@@ -1,0 +1,82 @@
+﻿/*html, body {
+    font-size: 16px;
+}
+
+@media all and (max-device-width: 720px) {
+    html, body {
+        font-size: 20px;
+    }
+}*/
+
+html, body {
+    padding: 0;
+    height: 100%;
+}
+
+#messages {
+    width: 100%;
+    border: 1px solid #ccc;
+    height: calc(100% - 120px);
+    float: none;
+    margin: 0px auto;
+    padding-left: 0px;
+    overflow-y: auto;
+}
+
+textarea:focus {
+    outline: none !important;
+}
+
+.system-message {
+    background: #87CEFA;
+}
+
+.broadcast-message {
+    display: inline-block;
+    background: yellow;
+    margin: auto;
+    padding: 5px 10px;
+}
+
+.message-entry {
+    overflow: auto;
+    margin: 8px 0;
+}
+
+.message-avatar {
+    display: inline-block;
+    padding: 10px;
+    max-width: 8em;
+    word-wrap: break-word;
+}
+
+.message-content {
+    display: inline-block;
+    background-color: #b2e281;
+    padding: 10px;
+    margin: 0 0.5em;
+    max-width: calc(60%);
+    word-wrap: break-word;
+}
+
+    .message-content.pull-left:before {
+        width: 0;
+        height: 0;
+        display: inline-block;
+        float: left;
+        border-top: 10px solid transparent;
+        border-bottom: 10px solid transparent;
+        border-right: 10px solid #b2e281;
+        margin: 15px 0;
+    }
+
+    .message-content.pull-right:after {
+        width: 0;
+        height: 0;
+        display: inline-block;
+        float: right;
+        border-top: 10px solid transparent;
+        border-bottom: 10px solid transparent;
+        border-left: 10px solid #b2e281;
+        margin: 15px 0;
+    }
