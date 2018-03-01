@@ -26,7 +26,8 @@ namespace ChatSample
                 new
                 {
                     serviceUrl = _endpointProvider.GetClientEndpoint(hubName),
-                    accessToken = _tokenProvider.GenerateClientAccessToken(hubName, new[]
+                    accessToken = _tokenProvider.GenerateClientAccessToken(hubName,
+                        new[]
                         {
                             new Claim(ClaimTypes.Name, "username"),
                             new Claim(ClaimTypes.NameIdentifier, "userId")

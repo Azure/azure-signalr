@@ -8,6 +8,9 @@ namespace Microsoft.Azure.SignalR
 {
     public class EndpointProvider
     {
+        private const int ClientPort = 5001;
+        private const int ServerPort = 5002;
+
         private readonly string _endpoint;
 
         public EndpointProvider(string endpoint)
@@ -31,7 +34,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            return InternalGetEndpoint("client", hubName);
+            return InternalGetEndpoint(ClientPort, "client", hubName);
         }
 
         public string GetServerEndpoint<THub>() where THub : Hub
@@ -46,12 +49,12 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            return InternalGetEndpoint("server", hubName);
+            return InternalGetEndpoint(ServerPort, "server", hubName);
         }
 
-        private string InternalGetEndpoint(string path, string hubName)
+        private string InternalGetEndpoint(int port, string path, string hubName)
         {
-            return $"{_endpoint}/{path}/?hub={hubName.ToLower()}";
+            return $"{_endpoint}:{port}/{path}/?hub={hubName.ToLower()}";
         }
     }
 }

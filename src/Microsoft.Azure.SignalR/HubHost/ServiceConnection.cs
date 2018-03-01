@@ -185,6 +185,7 @@ namespace Microsoft.Azure.SignalR
                     StringComparison.OrdinalIgnoreCase))
             {
                 await OnConnectedAsync(invocationMessage);
+                return;
             }
 
             var connection = GetHubConnectionContext(invocationMessage);
@@ -199,8 +200,8 @@ namespace Microsoft.Azure.SignalR
                     StringComparison.OrdinalIgnoreCase))
             {
                 await OnDisconnectedAsync(connection, methodInvocationMessage2);
+                return;
             }
-            
 
             await _hubDispatcher.DispatchMessageAsync(connection, message);
         }
