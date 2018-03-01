@@ -9,6 +9,8 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ClientProxyFactory
     {
+        private const int ProxyPort = 5002;
+
         public static ClientProxy CreateAllClientsProxy(string endpoint, string apiVersion, string accessKey,
             string hubName)
         {
@@ -83,7 +85,7 @@ namespace Microsoft.Azure.SignalR
 
         private static string GetBaseUrl(string endpoint, string apiVersion, string hubName)
         {
-            return $"{endpoint}/{apiVersion}/hub/{hubName}";
+            return $"{endpoint}:{ProxyPort}/{apiVersion}/hub/{hubName}";
         }
 
         private static ClientProxy InternalCreateClientProxy(string url, string accessKey, string hubName,
