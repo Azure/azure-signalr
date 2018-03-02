@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR
                 Timeout.Infinite);
 
             _reconnectTimer =
-                new Timer(state => ((CloudConnection<THub>) state).StartAsyncCore().GetAwaiter().GetResult(), this,
+                new Timer(state => ((CloudConnection<THub>) state).StartAsync().GetAwaiter().GetResult(), this,
                     Timeout.Infinite, Timeout.Infinite);
 
             connection.OnReceived((data, state) => ((CloudConnection<THub>) state).OnDataReceivedAsync(data), this);
@@ -81,16 +81,16 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 await StartAsyncCore();
+                _isConnected = true;
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Failed to connect to Azure SignalR due to error: {ex.Message}");
-                ResetTimeoutTimer();
+                ResetReconnectTimer();
                 return;
             }
 
             await RunUserCallbackAsync(ConnectCallback, _options.OnConnected);
-            _isConnected = true;
         }
 
         private async Task StartAsyncCore()
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (!_isConnected)
             {
-                _logger.LogWarning($"The '{nameof(OnDataReceivedAsync)}' method cannot be called when connection is .");
+                _logger.LogWarning("Message processing is disabled when disconnected.");
                 return;
             }
 
@@ -325,7 +325,7 @@ namespace Microsoft.Azure.SignalR
         private DefaultConnectionContext CreateConnectionContext(HubInvocationMessage message)
         {
             var connectionId = message.GetConnectionId();
-            // Note:
+            // TODO:
             // No physical pipeline for logical ConnectionContext. These pipelines won't be used in current context.
             // So no exception or error will be thrown.
             // We should have a cleaner approach to reuse DefaultConnectionContext for Azure SignalR.
