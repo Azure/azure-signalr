@@ -11,24 +11,18 @@ namespace Microsoft.Azure.SignalR
 {
     public static class HubInvocationMessageExtension
     {
+        private const string Separator = ",";
         internal const string ActionKeyName = "action";
         internal const string ConnectionIdKeyName = "connId";
+        internal const string ConnectionIdsKeyName = "connIds";
+        internal const string UserKeyName = "user";
+        internal const string UsersKeyName = "users";
         internal const string GroupNameKeyName = "group";
+        internal const string GroupNamesKeyName = "groups";
         internal const string ExcludedIdsKeyName = "excluded";
         internal const string ClaimsKeyName = "claims";
 
-        public static TMessage AddMetadata<TMessage>(this TMessage message, IDictionary<string, string> metadata)
-            where TMessage : HubInvocationMessage
-        {
-            if (message == null || metadata == null) return message;
-            foreach (var kvp in metadata)
-            {
-                message.Headers.Add(kvp.Key, kvp.Value);
-            }
-            return message;
-        }
-
-        public static TMessage AddMetadata<TMessage>(this TMessage message, string key, string value)
+        public static TMessage AddHeader<TMessage>(this TMessage message, string key, string value)
             where TMessage : HubInvocationMessage
         {
             if (message != null && !string.IsNullOrEmpty(key))
@@ -38,23 +32,22 @@ namespace Microsoft.Azure.SignalR
             return message;
         }
 
-        public static bool TryGetMetadata<TMessage>(this TMessage message, string metadataName,
-            out string metadataValue)
+        public static bool TryGetHeader<TMessage>(this TMessage message, string headerName, out string headerValue)
             where TMessage : HubInvocationMessage
         {
             if (message.Headers != null &&
-                message.Headers.TryGetValue(metadataName, out metadataValue))
+                message.Headers.TryGetValue(headerName, out headerValue))
             {
                 return true;
             }
-            metadataValue = null;
+            headerValue = null;
             return false;
         }
 
         public static TMessage AddConnectionId<TMessage>(this TMessage message, string connectionId)
             where TMessage : HubInvocationMessage
         {
-            return message.AddMetadata(ConnectionIdKeyName, connectionId);
+            return string.IsNullOrEmpty(connectionId) ? message : message.AddHeader(ConnectionIdKeyName, connectionId);
         }
 
         public static string GetConnectionId<TMessage>(this TMessage message) where TMessage : HubInvocationMessage
@@ -63,63 +56,58 @@ namespace Microsoft.Azure.SignalR
             return connectionId;
         }
 
+        public static TMessage AddConnectionIds<TMessage>(this TMessage message, IReadOnlyList<string> connectionIds)
+            where TMessage : HubInvocationMessage
+        {
+            return message.AddHeader(ConnectionIdsKeyName, string.Join(Separator, connectionIds));
+        }
+
         public static bool TryGetConnectionId<TMessage>(this TMessage message, out string connectionId)
             where TMessage : HubInvocationMessage
         {
-            return message.TryGetMetadata(ConnectionIdKeyName, out connectionId);
+            return message.TryGetHeader(ConnectionIdKeyName, out connectionId);
+        }
+
+        public static TMessage AddUser<TMessage>(this TMessage message, string userId)
+            where TMessage : HubInvocationMessage
+        {
+            return string.IsNullOrEmpty(userId) ? message : message.AddHeader(UserKeyName, userId);
+        }
+
+        public static TMessage AddUsers<TMessage>(this TMessage message, IReadOnlyList<string> userIds)
+            where TMessage : HubInvocationMessage
+        {
+            return userIds != null && userIds.Any() ? message.AddHeader(UsersKeyName, string.Join(Separator, userIds)) : message;
         }
 
         public static TMessage AddGroupName<TMessage>(this TMessage message, string groupName)
             where TMessage : HubInvocationMessage
         {
-            return message.AddMetadata(GroupNameKeyName, groupName);
+            return  string.IsNullOrEmpty(groupName) ? message : message.AddHeader(GroupNameKeyName, groupName);
         }
 
-        public static bool TryGetGroupName<TMessage>(this TMessage message, out string groupName)
+        public static TMessage AddGroupNames<TMessage>(this TMessage message, IReadOnlyList<string> groupNames)
             where TMessage : HubInvocationMessage
         {
-            return message.TryGetMetadata(GroupNameKeyName, out groupName);
+            return groupNames != null && groupNames.Any() ? message.AddHeader(GroupNamesKeyName, string.Join(Separator, groupNames)) : message;
         }
 
         public static TMessage AddExcludedIds<TMessage>(this TMessage message, IReadOnlyList<string> excludedIds)
             where TMessage : HubInvocationMessage
         {
-            return message.AddMetadata(ExcludedIdsKeyName, string.Join(",", excludedIds));
-        }
-
-        public static bool TryGetExcludedIds<TMessage>(this TMessage message, out IReadOnlyList<string> excludedIdList)
-            where TMessage : HubInvocationMessage
-        {
-            excludedIdList = message.TryGetMetadata(ExcludedIdsKeyName, out var value)
-                ? new List<string>(value.Split(','))
-                : null;
-
-            return excludedIdList != null;
+            return excludedIds != null && excludedIds.Any() ? message.AddHeader(ExcludedIdsKeyName, string.Join(Separator, excludedIds)) : message;
         }
 
         public static TMessage AddAction<TMessage>(this TMessage message, string actionName)
             where TMessage : HubInvocationMessage
         {
-            return message.AddMetadata(ActionKeyName, actionName);
-        }
-
-        public static bool TryGetAction<TMessage>(this TMessage message, out string actionName)
-            where TMessage : HubInvocationMessage
-        {
-            return message.TryGetMetadata(ActionKeyName, out actionName);
-        }
-
-        public static TMessage AddClaims<TMessage>(this TMessage message, IEnumerable<Claim> claims)
-            where TMessage : HubInvocationMessage
-        {
-            return message.AddMetadata(ClaimsKeyName,
-                JsonConvert.SerializeObject(claims.Select(ClaimEntry.FromClaim)));
+            return string.IsNullOrEmpty(actionName) ? message : message.AddHeader(ActionKeyName, actionName);
         }
 
         public static bool TryGetClaims<TMessage>(this TMessage message, out IEnumerable<Claim> claims)
             where TMessage : HubInvocationMessage
         {
-            claims = message.TryGetMetadata(ClaimsKeyName, out var serializedClaims)
+            claims = message.TryGetHeader(ClaimsKeyName, out var serializedClaims)
                 ? JsonConvert.DeserializeObject<IEnumerable<ClaimEntry>>(serializedClaims).Select(x => x.ToClaim())
                 : null;
 
