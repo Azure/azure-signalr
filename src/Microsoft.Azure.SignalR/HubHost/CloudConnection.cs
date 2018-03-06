@@ -21,9 +21,7 @@ namespace Microsoft.Azure.SignalR
 {
     public class CloudConnection<THub> where THub : Hub
     {
-        private static readonly object RandomLock = new object();
-        private static readonly Random RandomInterval = new Random((int)DateTime.UtcNow.Ticks);
-
+        private const int MaxReconnectInterval = 1000; // in milliseconds
         private const string OnConnectedAsyncMethod = "onconnectedasync";
         private const string OnDisconnectedAsyncMethod = "ondisconnectedasync";
         private const string ConnectCallback = "HubHostOptions.OnConnected";
@@ -48,17 +46,8 @@ namespace Microsoft.Azure.SignalR
         private bool _needKeepAlive;
 
         private readonly Timer _reconnectTimer;
-        private int _reconnectIntervalInMS
-        {
-            get
-            {
-                lock (RandomLock)
-                {
-                    return RandomInterval.Next(1000);
-                }
-            }
-        }
-
+        private int _reconnectIntervalInMS => StaticRandom.Next(MaxReconnectInterval);
+        
         public CloudConnection(IConnection connection,
             IHubProtocol protocol,
             HubHostOptions options,
