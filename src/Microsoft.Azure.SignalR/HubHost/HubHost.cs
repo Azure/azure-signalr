@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR
 {
     public class HubHost<THub> where THub : Hub
     {
-        private readonly List<ServiceConnection<THub>> _serviceConnections = new List<ServiceConnection<THub>>();
+        private readonly List<CloudConnection<THub>> _cloudConnections = new List<CloudConnection<THub>>();
 
         private readonly HubLifetimeManager<THub> _lifetimeManager;
         private readonly IHubProtocolResolver _protocolResolver;
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR
             if (_endpointProvider != null || _tokenProvider != null)
             {
                 throw new InvalidOperationException(
-                    $"{typeof(THub).Name} can only be used with one Azure SignalR instance. It can't be used with multiple Azure SignalR instances");
+                    $"{typeof(THub).FullName} can only bind with one Azure SignalR instance. Binding to multiple instances is forbidden.");
             }
 
             _endpointProvider = endpointProvider ?? throw new ArgumentNullException(nameof(endpointProvider));
@@ -66,58 +66,47 @@ namespace Microsoft.Azure.SignalR
                 AccessTokenFactory = () => _tokenProvider.GenerateServerAccessToken<THub>()
             };
 
+            // Simply create a couple of connections which connect to Azure SignalR
             for (var i = 0; i < _options.ConnectionNumber; i++)
             {
-                var serviceConnection = CreateServiceConnection(serviceUrl, httpOptions);
-                _serviceConnections.Add(serviceConnection);
+                var cloudConnection = CreateCloudConnection(serviceUrl, httpOptions);
+                _cloudConnections.Add(cloudConnection);
             }
         }
 
         public async Task StartAsync()
         {
-            try
-            {
-                _logger.LogInformation($"Starting {_name}...");
-                var tasks = _serviceConnections.Select(c => c.StartAsync());
-                await Task.WhenAll(tasks);
-                _logger.LogInformation($"Started {_name}.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Failed to start {_name}.");
-            }
+            _logger.LogInformation($"Starting {_name}...");
+            var tasks = _cloudConnections.Select(c => c.StartAsync());
+            await Task.WhenAll(tasks);
         }
 
-        public async Task StopAsync()
-        {
-            try
-            {
-                _logger.LogInformation($"Stopping {_name}...");
-                var tasks = _serviceConnections.Select(c => c.StopAsync());
-                await Task.WhenAll(tasks);
-                _logger.LogInformation($"Stopped {_name}.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Failed to stop {_name}.");
-            }
-        }
-
-        #region Private Methods
+        // TODO: Do not expose this API for now because auto-reconnect is enabled by default.
+        //public async Task StopAsync()
+        //{
+        //    _logger.LogInformation($"Stopping {_name}...");
+        //    var tasks = _cloudConnections.Select(c => c.StopAsync());
+        //    await Task.WhenAll(tasks);
+        //}
 
         private Uri GetServiceUrl()
         {
             return new Uri(_endpointProvider.GetServerEndpoint<THub>());
         }
 
-        private ServiceConnection<THub> CreateServiceConnection(Uri serviceUrl, HttpOptions httpOptions)
+        private CloudConnection<THub> CreateCloudConnection(Uri serviceUrl, HttpOptions httpOptions)
         {
             var httpConnection = new HttpConnection(serviceUrl, TransportType.WebSockets, _loggerFactory, httpOptions);
-            var protocolName = _options.ProtocolType == ProtocolType.Text ? "json" : "messagepack";
-            var protocol = _protocolResolver.GetProtocol(protocolName, null);
-            return new ServiceConnection<THub>(httpConnection, protocol, _lifetimeManager, _hubDispatcher, _loggerFactory);
+            var protocol = GetProtocol();
+            return new CloudConnection<THub>(httpConnection, protocol, _options, _lifetimeManager, _hubDispatcher,
+                _loggerFactory);
         }
 
-        #endregion
+        private IHubProtocol GetProtocol()
+        {
+            return _options.ProtocolType == ProtocolType.Text
+                ? _protocolResolver.GetProtocol("json", null)
+                : _protocolResolver.GetProtocol("messagepack", null);
+        }
     }
 }

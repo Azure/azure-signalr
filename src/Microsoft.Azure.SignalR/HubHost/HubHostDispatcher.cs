@@ -152,11 +152,10 @@ namespace Microsoft.Azure.SignalR
                     await Invoke(descriptor, connection, hubMethodInvocationMessage, isStreamedInvocation);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // Abort the entire connection if the invocation fails in an unexpected way
-                //connection.Abort(ex);
-                connection.Abort();
+                connection.Abort(ex);
             }
         }
 

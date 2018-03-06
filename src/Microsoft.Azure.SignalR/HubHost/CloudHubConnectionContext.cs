@@ -26,7 +26,6 @@ namespace Microsoft.Azure.SignalR
 
         private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1);
 
-
         public CloudHubConnectionContext(IConnection connection, ConnectionContext connectionContext, TimeSpan keepAliveInterval, ILoggerFactory loggerFactory)
             : base(connectionContext, keepAliveInterval, loggerFactory)
         {
