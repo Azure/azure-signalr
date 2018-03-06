@@ -69,8 +69,8 @@ namespace Microsoft.Azure.SignalR
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
             _options = options ?? throw new ArgumentNullException(nameof(options));
-            _lifetimeManager = lifetimeManager;
-            _hubDispatcher = hubDispatcher;
+            _lifetimeManager = lifetimeManager ?? throw new ArgumentNullException(nameof(lifetimeManager));
+            _hubDispatcher = hubDispatcher ?? throw new ArgumentNullException(nameof(hubDispatcher));
 
             _loggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
             _logger = _loggerFactory.CreateLogger<CloudConnection<THub>>();
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.SignalR
 
             if (ex != null)
             {
-                _logger.LogError($"Connection to Azure SignalR is closed dut to error: {ex.Message}");
+                _logger.LogError($"Connection to Azure SignalR is closed due to error: {ex.Message}");
             }
             else
             {

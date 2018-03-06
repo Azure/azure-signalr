@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
