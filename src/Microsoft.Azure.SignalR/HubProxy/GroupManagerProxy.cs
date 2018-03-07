@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR
     {
         private const int ProxyPort = 5002;
 
-        private readonly string _baseUrl;
+        private readonly string _baseUri;
         private readonly string _accessKey;
 
         public GroupManagerProxy(string endpoint, string accessKey, string hubName, HubProxyOptions options)
@@ -34,31 +34,36 @@ namespace Microsoft.Azure.SignalR
             }
 
             var apiVersion = options?.ApiVersion ?? HubProxyOptions.DefaultApiVersion;
-            _baseUrl = $"{endpoint}:{ProxyPort}/{apiVersion}/hub/{hubName.ToLower()}/group";
+            _baseUri = $"{endpoint}:{ProxyPort}/{apiVersion}/hub/{hubName.ToLower()}/group";
             _accessKey = accessKey;
         }
 
         public Task AddAsync(string connectionId, string groupName)
         {
-            var url = $"{_baseUrl}/{groupName}/connection/{connectionId}";
-            return SendAsync(url, HttpMethod.Post);
+            var uri = GetRequestUri(connectionId, groupName);
+            return SendAsync(uri, HttpMethod.Post);
         }
 
         public Task RemoveAsync(string connectionId, string groupName)
         {
-            var url = $"{_baseUrl}/{groupName}/connection/{connectionId}";
-            return SendAsync(url, HttpMethod.Delete);
+            var uri = GetRequestUri(connectionId, groupName);
+            return SendAsync(uri, HttpMethod.Delete);
         }
 
-        private Task SendAsync(string url, HttpMethod method)
+        private string GetRequestUri(string connectionId, string groupName)
+        {
+            return $"{_baseUri}/{groupName}/connection/{connectionId}";
+        }
+
+        private Task SendAsync(string uri, HttpMethod method)
         {
             var request = new HttpRequestMessage
             {
                 Method = method,
-                RequestUri = new Uri(url)
+                RequestUri = new Uri(uri)
             };
 
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", GenerateAccessToken(url));
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", GenerateAccessToken(uri));
 
             request.Headers.Accept.Clear();
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
