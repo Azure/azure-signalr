@@ -175,8 +175,8 @@ Method | Description
 
 Property | Description
 ---|---
-`Clients` | xxxx
-`Groups` | xxxx
+`Clients` | Proxy to clients connected to Azure SignalR.
+`Groups` | Proxy to groups within Azure SignalR.
 
 #### `IHubClients<IClientProxy> Clients` Property
 
