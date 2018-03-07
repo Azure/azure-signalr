@@ -27,7 +27,7 @@ namespace ChatSample
 
         private async Task Broadcast()
         {
-            await _hubProxy.All.SendAsync("broadcastMessage",
+            await _hubProxy.Clients.All.SendAsync("broadcastMessage",
                 new object[]
                 {
                     "_BROADCAST_",
