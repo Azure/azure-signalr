@@ -4,7 +4,7 @@
 
 Namespace | Description
 ---|---
-[Microsoft.Extensions.DependencyInjection](#microsoftexteionsdependencyinjection-namespace) | Contains extension methods for Azure SignalR dependency injection in ASP.NET Core 2.x
+[Microsoft.Extensions.DependencyInjection](#microsoftextensionsdependencyinjection-namespace) | Contains extension methods for Azure SignalR dependency injection in ASP.NET Core 2.x
 [Microsoft.AspNetCore.Builder](#microsoftaspnetcorebuilder-namespace) | Contains extension methods to initialize connections with Azure SignalR in ASP.NET Core 2.x
 [Microsoft.Azure.SignalR](#microsoftazuresignalr-namespace) | Contains core functionalities to interact with Azure SignalR.
 [Owin](#owin-namespace) | Contains extension methods to initialize connections with Azure SignalR in OWIN startup.
@@ -34,7 +34,8 @@ Class | Description
 [HubProxy](#hubproxy-class) | Proxy class to send message to Azure SignalR instance with REST API calls.
 [HubClientsProxy](#hubclientsproxy-class) | Proxy class to send message to Azure SignalR clients with REST API calls.
 [GroupManagerProxy](#groupmanagerproxy-class) | Proxy class to manage groups in Azure SignalR with REST API calls.
-
+[HubHostOptions](#hubhostoptions-class) | Options to configure Hub host.
+[HubProxyOptions](#hubproxyoptions-class) | Options to configure HubProxy.
 
 ### `Owin` Namespace
 
@@ -241,4 +242,25 @@ Method | Description
 
 #### `GroupManagerProxy.RemoveAsync(string connectionId, string groupName)` Method
 **Return**: `Task`
+
+---
+
+### `HubHostOptions` Class
+
+Property | Type | Default Value | Description
+---|---|---|---
+`ConnectionNumber` | `int` | 5 | Number of connections from Hub host to Azure SignalR.
+`ProtocolType` | `ProtocolType` | `ProtocolType.Text` | Protocol used between Hub host and Azure SignalR.
+`ServerTimeout` | `TimeSpan` | 30 seconds | Timeout interval between ping messages from Azure SignalR.
+`OnConnected` | `Func<Task>` | null | User callback when connection between Hub host and Azure SignalR is established or re-established.
+`OnDisconnected` | `Func<Exception, Task>` | null | User callback when connection between Hub host and Azure SignalR is closed.
+`AutoReconnect` | `bool` | `True` | Flag to control whether to reconnect when connection between Hub host and Azure SignalR is closed.
+
+---
+
+### `HubProxyOptions` Class
+
+Property | Type | Default Value | Description
+---|---|---|---
+`ApiVersion` | `string` | `v1-preview` | REST API version when calling Azure SignalR.
 
