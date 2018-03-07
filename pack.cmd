@@ -1,5 +1,8 @@
 @ECHO OFF
 
+SETLOCAL
+IF NOT [%~1]==[] SET BuildNumber=%~1
+
 PUSHD %~dp0
 
 RD /S /Q .publish
@@ -13,3 +16,5 @@ FOR /f %%p IN ('DIR . /AD /B') do (
 )
 
 POPD
+
+ENDLOCAL
