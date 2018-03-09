@@ -1,7 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.SignalR;
 using Microsoft.Extensions.Configuration;
@@ -46,8 +48,20 @@ namespace ChatSample
         {
             app.UseMvc();
             app.UseFileServer();
+            var protocolType = Configuration["AzureSignalR:ProtocolType"];
+            if (!Enum.TryParse<TransferFormat>(protocolType, true, out var protoType))
+            {
+                protoType = TransferFormat.Text;
+            }
+            var hubServerOptions = new HubHostOptions()
+            {
+                ProtocolType = protoType,
+                ConnectionNumber = Configuration.GetValue<int>("AzureSignalR:ServiceConnectionNo"),
+                AutoReconnect = false,
+                ServerTimeout = Configuration.GetValue<int>("AzureSignalR:ServiceTimeout")
+            };
             app.UseAzureSignalR(Configuration["AzureSignalR:ConnectionString"],
-                builder => { builder.UseHub<Chat>(); });
+                builder => { builder.UseHub<Chat>(hubServerOptions); });
         }
     }
 }

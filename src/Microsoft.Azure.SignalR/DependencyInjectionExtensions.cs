@@ -11,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public static class AzureSignalRDependencyInjectionExtensions
+    public static class DependencyInjectionExtensions
     {
         public static IServiceCollection AddAzureSignalR(this IServiceCollection services,
             Action<HubHostOptions> configure = null)
@@ -21,6 +21,9 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton(typeof(HubLifetimeManager<>), typeof(HubHostLifetimeManager<>));
             services.AddSingleton(typeof(IHubProtocolResolver), typeof(DefaultHubProtocolResolver));
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IHubProtocol, JsonHubProtocol>());
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHubProtocol, MessagePackHubProtocol>());
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHubProtocol, JsonHubProtocolWrapper>());
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHubProtocol, MessagePackHubProtocolWrapper>());
             services.AddSingleton(typeof(IHubContext<>), typeof(HubContext<>));
             services.AddSingleton(typeof(IUserIdProvider), typeof(DefaultUserIdProvider));
             services.AddScoped(typeof(IHubActivator<>), typeof(DefaultHubActivator<>));
