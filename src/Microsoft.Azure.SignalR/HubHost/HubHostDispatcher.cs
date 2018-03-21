@@ -144,8 +144,8 @@ namespace Microsoft.Azure.SignalR
                 {
                     // Send an error to the client. Then let the normal completion process occur
                     _logger.LogWarning($"Unknown hub method: {hubMethodInvocationMessage.Target}");
-                    await connection.WriteAsync(CompletionMessage.WithError(
-                        hubMethodInvocationMessage.InvocationId, $"Unknown hub method '{hubMethodInvocationMessage.Target}'"));
+                    await SendInvocationError(hubMethodInvocationMessage, connection,
+                        $"Unknown hub method '{hubMethodInvocationMessage.Target}'");
                 }
                 else
                 {
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.SignalR
             {
                 if (!await IsHubMethodAuthorized(scope.ServiceProvider, connection.User, descriptor.Policies))
                 {
-                    _logger.LogError($"Hub method not authoried: {hubMethodInvocationMessage.Target}");
+                    _logger.LogError($"Hub method unauthorized: {hubMethodInvocationMessage.Target}");
                     await SendInvocationError(hubMethodInvocationMessage, connection,
                         $"Failed to invoke '{hubMethodInvocationMessage.Target}' because user is unauthorized");
                     return;
@@ -198,7 +198,7 @@ namespace Microsoft.Azure.SignalR
                     else if (!string.IsNullOrEmpty(hubMethodInvocationMessage.InvocationId))
                     {
                         //Log.SendingResult(_logger, hubMethodInvocationMessage.InvocationId, methodExecutor);
-                        await connection.WriteAsync(CompletionMessage.WithResult(hubMethodInvocationMessage.InvocationId, result));
+                        await connection.ReturnResultAsync(CompletionMessage.WithResult(hubMethodInvocationMessage.InvocationId, result));
                     }
                 }
                 catch (TargetInvocationException ex)
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.SignalR
                 while (await enumerator.MoveNextAsync())
                 {
                     // Send the stream item
-                    await connection.WriteAsync(new StreamItemMessage(invocationId, enumerator.Current));
+                    await connection.ReturnResultAsync(new StreamItemMessage(invocationId, enumerator.Current));
                 }
             }
             catch (ChannelClosedException ex)
@@ -246,7 +246,7 @@ namespace Microsoft.Azure.SignalR
             }
             finally
             {
-                await connection.WriteAsync(new CompletionMessage(invocationId, error: error, result: null, hasResult: false));
+                await connection.ReturnResultAsync(new CompletionMessage(invocationId, error: error, result: null, hasResult: false));
 
                 if (connection.ActiveRequestCancellationSources.TryRemove(invocationId, out var cts))
                 {
@@ -285,7 +285,7 @@ namespace Microsoft.Azure.SignalR
                 return;
             }
 
-            await connection.WriteAsync(CompletionMessage.WithError(hubMethodInvocationMessage.InvocationId, errorMessage));
+            await connection.ReturnResultAsync(CompletionMessage.WithError(hubMethodInvocationMessage.InvocationId, errorMessage));
         }
 
         private void InitializeHub(THub hub, HubConnectionContext connection)
@@ -340,8 +340,8 @@ namespace Microsoft.Azure.SignalR
                 if (!string.IsNullOrEmpty(hubMethodInvocationMessage.InvocationId))
                 {
                     //Log.StreamingMethodCalledWithInvoke(_logger, hubMethodInvocationMessage);
-                    await connection.WriteAsync(CompletionMessage.WithError(hubMethodInvocationMessage.InvocationId,
-                        $"The client attempted to invoke the streaming '{hubMethodInvocationMessage.Target}' method in a non-streaming fashion."));
+                    await SendInvocationError(hubMethodInvocationMessage, connection,
+                        $"The client attempted to invoke the streaming '{hubMethodInvocationMessage.Target}' method in a non-streaming fashion.");
                 }
 
                 return false;
@@ -350,8 +350,8 @@ namespace Microsoft.Azure.SignalR
             if (!isStreamedResult && isStreamedInvocation)
             {
                 //Log.NonStreamingMethodCalledWithStream(_logger, hubMethodInvocationMessage);
-                await connection.WriteAsync(CompletionMessage.WithError(hubMethodInvocationMessage.InvocationId,
-                    $"The client attempted to invoke the non-streaming '{hubMethodInvocationMessage.Target}' method in a streaming fashion."));
+                await SendInvocationError(hubMethodInvocationMessage, connection,
+                    $"The client attempted to invoke the non-streaming '{hubMethodInvocationMessage.Target}' method in a streaming fashion.");
 
                 return false;
             }
