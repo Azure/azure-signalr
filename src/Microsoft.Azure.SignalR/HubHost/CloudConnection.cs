@@ -269,7 +269,7 @@ namespace Microsoft.Azure.SignalR
 
         private async Task DispatchAsync(HubInvocationMessage message)
         {
-            _logger.LogInformation($"Received mssage: {message}");
+            _logger.LogInformation($"Received message: {message}");
             var isMethodInvocation = message is HubMethodInvocationMessage;
             if (isMethodInvocation &&
                 OnConnectedAsyncMethod.IgnoreCaseEquals(((HubMethodInvocationMessage) message).Target))
