@@ -269,6 +269,7 @@ namespace Microsoft.Azure.SignalR
 
         private async Task DispatchAsync(HubInvocationMessage message)
         {
+            _logger.LogInformation($"Received message: {message}");
             var isMethodInvocation = message is HubMethodInvocationMessage;
             if (isMethodInvocation &&
                 OnConnectedAsyncMethod.IgnoreCaseEquals(((HubMethodInvocationMessage) message).Target))
@@ -332,7 +333,7 @@ namespace Microsoft.Azure.SignalR
             if (message.TryGetClaims(out var claims))
             {
                 connectionContext.User = new ClaimsPrincipal();
-                connectionContext.User.AddIdentity(new ClaimsIdentity(claims));
+                connectionContext.User.AddIdentity(new ClaimsIdentity(claims, "Bearer"));
             }
             return connectionContext;
         }
