@@ -29,10 +29,13 @@ namespace Microsoft.Azure.SignalR
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly IHubContext<THub> _hubContext;
         private readonly ILogger<HubHostDispatcher<THub>> _logger;
+        private readonly HubLifetimeManager<THub> _lifetimeManager;
 
-        public HubHostDispatcher(IServiceScopeFactory serviceScopeFactory, IHubContext<THub> hubContext,
+        public HubHostDispatcher(HubLifetimeManager<THub> lifetimeManager,
+            IServiceScopeFactory serviceScopeFactory, IHubContext<THub> hubContext,
             ILogger<HubHostDispatcher<THub>> logger)
         {
+            _lifetimeManager = lifetimeManager;
             _hubContext = hubContext;
             _logger = logger;
             _serviceScopeFactory = serviceScopeFactory;
@@ -78,49 +81,53 @@ namespace Microsoft.Azure.SignalR
 
         public override async Task DispatchMessageAsync(HubConnectionContext connection, HubMessage hubMessage)
         {
-            if (!(connection is CloudHubConnectionContext cloudConnection))
+            // The two parameter types are guaranteed by caller
+            var cloudConnection = (CloudHubConnectionContext)connection;
+            var messageWrapper = (HubInvocationMessageWrapper)hubMessage;
+
+            //var connectionId = messageWrapper.GetConnectionId();
+            var messages = new List<HubMessage>();
+            cloudConnection.ClientProtocol.TryParseMessages(messageWrapper.Payload, this, messages);
+            foreach (var message in messages)
             {
-                _logger.LogError("Invalid type. CloudHubConnectionContext expected.");
-                return;
-            }
+                switch (message)
+                {
+                    case InvocationMessage invocationMessage:
+                        _logger.LogDebug($"Received invocation: {invocationMessage}");
+                        await ProcessInvocation(messageWrapper, cloudConnection, invocationMessage, isStreamedInvocation: false);
+                        break;
 
-            switch (hubMessage)
-            {
-                case InvocationMessage invocationMessage:
-                    _logger.LogDebug($"Received invocation: {invocationMessage}");
-                    await ProcessInvocation(cloudConnection, invocationMessage, isStreamedInvocation: false);
-                    break;
+                    case StreamInvocationMessage streamInvocationMessage:
+                        _logger.LogDebug($"Received stream invocation: {streamInvocationMessage}");
+                        await ProcessInvocation(messageWrapper, cloudConnection, streamInvocationMessage, isStreamedInvocation: true);
+                        break;
 
-                case StreamInvocationMessage streamInvocationMessage:
-                    _logger.LogDebug($"Received stream invocation: {streamInvocationMessage}");
-                    await ProcessInvocation(cloudConnection, streamInvocationMessage, isStreamedInvocation: true);
-                    break;
+                    case CompletionMessage completionMessage:
+                        break;
 
-                case CompletionMessage completionMessage:
-                    break;
+                    case CancelInvocationMessage cancelInvocationMessage:
+                        // Check if there is an associated active stream and cancel it if it exists.
+                        // The cts will be removed when the streaming method completes executing
+                        if (cloudConnection.ActiveRequestCancellationSources.TryGetValue(cancelInvocationMessage.InvocationId, out var cts))
+                        {
+                            _logger.LogDebug($"Cancel stream invocation: {cancelInvocationMessage.InvocationId}");
+                            cts.Cancel();
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Unexpected stream invocation cancel.");
+                        }
+                        break;
 
-                case CancelInvocationMessage cancelInvocationMessage:
-                    // Check if there is an associated active stream and cancel it if it exists.
-                    // The cts will be removed when the streaming method completes executing
-                    if (cloudConnection.ActiveRequestCancellationSources.TryGetValue(cancelInvocationMessage.InvocationId, out var cts))
-                    {
-                        _logger.LogDebug($"Cancel stream invocation: {cancelInvocationMessage.InvocationId}");
-                        cts.Cancel();
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Unexpected stream invocation cancel.");
-                    }
-                    break;
+                    case PingMessage _:
+                        // We don't care about pings
+                        break;
 
-                case PingMessage _:
-                    // We don't care about pings
-                    break;
-
-                // Other kind of message we weren't expecting
-                default:
-                    _logger.LogError($"Received unsupported message type: {hubMessage.GetType().FullName}");
-                    throw new NotSupportedException($"Received unsupported message: {hubMessage}");
+                    // Other kind of message we weren't expecting
+                    default:
+                        _logger.LogError($"Received unsupported message type: {hubMessage.GetType().FullName}");
+                        throw new NotSupportedException($"Received unsupported message: {hubMessage}");
+                }
             }
         }
 
@@ -134,7 +141,9 @@ namespace Microsoft.Azure.SignalR
             return typeof(object);
         }
 
-        private async Task ProcessInvocation(CloudHubConnectionContext connection, HubMethodInvocationMessage hubMethodInvocationMessage, bool isStreamedInvocation)
+        private async Task ProcessInvocation(HubInvocationMessageWrapper originalHubMessageWrapper,
+            CloudHubConnectionContext connection, HubMethodInvocationMessage hubMethodInvocationMessage,
+            bool isStreamedInvocation)
         {
             try
             {
@@ -144,23 +153,28 @@ namespace Microsoft.Azure.SignalR
                 {
                     // Send an error to the client. Then let the normal completion process occur
                     _logger.LogWarning($"Unknown hub method: {hubMethodInvocationMessage.Target}");
-                    await SendInvocationError(hubMethodInvocationMessage, connection,
+
+                    await SendInvocationError(originalHubMessageWrapper, hubMethodInvocationMessage, connection,
                         $"Unknown hub method '{hubMethodInvocationMessage.Target}'");
                 }
                 else
                 {
-                    await Invoke(descriptor, connection, hubMethodInvocationMessage, isStreamedInvocation);
+                    await Invoke(descriptor, connection, hubMethodInvocationMessage, originalHubMessageWrapper, isStreamedInvocation);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Abort the entire connection if the invocation fails in an unexpected way
-                connection.Abort(ex);
+                //connection.Abort(ex);
+                connection.Abort();
             }
         }
 
-        private async Task Invoke(HubMethodDescriptor descriptor, CloudHubConnectionContext connection,
-            HubMethodInvocationMessage hubMethodInvocationMessage, bool isStreamedInvocation)
+        private async Task Invoke(HubMethodDescriptor descriptor,
+            CloudHubConnectionContext connection,
+            HubMethodInvocationMessage hubMethodInvocationMessage,
+            HubInvocationMessageWrapper originalHubMessageWrapper,
+            bool isStreamedInvocation)
         {
             var methodExecutor = descriptor.MethodExecutor;
 
@@ -169,12 +183,12 @@ namespace Microsoft.Azure.SignalR
                 if (!await IsHubMethodAuthorized(scope.ServiceProvider, connection.User, descriptor.Policies))
                 {
                     _logger.LogError($"Hub method unauthorized: {hubMethodInvocationMessage.Target}");
-                    await SendInvocationError(hubMethodInvocationMessage, connection,
+                    await SendInvocationError(originalHubMessageWrapper, hubMethodInvocationMessage, connection,
                         $"Failed to invoke '{hubMethodInvocationMessage.Target}' because user is unauthorized");
                     return;
                 }
 
-                if (!await ValidateInvocationMode(methodExecutor.MethodReturnType, isStreamedInvocation, hubMethodInvocationMessage, connection))
+                if (!await ValidateInvocationMode(methodExecutor.MethodReturnType, isStreamedInvocation, originalHubMessageWrapper, hubMethodInvocationMessage, connection))
                 {
                     return;
                 }
@@ -192,24 +206,27 @@ namespace Microsoft.Azure.SignalR
                     {
                         var enumerator = GetStreamingEnumerator(connection, hubMethodInvocationMessage.InvocationId, methodExecutor, result, methodExecutor.MethodReturnType);
                         //Log.StreamingResult(_logger, hubMethodInvocationMessage.InvocationId, methodExecutor);
-                        await StreamResultsAsync(hubMethodInvocationMessage.InvocationId, connection, enumerator);
+                        await StreamResultsAsync(hubMethodInvocationMessage.InvocationId, connection, enumerator, originalHubMessageWrapper);
                     }
                     // Non-empty/null InvocationId ==> Blocking invocation that needs a response
                     else if (!string.IsNullOrEmpty(hubMethodInvocationMessage.InvocationId))
                     {
                         //Log.SendingResult(_logger, hubMethodInvocationMessage.InvocationId, methodExecutor);
-                        await connection.ReturnResultAsync(CompletionMessage.WithResult(hubMethodInvocationMessage.InvocationId, result));
+                        await SendHubMessage(connection, CompletionMessage
+                            .WithResult(hubMethodInvocationMessage.InvocationId, result)
+                            .AddHeaders(hubMethodInvocationMessage.Headers), // Pass information to CompletionMessage
+                            originalHubMessageWrapper);
                     }
                 }
                 catch (TargetInvocationException ex)
                 {
                     //Log.FailedInvokingHubMethod(_logger, hubMethodInvocationMessage.Target, ex);
-                    await SendInvocationError(hubMethodInvocationMessage, connection, ex.InnerException.Message);
+                    await SendInvocationError(originalHubMessageWrapper, hubMethodInvocationMessage, connection, ex.InnerException.Message);
                 }
                 catch (Exception ex)
                 {
                     //Log.FailedInvokingHubMethod(_logger, hubMethodInvocationMessage.Target, ex);
-                    await SendInvocationError(hubMethodInvocationMessage, connection, ex.Message);
+                    await SendInvocationError(originalHubMessageWrapper, hubMethodInvocationMessage, connection, ex.Message);
                 }
                 finally
                 {
@@ -218,7 +235,8 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task StreamResultsAsync(string invocationId, CloudHubConnectionContext connection, IAsyncEnumerator<object> enumerator)
+        private async Task StreamResultsAsync(string invocationId, CloudHubConnectionContext connection,
+            IAsyncEnumerator<object> enumerator, HubInvocationMessageWrapper originalHubMessageWrapper)
         {
             string error = null;
 
@@ -227,7 +245,7 @@ namespace Microsoft.Azure.SignalR
                 while (await enumerator.MoveNextAsync())
                 {
                     // Send the stream item
-                    await connection.ReturnResultAsync(new StreamItemMessage(invocationId, enumerator.Current));
+                    await SendHubMessage(connection, new StreamItemMessage(invocationId, enumerator.Current), originalHubMessageWrapper);
                 }
             }
             catch (ChannelClosedException ex)
@@ -246,8 +264,8 @@ namespace Microsoft.Azure.SignalR
             }
             finally
             {
-                await connection.ReturnResultAsync(new CompletionMessage(invocationId, error: error, result: null, hasResult: false));
-
+                await SendHubMessage(connection, new CompletionMessage(invocationId, error: error, result: null, hasResult: false),
+                    originalHubMessageWrapper);
                 if (connection.ActiveRequestCancellationSources.TryRemove(invocationId, out var cts))
                 {
                     cts.Dispose();
@@ -277,21 +295,26 @@ namespace Microsoft.Azure.SignalR
             return null;
         }
 
-        private async Task SendInvocationError(HubMethodInvocationMessage hubMethodInvocationMessage,
-            HubConnectionContext connection, string errorMessage)
+        private async Task SendInvocationError(
+            HubInvocationMessageWrapper originalHubMessageWrapper,
+            HubMethodInvocationMessage hubMethodInvocationMessage,
+            CloudHubConnectionContext connection,
+            string errorMessage)
         {
             if (string.IsNullOrEmpty(hubMethodInvocationMessage.InvocationId))
             {
                 return;
             }
-
-            await connection.ReturnResultAsync(CompletionMessage.WithError(hubMethodInvocationMessage.InvocationId, errorMessage));
+            await SendHubMessage(connection, CompletionMessage
+                .WithError(hubMethodInvocationMessage.InvocationId, errorMessage),
+                originalHubMessageWrapper);
         }
 
         private void InitializeHub(THub hub, HubConnectionContext connection)
         {
-            hub.Clients = new HubCallerClients(_hubContext.Clients, connection.ConnectionId);
-            hub.Context = new HubCallerContext(connection);
+            hub.Clients = new HubCallerClients(new CloudHubClients<THub>(_lifetimeManager as HubHostLifetimeManager<THub>,
+                connection.ConnectionId), connection.ConnectionId);
+            hub.Context = new DefaultHubCallerContext(connection);
             hub.Groups = _hubContext.Groups;
         }
 
@@ -331,7 +354,8 @@ namespace Microsoft.Azure.SignalR
         }
 
         private async Task<bool> ValidateInvocationMode(Type resultType, bool isStreamedInvocation,
-            HubMethodInvocationMessage hubMethodInvocationMessage, HubConnectionContext connection)
+            HubInvocationMessageWrapper originalHubMessageWrapper, HubMethodInvocationMessage hubMethodInvocationMessage,
+            CloudHubConnectionContext connection)
         {
             var isStreamedResult = IsStreamed(resultType);
             if (isStreamedResult && !isStreamedInvocation)
@@ -340,7 +364,7 @@ namespace Microsoft.Azure.SignalR
                 if (!string.IsNullOrEmpty(hubMethodInvocationMessage.InvocationId))
                 {
                     //Log.StreamingMethodCalledWithInvoke(_logger, hubMethodInvocationMessage);
-                    await SendInvocationError(hubMethodInvocationMessage, connection,
+                    await SendInvocationError(originalHubMessageWrapper, hubMethodInvocationMessage, connection,
                         $"The client attempted to invoke the streaming '{hubMethodInvocationMessage.Target}' method in a non-streaming fashion.");
                 }
 
@@ -350,13 +374,21 @@ namespace Microsoft.Azure.SignalR
             if (!isStreamedResult && isStreamedInvocation)
             {
                 //Log.NonStreamingMethodCalledWithStream(_logger, hubMethodInvocationMessage);
-                await SendInvocationError(hubMethodInvocationMessage, connection,
+                await SendInvocationError(originalHubMessageWrapper, hubMethodInvocationMessage, connection,
                     $"The client attempted to invoke the non-streaming '{hubMethodInvocationMessage.Target}' method in a streaming fashion.");
 
                 return false;
             }
 
             return true;
+        }
+
+        private static Task SendHubMessage(CloudHubConnectionContext connection,
+            HubMessage hubMessage, HubInvocationMessageWrapper originalHubMessageWrapper)
+        {
+            var meta = new MessageMetaDataDictionary();
+            meta.AddConnectionId(originalHubMessageWrapper.GetConnectionId());
+            return connection.SendHubMessage(hubMessage, meta);
         }
 
         private static bool IsStreamed(Type resultType)
@@ -404,7 +436,7 @@ namespace Microsoft.Azure.SignalR
             {
                 var streamCts = new CancellationTokenSource();
                 connection.ActiveRequestCancellationSources.TryAdd(invocationId, streamCts);
-                return CancellationTokenSource.CreateLinkedTokenSource(connection.ConnectionAbortedToken, streamCts.Token).Token;
+                return CancellationTokenSource.CreateLinkedTokenSource(connection.ConnectionAborted, streamCts.Token).Token;
             }
         }
 
@@ -434,7 +466,7 @@ namespace Microsoft.Azure.SignalR
                 var authorizeAttributes = methodInfo.GetCustomAttributes<AuthorizeAttribute>(inherit: true);
                 _methods[methodName] = new HubMethodDescriptor(executor, authorizeAttributes);
 
-                //Log.HubMethodBound(_logger, hubName, methodName);
+                _logger.LogDebug($"'{hubName}' hub method '{methodName}' is bound.");
             }
         }
 

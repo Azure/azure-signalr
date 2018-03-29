@@ -3,95 +3,74 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Runtime.ExceptionServices;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Protocols;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Internal.Protocol;
-using Microsoft.AspNetCore.Sockets.Client;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
+    // This class plays a different role from SignalR because it is not used in a real server:
+    // No negotiation, no keep-alive ping sending. The connection context here is just
+    // used to carry some basic information for LifetimeManager.
+    // It is only a proxy class to fit in LifetimeManager and send message out.
     public class CloudHubConnectionContext : HubConnectionContext
     {
-        private static Action<object> _abortedCallback = AbortConnection;
-
-        private readonly IConnection _connection;
-        private readonly ILogger _logger;
         private readonly CancellationTokenSource _connectionAbortedTokenSource = new CancellationTokenSource();
         private readonly TaskCompletionSource<object> _abortCompletedTcs = new TaskCompletionSource<object>();
-
         private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1);
 
-        public CloudHubConnectionContext(IConnection connection, ConnectionContext connectionContext, TimeSpan keepAliveInterval, ILoggerFactory loggerFactory)
-            : base(connectionContext, keepAliveInterval, loggerFactory)
-        {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            _logger = loggerFactory.CreateLogger<CloudHubConnectionContext>();
-        }
+        private IMessageSender _hubSender;
 
-        internal virtual HubProtocolReaderWriter ProtocolReaderWriter { get; set; }
-
-        internal ExceptionDispatchInfo AbortException { get; private set; }
+        // client's protocol obtained from HubMessageWrapper in OnConnected
+        public IHubProtocol ClientProtocol { get; set; }
 
         // Currently used only for streaming methods
-        internal ConcurrentDictionary<string, CancellationTokenSource> ActiveRequestCancellationSources { get; } = new ConcurrentDictionary<string, CancellationTokenSource>();
+        internal ConcurrentDictionary<string, CancellationTokenSource> ActiveRequestCancellationSources { get; } = new
+            ConcurrentDictionary<string, CancellationTokenSource>();
 
-        public override async Task WriteAsync(HubMessage message)
+        public CloudHubConnectionContext(IHubProtocol hubProtocol, IMessageSender sender,
+            ConnectionContext connectionContext, ILoggerFactory loggerFactory)
+            : base(connectionContext, TimeSpan.FromSeconds(30), loggerFactory)
         {
-            try
-            {
-                await _writeLock.WaitAsync();
-
-                var buffer = ProtocolReaderWriter.WriteMessage(message);
-
-                await _connection.SendAsync(buffer, CancellationToken.None);
-            }
-            finally
-            {
-                _writeLock.Release();
-            }
+            _hubSender = sender;
+            ClientProtocol = hubProtocol;
         }
 
-        public override void Abort()
+        // generate binary for both Json and MessagePack
+        public Task SendAllProtocolRaw(IDictionary<string, string> meta, string method, object[] args)
         {
-            // If we already triggered the token then noop, this isn't thread safe but it's good enough
-            // to avoid spawning a new task in the most common cases
-            if (_connectionAbortedTokenSource.IsCancellationRequested)
-            {
-                return;
-            }
-
-            // We fire and forget since this can trigger user code to run
-            Task.Factory.StartNew(_abortedCallback, this);
+            return _hubSender.SendAllProtocolRawMessage(meta, method, args);
         }
 
-        internal void Abort(Exception exception)
+        public Task SendRaw(IDictionary<string, string> meta, string method, object[] args)
         {
-            AbortException = ExceptionDispatchInfo.Capture(exception);
-            Abort();
+            var hubInvocationMessageWrapper = new HubInvocationMessageWrapper(ClientProtocol.TransferFormat);
+            hubInvocationMessageWrapper.AddMetadata(meta);
+            if (method != null)
+            {
+                var message = _hubSender.CreateInvocationMessage(method, args);
+                hubInvocationMessageWrapper.Payload = ClientProtocol.WriteToArray(message);
+            }
+            _ = _hubSender.SendHubMessage(hubInvocationMessageWrapper);
+            return Task.CompletedTask;
         }
 
-        private static void AbortConnection(object state)
+        public Task SendHubMessage(HubMessage hubMessage, IDictionary<string, string> meta)
         {
-            var connection = (CloudHubConnectionContext)state;
-            try
-            {
-                connection._connectionAbortedTokenSource.Cancel();
-
-                // Communicate the fact that we're finished triggering abort callbacks
-                connection._abortCompletedTcs.TrySetResult(null);
-            }
-            catch (Exception ex)
-            {
-                // TODO: Should we log if the cancellation callback fails? This is more preventative to make sure
-                // we don't end up with an unobserved task
-                connection._abortCompletedTcs.TrySetException(ex);
-            }
+            var hubInvocationMessageWrapper = new HubInvocationMessageWrapper(ClientProtocol.TransferFormat);
+            hubInvocationMessageWrapper.AddMetadata(meta);
+            hubInvocationMessageWrapper.Payload = ClientProtocol.WriteToArray(hubMessage);
+            _ = _hubSender.SendHubMessage(hubInvocationMessageWrapper);
+            return Task.CompletedTask;
         }
 
+        public async override ValueTask WriteAsync(HubMessage message)
+        {
+            await _hubSender.SendHubMessage(message);
+        }
     }
 }
