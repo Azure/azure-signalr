@@ -76,6 +76,7 @@ namespace Microsoft.Azure.SignalR
             hubMessageWrapper.AddMetadata(metadata);
             hubMessageWrapper.JsonPayload = ReadBinary(unpacker, "jsonpayload");
             hubMessageWrapper.MsgpackPayload = ReadBinary(unpacker, "msgpackpayload");
+
             return hubMessageWrapper;
         }
 

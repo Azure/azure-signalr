@@ -2,28 +2,26 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
-using Microsoft.AspNetCore.SignalR.Internal.Encoders;
+using Microsoft.AspNetCore.SignalR.Internal.Formatters;
 using Microsoft.AspNetCore.SignalR.Internal.Protocol;
-using Microsoft.AspNetCore.Sockets;
 using Microsoft.AspNetCore.Sockets.Client;
-using Microsoft.AspNetCore.Sockets.Features;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class CloudConnection<THub> where THub : Hub
+    public class CloudConnection<THub> : IMessageSender where THub : Hub
     {
         private const int MaxReconnectInterval = 1000; // in milliseconds
-        private const string OnConnectedAsyncMethod = "onconnectedasync";
-        private const string OnDisconnectedAsyncMethod = "ondisconnectedasync";
         private const string ConnectCallback = "HubHostOptions.OnConnected";
         private const string DisconnectCallback = "HubHostOptions.OnDisconnected";
 
@@ -32,28 +30,34 @@ namespace Microsoft.Azure.SignalR
         private readonly IConnection _connection;
         private readonly HubHostOptions _options;
         private readonly IHubProtocol _protocol;
-        private HubProtocolReaderWriter _protocolReaderWriter;
 
+        private readonly IHubProtocolResolver _protocolResolver;
         private readonly HubLifetimeManager<THub> _lifetimeManager;
         private readonly HubDispatcher<THub> _hubDispatcher;
-        private readonly HubConnectionList _connections = new HubConnectionList();
+        private readonly IHubProtocol _jsonProtocol;
+        private readonly IHubProtocol _messagePackProtocol;
+        private readonly HubConnectionStore _connections = new HubConnectionStore();
 
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
         // TODO: expose connection status to user code
-        private volatile bool _isConnected;
         private readonly Timer _timeoutTimer;
         private bool _needKeepAlive;
 
+        private CancellationTokenSource _connectionActive;
         private readonly Timer _reconnectTimer;
         private int _reconnectIntervalInMS => StaticRandom.Next(MaxReconnectInterval);
-        
+        private bool _receivedHandshakeResponse;
+
         public CloudConnection(IConnection connection,
             IHubProtocol protocol,
             HubHostOptions options,
             HubLifetimeManager<THub> lifetimeManager,
             HubDispatcher<THub> hubDispatcher,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory,
+            IHubProtocolResolver hubProtocolResolver,
+            IHubProtocol jsonProtocol,
+            IHubProtocol messagePackProtocol)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
@@ -71,6 +75,10 @@ namespace Microsoft.Azure.SignalR
                 new Timer(state => ((CloudConnection<THub>) state).StartAsync().GetAwaiter().GetResult(), this,
                     Timeout.Infinite, Timeout.Infinite);
 
+            _protocolResolver = hubProtocolResolver;
+            _jsonProtocol = jsonProtocol;
+            _messagePackProtocol = messagePackProtocol;
+
             connection.OnReceived((data, state) => ((CloudConnection<THub>) state).OnDataReceivedAsync(data), this);
             connection.Closed += OnHttpConnectionClosed;
         }
@@ -80,7 +88,6 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 await StartAsyncCore();
-                _isConnected = true;
             }
             catch (Exception ex)
             {
@@ -94,63 +101,20 @@ namespace Microsoft.Azure.SignalR
 
         private async Task StartAsyncCore()
         {
-            var transferModeFeature = GetOrAddTransferModeFeature();
-            var requestedMode = transferModeFeature.TransferMode;
-
-            await _connection.StartAsync();
-
-            var actualMode = transferModeFeature.TransferMode;
-            _protocolReaderWriter = GetProtocolReaderWriter(requestedMode, actualMode);
-
-            await NegotiateProtocol();
-
+            await _connection.StartAsync(_protocol.TransferFormat);
             _needKeepAlive = _connection.Features.Get<IConnectionInherentKeepAliveFeature>() == null;
-            ResetTimeoutTimer();
-        }
+            _receivedHandshakeResponse = false;
 
-        private ITransferModeFeature GetOrAddTransferModeFeature()
-        {
-            var transferModeFeature = _connection.Features.Get<ITransferModeFeature>();
-            if (transferModeFeature == null)
-            {
-                transferModeFeature = new TransferModeFeature();
-                _connection.Features.Set(transferModeFeature);
-            }
+            //Log.HubProtocol(_logger, _protocol.Name, _protocol.Version);
 
-            transferModeFeature.TransferMode = _protocol.Type == ProtocolType.Binary
-                ? TransferMode.Binary
-                : TransferMode.Text;
-
-            return transferModeFeature;
-        }
-
-        private HubProtocolReaderWriter GetProtocolReaderWriter(TransferMode requestedMode, TransferMode actualMode)
-        {
-            return new HubProtocolReaderWriter(_protocol, GetDataEncoder(requestedMode, actualMode));
-        }
-
-        private IDataEncoder GetDataEncoder(TransferMode requestedMode, TransferMode actualMode)
-        {
-            if (requestedMode == TransferMode.Binary && actualMode == TransferMode.Text)
-            {
-                // This is for instance for SSE which is a Text protocol and the user wants to use a binary
-                // protocol so we need to encode messages.
-                return new Base64Encoder();
-            }
-
-            Debug.Assert(requestedMode == actualMode, "All transports besides SSE are expected to support binary mode.");
-
-            return new PassThroughEncoder();
-        }
-
-        private async Task NegotiateProtocol()
-        {
-            _logger.LogDebug($"Negotiate to use hub protocol: {_protocol.Name}");
+            _connectionActive = new CancellationTokenSource();
             using (var memoryStream = new MemoryStream())
             {
-                NegotiationProtocol.WriteMessage(new NegotiationMessage(_protocol.Name), memoryStream);
-                await _connection.SendAsync(memoryStream.ToArray(), CancellationToken.None);
+                //Log.SendingHubHandshake(_logger);
+                HandshakeProtocol.WriteRequestMessage(new HandshakeRequestMessage(_protocol.Name, _protocol.Version), memoryStream);
+                await _connection.SendAsync(memoryStream.ToArray(), _connectionActive.Token);
             }
+            ResetTimeoutTimer();
         }
 
         // TODO: Right now no one is calling this API. We should probably hide it.
@@ -163,9 +127,34 @@ namespace Microsoft.Azure.SignalR
 
             await StopAsyncCore();
 
-            _isConnected = false;
-
             await RunUserCallbackAsync(DisconnectCallback, () => _options.OnDisconnected?.Invoke(null));
+        }
+
+        public Task SendAllProtocolRawMessage(IDictionary<string, string> meta, string method, object[] args)
+        {
+            var hubInvocationMessageWrapper = new HubInvocationMessageWrapper(_protocol.TransferFormat);
+            hubInvocationMessageWrapper.AddMetadata(meta);
+            if (method != null)
+            {
+                var message = CreateInvocationMessage(method, args);
+                hubInvocationMessageWrapper.JsonPayload = _jsonProtocol.WriteToArray(message);
+                hubInvocationMessageWrapper.MsgpackPayload = _messagePackProtocol.WriteToArray(message);
+            }
+            _ = SendHubMessage(hubInvocationMessageWrapper);
+            return Task.CompletedTask;
+        }
+
+        public Task SendHubMessage(HubMessage message)
+        {
+            return SendMessageAsync(message);
+        }
+
+        public InvocationMessage CreateInvocationMessage(string methodName, object[] args)
+        {
+            var invocationMessage = new InvocationMessage(
+                target: methodName,
+                argumentBindingException: null, arguments: args);
+            return invocationMessage;
         }
 
         private Task StopAsyncCore() => _connection.StopAsync();
@@ -173,7 +162,7 @@ namespace Microsoft.Azure.SignalR
         private void TimeoutElapsed()
         {
             _connection.AbortAsync(new TimeoutException(
-                $"Server timeout ({_options.ServerTimeout.TotalMilliseconds:0.00}ms) elapsed without receiving a message from the server."));
+                $"Server timeout ({TimeSpan.FromSeconds(_options.ServerTimeout).TotalMilliseconds:0.00}ms) elapsed without receiving a message from the server."));
         }
 
         private void ResetTimeoutTimer()
@@ -181,7 +170,7 @@ namespace Microsoft.Azure.SignalR
             if (_needKeepAlive)
             {
                 _logger.LogDebug("Resetting keep alive timer...");
-                _timeoutTimer.Change(_options.ServerTimeout, Timeout.InfiniteTimeSpan);
+                _timeoutTimer.Change(TimeSpan.FromSeconds(_options.ServerTimeout), Timeout.InfiniteTimeSpan);
             }
         }
 
@@ -201,8 +190,6 @@ namespace Microsoft.Azure.SignalR
 
         private void OnHttpConnectionClosed(Exception ex)
         {
-            _isConnected = false;
-
             // Quick return when StopAsync has been called.
             if (_cancellationTokenSource.IsCancellationRequested)
             {
@@ -239,27 +226,77 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task OnDataReceivedAsync(byte[] data)
+        private bool ProcessHandshakeResponse(ref ReadOnlyMemory<byte> data)
         {
-            if (!_isConnected)
+            HandshakeResponseMessage message;
+
+            try
             {
-                _logger.LogWarning("Message processing is disabled when disconnected.");
-                return;
+                // read first message out of the incoming data
+                if (!TextMessageParser.TryParseMessage(ref data, out var payload))
+                {
+                    throw new InvalidDataException("Unable to parse payload as a handshake response message.");
+                }
+
+                message = HandshakeProtocol.ParseResponseMessage(payload);
+            }
+            catch (Exception)
+            {
+                // shutdown if we're unable to read handshake
+                //Log.ErrorReceivingHandshakeResponse(_logger, ex);
+                //Shutdown(ex);
+                return false;
             }
 
+            if (!string.IsNullOrEmpty(message.Error))
+            {
+                // shutdown if handshake returns an error
+                //Log.HandshakeServerError(_logger, message.Error);
+                //Shutdown();
+                return false;
+            }
+
+            return true;
+        }
+
+        private async Task OnDataReceivedAsync(byte[] data)
+        {
             ResetTimeoutTimer();
 
-            if (_protocolReaderWriter.ReadMessages(data, _hubDispatcher, out var messages))
+            var currentData = new ReadOnlyMemory<byte>(data);
+            //Log.ParsingMessages(_logger, currentData.Length);
+
+            // first message received must be handshake response
+            if (!_receivedHandshakeResponse)
+            {
+                // process handshake and return left over data to parse additional messages
+                if (!ProcessHandshakeResponse(ref currentData))
+                {
+                    return;
+                }
+
+                _receivedHandshakeResponse = true;
+                if (currentData.IsEmpty)
+                {
+                    return;
+                }
+            }
+
+            var messages = new List<HubMessage>();
+            if (_protocol.TryParseMessages(currentData, _hubDispatcher, messages))
             {
                 foreach (var message in messages)
                 {
-                    if (message is HubInvocationMessage invocationMessage)
+                    switch (message)
                     {
-                        _ = DispatchAsync(invocationMessage);
-                    }
-                    else
-                    {
-                        _logger.LogDebug($"Ignore non-HubInvocationMesssage: {message}");
+                        case HubInvocationMessageWrapper hubInvocationMessageWrapper:
+                            _ = DispatchAsync(hubInvocationMessageWrapper);
+                            break;
+                        case PingMessage _:
+                            break;
+                        default:
+                            //Logger.UnsupportedMessageReceived(message.GetType().FullName);
+                            throw new NotSupportedException($"Received unsupported message: {message}");
                     }
                 }
 
@@ -267,35 +304,29 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task DispatchAsync(HubInvocationMessage message)
+        private async Task DispatchAsync(HubInvocationMessageWrapper hubMessage)
         {
-            _logger.LogInformation($"Received message: {message}");
-            var isMethodInvocation = message is HubMethodInvocationMessage;
-            if (isMethodInvocation &&
-                OnConnectedAsyncMethod.IgnoreCaseEquals(((HubMethodInvocationMessage) message).Target))
+            switch (hubMessage.InvocationType)
             {
-                await OnClientConnectedAsync(message);
-                return;
+                case HubInvocationType.OnConnected:
+                    await OnConnectedAsync(hubMessage);
+                    break;
+                case HubInvocationType.OnDisconnected:
+                    await OnDisconnectedAsync(hubMessage);
+                    break;
+                default:
+                    var connection = GetHubConnectionContext(hubMessage);
+                    if (connection == null)
+                    {
+                        _logger.LogError("Fail to get Hub connection context information");
+                        return;
+                    }
+                    await _hubDispatcher.DispatchMessageAsync(connection, hubMessage);
+                    break;
             }
-
-            var connection = GetHubConnectionContext(message);
-            if (connection == null)
-            {
-                await SendMessageAsync(CompletionMessage.WithError(message.InvocationId, "No connection found."));
-                return;
-            }
-
-            if (isMethodInvocation &&
-                OnDisconnectedAsyncMethod.IgnoreCaseEquals(((HubMethodInvocationMessage) message).Target))
-            {
-                await OnClientDisconnectedAsync(connection);
-                return;
-            }
-
-            await _hubDispatcher.DispatchMessageAsync(connection, message);
         }
 
-        private async Task OnClientConnectedAsync(HubInvocationMessage message)
+        private async Task OnConnectedAsync(HubInvocationMessageWrapper message)
         {
             var connection = CreateHubConnectionContext(message);
             _connections.Add(connection);
@@ -305,8 +336,14 @@ namespace Microsoft.Azure.SignalR
             await _hubDispatcher.OnConnectedAsync(connection);
         }
 
-        private async Task OnClientDisconnectedAsync(HubConnectionContext connection)
+        private async Task OnDisconnectedAsync(HubInvocationMessageWrapper message)
         {
+            var connection = GetHubConnectionContext(message);
+            if (connection == null)
+            {
+                _logger.LogError("Fail to get Hub connection context information");
+                return;
+            }
             await _hubDispatcher.OnDisconnectedAsync(connection, null);
 
             await _lifetimeManager.OnDisconnectedAsync(connection);
@@ -314,15 +351,15 @@ namespace Microsoft.Azure.SignalR
             _connections.Remove(connection);
         }
 
-        private HubConnectionContext CreateHubConnectionContext(HubInvocationMessage message)
+        private HubConnectionContext CreateHubConnectionContext(HubInvocationMessageWrapper message)
         {
-            return new CloudHubConnectionContext(_connection, CreateConnectionContext(message), Timeout.InfiniteTimeSpan, _loggerFactory)
-                {
-                    ProtocolReaderWriter = _protocolReaderWriter
-                };
+            var context = CreateConnectionContext(message);
+
+            var protocolName = message.Format == TransferFormat.Binary ? MessagePackHubProtocol.ProtocolName : JsonHubProtocol.ProtocolName;
+            return new CloudHubConnectionContext(_protocolResolver.GetProtocol(protocolName, null, null), this, context, _loggerFactory);
         }
 
-        private DefaultConnectionContext CreateConnectionContext(HubInvocationMessage message)
+        private DefaultConnectionContext CreateConnectionContext(HubInvocationMessageWrapper message)
         {
             var connectionId = message.GetConnectionId();
             // TODO:
@@ -338,20 +375,17 @@ namespace Microsoft.Azure.SignalR
             return connectionContext;
         }
 
-        private HubConnectionContext GetHubConnectionContext(HubInvocationMessage message)
+        private HubConnectionContext GetHubConnectionContext(HubInvocationMessageWrapper message)
         {
             return message.TryGetConnectionId(out var connectionId) ? _connections[connectionId] : null;
         }
 
         private async Task SendMessageAsync(HubMessage hubMessage)
         {
-            var payload = _protocolReaderWriter.WriteMessage(hubMessage);
+            // TODO. When streaming is supported, here needs a lock here for race contention.
+            // This logic should be re-implemented after SignalR core will fix the issue https://github.com/aspnet/SignalR/pull/1718
+            var payload = _protocol.WriteToArray(hubMessage);
             await _connection.SendAsync(payload, CancellationToken.None);
-        }
-
-        private class TransferModeFeature : ITransferModeFeature
-        {
-            public TransferMode TransferMode { get; set; }
         }
     }
 }
