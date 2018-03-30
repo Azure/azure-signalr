@@ -16,6 +16,10 @@ namespace Microsoft.Azure.SignalR
     
     public class HubInvocationMessageWrapper : HubMessage
     {
+        // TODO.
+        // Optimization: replace string key with int key.
+        // string key is only meaningful for read, but bad for performance
+        // see https://jacksondunstan.com/articles/2527
         public const string ActionKeyName        = "action";
         public const string ConnectionIdKeyName  = "connId";
         public const string ConnectionIdsKeyName = "connIds";
@@ -25,7 +29,7 @@ namespace Microsoft.Azure.SignalR
         public const string GroupNamesKeyName    = "groups";
         public const string UsersKeyName         = "users";
         public const string UserKeyName          = "user";
-
+        public const string TimestampKeyName     = "_ts";
         public TransferFormat Type { get; }
 
         public int Target { get; set; }

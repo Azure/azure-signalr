@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Claims;
 using Newtonsoft.Json;
@@ -14,32 +15,32 @@ namespace Microsoft.Azure.SignalR
         public static TMessage AddAction<TMessage>(this TMessage message, string actionName)
             where TMessage : HubInvocationMessageWrapper
         {
-            return message.AddMetadata(HubInvocationMessageWrapper.ActionKeyName, actionName);
+            return message.AddOrUpdateMetadata(HubInvocationMessageWrapper.ActionKeyName, actionName);
         }
 
         public static TMessage AddClaims<TMessage>(this TMessage message, IEnumerable<Claim> claims)
             where TMessage : HubInvocationMessageWrapper
         {
-            return message.AddMetadata(HubInvocationMessageWrapper.ClaimsKeyName,
+            return message.AddOrUpdateMetadata(HubInvocationMessageWrapper.ClaimsKeyName,
                 JsonConvert.SerializeObject(claims.Select(ClaimEntry.FromClaim)));
         }
 
         public static TMessage AddConnectionId<TMessage>(this TMessage message, string connectionId)
             where TMessage : HubInvocationMessageWrapper
         {
-            return message.AddMetadata(HubInvocationMessageWrapper.ConnectionIdKeyName, connectionId);
+            return message.AddOrUpdateMetadata(HubInvocationMessageWrapper.ConnectionIdKeyName, connectionId);
         }
 
         public static TMessage AddExcludedIds<TMessage>(this TMessage message, IReadOnlyList<string> excludedIds)
             where TMessage : HubInvocationMessageWrapper
         {
-            return message.AddMetadata(HubInvocationMessageWrapper.ExcludedIdsKeyName, string.Join(",", excludedIds));
+            return message.AddOrUpdateMetadata(HubInvocationMessageWrapper.ExcludedIdsKeyName, string.Join(",", excludedIds));
         }
 
         public static TMessage AddGroupName<TMessage>(this TMessage message, string groupName)
             where TMessage : HubInvocationMessageWrapper
         {
-            return message.AddMetadata(HubInvocationMessageWrapper.GroupNameKeyName, groupName);
+            return message.AddOrUpdateMetadata(HubInvocationMessageWrapper.GroupNameKeyName, groupName);
         }
 
         public static TMessage AddMetadata<TMessage>(this TMessage message, IDictionary<string, string> metadata)
@@ -53,20 +54,44 @@ namespace Microsoft.Azure.SignalR
             return message;
         }
 
-        public static TMessage AddMetadata<TMessage>(this TMessage message, string key, string value)
+        public static TMessage AddOrUpdateMetadata<TMessage>(this TMessage message, string key, string value)
             where TMessage : HubInvocationMessageWrapper
         {
             if (message != null && !string.IsNullOrEmpty(key))
             {
-                message.Metadata.Add(key, value);
+                if (message.Metadata.ContainsKey(key))
+                {
+                    message.Metadata[key] = value;
+                }
+                else
+                {
+                    message.Metadata.Add(key, value);
+                }
             }
             return message;
+        }
+
+        public static TMessage AddTimestamp<TMessage>(this TMessage message)
+            where TMessage : HubInvocationMessageWrapper
+        {
+            return message.AddOrUpdateMetadata(HubInvocationMessageWrapper.TimestampKeyName, Stopwatch.GetTimestamp().ToString());
         }
 
         public static string GetConnectionId<TMessage>(this TMessage message) where TMessage : HubInvocationMessageWrapper
         {
             message.Metadata.TryGetValue(HubInvocationMessageWrapper.ConnectionIdKeyName, out var connectionId);
             return connectionId;
+        }
+
+        public static long? GetMessageDelay<TMessage>(this TMessage message)
+            where TMessage : HubInvocationMessageWrapper
+        {
+            if (message.Metadata.TryGetValue(HubInvocationMessageWrapper.TimestampKeyName, out var startTimestampString) &&
+                long.TryParse(startTimestampString, out var startTimestamp))
+            {
+                return Stopwatch.GetTimestamp() - startTimestamp;
+            }
+            return null;
         }
 
         public static bool TryGetAction<TMessage>(this TMessage message, out string actionName)
