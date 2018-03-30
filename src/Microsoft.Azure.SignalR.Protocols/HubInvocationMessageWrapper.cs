@@ -7,11 +7,11 @@ using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class HubInvocationServiceConstants
+    public enum HubInvocationType
     {
-        public const int OnConnected = 0;
-        public const int OnDisconnected = 1;
-        public const int OnOthers = 2;
+        OnConnected = 1,
+        OnDisconnected = 2,
+        OnOthers = 3
     }
     
     public class HubInvocationMessageWrapper : HubMessage
@@ -32,23 +32,20 @@ namespace Microsoft.Azure.SignalR
         public const string TimestampKeyName     = "_ts";
         public TransferFormat Type { get; }
 
-        public int Target { get; set; }
+        public HubInvocationType Target { get; set; }
 
         public HubMessage HubInvocationMessage { get; set; }
 
-        public byte[] Payload { get; set; }
+        public List<byte[]> Payload { get; private set; }
 
-        // PayloadExt is for two different kinds of encoded data.
-        // In this case, Payload saves JSON format, PayloadExt has messagepack format.
-        // Otherwise, PayloadExt is null.
-        public byte[] PayloadExt { get; set; }
-
-        public IDictionary<string, string> Metadata { get; } = new Dictionary<string, string>();
+        public IDictionary<string, string> Headers { get; } = new Dictionary<string, string>();
 
         public HubInvocationMessageWrapper(TransferFormat t)
         {
             Type = t;
-            Target = HubInvocationServiceConstants.OnOthers;
+            Target = HubInvocationType.OnOthers;
+            // We only have two protocols: JSON and MessagePack
+            Payload = new List<byte[]>(2) { null, null };
         }
     }
 }

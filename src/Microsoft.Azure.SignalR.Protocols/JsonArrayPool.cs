@@ -4,7 +4,7 @@
 using System.Buffers;
 using Newtonsoft.Json;
 
-namespace Microsoft.AspNetCore.SignalR.Internal.Protocol
+namespace Microsoft.Azure.SignalR
 {
     // copied from SignalR
     internal class JsonArrayPool<T> : IArrayPool<T>

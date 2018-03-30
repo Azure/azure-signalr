@@ -2,8 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 
-namespace Microsoft.AspNetCore.SignalR.Internal.Protocol
+namespace Microsoft.Azure.SignalR
 {
     public static class HubInvocationMessageExtensions
     {

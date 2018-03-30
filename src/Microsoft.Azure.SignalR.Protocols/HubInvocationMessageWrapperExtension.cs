@@ -49,7 +49,7 @@ namespace Microsoft.Azure.SignalR
             if (message == null || metadata == null) return message;
             foreach (var kvp in metadata)
             {
-                message.Metadata.Add(kvp.Key, kvp.Value);
+                message.Headers.Add(kvp.Key, kvp.Value);
             }
             return message;
         }
@@ -59,13 +59,13 @@ namespace Microsoft.Azure.SignalR
         {
             if (message != null && !string.IsNullOrEmpty(key))
             {
-                if (message.Metadata.ContainsKey(key))
+                if (message.Headers.ContainsKey(key))
                 {
-                    message.Metadata[key] = value;
+                    message.Headers[key] = value;
                 }
                 else
                 {
-                    message.Metadata.Add(key, value);
+                    message.Headers.Add(key, value);
                 }
             }
             return message;
@@ -79,14 +79,14 @@ namespace Microsoft.Azure.SignalR
 
         public static string GetConnectionId<TMessage>(this TMessage message) where TMessage : HubInvocationMessageWrapper
         {
-            message.Metadata.TryGetValue(HubInvocationMessageWrapper.ConnectionIdKeyName, out var connectionId);
+            message.Headers.TryGetValue(HubInvocationMessageWrapper.ConnectionIdKeyName, out var connectionId);
             return connectionId;
         }
 
         public static long? GetMessageDelay<TMessage>(this TMessage message)
             where TMessage : HubInvocationMessageWrapper
         {
-            if (message.Metadata.TryGetValue(HubInvocationMessageWrapper.TimestampKeyName, out var startTimestampString) &&
+            if (message.Headers.TryGetValue(HubInvocationMessageWrapper.TimestampKeyName, out var startTimestampString) &&
                 long.TryParse(startTimestampString, out var startTimestamp))
             {
                 return Stopwatch.GetTimestamp() - startTimestamp;
@@ -143,8 +143,8 @@ namespace Microsoft.Azure.SignalR
         public static bool TryGetMetadata<TMessage>(this TMessage message, string metadataName, out string metadataValue)
             where TMessage : HubInvocationMessageWrapper
         {
-            if (message.Metadata != null &&
-                message.Metadata.TryGetValue(metadataName, out metadataValue))
+            if (message.Headers != null &&
+                message.Headers.TryGetValue(metadataName, out metadataValue))
             {
                 return true;
             }

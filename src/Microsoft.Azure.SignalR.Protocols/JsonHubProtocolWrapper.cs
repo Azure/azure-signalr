@@ -22,8 +22,8 @@ namespace Microsoft.Azure.SignalR
         private const string TypePropertyName       = "type";
         private const string ProtocolPropertyName   = "protocol";
         private const string TargetPropertyName     = "target";
-        private const string PayloadPropertyName    = "payload";
-        private const string PayloadExtPropertyName = "payloadext";
+        private const string PayloadPropertyName    = "payload1";
+        private const string PayloadExtPropertyName = "payload2";
         private const string MetadataPropertyName   = "meta";
         public static string ProtocolName           = "jsonwrapper";
 
@@ -134,15 +134,15 @@ namespace Microsoft.Azure.SignalR
                 {
                     case AzureHubProtocolConstants.HubInvocationMessageWrapperType:
                         var hubMessageWrapper = new HubInvocationMessageWrapper((TransferFormat)protocolInt);
-                        hubMessageWrapper.Target = targetType.Value;
+                        hubMessageWrapper.Target = (HubInvocationType)(targetType.Value);
                         hubMessageWrapper.AddMetadata(headers);
                         if (payload != null)
                         {
-                            hubMessageWrapper.Payload = Convert.FromBase64String(payload);
+                            hubMessageWrapper.Payload[0] = Convert.FromBase64String(payload);
                         }
                         if (payloadExt != null)
                         {
-                            hubMessageWrapper.PayloadExt = Convert.FromBase64String(payloadExt);
+                            hubMessageWrapper.Payload[1] = Convert.FromBase64String(payloadExt);
                         }
                         return hubMessageWrapper;
                     case HubProtocolConstants.PingMessageType:
@@ -256,13 +256,13 @@ namespace Microsoft.Azure.SignalR
             WriteProtocolType(writer, message.Type);
             WriteTarget(writer, message.Target);
             WriteHubInvocationMessageMeta(message, writer);
-            if (message.Payload != null)
+            if (message.Payload[0] != null)
             {
-                WritePayload(writer, message.Payload);
+                WritePayload(writer, message.Payload[0]);
             }
-            if (message.PayloadExt != null)
+            if (message.Payload[1] != null)
             {
-                WritePayloadExt(writer, message.PayloadExt);
+                WritePayloadExt(writer, message.Payload[1]);
             }
         }
 
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.SignalR
         {
             writer.WritePropertyName(MetadataPropertyName);
             writer.WriteStartObject();
-            foreach (var kvp in message.Metadata)
+            foreach (var kvp in message.Headers)
             {
                 writer.WritePropertyName(kvp.Key);
                 writer.WriteValue(kvp.Value);
@@ -284,7 +284,7 @@ namespace Microsoft.Azure.SignalR
             writer.WriteValue(type);
         }
 
-        private static void WriteTarget(JsonTextWriter writer, int type)
+        private static void WriteTarget(JsonTextWriter writer, HubInvocationType type)
         {
             writer.WritePropertyName(TargetPropertyName);
             writer.WriteValue(type);

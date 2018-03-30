@@ -6,7 +6,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Microsoft.AspNetCore.SignalR.Internal.Protocol
+namespace Microsoft.Azure.SignalR
 {
     // copied from SignalR
     internal class Utf8BufferTextReader : TextReader

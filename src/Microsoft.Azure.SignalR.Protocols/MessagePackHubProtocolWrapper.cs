@@ -69,13 +69,13 @@ namespace Microsoft.Azure.SignalR
         {
             var protocolType = ReadInt32(unpacker, "messageProtocolType");
             var hubMessageWrapper = new HubInvocationMessageWrapper((TransferFormat)protocolType);
-            hubMessageWrapper.Target = ReadInt32(unpacker, "target");
+            hubMessageWrapper.Target = (HubInvocationType)ReadInt32(unpacker, "target");
             var metadata = ReadMetedata(unpacker, "metaData");
             hubMessageWrapper.AddMetadata(metadata);
-            hubMessageWrapper.Payload = ReadBinary(unpacker, "payload");
+            hubMessageWrapper.Payload[0] = ReadBinary(unpacker, "payload");
             if (len == 6)
             {
-                hubMessageWrapper.PayloadExt = ReadBinary(unpacker, "payloadext");
+                hubMessageWrapper.Payload[1] = ReadBinary(unpacker, "payloadext");
             }
             return hubMessageWrapper;
         }
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.SignalR
 
         private void WriteHubInvocationMessageWrapper(HubInvocationMessageWrapper message, Packer packer)
         {
-            if (message.PayloadExt == null)
+            if (message.Payload[1] == null)
             {
                 packer.PackArrayHeader(5);
             }
@@ -171,12 +171,12 @@ namespace Microsoft.Azure.SignalR
             }
             packer.Pack(AzureHubProtocolConstants.HubInvocationMessageWrapperType);
             packer.Pack((int)(message.Type));
-            packer.Pack(message.Target);
-            packer.PackDictionary<string, string>(message.Metadata);
-            packer.PackBinary(message.Payload);
-            if (message.PayloadExt != null)
+            packer.Pack((int)(message.Target));
+            packer.PackDictionary<string, string>(message.Headers);
+            packer.PackBinary(message.Payload[0]);
+            if (message.Payload[1] != null)
             {
-                packer.PackBinary(message.PayloadExt);
+                packer.PackBinary(message.Payload[1]);
             }
         }
 

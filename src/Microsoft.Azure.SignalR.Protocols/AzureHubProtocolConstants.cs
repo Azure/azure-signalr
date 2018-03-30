@@ -7,6 +7,6 @@ namespace Microsoft.Azure.SignalR
     {
         // The value used here should not be overlapped with values in
         // Microsoft.AspNetCore.SignalR.Internal.Protocol.HubProtocolConstants
-        public const int HubInvocationMessageWrapperType = 10;
+        public const int HubInvocationMessageWrapperType = 0xFF;
     }
 }
