@@ -59,6 +59,8 @@ namespace Microsoft.Azure.SignalR
                         return CreateHubInvocationMessageWrapper(unpacker, len);
                     case HubProtocolConstants.PingMessageType:
                         return PingMessage.Instance;
+                    case HubProtocolConstants.CloseMessageType:
+                        return CreateCloseMessage(unpacker);
                     default:
                         throw new FormatException($"Invalid message type: {messageType}.");
                 }
@@ -67,16 +69,13 @@ namespace Microsoft.Azure.SignalR
 
         private static HubInvocationMessageWrapper CreateHubInvocationMessageWrapper(Unpacker unpacker, long len)
         {
-            var protocolType = ReadInt32(unpacker, "messageProtocolType");
-            var hubMessageWrapper = new HubInvocationMessageWrapper((TransferFormat)protocolType);
-            hubMessageWrapper.Target = (HubInvocationType)ReadInt32(unpacker, "target");
-            var metadata = ReadMetedata(unpacker, "metaData");
+            var format = ReadInt32(unpacker, "messageformat");
+            var hubMessageWrapper = new HubInvocationMessageWrapper((TransferFormat)format);
+            hubMessageWrapper.InvocationType = (HubInvocationType)ReadInt32(unpacker, "invocationtype");
+            var metadata = ReadHeaders(unpacker, "headers");
             hubMessageWrapper.AddMetadata(metadata);
-            hubMessageWrapper.Payload[0] = ReadBinary(unpacker, "payload");
-            if (len == 6)
-            {
-                hubMessageWrapper.Payload[1] = ReadBinary(unpacker, "payloadext");
-            }
+            hubMessageWrapper.JsonPayload = ReadBinary(unpacker, "jsonpayload");
+            hubMessageWrapper.MsgpackPayload = ReadBinary(unpacker, "msgpackpayload");
             return hubMessageWrapper;
         }
 
@@ -111,7 +110,7 @@ namespace Microsoft.Azure.SignalR
             throw new FormatException($"Reading '{field}' as String failed.", msgPackException);
         }
 
-        private static IDictionary<string, string> ReadMetedata(Unpacker unpacker, string field)
+        private static IDictionary<string, string> ReadHeaders(Unpacker unpacker, string field)
         {
             unpacker.ReadObject(out var obj);
             if (obj.IsDictionary)
@@ -154,6 +153,9 @@ namespace Microsoft.Azure.SignalR
                 case PingMessage pingMessage:
                     WritePingMessage(pingMessage, packer);
                     break;
+                case CloseMessage closeMessage:
+                    WriteCloseMessage(closeMessage, packer);
+                    break;
                 default:
                     throw new FormatException($"Unexpected message type: {message.GetType().Name}");
             }
@@ -161,22 +163,26 @@ namespace Microsoft.Azure.SignalR
 
         private void WriteHubInvocationMessageWrapper(HubInvocationMessageWrapper message, Packer packer)
         {
-            if (message.Payload[1] == null)
+            packer.PackArrayHeader(6);
+            packer.Pack(AzureHubProtocolConstants.HubInvocationMessageWrapperType);
+            packer.Pack((int)(message.Format));
+            packer.Pack((int)(message.InvocationType));
+            packer.PackDictionary<string, string>(message.Headers);
+            if (message.JsonPayload != null)
             {
-                packer.PackArrayHeader(5);
+                packer.PackBinary(message.JsonPayload);
             }
             else
             {
-                packer.PackArrayHeader(6);
+                packer.PackNull();
             }
-            packer.Pack(AzureHubProtocolConstants.HubInvocationMessageWrapperType);
-            packer.Pack((int)(message.Type));
-            packer.Pack((int)(message.Target));
-            packer.PackDictionary<string, string>(message.Headers);
-            packer.PackBinary(message.Payload[0]);
-            if (message.Payload[1] != null)
+            if (message.MsgpackPayload != null)
             {
-                packer.PackBinary(message.Payload[1]);
+                packer.PackBinary(message.MsgpackPayload);
+            }
+            else
+            {
+                packer.PackNull();
             }
         }
 
@@ -184,6 +190,20 @@ namespace Microsoft.Azure.SignalR
         {
             packer.PackArrayHeader(1);
             packer.Pack(HubProtocolConstants.PingMessageType);
+        }
+
+        private void WriteCloseMessage(CloseMessage message, Packer packer)
+        {
+            packer.PackArrayHeader(2);
+            packer.Pack(HubProtocolConstants.CloseMessageType);
+            if (string.IsNullOrEmpty(message.Error))
+            {
+                packer.PackNull();
+            }
+            else
+            {
+                packer.PackString(message.Error);
+            }
         }
 
         private static long ReadArrayLength(Unpacker unpacker, string field)
@@ -227,9 +247,16 @@ namespace Microsoft.Azure.SignalR
             Exception msgPackException = null;
             try
             {
-                if (unpacker.ReadBinary(out var value))
+                if (unpacker.Read())
                 {
-                    return value;
+                    if (unpacker.LastReadData.IsNil)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        return unpacker.LastReadData.AsBinary();
+                    }
                 }
             }
             catch (Exception e)

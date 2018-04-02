@@ -18,18 +18,20 @@ namespace Microsoft.Azure.SignalR
     {
         private static readonly UTF8Encoding _utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
-        private const string ErrorPropertyName      = "error";
-        private const string TypePropertyName       = "type";
-        private const string ProtocolPropertyName   = "protocol";
-        private const string TargetPropertyName     = "target";
-        private const string PayloadPropertyName    = "payload1";
-        private const string PayloadExtPropertyName = "payload2";
-        private const string MetadataPropertyName   = "meta";
-        public static string ProtocolName           = "jsonwrapper";
+        private const string ErrorPropertyName          = "error";
+        private const string TypePropertyName           = "type";
+        private const string FormatPropertyName         = "format";
+        private const string InvocationTypePropertyName = "invocationtype";
+        private const string JsonPayloadPropertyName    = "jsonpayload";
+        private const string MsgpackPayloadPropertyName = "msgpackpayload";
+        private const string HeadersPropertyName        = "headers";
+
+        public static string ProtocolName               = "jsonwrapper";
 
         public static readonly int ProtocolVersion = 1;
 
         public string Name => ProtocolName;
+
         public TransferFormat TransferFormat => TransferFormat.Text;
 
         public int Version => ProtocolVersion;
@@ -60,8 +62,8 @@ namespace Microsoft.Azure.SignalR
             int? protocolInt = null;
             int? targetType = null;
             string error = null;
-            string payload = null;
-            string payloadExt = null;
+            string jsonPayload = null;
+            string msgpackPayload = null;
             Dictionary<string, string> headers = null;
             var completed = false;
             try
@@ -95,21 +97,21 @@ namespace Microsoft.Azure.SignalR
 
                                         type = messageType.Value;
                                         break;
-                                    case ProtocolPropertyName:
-                                        protocolInt = JsonUtils.ReadAsInt32(reader, ProtocolPropertyName);
+                                    case FormatPropertyName:
+                                        protocolInt = JsonUtils.ReadAsInt32(reader, FormatPropertyName);
                                         break;
-                                    case TargetPropertyName:
-                                        targetType = JsonUtils.ReadAsInt32(reader, TargetPropertyName);
+                                    case InvocationTypePropertyName:
+                                        targetType = JsonUtils.ReadAsInt32(reader, InvocationTypePropertyName);
                                         break;
-                                    case MetadataPropertyName:
+                                    case HeadersPropertyName:
                                         JsonUtils.CheckRead(reader);
                                         headers = ReadHeaders(reader);
                                         break;
-                                    case PayloadPropertyName:
-                                        payload = JsonUtils.ReadAsString(reader, PayloadPropertyName);
+                                    case JsonPayloadPropertyName:
+                                        jsonPayload = JsonUtils.ReadAsString(reader, JsonPayloadPropertyName);
                                         break;
-                                    case PayloadExtPropertyName:
-                                        payloadExt = JsonUtils.ReadAsString(reader, PayloadExtPropertyName);
+                                    case MsgpackPayloadPropertyName:
+                                        msgpackPayload = JsonUtils.ReadAsString(reader, MsgpackPayloadPropertyName);
                                         break;
                                     case ErrorPropertyName:
                                         error = JsonUtils.ReadAsString(reader, ErrorPropertyName);
@@ -134,15 +136,15 @@ namespace Microsoft.Azure.SignalR
                 {
                     case AzureHubProtocolConstants.HubInvocationMessageWrapperType:
                         var hubMessageWrapper = new HubInvocationMessageWrapper((TransferFormat)protocolInt);
-                        hubMessageWrapper.Target = (HubInvocationType)(targetType.Value);
+                        hubMessageWrapper.InvocationType = (HubInvocationType)(targetType.Value);
                         hubMessageWrapper.AddMetadata(headers);
-                        if (payload != null)
+                        if (jsonPayload != null)
                         {
-                            hubMessageWrapper.Payload[0] = Convert.FromBase64String(payload);
+                            hubMessageWrapper.JsonPayload = Convert.FromBase64String(jsonPayload);
                         }
-                        if (payloadExt != null)
+                        if (msgpackPayload != null)
                         {
-                            hubMessageWrapper.Payload[1] = Convert.FromBase64String(payloadExt);
+                            hubMessageWrapper.MsgpackPayload = Convert.FromBase64String(msgpackPayload);
                         }
                         return hubMessageWrapper;
                     case HubProtocolConstants.PingMessageType:
@@ -176,7 +178,7 @@ namespace Microsoft.Azure.SignalR
 
             if (reader.TokenType != JsonToken.StartObject)
             {
-                throw new InvalidDataException($"Expected '{MetadataPropertyName}' to be of type {JTokenType.Object}.");
+                throw new InvalidDataException($"Expected '{HeadersPropertyName}' to be of type {JTokenType.Object}.");
             }
 
             while (reader.Read())
@@ -253,22 +255,22 @@ namespace Microsoft.Azure.SignalR
         private void WriteInvocationMessageWrapper(HubInvocationMessageWrapper message, JsonTextWriter writer)
         {   
             WriteMessageType(writer, AzureHubProtocolConstants.HubInvocationMessageWrapperType);
-            WriteProtocolType(writer, message.Type);
-            WriteTarget(writer, message.Target);
+            WriteProtocolFormat(writer, message.Format);
+            WriteInvocationType(writer, message.InvocationType);
             WriteHubInvocationMessageMeta(message, writer);
-            if (message.Payload[0] != null)
+            if (message.JsonPayload != null)
             {
-                WritePayload(writer, message.Payload[0]);
+                WriteJsonPayload(writer, message.JsonPayload);
             }
-            if (message.Payload[1] != null)
+            if (message.MsgpackPayload != null)
             {
-                WritePayloadExt(writer, message.Payload[1]);
+                WriteMsgpackPayload(writer, message.MsgpackPayload);
             }
         }
 
         private static void WriteHubInvocationMessageMeta(HubInvocationMessageWrapper message, JsonTextWriter writer)
         {
-            writer.WritePropertyName(MetadataPropertyName);
+            writer.WritePropertyName(HeadersPropertyName);
             writer.WriteStartObject();
             foreach (var kvp in message.Headers)
             {
@@ -278,27 +280,27 @@ namespace Microsoft.Azure.SignalR
             writer.WriteEndObject();
         }
 
-        private static void WriteProtocolType(JsonTextWriter writer, TransferFormat type)
+        private static void WriteProtocolFormat(JsonTextWriter writer, TransferFormat type)
         {
-            writer.WritePropertyName(ProtocolPropertyName);
+            writer.WritePropertyName(FormatPropertyName);
             writer.WriteValue(type);
         }
 
-        private static void WriteTarget(JsonTextWriter writer, HubInvocationType type)
+        private static void WriteInvocationType(JsonTextWriter writer, HubInvocationType type)
         {
-            writer.WritePropertyName(TargetPropertyName);
+            writer.WritePropertyName(InvocationTypePropertyName);
             writer.WriteValue(type);
         }
 
-        private void WritePayload(JsonTextWriter writer, byte[] payload)
+        private void WriteJsonPayload(JsonTextWriter writer, byte[] payload)
         {
-            writer.WritePropertyName(PayloadPropertyName);
+            writer.WritePropertyName(JsonPayloadPropertyName);
             writer.WriteValue(Convert.ToBase64String(payload));
         }
 
-        private void WritePayloadExt(JsonTextWriter writer, byte[] payload)
+        private void WriteMsgpackPayload(JsonTextWriter writer, byte[] payload)
         {
-            writer.WritePropertyName(PayloadExtPropertyName);
+            writer.WritePropertyName(MsgpackPayloadPropertyName);
             writer.WriteValue(Convert.ToBase64String(payload));
         }
     }

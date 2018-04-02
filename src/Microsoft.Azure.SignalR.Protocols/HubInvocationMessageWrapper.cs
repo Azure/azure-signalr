@@ -30,22 +30,41 @@ namespace Microsoft.Azure.SignalR
         public const string UsersKeyName         = "users";
         public const string UserKeyName          = "user";
         public const string TimestampKeyName     = "_ts";
-        public TransferFormat Type { get; }
 
-        public HubInvocationType Target { get; set; }
+        public TransferFormat Format { get; }
 
-        public HubMessage HubInvocationMessage { get; set; }
+        public HubInvocationType InvocationType { get; set; }
 
-        public List<byte[]> Payload { get; private set; }
+        public byte[] JsonPayload { get; set; }
+
+        public byte[] MsgpackPayload { get; set; }
 
         public IDictionary<string, string> Headers { get; } = new Dictionary<string, string>();
 
-        public HubInvocationMessageWrapper(TransferFormat t)
+        public HubInvocationMessageWrapper(TransferFormat format)
         {
-            Type = t;
-            Target = HubInvocationType.OnOthers;
-            // We only have two protocols: JSON and MessagePack
-            Payload = new List<byte[]>(2) { null, null };
+            Format = format;
+            InvocationType = HubInvocationType.OnOthers;
+        }
+
+        // Write the payload according to the specified format
+        public void WritePayload(TransferFormat format, byte[] payload)
+        {
+            if (format == TransferFormat.Text)
+            {
+                JsonPayload = payload;
+            }
+            else
+            {
+                MsgpackPayload = payload;
+            }
+        }
+
+        // Read the non-null payload if only payload is non-null
+        // For example, the message from Service only contains one kind of payload.
+        public byte[] ReadPayload()
+        {
+            return JsonPayload != null ? JsonPayload : MsgpackPayload;
         }
     }
 }
