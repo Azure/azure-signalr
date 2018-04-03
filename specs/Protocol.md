@@ -4,8 +4,6 @@ The protocol used between SignalR Azure SDK and SignalR Azure Service is a wrapp
 
 ## Terms
 
-* SignalR Azure SDK - The package which is responsible to connect the SignalR Azure service.
-* SignalR Service - SignalR Azure Service is deployed on Azure.
 * Clients - browser or the other client which want to access the SignalR App.
 * MessageWrapper - Protocol used between SignalR Azure SDK and SignalR Service. It wrapps original Clients message.
 
@@ -13,7 +11,7 @@ The protocol used between SignalR Azure SDK and SignalR Azure Service is a wrapp
 
 The protocol is inherited from [SignalR HubProtocol](https://github.com/aspnet/SignalR/blob/dev/specs/HubProtocol.md) and applied for connecting to SignalR Azure Service. Therefore, it has the same requirement as SignalR HubProtocol, for example, it requires reliable, in-order, and delivery of messages.
 
-Generally, this protocol is transparent to developers compared with SignalR HubProtocol used between Clients and SignalR Azure Service. It targets to provide some implementation details to developers about how to efficiently exchange message with SignalR Azure Service. The assumption is you have already been familiar with SignalR HubProtocol.
+Different from the SignalR HubProtocol which is used between Clients and SignalR Azure Service, this protocol is transparent to developers compared. This document targets to provide the implementation details to developers about how to efficiently forward message from the point of SignalR Azure Service. The assumption is you have already been familiar with SignalR HubProtocol.
 
 ## Overview
 
@@ -29,11 +27,11 @@ In this protocol, the following types of messages can be sent:
 | `MessageWrapper`      | SignalR Azure SDK, SignalR Service | Indicates a message of `OnConnected`, `OnDisconnected`, `Invocation`, `StreamInvocation` or `CancelInvocation`, is sending to SignalR Service, or `StreamItem`, `Completion`, `Completion` is receiving from SignalR Service. |
 | `Ping`                | SignalR Azure SDK, SignalR Service | Sent by either party to check if the connection is active.                                                                     |
 
-After opening a connection to the server the client must send a `HandshakeRequest` message to the server as its first message. The handshake message is **always** a JSON message and contains the name of the format (protocol) as well as the version of the protocol that will be used for the duration of the connection. The server will reply with a `HandshakeResponse`, also always JSON, containing an error if the server does not support the protocol. If the server does not support the protocol requested by the client or the first message received from the client is not a `HandshakeRequest` message the server must close the connection.
+After opening a connection to the SignalR Service the SDK must send a `HandshakeRequest` message to the SignalR Service as its first message. The handshake message is **always** a JSON message and contains the name of the format (protocol) as well as the version of the protocol that will be used for the duration of the connection. The SignalR Service will reply with a `HandshakeResponse`, also always JSON, containing an error if the server does not support the protocol. If the SignalR Service does not support the protocol requested by the SDK or the first message received from the SDK is not a `HandshakeRequest` message the SignalR Service must close the connection.
 
 The `HandshakeRequest` message contains the following properties:
 
-* `protocol` - the name of the protocol to be used for messages exchanged between the SignalR Azure SDK and the SignalR Service, it is "messagepackwrapper"
+* `protocol` - the name of the protocol to be used for messages exchanged between the SDK and the SignalR Service, it is "messagepackwrapper" or "jsonwrapper"
 * `version` - the value must always be 1, for both MessagePack and Json protocols
 
 Example:
