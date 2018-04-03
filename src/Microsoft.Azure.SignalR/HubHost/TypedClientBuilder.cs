@@ -11,6 +11,9 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.SignalR
 {
     // Copied from SignalR
+    // TODO.
+    // If SignalR provides sending context, for example, connectionID, here we can
+    // remove this class. See https://github.com/aspnet/SignalR/issues/1767
     internal static class TypedClientBuilder<T>
     {
         private const string ClientModuleName = "Microsoft.Azure.SignalR.TypedClientBuilder";

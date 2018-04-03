@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
+    // TODO.
+    // If SignalR provides sending context, for example, connectionID, here we can
+    // remove this class. See https://github.com/aspnet/SignalR/issues/1767
     public class CloudHubClients<THub, T> : Microsoft.AspNetCore.SignalR.IHubClients<T> where THub : Hub
     {
         private readonly HubHostLifetimeManager<THub> _lifetimeManager;

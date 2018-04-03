@@ -21,6 +21,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
+    // TODO.
+    // This class has to be refactored since it has a lot of duplication of DefaultHubDispatcher.
+    // For example, the Hub invocation logic is totally the same as SignalR.
+    // The difference is to decode HubMessageWrapper before dispatching, and
+    // completion or error message sending.
     public class HubHostDispatcher<THub> : HubDispatcher<THub> where THub : Hub
     {
         private readonly Dictionary<string, HubMethodDescriptor> _methods =
