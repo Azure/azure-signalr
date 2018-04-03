@@ -57,21 +57,25 @@ Example:
 
 ## Communication between SignalR Azure SDK and SignalR Service
 
-SignalR Service plays a role of message broker for Clients and SignalR Azure SDK. Firstly, SignalR Azure SDK connects to SignalR Service, and then a protocol, for example,MessagePack is selected for the following communication between them.
+SignalR Service plays a role of message broker for Clients and SignalR Azure SDK. Firstly, SignalR Azure SDK connects to SignalR Service, and then a protocol, for example,MessagePack is selected for the following communication.
 
-When a Client connects to SignalR Service, SignalR Service sends a MessageWrapper with empty payload but containing `OnConnected` flag, Client ID and protocol: JSON or MessagePack, to SignalR SDK after the Client successfully established the connection. SignalR SDK creates a Client context to save the connection ID and Client protocol.
+When a Client connects to SignalR Service, SignalR Service sends a MessageWrapper with empty payload but containing `OnConnected` flag, Client ID and protocol (JSON or MessagePack), to SignalR SDK after the Client successfully established the connection. SignalR SDK creates a Client context to save the connection ID and Client protocol.
 
-In the following communication, once SignalR Service recives a message sent from Clients, it wraps the JSON or MessagePack binary payload with some metadata information, for example, the Client connection ID, into a MessageWrapper, and forwards that MessageWrapper to SignalR SDK. SignalR SDK decodes the MessageWrapper and then decodes the payload with the protocol in Client context created in `OnConnected` step. Next step is to invoke the Hub according to the payload and this step is exactly the same as SignalR. After Hub invocation, there will be some information sending back to SignalR Service, for example, calling Client method or sending Completion message, those information is encoded by Client protocol to be the payload, packed toghter with Client ID into a new MessageWrapper which is sent to SignalR Service.
+In the following communication, once SignalR Service recives a message from Clients, it packs the binary payload together with some metadata information, for example, the Client connection ID, into a MessageWrapper, and forwards it to SignalR SDK.
 
-SignalR Service receives the MessageWrapper from SignalR SDK, decodes the MessageWrapper with MessagePack protocol, then forwards the payload to Client.
+SignalR SDK decodes the MessageWrapper and then decodes the payload with the protocol obtained in `OnConnected` step. Then it invokes the Hub according to the payload. This step is exactly the same as SignalR.
+
+After Hub invocation, SignalR SDK sends some information back to SignalR Service, for example, calling Client method or sending Completion message or invocation errors, which is encoded by Client protocol firstly, and then packed with Client ID into a new MessageWrapper which is sent to SignalR Service.
+
+SignalR Service receives the MessageWrapper, decodes the MessageWrapper with MessagePack protocol, then forwards the payload to Client. The whole Hub invocation from Clients to SignalR SDK is complete.
 
 If Client closes the connection with SignalR Service, `OnDisconnected` MessageWrapper will be sent to SignalR SDK to clean the Client context.
 
-`Close` and `Ping` message will not be packed into MessageWrapper, and they are handled specially.
+`Close` and `Ping` message will never be packed into MessageWrapper, and they are handled specially.
 
 ## Examples
 
-The following example assumes Client sends invocation message to SignalR Service through JSON format. SignalR SDK use JSON or MessagePack to wrap that message.
+The following example demonstrates how SignalR SDK uses JSON or MessagePack to wrap the client message which is JSON format. MessagePack format is similiar.
 
 ```json
 {  
@@ -92,7 +96,7 @@ This message binary is:
 
 ### JSON Encoding
 
-JSON binary must be encoded thorugh Base64 before they are packed into MessageWrapper.
+JSON binary must be encoded through Base64 before they are packed into MessageWrapper.
 
 ```json
 {  
