@@ -5,6 +5,7 @@
   <PropertyGroup Label="Package Versions">
     <!-- Azure SignalR -->
     <MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>2.1.0-preview2-30131</MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>
+    <MicrosoftAspNetCoreSignalRCommonPackageVersion>1.0.0-preview3-32038</MicrosoftAspNetCoreSignalRCommonPackageVersion>
     <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0-preview2-30186</MicrosoftAspNetCoreSignalRPackageVersion>
     <MicrosoftAspNetCoreSignalRProtocolsMsgPackPackageVersion>1.0.0-preview2-30186</MicrosoftAspNetCoreSignalRProtocolsMsgPackPackageVersion>
     <MicrosoftAspNetCoreSocketsClientHttpPackageVersion>1.0.0-preview2-30186</MicrosoftAspNetCoreSocketsClientHttpPackageVersion>
@@ -16,6 +17,7 @@
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0-preview2-30131</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>3.19.1</MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>
     <MicrosoftAzureKeyVaultPackageVersion>2.3.2</MicrosoftAzureKeyVaultPackageVersion>
+    <MsgPackCliPackageVersion>1.0.0-rc</MsgPackCliPackageVersion>
     <OwinPackageVersion>1.0</OwinPackageVersion>
     <!-- Samples -->
     <MicrosoftAspNetCoreHostingPackageVersion>2.1.0-preview2-30131</MicrosoftAspNetCoreHostingPackageVersion>
