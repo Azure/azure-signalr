@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         // TODO: Translate HttpResponseMessage to typed error
-        public Task<HttpResponseMessage> SendAsync(string method, object[] args)
+        public Task<HttpResponseMessage> SendAsync(byte[] jsonPayload, byte[] msgpackPayload)
         {
             var request = new HttpRequestMessage
             {
@@ -44,8 +44,9 @@ namespace Microsoft.Azure.SignalR
             request.Content = new StringContent(
                 JsonConvert.SerializeObject(new
                 {
-                    method = method,
-                    arguments = args,
+                    // Binary in JSON must be base64 encoded.
+                    jsonPayload = Convert.ToBase64String(jsonPayload),
+                    msgpackPayload = Convert.ToBase64String(msgpackPayload),
                     excluded = _excludedIds
                 }), Encoding.UTF8, "application/json");
 
