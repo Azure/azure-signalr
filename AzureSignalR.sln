@@ -27,6 +27,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		version.props = version.props
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.Protocols", "src\Microsoft.Azure.SignalR.Protocols\Microsoft.Azure.SignalR.Protocols.csproj", "{8AB92F02-3D00-49E3-AD74-B8EFD4D65A58}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{B23C2F84-B0B8-47D1-A8D2-E524F6511215}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B23C2F84-B0B8-47D1-A8D2-E524F6511215}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B23C2F84-B0B8-47D1-A8D2-E524F6511215}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8AB92F02-3D00-49E3-AD74-B8EFD4D65A58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8AB92F02-3D00-49E3-AD74-B8EFD4D65A58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8AB92F02-3D00-49E3-AD74-B8EFD4D65A58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8AB92F02-3D00-49E3-AD74-B8EFD4D65A58}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -53,6 +59,7 @@ Global
 		{7B124E40-36AC-45CC-9467-F6A50D5FC149} = {DA69F624-5398-4884-87E4-B816698CDE65}
 		{7E2FD40B-18D4-4ADD-806A-3C6CED44F19D} = {DA69F624-5398-4884-87E4-B816698CDE65}
 		{B23C2F84-B0B8-47D1-A8D2-E524F6511215} = {C4BC9889-B49F-41B6-806B-F84941B2549B}
+		{8AB92F02-3D00-49E3-AD74-B8EFD4D65A58} = {DA69F624-5398-4884-87E4-B816698CDE65}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7945A4E4-ACDB-4F6E-95CA-6AC6E7C2CD59}

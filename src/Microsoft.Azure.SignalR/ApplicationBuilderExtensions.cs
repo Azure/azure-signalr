@@ -6,7 +6,7 @@ using Microsoft.Azure.SignalR;
 
 namespace Microsoft.AspNetCore.Builder
 {
-    public static class AzureSignalRApplicationBuilderExtensions
+    public static class ApplicationBuilderExtensions
     {
         public static IApplicationBuilder UseAzureSignalR(this IApplicationBuilder app,
             string connectionString, Action<HubHostBuilder> configure)

@@ -10,3 +10,4 @@ namespace Microsoft.Azure.SignalR
         public const int HubInvocationMessageWrapperType = 0xFF;
     }
 }
+

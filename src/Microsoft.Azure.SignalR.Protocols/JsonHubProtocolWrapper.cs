@@ -64,6 +64,7 @@ namespace Microsoft.Azure.SignalR
             string error = null;
             string jsonPayload = null;
             string msgpackPayload = null;
+
             Dictionary<string, string> headers = null;
             var completed = false;
             try
@@ -137,6 +138,7 @@ namespace Microsoft.Azure.SignalR
                     case AzureHubProtocolConstants.HubInvocationMessageWrapperType:
                         var hubMessageWrapper = new HubInvocationMessageWrapper((TransferFormat)protocolInt);
                         hubMessageWrapper.InvocationType = (HubInvocationType)(targetType.Value);
+
                         hubMessageWrapper.AddMetadata(headers);
                         if (jsonPayload != null)
                         {
