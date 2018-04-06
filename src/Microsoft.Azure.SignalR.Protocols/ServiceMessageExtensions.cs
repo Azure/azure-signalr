@@ -9,42 +9,42 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR
 {  
-    public static class HubInvocationMessageWrapperExtension
+    public static class ServiceMessageExtension
     {
         // All public static methods are listed in method names' alphabetic order.
         public static TMessage AddAction<TMessage>(this TMessage message, string actionName)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            return message.AddOrUpdateMetadata(HubInvocationMessageWrapper.ActionKeyName, actionName);
+            return message.AddOrUpdateMetadata(ServiceMessage.ActionKeyName, actionName);
         }
 
         public static TMessage AddClaims<TMessage>(this TMessage message, IEnumerable<Claim> claims)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            return message.AddOrUpdateMetadata(HubInvocationMessageWrapper.ClaimsKeyName,
+            return message.AddOrUpdateMetadata(ServiceMessage.ClaimsKeyName,
                 JsonConvert.SerializeObject(claims.Select(ClaimEntry.FromClaim)));
         }
 
         public static TMessage AddConnectionId<TMessage>(this TMessage message, string connectionId)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            return message.AddOrUpdateMetadata(HubInvocationMessageWrapper.ConnectionIdKeyName, connectionId);
+            return message.AddOrUpdateMetadata(ServiceMessage.ConnectionIdKeyName, connectionId);
         }
 
         public static TMessage AddExcludedIds<TMessage>(this TMessage message, IReadOnlyList<string> excludedIds)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            return message.AddOrUpdateMetadata(HubInvocationMessageWrapper.ExcludedIdsKeyName, string.Join(",", excludedIds));
+            return message.AddOrUpdateMetadata(ServiceMessage.ExcludedIdsKeyName, string.Join(",", excludedIds));
         }
 
         public static TMessage AddGroupName<TMessage>(this TMessage message, string groupName)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            return message.AddOrUpdateMetadata(HubInvocationMessageWrapper.GroupNameKeyName, groupName);
+            return message.AddOrUpdateMetadata(ServiceMessage.GroupNameKeyName, groupName);
         }
 
         public static TMessage AddMetadata<TMessage>(this TMessage message, IDictionary<string, string> metadata)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
             if (message == null || metadata == null) return message;
             foreach (var kvp in metadata)
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         public static TMessage AddOrUpdateMetadata<TMessage>(this TMessage message, string key, string value)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
             if (message != null && !string.IsNullOrEmpty(key))
             {
@@ -72,21 +72,21 @@ namespace Microsoft.Azure.SignalR
         }
 
         public static TMessage AddTimestamp<TMessage>(this TMessage message)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            return message.AddOrUpdateMetadata(HubInvocationMessageWrapper.TimestampKeyName, Stopwatch.GetTimestamp().ToString());
+            return message.AddOrUpdateMetadata(ServiceMessage.TimestampKeyName, Stopwatch.GetTimestamp().ToString());
         }
 
-        public static string GetConnectionId<TMessage>(this TMessage message) where TMessage : HubInvocationMessageWrapper
+        public static string GetConnectionId<TMessage>(this TMessage message) where TMessage : ServiceMessage
         {
-            message.Headers.TryGetValue(HubInvocationMessageWrapper.ConnectionIdKeyName, out var connectionId);
+            message.Headers.TryGetValue(ServiceMessage.ConnectionIdKeyName, out var connectionId);
             return connectionId;
         }
 
         public static long? GetMessageDelay<TMessage>(this TMessage message)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            if (message.Headers.TryGetValue(HubInvocationMessageWrapper.TimestampKeyName, out var startTimestampString) &&
+            if (message.Headers.TryGetValue(ServiceMessage.TimestampKeyName, out var startTimestampString) &&
                 long.TryParse(startTimestampString, out var startTimestamp))
             {
                 return Stopwatch.GetTimestamp() - startTimestamp;
@@ -95,15 +95,15 @@ namespace Microsoft.Azure.SignalR
         }
 
         public static bool TryGetAction<TMessage>(this TMessage message, out string actionName)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            return message.TryGetMetadata(HubInvocationMessageWrapper.ActionKeyName, out actionName);
+            return message.TryGetMetadata(ServiceMessage.ActionKeyName, out actionName);
         }
 
         public static bool TryGetClaims<TMessage>(this TMessage message, out IEnumerable<Claim> claims)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            claims = message.TryGetMetadata(HubInvocationMessageWrapper.ClaimsKeyName, out var serializedClaims)
+            claims = message.TryGetMetadata(ServiceMessage.ClaimsKeyName, out var serializedClaims)
                 ? JsonConvert.DeserializeObject<IEnumerable<ClaimEntry>>(serializedClaims).Select(x => x.ToClaim())
                 : null;
 
@@ -111,37 +111,37 @@ namespace Microsoft.Azure.SignalR
         }
 
         public static bool TryGetConnectionId<TMessage>(this TMessage message, out string connectionId)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            return message.TryGetMetadata(HubInvocationMessageWrapper.ConnectionIdKeyName, out connectionId);
+            return message.TryGetMetadata(ServiceMessage.ConnectionIdKeyName, out connectionId);
         }
 
         public static bool TryGetConnectionIds<TMessage>(this TMessage message, out IReadOnlyList<string> connectionIds)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            return message.TryGetList(HubInvocationMessageWrapper.ConnectionIdsKeyName, out connectionIds);
+            return message.TryGetList(ServiceMessage.ConnectionIdsKeyName, out connectionIds);
         }
 
         public static bool TryGetExcludedIds<TMessage>(this TMessage message, out IReadOnlyList<string> excludedIdList)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            return TryGetList(message, HubInvocationMessageWrapper.ExcludedIdsKeyName, out excludedIdList);
+            return TryGetList(message, ServiceMessage.ExcludedIdsKeyName, out excludedIdList);
         }
 
         public static bool TryGetGroupName<TMessage>(this TMessage message, out string groupName)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            return message.TryGetMetadata(HubInvocationMessageWrapper.GroupNameKeyName, out groupName);
+            return message.TryGetMetadata(ServiceMessage.GroupNameKeyName, out groupName);
         }
 
         public static bool TryGetGroupNames<TMessage>(this TMessage message, out IReadOnlyList<string> groupNames)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            return message.TryGetList(HubInvocationMessageWrapper.GroupNamesKeyName, out groupNames);
+            return message.TryGetList(ServiceMessage.GroupNamesKeyName, out groupNames);
         }
 
         public static bool TryGetMetadata<TMessage>(this TMessage message, string metadataName, out string metadataValue)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
             if (message.Headers != null &&
                 message.Headers.TryGetValue(metadataName, out metadataValue))
@@ -153,19 +153,19 @@ namespace Microsoft.Azure.SignalR
         }
 
         public static bool TryGetUser<TMessage>(this TMessage message, out string userId)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            return message.TryGetMetadata(HubInvocationMessageWrapper.UserKeyName, out userId);
+            return message.TryGetMetadata(ServiceMessage.UserKeyName, out userId);
         }
 
         public static bool TryGetUsers<TMessage>(this TMessage message, out IReadOnlyList<string> userIds)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
-            return message.TryGetList(HubInvocationMessageWrapper.UsersKeyName, out userIds);
+            return message.TryGetList(ServiceMessage.UsersKeyName, out userIds);
         }
 
         private static bool TryGetList<TMessage>(this TMessage message, string keyName, out IReadOnlyList<string> list)
-            where TMessage : HubInvocationMessageWrapper
+            where TMessage : ServiceMessage
         {
             list = message.TryGetMetadata(keyName, out var value)
                 ? new List<string>(value.Split(','))

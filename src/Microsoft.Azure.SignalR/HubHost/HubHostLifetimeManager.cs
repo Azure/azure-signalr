@@ -5,22 +5,32 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Internal;
+using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class HubHostLifetimeManager<THub> : HubLifetimeManager<THub>
+    public class HubHostLifetimeManager<THub> : HubLifetimeManager<THub> where THub : Hub
     {
-        private readonly HubConnectionList _connections = new HubConnectionList();
-        private readonly HubGroupList _groups = new HubGroupList();
+        private readonly HubConnectionStore _connections = new HubConnectionStore();
+        //private readonly HubGroupList _groups = new HubGroupList();
         private readonly ILogger<HubHostLifetimeManager<THub>> _logger;
+        // Protocol Reader/Writer shared between all HubConnectionContexts
+        private readonly IHubProtocol _jsonProtocol;
+        private readonly IHubProtocol _messagePackProtocol;
 
         private long _nextInvocationId;
         private string InvocationId => Interlocked.Increment(ref _nextInvocationId).ToString();
+        private IConnectionManager _connectionManager;
 
-        public HubHostLifetimeManager(ILogger<HubHostLifetimeManager<THub>> logger)
+        public HubHostLifetimeManager(IConnectionManager connectionManager, IHubProtocolResolver protocolResolver, ILogger<HubHostLifetimeManager<THub>> logger)
         {
+            _connectionManager = connectionManager;
+            _jsonProtocol = protocolResolver.GetProtocol(JsonHubProtocol.ProtocolName, null);
+            _messagePackProtocol = protocolResolver.GetProtocol(MessagePackHubProtocol.ProtocolName, null);
             _logger = logger;
         }
 
@@ -40,27 +50,20 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var connection = _connections.FirstOrDefault();
-            if (IsNullObject(connection, "No connection found to broadcast message.")) return Task.CompletedTask;
-
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendAllAsync))
-                .Build();
-            return connection.WriteAsync(message);
+            var meta = new MessageMetaDataDictionary();
+            meta.AddAction(nameof(SendAllAsync));
+            return SerializeAllProtocolsAndSendAsync(meta, methodName, args);
         }
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedIds)
         {
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var connection = _connections.FirstOrDefault();
-            if (IsNullObject(connection, "No connection found to broadcast message.")) return Task.CompletedTask;
+            var meta = new MessageMetaDataDictionary();
+            meta.AddAction(nameof(SendAllExceptAsync))
+                .AddExcludedIds(excludedIds);
 
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendAllExceptAsync))
-                .WithExcludedIds(excludedIds)
-                .Build();
-            return connection.WriteAsync(message);
+            return SerializeAllProtocolsAndSendAsync(meta, methodName, args);
         }
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args)
@@ -71,11 +74,10 @@ namespace Microsoft.Azure.SignalR
             var connection = _connections[connectionId];
             if (IsNullObject(connection, $"Connection[{connectionId}] not found.")) return Task.CompletedTask;
 
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendConnectionAsync))
-                .WithConnectionId(connectionId)
-                .Build();
-            return connection.WriteAsync(message);
+            var meta = new MessageMetaDataDictionary();
+            meta.AddAction(nameof(SendConnectionAsync))
+                .AddConnectionId(connectionId);
+            return SerializeAndSendAsync(_connectionManager.ClientTransferFormat(connectionId), meta, methodName, args);
         }
 
         public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args)
@@ -83,15 +85,10 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidListArgument(nameof(connectionIds), connectionIds)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var connectionId = connectionIds.FirstOrDefault(id => _connections[id] != null);
-            if (IsEmptyString(connectionId, "No valid connection found.")) return Task.CompletedTask;
-
-            var connection = _connections[connectionId];
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendConnectionsAsync))
-                .WithConnectionIds(connectionIds)
-                .Build();
-            return connection.WriteAsync(message);
+            var meta = new MessageMetaDataDictionary();
+            meta.AddAction(nameof(SendConnectionsAsync))
+                .AddConnectionIds(connectionIds);
+            return SerializeAllProtocolsAndSendAsync(meta, methodName, args);
         }
 
         public override Task SendGroupAsync(string groupName, string methodName, object[] args)
@@ -99,32 +96,29 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var group = _groups[groupName];
-            if (IsNullObject(group, $"Group[{groupName}] not found.")) return Task.CompletedTask;
+            // Do we need to validate the sender has joined the Group?
+            // Suppose that is the developer's responsibility. So, I removed the group validation.
+            //
+            // Consider there are 2 SDK servers and 10 clients.
+            // If 5 of clients join the same group, for example, groupA, and the 5 clients are routed to the same SDK server,
+            // any of other client will see error if they want to send message to groupA.
+            // But if 2 of clients are routed to SDK server1, the other 3 clients are routed to SDK server2,
+            // then the other 5 clients can send to groupA even though they did not join groupA.
 
-            var connection = group.Values.FirstOrDefault();
-            if (IsNullObject(connection, $"Group[{groupName}] is empty.")) return Task.CompletedTask;
-
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendGroupAsync))
-                .WithGroup(groupName)
-                .Build();
-            return connection.WriteAsync(message);
+            var meta = new MessageMetaDataDictionary();
+            meta.AddAction(nameof(SendGroupAsync))
+                .AddGroupName(groupName);
+            return SerializeAllProtocolsAndSendAsync(meta, methodName, args);
         }
 
         public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args)
         {
             if (IsInvalidListArgument(nameof(groupNames), groupNames)) return Task.CompletedTask;
-
-            var groupName = groupNames.FirstOrDefault(group => _groups[group]?.Values.FirstOrDefault() != null);
-            if (IsEmptyString(groupName, "No valid group found.")) return Task.CompletedTask;
-
-            var connection = _groups[groupName].Values.First();
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendGroupsAsync))
-                .WithGroups(groupNames)
-                .Build();
-            return connection.WriteAsync(message);
+            // Shall we validate group? The same issue as above.
+            var meta = new MessageMetaDataDictionary();
+            meta.AddAction(nameof(SendGroupsAsync))
+                .AddGroupsName(groupNames);
+            return SerializeAllProtocolsAndSendAsync(meta, methodName, args);
         }
 
         public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds)
@@ -132,18 +126,11 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var group = _groups[groupName];
-            if (IsNullObject(group, $"Group[{groupName}] not found.")) return Task.CompletedTask;
-
-            var connection = group.Values.FirstOrDefault();
-            if (IsNullObject(connection, $"Group[{groupName}] is empty.")) return Task.CompletedTask;
-
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendGroupExceptAsync))
-                .WithGroup(groupName)
-                .WithExcludedIds(excludedIds)
-                .Build();
-            return connection.WriteAsync(message);
+            var meta = new MessageMetaDataDictionary();
+            meta.AddAction(nameof(SendGroupExceptAsync))
+                .AddGroupName(groupName)
+                .AddExcludedIds(excludedIds);
+            return SerializeAllProtocolsAndSendAsync(meta, methodName, args);
         }
 
         public override Task SendUserAsync(string userId, string methodName, object[] args)
@@ -151,14 +138,10 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(userId), userId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var connection = _connections.FirstOrDefault();
-            if (IsNullObject(connection, "No connection found to send message.")) return Task.CompletedTask;
-
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendUserAsync))
-                .WithUser(userId)
-                .Build();
-            return connection.WriteAsync(message);
+            var meta = new MessageMetaDataDictionary();
+            meta.AddAction(nameof(SendUserAsync))
+                .AddUserId(userId);
+            return SerializeAllProtocolsAndSendAsync(meta, methodName, args);
         }
 
         public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args)
@@ -166,14 +149,10 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidListArgument(nameof(userIds), userIds)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var connection = _connections.FirstOrDefault();
-            if (IsNullObject(connection, "No connection found to send message.")) return Task.CompletedTask;
-
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendUsersAsync))
-                .WithUsers(userIds)
-                .Build();
-            return connection.WriteAsync(message);
+            var meta = new MessageMetaDataDictionary();
+            meta.AddAction(nameof(SendUsersAsync))
+                .AddUserIds(userIds);
+            return SerializeAllProtocolsAndSendAsync(meta, methodName, args);
         }
 
         public override Task AddGroupAsync(string connectionId, string groupName)
@@ -184,13 +163,12 @@ namespace Microsoft.Azure.SignalR
             var connection = _connections[connectionId];
             if (IsNullObject(connection, $"Connection[{connectionId}] not found.")) return Task.CompletedTask;
 
-            _groups.Add(connection, groupName);
-            var message = new InvocationMessageBuilder(InvocationId, nameof(AddGroupAsync), new object[0])
-                .WithAction(nameof(AddGroupAsync))
-                .WithConnectionId(connectionId)
-                .WithGroup(groupName)
-                .Build();
-            return connection.WriteAsync(message);
+            //_groups.Add(connection, groupName);
+            var meta = new MessageMetaDataDictionary();
+            meta.AddAction(nameof(AddGroupAsync))
+                .AddConnectionId(connectionId)
+                .AddGroupName(groupName);
+            return SerializeAndSendAsync(_connectionManager.ClientTransferFormat(connectionId), meta, null, null);
         }
 
         public override Task RemoveGroupAsync(string connectionId, string groupName)
@@ -201,13 +179,13 @@ namespace Microsoft.Azure.SignalR
             var connection = _connections[connectionId];
             if (IsNullObject(connection, $"Connection[{connectionId}] not found.")) return Task.CompletedTask;
 
-            _groups.Remove(connectionId, groupName);
-            var message = new InvocationMessageBuilder(InvocationId, nameof(RemoveGroupAsync), new object[0])
-                .WithAction(nameof(RemoveGroupAsync))
-                .WithConnectionId(connectionId)
-                .WithGroup(groupName)
-                .Build();
-            return connection.WriteAsync(message);
+            //_groups.Remove(connectionId, groupName);
+            // Ask SignalR Service to do 'RemoveGroupAsync'
+            var meta = new MessageMetaDataDictionary();
+            meta.AddAction(nameof(RemoveGroupAsync))
+                .AddConnectionId(connectionId)
+                .AddGroupName(groupName);
+            return SerializeAndSendAsync(_connectionManager.ClientTransferFormat(connectionId), meta, null, null);
         }
 
         private bool IsInvalidStringArgument(string name, string value)
@@ -234,6 +212,55 @@ namespace Microsoft.Azure.SignalR
             if (value != null) return false;
             _logger.LogWarning(message);
             return true;
+        }
+
+        private ServiceMessage Serialize(TransferFormat format, IDictionary<string, string> meta, string method, object[] args)
+        {
+            var serviceMessage = new ServiceMessage();
+            serviceMessage.AddMetadata(meta);
+            if (method != null)
+            {
+                var message = CreateInvocationMessage(method, args);
+                serviceMessage.WritePayload(format,
+                    format == TransferFormat.Binary ?
+                    _messagePackProtocol.WriteToArray(message) : _jsonProtocol.WriteToArray(message));
+            }
+            return serviceMessage;
+        }
+
+        private ServiceMessage SerializeAllProtocols(IDictionary<string, string> meta, string method, object[] args)
+        {
+            var serviceMessage = new ServiceMessage();
+            serviceMessage.AddMetadata(meta);
+            if (method != null)
+            {
+                var message = CreateInvocationMessage(method, args);
+                serviceMessage.JsonPayload = _jsonProtocol.WriteToArray(message);
+                serviceMessage.MsgpackPayload = _messagePackProtocol.WriteToArray(message);
+            }
+            return serviceMessage;
+        }
+
+        private Task SerializeAndSendAsync(TransferFormat format, IDictionary<string, string> meta, string method, object[] args)
+        {
+            var serviceMessage = Serialize(format, meta, method, args);
+            _connectionManager.SendServiceMessage(serviceMessage);
+            return Task.CompletedTask;
+        }
+
+        private Task SerializeAllProtocolsAndSendAsync(IDictionary<string, string> meta, string method, object[] args)
+        {
+            var serviceMessage = SerializeAllProtocols(meta, method, args);
+            _connectionManager.SendServiceMessage(serviceMessage);
+            return Task.CompletedTask;
+        }
+
+        public InvocationMessage CreateInvocationMessage(string methodName, object[] args)
+        {
+            var invocationMessage = new InvocationMessage(
+                target: methodName,
+                argumentBindingException: null, arguments: args);
+            return invocationMessage;
         }
     }
 }

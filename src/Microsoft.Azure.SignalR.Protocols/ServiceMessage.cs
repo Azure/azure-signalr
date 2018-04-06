@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR
         OnOthers = 3
     }
     
-    public class HubInvocationMessageWrapper : HubMessage
+    public class ServiceMessage : HubMessage
     {
         // TODO.
         // Optimization: replace string key with int key.
@@ -41,7 +41,12 @@ namespace Microsoft.Azure.SignalR
 
         public IDictionary<string, string> Headers { get; } = new Dictionary<string, string>();
 
-        public HubInvocationMessageWrapper(TransferFormat format)
+        public ServiceMessage()
+            : this (TransferFormat.Binary)
+        {   
+        }
+
+        public ServiceMessage(TransferFormat format)
         {
             Format = format;
             InvocationType = HubInvocationType.OnOthers;

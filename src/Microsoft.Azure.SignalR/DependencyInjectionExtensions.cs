@@ -21,13 +21,16 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton(typeof(HubLifetimeManager<>), typeof(HubHostLifetimeManager<>));
             services.AddSingleton(typeof(IHubProtocolResolver), typeof(DefaultHubProtocolResolver));
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IHubProtocol, JsonHubProtocol>());
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHubProtocol, MessagePackHubProtocol>());
             services.AddSingleton(typeof(IHubContext<>), typeof(HubContext<>));
             services.AddSingleton(typeof(IUserIdProvider), typeof(DefaultUserIdProvider));
             services.AddScoped(typeof(IHubActivator<>), typeof(DefaultHubActivator<>));
 
-            services.AddSingleton(typeof(HubDispatcher<>), typeof(HubHostDispatcher<>));
+            services.AddSingleton(typeof(IConnectionManager), typeof(ConnectionManager));
             services.AddSingleton(typeof(HubHost<>));
 
+            services.AddSingleton(typeof(HubConnectionHandler<>), typeof(HubConnectionHandler<>));
+            services.AddSingleton(typeof(HubDispatcher<>), typeof(DefaultHubDispatcher<>));
             services.AddAuthorization();
 
             return services;

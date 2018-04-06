@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,7 +26,10 @@ namespace Microsoft.Azure.SignalR
         {
             var hubHost = _serviceProvider.GetRequiredService<HubHost<THub>>();
             hubHost.Configure(_endpointProvider, _tokenProvider, options);
-            hubHost.StartAsync().GetAwaiter().GetResult();
+            var connectionBuilder = new ConnectionBuilder(_serviceProvider);
+            connectionBuilder.UseHub<THub>();
+            var app = connectionBuilder.Build();
+            hubHost.StartAsync(app).GetAwaiter().GetResult();
             return hubHost;
         }
     }

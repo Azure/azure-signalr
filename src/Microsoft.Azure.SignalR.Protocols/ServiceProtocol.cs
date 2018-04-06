@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -15,36 +16,49 @@ using MsgPack;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class MessagePackHubProtocolWrapper : IHubProtocol
+    public class ServiceProtocol
     {
         public static string ProtocolName = "messagepackwrapper";
         public static readonly int ProtocolVersion = 1;
 
-        public string Name => ProtocolName;
+        public static string Name => ProtocolName;
 
         public TransferFormat TransferFormat => TransferFormat.Binary;
 
-        public int Version => ProtocolVersion;
+        public static int Version => ProtocolVersion;
 
         public bool IsVersionSupported(int version)
         {
             return version == Version;
         }
 
-        public bool TryParseMessages(ReadOnlyMemory<byte> input, IInvocationBinder binder, IList<HubMessage> messages)
+        public static bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message)
         {
-            while (BinaryMessageParser.TryParseMessage(ref input, out var payload))
+            if (!BinaryMessageParser.TryParseMessage(ref input, out var payload))
             {
-                var isArray = MemoryMarshal.TryGetArray(payload, out var arraySegment);
+                message = null;
+                return false;
+            }
+
+            var arraySegment = GetArraySegment(payload);
+
+            message = ParseMessage(arraySegment.Array, arraySegment.Offset);
+
+            return message != null;
+        }
+
+        private static ArraySegment<byte> GetArraySegment(ReadOnlySequence<byte> input)
+        {
+            if (input.IsSingleSegment)
+            {
+                var isArray = MemoryMarshal.TryGetArray(input.First, out var arraySegment);
                 // This will never be false unless we started using un-managed buffers
                 Debug.Assert(isArray);
-                var message = ParseMessage(arraySegment.Array, arraySegment.Offset);
-                if (message != null)
-                {
-                    messages.Add(message);
-                }
+                return arraySegment;
             }
-            return messages.Count > 0;
+
+            // Should be rare
+            return new ArraySegment<byte>(input.ToArray());
         }
 
         private static HubMessage ParseMessage(byte[] input, int startOffset)
@@ -55,8 +69,8 @@ namespace Microsoft.Azure.SignalR
                 var messageType = ReadInt32(unpacker, "messageType");
                 switch (messageType)
                 {
-                    case AzureHubProtocolConstants.HubInvocationMessageWrapperType:
-                        return CreateHubInvocationMessageWrapper(unpacker, len);
+                    case AzureHubProtocolConstants.ServiceMessageType:
+                        return CreateServiceMessage(unpacker, len);
                     case HubProtocolConstants.PingMessageType:
                         return PingMessage.Instance;
                     case HubProtocolConstants.CloseMessageType:
@@ -67,10 +81,10 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private static HubInvocationMessageWrapper CreateHubInvocationMessageWrapper(Unpacker unpacker, long len)
+        private static ServiceMessage CreateServiceMessage(Unpacker unpacker, long len)
         {
             var format = ReadInt32(unpacker, "messageformat");
-            var hubMessageWrapper = new HubInvocationMessageWrapper((TransferFormat)format);
+            var hubMessageWrapper = new ServiceMessage((TransferFormat)format);
             hubMessageWrapper.InvocationType = (HubInvocationType)ReadInt32(unpacker, "invocationtype");
             var metadata = ReadHeaders(unpacker, "headers");
             hubMessageWrapper.AddMetadata(metadata);
@@ -120,35 +134,43 @@ namespace Microsoft.Azure.SignalR
             return new Dictionary<string, string>();
         }
 
-        public void WriteMessage(HubMessage message, Stream output)
+        public static byte[] WriteToArray(HubMessage message)
         {
-            using (var memoryStream = new MemoryStream())
+            var writer = MemoryBufferWriter.Get();
+            try
             {
-                WriteMessageCore(message, memoryStream);
-                if (memoryStream.TryGetBuffer(out var buffer))
-                {
-                    // Write the buffer directly
-                    BinaryMessageFormatter.WriteLengthPrefix(buffer.Count, output);
-                    output.Write(buffer.Array, buffer.Offset, buffer.Count);
-                }
-                else
-                {
-                    BinaryMessageFormatter.WriteLengthPrefix(memoryStream.Length, output);
-                    memoryStream.Position = 0;
-                    memoryStream.CopyTo(output);
-                }
+                WriteMessage(message, writer);
+                return writer.ToArray();
+            }
+            finally
+            {
+                MemoryBufferWriter.Return(writer);
             }
         }
 
-        private void WriteMessageCore(HubMessage message, Stream output)
+        public static void WriteMessage(HubMessage message, IBufferWriter<byte> output)
+        {
+            using (var stream = new LimitArrayPoolWriteStream())
+            {
+                // Write message to a buffer so we can get its length
+                WriteMessageCore(message, stream);
+                var buffer = stream.GetBuffer();
+
+                // Write length then message to output
+                BinaryMessageFormatter.WriteLengthPrefix(buffer.Count, output);
+                output.Write(buffer);
+            }
+        }
+
+        private static void WriteMessageCore(HubMessage message, Stream output)
         {
             // PackerCompatibilityOptions.None prevents from serializing byte[] as strings
             // and allows extended objects
             var packer = Packer.Create(output, PackerCompatibilityOptions.None);
             switch (message)
             {
-                case HubInvocationMessageWrapper hubInvocationMessageWrapper:
-                    WriteHubInvocationMessageWrapper(hubInvocationMessageWrapper, packer);
+                case ServiceMessage serviceMessage:
+                    ServiceMessage(serviceMessage, packer);
                     break;
                 case PingMessage pingMessage:
                     WritePingMessage(pingMessage, packer);
@@ -161,10 +183,10 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private void WriteHubInvocationMessageWrapper(HubInvocationMessageWrapper message, Packer packer)
+        private static void ServiceMessage(ServiceMessage message, Packer packer)
         {
             packer.PackArrayHeader(6);
-            packer.Pack(AzureHubProtocolConstants.HubInvocationMessageWrapperType);
+            packer.Pack(AzureHubProtocolConstants.ServiceMessageType);
             packer.Pack((int)(message.Format));
             packer.Pack((int)(message.InvocationType));
             packer.PackDictionary<string, string>(message.Headers);
@@ -186,13 +208,13 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private void WritePingMessage(PingMessage pingMessage, Packer packer)
+        private static void WritePingMessage(PingMessage pingMessage, Packer packer)
         {
             packer.PackArrayHeader(1);
             packer.Pack(HubProtocolConstants.PingMessageType);
         }
 
-        private void WriteCloseMessage(CloseMessage message, Packer packer)
+        private static void WriteCloseMessage(CloseMessage message, Packer packer)
         {
             packer.PackArrayHeader(2);
             packer.Pack(HubProtocolConstants.CloseMessageType);
