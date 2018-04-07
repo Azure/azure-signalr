@@ -7,14 +7,8 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Microsoft.Azure.SignalR
 {
-    public interface IConnectionManager
+    public interface IClientConnectionManager
     {
-        void AddServiceConnection(ServiceConnection serviceConnection);
-
-        Task StartAllServiceConnection(ConnectionDelegate connectionDelegate);
-
-        Task SendServiceMessage(ServiceMessage seviceMessage);
-
         void AddClientConnection(ServiceConnectionContext clientConnection);
 
         ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections { get; }

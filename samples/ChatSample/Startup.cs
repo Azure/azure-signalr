@@ -48,14 +48,8 @@ namespace ChatSample
         {
             app.UseMvc();
             app.UseFileServer();
-            var protocolType = Configuration["AzureSignalR:ProtocolType"];
-            if (!Enum.TryParse<TransferFormat>(protocolType, true, out var protoType))
-            {
-                protoType = TransferFormat.Text;
-            }
             var hubServerOptions = new HubHostOptions()
             {
-                ProtocolType = protoType,
                 ConnectionNumber = Configuration.GetValue<int>("AzureSignalR:ServiceConnectionNo"),
                 AutoReconnect = false,
                 ServerTimeout = TimeSpan.FromSeconds(Configuration.GetValue<int>("AzureSignalR:ServiceTimeout"))

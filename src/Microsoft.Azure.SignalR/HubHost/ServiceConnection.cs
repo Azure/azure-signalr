@@ -1,17 +1,12 @@
-﻿using System;
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Buffers;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
 using System.IO.Pipelines;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 
@@ -22,13 +17,14 @@ namespace Microsoft.Azure.SignalR
         // Only Binary TransferFormat is supported for SDK and service
         private readonly TransferFormat _transferFormat = TransferFormat.Binary;
         private HttpConnection _httpConnection;
-        private IConnectionManager _connectionManager;
+        private IClientConnectionManager _clientConnectionManager;
         private ConnectionDelegate _connectionDelegate;
         private SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
 
-        public ServiceConnection(IConnectionManager connectionManager, Uri serviceUrl, HttpConnection httpConnection)
+        public ServiceConnection(IClientConnectionManager clientConnectionManager,
+            Uri serviceUrl, HttpConnection httpConnection)
         {
-            _connectionManager = connectionManager;
+            _clientConnectionManager = clientConnectionManager;
             _httpConnection = httpConnection;
         }
         
@@ -124,7 +120,7 @@ namespace Microsoft.Azure.SignalR
                     serviceMessage.AddConnectionId(connection.ConnectionId);
                     serviceMessage.WritePayload(connection.TransferFormat, buffer.ToArray());
 
-                    _ = SendServiceMessage(serviceMessage);
+                    await SendServiceMessage(serviceMessage);
                 }
                 else if (result.IsCompleted)
                 {
@@ -135,7 +131,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             // We should probably notify the service here that the application chose to abort the connection
-            _connectionManager.ClientConnections.TryRemove(connection.ConnectionId, out _);
+            _clientConnectionManager.ClientConnections.TryRemove(connection.ConnectionId, out _);
         }
 
         private async Task ProcessHandshakeResponseAsync(IDuplexPipe application)
@@ -199,14 +195,17 @@ namespace Microsoft.Azure.SignalR
         {
             switch (serviceMessage.InvocationType)
             {
-                case HubInvocationType.OnConnected:
+                case ServiceMessageType.OnConnected:
                     await OnConnectedAsync(serviceMessage);
                     break;
-                case HubInvocationType.OnDisconnected:
+                case ServiceMessageType.OnDisconnected:
                     await OnDisconnectedAsync(serviceMessage);
                     break;
-                default:
+                case ServiceMessageType.HubMessage:
                     await OnSignalRHubCallAsync(serviceMessage);
+                    break;
+                default:
+                    // unexpected
                     break;
             }
         }
@@ -214,7 +213,7 @@ namespace Microsoft.Azure.SignalR
         private async Task OnConnectedAsync(ServiceMessage message)
         {
             var connection = new ServiceConnectionContext(message);
-            _connectionManager.AddClientConnection(connection);
+            _clientConnectionManager.AddClientConnection(connection);
 
             // Start receiving
             _ = ProcessOutgoingAckAsync(connection);
@@ -245,7 +244,7 @@ namespace Microsoft.Azure.SignalR
 
         private Task OnDisconnectedAsync(ServiceMessage message)
         {
-            _connectionManager.ClientConnections.TryRemove(message.GetConnectionId(), out var connection);
+            _clientConnectionManager.ClientConnections.TryRemove(message.GetConnectionId(), out var connection);
             // Close this connection gracefully then remove it from the list, this will trigger the hub shutdown logic appropriately
             connection.Application.Output.Complete();
             return Task.CompletedTask;
@@ -253,7 +252,7 @@ namespace Microsoft.Azure.SignalR
 
         private async Task OnSignalRHubCallAsync(ServiceMessage message)
         {
-            if (_connectionManager.ClientConnections.TryGetValue(message.GetConnectionId(), out var connection))
+            if (_clientConnectionManager.ClientConnections.TryGetValue(message.GetConnectionId(), out var connection))
             {
                 // Write the raw connection payload to the pipe let the upstream handle it
                 _ = connection.Application.Output.WriteAsync(message.ReadPayload());

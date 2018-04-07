@@ -23,12 +23,14 @@ namespace Microsoft.Azure.SignalR
         private HubHostOptions _options;
         private EndpointProvider _endpointProvider;
         private TokenProvider _tokenProvider;
-        private IConnectionManager _connectionManager;
+        private IServiceConnectionManager _serviceConnectionManager;
+        private IClientConnectionManager _clientConnectionManager;
         private readonly string _name = $"HubHost<{typeof(THub).FullName}>";
 
-        public HubHost(IConnectionManager connectionManager, IOptions<HubHostOptions> options, ILoggerFactory loggerFactory)
+        public HubHost(IServiceConnectionManager serviceConnectionManager, IClientConnectionManager clientConnectionManager, IOptions<HubHostOptions> options, ILoggerFactory loggerFactory)
         {
-            _connectionManager = connectionManager;
+            _serviceConnectionManager = serviceConnectionManager;
+            _clientConnectionManager = clientConnectionManager;
             _options = options != null ? options.Value : throw new ArgumentNullException(nameof(options));
 
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -58,14 +60,14 @@ namespace Microsoft.Azure.SignalR
             for (var i = 0; i < _options.ConnectionNumber; i++)
             {
                 var serviceConnection = CreateServiceConnection(serviceUrl, httpOptions);
-                _connectionManager.AddServiceConnection(serviceConnection);
+                _serviceConnectionManager.AddServiceConnection(serviceConnection);
             }
         }
 
         public async Task StartAsync(ConnectionDelegate connectionDelegate)
         {
             _logger.LogInformation($"Starting {_name}...");
-            await _connectionManager.StartAllServiceConnection(connectionDelegate);
+            await _serviceConnectionManager.StartAllServiceConnection(connectionDelegate);
         }
 
         private Uri GetServiceUrl()
@@ -76,7 +78,7 @@ namespace Microsoft.Azure.SignalR
         private ServiceConnection CreateServiceConnection(Uri serviceUrl, HttpOptions httpOptions)
         {
             var httpConnection = new HttpConnection(serviceUrl, HttpTransportType.WebSockets, _loggerFactory, httpOptions);
-            return new ServiceConnection(_connectionManager, serviceUrl, httpConnection);
+            return new ServiceConnection(_clientConnectionManager, serviceUrl, httpConnection);
         }
     }
 }

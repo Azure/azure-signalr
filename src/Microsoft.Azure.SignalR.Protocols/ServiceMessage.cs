@@ -7,11 +7,11 @@ using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    public enum HubInvocationType
+    public enum ServiceMessageType
     {
         OnConnected = 1,
         OnDisconnected = 2,
-        OnOthers = 3
+        HubMessage = 3
     }
     
     public class ServiceMessage : HubMessage
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR
 
         public TransferFormat Format { get; }
 
-        public HubInvocationType InvocationType { get; set; }
+        public ServiceMessageType InvocationType { get; set; }
 
         public byte[] JsonPayload { get; set; }
 
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.SignalR
         public ServiceMessage(TransferFormat format)
         {
             Format = format;
-            InvocationType = HubInvocationType.OnOthers;
+            InvocationType = ServiceMessageType.HubMessage;
         }
 
         // Write the payload according to the specified format

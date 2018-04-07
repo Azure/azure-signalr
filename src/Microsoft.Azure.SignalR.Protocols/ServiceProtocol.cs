@@ -85,7 +85,7 @@ namespace Microsoft.Azure.SignalR
         {
             var format = ReadInt32(unpacker, "messageformat");
             var hubMessageWrapper = new ServiceMessage((TransferFormat)format);
-            hubMessageWrapper.InvocationType = (HubInvocationType)ReadInt32(unpacker, "invocationtype");
+            hubMessageWrapper.InvocationType = (ServiceMessageType)ReadInt32(unpacker, "servicemessagetype");
             var metadata = ReadHeaders(unpacker, "headers");
             hubMessageWrapper.AddMetadata(metadata);
             hubMessageWrapper.JsonPayload = ReadBinary(unpacker, "jsonpayload");

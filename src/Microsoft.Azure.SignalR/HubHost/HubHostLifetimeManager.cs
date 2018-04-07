@@ -24,11 +24,13 @@ namespace Microsoft.Azure.SignalR
 
         private long _nextInvocationId;
         private string InvocationId => Interlocked.Increment(ref _nextInvocationId).ToString();
-        private IConnectionManager _connectionManager;
+        private IServiceConnectionManager _serviceConnectionManager;
+        private IClientConnectionManager _clientConnectionManager;
 
-        public HubHostLifetimeManager(IConnectionManager connectionManager, IHubProtocolResolver protocolResolver, ILogger<HubHostLifetimeManager<THub>> logger)
+        public HubHostLifetimeManager(IServiceConnectionManager serviceConnectionManager, IClientConnectionManager clientConnectionManager, IHubProtocolResolver protocolResolver, ILogger<HubHostLifetimeManager<THub>> logger)
         {
-            _connectionManager = connectionManager;
+            _serviceConnectionManager = serviceConnectionManager;
+            _clientConnectionManager = clientConnectionManager;
             _jsonProtocol = protocolResolver.GetProtocol(JsonHubProtocol.ProtocolName, null);
             _messagePackProtocol = protocolResolver.GetProtocol(MessagePackHubProtocol.ProtocolName, null);
             _logger = logger;
@@ -77,7 +79,7 @@ namespace Microsoft.Azure.SignalR
             var meta = new MessageMetaDataDictionary();
             meta.AddAction(nameof(SendConnectionAsync))
                 .AddConnectionId(connectionId);
-            return SerializeAndSendAsync(_connectionManager.ClientTransferFormat(connectionId), meta, methodName, args);
+            return SerializeAndSendAsync(_clientConnectionManager.ClientTransferFormat(connectionId), meta, methodName, args);
         }
 
         public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args)
@@ -168,7 +170,7 @@ namespace Microsoft.Azure.SignalR
             meta.AddAction(nameof(AddGroupAsync))
                 .AddConnectionId(connectionId)
                 .AddGroupName(groupName);
-            return SerializeAndSendAsync(_connectionManager.ClientTransferFormat(connectionId), meta, null, null);
+            return SerializeAndSendAsync(_clientConnectionManager.ClientTransferFormat(connectionId), meta, null, null);
         }
 
         public override Task RemoveGroupAsync(string connectionId, string groupName)
@@ -185,7 +187,7 @@ namespace Microsoft.Azure.SignalR
             meta.AddAction(nameof(RemoveGroupAsync))
                 .AddConnectionId(connectionId)
                 .AddGroupName(groupName);
-            return SerializeAndSendAsync(_connectionManager.ClientTransferFormat(connectionId), meta, null, null);
+            return SerializeAndSendAsync(_clientConnectionManager.ClientTransferFormat(connectionId), meta, null, null);
         }
 
         private bool IsInvalidStringArgument(string name, string value)
@@ -244,15 +246,13 @@ namespace Microsoft.Azure.SignalR
         private Task SerializeAndSendAsync(TransferFormat format, IDictionary<string, string> meta, string method, object[] args)
         {
             var serviceMessage = Serialize(format, meta, method, args);
-            _connectionManager.SendServiceMessage(serviceMessage);
-            return Task.CompletedTask;
+            return _serviceConnectionManager.SendServiceMessage(serviceMessage);
         }
 
         private Task SerializeAllProtocolsAndSendAsync(IDictionary<string, string> meta, string method, object[] args)
         {
             var serviceMessage = SerializeAllProtocols(meta, method, args);
-            _connectionManager.SendServiceMessage(serviceMessage);
-            return Task.CompletedTask;
+            return _serviceConnectionManager.SendServiceMessage(serviceMessage);
         }
 
         public InvocationMessage CreateInvocationMessage(string methodName, object[] args)

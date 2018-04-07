@@ -11,12 +11,9 @@ namespace Microsoft.Azure.SignalR
     public class HubHostOptions
     {
         public static readonly int DefaultConnectionNumber = 5;
-        public static readonly TransferFormat DefaultProtocolType = TransferFormat.Text;
         private static readonly TimeSpan DefaultServerTimeout = TimeSpan.FromSeconds(30); // Server ping rate is 15 sec, this is 2 times that.
 
         public int ConnectionNumber { get; set; } = DefaultConnectionNumber;
-
-        public TransferFormat ProtocolType { get; set; } = DefaultProtocolType;
 
         public TimeSpan ServerTimeout { get; set; } = DefaultServerTimeout;
 
