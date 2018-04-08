@@ -79,18 +79,19 @@ namespace Microsoft.Azure.SignalR
 
                 if (!buffer.IsEmpty)
                 {
-                    while (ServiceProtocol.TryParseMessage(ref buffer, out HubMessage message))
+                    while (ServiceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
                     {
-                        switch (message)
+                        switch (message.Command)
                         {
-                            case ServiceMessage serviceMessage:
-                                _ = DispatchMessageAsync(serviceMessage);
+                            case CommandType.AddConnection:
+                                await OnConnectedAsync(message);
                                 break;
-                            case PingMessage _:
+                            case CommandType.RemoveConnection:
+                                await OnDisconnectedAsync(message);
                                 break;
                             default:
-                                //Logger.UnsupportedMessageReceived(message.GetType().FullName);
-                                throw new NotSupportedException($"Received unsupported message: {message}");
+                                await OnSignalRHubCallAsync(message);
+                                break;
                         }
                     }
                 }
@@ -116,10 +117,8 @@ namespace Microsoft.Azure.SignalR
                 if (!buffer.IsEmpty)
                 {
                     // Send Completion or Error back to the Client
-                    var serviceMessage = new ServiceMessage(connection.TransferFormat);
-                    serviceMessage.AddConnectionId(connection.ConnectionId);
-                    serviceMessage.WritePayload(connection.TransferFormat, buffer.ToArray());
-
+                    var serviceMessage = new ServiceMessage();
+                    serviceMessage.CreateSendConnection(connection.ConnectionId, connection.ProtocolName, buffer.ToArray());
                     await SendServiceMessage(serviceMessage);
                 }
                 else if (result.IsCompleted)
@@ -191,25 +190,6 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task DispatchMessageAsync(ServiceMessage serviceMessage)
-        {
-            switch (serviceMessage.InvocationType)
-            {
-                case ServiceMessageType.OnConnected:
-                    await OnConnectedAsync(serviceMessage);
-                    break;
-                case ServiceMessageType.OnDisconnected:
-                    await OnDisconnectedAsync(serviceMessage);
-                    break;
-                case ServiceMessageType.HubMessage:
-                    await OnSignalRHubCallAsync(serviceMessage);
-                    break;
-                default:
-                    // unexpected
-                    break;
-            }
-        }
-
         private async Task OnConnectedAsync(ServiceMessage message)
         {
             var connection = new ServiceConnectionContext(message);
@@ -221,7 +201,7 @@ namespace Microsoft.Azure.SignalR
             // We need to do fake in memory handshake between this code and the 
             // HubConnectionHandler to set the protocol
             HandshakeRequestMessage handshakeRequest;
-            if (message.Format == TransferFormat.Binary)
+            if (string.Equals(message.GetProtocol(), MessagePackHubProtocol.ProtocolName, StringComparison.Ordinal))
             {
                 handshakeRequest = new HandshakeRequestMessage(MessagePackHubProtocol.ProtocolName, MessagePackHubProtocol.ProtocolVersion);
             }
@@ -255,7 +235,7 @@ namespace Microsoft.Azure.SignalR
             if (_clientConnectionManager.ClientConnections.TryGetValue(message.GetConnectionId(), out var connection))
             {
                 // Write the raw connection payload to the pipe let the upstream handle it
-                _ = connection.Application.Output.WriteAsync(message.ReadPayload());
+                _ = connection.Application.Output.WriteAsync(message.Payloads[connection.ProtocolName]);
                 await connection.Application.Output.FlushAsync();
             }
             else

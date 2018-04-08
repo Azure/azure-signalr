@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR
         public ServiceConnectionContext(ServiceMessage serviceMessage)
         {
             ConnectionId = serviceMessage.GetConnectionId();
-            TransferFormat = serviceMessage.Format;
+            ProtocolName = serviceMessage.GetProtocol();
 
             // Create the Duplix Pipeline for the virtual connection
             var options = new HttpConnectionOptions();
@@ -49,6 +49,6 @@ namespace Microsoft.Azure.SignalR
 
         public IDuplexPipe Application { get; set; }
 
-        public TransferFormat TransferFormat { get; set; }
+        public string ProtocolName { get; set; }
     }
 }

@@ -6,33 +6,39 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Internal.Formatters;
 using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 using MsgPack;
+using MsgPack.Serialization;
 
 namespace Microsoft.Azure.SignalR
 {
     public class ServiceProtocol
     {
-        public static string ProtocolName = "messagepackwrapper";
-        public static readonly int ProtocolVersion = 1;
+        internal static SerializationContext DefaultSerializationContext = new SerializationContext
+        {
+            // serializes objects (here: arguments and results) as maps so that property names are preserved
+            SerializationMethod = SerializationMethod.Map,
+            // allows for serializing objects that cannot be deserialized due to the lack of the default ctor etc.
+            CompatibilityOptions =
+            {
+                AllowAsymmetricSerializer = true
+            }
+        };
 
-        public static string Name => ProtocolName;
+        public static readonly string Name = "messagepackwrapper";
+        
+        public SerializationContext SerializationContext { get; } = DefaultSerializationContext;
 
-        public TransferFormat TransferFormat => TransferFormat.Binary;
+        public static int Version => 1;
 
-        public static int Version => ProtocolVersion;
-
-        public bool IsVersionSupported(int version)
+        public static bool IsVersionSupported(int version)
         {
             return version == Version;
         }
 
-        public static bool TryParseMessage(ref ReadOnlySequence<byte> input, out HubMessage message)
+        public static bool TryParseMessage(ref ReadOnlySequence<byte> input, out ServiceMessage message)
         {
             if (!BinaryMessageParser.TryParseMessage(ref input, out var payload))
             {
@@ -61,42 +67,161 @@ namespace Microsoft.Azure.SignalR
             return new ArraySegment<byte>(input.ToArray());
         }
 
-        private static HubMessage ParseMessage(byte[] input, int startOffset)
+        private static ServiceMessage ParseMessage(byte[] input, int startOffset)
         {
             using (var unpacker = Unpacker.Create(input, startOffset))
             {
-                var len = ReadArrayLength(unpacker, "elementCount");
-                var messageType = ReadInt32(unpacker, "messageType");
-                switch (messageType)
+                _ = ReadArrayLength(unpacker, "elementCount");
+
+                var command = ReadCommand(unpacker);
+                var arguments = ReadArguments(unpacker);
+
+                var payloads = ReadPayloads(unpacker);
+
+                return new ServiceMessage
                 {
-                    case AzureHubProtocolConstants.ServiceMessageType:
-                        return CreateServiceMessage(unpacker, len);
-                    case HubProtocolConstants.PingMessageType:
-                        return PingMessage.Instance;
-                    case HubProtocolConstants.CloseMessageType:
-                        return CreateCloseMessage(unpacker);
-                    default:
-                        throw new FormatException($"Invalid message type: {messageType}.");
-                }
+                    Command = command,
+                    Arguments = arguments,
+                    Payloads = payloads
+                };
             }
         }
 
-        private static ServiceMessage CreateServiceMessage(Unpacker unpacker, long len)
+        private static CommandType ReadCommand(Unpacker unpacker)
         {
-            var format = ReadInt32(unpacker, "messageformat");
-            var hubMessageWrapper = new ServiceMessage((TransferFormat)format);
-            hubMessageWrapper.InvocationType = (ServiceMessageType)ReadInt32(unpacker, "servicemessagetype");
-            var metadata = ReadHeaders(unpacker, "headers");
-            hubMessageWrapper.AddMetadata(metadata);
-            hubMessageWrapper.JsonPayload = ReadBinary(unpacker, "jsonpayload");
-            hubMessageWrapper.MsgpackPayload = ReadBinary(unpacker, "msgpackpayload");
-            return hubMessageWrapper;
+            return (CommandType)ReadInt16(unpacker, "command");
         }
 
-        private static CloseMessage CreateCloseMessage(Unpacker unpacker)
+        private static IDictionary<ArgumentType, string> ReadArguments(Unpacker unpacker)
         {
-            var error = ReadString(unpacker, "error");
-            return new CloseMessage(error);
+            var argumentCount = ReadMapLength(unpacker, "arguments");
+            if (argumentCount <= 0)
+            {
+                return null;
+            }
+
+            var arguments = new Dictionary<ArgumentType, string>((int)argumentCount);
+
+            for (var i = 0; i < argumentCount; i++)
+            {
+                var key = ReadString(unpacker, $"arguments[{i}].Key");
+                var value = ReadString(unpacker, $"arguments[{i}].Value");
+                if (Enum.TryParse<ArgumentType>(key, out var argumentType))
+                {
+                    arguments[argumentType] = value;
+                }
+            }
+            return arguments;
+        }
+
+        private static IDictionary<string, byte[]> ReadPayloads(Unpacker unpacker)
+        {
+            var payloadCount = ReadMapLength(unpacker, "payloads");
+            if (payloadCount <= 0)
+            {
+                return null;
+            }
+
+            var payloads = new Dictionary<string, byte[]>((int)payloadCount);
+
+            for (var i = 0; i < payloadCount; i++)
+            {
+                var key = ReadString(unpacker, $"payloads[{i}].Key");
+                var value = ReadBinary(unpacker, $"payloads[{i}].Value");
+                payloads[key] = value;
+            }
+            return payloads;
+        }
+
+        public static byte[] WriteToArray(ServiceMessage message)
+        {
+            var writer = MemoryBufferWriter.Get();
+            try
+            {
+                ServiceProtocol.WriteMessage(message, writer);
+                return writer.ToArray();
+            }
+            finally
+            {
+                MemoryBufferWriter.Return(writer);
+            }
+        }
+
+        public static void WriteMessage(ServiceMessage message, IBufferWriter<byte> output)
+        {
+            using (var stream = new LimitArrayPoolWriteStream())
+            {
+                // Write message to a buffer so we can get its length
+                WriteMessageCore(message, stream);
+                var buffer = stream.GetBuffer();
+
+                // Write length then message to output
+                BinaryMessageFormatter.WriteLengthPrefix(buffer.Count, output);
+                output.Write(buffer);
+            }
+        }
+
+        private static void WriteMessageCore(ServiceMessage message, Stream output)
+        {
+            // PackerCompatibilityOptions.None prevents from serializing byte[] as strings
+            // and allows extended objects
+            var packer = Packer.Create(output, PackerCompatibilityOptions.None);
+            packer.PackArrayHeader(3);
+            packer.Pack(message.Command);
+            PackArguments(packer, message.Arguments);
+            PackPayloads(packer, message.Payloads);
+        }
+
+        private static void PackArguments(Packer packer, IDictionary<ArgumentType, string> arguments)
+        {
+            if (arguments != null && arguments.Count > 0)
+            {
+                packer.PackMapHeader(arguments.Count);
+                foreach (var argument in arguments)
+                {
+                    packer.Pack(argument.Key);
+                    packer.PackString(argument.Value);
+                }
+            }
+            else
+            {
+                packer.PackMapHeader(0);
+            }
+        }
+
+        private static void PackPayloads(Packer packer, IDictionary<string, byte[]> payloads)
+        {
+            if (payloads != null && payloads.Count > 0)
+            {
+                packer.PackMapHeader(payloads.Count);
+                foreach (var payload in payloads)
+                {
+                    packer.PackString(payload.Key);
+                    packer.PackBinary(payload.Value);
+                }
+            }
+            else
+            {
+                packer.PackMapHeader(0);
+            }
+        }
+
+        private static int ReadInt16(Unpacker unpacker, string field)
+        {
+            Exception msgPackException = null;
+            try
+            {
+                if (unpacker.ReadInt16(out var value))
+                {
+                    return value;
+                }
+            }
+            catch (Exception e)
+            {
+                msgPackException = e;
+            }
+
+            throw new FormatException($"Reading '{field}' as Int32 failed.", msgPackException);
         }
 
         private static string ReadString(Unpacker unpacker, string field)
@@ -121,111 +246,25 @@ namespace Microsoft.Azure.SignalR
                 msgPackException = e;
             }
 
-            throw new FormatException($"Reading '{field}' as String failed.", msgPackException);
+            throw new InvalidDataException($"Reading '{field}' as String failed.", msgPackException);
         }
 
-        private static IDictionary<string, string> ReadHeaders(Unpacker unpacker, string field)
+        private static long ReadMapLength(Unpacker unpacker, string field)
         {
-            unpacker.ReadObject(out var obj);
-            if (obj.IsDictionary)
-            {
-                return obj.AsDictionary().ToDictionary(kvp => kvp.Key.AsString(), kvp => kvp.Value.ToString());
-            }
-            return new Dictionary<string, string>();
-        }
-
-        public static byte[] WriteToArray(HubMessage message)
-        {
-            var writer = MemoryBufferWriter.Get();
+            Exception msgPackException = null;
             try
             {
-                WriteMessage(message, writer);
-                return writer.ToArray();
+                if (unpacker.ReadMapLength(out var value))
+                {
+                    return value;
+                }
             }
-            finally
+            catch (Exception e)
             {
-                MemoryBufferWriter.Return(writer);
+                msgPackException = e;
             }
-        }
 
-        public static void WriteMessage(HubMessage message, IBufferWriter<byte> output)
-        {
-            using (var stream = new LimitArrayPoolWriteStream())
-            {
-                // Write message to a buffer so we can get its length
-                WriteMessageCore(message, stream);
-                var buffer = stream.GetBuffer();
-
-                // Write length then message to output
-                BinaryMessageFormatter.WriteLengthPrefix(buffer.Count, output);
-                output.Write(buffer);
-            }
-        }
-
-        private static void WriteMessageCore(HubMessage message, Stream output)
-        {
-            // PackerCompatibilityOptions.None prevents from serializing byte[] as strings
-            // and allows extended objects
-            var packer = Packer.Create(output, PackerCompatibilityOptions.None);
-            switch (message)
-            {
-                case ServiceMessage serviceMessage:
-                    ServiceMessage(serviceMessage, packer);
-                    break;
-                case PingMessage pingMessage:
-                    WritePingMessage(pingMessage, packer);
-                    break;
-                case CloseMessage closeMessage:
-                    WriteCloseMessage(closeMessage, packer);
-                    break;
-                default:
-                    throw new FormatException($"Unexpected message type: {message.GetType().Name}");
-            }
-        }
-
-        private static void ServiceMessage(ServiceMessage message, Packer packer)
-        {
-            packer.PackArrayHeader(6);
-            packer.Pack(AzureHubProtocolConstants.ServiceMessageType);
-            packer.Pack((int)(message.Format));
-            packer.Pack((int)(message.InvocationType));
-            packer.PackDictionary<string, string>(message.Headers);
-            if (message.JsonPayload != null)
-            {
-                packer.PackBinary(message.JsonPayload);
-            }
-            else
-            {
-                packer.PackNull();
-            }
-            if (message.MsgpackPayload != null)
-            {
-                packer.PackBinary(message.MsgpackPayload);
-            }
-            else
-            {
-                packer.PackNull();
-            }
-        }
-
-        private static void WritePingMessage(PingMessage pingMessage, Packer packer)
-        {
-            packer.PackArrayHeader(1);
-            packer.Pack(HubProtocolConstants.PingMessageType);
-        }
-
-        private static void WriteCloseMessage(CloseMessage message, Packer packer)
-        {
-            packer.PackArrayHeader(2);
-            packer.Pack(HubProtocolConstants.CloseMessageType);
-            if (string.IsNullOrEmpty(message.Error))
-            {
-                packer.PackNull();
-            }
-            else
-            {
-                packer.PackString(message.Error);
-            }
+            throw new InvalidDataException($"Reading map length for '{field}' failed.", msgPackException);
         }
 
         private static long ReadArrayLength(Unpacker unpacker, string field)
@@ -243,25 +282,7 @@ namespace Microsoft.Azure.SignalR
                 msgPackException = e;
             }
 
-            throw new FormatException($"Reading array length for '{field}' failed.", msgPackException);
-        }
-
-        private static int ReadInt32(Unpacker unpacker, string field)
-        {
-            Exception msgPackException = null;
-            try
-            {
-                if (unpacker.ReadInt32(out var value))
-                {
-                    return value;
-                }
-            }
-            catch (Exception e)
-            {
-                msgPackException = e;
-            }
-
-            throw new FormatException($"Reading '{field}' as Int32 failed.", msgPackException);
+            throw new InvalidDataException($"Reading array length for '{field}' failed.", msgPackException);
         }
 
         private static byte[] ReadBinary(Unpacker unpacker, string field)
@@ -286,7 +307,7 @@ namespace Microsoft.Azure.SignalR
                 msgPackException = e;
             }
 
-            throw new FormatException($"Reading '{field}' as byte[] failed.", msgPackException);
+            throw new InvalidDataException($"Reading '{field}' as byte[] failed.", msgPackException);
         }
     }
 }

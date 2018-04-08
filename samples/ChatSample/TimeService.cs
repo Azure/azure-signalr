@@ -32,16 +32,12 @@ namespace ChatSample
 
         private async Task Broadcast()
         {
-            var hubMessage = CreateInvocationMessage("broadcastMessage",
-                    new object[] { "_BROADCAST_", DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) });
-
-            await _hubProxy.Clients.All.SendAsync(_jsonProtocol.WriteToArray(hubMessage),
-                _msgpackProtocol.WriteToArray(hubMessage));
-        }
-
-        private InvocationMessage CreateInvocationMessage(string methodName, object[] args)
-        {
-            return new InvocationMessage(target: methodName, argumentBindingException: null, arguments: args);
+            await _hubProxy.Clients.All.SendAsync("broadcastMessage",
+                new object[]
+                {
+                    "_BROADCAST_",
+                    DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)
+                });
         }
     }
 }

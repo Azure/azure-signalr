@@ -11,9 +11,9 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Invokes a method on the connection(s) in Azure SignalR represented by the <see cref="IClientProxy"/> instance.
         /// </summary>
-        /// <param name="jsonPayload">content of serialized invocation through JSON protocol</param>
-        /// <param name="msgpackPayload">content of serialized invocation through MessagePack protocol</param>
+        /// <param name="method">name of the method to invoke</param>
+        /// <param name="args">arguments to pass to the client</param>
         /// <returns>A task that represents when the data has been sent to the client in SignalR service.</returns>
-        Task<HttpResponseMessage> SendAsync(byte[] jsonPayload, byte[] msgpackPayload);
+        Task<HttpResponseMessage> SendAsync(string method, object[] args);
     }
 }

@@ -13,6 +13,6 @@ namespace Microsoft.Azure.SignalR
 
         ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections { get; }
 
-        TransferFormat ClientTransferFormat(string connectionId);
+        string ClientProtocol(string connectionId);
     }
 }

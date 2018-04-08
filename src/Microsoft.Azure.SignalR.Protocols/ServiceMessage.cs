@@ -2,74 +2,55 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    public enum ServiceMessageType
+    public enum CommandType
     {
-        OnConnected = 1,
-        OnDisconnected = 2,
-        HubMessage = 3
+        // Service -> SDK
+        Ping = 0,
+        AddConnection,
+        RemoveConnection,
+        HubInvoke,
+        // SDK -> Service
+        AddConnectionToGroup,
+        RemoveConnectionFromGroup,
+        SendToConnection,
+        SendToConnections,
+        SendToAll,
+        SendToAllExcept,
+        SendToGroup,
+        SendToGroups,
+        SendToUser,
+        SendToUsers
     }
-    
-    public class ServiceMessage : HubMessage
+
+    public enum ArgumentType
     {
-        // TODO.
-        // Optimization: replace string key with int key.
-        // string key is only meaningful for read, but bad for performance
-        // see https://jacksondunstan.com/articles/2527
-        public const string ActionKeyName        = "action";
-        public const string ConnectionIdKeyName  = "connId";
-        public const string ConnectionIdsKeyName = "connIds";
-        public const string ClaimsKeyName        = "claims";
-        public const string ExcludedIdsKeyName   = "excluded";
-        public const string GroupNameKeyName     = "group";
-        public const string GroupNamesKeyName    = "groups";
-        public const string UsersKeyName         = "users";
-        public const string UserKeyName          = "user";
-        public const string TimestampKeyName     = "_ts";
+        ConnectionId = 0,
+        Claim,
+        Protocol,
+        ConnectionList,
+        GroupName,
+        GroupList,
+        UserId,
+        UserList,
+        ExcludedList
+    }
 
-        public TransferFormat Format { get; }
+    public class ServiceMessage
+    {
+        public CommandType Command { get; set; }
 
-        public ServiceMessageType InvocationType { get; set; }
+        public IDictionary<ArgumentType, string> Arguments { get; set; }
 
-        public byte[] JsonPayload { get; set; }
-
-        public byte[] MsgpackPayload { get; set; }
-
-        public IDictionary<string, string> Headers { get; } = new Dictionary<string, string>();
+        public IDictionary<string, byte[]> Payloads { get; set; }
 
         public ServiceMessage()
-            : this (TransferFormat.Binary)
-        {   
-        }
-
-        public ServiceMessage(TransferFormat format)
         {
-            Format = format;
-            InvocationType = ServiceMessageType.HubMessage;
-        }
-
-        // Write the payload according to the specified format
-        public void WritePayload(TransferFormat format, byte[] payload)
-        {
-            if (format == TransferFormat.Text)
-            {
-                JsonPayload = payload;
-            }
-            else
-            {
-                MsgpackPayload = payload;
-            }
-        }
-
-        // Read the non-null payload if only payload is non-null
-        // For example, the message from Service only contains one kind of payload.
-        public byte[] ReadPayload()
-        {
-            return JsonPayload != null ? JsonPayload : MsgpackPayload;
+            Command = CommandType.SendToConnection;
+            Payloads = new Dictionary<string, byte[]>();
+            Arguments = new Dictionary<ArgumentType, string>();
         }
     }
 }

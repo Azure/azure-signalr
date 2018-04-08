@@ -13,9 +13,9 @@ namespace Microsoft.Azure.SignalR
             ClientConnections = new ConcurrentDictionary<string, ServiceConnectionContext>();
         }
 
-        public TransferFormat ClientTransferFormat(string connectionId)
+        public string ClientProtocol(string connectionId)
         {
-            return ClientConnections[connectionId].TransferFormat;
+            return ClientConnections[connectionId].ProtocolName;
         }
 
         public void AddClientConnection(ServiceConnectionContext clientConnection)
