@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http.Connections;
@@ -13,7 +14,11 @@ using Microsoft.AspNetCore.Http.Features;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class ServiceConnectionContext : ConnectionContext
+    public class ServiceConnectionContext : ConnectionContext,
+                                            IConnectionUserFeature,
+                                            IConnectionItemsFeature,
+                                            IConnectionIdFeature,
+                                            IConnectionTransportFeature
     {
         public ServiceConnectionContext(ServiceMessage serviceMessage)
         {
@@ -37,6 +42,10 @@ namespace Microsoft.Azure.SignalR
             Features = new FeatureCollection();
             // Disable Ping for this virtual connection, set any TimeSpan is OK.
             Features.Set<IConnectionInherentKeepAliveFeature>(new ConnectionInherentKeepAliveFeature(TimeSpan.FromSeconds(90)));
+            Features.Set<IConnectionUserFeature>(this);
+            Features.Set<IConnectionItemsFeature>(this);
+            Features.Set<IConnectionIdFeature>(this);
+            Features.Set<IConnectionTransportFeature>(this);
         }
 
         public override string ConnectionId { get; set; }
@@ -50,5 +59,8 @@ namespace Microsoft.Azure.SignalR
         public IDuplexPipe Application { get; set; }
 
         public string ProtocolName { get; set; }
+
+        public ClaimsPrincipal User { get ; set; }
+
     }
 }
