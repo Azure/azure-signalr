@@ -11,90 +11,90 @@ namespace Microsoft.Azure.SignalR
     {
         private const int ProxyPort = 5002;
 
-        public static ClientProxy CreateAllClientsProxy(string endpoint, string apiVersion, string accessKey,
+        public static ClientProxy CreateAllClientsProxy(IHubMessageSender hubMessageSender, string endpoint, string apiVersion, string accessKey,
             string hubName)
         {
-            return InternalCreateClientProxy(
+            return InternalCreateClientProxy(hubMessageSender,
                 GetBaseUrl(endpoint, apiVersion, hubName),
                 accessKey, hubName);
         }
 
-        public static ClientProxy CreateAllClientsExceptProxy(string endpoint, string apiVersion, string accessKey,
+        public static ClientProxy CreateAllClientsExceptProxy(IHubMessageSender hubMessageSender, string endpoint, string apiVersion, string accessKey,
             string hubName, IReadOnlyList<string> excludedIds)
         {
-            return InternalCreateClientProxy(
+            return InternalCreateClientProxy(hubMessageSender,
                 GetBaseUrl(endpoint, apiVersion, hubName),
                 accessKey, hubName, excludedIds);
         }
 
-        public static ClientProxy CreateSingleClientProxy(string endpoint, string apiVersion, string accessKey,
+        public static ClientProxy CreateSingleClientProxy(IHubMessageSender hubMessageSender, string endpoint, string apiVersion, string accessKey,
             string hubName, string connectionId)
         {
-            return InternalCreateClientProxy(
+            return InternalCreateClientProxy(hubMessageSender,
                 $"{GetBaseUrl(endpoint, apiVersion, hubName)}/connection/{connectionId}",
                 accessKey, hubName);
         }
 
-        public static ClientProxy CreateMultipleClientProxy(string endpoint, string apiVersion, string accessKey,
+        public static ClientProxy CreateMultipleClientProxy(IHubMessageSender hubMessageSender, string endpoint, string apiVersion, string accessKey,
             string hubName, IReadOnlyList<string> connectionIds)
         {
-            return InternalCreateClientProxy(
+            return InternalCreateClientProxy(hubMessageSender,
                 $"{GetBaseUrl(endpoint, apiVersion, hubName)}/connections/{string.Join(",", connectionIds)}",
                 accessKey, hubName);
         }
 
-        public static ClientProxy CreateSingleUserProxy(string endpoint, string apiVersion, string accessKey,
+        public static ClientProxy CreateSingleUserProxy(IHubMessageSender hubMessageSender, string endpoint, string apiVersion, string accessKey,
             string hubName, string userId)
         {
-            return InternalCreateClientProxy(
+            return InternalCreateClientProxy(hubMessageSender,
                 $"{GetBaseUrl(endpoint, apiVersion, hubName)}/user/{userId}",
                 accessKey, hubName);
         }
 
-        public static ClientProxy CreateMultipleUserProxy(string endpoint, string apiVersion, string accessKey,
+        public static ClientProxy CreateMultipleUserProxy(IHubMessageSender hubMessageSender, string endpoint, string apiVersion, string accessKey,
             string hubName, IReadOnlyList<string> userIds)
         {
-            return InternalCreateClientProxy(
+            return InternalCreateClientProxy(hubMessageSender,
                 $"{GetBaseUrl(endpoint, apiVersion, hubName)}/users/{string.Join(",", userIds)}",
                 accessKey, hubName);
         }
 
-        public static ClientProxy CreateSingleGroupProxy(string endpoint, string apiVersion, string accessKey,
+        public static ClientProxy CreateSingleGroupProxy(IHubMessageSender hubMessageSender, string endpoint, string apiVersion, string accessKey,
             string hubName, string groupName)
         {
-            return InternalCreateClientProxy(
+            return InternalCreateClientProxy(hubMessageSender,
                 $"{GetBaseUrl(endpoint, apiVersion, hubName)}/group/{groupName}",
                 accessKey, hubName);
         }
 
-        public static ClientProxy CreateMultipleGroupProxy(string endpoint, string apiVersion, string accessKey,
+        public static ClientProxy CreateMultipleGroupProxy(IHubMessageSender hubMessageSender, string endpoint, string apiVersion, string accessKey,
             string hubName, IReadOnlyList<string> groupNames)
         {
-            return InternalCreateClientProxy(
+            return InternalCreateClientProxy(hubMessageSender,
                 $"{GetBaseUrl(endpoint, apiVersion, hubName)}/groups/{string.Join(",", groupNames)}",
                 accessKey, hubName);
         }
 
-        public static ClientProxy CreateSingleGroupExceptProxy(string endpoint, string apiVersion, string accessKey,
+        public static ClientProxy CreateSingleGroupExceptProxy(IHubMessageSender hubMessageSender, string endpoint, string apiVersion, string accessKey,
             string hubName, string groupName, IReadOnlyList<string> excludedIds)
         {
-            return InternalCreateClientProxy(
+            return InternalCreateClientProxy(hubMessageSender,
                 $"{GetBaseUrl(endpoint, apiVersion, hubName)}/group/{groupName}",
                 accessKey, hubName, excludedIds);
         }
 
-        private static string GetBaseUrl(string endpoint, string apiVersion, string hubName)
+        public static string GetBaseUrl(string endpoint, string apiVersion, string hubName)
         {
             return $"{endpoint}:{ProxyPort}/{apiVersion}/hub/{hubName}";
         }
 
-        private static ClientProxy InternalCreateClientProxy(string url, string accessKey, string hubName,
+        private static ClientProxy InternalCreateClientProxy(IHubMessageSender hubMessageSender, string url, string accessKey, string hubName,
             IReadOnlyList<string> excludedIds = null)
         {
-            return new ClientProxy(url, () => GenerateAccessToken(url, accessKey, hubName), excludedIds);
+            return new ClientProxy(hubMessageSender, url, () => GenerateAccessToken(url, accessKey, hubName), excludedIds);
         }
 
-        private static string GenerateAccessToken(string audience, string accessKey, string hubName)
+        public static string GenerateAccessToken(string audience, string accessKey, string hubName)
         {
             var name = $"HubProxy[{hubName}]";
             return AuthenticationHelper.GenerateJwtBearer(

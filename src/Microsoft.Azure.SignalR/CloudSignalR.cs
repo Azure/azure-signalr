@@ -5,24 +5,21 @@ using System;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Internal;
-using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Azure.SignalR
 {
     public class CloudSignalR
     {
+        private const string EndpointProperty = "endpoint";
+        private const string AccessKeyProperty = "accesskey";
+
         public class ConnectionString
         {
             public string Endpoint { get; set; }
 
             public string AccessKey { get; set; }
         }
-
-        private const string EndpointProperty = "endpoint";
-        private const string AccessKeyProperty = "accesskey";
 
         public static ConnectionString ParseConnectionString(string connectionString)
         {
@@ -76,7 +73,8 @@ namespace Microsoft.Azure.SignalR
         public static HubProxy CreateHubProxyFromConnectionString(string connectionString, string hubName, HubProxyOptions options)
         {
             var connStr = ParseConnectionString(connectionString);
-            return new HubProxy(connStr.Endpoint, connStr.AccessKey, hubName);
+            var hubMessageSender = ServiceProvider.GetRequiredService<IHubMessageSender>();
+            return new HubProxy(hubMessageSender, connStr.Endpoint, connStr.AccessKey, hubName);
         }
 
         public static void ConfigureAuthorization(Action<AuthorizationOptions> configure)
@@ -93,8 +91,7 @@ namespace Microsoft.Azure.SignalR
                 () =>
                 {
                     var serviceCollection = new ServiceCollection();
-                    var signalRServerBuilder = serviceCollection.AddSignalR()
-                                                                .AddAzureSignalR();
+                    var signalRServerBuilder = serviceCollection.AddSignalR().AddAzureSignalR();
                     signalRServerBuilder.Services.AddLogging();
                     signalRServerBuilder.Services.AddAuthorization(_authorizationConfigure);
                     return signalRServerBuilder.Services.BuildServiceProvider();

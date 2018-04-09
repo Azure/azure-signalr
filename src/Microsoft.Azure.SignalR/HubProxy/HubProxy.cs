@@ -8,11 +8,11 @@ namespace Microsoft.Azure.SignalR
 {
     public class HubProxy
     {
-        public HubProxy(string endpoint, string accessKey, string hubName) : this(endpoint, accessKey, hubName, null)
+        public HubProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey, string hubName) : this(hubMessageSender, endpoint, accessKey, hubName, null)
         {
         }
 
-        public HubProxy(string endpoint, string accessKey, string hubName, HubProxyOptions options)
+        public HubProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey, string hubName, HubProxyOptions options)
         {
             if (string.IsNullOrEmpty(endpoint))
             {
@@ -29,8 +29,8 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            Clients = new HubClientsProxy(endpoint, accessKey, hubName, options);
-            Groups = new GroupManagerProxy(endpoint, accessKey, hubName, options);
+            Clients = new HubClientsProxy(hubMessageSender, endpoint, accessKey, hubName, options);
+            Groups = new GroupManagerProxy(hubMessageSender, endpoint, accessKey, hubName, options);
 
             HubName = hubName.ToLower();
         }

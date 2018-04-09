@@ -15,7 +15,6 @@ namespace Microsoft.Azure.SignalR
 {
     public class HubHostLifetimeManager<THub> : HubLifetimeManager<THub> where THub : Hub
     {
-        //private readonly HubGroupList _groups = new HubGroupList();
         private readonly ILogger<HubHostLifetimeManager<THub>> _logger;
         private readonly IReadOnlyList<IHubProtocol> _allProtocols;
 

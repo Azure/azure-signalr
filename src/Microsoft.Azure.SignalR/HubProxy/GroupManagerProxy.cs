@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
         private readonly string _baseUri;
         private readonly string _accessKey;
 
-        public GroupManagerProxy(string endpoint, string accessKey, string hubName, HubProxyOptions options)
+        public GroupManagerProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey, string hubName, HubProxyOptions options)
         {
             if (string.IsNullOrEmpty(endpoint))
             {

@@ -14,8 +14,6 @@ namespace Microsoft.Azure.SignalR
 {
     public class ServiceConnection
     {
-        // Only Binary TransferFormat is supported for SDK and service
-        private readonly TransferFormat _transferFormat = TransferFormat.Binary;
         private HttpConnection _httpConnection;
         private IClientConnectionManager _clientConnectionManager;
         private ConnectionDelegate _connectionDelegate;
@@ -31,7 +29,7 @@ namespace Microsoft.Azure.SignalR
         public async Task StartAsync(ConnectionDelegate connectionDelegate)
         {
             _connectionDelegate = connectionDelegate;
-            await _httpConnection.StartAsync(_transferFormat);
+            await _httpConnection.StartAsync(TransferFormat.Binary);
             await HandshakeAsync();
             _ = ProcessIncomingAsync();
         }
@@ -45,10 +43,7 @@ namespace Microsoft.Azure.SignalR
                 await _serviceConnectionLock.WaitAsync();
 
                 // Write the service protocol message
-                var bytes = ServiceProtocol.WriteToArray(serviceMessage);
-
-                _httpConnection.Transport.Output.Write(bytes);
-                await _httpConnection.Transport.Output.FlushAsync();
+                ServiceProtocol.WriteMessage(serviceMessage, _httpConnection.Transport.Output);
             }
             finally
             {
@@ -90,7 +85,7 @@ namespace Microsoft.Azure.SignalR
                                 await OnDisconnectedAsync(message);
                                 break;
                             default:
-                                _ = OnSignalRHubCallAsync(message);
+                                _ = OnMessageAsync(message);
                                 break;
                         }
                     }
@@ -105,7 +100,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task ProcessOutgoingAckAsync(ServiceConnectionContext connection)
+        private async Task ProcessOutgoingMessagesAsync(ServiceConnectionContext connection)
         {
             await ProcessHandshakeResponseAsync(connection.Application);
 
@@ -196,7 +191,7 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionManager.AddClientConnection(connection);
 
             // Start receiving
-            _ = ProcessOutgoingAckAsync(connection);
+            _ = ProcessOutgoingMessagesAsync(connection);
             // This is a bit hacky, we can look at how to work around this
             // We need to do fake in memory handshake between this code and the 
             // HubConnectionHandler to set the protocol
@@ -223,7 +218,7 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        private async Task OnSignalRHubCallAsync(ServiceMessage message)
+        private async Task OnMessageAsync(ServiceMessage message)
         {
             if (_clientConnectionManager.ClientConnections.TryGetValue(message.GetConnectionId(), out var connection))
             {
