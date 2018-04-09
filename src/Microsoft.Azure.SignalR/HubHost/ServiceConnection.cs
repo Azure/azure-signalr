@@ -90,7 +90,7 @@ namespace Microsoft.Azure.SignalR
                                 await OnDisconnectedAsync(message);
                                 break;
                             default:
-                                await OnSignalRHubCallAsync(message);
+                                _ = OnSignalRHubCallAsync(message);
                                 break;
                         }
                     }
@@ -201,14 +201,7 @@ namespace Microsoft.Azure.SignalR
             // We need to do fake in memory handshake between this code and the 
             // HubConnectionHandler to set the protocol
             HandshakeRequestMessage handshakeRequest;
-            if (string.Equals(message.GetProtocol(), MessagePackHubProtocol.ProtocolName, StringComparison.Ordinal))
-            {
-                handshakeRequest = new HandshakeRequestMessage(MessagePackHubProtocol.ProtocolName, MessagePackHubProtocol.ProtocolVersion);
-            }
-            else
-            {
-                handshakeRequest = new HandshakeRequestMessage(JsonHubProtocol.ProtocolName, JsonHubProtocol.ProtocolVersion);
-            }
+            handshakeRequest = new HandshakeRequestMessage(message.GetProtocolName(), message.GetProtocolVersion());
             HandshakeProtocol.WriteRequestMessage(handshakeRequest, connection.Application.Output);
             
             var sendHandshakeResult = await connection.Application.Output.FlushAsync(CancellationToken.None);
@@ -235,8 +228,7 @@ namespace Microsoft.Azure.SignalR
             if (_clientConnectionManager.ClientConnections.TryGetValue(message.GetConnectionId(), out var connection))
             {
                 // Write the raw connection payload to the pipe let the upstream handle it
-                _ = connection.Application.Output.WriteAsync(message.Payloads[connection.ProtocolName]);
-                await connection.Application.Output.FlushAsync();
+                await connection.Application.Output.WriteAsync(message.Payloads[connection.ProtocolName]);
             }
             else
             {

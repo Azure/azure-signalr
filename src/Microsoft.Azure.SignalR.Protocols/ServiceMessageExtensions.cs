@@ -1,11 +1,21 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using System.Security.Claims;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR
 {
     public static class ServiceMessageExtensions
     {
+        public static TMessage AddClaims<TMessage>(this TMessage message, IEnumerable<Claim> claims) where TMessage : ServiceMessage
+        {
+            return message.AddOrUpdateArguments(ArgumentType.Claim, JsonConvert.SerializeObject(claims.Select(ClaimEntry.FromClaim)));
+        }
+
         public static TMessage AddConnectionId<TMessage>(this TMessage message, string connectionId) where TMessage : ServiceMessage
         {
             return message.AddOrUpdateArguments(ArgumentType.ConnectionId, connectionId);
@@ -28,6 +38,12 @@ namespace Microsoft.Azure.SignalR
                 message.Payloads.Add(protocolName, payload);
             }
             return message;
+        }
+
+        public static TMessage AddProtocol<TMessage>(this TMessage message, string protocolName, int protocolVersion) where TMessage : ServiceMessage
+        {
+            return message.AddOrUpdateArguments(ArgumentType.ProtocolName, protocolName)
+                          .AddOrUpdateArguments(ArgumentType.ProtocolVersion, Convert.ToString(protocolVersion));
         }
 
         public static TMessage AddOrUpdateArguments<TMessage>(this TMessage message, ArgumentType argumentType, string value) where TMessage : ServiceMessage
@@ -86,6 +102,20 @@ namespace Microsoft.Azure.SignalR
             return message.AddOrUpdateArguments(ArgumentType.UserList, string.Join(",", userIds));
         }
 
+        public static TMessage CreateAddConnection<TMessage>(this TMessage message, string connectionId, string protocolName, int protocolVersion, IEnumerable<Claim> claims) where TMessage : ServiceMessage
+        {
+            message.Command = CommandType.AddConnection;
+            return message.AddConnectionId(connectionId)
+                          .AddClaims(claims)
+                          .AddProtocol(protocolName, protocolVersion);
+        }
+
+        public static TMessage CreateRemoveConnection<TMessage>(this TMessage message, string connectionId) where TMessage : ServiceMessage
+        {
+            message.Command = CommandType.RemoveConnection;
+            return message.AddConnectionId(connectionId);
+        }
+
         public static TMessage CreateSendConnection<TMessage>(this TMessage message, string connectionId, string protocolName, byte[] payload) where TMessage : ServiceMessage
         {
             return message.AddSendConnection(connectionId)
@@ -115,13 +145,79 @@ namespace Microsoft.Azure.SignalR
             return null;
         }
 
-        public static string GetProtocol<TMessage>(this TMessage message) where TMessage : ServiceMessage
+        public static string GetProtocolName<TMessage>(this TMessage message) where TMessage : ServiceMessage
         {
-            if (message.Arguments.TryGetValue(ArgumentType.Protocol, out string value))
+            if (message.Arguments.TryGetValue(ArgumentType.ProtocolName, out string value))
             {
                 return value;
             }
             return null;
+        }
+
+        public static int GetProtocolVersion<TMessage>(this TMessage message) where TMessage : ServiceMessage
+        {
+            if (message.Arguments.TryGetValue(ArgumentType.ProtocolName, out string value))
+            {
+                return Int16.Parse(value);
+            }
+            return default;
+        }
+
+        public static bool TryGetConnectionId<TMessage>(this TMessage message, out string connectionId) where TMessage : ServiceMessage
+        {
+            return message.Arguments.TryGetValue(ArgumentType.ConnectionId, out connectionId);
+        }
+
+        public static bool TryGetConnectionIds<TMessage>(this TMessage message, out IReadOnlyList<string> list) where TMessage : ServiceMessage
+        {
+            return message.TryGetList(ArgumentType.ConnectionList, out list);
+        }
+
+        public static bool TryGetExcludedIds<TMessage>(this TMessage message, out IReadOnlyList<string> list) where TMessage : ServiceMessage
+        {
+            return message.TryGetList(ArgumentType.ExcludedList, out list);
+        }
+
+        public static bool TryGetGroupName<TMessage>(this TMessage message, out string value) where TMessage : ServiceMessage
+        {
+            if (message.Arguments.TryGetValue(ArgumentType.GroupName, out value))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public static bool TryGetGroupNames<TMessage>(this TMessage message, out IReadOnlyList<string> list) where TMessage : ServiceMessage
+        {
+            return message.TryGetList(ArgumentType.GroupList, out list);
+        }
+
+        public static bool TryGetUser<TMessage>(this TMessage message, out string value) where TMessage : ServiceMessage
+        {
+            return message.Arguments.TryGetValue(ArgumentType.UserId, out value);
+        }
+
+        public static bool TryGetUsers<TMessage>(this TMessage message, out IReadOnlyList<string> list) where TMessage : ServiceMessage
+        {
+            return message.TryGetList(ArgumentType.UserList, out list);
+        }
+
+        private static bool TryGetListValues<TMessage>(this TMessage message, ArgumentType argumentType, out string listStr) where TMessage : ServiceMessage
+        {
+            if (message.Arguments.TryGetValue(argumentType, out listStr))
+            {
+                return true;
+            }
+            return false;
+        }
+
+
+        private static bool TryGetList<TMessage>(this TMessage message, ArgumentType key, out IReadOnlyList<string> list) where TMessage : ServiceMessage
+        {
+            list = message.TryGetListValues(key, out var value)
+                ? new List<string>(value.Split(','))
+                : null;
+            return list != null;
         }
     }
 }

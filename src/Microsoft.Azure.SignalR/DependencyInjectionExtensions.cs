@@ -9,18 +9,16 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class AzureSignalRDependencyInjectionExtensions
     {
-        public static IServiceCollection AddAzureSignalR(this IServiceCollection services,
+        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder,
             Action<HubHostOptions> configure = null)
         {
-            if (configure != null) services.Configure(configure);
+            if (configure != null) builder.Services.Configure(configure);
 
-            services.AddSignalR().AddMessagePackProtocol();
-
-            services.AddSingleton(typeof(HubLifetimeManager<>), typeof(HubHostLifetimeManager<>));
-            services.AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager));
-            services.AddSingleton(typeof(IServiceConnectionManager), typeof(ServiceConnectionManager));
-            services.AddSingleton(typeof(HubHost<>));
-            return services;
+            builder.Services.AddSingleton(typeof(HubLifetimeManager<>), typeof(HubHostLifetimeManager<>));
+            builder.Services.AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager));
+            builder.Services.AddSingleton(typeof(IServiceConnectionManager), typeof(ServiceConnectionManager));
+            builder.Services.AddSingleton(typeof(HubHost<>));
+            return builder;
         }
     }
 }

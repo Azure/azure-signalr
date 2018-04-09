@@ -93,12 +93,11 @@ namespace Microsoft.Azure.SignalR
                 () =>
                 {
                     var serviceCollection = new ServiceCollection();
-
-                    serviceCollection.AddLogging();
-                    serviceCollection.AddAuthorization(_authorizationConfigure);
-                    serviceCollection.AddAzureSignalR();
-
-                    return serviceCollection.BuildServiceProvider();
+                    var signalRServerBuilder = serviceCollection.AddSignalR()
+                                                                .AddAzureSignalR();
+                    signalRServerBuilder.Services.AddLogging();
+                    signalRServerBuilder.Services.AddAuthorization(_authorizationConfigure);
+                    return signalRServerBuilder.Services.BuildServiceProvider();
                 });
 
         public static IServiceProvider ServiceProvider

@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR
         public ServiceConnectionContext(ServiceMessage serviceMessage)
         {
             ConnectionId = serviceMessage.GetConnectionId();
-            ProtocolName = serviceMessage.GetProtocol();
+            ProtocolName = serviceMessage.GetProtocolName();
 
             // Create the Duplix Pipeline for the virtual connection
             var options = new HttpConnectionOptions();

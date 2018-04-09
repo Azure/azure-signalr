@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="MsgPack.Cli" Version="$(MsgPackCliPackageVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="$(MicrosoftAspNetCoreSignalRCommonPackageVersion)" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersPackageVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryPackageVersion)" />
   </ItemGroup>
 </Project>

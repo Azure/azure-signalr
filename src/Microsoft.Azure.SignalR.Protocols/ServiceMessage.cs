@@ -29,7 +29,8 @@ namespace Microsoft.Azure.SignalR
     {
         ConnectionId = 0,
         Claim,
-        Protocol,
+        ProtocolName,
+        ProtocolVersion,
         ConnectionList,
         GroupName,
         GroupList,

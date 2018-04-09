@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Internal.Protocol;
@@ -18,21 +17,20 @@ namespace Microsoft.Azure.SignalR
     {
         //private readonly HubGroupList _groups = new HubGroupList();
         private readonly ILogger<HubHostLifetimeManager<THub>> _logger;
-        // Protocol Reader/Writer shared between all HubConnectionContexts
-        private readonly IHubProtocol _jsonProtocol;
-        private readonly IHubProtocol _messagePackProtocol;
+        private readonly IReadOnlyList<IHubProtocol> _allProtocols;
 
         private long _nextInvocationId;
         private string InvocationId => Interlocked.Increment(ref _nextInvocationId).ToString();
         private IServiceConnectionManager _serviceConnectionManager;
         private IClientConnectionManager _clientConnectionManager;
 
-        public HubHostLifetimeManager(IServiceConnectionManager serviceConnectionManager, IClientConnectionManager clientConnectionManager, IHubProtocolResolver protocolResolver, ILogger<HubHostLifetimeManager<THub>> logger)
+        public HubHostLifetimeManager(IServiceConnectionManager serviceConnectionManager,
+            IClientConnectionManager clientConnectionManager,
+            IHubProtocolResolver protocolResolver, ILogger<HubHostLifetimeManager<THub>> logger)
         {
             _serviceConnectionManager = serviceConnectionManager;
             _clientConnectionManager = clientConnectionManager;
-            _jsonProtocol = protocolResolver.GetProtocol(JsonHubProtocol.ProtocolName, null);
-            _messagePackProtocol = protocolResolver.GetProtocol(MessagePackHubProtocol.ProtocolName, null);
+            _allProtocols = protocolResolver.AllProtocols;
             _logger = logger;
         }
 
@@ -86,15 +84,6 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            // Do we need to validate the sender has joined the Group?
-            // Suppose that is the developer's responsibility. So, I removed the group validation.
-            //
-            // Consider there are 2 SDK servers and 10 clients.
-            // If 5 of clients join the same group, for example, groupA, and the 5 clients are routed to the same SDK server,
-            // any of other client will see error if they want to send message to groupA.
-            // But if 2 of clients are routed to SDK server1, the other 3 clients are routed to SDK server2,
-            // then the other 5 clients can send to groupA even though they did not join groupA.
-
             var serviceMessage = new ServiceMessage().AddSendGroup(groupName);
             return SerializeAllProtocolsAndSendAsync(serviceMessage, methodName, args);
         }
@@ -102,7 +91,7 @@ namespace Microsoft.Azure.SignalR
         public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args)
         {
             if (IsInvalidListArgument(nameof(groupNames), groupNames)) return Task.CompletedTask;
-            // Shall we validate group? The same issue as above.
+
             var serviceMessage = new ServiceMessage().AddSendGroups(groupNames);
             return SerializeAllProtocolsAndSendAsync(serviceMessage, methodName, args);
         }
@@ -184,13 +173,13 @@ namespace Microsoft.Azure.SignalR
             if (method != null)
             {
                 var message = CreateInvocationMessage(method, args);
-                if (string.Equals(protocol, MessagePackHubProtocol.ProtocolName, StringComparison.Ordinal))
+                foreach (var hubProtocol in _allProtocols)
                 {
-                    serviceMessage.AddPayload(protocol, _messagePackProtocol.WriteToArray(message));
-                }
-                else
-                {
-                    serviceMessage.AddPayload(protocol, _jsonProtocol.WriteToArray(message));
+                    if (string.Equals(hubProtocol.Name, protocol, StringComparison.Ordinal))
+                    {
+                        serviceMessage.AddPayload(protocol, hubProtocol.WriteToArray(message));
+                        break;
+                    }
                 }
             }
             return serviceMessage;
@@ -201,8 +190,10 @@ namespace Microsoft.Azure.SignalR
             if (method != null)
             {
                 var message = CreateInvocationMessage(method, args);
-                serviceMessage.AddPayload(_jsonProtocol.Name, _jsonProtocol.WriteToArray(message));
-                serviceMessage.AddPayload(_messagePackProtocol.Name, _messagePackProtocol.WriteToArray(message));
+                foreach (var hubProtocol in _allProtocols)
+                {
+                    serviceMessage.AddPayload(hubProtocol.Name, hubProtocol.WriteToArray(message));
+                }
             }
             return serviceMessage;
         }

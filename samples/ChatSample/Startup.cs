@@ -30,7 +30,9 @@ namespace ChatSample
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
-            services.AddAzureSignalR();
+            services.AddSignalR()
+                    .AddAzureSignalR()
+                    .AddMessagePackProtocol();
 
             var connStr = Configuration["AzureSignalR:ConnectionString"];
             services.AddSingleton(typeof(TokenProvider),

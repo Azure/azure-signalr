@@ -20,6 +20,8 @@
     <MicrosoftAzureKeyVaultPackageVersion>2.3.2</MicrosoftAzureKeyVaultPackageVersion>
     <MsgPackCliPackageVersion>1.0.0-rc</MsgPackCliPackageVersion>
     <OwinPackageVersion>1.0</OwinPackageVersion>
+    <SystemBuffersPackageVersion>4.5.0-preview3-26331-02</SystemBuffersPackageVersion>
+    <SystemMemoryPackageVersion>4.5.0-preview3-26331-02</SystemMemoryPackageVersion>
     <!-- Samples -->
     <MicrosoftAspNetCoreHostingPackageVersion>2.1.0-preview3-32162</MicrosoftAspNetCoreHostingPackageVersion>
     <MicrosoftAspNetCoreMvcPackageVersion>2.1.0-preview3-32162</MicrosoftAspNetCoreMvcPackageVersion>
