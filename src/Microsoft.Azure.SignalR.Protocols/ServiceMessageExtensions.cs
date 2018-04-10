@@ -42,8 +42,13 @@ namespace Microsoft.Azure.SignalR
 
         public static TMessage AddProtocol<TMessage>(this TMessage message, string protocolName, int protocolVersion) where TMessage : ServiceMessage
         {
-            return message.AddOrUpdateArguments(ArgumentType.ProtocolName, protocolName)
+            return message.AddProtocolName(protocolName)
                           .AddOrUpdateArguments(ArgumentType.ProtocolVersion, Convert.ToString(protocolVersion));
+        }
+
+        public static TMessage AddProtocolName<TMessage>(this TMessage message, string protocolName) where TMessage : ServiceMessage
+        {
+            return message.AddOrUpdateArguments(ArgumentType.ProtocolName, protocolName);
         }
 
         public static TMessage AddOrUpdateArguments<TMessage>(this TMessage message, ArgumentType argumentType, string value) where TMessage : ServiceMessage
@@ -156,7 +161,7 @@ namespace Microsoft.Azure.SignalR
 
         public static int GetProtocolVersion<TMessage>(this TMessage message) where TMessage : ServiceMessage
         {
-            if (message.Arguments.TryGetValue(ArgumentType.ProtocolName, out string value))
+            if (message.Arguments.TryGetValue(ArgumentType.ProtocolVersion, out string value))
             {
                 return Int16.Parse(value);
             }

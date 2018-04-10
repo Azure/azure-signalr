@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR
             }
         };
 
-        public static readonly string Name = "messagepackwrapper";
+        public static readonly string Name = "ServiceProtocol";
         
         public SerializationContext SerializationContext { get; } = DefaultSerializationContext;
 
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.SignalR
 
         private static CommandType ReadCommand(Unpacker unpacker)
         {
-            return (CommandType)ReadInt16(unpacker, "command");
+            return (CommandType)ReadInt32(unpacker, "command");
         }
 
         private static IDictionary<ArgumentType, string> ReadArguments(Unpacker unpacker)
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.SignalR
             // and allows extended objects
             var packer = Packer.Create(output, PackerCompatibilityOptions.None);
             packer.PackArrayHeader(3);
-            packer.Pack(message.Command);
+            packer.Pack((int)(message.Command));
             PackArguments(packer, message.Arguments);
             PackPayloads(packer, message.Payloads);
         }
@@ -204,12 +204,12 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private static int ReadInt16(Unpacker unpacker, string field)
+        private static int ReadInt32(Unpacker unpacker, string field)
         {
             Exception msgPackException = null;
             try
             {
-                if (unpacker.ReadInt16(out var value))
+                if (unpacker.ReadInt32(out var value))
                 {
                     return value;
                 }

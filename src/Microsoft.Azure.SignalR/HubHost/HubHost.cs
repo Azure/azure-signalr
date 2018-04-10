@@ -78,7 +78,7 @@ namespace Microsoft.Azure.SignalR
         private ServiceConnection CreateServiceConnection(Uri serviceUrl, HttpOptions httpOptions)
         {
             var httpConnection = new HttpConnection(serviceUrl, HttpTransportType.WebSockets, _loggerFactory, httpOptions);
-            return new ServiceConnection(_clientConnectionManager, serviceUrl, httpConnection);
+            return new ServiceConnection(_clientConnectionManager, serviceUrl, httpConnection, _loggerFactory);
         }
     }
 }

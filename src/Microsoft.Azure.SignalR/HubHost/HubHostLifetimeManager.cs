@@ -171,6 +171,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (method != null)
             {
+                serviceMessage.AddProtocolName(protocol);
                 var message = CreateInvocationMessage(method, args);
                 foreach (var hubProtocol in _allProtocols)
                 {

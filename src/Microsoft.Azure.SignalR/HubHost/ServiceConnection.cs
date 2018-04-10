@@ -9,21 +9,28 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR.Internal.Protocol;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
     public class ServiceConnection
     {
+        public static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
+
         private HttpConnection _httpConnection;
         private IClientConnectionManager _clientConnectionManager;
         private ConnectionDelegate _connectionDelegate;
         private SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
+        private readonly ILogger<ServiceConnection> _logger;
+
+        public TimeSpan HandshakeTimeout { get; set; } = DefaultHandshakeTimeout;
 
         public ServiceConnection(IClientConnectionManager clientConnectionManager,
-            Uri serviceUrl, HttpConnection httpConnection)
+            Uri serviceUrl, HttpConnection httpConnection, ILoggerFactory loggerFactory)
         {
             _clientConnectionManager = clientConnectionManager;
             _httpConnection = httpConnection;
+            _logger = loggerFactory.CreateLogger<ServiceConnection>();
         }
         
         public async Task StartAsync(ConnectionDelegate connectionDelegate)
@@ -31,6 +38,7 @@ namespace Microsoft.Azure.SignalR
             _connectionDelegate = connectionDelegate;
             await _httpConnection.StartAsync(TransferFormat.Binary);
             await HandshakeAsync();
+            _logger.LogDebug("Finish handshake with service");
             _ = ProcessIncomingAsync();
         }
 
@@ -44,6 +52,7 @@ namespace Microsoft.Azure.SignalR
 
                 // Write the service protocol message
                 ServiceProtocol.WriteMessage(serviceMessage, _httpConnection.Transport.Output);
+                await _httpConnection.Transport.Output.FlushAsync(CancellationToken.None);
             }
             finally
             {
@@ -72,31 +81,43 @@ namespace Microsoft.Azure.SignalR
                 var result = await _httpConnection.Transport.Input.ReadAsync();
                 var buffer = result.Buffer;
 
-                if (!buffer.IsEmpty)
+                try
                 {
-                    while (ServiceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
+                    if (!buffer.IsEmpty)
                     {
-                        switch (message.Command)
+                        _logger.LogDebug("message received from service");
+                        while (ServiceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
                         {
-                            case CommandType.AddConnection:
-                                await OnConnectedAsync(message);
-                                break;
-                            case CommandType.RemoveConnection:
-                                await OnDisconnectedAsync(message);
-                                break;
-                            default:
-                                _ = OnMessageAsync(message);
-                                break;
+                            switch (message.Command)
+                            {
+                                case CommandType.AddConnection:
+                                    await OnConnectedAsync(message);
+                                    break;
+                                case CommandType.RemoveConnection:
+                                    await OnDisconnectedAsync(message);
+                                    break;
+                                default:
+                                    _ = OnMessageAsync(message);
+                                    break;
+                            }
                         }
                     }
+                    else if (result.IsCompleted)
+                    {
+                        // The connection is closed (reconnect)
+                        _logger.LogDebug("Connection is closed");
+                        break;
+                    }
                 }
-                else if (result.IsCompleted)
+                catch(Exception e)
                 {
-                    // The connection is closed (reconnect)
-                    break;
+                    _logger.LogError($"Fail to handle message from service {e.Message}");
+                    throw e;
                 }
-
-                _httpConnection.Transport.Input.AdvanceTo(buffer.Start, buffer.End);
+                finally
+                {
+                    _httpConnection.Transport.Input.AdvanceTo(buffer.Start, buffer.End);
+                }
             }
         }
 
@@ -104,24 +125,36 @@ namespace Microsoft.Azure.SignalR
         {
             await ProcessHandshakeResponseAsync(connection.Application);
 
-            while (true)
+            try
             {
-                var result = await connection.Application.Input.ReadAsync();
-                var buffer = result.Buffer;
+                while (true)
+                {
+                    var result = await connection.Application.Input.ReadAsync();
+                    var buffer = result.Buffer;
 
-                if (!buffer.IsEmpty)
-                {
-                    // Send Completion or Error back to the Client
-                    var serviceMessage = new ServiceMessage();
-                    serviceMessage.CreateSendConnection(connection.ConnectionId, connection.ProtocolName, buffer.ToArray());
-                    await SendServiceMessage(serviceMessage);
+                    if (!buffer.IsEmpty)
+                    {
+                        // Send Completion or Error back to the Client
+                        var serviceMessage = new ServiceMessage();
+                        serviceMessage.CreateSendConnection(connection.ConnectionId, connection.ProtocolName, buffer.ToArray());
+                        await SendServiceMessage(serviceMessage);
+                    }
+                    else if (result.IsCompleted)
+                    {
+                        // This connection ended (the application itself shut down) we should remove it from the list of connections
+                        break;
+                    }
+                    connection.Application.Input.AdvanceTo(buffer.Start, buffer.End);
                 }
-                else if (result.IsCompleted)
-                {
-                    // This connection ended (the application itself shut down) we should remove it from the list of connections
-                    break;
-                }
-                connection.Application.Input.AdvanceTo(buffer.Start, buffer.End);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Error occurs when reading from SignalR or sending to Service: {e.Message}");
+                throw e;
+            }
+            finally
+            {
+                connection.Application.Input.Complete();
             }
 
             // We should probably notify the service here that the application chose to abort the connection
@@ -132,46 +165,50 @@ namespace Microsoft.Azure.SignalR
         {
             try
             {
-                while (true)
+                using (var handshakeCts = new CancellationTokenSource(HandshakeTimeout))
+                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(default, handshakeCts.Token))
                 {
-                    var result = await application.Input.ReadAsync();
-                    var buffer = result.Buffer;
-                    var consumed = buffer.Start;
-                    var examined = buffer.End;
-
-                    try
+                    while (true)
                     {
-                        // Read first message out of the incoming data
-                        if (!buffer.IsEmpty)
+                        var result = await application.Input.ReadAsync();
+                        var buffer = result.Buffer;
+                        var consumed = buffer.Start;
+                        var examined = buffer.End;
+
+                        try
                         {
-                            if (HandshakeProtocol.TryParseResponseMessage(ref buffer, out var message))
+                            // Read first message out of the incoming data
+                            if (!buffer.IsEmpty)
                             {
-                                // Adjust consumed and examined to point to the end of the handshake
-                                // response, this handles the case where invocations are sent in the same payload
-                                // as the the negotiate response.
-                                consumed = buffer.Start;
-                                examined = consumed;
-
-                                if (message.Error != null)
+                                if (HandshakeProtocol.TryParseResponseMessage(ref buffer, out var message))
                                 {
-                                    //Log.HandshakeServerError(_logger, message.Error);
-                                    throw new Exception(
-                                        $"Unable to complete handshake with the server due to an error: {message.Error}");
-                                }
+                                    // Adjust consumed and examined to point to the end of the handshake
+                                    // response, this handles the case where invocations are sent in the same payload
+                                    // as the the negotiate response.
+                                    consumed = buffer.Start;
+                                    examined = consumed;
 
-                                break;
+                                    if (message.Error != null)
+                                    {
+                                        var error = $"Unable to complete handshake with the server due to an error: {message.Error}";
+                                        _logger.LogError(error);
+                                        //Log.HandshakeServerError(_logger, message.Error);
+                                        throw new Exception(error);
+                                    }
+                                    break;
+                                }
+                            }
+                            else if (result.IsCompleted)
+                            {
+                                // Not enough data, and we won't be getting any more data.
+                                throw new InvalidOperationException(
+                                    "The server disconnected before sending a handshake response");
                             }
                         }
-                        else if (result.IsCompleted)
+                        finally
                         {
-                            // Not enough data, and we won't be getting any more data.
-                            throw new InvalidOperationException(
-                                "The server disconnected before sending a handshake response");
+                            application.Input.AdvanceTo(consumed, examined);
                         }
-                    }
-                    finally
-                    {
-                        application.Input.AdvanceTo(consumed, examined);
                     }
                 }
             }
@@ -181,6 +218,7 @@ namespace Microsoft.Azure.SignalR
             {
                 // shutdown if we're unable to read handshake
                 //Log.ErrorReceivingHandshakeResponse(_logger, ex);
+                _logger.LogError($"Hand shake failed because we received response {ex.Message}");
                 throw ex;
             }
         }
@@ -189,14 +227,13 @@ namespace Microsoft.Azure.SignalR
         {
             var connection = new ServiceConnectionContext(message);
             _clientConnectionManager.AddClientConnection(connection);
-
-            // Start receiving
-            _ = ProcessOutgoingMessagesAsync(connection);
+            _logger.LogDebug("Handle OnConnected command");
             // This is a bit hacky, we can look at how to work around this
             // We need to do fake in memory handshake between this code and the 
             // HubConnectionHandler to set the protocol
             HandshakeRequestMessage handshakeRequest;
             handshakeRequest = new HandshakeRequestMessage(message.GetProtocolName(), message.GetProtocolVersion());
+            _logger.LogDebug($"Client connection protocol is {message.GetProtocolName()} version {message.GetProtocolVersion()}");
             HandshakeProtocol.WriteRequestMessage(handshakeRequest, connection.Application.Output);
             
             var sendHandshakeResult = await connection.Application.Output.FlushAsync(CancellationToken.None);
@@ -206,8 +243,11 @@ namespace Microsoft.Azure.SignalR
                 // The other side disconnected
                 throw new InvalidOperationException("The server disconnected before the handshake was completed");
             }
+
             // Execute the application code, this will call into the SignalR end point
             _ = _connectionDelegate(connection);
+            // Start receiving
+            _ = ProcessOutgoingMessagesAsync(connection);
         }
 
         private Task OnDisconnectedAsync(ServiceMessage message)
@@ -222,8 +262,16 @@ namespace Microsoft.Azure.SignalR
         {
             if (_clientConnectionManager.ClientConnections.TryGetValue(message.GetConnectionId(), out var connection))
             {
-                // Write the raw connection payload to the pipe let the upstream handle it
-                await connection.Application.Output.WriteAsync(message.Payloads[connection.ProtocolName]);
+                try
+                {
+                    // Write the raw connection payload to the pipe let the upstream handle it
+                    await connection.Application.Output.WriteAsync(message.Payloads[connection.ProtocolName]);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError($"SignalR reports error: {e.Message}");
+                    throw e;
+                }
             }
             else
             {
