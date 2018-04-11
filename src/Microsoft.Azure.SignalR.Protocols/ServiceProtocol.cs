@@ -79,7 +79,7 @@ namespace Microsoft.Azure.SignalR
                         Command = command
                     };
                 }
-
+                var ackPayload = ReadAckPayload(unpacker, "ackpayload");
                 var arguments = ReadArguments(unpacker);
 
                 var payloads = ReadPayloads(unpacker);
@@ -87,6 +87,7 @@ namespace Microsoft.Azure.SignalR
                 return new ServiceMessage
                 {
                     Command = command,
+                    AckPayload = ackPayload,
                     Arguments = arguments,
                     Payloads = payloads
                 };
@@ -178,8 +179,9 @@ namespace Microsoft.Azure.SignalR
                 packer.Pack((int)message.Command);
                 return;
             }
-            packer.PackArrayHeader(3);
+            packer.PackArrayHeader(4);
             packer.Pack((int)message.Command);
+            PackAclPayload(packer, message.AckPayload);
             PackArguments(packer, message.Arguments);
             PackPayloads(packer, message.Payloads);
         }
@@ -216,6 +218,43 @@ namespace Microsoft.Azure.SignalR
             {
                 packer.PackMapHeader(0);
             }
+        }
+
+        private static void PackAclPayload(Packer packer, byte[] ackPayload)
+        {
+            if (ackPayload != null)
+            {
+                packer.PackBinary(ackPayload);
+            }
+            else
+            {
+                packer.PackNull();
+            }
+        }
+
+        private static byte[] ReadAckPayload(Unpacker unpacker, string field)
+        {
+            Exception msgPackException = null;
+            try
+            {
+                if (unpacker.Read())
+                {
+                    if (unpacker.LastReadData.IsNil)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        return unpacker.LastReadData.AsBinary();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                msgPackException = e;
+            }
+
+            throw new InvalidDataException($"Reading '{field}' as String failed.", msgPackException);
         }
 
         private static int ReadInt32(Unpacker unpacker, string field)

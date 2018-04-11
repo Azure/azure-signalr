@@ -11,8 +11,8 @@ namespace Microsoft.Azure.SignalR
         Ping = 0,
         AddConnection,
         RemoveConnection,
+        AckMessage,
         // SDK -> Service
-        HandshakeResponse,
         AddConnectionToGroup,
         RemoveConnectionFromGroup,
         SendToConnection,
@@ -46,6 +46,13 @@ namespace Microsoft.Azure.SignalR
 
         public IDictionary<ArgumentType, string> Arguments { get; set; }
 
+        public byte[] AckPayload { get; set; }
+
         public IDictionary<string, byte[]> Payloads { get; set; }
+
+        public static readonly ServiceMessage PingMessage = new ServiceMessage
+        {
+            Command = CommandType.Ping
+        };
     }
 }

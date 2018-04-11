@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -50,6 +51,7 @@ namespace Microsoft.Azure.SignalR
                 // Write the service protocol message
                 ServiceProtocol.WriteMessage(serviceMessage, _httpConnection.Transport.Output);
                 await _httpConnection.Transport.Output.FlushAsync(CancellationToken.None);
+                _logger.LogDebug("Send messge to service");
             }
             finally
             {
@@ -69,7 +71,7 @@ namespace Microsoft.Azure.SignalR
                     if (!buffer.IsEmpty)
                     {
                         _logger.LogDebug("message received from service");
-                        if (ServiceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
+                        while (ServiceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
                         {
                             await DispatchMessage(message);
                         }
@@ -116,27 +118,21 @@ namespace Microsoft.Azure.SignalR
 
         private async Task ProcessOutgoingMessagesAsync(ServiceConnectionContext connection)
         {
+            //await ProcessHandshakeResponseAsync(connection);
             try
             {
                 while (true)
                 {
                     var result = await connection.Application.Input.ReadAsync();
                     var buffer = result.Buffer;
-
                     if (!buffer.IsEmpty)
                     {
                         // Send Handshake, Completion or Error back to the Client
                         var serviceMessage = new ServiceMessage();
-                        if (!connection.FinishHandshake)
-                        {
-                            connection.FinishHandshake = true;
-                            serviceMessage.CreateHandshakeResponse(connection.ConnectionId, buffer.ToArray());
-                        }
-                        else
-                        {
-                            serviceMessage.CreateSendConnection(connection.ConnectionId, connection.ProtocolName, buffer.ToArray());
-                        }
+                        serviceMessage.CreateAckResponse(connection.ConnectionId, buffer.ToArray());
                         await SendServiceMessage(serviceMessage);
+                        buffer = buffer.Slice(buffer.GetPosition(buffer.Length));
+                        _logger.LogDebug($"Send Ack message {serviceMessage.Command}");
                     }
                     else if (result.IsCompleted)
                     {

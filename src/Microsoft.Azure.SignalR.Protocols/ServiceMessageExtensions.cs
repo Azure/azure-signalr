@@ -124,11 +124,11 @@ namespace Microsoft.Azure.SignalR
             return message.AddConnectionId(connectionId);
         }
 
-        public static TMessage CreateHandshakeResponse<TMessage>(this TMessage message, string connectionId, byte[] payload) where TMessage : ServiceMessage
+        public static TMessage CreateAckResponse<TMessage>(this TMessage message, string connectionId, byte[] payload) where TMessage : ServiceMessage
         {
-            message.Command = CommandType.HandshakeResponse;
-            return message.AddConnectionId(connectionId)
-                          .AddPayload(ServiceMessage.HandshakeProtocol, payload);
+            message.Command = CommandType.AckMessage;
+            message.AckPayload = payload;
+            return message.AddConnectionId(connectionId);
         }
 
         public static TMessage CreateSendConnection<TMessage>(this TMessage message, string connectionId, string protocolName, byte[] payload) where TMessage : ServiceMessage
