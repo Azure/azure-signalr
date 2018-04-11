@@ -18,7 +18,6 @@ namespace ChatSample
                     factory.AddConfiguration(context.Configuration.GetSection("Logging"));
                     factory.AddConsole();
                     factory.AddDebug();
-                    //factory.SetMinimumLevel(LogLevel.Trace);
                 })
                 .UseKestrel()
                 .UseUrls("http://*:5050/")

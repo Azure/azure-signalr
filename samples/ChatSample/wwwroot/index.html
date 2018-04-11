@@ -174,7 +174,7 @@
             function startConnection(url, configureConnection) {
                 return function start(transport) {
                     console.log(`Starting connection using ${signalR.TransportType[transport]} transport`);
-                    var connection = new signalR.HubConnection(url, { transport: transport, accessTokenFactory: () => accessToken /* , protocol: new signalR.protocols.msgpack.MessagePackHubProtocol() */});
+                    var connection = new signalR.HubConnection(url, { transport: transport, accessTokenFactory: () => accessToken/*, protocol: new signalR.protocols.msgpack.MessagePackHubProtocol()*/});
                     if (configureConnection && typeof configureConnection === 'function') {
                         configureConnection(connection);
                     }

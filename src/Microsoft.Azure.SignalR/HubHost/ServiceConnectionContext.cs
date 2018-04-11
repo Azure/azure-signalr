@@ -50,10 +50,10 @@ namespace Microsoft.Azure.SignalR
             Features.Set<IConnectionItemsFeature>(this);
             Features.Set<IConnectionIdFeature>(this);
             Features.Set<IConnectionTransportFeature>(this);
-            FinishedHandshake = false;
+            FinishHandshake = false;
         }
 
-        public bool FinishedHandshake { get; set; }
+        public bool FinishHandshake { get; set; }
 
         public override string ConnectionId { get; set; }
 

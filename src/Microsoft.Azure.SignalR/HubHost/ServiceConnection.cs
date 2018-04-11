@@ -3,12 +3,10 @@
 
 using System;
 using System.Buffers;
-using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Connections.Client;
-using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
@@ -23,7 +21,7 @@ namespace Microsoft.Azure.SignalR
         private SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
         private readonly ILogger<ServiceConnection> _logger;
 
-        public TimeSpan HandshakeTimeout { get; set; } = DefaultHandshakeTimeout;
+        public static TimeSpan HandshakeTimeout { get; set; } = DefaultHandshakeTimeout;
 
         public ServiceConnection(IClientConnectionManager clientConnectionManager,
             Uri serviceUrl, HttpConnection httpConnection, ILoggerFactory loggerFactory)
@@ -37,8 +35,7 @@ namespace Microsoft.Azure.SignalR
         {
             _connectionDelegate = connectionDelegate;
             await _httpConnection.StartAsync(TransferFormat.Binary);
-            //await HandshakeAsync();
-            //_logger.LogDebug("Finish handshake with service");
+            // TODO. Handshake with Service for version confirmation
             _ = ProcessIncomingAsync();
         }
 
@@ -60,25 +57,10 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task HandshakeAsync()
-        {
-            var handshakeRequest = new HandshakeRequestMessage(ServiceProtocol.Name, ServiceProtocol.Version);
-            HandshakeProtocol.WriteRequestMessage(handshakeRequest, _httpConnection.Transport.Output);
-            var sendHandshakeResult = await _httpConnection.Transport.Output.FlushAsync(CancellationToken.None);
-
-            if (sendHandshakeResult.IsCompleted)
-            {
-                // The other side disconnected
-                throw new InvalidOperationException("The server disconnected before the handshake was completed");
-            }
-            await ProcessHandshakeResponseAsync(_httpConnection.Transport);
-        }
-
         private async Task ProcessIncomingAsync()
         {
             while (true)
             {
-
                 var result = await _httpConnection.Transport.Input.ReadAsync();
                 var buffer = result.Buffer;
 
@@ -134,8 +116,6 @@ namespace Microsoft.Azure.SignalR
 
         private async Task ProcessOutgoingMessagesAsync(ServiceConnectionContext connection)
         {
-            await ProcessHandshakeResponseAsync(connection.Application);
-
             try
             {
                 while (true)
@@ -147,15 +127,14 @@ namespace Microsoft.Azure.SignalR
                     {
                         // Send Handshake, Completion or Error back to the Client
                         var serviceMessage = new ServiceMessage();
-                        if (!connection.FinishedHandshake)
+                        if (!connection.FinishHandshake)
                         {
-                            connection.FinishedHandshake = true;
-                            serviceMessage.CreateSendConnection(connection.ConnectionId, "json", buffer.ToArray());
+                            connection.FinishHandshake = true;
+                            serviceMessage.CreateHandshakeResponse(connection.ConnectionId, buffer.ToArray());
                         }
                         else
                         {
-                            serviceMessage.CreateSendConnection(connection.ConnectionId, connection.ProtocolName, buffer.ToArray())
-                                      .AddProtocolName(connection.ProtocolName); // for debug
+                            serviceMessage.CreateSendConnection(connection.ConnectionId, connection.ProtocolName, buffer.ToArray());
                         }
                         await SendServiceMessage(serviceMessage);
                     }
@@ -179,68 +158,6 @@ namespace Microsoft.Azure.SignalR
 
             // We should probably notify the service here that the application chose to abort the connection
             _clientConnectionManager.ClientConnections.TryRemove(connection.ConnectionId, out _);
-        }
-
-        private async Task ProcessHandshakeResponseAsync(IDuplexPipe application)
-        {
-            try
-            {
-                using (var handshakeCts = new CancellationTokenSource(HandshakeTimeout))
-                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(default, handshakeCts.Token))
-                {
-                    while (true)
-                    {
-                        var result = await application.Input.ReadAsync();
-                        var buffer = result.Buffer;
-                        var consumed = buffer.Start;
-                        var examined = buffer.End;
-
-                        try
-                        {
-                            // Read first message out of the incoming data
-                            if (!buffer.IsEmpty)
-                            {
-                                if (HandshakeProtocol.TryParseResponseMessage(ref buffer, out var message))
-                                {
-                                    // Adjust consumed and examined to point to the end of the handshake
-                                    // response, this handles the case where invocations are sent in the same payload
-                                    // as the the negotiate response.
-                                    consumed = buffer.Start;
-                                    examined = consumed;
-
-                                    if (message.Error != null)
-                                    {
-                                        var error = $"Unable to complete handshake with the server due to an error: {message.Error}";
-                                        _logger.LogError(error);
-                                        //Log.HandshakeServerError(_logger, message.Error);
-                                        throw new Exception(error);
-                                    }
-                                    break;
-                                }
-                            }
-                            else if (result.IsCompleted)
-                            {
-                                // Not enough data, and we won't be getting any more data.
-                                throw new InvalidOperationException(
-                                    "The server disconnected before sending a handshake response");
-                            }
-                        }
-                        finally
-                        {
-                            application.Input.AdvanceTo(consumed, examined);
-                        }
-                    }
-                }
-            }
-            // Ignore HubException because we throw it when we receive a handshake response with an error
-            // And we don't need to log that the handshake failed
-            catch (Exception ex)
-            {
-                // shutdown if we're unable to read handshake
-                //Log.ErrorReceivingHandshakeResponse(_logger, ex);
-                _logger.LogError($"Hand shake failed because we received response {ex.Message}");
-                throw ex;
-            }
         }
 
         private async Task OnConnectedAsync(ServiceMessage message)

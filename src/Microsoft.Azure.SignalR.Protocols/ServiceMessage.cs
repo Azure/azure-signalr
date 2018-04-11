@@ -12,6 +12,7 @@ namespace Microsoft.Azure.SignalR
         AddConnection,
         RemoveConnection,
         // SDK -> Service
+        HandshakeResponse,
         AddConnectionToGroup,
         RemoveConnectionFromGroup,
         SendToConnection,
@@ -39,6 +40,8 @@ namespace Microsoft.Azure.SignalR
 
     public class ServiceMessage
     {
+        public static readonly string HandshakeProtocol = "json";
+
         public CommandType Command { get; set; }
 
         public IDictionary<ArgumentType, string> Arguments { get; set; }
