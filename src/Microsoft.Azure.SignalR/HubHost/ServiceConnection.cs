@@ -131,7 +131,6 @@ namespace Microsoft.Azure.SignalR
                         var serviceMessage = new ServiceMessage();
                         serviceMessage.CreateAckResponse(connection.ConnectionId, buffer.ToArray());
                         await SendServiceMessage(serviceMessage);
-                        buffer = buffer.Slice(buffer.GetPosition(buffer.Length));
                         _logger.LogDebug($"Send Ack message {serviceMessage.Command}");
                     }
                     else if (result.IsCompleted)
@@ -139,7 +138,7 @@ namespace Microsoft.Azure.SignalR
                         // This connection ended (the application itself shut down) we should remove it from the list of connections
                         break;
                     }
-                    connection.Application.Input.AdvanceTo(buffer.Start, buffer.End);
+                    connection.Application.Input.AdvanceTo(buffer.End);
                 }
             }
             catch (Exception e)
