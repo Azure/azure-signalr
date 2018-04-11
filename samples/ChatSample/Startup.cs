@@ -40,9 +40,9 @@ namespace ChatSample
             services.AddSingleton(typeof(EndpointProvider),
                 CloudSignalR.CreateEndpointProviderFromConnectionString(connStr));
 
-            var timeService =
-                new TimeService(CloudSignalR.CreateHubProxyFromConnectionString<Chat>(connStr));
-            services.AddSingleton(typeof(TimeService), timeService);
+            //var timeService =
+            //    new TimeService(CloudSignalR.CreateHubProxyFromConnectionString<Chat>(connStr));
+            //services.AddSingleton(typeof(TimeService), timeService);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

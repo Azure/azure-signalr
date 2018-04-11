@@ -11,7 +11,6 @@ namespace Microsoft.Azure.SignalR
         Ping = 0,
         AddConnection,
         RemoveConnection,
-        HubInvoke,
         // SDK -> Service
         AddConnectionToGroup,
         RemoveConnectionFromGroup,
@@ -30,7 +29,6 @@ namespace Microsoft.Azure.SignalR
         ConnectionId = 0,
         Claim,
         ProtocolName,
-        ProtocolVersion,
         ConnectionList,
         GroupName,
         GroupList,
@@ -46,12 +44,5 @@ namespace Microsoft.Azure.SignalR
         public IDictionary<ArgumentType, string> Arguments { get; set; }
 
         public IDictionary<string, byte[]> Payloads { get; set; }
-
-        public ServiceMessage()
-        {
-            Command = CommandType.SendToConnection;
-            Payloads = new Dictionary<string, byte[]>();
-            Arguments = new Dictionary<ArgumentType, string>();
-        }
     }
 }

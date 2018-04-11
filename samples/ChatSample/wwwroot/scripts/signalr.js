@@ -2355,7 +2355,7 @@ exports.JsonHubProtocol = JsonHubProtocol_1.JsonHubProtocol;
 
 
 
-var DEFAULT_TIMEOUT_IN_MS = 30 * 1000;
+var DEFAULT_TIMEOUT_IN_MS = 3600 * 1000;
 var HubConnection = /** @class */ (function () {
     function HubConnection(urlOrConnection, options) {
         if (options === void 0) { options = {}; }

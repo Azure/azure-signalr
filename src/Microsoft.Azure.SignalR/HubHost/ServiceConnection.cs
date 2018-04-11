@@ -37,8 +37,8 @@ namespace Microsoft.Azure.SignalR
         {
             _connectionDelegate = connectionDelegate;
             await _httpConnection.StartAsync(TransferFormat.Binary);
-            await HandshakeAsync();
-            _logger.LogDebug("Finish handshake with service");
+            //await HandshakeAsync();
+            //_logger.LogDebug("Finish handshake with service");
             _ = ProcessIncomingAsync();
         }
 
@@ -78,6 +78,7 @@ namespace Microsoft.Azure.SignalR
         {
             while (true)
             {
+
                 var result = await _httpConnection.Transport.Input.ReadAsync();
                 var buffer = result.Buffer;
 
@@ -86,20 +87,9 @@ namespace Microsoft.Azure.SignalR
                     if (!buffer.IsEmpty)
                     {
                         _logger.LogDebug("message received from service");
-                        while (ServiceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
+                        if (ServiceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
                         {
-                            switch (message.Command)
-                            {
-                                case CommandType.AddConnection:
-                                    await OnConnectedAsync(message);
-                                    break;
-                                case CommandType.RemoveConnection:
-                                    await OnDisconnectedAsync(message);
-                                    break;
-                                default:
-                                    _ = OnMessageAsync(message);
-                                    break;
-                            }
+                            await DispatchMessage(message);
                         }
                     }
                     else if (result.IsCompleted)
@@ -121,6 +111,27 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        private async Task DispatchMessage(ServiceMessage message)
+        {
+            _logger.LogDebug($"mesage command {message.Command}");
+            if (message.Command != CommandType.Ping)
+            {
+                switch (message.Command)
+                {
+                    case CommandType.AddConnection:
+                        await OnConnectedAsync(message);
+                        break;
+                    case CommandType.RemoveConnection:
+                        await OnDisconnectedAsync(message);
+                        break;
+                    default:
+                        _ = OnMessageAsync(message);
+                        break;
+                }
+            }
+            // ignore ping
+        }
+
         private async Task ProcessOutgoingMessagesAsync(ServiceConnectionContext connection)
         {
             await ProcessHandshakeResponseAsync(connection.Application);
@@ -134,9 +145,18 @@ namespace Microsoft.Azure.SignalR
 
                     if (!buffer.IsEmpty)
                     {
-                        // Send Completion or Error back to the Client
+                        // Send Handshake, Completion or Error back to the Client
                         var serviceMessage = new ServiceMessage();
-                        serviceMessage.CreateSendConnection(connection.ConnectionId, connection.ProtocolName, buffer.ToArray());
+                        if (!connection.FinishedHandshake)
+                        {
+                            connection.FinishedHandshake = true;
+                            serviceMessage.CreateSendConnection(connection.ConnectionId, "json", buffer.ToArray());
+                        }
+                        else
+                        {
+                            serviceMessage.CreateSendConnection(connection.ConnectionId, connection.ProtocolName, buffer.ToArray())
+                                      .AddProtocolName(connection.ProtocolName); // for debug
+                        }
                         await SendServiceMessage(serviceMessage);
                     }
                     else if (result.IsCompleted)
@@ -231,19 +251,7 @@ namespace Microsoft.Azure.SignalR
             // This is a bit hacky, we can look at how to work around this
             // We need to do fake in memory handshake between this code and the 
             // HubConnectionHandler to set the protocol
-            HandshakeRequestMessage handshakeRequest;
-            handshakeRequest = new HandshakeRequestMessage(message.GetProtocolName(), message.GetProtocolVersion());
-            _logger.LogDebug($"Client connection protocol is {message.GetProtocolName()} version {message.GetProtocolVersion()}");
-            HandshakeProtocol.WriteRequestMessage(handshakeRequest, connection.Application.Output);
-            
-            var sendHandshakeResult = await connection.Application.Output.FlushAsync(CancellationToken.None);
-
-            if (sendHandshakeResult.IsCompleted)
-            {
-                // The other side disconnected
-                throw new InvalidOperationException("The server disconnected before the handshake was completed");
-            }
-
+            await connection.Application.Output.WriteAsync(message.Payloads["json"]); // forward handshake
             // Execute the application code, this will call into the SignalR end point
             _ = _connectionDelegate(connection);
             // Start receiving
@@ -264,6 +272,7 @@ namespace Microsoft.Azure.SignalR
             {
                 try
                 {
+                    _logger.LogDebug("Send message to SignalR Hub handler");
                     // Write the raw connection payload to the pipe let the upstream handle it
                     await connection.Application.Output.WriteAsync(message.Payloads[connection.ProtocolName]);
                 }
@@ -275,6 +284,7 @@ namespace Microsoft.Azure.SignalR
             }
             else
             {
+                _logger.LogError("Message re-ordered");
                 // Unexpected error
             }
         }

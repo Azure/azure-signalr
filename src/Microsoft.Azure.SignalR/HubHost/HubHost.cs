@@ -53,7 +53,8 @@ namespace Microsoft.Azure.SignalR
             var serviceUrl = GetServiceUrl();
             var httpOptions = new HttpOptions
             {
-                AccessTokenFactory = () => _tokenProvider.GenerateServerAccessToken<THub>()
+                AccessTokenFactory = () => _tokenProvider.GenerateServerAccessToken<THub>(),
+                CloseTimeout = TimeSpan.FromSeconds(300)
             };
 
             // Simply create a couple of connections which connect to Azure SignalR

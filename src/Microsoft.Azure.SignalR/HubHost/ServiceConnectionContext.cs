@@ -24,7 +24,11 @@ namespace Microsoft.Azure.SignalR
         {
             ConnectionId = serviceMessage.GetConnectionId();
             ProtocolName = serviceMessage.GetProtocolName();
-
+            if (serviceMessage.TryGetClaims(out var claims))
+            {
+                User = new ClaimsPrincipal();
+                User.AddIdentity(new ClaimsIdentity(claims, "Bearer"));
+            }
             // Create the Duplix Pipeline for the virtual connection
             var options = new HttpConnectionOptions();
             var transportPipeOptions = new PipeOptions(pauseWriterThreshold: options.TransportMaxBufferSize,
@@ -46,7 +50,10 @@ namespace Microsoft.Azure.SignalR
             Features.Set<IConnectionItemsFeature>(this);
             Features.Set<IConnectionIdFeature>(this);
             Features.Set<IConnectionTransportFeature>(this);
+            FinishedHandshake = false;
         }
+
+        public bool FinishedHandshake { get; set; }
 
         public override string ConnectionId { get; set; }
 

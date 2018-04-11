@@ -29,21 +29,22 @@ namespace Microsoft.Azure.SignalR
 
         public static TMessage AddPayload<TMessage>(this TMessage message, string protocolName, byte[] payload) where TMessage : ServiceMessage
         {
-            if (message.Payloads.ContainsKey(protocolName))
+            var payloads = message.GetPayloads();
+
+            if (payloads.ContainsKey(protocolName))
             {
-                message.Payloads[protocolName] = payload;
+                payloads[protocolName] = payload;
             }
             else
             {
-                message.Payloads.Add(protocolName, payload);
+                payloads.Add(protocolName, payload);
             }
             return message;
         }
 
         public static TMessage AddProtocol<TMessage>(this TMessage message, string protocolName, int protocolVersion) where TMessage : ServiceMessage
         {
-            return message.AddProtocolName(protocolName)
-                          .AddOrUpdateArguments(ArgumentType.ProtocolVersion, Convert.ToString(protocolVersion));
+            return message.AddProtocolName(protocolName);
         }
 
         public static TMessage AddProtocolName<TMessage>(this TMessage message, string protocolName) where TMessage : ServiceMessage
@@ -53,13 +54,15 @@ namespace Microsoft.Azure.SignalR
 
         public static TMessage AddOrUpdateArguments<TMessage>(this TMessage message, ArgumentType argumentType, string value) where TMessage : ServiceMessage
         {
-            if (message.Arguments.ContainsKey(argumentType))
+            var arguments = message.GetArguments();
+
+            if (arguments.ContainsKey(argumentType))
             {
-                message.Arguments[argumentType] = value;
+                arguments[argumentType] = value;
             }
             else
             {
-                message.Arguments.Add(argumentType, value);
+                arguments.Add(argumentType, value);
             }
             return message;
         }
@@ -143,7 +146,7 @@ namespace Microsoft.Azure.SignalR
 
         public static string GetConnectionId<TMessage>(this TMessage message) where TMessage : ServiceMessage
         {
-            if (message.Arguments.TryGetValue(ArgumentType.ConnectionId, out string value))
+            if (message.GetArguments().TryGetValue(ArgumentType.ConnectionId, out string value))
             {
                 return value;
             }
@@ -152,25 +155,25 @@ namespace Microsoft.Azure.SignalR
 
         public static string GetProtocolName<TMessage>(this TMessage message) where TMessage : ServiceMessage
         {
-            if (message.Arguments.TryGetValue(ArgumentType.ProtocolName, out string value))
+            if (message.GetArguments().TryGetValue(ArgumentType.ProtocolName, out string value))
             {
                 return value;
             }
             return null;
         }
 
-        public static int GetProtocolVersion<TMessage>(this TMessage message) where TMessage : ServiceMessage
+        public static bool TryGetClaims<TMessage>(this TMessage message, out IEnumerable<Claim> claims) where TMessage : ServiceMessage
         {
-            if (message.Arguments.TryGetValue(ArgumentType.ProtocolVersion, out string value))
-            {
-                return Int16.Parse(value);
-            }
-            return default;
+            claims = message.GetArguments().TryGetValue(ArgumentType.Claim, out var serializedClaims)
+                    ? JsonConvert.DeserializeObject<IEnumerable<ClaimEntry>>(serializedClaims).Select(x => x.ToClaim())
+                    : null;
+
+            return claims != null;
         }
 
         public static bool TryGetConnectionId<TMessage>(this TMessage message, out string connectionId) where TMessage : ServiceMessage
         {
-            return message.Arguments.TryGetValue(ArgumentType.ConnectionId, out connectionId);
+            return message.GetArguments().TryGetValue(ArgumentType.ConnectionId, out connectionId);
         }
 
         public static bool TryGetConnectionIds<TMessage>(this TMessage message, out IReadOnlyList<string> list) where TMessage : ServiceMessage
@@ -185,7 +188,7 @@ namespace Microsoft.Azure.SignalR
 
         public static bool TryGetGroupName<TMessage>(this TMessage message, out string value) where TMessage : ServiceMessage
         {
-            if (message.Arguments.TryGetValue(ArgumentType.GroupName, out value))
+            if (message.GetArguments().TryGetValue(ArgumentType.GroupName, out value))
             {
                 return true;
             }
@@ -199,7 +202,7 @@ namespace Microsoft.Azure.SignalR
 
         public static bool TryGetUser<TMessage>(this TMessage message, out string value) where TMessage : ServiceMessage
         {
-            return message.Arguments.TryGetValue(ArgumentType.UserId, out value);
+            return message.GetArguments().TryGetValue(ArgumentType.UserId, out value);
         }
 
         public static bool TryGetUsers<TMessage>(this TMessage message, out IReadOnlyList<string> list) where TMessage : ServiceMessage
@@ -209,13 +212,12 @@ namespace Microsoft.Azure.SignalR
 
         private static bool TryGetListValues<TMessage>(this TMessage message, ArgumentType argumentType, out string listStr) where TMessage : ServiceMessage
         {
-            if (message.Arguments.TryGetValue(argumentType, out listStr))
+            if (message.GetArguments().TryGetValue(argumentType, out listStr))
             {
                 return true;
             }
             return false;
         }
-
 
         private static bool TryGetList<TMessage>(this TMessage message, ArgumentType key, out IReadOnlyList<string> list) where TMessage : ServiceMessage
         {
@@ -223,6 +225,24 @@ namespace Microsoft.Azure.SignalR
                 ? new List<string>(value.Split(','))
                 : null;
             return list != null;
+        }
+
+        private static IDictionary<ArgumentType, string> GetArguments<TMessage>(this TMessage message) where TMessage : ServiceMessage
+        {
+            if (message.Arguments == null)
+            {
+                message.Arguments = new Dictionary<ArgumentType, string>();
+            }
+            return message.Arguments;
+        }
+
+        private static IDictionary<string, byte[]> GetPayloads<TMessage>(this TMessage message) where TMessage : ServiceMessage
+        {
+            if (message.Payloads == null)
+            {
+                message.Payloads = new Dictionary<string, byte[]>();
+            }
+            return message.Payloads;
         }
     }
 }

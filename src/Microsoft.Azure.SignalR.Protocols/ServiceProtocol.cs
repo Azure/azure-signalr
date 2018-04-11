@@ -72,6 +72,14 @@ namespace Microsoft.Azure.SignalR
                 _ = ReadArrayLength(unpacker, "elementCount");
 
                 var command = ReadCommand(unpacker);
+                if (command == CommandType.Ping)
+                {
+                    return new ServiceMessage
+                    {
+                        Command = command
+                    };
+                }
+
                 var arguments = ReadArguments(unpacker);
 
                 var payloads = ReadPayloads(unpacker);
@@ -136,7 +144,7 @@ namespace Microsoft.Azure.SignalR
             var writer = MemoryBufferWriter.Get();
             try
             {
-                ServiceProtocol.WriteMessage(message, writer);
+                WriteMessage(message, writer);
                 return writer.ToArray();
             }
             finally
@@ -164,8 +172,14 @@ namespace Microsoft.Azure.SignalR
             // PackerCompatibilityOptions.None prevents from serializing byte[] as strings
             // and allows extended objects
             var packer = Packer.Create(output, PackerCompatibilityOptions.None);
+            if (message.Command == CommandType.Ping)
+            {
+                packer.PackArrayHeader(1);
+                packer.Pack((int)message.Command);
+                return;
+            }
             packer.PackArrayHeader(3);
-            packer.Pack((int)(message.Command));
+            packer.Pack((int)message.Command);
             PackArguments(packer, message.Arguments);
             PackPayloads(packer, message.Payloads);
         }
