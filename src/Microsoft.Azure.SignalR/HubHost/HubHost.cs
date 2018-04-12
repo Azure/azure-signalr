@@ -36,8 +36,7 @@ namespace Microsoft.Azure.SignalR
             _logger = loggerFactory.CreateLogger<HubHost<THub>>();
         }
 
-        internal void Configure(EndpointProvider endpointProvider, TokenProvider tokenProvider,
-            HubHostOptions options = null)
+        internal void Configure(EndpointProvider endpointProvider, TokenProvider tokenProvider)
         {
             if (_endpointProvider != null || _tokenProvider != null)
             {
@@ -47,7 +46,6 @@ namespace Microsoft.Azure.SignalR
 
             _endpointProvider = endpointProvider ?? throw new ArgumentNullException(nameof(endpointProvider));
             _tokenProvider = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
-            if (options != null) _options = options;
 
             var serviceUrl = GetServiceUrl();
             var httpOptions = new HttpOptions

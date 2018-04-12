@@ -22,10 +22,10 @@ namespace Microsoft.Azure.SignalR
             _tokenProvider = tokenProvider;
         }
 
-        public HubHost<THub> UseHub<THub>(HubHostOptions options = null) where THub: Hub
+        public HubHost<THub> UseHub<THub>() where THub: Hub
         {
             var hubHost = _serviceProvider.GetRequiredService<HubHost<THub>>();
-            hubHost.Configure(_endpointProvider, _tokenProvider, options);
+            hubHost.Configure(_endpointProvider, _tokenProvider);
             var connectionBuilder = new ConnectionBuilder(_serviceProvider);
             connectionBuilder.UseHub<THub>();
             var app = connectionBuilder.Build();

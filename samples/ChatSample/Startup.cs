@@ -31,10 +31,10 @@ namespace ChatSample
         {
             services.AddMvc();
             services.AddSignalR()
-                    .AddAzureSignalR()
+                    .AddAzureSignalR(options => Configuration.GetSection("AzureSignalRConfiguration").Bind(options))
                     .AddMessagePackProtocol();
 
-            var connStr = Configuration["AzureSignalR:ConnectionString"];
+            var connStr = Configuration.GetValue<string>("AzureSignalRConfiguration:ConnectionString");
             services.AddSingleton(typeof(TokenProvider),
                 CloudSignalR.CreateTokenProviderFromConnectionString(connStr));
             services.AddSingleton(typeof(EndpointProvider),
@@ -50,14 +50,8 @@ namespace ChatSample
         {
             app.UseMvc();
             app.UseFileServer();
-            var hubServerOptions = new HubHostOptions()
-            {
-                ConnectionNumber = Configuration.GetValue<int>("AzureSignalR:ServiceConnectionNo"),
-                AutoReconnect = false,
-                ServerTimeout = TimeSpan.FromSeconds(Configuration.GetValue<int>("AzureSignalR:ServiceTimeout"))
-            };
-            app.UseAzureSignalR(Configuration["AzureSignalR:ConnectionString"],
-                builder => { builder.UseHub<Chat>(hubServerOptions); });
+            app.UseAzureSignalR(Configuration["AzureSignalRConfiguration:ConnectionString"],
+                builder => { builder.UseHub<Chat>(); });
         }
     }
 }
