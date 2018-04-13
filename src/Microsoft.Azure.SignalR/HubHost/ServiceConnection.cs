@@ -3,7 +3,6 @@
 
 using System;
 using System.Buffers;
-using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -118,7 +117,6 @@ namespace Microsoft.Azure.SignalR
 
         private async Task ProcessOutgoingMessagesAsync(ServiceConnectionContext connection)
         {
-            //await ProcessHandshakeResponseAsync(connection);
             try
             {
                 while (true)

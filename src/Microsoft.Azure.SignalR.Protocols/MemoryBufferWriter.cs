@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal sealed class MemoryBufferWriter : IBufferWriter<byte>
+    public sealed class MemoryBufferWriter : IBufferWriter<byte>
     {
         [ThreadStatic]
         private static MemoryBufferWriter _cachedInstance;

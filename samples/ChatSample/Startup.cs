@@ -1,9 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.SignalR;
 using Microsoft.Extensions.Configuration;
@@ -31,18 +30,23 @@ namespace ChatSample
         {
             services.AddMvc();
             services.AddSignalR()
-                    .AddAzureSignalR(options => Configuration.GetSection("AzureSignalRConfiguration").Bind(options))
+                    .AddAzureSignalR(options =>
+                    {
+                        Configuration.GetSection("AzureSignalRConfiguration").Bind(options);
+                        options.Claims = (httpContext) =>
+                        {
+                            return new[]
+                            {
+                                new Claim(ClaimTypes.Name, "username"),
+                                new Claim(ClaimTypes.NameIdentifier, "userId")
+                            };
+                        };
+                    })
                     .AddMessagePackProtocol();
 
-            var connStr = Configuration.GetValue<string>("AzureSignalRConfiguration:ConnectionString");
-            services.AddSingleton(typeof(TokenProvider),
-                CloudSignalR.CreateTokenProviderFromConnectionString(connStr));
-            services.AddSingleton(typeof(EndpointProvider),
-                CloudSignalR.CreateEndpointProviderFromConnectionString(connStr));
-
-            //var timeService =
-            //    new TimeService(CloudSignalR.CreateHubProxyFromConnectionString<Chat>(connStr));
-            //services.AddSingleton(typeof(TimeService), timeService);
+            var timeService =
+                new TimeService(CloudSignalR.CreateServiceContext<Chat>());
+            services.AddSingleton(typeof(TimeService), timeService);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -50,8 +54,8 @@ namespace ChatSample
         {
             app.UseMvc();
             app.UseFileServer();
-            app.UseAzureSignalR(Configuration["AzureSignalRConfiguration:ConnectionString"],
-                builder => { builder.UseHub<Chat>(); });
+            app.UseAzureSignalR(
+                builder => { builder.UseHub<Chat>("/chat"); });
         }
     }
 }

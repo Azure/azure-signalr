@@ -2,30 +2,85 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Connections.Internal;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
     public class HubHostBuilder
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly EndpointProvider _endpointProvider;
-        private readonly TokenProvider _tokenProvider;
+        private readonly RouteBuilder _routes;
 
-        public HubHostBuilder(IServiceProvider serviceProvider, EndpointProvider endpointProvider,
-            TokenProvider tokenProvider)
+        public HubHostBuilder(RouteBuilder routes)
         {
-            _serviceProvider = serviceProvider;
-            _endpointProvider = endpointProvider;
-            _tokenProvider = tokenProvider;
+            _routes = routes;
+            _serviceProvider = _routes.ServiceProvider;
         }
 
-        public HubHost<THub> UseHub<THub>() where THub: Hub
+        public HubHost<THub> UseHub<THub>(string path) where THub : Hub
+            => UseHub<THub>(new PathString(path));
+
+        public HubHost<THub> UseHub<THub>(PathString path) where THub: Hub
+        {
+            // find auth attributes
+            var authorizeAttributes = typeof(THub).GetCustomAttributes<AuthorizeAttribute>(inherit: true);
+            var authorizationData = new List<IAuthorizeData>();
+            foreach (var attribute in authorizeAttributes)
+            {
+                authorizationData.Add(attribute);
+            }
+
+            _routes.MapRoute(path + "/negotiate", c => RedirectToServiceUrlWithToken(c, nameof(THub), authorizationData));
+
+            return Start<THub>();
+        }
+
+        private async Task RedirectToServiceUrlWithToken(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
+        {
+            if (!await AuthorizeHelper.AuthorizeAsync(context, authorizationData))
+            {
+                return;
+            }
+            context.Response.ContentType = "application/json";
+            var writer = new MemoryBufferWriter();
+
+            try
+            {
+                var connectionServiceProvider = _serviceProvider.GetRequiredService<IConnectionServiceProvider>();
+                var options = _serviceProvider.GetService<IOptions<ServiceOptions>>();
+                var claims = options.Value.Claims?.Invoke(context);
+                var serviceProviderResponse = new ServiceProviderResponse()
+                {
+                    ServiceUrl = connectionServiceProvider.GetClientEndpoint(hubName),
+                    AccessToken = connectionServiceProvider.GenerateClientAccessToken(hubName, claims)
+                };
+
+                ServiceProviderProtocol.WriteResponse(serviceProviderResponse, writer);
+                // Write it out to the response with the right content length
+                context.Response.ContentLength = writer.Length;
+                await writer.CopyToAsync(context.Response.Body);
+            }
+            finally
+            {
+                writer.Reset();
+            }
+        }
+
+        private HubHost<THub> Start<THub>() where THub : Hub
         {
             var hubHost = _serviceProvider.GetRequiredService<HubHost<THub>>();
-            hubHost.Configure(_endpointProvider, _tokenProvider);
+            hubHost.Configure();
             var connectionBuilder = new ConnectionBuilder(_serviceProvider);
             connectionBuilder.UseHub<THub>();
             var app = connectionBuilder.Build();

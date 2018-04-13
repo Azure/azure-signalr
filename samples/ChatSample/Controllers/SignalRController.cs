@@ -10,13 +10,11 @@ namespace ChatSample
     [Route("signalr")]
     public class SignalRController : Controller
     {
-        private readonly EndpointProvider _endpointProvider;
-        private readonly TokenProvider _tokenProvider;
+        private readonly IConnectionServiceProvider _connectionServiceProvider;
 
-        public SignalRController(EndpointProvider endpointProvider, TokenProvider tokenProvider)
+        public SignalRController(IConnectionServiceProvider connectionServiceProvider)
         {
-            _endpointProvider = endpointProvider;
-            _tokenProvider = tokenProvider;
+            _connectionServiceProvider = connectionServiceProvider;
         }
 
         [HttpGet("{hubName}")]
@@ -25,8 +23,8 @@ namespace ChatSample
             return new OkObjectResult(
                 new
                 {
-                    serviceUrl = _endpointProvider.GetClientEndpoint(hubName),
-                    accessToken = _tokenProvider.GenerateClientAccessToken(hubName,
+                    serviceUrl = _connectionServiceProvider.GetClientEndpoint(hubName),
+                    accessToken = _connectionServiceProvider.GenerateClientAccessToken(hubName,
                         new[]
                         {
                             new Claim(ClaimTypes.Name, "username"),

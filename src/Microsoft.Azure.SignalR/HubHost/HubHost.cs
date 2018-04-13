@@ -19,38 +19,33 @@ namespace Microsoft.Azure.SignalR
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<HubHost<THub>> _logger;
 
-        private HubHostOptions _options;
-        private EndpointProvider _endpointProvider;
-        private TokenProvider _tokenProvider;
+        private ServiceOptions _options;
+        private IConnectionServiceProvider _connectionServiceProvider;
         private IServiceConnectionManager _serviceConnectionManager;
         private IClientConnectionManager _clientConnectionManager;
         private readonly string _name = $"HubHost<{typeof(THub).FullName}>";
 
-        public HubHost(IServiceConnectionManager serviceConnectionManager, IClientConnectionManager clientConnectionManager, IOptions<HubHostOptions> options, ILoggerFactory loggerFactory)
+        public HubHost(IServiceConnectionManager serviceConnectionManager,
+            IClientConnectionManager clientConnectionManager,
+            IConnectionServiceProvider connectionServiceProvider,
+            IOptions<ServiceOptions> options,
+            ILoggerFactory loggerFactory)
         {
             _serviceConnectionManager = serviceConnectionManager;
             _clientConnectionManager = clientConnectionManager;
+            _connectionServiceProvider = connectionServiceProvider;
             _options = options != null ? options.Value : throw new ArgumentNullException(nameof(options));
 
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<HubHost<THub>>();
         }
 
-        internal void Configure(EndpointProvider endpointProvider, TokenProvider tokenProvider)
+        internal void Configure()
         {
-            if (_endpointProvider != null || _tokenProvider != null)
-            {
-                throw new InvalidOperationException(
-                    $"{typeof(THub).FullName} can only bind with one Azure SignalR instance. Binding to multiple instances is forbidden.");
-            }
-
-            _endpointProvider = endpointProvider ?? throw new ArgumentNullException(nameof(endpointProvider));
-            _tokenProvider = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
-
             var serviceUrl = GetServiceUrl();
             var httpOptions = new HttpOptions
             {
-                AccessTokenFactory = () => _tokenProvider.GenerateServerAccessToken<THub>(),
+                AccessTokenFactory = () => _connectionServiceProvider.GenerateServerAccessToken<THub>(),
                 CloseTimeout = TimeSpan.FromSeconds(300)
             };
 
@@ -70,7 +65,7 @@ namespace Microsoft.Azure.SignalR
 
         private Uri GetServiceUrl()
         {
-            return new Uri(_endpointProvider.GetServerEndpoint<THub>());
+            return new Uri(_connectionServiceProvider.GetServerEndpoint<THub>());
         }
 
         private ServiceConnection CreateServiceConnection(Uri serviceUrl, HttpOptions httpOptions)

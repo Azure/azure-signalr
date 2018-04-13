@@ -10,10 +10,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="$(MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion)" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="$(SystemIdentityModelTokensJwtPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="$(MicrosoftAspNetCoreHttpConnectionsClientPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="$(MicrosoftAspNetCoreSignalRPackageVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MsgPack" Version="$(MicrosoftAspNetCoreSignalRProtocolsMsgPackPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsDependencyInjectionPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.ObjectMethodExecutor.Sources" PrivateAssets="All" Version="$(MicrosoftExtensionsObjectMethodExecutorSourcesPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingPackageVersion)" />

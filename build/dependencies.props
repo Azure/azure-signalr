@@ -22,12 +22,14 @@
     <OwinPackageVersion>1.0</OwinPackageVersion>
     <SystemBuffersPackageVersion>4.5.0-preview3-26331-02</SystemBuffersPackageVersion>
     <SystemMemoryPackageVersion>4.5.0-preview3-26331-02</SystemMemoryPackageVersion>
+    <SystemIdentityModelTokensJwtPackageVersion>5.2.1</SystemIdentityModelTokensJwtPackageVersion>
     <!-- Samples -->
     <MicrosoftAspNetCoreHostingPackageVersion>2.1.0-preview3-32162</MicrosoftAspNetCoreHostingPackageVersion>
     <MicrosoftAspNetCoreMvcPackageVersion>2.1.0-preview3-32162</MicrosoftAspNetCoreMvcPackageVersion>
     <MicrosoftAspNetCoreServerKestrelPackageVersion>2.1.0-preview3-32162</MicrosoftAspNetCoreServerKestrelPackageVersion>
     <MicrosoftAspNetCoreStaticFilesPackageVersion>2.1.0-preview3-32162</MicrosoftAspNetCoreStaticFilesPackageVersion>
     <MicrosoftExtensionsConfigurationEnvironmentVariablesPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsConfigurationEnvironmentVariablesPackageVersion>
+    <MicrosoftExtensionsConfigurationJsonPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsConfigurationJsonPackageVersion>
     <MicrosoftExtensionsConfigurationUserSecretsPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsConfigurationUserSecretsPackageVersion>
     <MicrosoftExtensionsLoggingConfigurationPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsLoggingConfigurationPackageVersion>
     <MicrosoftExtensionsLoggingConsolePackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsLoggingConsolePackageVersion>

@@ -3,12 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.SignalR.Internal.Protocol;
-using Newtonsoft.Json;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -18,6 +14,11 @@ namespace Microsoft.Azure.SignalR
         private readonly Func<string> _jwtBearerProvider;
         private readonly IReadOnlyList<string> _excludedIds;
         private IHubMessageSender _hubMessageSender;
+
+        internal const int ProxyPort = 5002;
+
+        internal const string DefaultApiVersion = "v1-preview";
+
         public ClientProxy(IHubMessageSender hubMessageSender, string url, Func<string> jwtBearerProvider, IReadOnlyList<string> excludedIds = null)
         {
             _hubMessageSender = hubMessageSender;
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         // TODO: Translate HttpResponseMessage to typed error
-        public Task<HttpResponseMessage> SendAsync(string method, object[] args)
+        public Task SendCoreAsync(string method, object[] args)
         {
             return _hubMessageSender.PostAsync(_url, _jwtBearerProvider.Invoke(), method, args);
         }
