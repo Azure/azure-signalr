@@ -1,5 +1,5 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Buffers;
@@ -11,7 +11,7 @@ using System.Text;
 
 namespace Microsoft.Azure.SignalR
 {
-    public sealed class Utf8BufferTextWriter : TextWriter
+    internal sealed class Utf8BufferTextWriter : TextWriter
     {
         private static readonly UTF8Encoding _utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
