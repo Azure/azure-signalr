@@ -40,10 +40,41 @@ namespace Microsoft.Azure.SignalR
             {
                 authorizationData.Add(attribute);
             }
-
+            _routes.MapRoute(path, c => RedirectWebsocket(c, nameof(THub), authorizationData));
             _routes.MapRoute(path + "/negotiate", c => RedirectToServiceUrlWithToken(c, nameof(THub), authorizationData));
 
             return Start<THub>();
+        }
+
+        private ServiceProviderResponse GenServiceUrlAndToken(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
+        {
+            var connectionServiceProvider = _serviceProvider.GetRequiredService<IConnectionServiceProvider>();
+            var options = _serviceProvider.GetService<IOptions<ServiceOptions>>();
+            var claims = options.Value.Claims?.Invoke(context);
+            var serviceProviderResponse = new ServiceProviderResponse()
+            {
+                ServiceUrl = connectionServiceProvider.GetClientEndpoint(hubName),
+                AccessToken = connectionServiceProvider.GenerateClientAccessToken(hubName, claims)
+            };
+            return serviceProviderResponse;
+        }
+
+        private async Task RedirectWebsocket(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
+        {
+            if (!context.WebSockets.IsWebSocketRequest)
+            {
+                context.Response.ContentType = "text/plain";
+                context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+                return;
+            }
+            if (!await AuthorizeHelper.AuthorizeAsync(context, authorizationData))
+            {
+                return;
+            }
+            var serviceProviderResponse = GenServiceUrlAndToken(context, hubName, authorizationData);
+            context.Response.StatusCode = StatusCodes.Status302Found;
+            context.Response.Headers.Add("access_token", serviceProviderResponse.AccessToken);
+            context.Response.Redirect(serviceProviderResponse.ServiceUrl);
         }
 
         private async Task RedirectToServiceUrlWithToken(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
@@ -53,19 +84,11 @@ namespace Microsoft.Azure.SignalR
                 return;
             }
             context.Response.ContentType = "application/json";
+            var serviceProviderResponse = GenServiceUrlAndToken(context, hubName, authorizationData);
             var writer = new MemoryBufferWriter();
 
             try
             {
-                var connectionServiceProvider = _serviceProvider.GetRequiredService<IConnectionServiceProvider>();
-                var options = _serviceProvider.GetService<IOptions<ServiceOptions>>();
-                var claims = options.Value.Claims?.Invoke(context);
-                var serviceProviderResponse = new ServiceProviderResponse()
-                {
-                    ServiceUrl = connectionServiceProvider.GetClientEndpoint(hubName),
-                    AccessToken = connectionServiceProvider.GenerateClientAccessToken(hubName, claims)
-                };
-
                 ServiceProviderProtocol.WriteResponse(serviceProviderResponse, writer);
                 // Write it out to the response with the right content length
                 context.Response.ContentLength = writer.Length;
