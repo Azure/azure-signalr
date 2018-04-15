@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR
             {
                 authorizationData.Add(attribute);
             }
-            _routes.MapRoute(path, c => RedirectWebsocket(c, nameof(THub), authorizationData));
+            //_routes.MapRoute(path, c => RedirectWebsocket(c, nameof(THub), authorizationData));
             _routes.MapRoute(path + "/negotiate", c => RedirectToServiceUrlWithToken(c, nameof(THub), authorizationData));
 
             return Start<THub>();

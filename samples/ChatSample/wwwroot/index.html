@@ -193,8 +193,6 @@
                         });
                 }(signalR.TransportType.WebSockets);
             }
-            startConnection("/chat", bindConnectionMessage);
-            /*
             getAccessToken('/signalr/chat')
                 .then(function (endpoint) {
                     accessToken = endpoint.accessToken;
@@ -202,7 +200,6 @@
                 })
                 .then(onConnected)
                 .catch(onConnectionError);
-            */
         });
     </script>
 </body>

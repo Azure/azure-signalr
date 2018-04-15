@@ -44,9 +44,9 @@ namespace ChatSample
                     })
                     .AddMessagePackProtocol();
 
-            var timeService =
-                new TimeService(CloudSignalR.CreateServiceContext<Chat>());
-            services.AddSingleton(typeof(TimeService), timeService);
+            //var timeService =
+            //    new TimeService(CloudSignalR.CreateServiceContext<Chat>());
+            //services.AddSingleton(typeof(TimeService), timeService);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
