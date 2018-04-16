@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +19,7 @@ namespace Microsoft.Azure.SignalR
             return new SignalRServiceContext<THub>(connectionServiceProvider, signalrServiceHubContext);
         }
 
-        public static void ConfigureAuthorization(Action<AuthorizationOptions> configure)
+        internal static void ConfigureAuthorization(Action<AuthorizationOptions> configure)
         {
             if (configure != null) _authorizationConfigure = configure;
         }
@@ -42,16 +41,16 @@ namespace Microsoft.Azure.SignalR
                     return signalRServerBuilder.Services.BuildServiceProvider();
                 });
 
-        public static IServiceProvider ServiceProvider
+        internal static IServiceProvider ServiceProvider
         {
             get => _externalServiceProvider ?? (_externalServiceCollection != null ? _externalServiceCollection.BuildServiceProvider() : _internalServiceProvider.Value);
-            internal set => _externalServiceProvider = value;
+            set => _externalServiceProvider = value;
         }
 
-        public static IServiceCollection ServiceCollection
+        internal static IServiceCollection ServiceCollection
         {
             get => _externalServiceCollection;
-            internal set => _externalServiceCollection = value;
+            set => _externalServiceCollection = value;
         }
     }
 }

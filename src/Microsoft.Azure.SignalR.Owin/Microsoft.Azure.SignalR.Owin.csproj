@@ -5,6 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\CloudSignalR.cs" Link="CloudSignalR.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Owin" Version="$(OwinPackageVersion)" />
   </ItemGroup>
 
