@@ -127,6 +127,8 @@
             }
 
             function onConnected(connection) {
+                console.log('connection started');
+                connection.invoke('broadcastMessage', '_SYSTEM_', username + ' JOINED');
                 document.getElementById('sendmessage').addEventListener('click', function (event) {
                     // Call the broadcastMessage method on the hub.
                     if (messageInput.value) {
@@ -179,8 +181,6 @@
 
                     return connection.start()
                         .then(function () {
-                            console.log('connection started');
-                            connection.invoke('broadcastMessage', '_SYSTEM_', username + ' JOINED');
                             return connection;
                         })
                         .catch(function (error) {
