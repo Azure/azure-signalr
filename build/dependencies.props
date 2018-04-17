@@ -4,7 +4,6 @@
   </PropertyGroup>
   <PropertyGroup Label="Package Versions">
     <!-- Azure SignalR -->
-    <MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>2.1.0-preview3-32162</MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
     <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreSignalRPackageVersion>
     <MicrosoftAspNetCoreSignalRProtocolsMsgPackPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreSignalRProtocolsMsgPackPackageVersion>
