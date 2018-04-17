@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class GroupManagerProxy : IGroupManager
+    internal class GroupManagerProxy : IGroupManager
     {
         private const int ProxyPort = 5002;
 

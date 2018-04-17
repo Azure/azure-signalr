@@ -7,7 +7,7 @@ namespace Microsoft.Azure.SignalR
 {
     public class ServiceProviderProtocol
     {
-        private const string ServiceUrlPropertyName = "serviceUrl";
+        private const string ServiceUrlPropertyName = "url";
         private const string AccessTokenPropertyName = "accessToken";
 
         public static void WriteResponse(ServiceProviderResponse response, IBufferWriter<byte> output)

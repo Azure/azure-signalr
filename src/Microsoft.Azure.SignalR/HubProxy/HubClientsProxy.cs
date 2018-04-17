@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class HubClientsProxy : IHubClients
+    internal class HubClientsProxy : IHubClients
     {
         private readonly IHubMessageSender _hubMessageSender;
         private readonly string _endpoint;
