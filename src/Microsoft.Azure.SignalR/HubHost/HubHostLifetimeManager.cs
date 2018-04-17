@@ -1,38 +1,45 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Internal;
+using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class HubHostLifetimeManager<THub> : HubLifetimeManager<THub>
+    public class HubHostLifetimeManager<THub> : HubLifetimeManager<THub> where THub : Hub
     {
-        private readonly HubConnectionList _connections = new HubConnectionList();
-        private readonly HubGroupList _groups = new HubGroupList();
         private readonly ILogger<HubHostLifetimeManager<THub>> _logger;
+        private readonly IReadOnlyList<IHubProtocol> _allProtocols;
 
         private long _nextInvocationId;
         private string InvocationId => Interlocked.Increment(ref _nextInvocationId).ToString();
+        private IServiceConnectionManager _serviceConnectionManager;
+        private IClientConnectionManager _clientConnectionManager;
 
-        public HubHostLifetimeManager(ILogger<HubHostLifetimeManager<THub>> logger)
+        public HubHostLifetimeManager(IServiceConnectionManager serviceConnectionManager,
+            IClientConnectionManager clientConnectionManager,
+            IHubProtocolResolver protocolResolver, ILogger<HubHostLifetimeManager<THub>> logger)
         {
+            _serviceConnectionManager = serviceConnectionManager;
+            _clientConnectionManager = clientConnectionManager;
+            _allProtocols = protocolResolver.AllProtocols;
             _logger = logger;
         }
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
         {
-            _connections.Add(connection);
             return Task.CompletedTask;
         }
 
         public override Task OnDisconnectedAsync(HubConnectionContext connection)
         {
-            _connections.Remove(connection);
             return Task.CompletedTask;
         }
 
@@ -40,27 +47,17 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var connection = _connections.FirstOrDefault();
-            if (IsNullObject(connection, "No connection found to broadcast message.")) return Task.CompletedTask;
-
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendAllAsync))
-                .Build();
-            return connection.WriteAsync(message);
+            var meta = new ServiceMessage();
+            meta.Command = CommandType.SendToAll;
+            return SerializeAllProtocolsAndSendAsync(meta, methodName, args);
         }
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedIds)
         {
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var connection = _connections.FirstOrDefault();
-            if (IsNullObject(connection, "No connection found to broadcast message.")) return Task.CompletedTask;
-
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendAllExceptAsync))
-                .WithExcludedIds(excludedIds)
-                .Build();
-            return connection.WriteAsync(message);
+            var meta = new ServiceMessage().AddExcludedIds(excludedIds);
+            return SerializeAllProtocolsAndSendAsync(meta, methodName, args);
         }
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args)
@@ -68,14 +65,8 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var connection = _connections[connectionId];
-            if (IsNullObject(connection, $"Connection[{connectionId}] not found.")) return Task.CompletedTask;
-
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendConnectionAsync))
-                .WithConnectionId(connectionId)
-                .Build();
-            return connection.WriteAsync(message);
+            var serviceMessage = new ServiceMessage().AddSendConnection(connectionId);
+            return SerializeAndSendAsync(_clientConnectionManager.ClientProtocol(connectionId), serviceMessage, methodName, args);
         }
 
         public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args)
@@ -83,15 +74,8 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidListArgument(nameof(connectionIds), connectionIds)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var connectionId = connectionIds.FirstOrDefault(id => _connections[id] != null);
-            if (IsEmptyString(connectionId, "No valid connection found.")) return Task.CompletedTask;
-
-            var connection = _connections[connectionId];
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendConnectionsAsync))
-                .WithConnectionIds(connectionIds)
-                .Build();
-            return connection.WriteAsync(message);
+            var serviceMessage = new ServiceMessage().AddSendConnections(connectionIds);
+            return SerializeAllProtocolsAndSendAsync(serviceMessage, methodName, args);
         }
 
         public override Task SendGroupAsync(string groupName, string methodName, object[] args)
@@ -99,32 +83,16 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var group = _groups[groupName];
-            if (IsNullObject(group, $"Group[{groupName}] not found.")) return Task.CompletedTask;
-
-            var connection = group.Values.FirstOrDefault();
-            if (IsNullObject(connection, $"Group[{groupName}] is empty.")) return Task.CompletedTask;
-
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendGroupAsync))
-                .WithGroup(groupName)
-                .Build();
-            return connection.WriteAsync(message);
+            var serviceMessage = new ServiceMessage().AddSendGroup(groupName);
+            return SerializeAllProtocolsAndSendAsync(serviceMessage, methodName, args);
         }
 
         public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args)
         {
             if (IsInvalidListArgument(nameof(groupNames), groupNames)) return Task.CompletedTask;
 
-            var groupName = groupNames.FirstOrDefault(group => _groups[group]?.Values.FirstOrDefault() != null);
-            if (IsEmptyString(groupName, "No valid group found.")) return Task.CompletedTask;
-
-            var connection = _groups[groupName].Values.First();
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendGroupsAsync))
-                .WithGroups(groupNames)
-                .Build();
-            return connection.WriteAsync(message);
+            var serviceMessage = new ServiceMessage().AddSendGroups(groupNames);
+            return SerializeAllProtocolsAndSendAsync(serviceMessage, methodName, args);
         }
 
         public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds)
@@ -132,18 +100,8 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var group = _groups[groupName];
-            if (IsNullObject(group, $"Group[{groupName}] not found.")) return Task.CompletedTask;
-
-            var connection = group.Values.FirstOrDefault();
-            if (IsNullObject(connection, $"Group[{groupName}] is empty.")) return Task.CompletedTask;
-
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendGroupExceptAsync))
-                .WithGroup(groupName)
-                .WithExcludedIds(excludedIds)
-                .Build();
-            return connection.WriteAsync(message);
+            var serviceMessage = new ServiceMessage().AddSendGroupExcludedIds(groupName, excludedIds);
+            return SerializeAllProtocolsAndSendAsync(serviceMessage, methodName, args);
         }
 
         public override Task SendUserAsync(string userId, string methodName, object[] args)
@@ -151,14 +109,8 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(userId), userId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var connection = _connections.FirstOrDefault();
-            if (IsNullObject(connection, "No connection found to send message.")) return Task.CompletedTask;
-
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendUserAsync))
-                .WithUser(userId)
-                .Build();
-            return connection.WriteAsync(message);
+            var serviceMessage = new ServiceMessage().AddSendUserId(userId);
+            return SerializeAllProtocolsAndSendAsync(serviceMessage, methodName, args);
         }
 
         public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args)
@@ -166,14 +118,8 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidListArgument(nameof(userIds), userIds)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var connection = _connections.FirstOrDefault();
-            if (IsNullObject(connection, "No connection found to send message.")) return Task.CompletedTask;
-
-            var message = new InvocationMessageBuilder(InvocationId, methodName, args)
-                .WithAction(nameof(SendUsersAsync))
-                .WithUsers(userIds)
-                .Build();
-            return connection.WriteAsync(message);
+            var serviceMessage = new ServiceMessage().AddSendUserIds(userIds);
+            return SerializeAllProtocolsAndSendAsync(serviceMessage, methodName, args);
         }
 
         public override Task AddGroupAsync(string connectionId, string groupName)
@@ -181,16 +127,8 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
 
-            var connection = _connections[connectionId];
-            if (IsNullObject(connection, $"Connection[{connectionId}] not found.")) return Task.CompletedTask;
-
-            _groups.Add(connection, groupName);
-            var message = new InvocationMessageBuilder(InvocationId, nameof(AddGroupAsync), new object[0])
-                .WithAction(nameof(AddGroupAsync))
-                .WithConnectionId(connectionId)
-                .WithGroup(groupName)
-                .Build();
-            return connection.WriteAsync(message);
+            var serviceMessage = new ServiceMessage().CreateAddConnectionToGroup(connectionId, groupName);
+            return SerializeAndSendAsync(_clientConnectionManager.ClientProtocol(connectionId), serviceMessage, null, null);
         }
 
         public override Task RemoveGroupAsync(string connectionId, string groupName)
@@ -198,16 +136,9 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
 
-            var connection = _connections[connectionId];
-            if (IsNullObject(connection, $"Connection[{connectionId}] not found.")) return Task.CompletedTask;
-
-            _groups.Remove(connectionId, groupName);
-            var message = new InvocationMessageBuilder(InvocationId, nameof(RemoveGroupAsync), new object[0])
-                .WithAction(nameof(RemoveGroupAsync))
-                .WithConnectionId(connectionId)
-                .WithGroup(groupName)
-                .Build();
-            return connection.WriteAsync(message);
+            var serviceMesssage = new ServiceMessage();
+            serviceMesssage.CreateRemoveConnectionFromGroup(connectionId, groupName);
+            return SerializeAndSendAsync(_clientConnectionManager.ClientProtocol(connectionId), serviceMesssage, null, null);
         }
 
         private bool IsInvalidStringArgument(string name, string value)
@@ -234,6 +165,55 @@ namespace Microsoft.Azure.SignalR
             if (value != null) return false;
             _logger.LogWarning(message);
             return true;
+        }
+
+        private ServiceMessage Serialize(string protocol, ServiceMessage serviceMessage, string method, object[] args)
+        {
+            if (method != null)
+            {
+                serviceMessage.AddProtocolName(protocol);
+                var message = CreateInvocationMessage(method, args);
+                foreach (var hubProtocol in _allProtocols)
+                {
+                    if (string.Equals(hubProtocol.Name, protocol, StringComparison.Ordinal))
+                    {
+                        serviceMessage.AddPayload(protocol, hubProtocol.WriteToArray(message));
+                        break;
+                    }
+                }
+            }
+            return serviceMessage;
+        }
+
+        private ServiceMessage SerializeAllProtocols(ServiceMessage serviceMessage, string method, object[] args)
+        {
+            if (method != null)
+            {
+                var message = CreateInvocationMessage(method, args);
+                foreach (var hubProtocol in _allProtocols)
+                {
+                    serviceMessage.AddPayload(hubProtocol.Name, hubProtocol.WriteToArray(message));
+                }
+            }
+            return serviceMessage;
+        }
+
+        private Task SerializeAndSendAsync(string protocol, ServiceMessage serviceMessage, string method, object[] args)
+        {
+            return _serviceConnectionManager.SendServiceMessage(Serialize(protocol, serviceMessage, method, args));
+        }
+
+        private Task SerializeAllProtocolsAndSendAsync(ServiceMessage serviceMessage, string method, object[] args)
+        {
+            return _serviceConnectionManager.SendServiceMessage(SerializeAllProtocols(serviceMessage, method, args));
+        }
+
+        public InvocationMessage CreateInvocationMessage(string methodName, object[] args)
+        {
+            var invocationMessage = new InvocationMessage(
+                target: methodName,
+                argumentBindingException: null, arguments: args);
+            return invocationMessage;
         }
     }
 }

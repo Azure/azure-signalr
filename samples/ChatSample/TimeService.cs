@@ -11,23 +11,38 @@ namespace ChatSample
 {
     public class TimeService
     {
-        private readonly HubProxy _hubProxy;
-        private readonly Timer _timer;
+        private readonly SignalRServiceContext<Chat> _hubProxy;
+        private Timer _timer;
+        private bool _isDisposed;
 
-        public TimeService(HubProxy hubProxy)
+        public TimeService(CloudSignalR cloudSignalR)
         {
-            _hubProxy = hubProxy ?? throw new ArgumentNullException(nameof(hubProxy));
+            _hubProxy = cloudSignalR.CreateServiceContext<Chat>();
+        }
+
+        public void Start()
+        {
             _timer = new Timer(Run, this, 100, 60 * 1000);
+            _isDisposed = false;
+        }
+
+        public void Dispose()
+        {
+            if (!_isDisposed)
+            {
+                _timer.Dispose();
+            }
+            _isDisposed = true;
         }
 
         private static void Run(object state)
         {
-            _ = ((TimeService) state).Broadcast();
+            _ = ((TimeService)state).Broadcast();
         }
 
         private async Task Broadcast()
         {
-            await _hubProxy.Clients.All.SendAsync("broadcastMessage",
+            await _hubProxy.HubContext.Clients.All.SendCoreAsync("broadcastMessage",
                 new object[]
                 {
                     "_BROADCAST_",

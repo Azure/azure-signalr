@@ -3,34 +3,24 @@
 
 using System;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Core;
-using Microsoft.AspNetCore.SignalR.Internal;
-using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 using Microsoft.Azure.SignalR;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     public static class AzureSignalRDependencyInjectionExtensions
     {
-        public static IServiceCollection AddAzureSignalR(this IServiceCollection services,
-            Action<HubHostOptions> configure = null)
+        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder,
+            Action<ServiceOptions> configure = null)
         {
-            if (configure != null) services.Configure(configure);
-            
-            services.AddSingleton(typeof(HubLifetimeManager<>), typeof(HubHostLifetimeManager<>));
-            services.AddSingleton(typeof(IHubProtocolResolver), typeof(DefaultHubProtocolResolver));
-            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHubProtocol, JsonHubProtocol>());
-            services.AddSingleton(typeof(IHubContext<>), typeof(HubContext<>));
-            services.AddSingleton(typeof(IUserIdProvider), typeof(DefaultUserIdProvider));
-            services.AddScoped(typeof(IHubActivator<>), typeof(DefaultHubActivator<>));
-
-            services.AddSingleton(typeof(HubDispatcher<>), typeof(HubHostDispatcher<>));
-            services.AddSingleton(typeof(HubHost<>));
-
-            services.AddAuthorization();
-
-            return services;
+            if (configure != null) builder.Services.Configure(configure);
+            builder.Services.AddSingleton(typeof(HubLifetimeManager<>), typeof(HubHostLifetimeManager<>));
+            builder.Services.AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager));
+            builder.Services.AddSingleton(typeof(IServiceConnectionManager), typeof(ServiceConnectionManager));
+            builder.Services.AddSingleton(typeof(IConnectionServiceProvider), typeof(ConnectionServiceProvider));
+            builder.Services.AddSingleton(typeof(HubHost<>));
+            builder.Services.AddSingleton(typeof(CloudSignalR));
+            builder.Services.AddSingleton(typeof(IHubMessageSender), typeof(HubMessageSender));
+            return builder;
         }
     }
 }
