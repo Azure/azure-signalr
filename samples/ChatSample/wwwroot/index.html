@@ -38,7 +38,9 @@
     <script type="text/javascript" src="scripts/bootstrap.js"></script>
 
     <!--Reference the SignalR library. -->
+    <script type="text/javascript" src="scripts/msgpack5.js"></script>
     <script type="text/javascript" src="scripts/signalr.js"></script>
+    <script type="text/javascript" src="scripts/signalr-protocol-msgpack.js"></script>
 
     <!--Add script to update the page and send messages.-->
     <script type="text/javascript">
@@ -172,7 +174,7 @@
             function startConnection(url, configureConnection) {
                 return function start(transport) {
                     console.log(`Starting connection using ${signalR.TransportType[transport]} transport`);
-                    var connection = new signalR.HubConnection(url, { transport: transport, accessTokenFactory: () => accessToken });
+                    var connection = new signalR.HubConnection(url, { transport: transport, accessTokenFactory: () => accessToken/*, protocol: new signalR.protocols.msgpack.MessagePackHubProtocol()*/});
                     if (configureConnection && typeof configureConnection === 'function') {
                         configureConnection(connection);
                     }
@@ -191,7 +193,6 @@
                         });
                 }(signalR.TransportType.WebSockets);
             }
-
             getAccessToken('/signalr/chat')
                 .then(function (endpoint) {
                     accessToken = endpoint.accessToken;

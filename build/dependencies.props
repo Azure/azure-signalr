@@ -4,32 +4,34 @@
   </PropertyGroup>
   <PropertyGroup Label="Package Versions">
     <!-- Azure SignalR -->
-    <MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>2.1.0-preview2-30131</MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>
-    <MicrosoftAspNetCoreSignalRCommonPackageVersion>1.0.0-preview3-32038</MicrosoftAspNetCoreSignalRCommonPackageVersion>
-    <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0-preview2-30186</MicrosoftAspNetCoreSignalRPackageVersion>
-    <MicrosoftAspNetCoreSignalRProtocolsMsgPackPackageVersion>1.0.0-preview2-30186</MicrosoftAspNetCoreSignalRProtocolsMsgPackPackageVersion>
-    <MicrosoftAspNetCoreSocketsClientHttpPackageVersion>1.0.0-preview2-30186</MicrosoftAspNetCoreSocketsClientHttpPackageVersion>
-    <MicrosoftExtensionsCachingAbstractionsPackageVersion>2.1.0-preview2-30131</MicrosoftExtensionsCachingAbstractionsPackageVersion>
-    <MicrosoftExtensionsCachingMemoryPackageVersion>2.1.0-preview2-30131</MicrosoftExtensionsCachingMemoryPackageVersion>
-    <MicrosoftExtensionsCachingRedisPackageVersion>2.1.0-preview2-30131</MicrosoftExtensionsCachingRedisPackageVersion>
-    <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0-preview2-30131</MicrosoftExtensionsDependencyInjectionPackageVersion>
-    <MicrosoftExtensionsObjectMethodExecutorSourcesPackageVersion>2.1.0-preview2-30131</MicrosoftExtensionsObjectMethodExecutorSourcesPackageVersion>
-    <MicrosoftExtensionsLoggingPackageVersion>2.1.0-preview2-30131</MicrosoftExtensionsLoggingPackageVersion>
+    <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
+    <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreSignalRPackageVersion>
+    <MicrosoftAspNetCoreSignalRProtocolsMsgPackPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreSignalRProtocolsMsgPackPackageVersion>
+    <MicrosoftExtensionsCachingAbstractionsPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsCachingAbstractionsPackageVersion>
+    <MicrosoftExtensionsCachingMemoryPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsCachingMemoryPackageVersion>
+    <MicrosoftExtensionsCachingRedisPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsCachingRedisPackageVersion>
+    <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsDependencyInjectionPackageVersion>
+    <MicrosoftExtensionsObjectMethodExecutorSourcesPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsObjectMethodExecutorSourcesPackageVersion>
+    <MicrosoftExtensionsLoggingPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>3.19.1</MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>
     <MicrosoftAzureKeyVaultPackageVersion>2.3.2</MicrosoftAzureKeyVaultPackageVersion>
     <MsgPackCliPackageVersion>1.0.0-rc</MsgPackCliPackageVersion>
     <OwinPackageVersion>1.0</OwinPackageVersion>
+    <SystemBuffersPackageVersion>4.5.0-preview3-26331-02</SystemBuffersPackageVersion>
+    <SystemMemoryPackageVersion>4.5.0-preview3-26331-02</SystemMemoryPackageVersion>
+    <SystemIdentityModelTokensJwtPackageVersion>5.2.1</SystemIdentityModelTokensJwtPackageVersion>
     <!-- Samples -->
-    <MicrosoftAspNetCoreHostingPackageVersion>2.1.0-preview2-30131</MicrosoftAspNetCoreHostingPackageVersion>
-    <MicrosoftAspNetCoreMvcPackageVersion>2.1.0-preview2-30131</MicrosoftAspNetCoreMvcPackageVersion>
-    <MicrosoftAspNetCoreServerKestrelPackageVersion>2.1.0-preview2-30131</MicrosoftAspNetCoreServerKestrelPackageVersion>
-    <MicrosoftAspNetCoreStaticFilesPackageVersion>2.1.0-preview2-30131</MicrosoftAspNetCoreStaticFilesPackageVersion>
-    <MicrosoftExtensionsConfigurationEnvironmentVariablesPackageVersion>2.1.0-preview2-30131</MicrosoftExtensionsConfigurationEnvironmentVariablesPackageVersion>
-    <MicrosoftExtensionsConfigurationUserSecretsPackageVersion>2.1.0-preview2-30131</MicrosoftExtensionsConfigurationUserSecretsPackageVersion>
-    <MicrosoftExtensionsLoggingConfigurationPackageVersion>2.1.0-preview2-30131</MicrosoftExtensionsLoggingConfigurationPackageVersion>
-    <MicrosoftExtensionsLoggingConsolePackageVersion>2.1.0-preview2-30131</MicrosoftExtensionsLoggingConsolePackageVersion>
-    <MicrosoftExtensionsLoggingDebugPackageVersion>2.1.0-preview2-30131</MicrosoftExtensionsLoggingDebugPackageVersion>
-    <NewtonsoftJsonPackageVersion>10.0.1</NewtonsoftJsonPackageVersion>
+    <MicrosoftAspNetCoreHostingPackageVersion>2.1.0-preview3-32162</MicrosoftAspNetCoreHostingPackageVersion>
+    <MicrosoftAspNetCoreMvcPackageVersion>2.1.0-preview3-32162</MicrosoftAspNetCoreMvcPackageVersion>
+    <MicrosoftAspNetCoreServerKestrelPackageVersion>2.1.0-preview3-32162</MicrosoftAspNetCoreServerKestrelPackageVersion>
+    <MicrosoftAspNetCoreStaticFilesPackageVersion>2.1.0-preview3-32162</MicrosoftAspNetCoreStaticFilesPackageVersion>
+    <MicrosoftExtensionsConfigurationEnvironmentVariablesPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsConfigurationEnvironmentVariablesPackageVersion>
+    <MicrosoftExtensionsConfigurationJsonPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsConfigurationJsonPackageVersion>
+    <MicrosoftExtensionsConfigurationUserSecretsPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsConfigurationUserSecretsPackageVersion>
+    <MicrosoftExtensionsLoggingConfigurationPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsLoggingConfigurationPackageVersion>
+    <MicrosoftExtensionsLoggingConsolePackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsLoggingConsolePackageVersion>
+    <MicrosoftExtensionsLoggingDebugPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsLoggingDebugPackageVersion>
+    <NewtonsoftJsonPackageVersion>11.0.2</NewtonsoftJsonPackageVersion>
   </PropertyGroup>
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition=" '$(DotNetPackageVersionPropsPath)' != '' " />
 </Project>

@@ -9,14 +9,14 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class GroupManagerProxy : IGroupManager
+    internal class GroupManagerProxy : IGroupManager
     {
         private const int ProxyPort = 5002;
 
         private readonly string _baseUri;
         private readonly string _accessKey;
 
-        public GroupManagerProxy(string endpoint, string accessKey, string hubName, HubProxyOptions options)
+        public GroupManagerProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey, string hubName)
         {
             if (string.IsNullOrEmpty(endpoint))
             {
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            var apiVersion = options?.ApiVersion ?? HubProxyOptions.DefaultApiVersion;
+            var apiVersion = ClientProxy.DefaultApiVersion;
             _baseUri = $"{endpoint}:{ProxyPort}/{apiVersion}/hub/{hubName.ToLower()}/group";
             _accessKey = accessKey;
         }
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.SignalR
             return AuthenticationHelper.GenerateJwtBearer(
                 audience: audience,
                 claims: null,
-                expires: DateTime.UtcNow.Add(TokenProvider.DefaultAccessTokenLifetime),
+                expires: DateTime.UtcNow.Add(ConnectionServiceProvider.DefaultAccessTokenLifetime),
                 signingKey: _accessKey
             );
         }

@@ -8,17 +8,12 @@ namespace Microsoft.AspNetCore.Builder
 {
     public static class AzureSignalRApplicationBuilderExtensions
     {
-        public static IApplicationBuilder UseAzureSignalR(this IApplicationBuilder app,
-            string connectionString, Action<HubHostBuilder> configure)
+        public static IApplicationBuilder UseAzureSignalR(this IApplicationBuilder app, Action<HubHostBuilder> configure)
         {
-            // Assign only once
-            CloudSignalR.ServiceProvider = app.ApplicationServices;
-
-            var builder = new HubHostBuilder(app.ApplicationServices,
-                CloudSignalR.CreateEndpointProviderFromConnectionString(connectionString),
-                CloudSignalR.CreateTokenProviderFromConnectionString(connectionString));
-            configure(builder);
-
+            app.UseRoute(routes =>
+            {
+                configure(new HubHostBuilder(routes));
+            });
             return app;
         }
     }
