@@ -6,7 +6,7 @@ using System.Buffers;
 
 namespace Microsoft.Azure.SignalR
 {
-    public static class BinaryMessageParser
+    internal static class BinaryMessageParser
     {
         private const int MaxLengthPrefixSize = 5;
 

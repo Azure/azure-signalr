@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
-    public sealed class LimitArrayPoolWriteStream : Stream
+    internal sealed class LimitArrayPoolWriteStream : Stream
     {
         private const int MaxByteArrayLength = 0x7FFFFFC7;
         private const int InitialLength = 256;

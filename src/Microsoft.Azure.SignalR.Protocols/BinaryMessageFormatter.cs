@@ -6,7 +6,7 @@ using System.Buffers;
 
 namespace Microsoft.Azure.SignalR
 {
-    public static class BinaryMessageFormatter
+    internal static class BinaryMessageFormatter
     {
         public static void WriteLengthPrefix(long length, IBufferWriter<byte> output)
         {
