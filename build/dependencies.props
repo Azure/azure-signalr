@@ -6,10 +6,8 @@
     <!-- Azure SignalR -->
     <MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>2.1.0-preview3-32162</MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
-    <MicrosoftAspNetCoreSignalRCommonPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreSignalRCommonPackageVersion>
     <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreSignalRPackageVersion>
     <MicrosoftAspNetCoreSignalRProtocolsMsgPackPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreSignalRProtocolsMsgPackPackageVersion>
-    <MicrosoftAspNetCoreSocketsClientHttpPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreSocketsClientHttpPackageVersion>
     <MicrosoftExtensionsCachingAbstractionsPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsCachingAbstractionsPackageVersion>
     <MicrosoftExtensionsCachingMemoryPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsCachingMemoryPackageVersion>
     <MicrosoftExtensionsCachingRedisPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsCachingRedisPackageVersion>
