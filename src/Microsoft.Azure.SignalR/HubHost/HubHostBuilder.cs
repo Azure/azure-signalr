@@ -27,10 +27,10 @@ namespace Microsoft.Azure.SignalR
             _serviceProvider = _routes.ServiceProvider;
         }
 
-        public HubHost<THub> MapHub<THub>(string path) where THub : Hub
+        public Task MapHub<THub>(string path) where THub : Hub
             => MapHub<THub>(new PathString(path));
 
-        public HubHost<THub> MapHub<THub>(PathString path) where THub: Hub
+        public Task MapHub<THub>(PathString path) where THub: Hub
         {
             // find auth attributes
             var authorizeAttributes = typeof(THub).GetCustomAttributes<AuthorizeAttribute>(inherit: true);
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private HubHost<THub> Start<THub>() where THub : Hub
+        private Task Start<THub>() where THub : Hub
         {
             var hubHost = _serviceProvider.GetRequiredService<HubHost<THub>>();
             hubHost.Configure();
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR
             connectionBuilder.UseHub<THub>();
             var app = connectionBuilder.Build();
             hubHost.StartAsync(app).GetAwaiter().GetResult();
-            return hubHost;
+            return Task.CompletedTask;
         }
     }
 }

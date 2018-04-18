@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class ServiceConnection
+    internal class ServiceConnection
     {
         public static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
 
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.SignalR
                         break;
                     }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     _logger.LogError($"Fail to handle message from service {e.Message}");
                     throw e;
@@ -148,9 +148,6 @@ namespace Microsoft.Azure.SignalR
             {
                 connection.Application.Input.Complete();
             }
-
-            // We should probably notify the service here that the application chose to abort the connection
-            _clientConnectionManager.ClientConnections.TryRemove(connection.ConnectionId, out _);
         }
 
         private async Task OnConnectedAsync(ServiceMessage message)
@@ -158,10 +155,9 @@ namespace Microsoft.Azure.SignalR
             var connection = new ServiceConnectionContext(message);
             _clientConnectionManager.AddClientConnection(connection);
             _logger.LogDebug("Handle OnConnected command");
-            // This is a bit hacky, we can look at how to work around this
-            // We need to do fake in memory handshake between this code and the 
-            // HubConnectionHandler to set the protocol
-            await connection.Application.Output.WriteAsync(message.Payloads["json"]); // forward handshake
+
+            // forward handshake
+            await connection.Application.Output.WriteAsync(message.Payloads["json"]);
             // Execute the application code, this will call into the SignalR end point
             _ = _connectionDelegate(connection);
             // Start receiving
@@ -173,6 +169,7 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionManager.ClientConnections.TryRemove(message.GetConnectionId(), out var connection);
             // Close this connection gracefully then remove it from the list, this will trigger the hub shutdown logic appropriately
             connection.Application.Output.Complete();
+            _clientConnectionManager.ClientConnections.TryRemove(connection.ConnectionId, out _);
             return Task.CompletedTask;
         }
 

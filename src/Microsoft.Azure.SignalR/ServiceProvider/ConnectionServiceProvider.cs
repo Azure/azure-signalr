@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class ConnectionServiceProvider : IConnectionServiceProvider
+    internal class ConnectionServiceProvider : IConnectionServiceProvider
     {
         private const string EndpointProperty = "endpoint";
         private const string AccessKeyProperty = "accesskey";
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.SignalR
         }
     }
 
-    public class ConnectionService
+    internal class ConnectionService
     {
         public string Endpoint { get; set; }
 

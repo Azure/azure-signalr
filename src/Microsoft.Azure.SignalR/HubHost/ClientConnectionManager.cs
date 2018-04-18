@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class ClientConnectionManager : IClientConnectionManager
+    internal class ClientConnectionManager : IClientConnectionManager
     {
         public ClientConnectionManager()
         {

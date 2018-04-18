@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class ServiceConnectionManager : IServiceConnectionManager
+    internal class ServiceConnectionManager : IServiceConnectionManager
     {
         private readonly List<ServiceConnection> _serviceConnections = new List<ServiceConnection>();
 

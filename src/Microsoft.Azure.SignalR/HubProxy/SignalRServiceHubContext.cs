@@ -5,9 +5,8 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class SignalRServiceHubContext<THub> : IHubContext<THub> where THub : Hub
+    internal class SignalRServiceHubContext<THub> : IHubContext<THub> where THub : Hub
     {
-
         public SignalRServiceHubContext(IConnectionServiceProvider connectionServiceProvider, IHubMessageSender hubMessageSender)
         {
             Clients = new HubClientsProxy(hubMessageSender, connectionServiceProvider.GetEndpoint(), connectionServiceProvider.GetAccessToken(), typeof(THub).Name);

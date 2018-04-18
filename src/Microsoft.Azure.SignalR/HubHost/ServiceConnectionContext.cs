@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Http.Features;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class ServiceConnectionContext : ConnectionContext,
+    internal class ServiceConnectionContext : ConnectionContext,
                                             IConnectionUserFeature,
                                             IConnectionItemsFeature,
                                             IConnectionIdFeature,

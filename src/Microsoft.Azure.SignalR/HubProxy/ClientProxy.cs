@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class ClientProxy : IClientProxy
+    internal class ClientProxy : IClientProxy
     {
         private readonly string _url;
         private readonly Func<string> _jwtBearerProvider;

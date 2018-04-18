@@ -7,13 +7,10 @@ namespace Microsoft.Azure.SignalR
 {
     public class SignalRServiceContext<THub> where THub : Hub
     {
-        public SignalRServiceContext(IConnectionServiceProvider connectionServiceProvider, IHubContext<THub> hubContext)
+        public SignalRServiceContext(IHubContext<THub> hubContext)
         {
-            ConnectionServiceProvider = connectionServiceProvider;
             HubContext = hubContext;
         }
-
-        public IConnectionServiceProvider ConnectionServiceProvider { get; set; }
 
         public IHubContext<THub> HubContext { get; set; }
     }

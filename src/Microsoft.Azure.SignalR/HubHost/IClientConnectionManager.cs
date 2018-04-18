@@ -5,7 +5,7 @@ using System.Collections.Concurrent;
 
 namespace Microsoft.Azure.SignalR
 {
-    public interface IClientConnectionManager
+    internal interface IClientConnectionManager
     {
         void AddClientConnection(ServiceConnectionContext clientConnection);
 

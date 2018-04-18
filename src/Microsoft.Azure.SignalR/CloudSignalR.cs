@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR
         public SignalRServiceContext<THub> CreateServiceContext<THub>() where THub : Hub
         {
             var signalrServiceHubContext = new SignalRServiceHubContext<THub>(_connectionServiceProvider, _hubMessageSender);
-            return new SignalRServiceContext<THub>(_connectionServiceProvider, signalrServiceHubContext);
+            return new SignalRServiceContext<THub>(signalrServiceHubContext);
         }
     }
 }

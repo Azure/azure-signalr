@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Microsoft.Azure.SignalR
 {
-    public interface IServiceConnectionManager
+    internal interface IServiceConnectionManager
     {
         void AddServiceConnection(ServiceConnection serviceConnection);
 

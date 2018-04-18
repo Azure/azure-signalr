@@ -5,7 +5,7 @@ using System.Buffers;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class ServiceProviderProtocol
+    internal class ServiceProviderProtocol
     {
         private const string ServiceUrlPropertyName = "url";
         private const string AccessTokenPropertyName = "accessToken";

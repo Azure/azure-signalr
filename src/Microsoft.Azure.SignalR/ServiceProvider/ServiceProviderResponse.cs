@@ -3,7 +3,7 @@
 
 namespace Microsoft.Azure.SignalR
 {
-    public class ServiceProviderResponse
+    internal class ServiceProviderResponse
     {
         public string ServiceUrl { get; set; }
 

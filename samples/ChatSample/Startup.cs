@@ -4,7 +4,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Azure.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -43,7 +42,7 @@ namespace ChatSample
                         };
                     })
                     .AddMessagePackProtocol();
-            services.AddSingleton(typeof(TimeService));
+            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, TimeService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -53,8 +52,6 @@ namespace ChatSample
             app.UseFileServer();
             app.UseAzureSignalR(
                 builder => { builder.MapHub<Chat>("/chat"); });
-            var timeService = app.ApplicationServices.GetRequiredService(typeof(TimeService)) as TimeService;
-            timeService.Start();
         }
     }
 }

@@ -13,14 +13,14 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class HubMessagePayload
+    internal class HubMessagePayload
     {
         public string ProtocolName { get; set; }
 
         public string Payload { get; set; }
     }
 
-    public class HttpMessage
+    internal class HttpMessage
     {
         public int PayloadCount { get; set; }
 
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR
         public IReadOnlyList<string> ExcludedIds { get; set; }
     }
 
-    public class HubMessageSender : IHubMessageSender
+    internal class HubMessageSender : IHubMessageSender
     {
         private IHubProtocolResolver _hubProtocolResolver;
         private HttpClient _httpClient = new HttpClient();

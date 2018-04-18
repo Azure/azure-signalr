@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class HubHost<THub> where THub : Hub
+    internal class HubHost<THub> where THub : Hub
     {
         private readonly List<ServiceConnection> _cloudConnections = new List<ServiceConnection>();
         private readonly ILoggerFactory _loggerFactory;
