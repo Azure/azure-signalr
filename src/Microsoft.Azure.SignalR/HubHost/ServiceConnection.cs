@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR
             _httpConnection = httpConnection;
             _logger = loggerFactory.CreateLogger<ServiceConnection>();
         }
-        
+
         public async Task StartAsync(ConnectionDelegate connectionDelegate)
         {
             _connectionDelegate = connectionDelegate;
@@ -159,9 +159,14 @@ namespace Microsoft.Azure.SignalR
             // forward handshake
             await connection.Application.Output.WriteAsync(message.Payloads["json"]);
             // Execute the application code, this will call into the SignalR end point
-            _ = _connectionDelegate(connection);
+            _ = _connectionDelegate(connection).ContinueWith(task => { RemoveConnectionContext(connection); });
             // Start receiving
-            _ = ProcessOutgoingMessagesAsync(connection);
+            _ = ProcessOutgoingMessagesAsync(connection).ContinueWith(task => { RemoveConnectionContext(connection); });
+        }
+
+        private void RemoveConnectionContext(ServiceConnectionContext connection)
+        {
+            _clientConnectionManager.ClientConnections.TryRemove(connection.ConnectionId, out _);
         }
 
         private Task OnDisconnectedAsync(ServiceMessage message)
@@ -169,7 +174,6 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionManager.ClientConnections.TryRemove(message.GetConnectionId(), out var connection);
             // Close this connection gracefully then remove it from the list, this will trigger the hub shutdown logic appropriately
             connection.Application.Output.Complete();
-            _clientConnectionManager.ClientConnections.TryRemove(connection.ConnectionId, out _);
             return Task.CompletedTask;
         }
 
