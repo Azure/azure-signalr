@@ -27,10 +27,10 @@ namespace Microsoft.Azure.SignalR
             _serviceProvider = _routes.ServiceProvider;
         }
 
-        public Task MapHub<THub>(string path) where THub : Hub
+        public void MapHub<THub>(string path) where THub : Hub
             => MapHub<THub>(new PathString(path));
 
-        public Task MapHub<THub>(PathString path) where THub: Hub
+        public void MapHub<THub>(PathString path) where THub: Hub
         {
             // find auth attributes
             var authorizeAttributes = typeof(THub).GetCustomAttributes<AuthorizeAttribute>(inherit: true);
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR
             }
             _routes.MapRoute(path + "/negotiate", c => RedirectToServiceUrlWithToken(c, nameof(THub), authorizationData));
 
-            return Start<THub>();
+            Start<THub>();
         }
 
         private ServiceProviderResponse GenServiceUrlAndToken(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private Task Start<THub>() where THub : Hub
+        private void Start<THub>() where THub : Hub
         {
             var hubHost = _serviceProvider.GetRequiredService<HubHost<THub>>();
             hubHost.Configure();
@@ -88,7 +88,6 @@ namespace Microsoft.Azure.SignalR
             connectionBuilder.UseHub<THub>();
             var app = connectionBuilder.Build();
             hubHost.StartAsync(app).GetAwaiter().GetResult();
-            return Task.CompletedTask;
         }
     }
 }
