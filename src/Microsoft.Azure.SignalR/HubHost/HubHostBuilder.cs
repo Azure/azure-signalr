@@ -39,7 +39,7 @@ namespace Microsoft.Azure.SignalR
             {
                 authorizationData.Add(attribute);
             }
-            _routes.MapRoute(path + "/negotiate", c => RedirectToServiceUrlWithToken(c, nameof(THub), authorizationData));
+            _routes.MapRoute(path + "/negotiate", c => RedirectToServiceUrlWithToken(c, typeof(THub).Name, authorizationData));
 
             Start<THub>();
         }

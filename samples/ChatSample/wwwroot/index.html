@@ -65,29 +65,6 @@
             var messageInput = document.getElementById('message');
             messageInput.focus();
 
-            var accessToken = '';
-
-            function getAccessToken(url) {
-                return new Promise((resolve, reject) => {
-                    var xhr = new XMLHttpRequest();
-                    xhr.open('GET', url, true);
-                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-                    xhr.send();
-                    xhr.onload = () => {
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            resolve(JSON.parse(xhr.response || xhr.responseText));
-                        }
-                        else {
-                            reject(new Error(xhr.statusText));
-                        }
-                    };
-
-                    xhr.onerror = () => {
-                        reject(new Error(xhr.statusText));
-                    }
-                });
-            }
-
             function createMessageEntry(encodedName, encodedMsg) {
                 var entry = document.createElement('div');
                 entry.classList.add("message-entry");
@@ -173,8 +150,8 @@
             // any of the available transports the function will return a rejected Promise.
             function startConnection(url, configureConnection) {
                 return function start(transport) {
-                    console.log(`Starting connection using ${signalR.TransportType[transport]} transport`);
-                    var connection = new signalR.HubConnection(url, { transport: transport, accessTokenFactory: () => accessToken });
+                    console.log(`Starting connection using ${signalR.HttpTransportType[transport]} transport`);
+                    var connection = new signalR.HubConnection(url, { transport: transport });
                     if (configureConnection && typeof configureConnection === 'function') {
                         configureConnection(connection);
                     }
@@ -184,23 +161,16 @@
                             return connection;
                         })
                         .catch(function (error) {
-                            console.log(`Cannot start the connection use ${signalR.TransportType[transport]} transport. ${error.message}`);
-                            if (transport !== signalR.TransportType.LongPolling) {
+                            console.log(`Cannot start the connection use ${signalR.HttpTransportType[transport]} transport. ${error.message}`);
+                            if (transport !== signalR.HttpTransportType.LongPolling) {
                                 return start(transport + 1);
                             }
 
                             return Promise.reject(error);
                         });
-                }(signalR.TransportType.WebSockets);
+                }(signalR.HttpTransportType.WebSockets);
             }
-
-            getAccessToken('/signalr/chat')
-                .then(function (endpoint) {
-                    accessToken = endpoint.accessToken;
-                    return startConnection(endpoint.serviceUrl, bindConnectionMessage);
-                })
-                .then(onConnected)
-                .catch(onConnectionError);
+            startConnection('/chat', bindConnectionMessage).then(onConnected);
         });
     </script>
 </body>
