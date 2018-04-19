@@ -125,7 +125,7 @@ namespace Microsoft.Azure.SignalR
                     var buffer = result.Buffer;
                     if (!buffer.IsEmpty)
                     {
-                        // Send Handshake, Completion or Error back to the Client
+                        // Blindly send message from SignalR to Client
                         var serviceMessage = new ServiceMessage();
                         serviceMessage.CreateAckResponse(connection.ConnectionId, buffer.ToArray());
                         await SendServiceMessage(serviceMessage);
@@ -156,17 +156,38 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionManager.AddClientConnection(connection);
             _logger.LogDebug("Handle OnConnected command");
 
-            // forward handshake
+            // Need to remove the workaround handshake after fixing https://github.com/Azure/azure-signalr/issues/20
             await connection.Application.Output.WriteAsync(message.Payloads["json"]);
             // Execute the application code, this will call into the SignalR end point
-            _ = _connectionDelegate(connection).ContinueWith(task => { RemoveConnectionContext(connection); });
+            // SignalR keeps on reading from Transport.Input.
+            _ = _connectionDelegate(connection).ContinueWith(task =>
+            {
+                // SignalR stops reading from Transport.Input, we have to complete pipes for
+                // both Transport and Application, and then remove the connection.
+
+                // Here we complete the Transport.Output, which triggers
+                // connection.Application.Input.ReadAsync returns "Completed",
+                // and connection.Applicaiton.Input.Complete()
+                connection.Transport.Output.Complete();
+                _logger.LogDebug($"SignalR completes reading from Transport.Input which finally causes {connection.ConnectionId} to be removed");
+            });
             // Start receiving
-            _ = ProcessOutgoingMessagesAsync(connection).ContinueWith(task => { RemoveConnectionContext(connection); });
+            _ = ProcessOutgoingMessagesAsync(connection).ContinueWith(task =>
+            {
+                RemoveConnectionContext(connection).Wait();
+            });
         }
 
-        private void RemoveConnectionContext(ServiceConnectionContext connection)
+        private async Task RemoveConnectionContext(ServiceConnectionContext connection)
         {
+            // Inform the Service that we will remove the client because SignalR told us it is disconnected.
+            var serviceMessage = new ServiceMessage();
+            serviceMessage.CreateAbortConnection(connection.ConnectionId);
+            await SendServiceMessage(serviceMessage);
+            _logger.LogDebug($"Inform service that client {connection.ConnectionId} should be removed");
+            // Remove the connection
             _clientConnectionManager.ClientConnections.TryRemove(connection.ConnectionId, out _);
+            _logger.LogDebug($"{connection.ConnectionId} is removed");
         }
 
         private Task OnDisconnectedAsync(ServiceMessage message)
@@ -185,6 +206,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     _logger.LogDebug("Send message to SignalR Hub handler");
                     // Write the raw connection payload to the pipe let the upstream handle it
+                    // Remove the dependence on ProtocolName after fixing https://github.com/Azure/azure-signalr/issues/20
                     await connection.Application.Output.WriteAsync(message.Payloads[connection.ProtocolName]);
                 }
                 catch (Exception e)
