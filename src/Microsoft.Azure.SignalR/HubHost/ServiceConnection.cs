@@ -60,37 +60,45 @@ namespace Microsoft.Azure.SignalR
 
         private async Task ProcessIncomingAsync()
         {
-            while (true)
+            try
             {
-                var result = await _httpConnection.Transport.Input.ReadAsync();
-                var buffer = result.Buffer;
-
-                try
+                while (true)
                 {
-                    if (!buffer.IsEmpty)
+                    var result = await _httpConnection.Transport.Input.ReadAsync();
+                    var buffer = result.Buffer;
+
+                    try
                     {
-                        _logger.LogDebug("message received from service");
-                        while (ServiceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
+                        if (!buffer.IsEmpty)
                         {
-                            await DispatchMessage(message);
+                            _logger.LogDebug("message received from service");
+                            while (ServiceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
+                            {
+                                await DispatchMessage(message);
+                            }
+                        }
+                        else if (result.IsCompleted)
+                        {
+                            // The connection is closed (reconnect)
+                            _logger.LogDebug("Connection is closed");
+                            break;
                         }
                     }
-                    else if (result.IsCompleted)
+                    catch (Exception e)
                     {
-                        // The connection is closed (reconnect)
-                        _logger.LogDebug("Connection is closed");
-                        break;
+                        _logger.LogError($"Fail to handle message from service {e.Message}");
+                    }
+                    finally
+                    {
+                        _httpConnection.Transport.Input.AdvanceTo(buffer.Start, buffer.End);
                     }
                 }
-                catch (Exception e)
-                {
-                    _logger.LogError($"Fail to handle message from service {e.Message}");
-                    throw e;
-                }
-                finally
-                {
-                    _httpConnection.Transport.Input.AdvanceTo(buffer.Start, buffer.End);
-                }
+            }
+            catch (OperationCanceledException)
+            {
+                // There is something wrong for the connection between SDK and service.
+                // Abort all the client connections, close the httpConnection.
+                await _httpConnection.DisposeAsync();
             }
         }
 
@@ -142,7 +150,6 @@ namespace Microsoft.Azure.SignalR
             catch (Exception e)
             {
                 _logger.LogError($"Error occurs when reading from SignalR or sending to Service: {e.Message}");
-                throw e;
             }
             finally
             {
@@ -172,10 +179,7 @@ namespace Microsoft.Azure.SignalR
                 _logger.LogDebug($"SignalR completes reading from Transport.Input which finally causes {connection.ConnectionId} to be removed");
             });
             // Start receiving
-            _ = ProcessOutgoingMessagesAsync(connection).ContinueWith(task =>
-            {
-                RemoveConnectionContext(connection).Wait();
-            });
+            connection.ApplicationTask = ProcessOutgoingMessagesAsync(connection);
         }
 
         private async Task RemoveConnectionContext(ServiceConnectionContext connection)
@@ -190,12 +194,16 @@ namespace Microsoft.Azure.SignalR
             _logger.LogDebug($"{connection.ConnectionId} is removed");
         }
 
-        private Task OnDisconnectedAsync(ServiceMessage message)
+        private async Task OnDisconnectedAsync(ServiceMessage message)
         {
-            _clientConnectionManager.ClientConnections.TryRemove(message.GetConnectionId(), out var connection);
+            if (_clientConnectionManager.ClientConnections.TryGetValue(message.GetConnectionId(), out var connection))
+            {
+                connection.Application.Output.Complete();
+                // wait for application.Input.ReadAsync() to complete
+                await connection.ApplicationTask;
+            }
             // Close this connection gracefully then remove it from the list, this will trigger the hub shutdown logic appropriately
-            connection.Application.Output.Complete();
-            return Task.CompletedTask;
+            _clientConnectionManager.ClientConnections.TryRemove(message.GetConnectionId(), out _);
         }
 
         private async Task OnMessageAsync(ServiceMessage message)
@@ -211,8 +219,7 @@ namespace Microsoft.Azure.SignalR
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError($"SignalR reports error: {e.Message}");
-                    throw e;
+                    _logger.LogError($"Fail to write message to application pipe: {e.Message}");
                 }
             }
             else

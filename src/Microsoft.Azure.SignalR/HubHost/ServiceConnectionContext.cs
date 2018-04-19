@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http.Connections;
@@ -64,6 +65,8 @@ namespace Microsoft.Azure.SignalR
         public override IDuplexPipe Transport { get; set; }
 
         public IDuplexPipe Application { get; set; }
+
+        public Task ApplicationTask { get; set; }
 
         public string ProtocolName { get; set; }
 

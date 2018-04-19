@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR;
 using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.SignalR;
 
 namespace ChatSample
 {
@@ -43,7 +44,7 @@ namespace ChatSample
 
         private async Task Broadcast()
         {
-            await _hubProxy.HubContext.Clients.All.SendCoreAsync("broadcastMessage",
+            await _hubProxy.HubContext.Clients.All.SendAsync("broadcastMessage",
                 new object[]
                 {
                     "_BROADCAST_",
