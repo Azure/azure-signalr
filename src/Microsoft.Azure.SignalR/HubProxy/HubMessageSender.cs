@@ -13,21 +13,15 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class HubMessagePayload
+    internal class PayloadMessage
     {
-        public string ProtocolName { get; set; }
+        [JsonProperty("x")]
+        public IReadOnlyList<string> ExcludedList { get; set; }
 
-        public string Payload { get; set; }
+        [JsonProperty("p")]
+        public IDictionary<string, string> Payloads { get; set; }
     }
 
-    internal class HttpMessage
-    {
-        public int PayloadCount { get; set; }
-
-        public IReadOnlyList<HubMessagePayload> Payloads { get; set; }
-
-        public IReadOnlyList<string> ExcludedIds { get; set; }
-    }
 
     internal class HubMessageSender : IHubMessageSender
     {
@@ -55,14 +49,14 @@ namespace Microsoft.Azure.SignalR
             request.Headers.AcceptCharset.Clear();
             request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("UTF-8"));
             var invocationMessage = CreateInvocationMessage(method, args);
-            var httpMessage = new HttpMessage();
-            httpMessage.PayloadCount = _hubProtocolResolver.AllProtocols.Count;
-            httpMessage.ExcludedIds = excludedIds;
+            var httpMessage = new PayloadMessage();
+            if (excludedIds != null)
+            {
+                httpMessage.ExcludedList = excludedIds;
+            }
             foreach (var hubProtocol in _hubProtocolResolver.AllProtocols)
             {
-                var payloads = new HubMessagePayload();
-                payloads.ProtocolName = hubProtocol.Name;
-                payloads.Payload = Convert.ToBase64String(hubProtocol.WriteToArray(invocationMessage));
+                httpMessage.Payloads.Add(hubProtocol.Name, Convert.ToBase64String(hubProtocol.WriteToArray(invocationMessage)));
             }
 
             request.Content = new ByteArrayContent(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(httpMessage)));

@@ -180,50 +180,30 @@ namespace Microsoft.Azure.SignalR
             // SignalR keeps on reading from Transport.Input.
             connection.ApplicationTask = _connectionDelegate(connection);
             // Sending SignalR output
-            connection.TransportTask = ProcessOutgoingMessagesAsync(connection);
-            await WaitOnTasks(connection.ApplicationTask, connection.TransportTask, connection);
+            _ = ProcessOutgoingMessagesAsync(connection);
+            _ = WaitOnAppTasks(connection.ApplicationTask, connection);
         }
 
-        private async Task WaitOnTasks(Task applicationTask, Task transportTask, ServiceConnectionContext connection)
+        private async Task WaitOnAppTasks(Task applicationTask, ServiceConnectionContext connection)
         {
-            var result = await Task.WhenAny(applicationTask, transportTask);
-
-            if (result == applicationTask)
-            {
-                // SignalR stops reading
-                connection.Transport.Output.Complete(applicationTask.Exception?.InnerException);
-                connection.Transport.Input.Complete();
-
-                try
-                {
-                    // Transports are written by us and are well behaved, wait for them to drain
-                    await transportTask;
-                }
-                finally
-                {
-                    // Now complete the application
-                    connection.Application.Output.Complete();
-                    connection.Application.Input.Complete();
-                }
-            }
-            else
-            {
-                // We stop reading, complete the application pipes
-                connection.Application?.Output.Complete(transportTask.Exception?.InnerException);
-                connection.Application?.Input.Complete();
-
-                try
-                {
-                    // wait for SignalR to drain
-                    await applicationTask;
-                }
-                finally
-                {
-                    connection.Transport?.Output.Complete();
-                    connection.Transport?.Input.Complete();
-                }
-            }
+            await applicationTask;
+            // SignalR stops reading
+            connection.Transport.Output.Complete(applicationTask.Exception?.InnerException);
+            connection.Transport.Input.Complete();
             await AbortClientConnection(connection);
+        }
+
+        private async Task WaitOnTransportTask(ServiceConnectionContext connection)
+        {
+            connection.Application.Output.Complete();
+            try
+            {
+                await connection.ApplicationTask;
+            }
+            finally
+            {
+                connection.Application.Input.Complete();
+            }
         }
 
         private async Task AbortClientConnection(ServiceConnectionContext connection)
@@ -239,7 +219,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (_clientConnectionManager.ClientConnections.TryGetValue(message.GetConnectionId(), out var connection))
             {
-                await WaitOnTasks(connection.ApplicationTask, connection.TransportTask, connection);
+                await WaitOnTransportTask(connection);
             }
             // Close this connection gracefully then remove it from the list, this will trigger the hub shutdown logic appropriately
             _clientConnectionManager.ClientConnections.TryRemove(message.GetConnectionId(), out _);

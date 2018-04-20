@@ -83,7 +83,7 @@ namespace Microsoft.Azure.SignalR
 
         public static string GetBaseUrl(string endpoint, string hubName)
         {
-            return $"{endpoint}:{ClientProxy.ProxyPort}/{ClientProxy.DefaultApiVersion}/hub/{hubName}";
+            return $"{endpoint}:{ClientProxy.ProxyPort}/api/{ClientProxy.DefaultApiVersion}/hub/{hubName}";
         }
 
         private static ClientProxy InternalCreateClientProxy(IHubMessageSender hubMessageSender, string url, string accessKey, string hubName,
