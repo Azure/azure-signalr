@@ -7,11 +7,11 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class SignalRServiceContext
+    public class ServiceContext
     {
         private IConnectionServiceProvider _connectionServiceProvider;
 
-        internal SignalRServiceContext(IConnectionServiceProvider connectionServiceProvider, IHubContext<Hub> hubContext)
+        internal ServiceContext(IConnectionServiceProvider connectionServiceProvider, IHubContext<Hub> hubContext)
         {
             _connectionServiceProvider = connectionServiceProvider;
             HubContext = hubContext;

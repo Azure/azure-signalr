@@ -7,12 +7,12 @@ namespace Microsoft.Azure.SignalR
 {
     public class CloudSignalR
     {
-        public static SignalRServiceContext CreateServiceContext(string connectionString, string hubName)
+        public static ServiceContext CreateServiceContext(string connectionString, string hubName)
         {
             return CreateServiceContextInternal(connectionString, hubName);
         }
 
-        private static SignalRServiceContext CreateServiceContextInternal(string connectionString, string hubName)
+        private static ServiceContext CreateServiceContextInternal(string connectionString, string hubName)
         {
             var serviceCollection = new ServiceCollection();
 
@@ -23,8 +23,8 @@ namespace Microsoft.Azure.SignalR
 
             var connectionServiceProvider = serviceProvider.GetService<IConnectionServiceProvider>();
             var hubMessageSender = serviceProvider.GetService<IHubMessageSender>();
-            var signalrServiceHubContext = new SignalRServiceHubContext(connectionServiceProvider, hubMessageSender, hubName);
-            return new SignalRServiceContext(connectionServiceProvider, signalrServiceHubContext);
+            var signalrServiceHubContext = new ServiceHubContext(connectionServiceProvider, hubMessageSender, hubName);
+            return new ServiceContext(connectionServiceProvider, signalrServiceHubContext);
         }
     }
 }
