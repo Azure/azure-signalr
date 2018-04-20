@@ -18,7 +18,6 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.AddSingleton(typeof(IServiceConnectionManager), typeof(ServiceConnectionManager));
             builder.Services.AddSingleton(typeof(IConnectionServiceProvider), typeof(ConnectionServiceProvider));
             builder.Services.AddSingleton(typeof(HubHost<>));
-            builder.Services.AddSingleton(typeof(CloudSignalR));
             builder.Services.AddSingleton(typeof(IHubMessageSender), typeof(HubMessageSender));
             return builder;
         }

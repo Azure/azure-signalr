@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
-    public interface IHubMessageSender
+    internal interface IHubMessageSender
     {
         Task<HttpResponseMessage> PostAsync(string url, string bearer, string method, object[] args, IReadOnlyList<string> excludedIds = null);
 

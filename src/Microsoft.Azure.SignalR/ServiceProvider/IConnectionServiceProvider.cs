@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
-    public interface IConnectionServiceProvider
+    internal interface IConnectionServiceProvider
     {
         string GetEndpoint();
 

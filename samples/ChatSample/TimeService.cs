@@ -13,13 +13,14 @@ namespace ChatSample
 {
     public class TimeService : BackgroundService
     {
-        private readonly SignalRServiceContext<Chat> _hubProxy;
+        private readonly SignalRServiceContext _hubProxy;
         private Timer _timer;
         private bool _isDisposed;
 
-        public TimeService(CloudSignalR cloudSignalR)
+        public TimeService()
         {
-            _hubProxy = cloudSignalR.CreateServiceContext<Chat>();
+            var connectionString = Environment.GetEnvironmentVariable(ServiceOptions.ConnectionStringDefaultKey);
+            _hubProxy = CloudSignalR.CreateServiceContext(connectionString, typeof(Chat).Name);
         }
 
         private void Start()

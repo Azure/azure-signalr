@@ -1,26 +1,30 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR
 {
     public class CloudSignalR
     {
-        private IHubMessageSender _hubMessageSender;
-        private IConnectionServiceProvider _connectionServiceProvider;
-
-        public CloudSignalR(IHubMessageSender hubMessageSender,
-            IConnectionServiceProvider connectionServiceProvider)
+        public static SignalRServiceContext CreateServiceContext(string connectionString, string hubName)
         {
-            _hubMessageSender = hubMessageSender;
-            _connectionServiceProvider = connectionServiceProvider;
+            return CreateServiceContextInternal(connectionString, hubName);
         }
 
-        public SignalRServiceContext<THub> CreateServiceContext<THub>() where THub : Hub
+        private static SignalRServiceContext CreateServiceContextInternal(string connectionString, string hubName)
         {
-            var signalrServiceHubContext = new SignalRServiceHubContext<THub>(_connectionServiceProvider, _hubMessageSender);
-            return new SignalRServiceContext<THub>(signalrServiceHubContext);
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddLogging();
+            serviceCollection.AddAuthorization();
+            serviceCollection.AddSignalR().AddAzureSignalR().AddJsonProtocol().AddMessagePackProtocol();
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            var connectionServiceProvider = serviceProvider.GetService<IConnectionServiceProvider>();
+            var hubMessageSender = serviceProvider.GetService<IHubMessageSender>();
+            var signalrServiceHubContext = new SignalRServiceHubContext(connectionServiceProvider, hubMessageSender, hubName);
+            return new SignalRServiceContext(connectionServiceProvider, signalrServiceHubContext);
         }
     }
 }

@@ -5,12 +5,12 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class SignalRServiceHubContext<THub> : IHubContext<THub> where THub : Hub
+    internal class SignalRServiceHubContext: IHubContext<Hub>
     {
-        public SignalRServiceHubContext(IConnectionServiceProvider connectionServiceProvider, IHubMessageSender hubMessageSender)
+        public SignalRServiceHubContext(IConnectionServiceProvider connectionServiceProvider, IHubMessageSender hubMessageSender, string hubName)
         {
-            Clients = new HubClientsProxy(hubMessageSender, connectionServiceProvider.GetEndpoint(), connectionServiceProvider.GetAccessToken(), typeof(THub).Name);
-            Groups = new GroupManagerProxy(hubMessageSender, connectionServiceProvider.GetEndpoint(), connectionServiceProvider.GetAccessToken(), typeof(THub).Name);
+            Clients = new HubClientsProxy(hubMessageSender, connectionServiceProvider.GetEndpoint(), connectionServiceProvider.GetAccessToken(), hubName);
+            Groups = new GroupManagerProxy(hubMessageSender, connectionServiceProvider.GetEndpoint(), connectionServiceProvider.GetAccessToken(), hubName);
         }
 
         public IHubClients Clients { get; }
