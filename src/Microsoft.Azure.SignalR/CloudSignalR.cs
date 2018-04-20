@@ -18,6 +18,7 @@ namespace Microsoft.Azure.SignalR
 
             serviceCollection.AddLogging();
             serviceCollection.AddAuthorization();
+            // We need to serialize the request with all protocols, that is why we add those protocols
             serviceCollection.AddSignalR().AddAzureSignalR().AddJsonProtocol().AddMessagePackProtocol();
             var serviceProvider = serviceCollection.BuildServiceProvider();
 
