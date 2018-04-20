@@ -93,7 +93,7 @@ namespace Microsoft.Azure.SignalR
 
         public static TMessage AddSendGroupExcludedIds<TMessage>(this TMessage message, string groupName, IReadOnlyList<string> excludedIds) where TMessage : ServiceMessage
         {
-            message.Command = CommandType.SendToGroup;
+            message.Command = CommandType.SendToGroupExcept;
             return message.AddOrUpdateArguments(ArgumentType.GroupName, groupName)
                           .AddOrUpdateArguments(ArgumentType.ExcludedList, string.Join(",", excludedIds));
         }
@@ -108,6 +108,12 @@ namespace Microsoft.Azure.SignalR
         {
             message.Command = CommandType.SendToUser;
             return message.AddOrUpdateArguments(ArgumentType.UserList, string.Join(",", userIds));
+        }
+
+        public static TMessage CreateAbortConnection<TMessage>(this TMessage message, string connectionId) where TMessage : ServiceMessage
+        {
+            message.Command = CommandType.AbortConnection;
+            return message.AddConnectionId(connectionId);
         }
 
         public static TMessage CreateAddConnection<TMessage>(this TMessage message, string connectionId, string protocolName, int protocolVersion, IEnumerable<Claim> claims) where TMessage : ServiceMessage

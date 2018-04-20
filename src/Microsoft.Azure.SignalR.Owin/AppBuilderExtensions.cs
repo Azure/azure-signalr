@@ -8,14 +8,8 @@ namespace Owin
 {
     public static class AzureSignalRAppBuilderExtensions
     {
-        public static IAppBuilder UseAzureSignalR(this IAppBuilder app, string connectionString,
-            Action<HubHostBuilder> configure)
+        public static IAppBuilder UseAzureSignalR(this IAppBuilder app, Action<HubHostBuilder> configure)
         {
-            var builder = new HubHostBuilder(CloudSignalR.ServiceProvider,
-                CloudSignalR.CreateEndpointProviderFromConnectionString(connectionString),
-                CloudSignalR.CreateTokenProviderFromConnectionString(connectionString));
-            configure(builder);
-
             return app;
         }
     }

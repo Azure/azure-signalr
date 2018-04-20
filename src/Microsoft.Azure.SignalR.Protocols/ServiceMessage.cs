@@ -22,7 +22,9 @@ namespace Microsoft.Azure.SignalR
         SendToGroup,
         SendToGroups,
         SendToUser,
-        SendToUsers
+        SendToUsers,
+        AbortConnection,
+        SendToGroupExcept
     }
 
     public enum ArgumentType
