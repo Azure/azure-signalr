@@ -13,7 +13,7 @@ namespace ChatSample
 {
     public class TimeService : BackgroundService
     {
-        private readonly SignalRServiceContext _hubProxy;
+        private readonly ServiceContext _hubProxy;
         private Timer _timer;
         private bool _isDisposed;
 
