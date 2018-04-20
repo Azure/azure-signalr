@@ -68,6 +68,8 @@ namespace Microsoft.Azure.SignalR
 
         public Task ApplicationTask { get; set; }
 
+        public Task TransportTask { get; set; }
+
         public string ProtocolName { get; set; }
 
         public ClaimsPrincipal User { get ; set; }

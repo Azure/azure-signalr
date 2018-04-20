@@ -52,6 +52,10 @@ namespace Microsoft.Azure.SignalR
                 await _httpConnection.Transport.Output.FlushAsync(CancellationToken.None);
                 _logger.LogDebug("Send messge to service");
             }
+            catch (Exception e)
+            {
+                _logger.LogError($"Fail to send message through SDK <-> Service channel: {e.Message}");
+            }
             finally
             {
                 _serviceConnectionLock.Release();
@@ -74,7 +78,7 @@ namespace Microsoft.Azure.SignalR
                             _logger.LogDebug("message received from service");
                             while (ServiceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
                             {
-                                await DispatchMessage(message);
+                                _ = DispatchMessage(message);
                             }
                         }
                         else if (result.IsCompleted)
@@ -86,6 +90,8 @@ namespace Microsoft.Azure.SignalR
                     }
                     catch (Exception e)
                     {
+                        // Error occurs in handling the message, but the connection between SDK and service still works.
+                        // So, just log error instead of breaking the connection
                         _logger.LogError($"Fail to handle message from service {e.Message}");
                     }
                     finally
@@ -94,10 +100,14 @@ namespace Microsoft.Azure.SignalR
                     }
                 }
             }
-            catch (OperationCanceledException)
+            catch (Exception)
             {
-                // There is something wrong for the connection between SDK and service.
+                // Fatal error: There is something wrong for the connection between SDK and service.
                 // Abort all the client connections, close the httpConnection.
+                // Only reconnect can recover.
+            }
+            finally
+            {
                 await _httpConnection.DisposeAsync();
             }
         }
@@ -116,7 +126,7 @@ namespace Microsoft.Azure.SignalR
                         await OnDisconnectedAsync(message);
                         break;
                     default:
-                        _ = OnMessageAsync(message);
+                        await OnMessageAsync(message);
                         break;
                 }
             }
@@ -137,7 +147,7 @@ namespace Microsoft.Azure.SignalR
                         var serviceMessage = new ServiceMessage();
                         serviceMessage.CreateAckResponse(connection.ConnectionId, buffer.ToArray());
                         await SendServiceMessage(serviceMessage);
-                        _logger.LogDebug($"Send Ack message {serviceMessage.Command}");
+                        _logger.LogDebug($"Send data message back to client through {serviceMessage.Command}");
                     }
                     else if (result.IsCompleted)
                     {
@@ -165,45 +175,75 @@ namespace Microsoft.Azure.SignalR
 
             // Need to remove the workaround handshake after fixing https://github.com/Azure/azure-signalr/issues/20
             await connection.Application.Output.WriteAsync(message.Payloads["json"]);
+
             // Execute the application code, this will call into the SignalR end point
             // SignalR keeps on reading from Transport.Input.
-            _ = _connectionDelegate(connection).ContinueWith(task =>
-            {
-                // SignalR stops reading from Transport.Input, we have to complete pipes for
-                // both Transport and Application, and then remove the connection.
-
-                // Here we complete the Transport.Output, which triggers
-                // connection.Application.Input.ReadAsync returns "Completed",
-                // and connection.Applicaiton.Input.Complete()
-                connection.Transport.Output.Complete();
-                _logger.LogDebug($"SignalR completes reading from Transport.Input which finally causes {connection.ConnectionId} to be removed");
-            });
-            // Start receiving
-            connection.ApplicationTask = ProcessOutgoingMessagesAsync(connection);
+            connection.ApplicationTask = _connectionDelegate(connection);
+            // Sending SignalR output
+            connection.TransportTask = ProcessOutgoingMessagesAsync(connection);
+            await WaitOnTasks(connection.ApplicationTask, connection.TransportTask, connection);
         }
 
-        private async Task RemoveConnectionContext(ServiceConnectionContext connection)
+        private async Task WaitOnTasks(Task applicationTask, Task transportTask, ServiceConnectionContext connection)
+        {
+            var result = await Task.WhenAny(applicationTask, transportTask);
+
+            if (result == applicationTask)
+            {
+                // SignalR stops reading
+                connection.Transport.Output.Complete(applicationTask.Exception?.InnerException);
+                connection.Transport.Input.Complete();
+
+                try
+                {
+                    // Transports are written by us and are well behaved, wait for them to drain
+                    await transportTask;
+                }
+                finally
+                {
+                    // Now complete the application
+                    connection.Application.Output.Complete();
+                    connection.Application.Input.Complete();
+                }
+            }
+            else
+            {
+                // We stop reading, complete the application pipes
+                connection.Application?.Output.Complete(transportTask.Exception?.InnerException);
+                connection.Application?.Input.Complete();
+
+                try
+                {
+                    // wait for SignalR to drain
+                    await applicationTask;
+                }
+                finally
+                {
+                    connection.Transport?.Output.Complete();
+                    connection.Transport?.Input.Complete();
+                }
+            }
+            await AbortClientConnection(connection);
+        }
+
+        private async Task AbortClientConnection(ServiceConnectionContext connection)
         {
             // Inform the Service that we will remove the client because SignalR told us it is disconnected.
             var serviceMessage = new ServiceMessage();
             serviceMessage.CreateAbortConnection(connection.ConnectionId);
             await SendServiceMessage(serviceMessage);
             _logger.LogDebug($"Inform service that client {connection.ConnectionId} should be removed");
-            // Remove the connection
-            _clientConnectionManager.ClientConnections.TryRemove(connection.ConnectionId, out _);
-            _logger.LogDebug($"{connection.ConnectionId} is removed");
         }
 
         private async Task OnDisconnectedAsync(ServiceMessage message)
         {
             if (_clientConnectionManager.ClientConnections.TryGetValue(message.GetConnectionId(), out var connection))
             {
-                connection.Application.Output.Complete();
-                // wait for application.Input.ReadAsync() to complete
-                await connection.ApplicationTask;
+                await WaitOnTasks(connection.ApplicationTask, connection.TransportTask, connection);
             }
             // Close this connection gracefully then remove it from the list, this will trigger the hub shutdown logic appropriately
             _clientConnectionManager.ClientConnections.TryRemove(message.GetConnectionId(), out _);
+            _logger.LogDebug($"Remove client connection {connection.ConnectionId}");
         }
 
         private async Task OnMessageAsync(ServiceMessage message)
