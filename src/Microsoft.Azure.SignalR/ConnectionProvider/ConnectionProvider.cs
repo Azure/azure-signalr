@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ConnectionServiceProvider : IConnectionServiceProvider
+    internal class ConnectionProvider : IConnectionProvider
     {
         private const string EndpointProperty = "endpoint";
         private const string AccessKeyProperty = "accesskey";
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR
 
         private ConnectionService _connectionService;
 
-        public ConnectionServiceProvider(IOptions<ServiceOptions> options)
+        public ConnectionProvider(IOptions<ServiceOptions> options)
         {
             string connectionString = null;
             if (String.IsNullOrEmpty(options.Value.ConnectionString))

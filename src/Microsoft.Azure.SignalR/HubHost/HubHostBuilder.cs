@@ -44,12 +44,12 @@ namespace Microsoft.Azure.SignalR
             Start<THub>();
         }
 
-        private ServiceProviderResponse GenServiceUrlAndToken(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
+        private ServiceResponse GenServiceUrlAndToken(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
         {
-            var connectionServiceProvider = _serviceProvider.GetRequiredService<IConnectionServiceProvider>();
+            var connectionServiceProvider = _serviceProvider.GetRequiredService<IConnectionProvider>();
             var options = _serviceProvider.GetService<IOptions<ServiceOptions>>();
             var claims = options.Value.Claims?.Invoke(context);
-            var serviceProviderResponse = new ServiceProviderResponse()
+            var serviceProviderResponse = new ServiceResponse()
             {
                 ServiceUrl = connectionServiceProvider.GetClientEndpoint(hubName),
                 AccessToken = connectionServiceProvider.GenerateClientAccessToken(hubName, claims)
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR
 
             try
             {
-                ServiceProviderProtocol.WriteResponse(serviceProviderResponse, writer);
+                ConnectionProtocol.WriteResponse(serviceProviderResponse, writer);
                 // Write it out to the response with the right content length
                 context.Response.ContentLength = writer.Length;
                 await writer.CopyToAsync(context.Response.Body);

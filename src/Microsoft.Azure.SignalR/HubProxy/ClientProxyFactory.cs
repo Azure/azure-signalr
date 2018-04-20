@@ -102,7 +102,7 @@ namespace Microsoft.Azure.SignalR
                     new Claim(ClaimTypes.Name, name),
                     new Claim(ClaimTypes.NameIdentifier, name)
                 },
-                expires: DateTime.UtcNow.Add(ConnectionServiceProvider.DefaultAccessTokenLifetime),
+                expires: DateTime.UtcNow.Add(ConnectionProvider.DefaultAccessTokenLifetime),
                 signingKey: accessKey
             );
         }

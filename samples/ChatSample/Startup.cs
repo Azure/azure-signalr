@@ -1,11 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Azure.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,7 +28,7 @@ namespace ChatSample
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
-            services.AddSignalR()
+            services.AddSignalR().AddMessagePackProtocol()
                     .AddAzureSignalR(options =>
                     {
                         Configuration.GetSection("AzureSignalRConfiguration").Bind(options);
@@ -42,10 +40,7 @@ namespace ChatSample
                                 new Claim(ClaimTypes.NameIdentifier, "userId")
                             };
                         };
-                    })
-                    .AddMessagePackProtocol();
-            // You have to set connection string to environment variable to call RESTful API in Azure function
-            Environment.SetEnvironmentVariable(ServiceOptions.ConnectionStringDefaultKey, Configuration["AzureSignalRConfiguration:ConnectionString"]);
+                    });
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, TimeService>();
         }
 

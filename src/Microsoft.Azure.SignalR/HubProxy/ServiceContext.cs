@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using Microsoft.AspNetCore.SignalR;
@@ -9,9 +10,9 @@ namespace Microsoft.Azure.SignalR
 {
     public class ServiceContext
     {
-        private IConnectionServiceProvider _connectionServiceProvider;
+        private IConnectionProvider _connectionServiceProvider;
 
-        internal ServiceContext(IConnectionServiceProvider connectionServiceProvider, IHubContext<Hub> hubContext)
+        internal ServiceContext(IConnectionProvider connectionServiceProvider, IHubContext<Hub> hubContext)
         {
             _connectionServiceProvider = connectionServiceProvider;
             HubContext = hubContext;
@@ -24,9 +25,9 @@ namespace Microsoft.Azure.SignalR
             return _connectionServiceProvider.GetClientEndpoint(hubName);
         }
 
-        public string GenerateAccessToken(string hubName, IEnumerable<Claim> claims)
+        public string GenerateAccessToken(string hubName, IEnumerable<Claim> claims, TimeSpan? lifetime = null)
         {
-            return _connectionServiceProvider.GenerateClientAccessToken(hubName, claims);
+            return _connectionServiceProvider.GenerateClientAccessToken(hubName, claims, lifetime);
         }
     }
 }

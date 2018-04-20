@@ -7,6 +7,12 @@ namespace Microsoft.Azure.SignalR
 {
     public class CloudSignalR
     {
+        /// <summary>
+        /// Create an instance of ServiceContext.
+        /// </summary>
+        /// <param name="connectionString">The string used to connect service.</param>
+        /// <param name="hubName">Name of the Hub to operate on and it is case insensitive</param>
+        /// <returns>An instance of ServiceContext which can be used to send message to the clients who connected on the Hub</returns>
         public static ServiceContext CreateServiceContext(string connectionString, string hubName)
         {
             return CreateServiceContextInternal(connectionString, hubName);
@@ -19,10 +25,13 @@ namespace Microsoft.Azure.SignalR
             serviceCollection.AddLogging();
             serviceCollection.AddAuthorization();
             // We need to serialize the request with all protocols, that is why we add those protocols
-            serviceCollection.AddSignalR().AddAzureSignalR().AddJsonProtocol().AddMessagePackProtocol();
+            serviceCollection.AddSignalR().AddJsonProtocol().AddMessagePackProtocol().AddAzureSignalR(options =>
+            {
+                options.ConnectionString = connectionString;
+            });
             var serviceProvider = serviceCollection.BuildServiceProvider();
 
-            var connectionServiceProvider = serviceProvider.GetService<IConnectionServiceProvider>();
+            var connectionServiceProvider = serviceProvider.GetService<IConnectionProvider>();
             var hubMessageSender = serviceProvider.GetService<IHubMessageSender>();
             var signalrServiceHubContext = new ServiceHubContext(connectionServiceProvider, hubMessageSender, hubName);
             return new ServiceContext(connectionServiceProvider, signalrServiceHubContext);

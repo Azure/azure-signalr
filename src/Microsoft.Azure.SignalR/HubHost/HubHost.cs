@@ -20,14 +20,14 @@ namespace Microsoft.Azure.SignalR
         private readonly ILogger<HubHost<THub>> _logger;
 
         private ServiceOptions _options;
-        private IConnectionServiceProvider _connectionServiceProvider;
+        private IConnectionProvider _connectionServiceProvider;
         private IServiceConnectionManager _serviceConnectionManager;
         private IClientConnectionManager _clientConnectionManager;
         private readonly string _name = $"HubHost<{typeof(THub).FullName}>";
 
         public HubHost(IServiceConnectionManager serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
-            IConnectionServiceProvider connectionServiceProvider,
+            IConnectionProvider connectionServiceProvider,
             IOptions<ServiceOptions> options,
             ILoggerFactory loggerFactory)
         {
