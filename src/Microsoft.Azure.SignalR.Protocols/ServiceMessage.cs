@@ -1,60 +1,99 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Security.Claims;
 
 namespace Microsoft.Azure.SignalR
 {
-    public enum CommandType
+    public abstract class ServiceMessage
     {
-        // Service -> SDK
-        Ping = 0,
-        AddConnection,
-        RemoveConnection,
-        AckMessage,
-        // SDK -> Service
-        AddConnectionToGroup,
-        RemoveConnectionFromGroup,
-        SendToConnection,
-        SendToConnections,
-        SendToAll,
-        SendToAllExcept,
-        SendToGroup,
-        SendToGroups,
-        SendToUser,
-        SendToUsers,
-        AbortConnection,
-        SendToGroupExcept
     }
 
-    public enum ArgumentType
+    // ConnectionMessage
+    //      |----AddConnectionMessage
+    //      |----RemoveConnectionMessage
+    //      |----AbortConnectionMessage
+    //      |----ConnectionDataMessage
+    //      |----JoinGroupMessage
+    //      |----LeaveGroupMessage
+
+    public abstract class ConnectionMessage : ServiceMessage
     {
-        ConnectionId = 0,
-        Claim,
-        ProtocolName,
-        ConnectionList,
-        GroupName,
-        GroupList,
-        UserId,
-        UserList,
-        ExcludedList
+        public string ConnectionId { get; set; }
     }
 
-    public class ServiceMessage
+    public class AddConnectionMessage : ConnectionMessage
     {
-        public static readonly string HandshakeProtocol = "json";
+        public Claim[] Claims { get; set; }
+    }
 
-        public CommandType Command { get; set; }
+    public class RemoveConnectionMessage : ConnectionMessage
+    {
+        public string ErrorMessage { get; set; }
+    }
 
-        public IDictionary<ArgumentType, string> Arguments { get; set; }
+    public class AbortConnectionMessage : ConnectionMessage
+    {
+    }
 
-        public byte[] AckPayload { get; set; }
+    public class ConnectionDataMessage : ConnectionMessage
+    {
+        public byte[] Payload { get; set; }
+    }
 
+    public class JoinGroupMessage : ConnectionMessage
+    {
+        public string GroupName { get; set; }
+    }
+
+    public class LeaveGroupMessage : ConnectionMessage
+    {
+        public string GroupName { get; set; }
+    }
+
+    // MultiCastMessage
+    //      |----MultiConnectionDataMessage
+    //      |----BroadcastMessage
+    //      |----GroupBroadcastMessage
+    //      |----MultiGroupBroadcastMessage
+    //      |----UserDataMessage
+    //      |----MultiUserDataMessage
+
+    public abstract class MultiCastMessage : ServiceMessage
+    {
         public IDictionary<string, byte[]> Payloads { get; set; }
+    }
 
-        public static readonly ServiceMessage PingMessage = new ServiceMessage
-        {
-            Command = CommandType.Ping
-        };
+    public class MultiConnectionDataMessage : MultiCastMessage
+    {
+        public string[] ConnectionList { get; set; }
+    }
+
+    public class BroadcastMessage : MultiCastMessage
+    {
+        public string[] ExcludedList { get; set; }
+    }
+
+    public class GroupBroadcastMessage : MultiCastMessage
+    {
+        public string[] ExcludedList { get; set; }
+    }
+
+    public class MultiGroupBroadcastMessage : MultiCastMessage
+    {
+        public string[] GroupList { get; set; }
+    }
+
+    // It is possible that the same user has multiple connections. So it is a multi-cast message.
+    public class UserDataMessage : MultiCastMessage
+    {
+        public string UserId { get; set; }
+    }
+
+    public class MultiUserDataMessage : MultiCastMessage
+    {
+        public string[] UserList { get; set; }
     }
 }
