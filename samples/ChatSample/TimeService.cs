@@ -37,7 +37,7 @@ namespace ChatSample
             }
             if (String.IsNullOrEmpty(connectionString))
             {
-                throw new ArgumentNullException(nameof(ServiceOptions.ConnectionString));
+                throw new ArgumentNullException("Connection string is not found, please set it in ServiceOption or pass it through environment variable.");
             }
             // Please specify the hubname (case is insensitive) if Hub is running on remote.
             _hubProxy = CloudSignalR.CreateServiceContext(connectionString, typeof(Chat).Name);

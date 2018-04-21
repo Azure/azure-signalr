@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR
             }
             if (String.IsNullOrEmpty(connectionString))
             {
-                throw new ArgumentNullException(nameof(ServiceOptions.ConnectionString));
+                throw new ArgumentNullException("Connection string is not found, please set it in ServiceOption or pass it through environment variable.");
             }
             _connectionService = ParseConnectionString(connectionString);
         }
