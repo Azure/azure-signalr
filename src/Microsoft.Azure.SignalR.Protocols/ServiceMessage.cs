@@ -11,10 +11,13 @@ namespace Microsoft.Azure.SignalR
     {
     }
 
+    public class PingMessage : ServiceMessage
+    {
+    }
+
     // ConnectionMessage
-    //      |----AddConnectionMessage
-    //      |----RemoveConnectionMessage
-    //      |----AbortConnectionMessage
+    //      |----OpenConnectionMessage
+    //      |----CloseConnectionMessage
     //      |----ConnectionDataMessage
 
     public abstract class ConnectionMessage : ServiceMessage
@@ -22,18 +25,14 @@ namespace Microsoft.Azure.SignalR
         public string ConnectionId { get; set; }
     }
 
-    public class AddConnectionMessage : ConnectionMessage
+    public class OpenConnectionMessage : ConnectionMessage
     {
         public Claim[] Claims { get; set; }
     }
 
-    public class RemoveConnectionMessage : ConnectionMessage
+    public class CloseConnectionMessage : ConnectionMessage
     {
         public string ErrorMessage { get; set; }
-    }
-
-    public class AbortConnectionMessage : ConnectionMessage
-    {
     }
 
     public class ConnectionDataMessage : ConnectionMessage
@@ -55,47 +54,47 @@ namespace Microsoft.Azure.SignalR
         public string GroupName { get; set; }
     }
 
-    // MulticastMessage
+    // MulticastDataMessage
     //      |----MultiConnectionDataMessage
-    //      |----BroadcastMessage
-    //      |----GroupBroadcastMessage
-    //      |----MultiGroupBroadcastMessage
+    //      |----BroadcastDataMessage
+    //      |----GroupBroadcastDataMessage
+    //      |----MultiGroupBroadcastDataMessage
     //      |----UserDataMessage
     //      |----MultiUserDataMessage
 
-    public abstract class MulticastMessage : ServiceMessage
+    public abstract class MulticastDataMessage : ServiceMessage
     {
         public IDictionary<string, byte[]> Payloads { get; set; }
     }
 
-    public class MultiConnectionDataMessage : MulticastMessage
+    public class MultiConnectionDataMessage : MulticastDataMessage
     {
         public string[] ConnectionList { get; set; }
     }
 
-    public class BroadcastMessage : MulticastMessage
+    public class BroadcastDataMessage : MulticastDataMessage
     {
         public string[] ExcludedList { get; set; }
     }
 
-    public class GroupBroadcastMessage : MulticastMessage
+    public class GroupBroadcastDataMessage : MulticastDataMessage
     {
         public string GroupName { get; set; }
         public string[] ExcludedList { get; set; }
     }
 
-    public class MultiGroupBroadcastMessage : MulticastMessage
+    public class MultiGroupBroadcastDataMessage : MulticastDataMessage
     {
         public string[] GroupList { get; set; }
     }
 
     // It is possible that the same user has multiple connections. So it is a multi-cast message.
-    public class UserDataMessage : MulticastMessage
+    public class UserDataMessage : MulticastDataMessage
     {
         public string UserId { get; set; }
     }
 
-    public class MultiUserDataMessage : MulticastMessage
+    public class MultiUserDataMessage : MulticastDataMessage
     {
         public string[] UserList { get; set; }
     }
