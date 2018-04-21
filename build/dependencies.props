@@ -4,7 +4,9 @@
   </PropertyGroup>
   <PropertyGroup Label="Package Versions">
     <!-- Azure SignalR -->
+    <MessagePackPackageVersion>1.7.3.4</MessagePackPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
+    <MicrosoftAspNetCoreHttpConnectionsPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreHttpConnectionsPackageVersion>
     <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreSignalRPackageVersion>
     <MicrosoftAspNetCoreSignalRProtocolsMsgPackPackageVersion>1.0.0-preview3-32162</MicrosoftAspNetCoreSignalRProtocolsMsgPackPackageVersion>
     <MicrosoftExtensionsCachingAbstractionsPackageVersion>2.1.0-preview3-32162</MicrosoftExtensionsCachingAbstractionsPackageVersion>
