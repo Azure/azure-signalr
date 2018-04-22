@@ -9,12 +9,8 @@ namespace RestAPISample
         {
             if (args.Length != 1  && args.Length != 2)
             {
-                var connectionStringDemo = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
-                var hubName = "chat";
                 Console.WriteLine("Please specify <hubName> [<connectionString>]");
                 Console.WriteLine($"If <connecitonString> is not specified, we will read it from environment key {ServiceOptions.ConnectionStringDefaultKey}");
-                Console.WriteLine($"usage: {hubName}");
-                Console.WriteLine($"usage: {hubName} {connectionStringDemo}");
                 return;
             }
             BroadcastTimer broadcastTimer = null;

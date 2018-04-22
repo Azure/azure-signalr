@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR
     public class ServiceOptions
     {
         // Connection string can be passed by setting this environment variable (default key)
-        public static readonly string ConnectionStringDefaultKey = "AzureSignalRConnectionString";
+        public static readonly string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
 
         // The order to find connection string:
         // 1. options

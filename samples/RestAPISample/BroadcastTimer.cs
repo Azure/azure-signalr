@@ -59,7 +59,7 @@ namespace RestAPISample
         {
             var hubMethod = "broadcastMessage";
             var name = "_BROADCAST_";
-            var message = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture);
+            var message = DateTime.UtcNow;
             Console.WriteLine($"Broadcast: {hubMethod} {name} {message}");
             await _hubProxy.HubContext.Clients.All.SendAsync(hubMethod,
                 new object[]
