@@ -2,11 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Buffers;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
@@ -19,9 +19,13 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
         private readonly ILogger<ServiceConnection> _logger;
+        private readonly TimeSpan DefaultServerTimeout = TimeSpan.FromSeconds(30);// Server ping rate is 15 sec, this is 2 times that.
 
         private ConnectionContext _connection;
         private ConnectionDelegate _connectionDelegate;
+        private ConcurrentDictionary<string, string> _connectionIds = new ConcurrentDictionary<string, string>();
+        private int _reconnectIntervalInMS => StaticRandom.Next(1000);// Start reconnect after a random interval less than 1 second
+        private volatile bool _connected;
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
@@ -31,30 +35,28 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _logger = loggerFactory.CreateLogger<ServiceConnection>();
+            _connected = false;
         }
 
         public async Task StartAsync(ConnectionDelegate connectionDelegate)
         {
             _connectionDelegate = connectionDelegate;
-
-            // Lock here in case somebody tries to send before the connection is assigned
-            await _serviceConnectionLock.WaitAsync();
-
-            try
+            while (true)
             {
-                _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary);
-            }
-            finally
-            {
-                _serviceConnectionLock.Release();
-            }
+                await StartAsyncCore();
 
-            // TODO. Handshake with Service for version confirmation
-            _ = ProcessIncomingAsync();
+                await ProcessIncomingAsync();
+            }
         }
 
         public async Task WriteAsync(ServiceMessage serviceMessage)
         {
+            if (!_connected)
+            {
+                _logger.LogError("Connection has not been established, any data cannot be sent to service");
+                return;
+            }
+
             // We have to lock around outgoing sends since the pipe is single writer.
             // The lock is per serviceConnection
             await _serviceConnectionLock.WaitAsync();
@@ -76,19 +78,102 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        private async Task StartAsyncCore()
+        {
+            // Always try until connected
+            while (true)
+            {
+                // Lock here in case somebody tries to send before the connection is assigned
+                await _serviceConnectionLock.WaitAsync();
+
+                try
+                {
+                    _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary);
+                    _connected = true;
+                    return;
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError($"Failed to connect to Azure SignalR due to error: {e.Message}");
+                    await Task.Delay(_reconnectIntervalInMS);
+                    _connected = false;
+                }
+                finally
+                {
+                    _serviceConnectionLock.Release();
+                }
+            }
+        }
+
+        private Timer StartTimeoutTimer()
+        {
+            _logger.LogDebug("Start server timeout timer");
+            return new Timer(state => ((ServiceConnection)state).TimeoutElapsed(),
+                    this, Timeout.Infinite, Timeout.Infinite);
+        }
+
+        private void ResetTimeoutTimer(Timer timeoutTimer)
+        {
+            if (timeoutTimer != null)
+            {
+                _logger.LogDebug("Reset server timeout timer");
+                timeoutTimer.Change(DefaultServerTimeout, Timeout.InfiniteTimeSpan);
+            }
+        }
+
+        private void TimeoutElapsed()
+        {
+            _ = AbortServiceConnection();
+        }
+
+        private async Task CleanupConnections()
+        {
+            if (_connectionIds.Count == 0)
+            {
+                return;
+            }
+            var tasks = new List<Task>(_connectionIds.Count);
+            foreach (var connectionId in _connectionIds.Keys)
+            {
+                tasks.Add(SafetyDisconnectedAsync(connectionId));
+            }
+            await Task.WhenAll(tasks);
+        }
+
+        private async Task AbortServiceConnection()
+        {
+            // Even if reconnection is successfully immediately after connection drops,
+            // the server connectionId has changed, and Service will not route previous
+            // clients back to us, so clean all client connections once connection aborts.
+            await CleanupConnections();
+            // abort SDK <-> service connection
+            if (_connected)
+            {
+                _connected = false;
+                _connection.Transport.Input.CancelPendingRead();
+            }
+        }
+
         private async Task ProcessIncomingAsync()
         {
+            var timeoutTimer = StartTimeoutTimer();
             try
             {
-                while (true)
+                while (_connected)
                 {
                     var result = await _connection.Transport.Input.ReadAsync();
                     var buffer = result.Buffer;
 
                     try
                     {
+                        if (result.IsCanceled)
+                        {
+                            _logger.LogDebug("Cancel the read from connection");
+                            break;
+                        }
                         if (!buffer.IsEmpty)
                         {
+                            ResetTimeoutTimer(timeoutTimer);
                             _logger.LogDebug("message received from service");
                             while (_serviceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
                             {
@@ -119,11 +204,15 @@ namespace Microsoft.Azure.SignalR
                 // Fatal error: There is something wrong for the connection between SDK and service.
                 // Abort all the client connections, close the httpConnection.
                 // Only reconnect can recover.
+                await AbortServiceConnection();
             }
             finally
             {
                 await _connectionFactory.DisposeAsync(_connection);
+                timeoutTimer?.Dispose();
             }
+
+            _connected = false;
         }
 
         private async Task DispatchMessage(ServiceMessage message)
@@ -191,10 +280,23 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        private void AddClientConnection(ServiceConnectionContext connection)
+        {
+            _clientConnectionManager.AddClientConnection(connection);
+            _connectionIds.TryAdd(connection.ConnectionId, connection.ConnectionId);
+        }
+
+        private void RemoveClientConnection(string connectionId)
+        {
+            _clientConnectionManager.ClientConnections.TryRemove(connectionId, out _);
+            _logger.LogDebug($"Remove client connection {connectionId}");
+            _connectionIds.TryRemove(connectionId, out _);
+        }
+
         private Task OnConnectedAsync(OpenConnectionMessage message)
         {
             var connection = new ServiceConnectionContext(message);
-            _clientConnectionManager.AddClientConnection(connection);
+            AddClientConnection(connection);
             _logger.LogDebug("Handle OnConnected command");
 
             // Execute the application code, this will call into the SignalR end point
@@ -212,7 +314,11 @@ namespace Microsoft.Azure.SignalR
             // SignalR stops reading
             connection.Transport.Output.Complete(applicationTask.Exception?.InnerException);
             connection.Transport.Input.Complete();
-            await AbortClientConnection(connection);
+            // If Service has already dropped the client, no need to send Abort message.
+            if (!connection.OnDisconnected)
+            {
+                await AbortClientConnection(connection);
+            }
         }
 
         private async Task WaitOnTransportTask(ServiceConnectionContext connection)
@@ -238,13 +344,19 @@ namespace Microsoft.Azure.SignalR
 
         private async Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
-            if (_clientConnectionManager.ClientConnections.TryGetValue(closeConnectionMessage.ConnectionId, out var connection))
+            await SafetyDisconnectedAsync(closeConnectionMessage.ConnectionId);
+        }
+
+        private async Task SafetyDisconnectedAsync(string connectionId)
+        {
+            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var connection))
             {
+                connection.OnDisconnected = true;
                 await WaitOnTransportTask(connection);
             }
-            // Close this connection gracefully then remove it from the list, this will trigger the hub shutdown logic appropriately
-            _clientConnectionManager.ClientConnections.TryRemove(closeConnectionMessage.ConnectionId, out _);
-            _logger.LogDebug($"Remove client connection {connection.ConnectionId}");
+            // Close this connection gracefully then remove it from the list,
+            // this will trigger the hub shutdown logic appropriately
+            RemoveClientConnection(connectionId);
         }
 
         private async Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)

@@ -89,7 +89,7 @@ namespace Microsoft.Azure.SignalR
 
             var hubHost = _serviceProvider.GetRequiredService<HubHost<THub>>();
             hubHost.Configure();
-            hubHost.StartAsync(app).GetAwaiter().GetResult();
+            hubHost.StartAsync(app);
         }
     }
 }
