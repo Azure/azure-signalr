@@ -11,11 +11,21 @@ The Azure SignalR Service Protocol is a protocol between Azure SignalR Service a
 ## Overview
 
 Azure SignalR Service Protocol uses WebSocket transport and MessagePack encoding for better performance, and allows a limited set of messages.
-Messages are categorized into two groups:
+Messages are categorized into three groups:
 
-### Generic Connection Message
+### Service Connection Message
 
-These messages are in the context of a single connection.
+These messages are used to establish and maintain the physical connection between Service and Server.
+
+Message Name | Sender | Description
+---|---|---
+HandshakeRequest | Server | Sent by Server to negotiate the protocol version before the physical connection is established.
+HandshakeResponse | Service | Sent by Service to tell Server whether the requested protocol version is supported. If yes, connection will be successfully established. Otherwise, connection will be closed.
+Ping | Service or Server | Sent by Service or Server to check the connection is alive.
+
+### Generic Client Connection Message
+
+ Multiple logical client connections will be multiplexed in one or a few (far less than the number of client connections) physical connections between Service and Server. These messages are used to operate a single logical client connection within a physical connection.
 
 Message Name | Sender | Description
 ---|---|---
@@ -38,15 +48,17 @@ LeaveGroup | Server | Sent by server to ask Service removing the target connecti
 GroupBroadcastData | Server | Sent from Server to Service. Payloads in the message will be broadcasted to all connections within the target group by Service.
 MultiGroupBroadcastData | Server | Sent from Server to Service. Payloads in the message will be broadcasted to all connections within the target groups by Service.
 
-### Misc
-
-Message Name | Sender | Description
----|---|---
-Ping | Service or Server | Sent by Service or Server to check the connection is alive.
-
 ## Communication Model
 
-Server should initiate the connection to Service, then the communication begins. Data from/to multiple clients will be multiplexed in this one connection between Server and Service.
+This protocol will be used between Service and Server. There will be one or a few physical connections between Service and Server. Data from/to multiple client connections will be multiplexed within these physical connections. Each client connection will be identified by a unique connection Id. 
+
+The number of client connections will be far more (over 100 times) than the number of physical connections between Service and Server.
+
+### Handshake
+
+Server will initiate a physical connection to Service, using WebSocket transport. Once the WebSocket connection is established, Server will send a `HandshakeRequest` message with a requested version number of Azure SignalR Service Protocol to service.
+- If the protocol version is supported, Service will send a success `HandshakeResponse` message to Server. Then the communication begins.
+- Otherwise, Service will send a `HandshakeResponse` message with error, and the physical connection will be closed.
 
 ### New Client Connect
 
@@ -55,22 +67,22 @@ When a new client is connected to Service, a `OpenConnection` message will be se
 ### Client Disconnect
 
 - When a client is disconnected from Service, a `CloseConnection` message will be sent by Service to Server.
-- When Server wants to disconnect a client, a `CloseConnection` message will be sent by Server to Service. Then Service will disconnect the underlying connections with the target client.
+- When Server wants to disconnect a client, a `CloseConnection` message will be sent by Server to Service. Then Service will disconnect the phyical connection with the target client.
 
-### Data Pass Through
+### Client Data Pass Through
 
 - When a client sends data to Service, a `ConnectionData` message will be sent by Service to Server.
 - When Server wants to send data to a client, a `ConnectionData` message will be sent by Server to Service. 
 
 ### SignalR scenarios
 
-Service supports various scenarios in SignalR to send data from Server to multiple client.
+Service supports various scenarios in SignalR to send data from Server to multiple clients.
 - When Server wants to send data to a specific set of connections, a `MultiConnectionData` message is sent to Service, containing the list of the target connections.
 - When Server wants to send data to a specific user, a `UserData` message is sent to Service.
 - When Server wants to send data to a specific set of users, a `MultiUserData` message is sent to Service, containing the list of the target users.
 - When Server wants to send data to all clients, a `BroadcastData` message is sent to Service.
-- When Server wants to send data to a specific group, a `GroupData` message is sent to Service.
-- When Server wants to send data to a couple of groups, a `MultiGroupData` message is sent to Service.
+- When Server wants to send data to a specific group, a `GroupBroadcastData` message is sent to Service.
+- When Server wants to send data to a couple of groups, a `MultiGroupBroadcastData` message is sent to Service.
 
 ## Message Encodings
 
@@ -78,31 +90,52 @@ In Azure SignalR Service Protocol, each message is represented as a single MsgPa
 
 MessagePack uses different formats to encode values. Refer to the [MsgPack format spec](https://github.com/msgpack/msgpack/blob/master/spec.md#formats) for format definitions.
 
+### HandshakeRequest Message
+`HandshakeRequest` messages have the following structure.
+```
+[1, Version]
+```
+- 1 - Message Type, indicating this is a `HandshakeRequest` message.
+- Version - A `Int32` encoding number of the protocol version.
+
+#### Example: TODO
+
+### HandshakeResponse Message
+`HandshakeResponse` messages have the following structure.
+```
+[2, ErrorMessage]
+```
+- 2 - Message Type, indicating this is a `HandshakeResponse` message.
+- ErrorMessage - A `String` encoding error message. Null means handshake success, otherwise it means there is error.
+
+#### Example: TODO
+
 ### Ping Message
  `Ping` messages have the following structure.
 ```
-[1]
+[3]
 ```
-- 1 - Message Type, indicating this is a `Ping` message.
+- 3 - Message Type, indicating this is a `Ping` message.
 
 #### Example: TODO
 
 ### OpenConnection Message
 `OpenConnection` messages have the following structure.
 ```
-[2, ConnectionId]
+[4, ConnectionId, Claims]
 ```
-- 2 - Message Type, indicating this is a `OpenConnection` message.
+- 4 - Message Type, indicating this is a `OpenConnection` message.
 - ConnectionId - A `String` encoding unique Id for the connection.
+- Claims - A MsgPack Map containing all claims of this client.
 
 #### Example: TODO
 
 ### CloseConnection Message
 `CloseConnection` messages have the following structure.
 ```
-[3, ConnectionId, ErrorMessage]
+[5, ConnectionId, ErrorMessage]
 ```
-- 3 - Message Type, indicating this is a `CloseConnection` message.
+- 5 - Message Type, indicating this is a `CloseConnection` message.
 - ConnectionId - A `String` encoding unique Id of the connection.
 - ErrorMessage - Optional `String` encoding error message.
 
@@ -111,9 +144,9 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ### ConnectionData Message
 `ConnectionData` messages have the following structure.
 ```
-[4, ConnectionId, Payload]
+[6, ConnectionId, Payload]
 ```
-- 4 - Message Type, indicating this is a `ConnectionData` message.
+- 6 - Message Type, indicating this is a `ConnectionData` message.
 - ConnectionId - A `String` encoding unique Id for the connection.
 - Payload - `Binary` encoding of the raw bytes from/to the connection.
 
@@ -122,9 +155,9 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ### MultiConnectionData Message
 `MultiConnectionData` messages have the following structure.
 ```
-[5, ConnectionList, Payloads]
+[7, ConnectionList, Payloads]
 ```
-- 5 - Message Type, indicating this is a `MultiConnectionData` message.
+- 7 - Message Type, indicating this is a `MultiConnectionData` message.
 - ConnectionList - An array containing `String` encoding Ids of the target connections.
 - Payloads - A MsgPack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
 
@@ -133,9 +166,9 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ### UserData Message
 `UserData` messages have the following structure.
 ```
-[6, UserId, Payloads]
+[8, UserId, Payloads]
 ```
-- 6 - Message Type, indicating this is a `UserData` message.
+- 8 - Message Type, indicating this is a `UserData` message.
 - UserId - A `String` encoding unique Id for the user.
 - Payloads - A MsgPack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
 
@@ -144,9 +177,9 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ### MultiUserData Message
 `MultiUserData` messages have the following structure.
 ```
-[7, UserList, Payloads]
+[9, UserList, Payloads]
 ```
-- 7 - Message Type, indicating this is a `MultiUserData` message.
+- 9 - Message Type, indicating this is a `MultiUserData` message.
 - UserList - An array containing `String` encoding Ids of the target users.
 - Payloads - A MsgPack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
 
@@ -155,9 +188,9 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ### BroadcastData Message
 `BroadcastData` messages have the following structure.
 ```
-[8, ExcludedList, Payloads]
+[10, ExcludedList, Payloads]
 ```
-- 8 - Message Type, indicating this is a `BroadcastData` message.
+- 10 - Message Type, indicating this is a `BroadcastData` message.
 - ExcludedList - An array containing `String` encoding Ids of the connections, which will not receive payload in this message.
 - Payloads - A MsgPack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
 
@@ -166,9 +199,9 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ### JoinGroup Message
 `JoinGroup` messages have the following structure.
 ```
-[9, ConnectionId, GroupName]
+[11, ConnectionId, GroupName]
 ```
-- 9 - Message Type, indicating this is a `JoinGroup` message.
+- 11 - Message Type, indicating this is a `JoinGroup` message.
 - ConnectionId - A `String` encoding unique Id for the connection.
 - GroupName - A `String` encoding group name, which the connection will join.
 
@@ -177,9 +210,9 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ### LeaveGroup Message
 `LeaveGroup` messages have the following structure.
 ```
-[10, ConnectionId, GroupName]
+[12, ConnectionId, GroupName]
 ```
-- 10 - Message Type, indicating this is a `LeaveGroup` message.
+- 12 - Message Type, indicating this is a `LeaveGroup` message.
 - ConnectionId - A `String` encoding unique Id for the connection.
 - GroupName - A `String` encoding group name, which the connection will leave.
 
@@ -188,9 +221,9 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ### GroupBroadcastData Message
 `GroupBroadcastData` messages have the following structure.
 ```
-[11, GroupName, ExcludedList, Payloads]
+[13, GroupName, ExcludedList, Payloads]
 ```
-- 11 - Message Type, indicating this is a `GroupBroadcastData` message.
+- 13 - Message Type, indicating this is a `GroupBroadcastData` message.
 - GroupName - A `String` encoding target group name.
 - ExcludedList - An array containing `String` encoding Ids of the connections, which will not receive payload in this message.
 - Payloads - A MsgPack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
@@ -200,9 +233,9 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ### MultiGroupBroadcastData Message
 `MultiGroupBroadcastData` messages have the following structure.
 ```
-[12, GroupList, Payloads]
+[14, GroupList, Payloads]
 ```
-- 12 - Message Type, indicating this is a `MultiGroupBroadcastData` message.
+- 14 - Message Type, indicating this is a `MultiGroupBroadcastData` message.
 - GroupList - An array containing `String` encoding target group names.
 - Payloads - A MsgPack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
 

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 {
     public class ServiceProtocol : IServiceProtocol
     {
-        private static readonly string ProtocolName = "azuresignalrservice";
+        private static readonly string ProtocolName = "signalrservice";
         private static readonly int ProtocolVersion = 1;
 
         public string Name => ProtocolName;
@@ -62,29 +62,33 @@ namespace Microsoft.Azure.SignalR.Protocol
 
             switch (messageType)
             {
-                case ProtocolConstants.PingMessageType:
+                case ServiceProtocolConstants.HandshakeRequestType:
+                    return CreateHandshakeRequestMessage(input, ref startOffset);
+                case ServiceProtocolConstants.HandshakeResponseType:
+                    return CreateHandshakeResponseMessage(input, ref startOffset);
+                case ServiceProtocolConstants.PingMessageType:
                     return PingMessage.Instance;
-                case ProtocolConstants.OpenConnectionMessageType:
+                case ServiceProtocolConstants.OpenConnectionMessageType:
                     return CreateOpenConnectionMessage(input, ref startOffset);
-                case ProtocolConstants.CloseConnectionMessageType:
+                case ServiceProtocolConstants.CloseConnectionMessageType:
                     return CreateCloseConnectionMessage(input, ref startOffset);
-                case ProtocolConstants.ConnectionDataMessageType:
+                case ServiceProtocolConstants.ConnectionDataMessageType:
                     return CreateConnectionDataMessage(input, ref startOffset);
-                case ProtocolConstants.MultiConnectionDataMessageType:
+                case ServiceProtocolConstants.MultiConnectionDataMessageType:
                     return CreateMultiConnectionDataMessage(input, ref startOffset);
-                case ProtocolConstants.UserDataMessageType:
+                case ServiceProtocolConstants.UserDataMessageType:
                     return CreateUserDataMessage(input, ref startOffset);
-                case ProtocolConstants.MultiUserDataMessageType:
+                case ServiceProtocolConstants.MultiUserDataMessageType:
                     return CreateMultiUserDataMessage(input, ref startOffset);
-                case ProtocolConstants.BroadcastDataMessageType:
+                case ServiceProtocolConstants.BroadcastDataMessageType:
                     return CreateBroadcastDataMessage(input, ref startOffset);
-                case ProtocolConstants.JoinGroupMessageType:
+                case ServiceProtocolConstants.JoinGroupMessageType:
                     return CreateJoinGroupMessage(input, ref startOffset);
-                case ProtocolConstants.LeaveGroupMessageType:
+                case ServiceProtocolConstants.LeaveGroupMessageType:
                     return CreateLeaveGroupMessage(input, ref startOffset);
-                case ProtocolConstants.GroupBroadcastDataMessageType:
+                case ServiceProtocolConstants.GroupBroadcastDataMessageType:
                     return CreateGroupBroadcastDataMessage(input, ref startOffset);
-                case ProtocolConstants.MultiGroupBroadcastDataMessageType:
+                case ServiceProtocolConstants.MultiGroupBroadcastDataMessageType:
                     return CreateMultiGroupBroadcastDataMessage(input, ref startOffset);
                 default:
                     // Future protocol changes can add message types, old clients can ignore them
@@ -143,6 +147,12 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             switch (message)
             {
+                case HandshakeRequestMessage handshakeRequestMessage:
+                    WriteHandshakeRequestMessage(handshakeRequestMessage, packer);
+                    break;
+                case HandshakeResponseMessage handshakeResponseMessage:
+                    WriteHandshakeResponseMessage(handshakeResponseMessage, packer);
+                    break;
                 case PingMessage pingMessage:
                     WritePingMessage(pingMessage, packer);
                     break;
@@ -184,16 +194,30 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
+        private void WriteHandshakeRequestMessage(HandshakeRequestMessage message, Stream packer)
+        {
+            MessagePackBinary.WriteArrayHeader(packer, 2);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeRequestType);
+            MessagePackBinary.WriteInt32(packer, message.Version);
+        }
+
+        private void WriteHandshakeResponseMessage(HandshakeResponseMessage message, Stream packer)
+        {
+            MessagePackBinary.WriteArrayHeader(packer, 2);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeResponseType);
+            MessagePackBinary.WriteString(packer, message.ErrorMessage);
+        }
+
         private void WritePingMessage(PingMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 1);
-            MessagePackBinary.WriteInt32(packer, ProtocolConstants.PingMessageType);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.PingMessageType);
         }
 
         private void WriteOpenConnectionMessage(OpenConnectionMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ProtocolConstants.OpenConnectionMessageType);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.OpenConnectionMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
 
             if (message.Claims?.Any() == true)
@@ -214,7 +238,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         private void WriteCloseConnectionMessage(CloseConnectionMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ProtocolConstants.CloseConnectionMessageType);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.CloseConnectionMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
             MessagePackBinary.WriteString(packer, message.ErrorMessage);
         }
@@ -222,7 +246,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         private void WriteConnectionDataMessage(ConnectionDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ProtocolConstants.ConnectionDataMessageType);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ConnectionDataMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
             MessagePackBinary.WriteBytes(packer, message.Payload);
         }
@@ -230,7 +254,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         private void WriteMultiConnectionDataMessage(MultiConnectionDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ProtocolConstants.MultiConnectionDataMessageType);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.MultiConnectionDataMessageType);
             WriteStringArray(message.ConnectionList, packer);
             WritePayloads(message.Payloads, packer);
         }
@@ -238,7 +262,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         private void WriteUserDataMessage(UserDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ProtocolConstants.UserDataMessageType);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.UserDataMessageType);
             MessagePackBinary.WriteString(packer, message.UserId);
             WritePayloads(message.Payloads, packer);
         }
@@ -246,7 +270,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         private void WriteMultiUserDataMessage(MultiUserDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ProtocolConstants.UserDataMessageType);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.UserDataMessageType);
             WriteStringArray(message.UserList, packer);
             WritePayloads(message.Payloads, packer);
         }
@@ -254,7 +278,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         private void WriteBroadcastDataMessage(BroadcastDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ProtocolConstants.BroadcastDataMessageType);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.BroadcastDataMessageType);
             WriteStringArray(message.ExcludedList, packer);
             WritePayloads(message.Payloads, packer);
         }
@@ -262,7 +286,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         private void WriteJoinGroupMessage(JoinGroupMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ProtocolConstants.JoinGroupMessageType);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.JoinGroupMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
             MessagePackBinary.WriteString(packer, message.GroupName);
         }
@@ -270,7 +294,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         private void WriteLeaveGroupMessage(LeaveGroupMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ProtocolConstants.LeaveGroupMessageType);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.LeaveGroupMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
             MessagePackBinary.WriteString(packer, message.GroupName);
         }
@@ -278,7 +302,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         private void WriteGroupBroadcastDataMessage(GroupBroadcastDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 4);
-            MessagePackBinary.WriteInt32(packer, ProtocolConstants.GroupBroadcastDataMessageType);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.GroupBroadcastDataMessageType);
             MessagePackBinary.WriteString(packer, message.GroupName);
             WriteStringArray(message.ExcludedList, packer);
             WritePayloads(message.Payloads, packer);
@@ -287,7 +311,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         private void WriteMultiGroupBroadcastDataMessage(MultiGroupBroadcastDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ProtocolConstants.MultiGroupBroadcastDataMessageType);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.MultiGroupBroadcastDataMessageType);
             WriteStringArray(message.GroupList, packer);
             WritePayloads(message.Payloads, packer);
         }
@@ -323,6 +347,20 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 MessagePackBinary.WriteMapHeader(packer, 0);
             }
+        }
+
+        private static HandshakeRequestMessage CreateHandshakeRequestMessage(byte[] input, ref int offset)
+        {
+            var version = ReadInt32(input, ref offset, "version");
+
+            return new HandshakeRequestMessage(version);
+        }
+
+        private static HandshakeResponseMessage CreateHandshakeResponseMessage(byte[] input, ref int offset)
+        {
+            var errorMessage = ReadString(input, ref offset, "errorMessage");
+
+            return new HandshakeResponseMessage(errorMessage);
         }
 
         private static OpenConnectionMessage CreateOpenConnectionMessage(byte[] input, ref int offset)

@@ -10,6 +10,26 @@ namespace Microsoft.Azure.SignalR.Protocol
     {
     }
 
+    public class HandshakeRequestMessage : ServiceMessage
+    {
+        public int Version { get; set; }
+
+        public HandshakeRequestMessage(int version)
+        {
+            Version = version;
+        }
+    }
+
+    public class HandshakeResponseMessage : ServiceMessage
+    {
+        public string ErrorMessage { get; set; }
+
+        public HandshakeResponseMessage(string errorMessage)
+        {
+            ErrorMessage = errorMessage;
+        }
+    }
+
     public class PingMessage : ServiceMessage
     {
         public static PingMessage Instance = new PingMessage();
