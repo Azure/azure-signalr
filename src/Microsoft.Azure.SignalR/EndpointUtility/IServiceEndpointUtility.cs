@@ -8,13 +8,14 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal interface IConnectionProvider
+    internal interface IServiceEndpointUtility
     {
-        string GetEndpoint();
+        string Endpoint { get; }
 
-        string GetAccessToken();
+        string AccessKey { get; }
 
-        string GenerateClientAccessToken<THub>(IEnumerable<Claim> claims = null, TimeSpan? lifetime = null) where THub : Hub;
+        string GenerateClientAccessToken<THub>(IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
+            where THub : Hub;
 
         string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null);
 

@@ -22,11 +22,11 @@ namespace RestAPISample
         {
             if (connectionString == null)
             {
-                _hubProxy = CloudSignalR.CreateServiceContext(hubName);
+                _hubProxy = AzureSignalR.CreateServiceContext(hubName);
             }
             else
             {
-                _hubProxy = CloudSignalR.CreateServiceContext(connectionString, hubName);
+                _hubProxy = AzureSignalR.CreateServiceContext(connectionString, hubName);
             }
         }
 

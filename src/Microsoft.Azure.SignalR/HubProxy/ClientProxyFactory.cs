@@ -3,106 +3,91 @@
 
 using System;
 using System.Collections.Generic;
-using System.Security.Claims;
 
 namespace Microsoft.Azure.SignalR
 {
     internal class ClientProxyFactory
     {
-        public static ClientProxy CreateAllClientsProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey,
-            string hubName)
+        public static ClientProxy CreateAllClientsProxy(IHubMessageSender hubMessageSender, string endpoint,
+            string accessKey, string hubName)
         {
-            return InternalCreateClientProxy(hubMessageSender,
-                GetBaseUrl(endpoint, hubName),
-                accessKey, hubName);
+            return InternalCreateClientProxy(hubMessageSender, GetBaseUrl(endpoint, hubName), accessKey, hubName);
         }
 
-        public static ClientProxy CreateAllClientsExceptProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey,
-            string hubName, IReadOnlyList<string> excludedIds)
+        public static ClientProxy CreateAllClientsExceptProxy(IHubMessageSender hubMessageSender, string endpoint,
+            string accessKey, string hubName, IReadOnlyList<string> excludedList)
         {
-            return InternalCreateClientProxy(hubMessageSender,
-                GetBaseUrl(endpoint, hubName),
-                accessKey, hubName, excludedIds);
+            return InternalCreateClientProxy(hubMessageSender, GetBaseUrl(endpoint, hubName), accessKey, hubName,
+                excludedList);
         }
 
-        public static ClientProxy CreateSingleClientProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey,
-            string hubName, string connectionId)
+        public static ClientProxy CreateSingleClientProxy(IHubMessageSender hubMessageSender, string endpoint,
+            string accessKey, string hubName, string connectionId)
         {
-            return InternalCreateClientProxy(hubMessageSender,
-                $"{GetBaseUrl(endpoint, hubName)}/connection/{connectionId}",
-                accessKey, hubName);
+            var url = $"{GetBaseUrl(endpoint, hubName)}/connection/{connectionId}";
+            return InternalCreateClientProxy(hubMessageSender, url, accessKey, hubName);
         }
 
-        public static ClientProxy CreateMultipleClientProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey,
-            string hubName, IReadOnlyList<string> connectionIds)
+        public static ClientProxy CreateMultipleClientProxy(IHubMessageSender hubMessageSender, string endpoint,
+            string accessKey, string hubName, IReadOnlyList<string> connectionIds)
         {
-            return InternalCreateClientProxy(hubMessageSender,
-                $"{GetBaseUrl(endpoint, hubName)}/connections/{string.Join(",", connectionIds)}",
-                accessKey, hubName);
+            var url = $"{GetBaseUrl(endpoint, hubName)}/connections/{string.Join(",", connectionIds)}";
+            return InternalCreateClientProxy(hubMessageSender, url, accessKey, hubName);
         }
 
-        public static ClientProxy CreateSingleUserProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey,
-            string hubName, string userId)
+        public static ClientProxy CreateSingleUserProxy(IHubMessageSender hubMessageSender, string endpoint,
+            string accessKey, string hubName, string userId)
         {
-            return InternalCreateClientProxy(hubMessageSender,
-                $"{GetBaseUrl(endpoint, hubName)}/user/{userId}",
-                accessKey, hubName);
+            var url = $"{GetBaseUrl(endpoint, hubName)}/user/{userId}";
+            return InternalCreateClientProxy(hubMessageSender, url, accessKey, hubName);
         }
 
-        public static ClientProxy CreateMultipleUserProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey,
-            string hubName, IReadOnlyList<string> userIds)
+        public static ClientProxy CreateMultipleUserProxy(IHubMessageSender hubMessageSender, string endpoint,
+            string accessKey, string hubName, IReadOnlyList<string> userIds)
         {
-            return InternalCreateClientProxy(hubMessageSender,
-                $"{GetBaseUrl(endpoint, hubName)}/users/{string.Join(",", userIds)}",
-                accessKey, hubName);
+            var url = $"{GetBaseUrl(endpoint, hubName)}/users/{string.Join(",", userIds)}";
+            return InternalCreateClientProxy(hubMessageSender, url, accessKey, hubName);
         }
 
-        public static ClientProxy CreateSingleGroupProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey,
-            string hubName, string groupName)
+        public static ClientProxy CreateSingleGroupProxy(IHubMessageSender hubMessageSender, string endpoint,
+            string accessKey, string hubName, string groupName)
         {
-            return InternalCreateClientProxy(hubMessageSender,
-                $"{GetBaseUrl(endpoint, hubName)}/group/{groupName}",
-                accessKey, hubName);
+            var url = $"{GetBaseUrl(endpoint, hubName)}/group/{groupName}";
+            return InternalCreateClientProxy(hubMessageSender, url, accessKey, hubName);
         }
 
-        public static ClientProxy CreateMultipleGroupProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey,
-            string hubName, IReadOnlyList<string> groupNames)
+        public static ClientProxy CreateMultipleGroupProxy(IHubMessageSender hubMessageSender, string endpoint,
+            string accessKey, string hubName, IReadOnlyList<string> groupNames)
         {
-            return InternalCreateClientProxy(hubMessageSender,
-                $"{GetBaseUrl(endpoint, hubName)}/groups/{string.Join(",", groupNames)}",
-                accessKey, hubName);
+            var url = $"{GetBaseUrl(endpoint, hubName)}/groups/{string.Join(",", groupNames)}";
+            return InternalCreateClientProxy(hubMessageSender, url, accessKey, hubName);
         }
 
-        public static ClientProxy CreateSingleGroupExceptProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey,
-            string hubName, string groupName, IReadOnlyList<string> excludedIds)
+        public static ClientProxy CreateSingleGroupExceptProxy(IHubMessageSender hubMessageSender, string endpoint,
+            string accessKey, string hubName, string groupName, IReadOnlyList<string> excludedList)
         {
-            return InternalCreateClientProxy(hubMessageSender,
-                $"{GetBaseUrl(endpoint, hubName)}/group/{groupName}",
-                accessKey, hubName, excludedIds);
+            var url = $"{GetBaseUrl(endpoint, hubName)}/group/{groupName}";
+            return InternalCreateClientProxy(hubMessageSender, url, accessKey, hubName, excludedList);
         }
 
         public static string GetBaseUrl(string endpoint, string hubName)
         {
-            return $"{endpoint}:{ClientProxy.ProxyPort}/api/{ClientProxy.DefaultApiVersion}/hub/{hubName}";
+            return $"{endpoint}:{ProxyConstants.Port}/api/{ProxyConstants.ApiVersion}/hub/{hubName}";
         }
 
-        private static ClientProxy InternalCreateClientProxy(IHubMessageSender hubMessageSender, string url, string accessKey, string hubName,
-            IReadOnlyList<string> excludedIds = null)
+        private static ClientProxy InternalCreateClientProxy(IHubMessageSender hubMessageSender, string url,
+            string accessKey, string hubName, IReadOnlyList<string> excludedList = null)
         {
-            return new ClientProxy(hubMessageSender, url, () => GenerateAccessToken(url, accessKey, hubName), excludedIds);
+            return new ClientProxy(hubMessageSender, url, () => GenerateAccessToken(url, accessKey, hubName),
+                excludedList);
         }
 
         public static string GenerateAccessToken(string audience, string accessKey, string hubName)
         {
-            var name = $"HubProxy[{hubName}]";
             return AuthenticationHelper.GenerateJwtBearer(
                 audience: audience,
-                claims: new[]
-                {
-                    new Claim(ClaimTypes.Name, name),
-                    new Claim(ClaimTypes.NameIdentifier, name)
-                },
-                expires: DateTime.UtcNow.Add(ConnectionProvider.DefaultAccessTokenLifetime),
+                claims: null,
+                expires: DateTime.UtcNow.Add(ServiceEndpointUtility.DefaultAccessTokenLifetime),
                 signingKey: accessKey
             );
         }

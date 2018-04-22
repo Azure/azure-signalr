@@ -11,26 +11,22 @@ namespace Microsoft.Azure.SignalR
     internal class ClientProxy : IClientProxy
     {
         private readonly string _url;
-        private readonly Func<string> _jwtBearerProvider;
-        private readonly IReadOnlyList<string> _excludedIds;
-        private IHubMessageSender _hubMessageSender;
+        private readonly Func<string> _accessTokenProvider;
+        private readonly IReadOnlyList<string> _excludedList;
+        private readonly IHubMessageSender _hubMessageSender;
 
-        internal const int ProxyPort = 5002;
-
-        internal const string DefaultApiVersion = "v1-preview";
-
-        public ClientProxy(IHubMessageSender hubMessageSender, string url, Func<string> jwtBearerProvider, IReadOnlyList<string> excludedIds = null)
+        public ClientProxy(IHubMessageSender hubMessageSender, string url, Func<string> accessTokenProvider,
+            IReadOnlyList<string> excludedList)
         {
             _hubMessageSender = hubMessageSender;
             _url = url;
-            _jwtBearerProvider = jwtBearerProvider;
-            _excludedIds = excludedIds;
+            _accessTokenProvider = accessTokenProvider;
+            _excludedList = excludedList;
         }
 
-        // TODO: Translate HttpResponseMessage to typed error
         public Task SendCoreAsync(string method, object[] args)
         {
-            return _hubMessageSender.PostAsync(_url, _jwtBearerProvider.Invoke(), method, args);
+            return _hubMessageSender.SendAsync(_url, _accessTokenProvider.Invoke(), method, args, _excludedList);
         }
     }
 }

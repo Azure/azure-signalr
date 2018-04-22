@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -17,12 +16,11 @@ namespace Microsoft.Azure.SignalR
 {
     internal class HubHost<THub> : IConnectionFactory where THub : Hub
     {
-        private readonly List<ServiceConnection> _cloudConnections = new List<ServiceConnection>();
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<HubHost<THub>> _logger;
         private ServiceOptions _options;
         private HttpConnectionOptions _httpConnectionOptions;
-        private IConnectionProvider _connectionServiceProvider;
+        private IServiceEndpointUtility _serviceEndpointUtility;
         private IServiceConnectionManager _serviceConnectionManager;
         private IClientConnectionManager _clientConnectionManager;
         private IServiceProtocol _serviceProtocol;
@@ -31,14 +29,14 @@ namespace Microsoft.Azure.SignalR
         public HubHost(IServiceProtocol serviceProtocol,
             IServiceConnectionManager serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
-            IConnectionProvider connectionServiceProvider,
+            IServiceEndpointUtility serviceEndpointUtility,
             IOptions<ServiceOptions> options,
             ILoggerFactory loggerFactory)
         {
             _serviceProtocol = serviceProtocol;
             _serviceConnectionManager = serviceConnectionManager;
             _clientConnectionManager = clientConnectionManager;
-            _connectionServiceProvider = connectionServiceProvider;
+            _serviceEndpointUtility = serviceEndpointUtility;
             _options = options != null ? options.Value : throw new ArgumentNullException(nameof(options));
 
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -50,7 +48,7 @@ namespace Microsoft.Azure.SignalR
             _httpConnectionOptions = new HttpConnectionOptions
             {
                 Url = GetServiceUrl(),
-                AccessTokenProvider = () => Task.FromResult(_connectionServiceProvider.GenerateServerAccessToken<THub>()),
+                AccessTokenProvider = () => Task.FromResult(_serviceEndpointUtility.GenerateServerAccessToken<THub>()),
                 CloseTimeout = TimeSpan.FromSeconds(300),
                 Transports = HttpTransportType.WebSockets,
                 SkipNegotiation = true
@@ -72,7 +70,7 @@ namespace Microsoft.Azure.SignalR
 
         private Uri GetServiceUrl()
         {
-            return new Uri(_connectionServiceProvider.GetServerEndpoint<THub>());
+            return new Uri(_serviceEndpointUtility.GetServerEndpoint<THub>());
         }
 
         public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, CancellationToken cancellationToken = default)

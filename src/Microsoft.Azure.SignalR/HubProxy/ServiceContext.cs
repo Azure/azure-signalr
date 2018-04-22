@@ -10,24 +10,26 @@ namespace Microsoft.Azure.SignalR
 {
     public class ServiceContext
     {
-        private IConnectionProvider _connectionServiceProvider;
+        private readonly string _hubName;
+        private readonly IServiceEndpointUtility _serviceEndpointUtility;
 
-        internal ServiceContext(IConnectionProvider connectionServiceProvider, IHubContext<Hub> hubContext)
+        internal ServiceContext(string hubName, IServiceEndpointUtility serviceEndpointUtility, IHubContext<Hub> hubContext)
         {
-            _connectionServiceProvider = connectionServiceProvider;
+            _hubName = hubName;
+            _serviceEndpointUtility = serviceEndpointUtility;
             HubContext = hubContext;
         }
 
-        public IHubContext<Hub> HubContext { get; set; }
+        public IHubContext<Hub> HubContext { get; }
 
-        public string GenerateEndpoint(string hubName)
+        public string GetEndpoint()
         {
-            return _connectionServiceProvider.GetClientEndpoint(hubName);
+            return _serviceEndpointUtility.GetClientEndpoint(_hubName);
         }
 
-        public string GenerateAccessToken(string hubName, IEnumerable<Claim> claims, TimeSpan? lifetime = null)
+        public string GenerateAccessToken(IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
         {
-            return _connectionServiceProvider.GenerateClientAccessToken(hubName, claims, lifetime);
+            return _serviceEndpointUtility.GenerateClientAccessToken(_hubName, claims, lifetime);
         }
     }
 }
