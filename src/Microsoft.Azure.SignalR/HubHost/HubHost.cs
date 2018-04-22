@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -23,14 +24,17 @@ namespace Microsoft.Azure.SignalR
         private IConnectionServiceProvider _connectionServiceProvider;
         private IServiceConnectionManager _serviceConnectionManager;
         private IClientConnectionManager _clientConnectionManager;
+        private IServiceProtocol _serviceProtocol;
         private readonly string _name = $"HubHost<{typeof(THub).FullName}>";
 
-        public HubHost(IServiceConnectionManager serviceConnectionManager,
+        public HubHost(IServiceProtocol serviceProtocol,
+            IServiceConnectionManager serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
             IConnectionServiceProvider connectionServiceProvider,
             IOptions<ServiceOptions> options,
             ILoggerFactory loggerFactory)
         {
+            _serviceProtocol = serviceProtocol;
             _serviceConnectionManager = serviceConnectionManager;
             _clientConnectionManager = clientConnectionManager;
             _connectionServiceProvider = connectionServiceProvider;
@@ -71,7 +75,7 @@ namespace Microsoft.Azure.SignalR
         private ServiceConnection CreateServiceConnection(Uri serviceUrl, HttpOptions httpOptions)
         {
             var httpConnection = new HttpConnection(serviceUrl, HttpTransportType.WebSockets, _loggerFactory, httpOptions);
-            return new ServiceConnection(_clientConnectionManager, serviceUrl, httpConnection, _loggerFactory);
+            return new ServiceConnection(_serviceProtocol, _clientConnectionManager, serviceUrl, httpConnection, _loggerFactory);
         }
     }
 }

@@ -26,8 +26,11 @@ namespace Microsoft.Azure.SignalR
         public ServiceConnectionContext(OpenConnectionMessage serviceMessage)
         {
             ConnectionId = serviceMessage.ConnectionId;
-            User = new ClaimsPrincipal();
-            User.AddIdentity(new ClaimsIdentity(serviceMessage.Claims, "Bearer"));
+            if (serviceMessage.Claims != null)
+            {
+                User = new ClaimsPrincipal();
+                User.AddIdentity(new ClaimsIdentity(serviceMessage.Claims, "Bearer"));
+            }
             // Create the Duplix Pipeline for the virtual connection
             var options = new HttpConnectionOptions();
             var transportPipeOptions = new PipeOptions(pauseWriterThreshold: options.TransportMaxBufferSize,

@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         public int Version => ProtocolVersion;
 
-        public static bool TryParse(ref ReadOnlySequence<byte> input, out ServiceMessage message)
+        public bool TryParseMessage(ref ReadOnlySequence<byte> input, out ServiceMessage message)
         {
             if (!BinaryMessageParser.TryParseMessage(ref input, out var payload))
             {
@@ -31,11 +31,6 @@ namespace Microsoft.Azure.SignalR.Protocol
 
             message = ParseMessage(arraySegment.Array, arraySegment.Offset);
             return true;
-        }
-
-        public bool TryParseMessage(ref ReadOnlySequence<byte> input, out ServiceMessage message)
-        {
-            return TryParse(ref input, out message);
         }
 
         private static ArraySegment<byte> GetArraySegment(in ReadOnlySequence<byte> input)
@@ -95,7 +90,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
-        public static void Write(ServiceMessage message, IBufferWriter<byte> output)
+        public void WriteMessage(ServiceMessage message, IBufferWriter<byte> output)
         {
             var writer = MemoryBufferWriter.Get();
 
@@ -112,11 +107,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 MemoryBufferWriter.Return(writer);
             }
-        }
-
-        public void WriteMessage(ServiceMessage message, IBufferWriter<byte> output)
-        {
-            Write(message, output);
         }
 
         public ReadOnlyMemory<byte> GetMessageBytes(ServiceMessage message)

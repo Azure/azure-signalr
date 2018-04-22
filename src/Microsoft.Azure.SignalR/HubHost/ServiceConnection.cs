@@ -17,6 +17,7 @@ namespace Microsoft.Azure.SignalR
         public static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
 
         private HttpConnection _httpConnection;
+        private IServiceProtocol _serviceProtocol;
         private IClientConnectionManager _clientConnectionManager;
         private ConnectionDelegate _connectionDelegate;
         private SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
@@ -24,9 +25,11 @@ namespace Microsoft.Azure.SignalR
 
         public static TimeSpan HandshakeTimeout { get; set; } = DefaultHandshakeTimeout;
 
-        public ServiceConnection(IClientConnectionManager clientConnectionManager,
+        public ServiceConnection(IServiceProtocol serviceProtocol,
+            IClientConnectionManager clientConnectionManager,
             Uri serviceUrl, HttpConnection httpConnection, ILoggerFactory loggerFactory)
         {
+            _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
             _httpConnection = httpConnection;
             _logger = loggerFactory.CreateLogger<ServiceConnection>();
@@ -49,7 +52,7 @@ namespace Microsoft.Azure.SignalR
                 await _serviceConnectionLock.WaitAsync();
 
                 // Write the service protocol message
-                ServiceProtocol.Write(serviceMessage, _httpConnection.Transport.Output);
+                _serviceProtocol.WriteMessage(serviceMessage, _httpConnection.Transport.Output);
                 await _httpConnection.Transport.Output.FlushAsync(CancellationToken.None);
                 _logger.LogDebug("Send messge to service");
             }
@@ -77,7 +80,7 @@ namespace Microsoft.Azure.SignalR
                         if (!buffer.IsEmpty)
                         {
                             _logger.LogDebug("message received from service");
-                            while (ServiceProtocol.TryParse(ref buffer, out ServiceMessage message))
+                            while (_serviceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
                             {
                                 _ = DispatchMessage(message);
                             }

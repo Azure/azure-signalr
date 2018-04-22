@@ -4,6 +4,7 @@
 using System;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR;
+using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -14,6 +15,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             if (configure != null) builder.Services.Configure(configure);
             builder.Services.AddSingleton(typeof(HubLifetimeManager<>), typeof(HubHostLifetimeManager<>));
+            builder.Services.AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol));
             builder.Services.AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager));
             builder.Services.AddSingleton(typeof(IServiceConnectionManager), typeof(ServiceConnectionManager));
             builder.Services.AddSingleton(typeof(IConnectionServiceProvider), typeof(ConnectionServiceProvider));
