@@ -16,6 +16,14 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder.AddAzureSignalRCore();
         }
 
+        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, string connectionString)
+        {
+            return builder.AddAzureSignalR(options =>
+            {
+                options.ConnectionString = connectionString;
+            });
+        }
+
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, Action<ServiceOptions> configure)
         {
             builder.Services.Configure(configure);

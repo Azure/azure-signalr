@@ -41,7 +41,6 @@ namespace ChatSample
                             };
                         };
                     });
-            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, TimeService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

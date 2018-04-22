@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
@@ -9,6 +10,12 @@ namespace Microsoft.Azure.SignalR
     internal class ServiceOptionsSetup : IConfigureOptions<ServiceOptions>
     {
         internal static readonly int DefaultConnectionNumber = 5;
+        private string _connectionString;
+
+        public ServiceOptionsSetup(IConfiguration configuration)
+        {
+            _connectionString = configuration.GetSection(ServiceOptions.ConnectionStringDefaultKey).Value;
+        }
 
         public void Configure(ServiceOptions options)
         {
@@ -18,7 +25,7 @@ namespace Microsoft.Azure.SignalR
             }
             if (options.ConnectionString == null)
             {
-                options.ConnectionString = Environment.GetEnvironmentVariable(ServiceOptions.ConnectionStringDefaultKey);
+                options.ConnectionString = _connectionString;
             }
         }
     }

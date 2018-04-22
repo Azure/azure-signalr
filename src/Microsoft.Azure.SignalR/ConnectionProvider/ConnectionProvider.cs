@@ -22,15 +22,7 @@ namespace Microsoft.Azure.SignalR
 
         public ConnectionProvider(IOptions<ServiceOptions> options)
         {
-            string connectionString = null;
-            if (String.IsNullOrEmpty(options.Value.ConnectionString))
-            {
-                connectionString = Environment.GetEnvironmentVariable(ServiceOptions.ConnectionStringDefaultKey);
-            }
-            else
-            {
-                connectionString = options.Value.ConnectionString;
-            }
+            var connectionString = options.Value.ConnectionString;
             if (String.IsNullOrEmpty(connectionString))
             {
                 throw new ArgumentNullException("Connection string is not found, please set it in ServiceOption or pass it through environment variable.");
