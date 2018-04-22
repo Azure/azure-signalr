@@ -10,20 +10,14 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Claims;
 using MessagePack;
-using Microsoft.AspNetCore.Connections;
 
 namespace Microsoft.Azure.SignalR.Protocol
 {
     public class ServiceProtocol : IServiceProtocol
     {
-        private static readonly string ProtocolName = "signalrservice";
         private static readonly int ProtocolVersion = 1;
 
-        public string Name => ProtocolName;
-
         public int Version => ProtocolVersion;
-
-        public TransferFormat TransferFormat => TransferFormat.Binary;
 
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, out ServiceMessage message)
         {

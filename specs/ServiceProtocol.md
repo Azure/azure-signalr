@@ -4,13 +4,13 @@ The Azure SignalR Service Protocol is a protocol between Azure SignalR Service a
 
 ## Terms
 
-- Service - Azure SignalR Service. It accepts connections from both clients and servers, acting as the abstract transport between them.
-- Server - Application server node, which is connected with Azure SignalR Service, using this protocol to receive data from and send data to clients via Azure SignalR Service. 
-- Client - Application client node, which is connected with Azure SignalR Service, using SignalR protocols. Azure SignalR Service will look exactly the same as a self-hosted SignalR server from the client.
+- Service - Azure SignalR Service. It accepts connections from both clients and servers, acting as the abstract transport between them. It will internally maintain a one-to-one mapping between clients and servers, to make sure that messages are correctly routed to the recipients as if it is a physical transport.
+- Server - Application server node, which is connected to the Azure SignalR Service, using this protocol to receive data from and send data to clients through Azure SignalR Service. 
+- Client - The SignalR client connected to the Azure SignalR Service. The Azure SignalR Service will look exactly the same as a self-hosted SignalR server from the client's perspective.
 
 ## Overview
 
-Azure SignalR Service Protocol uses WebSocket transport and MessagePack encoding for better performance, and allows a limited set of messages.
+Azure SignalR Service Protocol uses WebSockets and MessagePack to proxy messages between Service and Server.
 Messages are categorized into three groups:
 
 ### Service Connection Message
@@ -21,7 +21,7 @@ Message Name | Sender | Description
 ---|---|---
 HandshakeRequest | Server | Sent by Server to negotiate the protocol version before the physical connection is established.
 HandshakeResponse | Service | Sent by Service to tell Server whether the requested protocol version is supported. If yes, connection will be successfully established. Otherwise, connection will be closed.
-Ping | Service or Server | Sent by Service or Server to check the connection is alive.
+Ping | Service or Server | Sent by either side to check the connection is alive.
 
 ### Generic Client Connection Message
 
@@ -30,7 +30,7 @@ Ping | Service or Server | Sent by Service or Server to check the connection is 
 Message Name | Sender | Description
 ---|---|---
 OpenConnection| Service | Sent by Service to notify Server there is a new client connected.
-CloseConnection | Service or Server | Sent by Service or Server to notify the other side that the specified connection should be closed.
+CloseConnection | Service or Server | Sent by either side to notify the other side that the specified connection should be closed.
 ConnectionData | Service or Server | When sent from Service to Server, it contains data from a single client. When sent from Server to Service, it contains data which should be delivered to a single client.
 
 ### SignalR-specific Message
@@ -86,9 +86,9 @@ Service supports various scenarios in SignalR to send data from Server to multip
 
 ## Message Encodings
 
-In Azure SignalR Service Protocol, each message is represented as a single MsgPack array containing items that correspond to properties of the given service message.
+In Azure SignalR Service Protocol, each message is represented as a single MessagePack array containing items that correspond to properties of the given service message.
 
-MessagePack uses different formats to encode values. Refer to the [MsgPack format spec](https://github.com/msgpack/msgpack/blob/master/spec.md#formats) for format definitions.
+MessagePack uses different formats to encode values. Refer to the [MessagePack Format Spec](https://github.com/msgpack/msgpack/blob/master/spec.md#formats) for format definitions.
 
 ### HandshakeRequest Message
 `HandshakeRequest` messages have the following structure.
@@ -126,7 +126,7 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ```
 - 4 - Message Type, indicating this is a `OpenConnection` message.
 - ConnectionId - A `String` encoding unique Id for the connection.
-- Claims - A MsgPack Map containing all claims of this client.
+- Claims - A MessagePack Map containing all claims of this client.
 
 #### Example: TODO
 
@@ -159,7 +159,7 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ```
 - 7 - Message Type, indicating this is a `MultiConnectionData` message.
 - ConnectionList - An array containing `String` encoding Ids of the target connections.
-- Payloads - A MsgPack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
+- Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
 
 #### Example: TODO
 
@@ -170,7 +170,7 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ```
 - 8 - Message Type, indicating this is a `UserData` message.
 - UserId - A `String` encoding unique Id for the user.
-- Payloads - A MsgPack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
+- Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
 
 #### Example: TODO
 
@@ -181,7 +181,7 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ```
 - 9 - Message Type, indicating this is a `MultiUserData` message.
 - UserList - An array containing `String` encoding Ids of the target users.
-- Payloads - A MsgPack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
+- Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
 
 #### Example: TODO
 
@@ -192,7 +192,7 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ```
 - 10 - Message Type, indicating this is a `BroadcastData` message.
 - ExcludedList - An array containing `String` encoding Ids of the connections, which will not receive payload in this message.
-- Payloads - A MsgPack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
+- Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
 
 #### Example: TODO
 
@@ -226,7 +226,7 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 - 13 - Message Type, indicating this is a `GroupBroadcastData` message.
 - GroupName - A `String` encoding target group name.
 - ExcludedList - An array containing `String` encoding Ids of the connections, which will not receive payload in this message.
-- Payloads - A MsgPack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
+- Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
 
 #### Example: TODO
 
@@ -237,6 +237,6 @@ MessagePack uses different formats to encode values. Refer to the [MsgPack forma
 ```
 - 14 - Message Type, indicating this is a `MultiGroupBroadcastData` message.
 - GroupList - An array containing `String` encoding target group names.
-- Payloads - A MsgPack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
+- Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
 
 #### Example: TODO
