@@ -61,12 +61,7 @@ namespace RestAPISample
             var name = "_BROADCAST_";
             var message = DateTime.UtcNow;
             Console.WriteLine($"Broadcast: {hubMethod} {name} {message}");
-            await _hubProxy.HubContext.Clients.All.SendAsync(hubMethod,
-                new object[]
-                {
-                    name,
-                    message
-                });
+            await _hubProxy.HubContext.Clients.All.SendAsync(hubMethod, name, message);
         }
     }
 }
