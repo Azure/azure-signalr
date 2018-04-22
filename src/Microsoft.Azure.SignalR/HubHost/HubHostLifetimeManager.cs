@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 using Microsoft.Extensions.Logging;
+using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -46,27 +47,25 @@ namespace Microsoft.Azure.SignalR
         public override Task SendAllAsync(string methodName, object[] args)
         {
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
-
-            var meta = new ServiceMessage();
-            meta.Command = CommandType.SendToAll;
-            return SerializeAllProtocolsAndSendAsync(meta, methodName, args);
+            return _serviceConnectionManager.SendServiceMessage(
+                new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedIds)
         {
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
-
-            var meta = new ServiceMessage().AddExcludedIds(excludedIds);
-            return SerializeAllProtocolsAndSendAsync(meta, methodName, args);
+            return _serviceConnectionManager.SendServiceMessage(
+                new BroadcastDataMessage(excludedIds.ToArray(), SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args)
         {
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
-
-            var serviceMessage = new ServiceMessage().AddSendConnection(connectionId);
-            return SerializeAndSendAsync(_clientConnectionManager.ClientProtocol(connectionId), serviceMessage, methodName, args);
+            // TODO. Do not need to serialize to all protocols.
+            // After update SignalR, do not forget to fix this. It impacts "echo" performance.
+            return _serviceConnectionManager.SendServiceMessage(
+                new MultiConnectionDataMessage(new string[1] { connectionId }, SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args)
@@ -74,25 +73,24 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidListArgument(nameof(connectionIds), connectionIds)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var serviceMessage = new ServiceMessage().AddSendConnections(connectionIds);
-            return SerializeAllProtocolsAndSendAsync(serviceMessage, methodName, args);
+            return _serviceConnectionManager.SendServiceMessage(
+                new MultiConnectionDataMessage(connectionIds.ToArray(), SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendGroupAsync(string groupName, string methodName, object[] args)
         {
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
-
-            var serviceMessage = new ServiceMessage().AddSendGroup(groupName);
-            return SerializeAllProtocolsAndSendAsync(serviceMessage, methodName, args);
+            return _serviceConnectionManager.SendServiceMessage(
+                new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args)
         {
             if (IsInvalidListArgument(nameof(groupNames), groupNames)) return Task.CompletedTask;
 
-            var serviceMessage = new ServiceMessage().AddSendGroups(groupNames);
-            return SerializeAllProtocolsAndSendAsync(serviceMessage, methodName, args);
+            return _serviceConnectionManager.SendServiceMessage(
+                new MultiGroupBroadcastDataMessage(groupNames.ToArray(), SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds)
@@ -100,8 +98,8 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var serviceMessage = new ServiceMessage().AddSendGroupExcludedIds(groupName, excludedIds);
-            return SerializeAllProtocolsAndSendAsync(serviceMessage, methodName, args);
+            return _serviceConnectionManager.SendServiceMessage(
+                new GroupBroadcastDataMessage(groupName, excludedIds.ToArray(), SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendUserAsync(string userId, string methodName, object[] args)
@@ -109,8 +107,8 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(userId), userId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var serviceMessage = new ServiceMessage().AddSendUserId(userId);
-            return SerializeAllProtocolsAndSendAsync(serviceMessage, methodName, args);
+            return _serviceConnectionManager.SendServiceMessage(
+                new UserDataMessage(userId, SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args)
@@ -118,8 +116,8 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidListArgument(nameof(userIds), userIds)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            var serviceMessage = new ServiceMessage().AddSendUserIds(userIds);
-            return SerializeAllProtocolsAndSendAsync(serviceMessage, methodName, args);
+            return _serviceConnectionManager.SendServiceMessage(
+                new MultiUserDataMessage(userIds.ToArray(), SerializeAllProtocols(methodName, args)));
         }
 
         public override Task AddGroupAsync(string connectionId, string groupName)
@@ -127,8 +125,7 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
 
-            var serviceMessage = new ServiceMessage().CreateAddConnectionToGroup(connectionId, groupName);
-            return SerializeAndSendAsync(_clientConnectionManager.ClientProtocol(connectionId), serviceMessage, null, null);
+            return _serviceConnectionManager.SendServiceMessage(new JoinGroupMessage(connectionId, groupName));
         }
 
         public override Task RemoveGroupAsync(string connectionId, string groupName)
@@ -136,9 +133,7 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
 
-            var serviceMesssage = new ServiceMessage();
-            serviceMesssage.CreateRemoveConnectionFromGroup(connectionId, groupName);
-            return SerializeAndSendAsync(_clientConnectionManager.ClientProtocol(connectionId), serviceMesssage, null, null);
+            return _serviceConnectionManager.SendServiceMessage(new LeaveGroupMessage(connectionId, groupName));
         }
 
         private bool IsInvalidStringArgument(string name, string value)
@@ -167,45 +162,15 @@ namespace Microsoft.Azure.SignalR
             return true;
         }
 
-        private ServiceMessage Serialize(string protocol, ServiceMessage serviceMessage, string method, object[] args)
+        private IDictionary<string, byte[]> SerializeAllProtocols(string method, object[] args)
         {
-            if (method != null)
+            var payloads = new Dictionary<string, byte[]>();
+            var message = CreateInvocationMessage(method, args);
+            foreach (var hubProtocol in _allProtocols)
             {
-                serviceMessage.AddProtocolName(protocol);
-                var message = CreateInvocationMessage(method, args);
-                foreach (var hubProtocol in _allProtocols)
-                {
-                    if (string.Equals(hubProtocol.Name, protocol, StringComparison.Ordinal))
-                    {
-                        serviceMessage.AddPayload(protocol, hubProtocol.WriteToArray(message));
-                        break;
-                    }
-                }
+                payloads.Add(hubProtocol.Name, hubProtocol.WriteToArray(message));
             }
-            return serviceMessage;
-        }
-
-        private ServiceMessage SerializeAllProtocols(ServiceMessage serviceMessage, string method, object[] args)
-        {
-            if (method != null)
-            {
-                var message = CreateInvocationMessage(method, args);
-                foreach (var hubProtocol in _allProtocols)
-                {
-                    serviceMessage.AddPayload(hubProtocol.Name, hubProtocol.WriteToArray(message));
-                }
-            }
-            return serviceMessage;
-        }
-
-        private Task SerializeAndSendAsync(string protocol, ServiceMessage serviceMessage, string method, object[] args)
-        {
-            return _serviceConnectionManager.SendServiceMessage(Serialize(protocol, serviceMessage, method, args));
-        }
-
-        private Task SerializeAllProtocolsAndSendAsync(ServiceMessage serviceMessage, string method, object[] args)
-        {
-            return _serviceConnectionManager.SendServiceMessage(SerializeAllProtocols(serviceMessage, method, args));
+            return payloads;
         }
 
         public InvocationMessage CreateInvocationMessage(string methodName, object[] args)
