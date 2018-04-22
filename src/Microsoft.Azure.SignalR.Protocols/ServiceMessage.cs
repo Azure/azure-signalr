@@ -1,60 +1,34 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
-
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR.Protocol
 {
-    public enum CommandType
+    public abstract class ServiceMessage
     {
-        // Service -> SDK
-        Ping = 0,
-        AddConnection,
-        RemoveConnection,
-        AckMessage,
-        // SDK -> Service
-        AddConnectionToGroup,
-        RemoveConnectionFromGroup,
-        SendToConnection,
-        SendToConnections,
-        SendToAll,
-        SendToAllExcept,
-        SendToGroup,
-        SendToGroups,
-        SendToUser,
-        SendToUsers,
-        AbortConnection,
-        SendToGroupExcept
     }
 
-    public enum ArgumentType
+    public class HandshakeRequestMessage : ServiceMessage
     {
-        ConnectionId = 0,
-        Claim,
-        ProtocolName,
-        ConnectionList,
-        GroupName,
-        GroupList,
-        UserId,
-        UserList,
-        ExcludedList
-    }
+        public int Version { get; set; }
 
-    public class ServiceMessage
-    {
-        public static readonly string HandshakeProtocol = "json";
-
-        public CommandType Command { get; set; }
-
-        public IDictionary<ArgumentType, string> Arguments { get; set; }
-
-        public byte[] AckPayload { get; set; }
-
-        public IDictionary<string, byte[]> Payloads { get; set; }
-
-        public static readonly ServiceMessage PingMessage = new ServiceMessage
+        public HandshakeRequestMessage(int version)
         {
-            Command = CommandType.Ping
-        };
+            Version = version;
+        }
+    }
+
+    public class HandshakeResponseMessage : ServiceMessage
+    {
+        public string ErrorMessage { get; set; }
+
+        public HandshakeResponseMessage(string errorMessage)
+        {
+            ErrorMessage = errorMessage;
+        }
+    }
+
+    public class PingMessage : ServiceMessage
+    {
+        public static PingMessage Instance = new PingMessage();
     }
 }
