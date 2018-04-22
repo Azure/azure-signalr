@@ -123,8 +123,8 @@ namespace Microsoft.Azure.SignalR
                 case OpenConnectionMessage openConnectionMessage:
                     await OnConnectedAsync(openConnectionMessage);
                     break;
-                case CloseConnectionMessage closeConnectoinMessage:
-                    await OnDisconnectedAsync(closeConnectoinMessage);
+                case CloseConnectionMessage closeConnectionMessage:
+                    await OnDisconnectedAsync(closeConnectionMessage);
                     break;
                 case ConnectionDataMessage connectionDataMessage:
                     await OnMessageAsync(connectionDataMessage);
@@ -213,14 +213,14 @@ namespace Microsoft.Azure.SignalR
             _logger.LogDebug($"Inform service that client {connection.ConnectionId} should be removed");
         }
 
-        private async Task OnDisconnectedAsync(CloseConnectionMessage closeConnectoinMessage)
+        private async Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
-            if (_clientConnectionManager.ClientConnections.TryGetValue(closeConnectoinMessage.ConnectionId, out var connection))
+            if (_clientConnectionManager.ClientConnections.TryGetValue(closeConnectionMessage.ConnectionId, out var connection))
             {
                 await WaitOnTransportTask(connection);
             }
             // Close this connection gracefully then remove it from the list, this will trigger the hub shutdown logic appropriately
-            _clientConnectionManager.ClientConnections.TryRemove(closeConnectoinMessage.ConnectionId, out _);
+            _clientConnectionManager.ClientConnections.TryRemove(closeConnectionMessage.ConnectionId, out _);
             _logger.LogDebug($"Remove client connection {connection.ConnectionId}");
         }
 

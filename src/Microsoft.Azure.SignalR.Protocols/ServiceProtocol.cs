@@ -214,7 +214,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.OpenConnectionMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
 
-            if (message.Claims?.Any() == true)
+            if (message.Claims?.Length > 0)
             {
                 MessagePackBinary.WriteMapHeader(packer, message.Claims.Length);
                 foreach (var claim in message.Claims)
@@ -312,7 +312,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteStringArray(string[] array, Stream packer)
         {
-            if (array?.Any() == true)
+            if (array?.Length > 0)
             {
                 MessagePackBinary.WriteArrayHeader(packer, array.Length);
                 foreach (var value in array)
@@ -328,7 +328,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WritePayloads(IDictionary<string, byte[]> payloads, Stream packer)
         {
-            if (payloads?.Count() > 0)
+            if (payloads?.Count > 0)
             {
                 MessagePackBinary.WriteMapHeader(packer, payloads.Count);
                 foreach (var payload in payloads)
