@@ -28,7 +28,7 @@ namespace ChatSample
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
-            services.AddSignalR().AddMessagePackProtocol()
+            services.AddSignalR()
                     .AddAzureSignalR(options =>
                     {
                         Configuration.GetSection("AzureSignalRConfiguration").Bind(options);
