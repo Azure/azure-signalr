@@ -10,23 +10,16 @@ namespace Microsoft.Azure.SignalR
 {
     public class ServiceOptions
     {
-        public static readonly int DefaultConnectionNumber = 5;
-
         // Connection string can be passed by setting this environment variable (default key)
-        public static readonly string ConnectionStringDefaultKey = "AzureSignalRConnectionString";
+        public static readonly string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
 
-        public ServiceOptions()
-        {
-            ConnectionNumber = DefaultConnectionNumber;
-        }
+        // The order to find connection string:
+        // 1. options
+        // 2. environment variable
+        // Throw exception if 1 and 2 fail to find it.
+        public string ConnectionString { get; set; } = null;
 
-        // the order to find connection string:
-        // 1. ServiceOptions.ConnectionString
-        // 2. Environment variable
-        // 3. Exception for no connection string
-        public string ConnectionString { get; set; }
-
-        public int ConnectionNumber { get; set; }
+        public int? ConnectionNumber { get; set; } = null;
 
         public Func<HttpContext, IEnumerable<Claim>> Claims { get; set; } = null;
     }

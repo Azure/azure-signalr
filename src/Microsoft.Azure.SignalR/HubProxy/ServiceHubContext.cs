@@ -7,7 +7,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceHubContext: IHubContext<Hub>
     {
-        public ServiceHubContext(IConnectionServiceProvider connectionServiceProvider, IHubMessageSender hubMessageSender, string hubName)
+        public ServiceHubContext(IConnectionProvider connectionServiceProvider, IHubMessageSender hubMessageSender, string hubName)
         {
             Clients = new HubClientsProxy(hubMessageSender, connectionServiceProvider.GetEndpoint(), connectionServiceProvider.GetAccessToken(), hubName);
             Groups = new GroupManagerProxy(hubMessageSender, connectionServiceProvider.GetEndpoint(), connectionServiceProvider.GetAccessToken(), hubName);
