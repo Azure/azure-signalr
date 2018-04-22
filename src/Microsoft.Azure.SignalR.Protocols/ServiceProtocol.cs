@@ -328,7 +328,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WritePayloads(IDictionary<string, byte[]> payloads, Stream packer)
         {
-            if (payloads?.Any() == true)
+            if (payloads?.Count() > 0)
             {
                 MessagePackBinary.WriteMapHeader(packer, payloads.Count);
                 foreach (var payload in payloads)
