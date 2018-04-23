@@ -18,16 +18,16 @@ namespace Microsoft.Azure.SignalR
             _serviceConnections.Add(serviceConnection);
         }
 
-        public async Task StartAllServiceConnection(ConnectionDelegate connectionDelegate)
+        public async Task StartAsync(ConnectionDelegate connectionDelegate)
         {
             var tasks = _serviceConnections.Select(c => c.StartAsync(connectionDelegate));
             await Task.WhenAll(tasks);
         }
 
-        public async Task SendServiceMessage(ServiceMessage serviceMessage)
+        public async Task WriteAsync(ServiceMessage serviceMessage)
         {
             var index = StaticRandom.Next(_serviceConnections.Count);
-            await _serviceConnections[index].SendServiceMessage(serviceMessage);
+            await _serviceConnections[index].WriteAsync(serviceMessage);
         }
     }
 }

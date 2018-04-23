@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -46,14 +47,14 @@ namespace Microsoft.Azure.SignalR
         public override Task SendAllAsync(string methodName, object[] args)
         {
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
-            return _serviceConnectionManager.SendServiceMessage(
+            return _serviceConnectionManager.WriteAsync(
                 new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedIds)
         {
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
-            return _serviceConnectionManager.SendServiceMessage(
+            return _serviceConnectionManager.WriteAsync(
                 new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)));
         }
 
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
             // TODO. Do not need to serialize to all protocols.
             // After update SignalR, do not forget to fix this. It impacts "echo" performance.
-            return _serviceConnectionManager.SendServiceMessage(
+            return _serviceConnectionManager.WriteAsync(
                 new MultiConnectionDataMessage(new string[1] { connectionId }, SerializeAllProtocols(methodName, args)));
         }
 
@@ -72,7 +73,7 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidListArgument(nameof(connectionIds), connectionIds)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            return _serviceConnectionManager.SendServiceMessage(
+            return _serviceConnectionManager.WriteAsync(
                 new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)));
         }
 
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
-            return _serviceConnectionManager.SendServiceMessage(
+            return _serviceConnectionManager.WriteAsync(
                 new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args)));
         }
 
@@ -88,7 +89,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidListArgument(nameof(groupNames), groupNames)) return Task.CompletedTask;
 
-            return _serviceConnectionManager.SendServiceMessage(
+            return _serviceConnectionManager.WriteAsync(
                 new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)));
         }
 
@@ -97,7 +98,7 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            return _serviceConnectionManager.SendServiceMessage(
+            return _serviceConnectionManager.WriteAsync(
                 new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args)));
         }
 
@@ -106,7 +107,7 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(userId), userId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            return _serviceConnectionManager.SendServiceMessage(
+            return _serviceConnectionManager.WriteAsync(
                 new UserDataMessage(userId, SerializeAllProtocols(methodName, args)));
         }
 
@@ -115,7 +116,7 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidListArgument(nameof(userIds), userIds)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
-            return _serviceConnectionManager.SendServiceMessage(
+            return _serviceConnectionManager.WriteAsync(
                 new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)));
         }
 
@@ -124,7 +125,7 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
 
-            return _serviceConnectionManager.SendServiceMessage(new JoinGroupMessage(connectionId, groupName));
+            return _serviceConnectionManager.WriteAsync(new JoinGroupMessage(connectionId, groupName));
         }
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName)
@@ -132,7 +133,7 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
 
-            return _serviceConnectionManager.SendServiceMessage(new LeaveGroupMessage(connectionId, groupName));
+            return _serviceConnectionManager.WriteAsync(new LeaveGroupMessage(connectionId, groupName));
         }
 
         private bool IsInvalidStringArgument(string name, string value)
@@ -161,13 +162,13 @@ namespace Microsoft.Azure.SignalR
             return true;
         }
 
-        private IDictionary<string, byte[]> SerializeAllProtocols(string method, object[] args)
+        private IDictionary<string, ReadOnlyMemory<byte>> SerializeAllProtocols(string method, object[] args)
         {
-            var payloads = new Dictionary<string, byte[]>();
+            var payloads = new Dictionary<string, ReadOnlyMemory<byte>>();
             var message = CreateInvocationMessage(method, args);
             foreach (var hubProtocol in _allProtocols)
             {
-                payloads.Add(hubProtocol.Name, hubProtocol.GetMessageBytes(message).ToArray());
+                payloads.Add(hubProtocol.Name, hubProtocol.GetMessageBytes(message));
             }
             return payloads;
         }

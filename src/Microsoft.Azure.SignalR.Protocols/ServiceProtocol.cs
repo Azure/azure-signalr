@@ -328,7 +328,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
-        private static void WritePayloads(IDictionary<string, byte[]> payloads, Stream packer)
+        private static void WritePayloads(IDictionary<string, ReadOnlyMemory<byte>> payloads, Stream packer)
         {
             if (payloads?.Count > 0)
             {
@@ -336,7 +336,9 @@ namespace Microsoft.Azure.SignalR.Protocol
                 foreach (var payload in payloads)
                 {
                     MessagePackBinary.WriteString(packer, payload.Key);
-                    MessagePackBinary.WriteBytes(packer, payload.Value);
+                    bool isArray = MemoryMarshal.TryGetArray(payload.Value, out var segment);
+                    Debug.Assert(isArray, "We're not using managed memory");
+                    MessagePackBinary.WriteBytes(packer, segment.Array, segment.Offset, segment.Count);
                 }
             }
             else
@@ -468,12 +470,12 @@ namespace Microsoft.Azure.SignalR.Protocol
             return null;
         }
 
-        private static IDictionary<string, byte[]> ReadPayloads(byte[] input, ref int offset)
+        private static IDictionary<string, ReadOnlyMemory<byte>> ReadPayloads(byte[] input, ref int offset)
         {
             var payloadCount = ReadMapLength(input, ref offset, "payloads");
             if (payloadCount > 0)
             {
-                var payloads = new Dictionary<string, byte[]>((int)payloadCount);
+                var payloads = new Dictionary<string, ReadOnlyMemory<byte>>((int)payloadCount);
                 for (var i = 0; i < payloadCount; i++)
                 {
                     var key = ReadString(input, ref offset, $"payloads[{i}].key");

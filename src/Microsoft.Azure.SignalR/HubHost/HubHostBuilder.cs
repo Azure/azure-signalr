@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Connections.Internal;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
@@ -44,17 +45,17 @@ namespace Microsoft.Azure.SignalR
             Start<THub>();
         }
 
-        private ServiceResponse GenServiceUrlAndToken(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
+        private NegotiationResponse GenServiceUrlAndToken(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
         {
             var connectionServiceProvider = _serviceProvider.GetRequiredService<IConnectionProvider>();
             var options = _serviceProvider.GetService<IOptions<ServiceOptions>>();
             var claims = options.Value.ClaimsProvider?.Invoke(context) ?? context.User.Claims;
-            var serviceProviderResponse = new ServiceResponse()
+            var negotiationResponse = new NegotiationResponse()
             {
-                ServiceUrl = connectionServiceProvider.GetClientEndpoint(hubName),
+                Url = connectionServiceProvider.GetClientEndpoint(hubName),
                 AccessToken = connectionServiceProvider.GenerateClientAccessToken(hubName, claims)
             };
-            return serviceProviderResponse;
+            return negotiationResponse;
         }
 
         private async Task RedirectToServiceUrlWithToken(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.SignalR
 
             try
             {
-                ConnectionProtocol.WriteResponse(serviceProviderResponse, writer);
+                NegotiateProtocol.WriteResponse(serviceProviderResponse, writer);
                 // Write it out to the response with the right content length
                 context.Response.ContentLength = writer.Length;
                 await writer.CopyToAsync(context.Response.Body);

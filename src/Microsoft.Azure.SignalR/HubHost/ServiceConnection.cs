@@ -36,19 +36,31 @@ namespace Microsoft.Azure.SignalR
         public async Task StartAsync(ConnectionDelegate connectionDelegate)
         {
             _connectionDelegate = connectionDelegate;
-            _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary);
+
+            // Lock here in case somebody tries to send before the connection is assigned
+            await _serviceConnectionLock.WaitAsync();
+
+            try
+            {
+                _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary);
+            }
+            finally
+            {
+                _serviceConnectionLock.Release();
+            }
+
             // TODO. Handshake with Service for version confirmation
             _ = ProcessIncomingAsync();
         }
 
-        public async Task SendServiceMessage(ServiceMessage serviceMessage)
+        public async Task WriteAsync(ServiceMessage serviceMessage)
         {
+            // We have to lock around outgoing sends since the pipe is single writer.
+            // The lock is per serviceConnection
+            await _serviceConnectionLock.WaitAsync();
+
             try
             {
-                // We have to lock around outgoing sends since the pipe is single writer.
-                // The lock is per serviceConnection
-                await _serviceConnectionLock.WaitAsync();
-
                 // Write the service protocol message
                 _serviceProtocol.WriteMessage(serviceMessage, _connection.Transport.Output);
                 await _connection.Transport.Output.FlushAsync(CancellationToken.None);
@@ -146,7 +158,7 @@ namespace Microsoft.Azure.SignalR
                         // Forward the message to the service
                         if (buffer.IsSingleSegment)
                         {
-                            await SendServiceMessage(new ConnectionDataMessage(connection.ConnectionId, buffer.First));
+                            await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, buffer.First));
                         }
                         else
                         {
@@ -155,7 +167,7 @@ namespace Microsoft.Azure.SignalR
                             var position = buffer.Start;
                             while (buffer.TryGet(ref position, out var memory))
                             {
-                                await SendServiceMessage(new ConnectionDataMessage(connection.ConnectionId, memory));
+                                await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, memory));
                             }
                         }
 
@@ -220,7 +232,7 @@ namespace Microsoft.Azure.SignalR
         {
             // Inform the Service that we will remove the client because SignalR told us it is disconnected.
             var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, "");
-            await SendServiceMessage(serviceMessage);
+            await WriteAsync(serviceMessage);
             _logger.LogDebug($"Inform service that client {connection.ConnectionId} should be removed");
         }
 
