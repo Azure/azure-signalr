@@ -5,12 +5,19 @@ using System.Buffers;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceProviderProtocol
+    internal class ServiceResponse
+    {
+        public string ServiceUrl { get; set; }
+
+        public string AccessToken { get; set; }
+    }
+
+    internal class ConnectionProtocol
     {
         private const string ServiceUrlPropertyName = "url";
         private const string AccessTokenPropertyName = "accessToken";
 
-        public static void WriteResponse(ServiceProviderResponse response, IBufferWriter<byte> output)
+        public static void WriteResponse(ServiceResponse response, IBufferWriter<byte> output)
         {
             var textWriter = Utf8BufferTextWriter.Get(output);
             try

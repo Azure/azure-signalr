@@ -5,20 +5,39 @@ using System;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     public static class AzureSignalRDependencyInjectionExtensions
     {
-        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder,
-            Action<ServiceOptions> configure = null)
+        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder)
         {
-            if (configure != null) builder.Services.Configure(configure);
+            builder.Services.AddSingleton<IConfigureOptions<ServiceOptions>, ServiceOptionsSetup>();
+            return builder.AddAzureSignalRCore();
+        }
+
+        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, string connectionString)
+        {
+            return builder.AddAzureSignalR(options =>
+            {
+                options.ConnectionString = connectionString;
+            });
+        }
+
+        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, Action<ServiceOptions> configure)
+        {
+            builder.Services.Configure(configure);
+            return builder.AddAzureSignalRCore();
+        }
+
+        public static ISignalRServerBuilder AddAzureSignalRCore(this ISignalRServerBuilder builder)
+        {
             builder.Services.AddSingleton(typeof(HubLifetimeManager<>), typeof(HubHostLifetimeManager<>));
             builder.Services.AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol));
             builder.Services.AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager));
             builder.Services.AddSingleton(typeof(IServiceConnectionManager), typeof(ServiceConnectionManager));
-            builder.Services.AddSingleton(typeof(IConnectionServiceProvider), typeof(ConnectionServiceProvider));
+            builder.Services.AddSingleton(typeof(IConnectionProvider), typeof(ConnectionProvider));
             builder.Services.AddSingleton(typeof(HubHost<>));
             builder.Services.AddSingleton(typeof(IHubMessageSender), typeof(HubMessageSender));
             return builder;
