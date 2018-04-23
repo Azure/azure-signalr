@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR
             var connectionString = options.Value.ConnectionString;
             if (String.IsNullOrEmpty(connectionString))
             {
-                throw new ArgumentNullException("Connection string is not found, please set it in ServiceOption or pass it through environment variable.");
+                throw new ArgumentException($"Unable to determine the connection string. Please specify a configuration entry for {ServiceOptions.ConnectionStringDefaultKey} or explicitly pass one using IServiceCollection.AddSignalRService(connectionString) in Startup.ConfigureServices.");
             }
             _connectionService = ParseConnectionString(connectionString);
         }
