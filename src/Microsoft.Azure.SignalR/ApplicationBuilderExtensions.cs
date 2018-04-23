@@ -11,17 +11,8 @@ namespace Microsoft.AspNetCore.Builder
     {
         public static IApplicationBuilder UseAzureSignalR(this IApplicationBuilder app, Action<HubHostBuilder> configure)
         {
-            app.UseRoute(routes =>
-            {
-                configure(new HubHostBuilder(routes));
-            });
-            return app;
-        }
-
-        private static IApplicationBuilder UseRoute(this IApplicationBuilder app, Action<RouteBuilder> callback)
-        {
             var routes = new RouteBuilder(app);
-            callback(routes);
+            configure(new HubHostBuilder(routes));
             app.UseRouter(routes.Build());
             return app;
         }
