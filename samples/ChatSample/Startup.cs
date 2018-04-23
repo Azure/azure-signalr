@@ -24,32 +24,21 @@ namespace ChatSample
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
             services.AddSignalR()
-                    .AddAzureSignalR(options =>
-                    {
-                        Configuration.GetSection("AzureSignalRConfiguration").Bind(options);
-                        options.Claims = (httpContext) =>
-                        {
-                            return new[]
-                            {
-                                new Claim(ClaimTypes.Name, "username"),
-                                new Claim(ClaimTypes.NameIdentifier, "userId")
-                            };
-                        };
-                    });
+                    .AddAzureSignalR();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             app.UseMvc();
             app.UseFileServer();
-            app.UseAzureSignalR(
-                builder => { builder.MapHub<Chat>("/chat"); });
+            app.UseAzureSignalR(routes =>
+            {
+                routes.MapHub<Chat>("/chat");
+            });
         }
     }
 }

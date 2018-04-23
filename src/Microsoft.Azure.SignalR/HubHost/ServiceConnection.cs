@@ -145,10 +145,23 @@ namespace Microsoft.Azure.SignalR
                     var buffer = result.Buffer;
                     if (!buffer.IsEmpty)
                     {
-                        // Blindly send message from SignalR to Client
-                        var serviceMessage = new ConnectionDataMessage(connection.ConnectionId, buffer.ToArray());
-                        await SendServiceMessage(serviceMessage);
-                        _logger.LogDebug($"Send data message back to client through {serviceMessage.ConnectionId}");
+                        // Forward the message to the service
+                        if (buffer.IsSingleSegment)
+                        {
+                            await SendServiceMessage(new ConnectionDataMessage(connection.ConnectionId, buffer.First));
+                        }
+                        else
+                        {
+                            // This is a multi-segmented buffer so just write each chunk
+                            // TODO: Optimize this by doing it all under a single lock
+                            var position = buffer.Start;
+                            while (buffer.TryGet(ref position, out var memory))
+                            {
+                                await SendServiceMessage(new ConnectionDataMessage(connection.ConnectionId, memory));
+                            }
+                        }
+
+                        _logger.LogDebug($"Send data message back to client through {connection.ConnectionId}");
                     }
                     else if (result.IsCompleted)
                     {

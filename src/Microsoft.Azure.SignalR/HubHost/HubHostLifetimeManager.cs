@@ -54,7 +54,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
             return _serviceConnectionManager.SendServiceMessage(
-                new BroadcastDataMessage(excludedIds.ToArray(), SerializeAllProtocols(methodName, args)));
+                new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args)
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
             return _serviceConnectionManager.SendServiceMessage(
-                new MultiConnectionDataMessage(connectionIds.ToArray(), SerializeAllProtocols(methodName, args)));
+                new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendGroupAsync(string groupName, string methodName, object[] args)
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidListArgument(nameof(groupNames), groupNames)) return Task.CompletedTask;
 
             return _serviceConnectionManager.SendServiceMessage(
-                new MultiGroupBroadcastDataMessage(groupNames.ToArray(), SerializeAllProtocols(methodName, args)));
+                new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds)
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
             return _serviceConnectionManager.SendServiceMessage(
-                new GroupBroadcastDataMessage(groupName, excludedIds.ToArray(), SerializeAllProtocols(methodName, args)));
+                new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendUserAsync(string userId, string methodName, object[] args)
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
 
             return _serviceConnectionManager.SendServiceMessage(
-                new MultiUserDataMessage(userIds.ToArray(), SerializeAllProtocols(methodName, args)));
+                new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)));
         }
 
         public override Task AddGroupAsync(string connectionId, string groupName)
