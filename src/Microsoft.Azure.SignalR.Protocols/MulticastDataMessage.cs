@@ -1,23 +1,24 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR.Protocol
 {
     public abstract class MulticastDataMessage : ServiceMessage
     {
-        protected MulticastDataMessage(IDictionary<string, byte[]> payloads)
+        protected MulticastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads)
         {
             Payloads = payloads;
         }
 
-        public IDictionary<string, byte[]> Payloads { get; set; }
+        public IDictionary<string, ReadOnlyMemory<byte>> Payloads { get; set; }
     }
 
     public class MultiConnectionDataMessage : MulticastDataMessage
     {
-        public MultiConnectionDataMessage(IReadOnlyList<string> connectionList, IDictionary<string, byte[]> payloads) :
+        public MultiConnectionDataMessage(IReadOnlyList<string> connectionList, IDictionary<string, ReadOnlyMemory<byte>> payloads) :
             base(payloads)
         {
             ConnectionList = connectionList;
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     {
         public string UserId { get; set; }
 
-        public UserDataMessage(string userId, IDictionary<string, byte[]> payloads) : base(payloads)
+        public UserDataMessage(string userId, IDictionary<string, ReadOnlyMemory<byte>> payloads) : base(payloads)
         {
             UserId = userId;
         }
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
     public class MultiUserDataMessage : MulticastDataMessage
     {
-        public MultiUserDataMessage(IReadOnlyList<string> userList, IDictionary<string, byte[]> payloads) : base(payloads)
+        public MultiUserDataMessage(IReadOnlyList<string> userList, IDictionary<string, ReadOnlyMemory<byte>> payloads) : base(payloads)
         {
             UserList = userList;
         }
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     {
         public IReadOnlyList<string> ExcludedList { get; set; }
 
-        public BroadcastDataMessage(IReadOnlyList<string> excludedList, IDictionary<string, byte[]> payloads) : base(payloads)
+        public BroadcastDataMessage(IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads) : base(payloads)
         {
             ExcludedList = excludedList;
         }
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string GroupName { get; set; }
         public IReadOnlyList<string> ExcludedList { get; set; }
 
-        public GroupBroadcastDataMessage(string groupName, IReadOnlyList<string> excludedList, IDictionary<string, byte[]> payloads)
+        public GroupBroadcastDataMessage(string groupName, IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads)
             : base(payloads)
         {
             GroupName = groupName;
@@ -74,7 +75,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     {
         public IReadOnlyList<string> GroupList { get; set; }
 
-        public MultiGroupBroadcastDataMessage(IReadOnlyList<string> groupList, IDictionary<string, byte[]> payloads) : base(payloads)
+        public MultiGroupBroadcastDataMessage(IReadOnlyList<string> groupList, IDictionary<string, ReadOnlyMemory<byte>> payloads) : base(payloads)
         {
             GroupList = groupList;
         }
