@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR
         {
             var connectionServiceProvider = _serviceProvider.GetRequiredService<IConnectionProvider>();
             var options = _serviceProvider.GetService<IOptions<ServiceOptions>>();
-            var claims = options.Value.Claims?.Invoke(context);
+            var claims = options.Value.ClaimsProvider?.Invoke(context) ?? context.User.Claims;
             var serviceProviderResponse = new ServiceResponse()
             {
                 ServiceUrl = connectionServiceProvider.GetClientEndpoint(hubName),

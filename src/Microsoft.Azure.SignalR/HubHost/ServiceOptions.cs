@@ -21,6 +21,6 @@ namespace Microsoft.Azure.SignalR
 
         public int? ConnectionNumber { get; set; } = null;
 
-        public Func<HttpContext, IEnumerable<Claim>> Claims { get; set; } = null;
+        public Func<HttpContext, IEnumerable<Claim>> ClaimsProvider { get; set; } = null;
     }
 }

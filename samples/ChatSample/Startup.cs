@@ -28,7 +28,18 @@ namespace ChatSample
         {
             services.AddMvc();
             services.AddSignalR()
-                    .AddAzureSignalR();
+                    .AddAzureSignalR(options =>
+                    {
+                        Configuration.GetSection("AzureSignalRConfiguration").Bind(options);
+                        options.ClaimsProvider = (httpContext) =>
+                        {
+                            return new[]
+                            {
+                                new Claim(ClaimTypes.Name, "username"),
+                                new Claim(ClaimTypes.NameIdentifier, "userId")
+                            };
+                        };
+                    });
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
