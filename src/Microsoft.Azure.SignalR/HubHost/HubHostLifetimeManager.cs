@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -21,6 +20,7 @@ namespace Microsoft.Azure.SignalR
 
         private long _nextInvocationId;
         private string InvocationId => Interlocked.Increment(ref _nextInvocationId).ToString();
+        private readonly HubConnectionStore _connections = new HubConnectionStore();
         private IServiceConnectionManager _serviceConnectionManager;
         private IClientConnectionManager _clientConnectionManager;
 
@@ -36,11 +36,13 @@ namespace Microsoft.Azure.SignalR
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
         {
+            _connections.Add(connection);
             return Task.CompletedTask;
         }
 
         public override Task OnDisconnectedAsync(HubConnectionContext connection)
         {
+            _connections.Remove(connection);
             return Task.CompletedTask;
         }
 
@@ -62,10 +64,15 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
-            // TODO. Do not need to serialize to all protocols.
-            // After update SignalR, do not forget to fix this. It impacts "echo" performance.
+
+            var connection = _connections[connectionId];
+            if (connection == null)
+            {
+                _logger.LogError($"connectionId {connectionId} does not exist!");
+                return Task.CompletedTask;
+            }
             return _serviceConnectionManager.WriteAsync(
-                new MultiConnectionDataMessage(new string[1] { connectionId }, SerializeAllProtocols(methodName, args)));
+                new ConnectionDataMessage(connectionId, connection.Protocol.GetMessageBytes(CreateInvocationMessage(methodName, args))));
         }
 
         public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args)
