@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Connections.Client;
+using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
@@ -16,6 +17,7 @@ namespace Microsoft.Azure.SignalR
         public static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
 
         private HttpConnection _httpConnection;
+        private IServiceProtocol _serviceProtocol;
         private IClientConnectionManager _clientConnectionManager;
         private ConnectionDelegate _connectionDelegate;
         private SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
@@ -23,9 +25,11 @@ namespace Microsoft.Azure.SignalR
 
         public static TimeSpan HandshakeTimeout { get; set; } = DefaultHandshakeTimeout;
 
-        public ServiceConnection(IClientConnectionManager clientConnectionManager,
+        public ServiceConnection(IServiceProtocol serviceProtocol,
+            IClientConnectionManager clientConnectionManager,
             Uri serviceUrl, HttpConnection httpConnection, ILoggerFactory loggerFactory)
         {
+            _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
             _httpConnection = httpConnection;
             _logger = loggerFactory.CreateLogger<ServiceConnection>();
@@ -48,7 +52,7 @@ namespace Microsoft.Azure.SignalR
                 await _serviceConnectionLock.WaitAsync();
 
                 // Write the service protocol message
-                ServiceProtocol.WriteMessage(serviceMessage, _httpConnection.Transport.Output);
+                _serviceProtocol.WriteMessage(serviceMessage, _httpConnection.Transport.Output);
                 await _httpConnection.Transport.Output.FlushAsync(CancellationToken.None);
                 _logger.LogDebug("Send messge to service");
             }
@@ -76,7 +80,7 @@ namespace Microsoft.Azure.SignalR
                         if (!buffer.IsEmpty)
                         {
                             _logger.LogDebug("message received from service");
-                            while (ServiceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
+                            while (_serviceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
                             {
                                 _ = DispatchMessage(message);
                             }
@@ -114,23 +118,21 @@ namespace Microsoft.Azure.SignalR
 
         private async Task DispatchMessage(ServiceMessage message)
         {
-            _logger.LogDebug($"mesage command {message.Command}");
-            if (message.Command != CommandType.Ping)
+            switch (message)
             {
-                switch (message.Command)
-                {
-                    case CommandType.AddConnection:
-                        await OnConnectedAsync(message);
-                        break;
-                    case CommandType.RemoveConnection:
-                        await OnDisconnectedAsync(message);
-                        break;
-                    default:
-                        await OnMessageAsync(message);
-                        break;
-                }
+                case OpenConnectionMessage openConnectionMessage:
+                    await OnConnectedAsync(openConnectionMessage);
+                    break;
+                case CloseConnectionMessage closeConnectionMessage:
+                    await OnDisconnectedAsync(closeConnectionMessage);
+                    break;
+                case ConnectionDataMessage connectionDataMessage:
+                    await OnMessageAsync(connectionDataMessage);
+                    break;
+                case PingMessage _:
+                    // ignore ping
+                    break;
             }
-            // ignore ping
         }
 
         private async Task ProcessOutgoingMessagesAsync(ServiceConnectionContext connection)
@@ -144,10 +146,9 @@ namespace Microsoft.Azure.SignalR
                     if (!buffer.IsEmpty)
                     {
                         // Blindly send message from SignalR to Client
-                        var serviceMessage = new ServiceMessage();
-                        serviceMessage.CreateAckResponse(connection.ConnectionId, buffer.ToArray());
+                        var serviceMessage = new ConnectionDataMessage(connection.ConnectionId, buffer.ToArray());
                         await SendServiceMessage(serviceMessage);
-                        _logger.LogDebug($"Send data message back to client through {serviceMessage.Command}");
+                        _logger.LogDebug($"Send data message back to client through {serviceMessage.ConnectionId}");
                     }
                     else if (result.IsCompleted)
                     {
@@ -167,14 +168,11 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task OnConnectedAsync(ServiceMessage message)
+        private Task OnConnectedAsync(OpenConnectionMessage message)
         {
             var connection = new ServiceConnectionContext(message);
             _clientConnectionManager.AddClientConnection(connection);
             _logger.LogDebug("Handle OnConnected command");
-
-            // Need to remove the workaround handshake after fixing https://github.com/Azure/azure-signalr/issues/20
-            await connection.Application.Output.WriteAsync(message.Payloads["json"]);
 
             // Execute the application code, this will call into the SignalR end point
             // SignalR keeps on reading from Transport.Input.
@@ -182,6 +180,7 @@ namespace Microsoft.Azure.SignalR
             // Sending SignalR output
             _ = ProcessOutgoingMessagesAsync(connection);
             _ = WaitOnAppTasks(connection.ApplicationTask, connection);
+            return Task.CompletedTask;
         }
 
         private async Task WaitOnAppTasks(Task applicationTask, ServiceConnectionContext connection)
@@ -209,33 +208,31 @@ namespace Microsoft.Azure.SignalR
         private async Task AbortClientConnection(ServiceConnectionContext connection)
         {
             // Inform the Service that we will remove the client because SignalR told us it is disconnected.
-            var serviceMessage = new ServiceMessage();
-            serviceMessage.CreateAbortConnection(connection.ConnectionId);
+            var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, "");
             await SendServiceMessage(serviceMessage);
             _logger.LogDebug($"Inform service that client {connection.ConnectionId} should be removed");
         }
 
-        private async Task OnDisconnectedAsync(ServiceMessage message)
+        private async Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
-            if (_clientConnectionManager.ClientConnections.TryGetValue(message.GetConnectionId(), out var connection))
+            if (_clientConnectionManager.ClientConnections.TryGetValue(closeConnectionMessage.ConnectionId, out var connection))
             {
                 await WaitOnTransportTask(connection);
             }
             // Close this connection gracefully then remove it from the list, this will trigger the hub shutdown logic appropriately
-            _clientConnectionManager.ClientConnections.TryRemove(message.GetConnectionId(), out _);
+            _clientConnectionManager.ClientConnections.TryRemove(closeConnectionMessage.ConnectionId, out _);
             _logger.LogDebug($"Remove client connection {connection.ConnectionId}");
         }
 
-        private async Task OnMessageAsync(ServiceMessage message)
+        private async Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)
         {
-            if (_clientConnectionManager.ClientConnections.TryGetValue(message.GetConnectionId(), out var connection))
+            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionDataMessage.ConnectionId, out var connection))
             {
                 try
                 {
                     _logger.LogDebug("Send message to SignalR Hub handler");
                     // Write the raw connection payload to the pipe let the upstream handle it
-                    // Remove the dependence on ProtocolName after fixing https://github.com/Azure/azure-signalr/issues/20
-                    await connection.Application.Output.WriteAsync(message.Payloads[connection.ProtocolName]);
+                    await connection.Application.Output.WriteAsync(connectionDataMessage.Payload);
                 }
                 catch (Exception e)
                 {

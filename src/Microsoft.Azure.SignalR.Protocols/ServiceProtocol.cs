@@ -137,7 +137,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
-        private void WriteMessageCore(ServiceMessage message, Stream packer)
+        private static void WriteMessageCore(ServiceMessage message, Stream packer)
         {
             switch (message)
             {
@@ -188,33 +188,33 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
-        private void WriteHandshakeRequestMessage(HandshakeRequestMessage message, Stream packer)
+        private static void WriteHandshakeRequestMessage(HandshakeRequestMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 2);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeRequestType);
             MessagePackBinary.WriteInt32(packer, message.Version);
         }
 
-        private void WriteHandshakeResponseMessage(HandshakeResponseMessage message, Stream packer)
+        private static void WriteHandshakeResponseMessage(HandshakeResponseMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 2);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeResponseType);
             MessagePackBinary.WriteString(packer, message.ErrorMessage);
         }
 
-        private void WritePingMessage(PingMessage message, Stream packer)
+        private static void WritePingMessage(PingMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 1);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.PingMessageType);
         }
 
-        private void WriteOpenConnectionMessage(OpenConnectionMessage message, Stream packer)
+        private static void WriteOpenConnectionMessage(OpenConnectionMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.OpenConnectionMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
 
-            if (message.Claims?.Any() == true)
+            if (message.Claims?.Length > 0)
             {
                 MessagePackBinary.WriteMapHeader(packer, message.Claims.Length);
                 foreach (var claim in message.Claims)
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
-        private void WriteCloseConnectionMessage(CloseConnectionMessage message, Stream packer)
+        private static void WriteCloseConnectionMessage(CloseConnectionMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.CloseConnectionMessageType);
@@ -237,7 +237,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             MessagePackBinary.WriteString(packer, message.ErrorMessage);
         }
 
-        private void WriteConnectionDataMessage(ConnectionDataMessage message, Stream packer)
+        private static void WriteConnectionDataMessage(ConnectionDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ConnectionDataMessageType);
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             MessagePackBinary.WriteBytes(packer, message.Payload);
         }
 
-        private void WriteMultiConnectionDataMessage(MultiConnectionDataMessage message, Stream packer)
+        private static void WriteMultiConnectionDataMessage(MultiConnectionDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.MultiConnectionDataMessageType);
@@ -253,7 +253,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             WritePayloads(message.Payloads, packer);
         }
 
-        private void WriteUserDataMessage(UserDataMessage message, Stream packer)
+        private static void WriteUserDataMessage(UserDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.UserDataMessageType);
@@ -261,7 +261,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             WritePayloads(message.Payloads, packer);
         }
 
-        private void WriteMultiUserDataMessage(MultiUserDataMessage message, Stream packer)
+        private static void WriteMultiUserDataMessage(MultiUserDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.UserDataMessageType);
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             WritePayloads(message.Payloads, packer);
         }
 
-        private void WriteBroadcastDataMessage(BroadcastDataMessage message, Stream packer)
+        private static void WriteBroadcastDataMessage(BroadcastDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.BroadcastDataMessageType);
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             WritePayloads(message.Payloads, packer);
         }
 
-        private void WriteJoinGroupMessage(JoinGroupMessage message, Stream packer)
+        private static void WriteJoinGroupMessage(JoinGroupMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.JoinGroupMessageType);
@@ -285,7 +285,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             MessagePackBinary.WriteString(packer, message.GroupName);
         }
 
-        private void WriteLeaveGroupMessage(LeaveGroupMessage message, Stream packer)
+        private static void WriteLeaveGroupMessage(LeaveGroupMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.LeaveGroupMessageType);
@@ -293,7 +293,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             MessagePackBinary.WriteString(packer, message.GroupName);
         }
 
-        private void WriteGroupBroadcastDataMessage(GroupBroadcastDataMessage message, Stream packer)
+        private static void WriteGroupBroadcastDataMessage(GroupBroadcastDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 4);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.GroupBroadcastDataMessageType);
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             WritePayloads(message.Payloads, packer);
         }
 
-        private void WriteMultiGroupBroadcastDataMessage(MultiGroupBroadcastDataMessage message, Stream packer)
+        private static void WriteMultiGroupBroadcastDataMessage(MultiGroupBroadcastDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.MultiGroupBroadcastDataMessageType);
@@ -310,9 +310,9 @@ namespace Microsoft.Azure.SignalR.Protocol
             WritePayloads(message.Payloads, packer);
         }
 
-        private void WriteStringArray(string[] array, Stream packer)
+        private static void WriteStringArray(string[] array, Stream packer)
         {
-            if (array?.Any() == true)
+            if (array?.Length > 0)
             {
                 MessagePackBinary.WriteArrayHeader(packer, array.Length);
                 foreach (var value in array)
@@ -326,9 +326,9 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
-        private void WritePayloads(IDictionary<string, byte[]> payloads, Stream packer)
+        private static void WritePayloads(IDictionary<string, byte[]> payloads, Stream packer)
         {
-            if (payloads?.Any() == true)
+            if (payloads?.Count > 0)
             {
                 MessagePackBinary.WriteMapHeader(packer, payloads.Count);
                 foreach (var payload in payloads)

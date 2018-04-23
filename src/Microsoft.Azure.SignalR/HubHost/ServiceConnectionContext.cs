@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -22,14 +23,13 @@ namespace Microsoft.Azure.SignalR
                                             IConnectionIdFeature,
                                             IConnectionTransportFeature
     {
-        public ServiceConnectionContext(ServiceMessage serviceMessage)
+        public ServiceConnectionContext(OpenConnectionMessage serviceMessage)
         {
-            ConnectionId = serviceMessage.GetConnectionId();
-            ProtocolName = serviceMessage.GetProtocolName();
-            if (serviceMessage.TryGetClaims(out var claims))
+            ConnectionId = serviceMessage.ConnectionId;
+            User = new ClaimsPrincipal();
+            if (serviceMessage.Claims != null)
             {
-                User = new ClaimsPrincipal();
-                User.AddIdentity(new ClaimsIdentity(claims, "Bearer"));
+                User.AddIdentity(new ClaimsIdentity(serviceMessage.Claims, "Bearer"));
             }
             // Create the Duplix Pipeline for the virtual connection
             var options = new HttpConnectionOptions();
