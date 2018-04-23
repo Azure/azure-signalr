@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Connections;
@@ -14,13 +15,13 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class HubHost<THub> where THub : Hub
+    internal class HubHost<THub> : IConnectionFactory where THub : Hub
     {
         private readonly List<ServiceConnection> _cloudConnections = new List<ServiceConnection>();
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<HubHost<THub>> _logger;
-
         private ServiceOptions _options;
+        private HttpConnectionOptions _httpConnectionOptions;
         private IConnectionProvider _connectionServiceProvider;
         private IServiceConnectionManager _serviceConnectionManager;
         private IClientConnectionManager _clientConnectionManager;
@@ -46,17 +47,19 @@ namespace Microsoft.Azure.SignalR
 
         internal void Configure()
         {
-            var serviceUrl = GetServiceUrl();
-            var httpOptions = new HttpOptions
+            _httpConnectionOptions = new HttpConnectionOptions
             {
-                AccessTokenFactory = () => _connectionServiceProvider.GenerateServerAccessToken<THub>(),
-                CloseTimeout = TimeSpan.FromSeconds(300)
+                Url = GetServiceUrl(),
+                AccessTokenProvider = () => Task.FromResult(_connectionServiceProvider.GenerateServerAccessToken<THub>()),
+                CloseTimeout = TimeSpan.FromSeconds(300),
+                Transports = HttpTransportType.WebSockets,
+                SkipNegotiation = true
             };
 
             // Simply create a couple of connections which connect to Azure SignalR
             for (var i = 0; i < _options.ConnectionNumber; i++)
             {
-                var serviceConnection = CreateServiceConnection(serviceUrl, httpOptions);
+                var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, this, _loggerFactory);
                 _serviceConnectionManager.AddServiceConnection(serviceConnection);
             }
         }
@@ -72,10 +75,16 @@ namespace Microsoft.Azure.SignalR
             return new Uri(_connectionServiceProvider.GetServerEndpoint<THub>());
         }
 
-        private ServiceConnection CreateServiceConnection(Uri serviceUrl, HttpOptions httpOptions)
+        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, CancellationToken cancellationToken = default)
         {
-            var httpConnection = new HttpConnection(serviceUrl, HttpTransportType.WebSockets, _loggerFactory, httpOptions);
-            return new ServiceConnection(_serviceProtocol, _clientConnectionManager, serviceUrl, httpConnection, _loggerFactory);
+            var httpConnection = new HttpConnection(_httpConnectionOptions, _loggerFactory);
+            await httpConnection.StartAsync(transferFormat);
+            return httpConnection;
+        }
+
+        public Task DisposeAsync(ConnectionContext connection)
+        {
+            return ((HttpConnection)connection).DisposeAsync();
         }
     }
 }

@@ -18,10 +18,11 @@ using Microsoft.Azure.SignalR.Protocol;
 namespace Microsoft.Azure.SignalR
 {
     internal class ServiceConnectionContext : ConnectionContext,
-                                            IConnectionUserFeature,
-                                            IConnectionItemsFeature,
-                                            IConnectionIdFeature,
-                                            IConnectionTransportFeature
+                                              IConnectionUserFeature,
+                                              IConnectionItemsFeature,
+                                              IConnectionIdFeature,
+                                              IConnectionTransportFeature,
+                                              IConnectionInherentKeepAliveFeature
     {
         public ServiceConnectionContext(OpenConnectionMessage serviceMessage)
         {
@@ -31,35 +32,33 @@ namespace Microsoft.Azure.SignalR
             {
                 User.AddIdentity(new ClaimsIdentity(serviceMessage.Claims, "Bearer"));
             }
+
             // Create the Duplix Pipeline for the virtual connection
-            var options = new HttpConnectionOptions();
-            var transportPipeOptions = new PipeOptions(pauseWriterThreshold: options.TransportMaxBufferSize,
-                resumeWriterThreshold: options.TransportMaxBufferSize / 2,
+            var transportPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
+                resumeWriterThreshold: 0,
                 readerScheduler: PipeScheduler.ThreadPool,
                 useSynchronizationContext: false);
-            var appPipeOptions = new PipeOptions(pauseWriterThreshold: options.ApplicationMaxBufferSize,
-                resumeWriterThreshold: options.ApplicationMaxBufferSize / 2,
+            var appPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
+                resumeWriterThreshold: 0,
                 readerScheduler: PipeScheduler.ThreadPool,
                 useSynchronizationContext: false);
+
             var pair = DuplexPipe.CreateConnectionPair(transportPipeOptions, appPipeOptions);
             Transport = pair.Application;
             Application = pair.Transport;
 
             Features = new FeatureCollection();
             // Disable Ping for this virtual connection, set any TimeSpan is OK.
-            Features.Set<IConnectionInherentKeepAliveFeature>(new ConnectionInherentKeepAliveFeature(TimeSpan.FromSeconds(90)));
+            Features.Set<IConnectionInherentKeepAliveFeature>(this);
             Features.Set<IConnectionUserFeature>(this);
             Features.Set<IConnectionItemsFeature>(this);
             Features.Set<IConnectionIdFeature>(this);
             Features.Set<IConnectionTransportFeature>(this);
-            FinishHandshake = false;
         }
-
-        public bool FinishHandshake { get; set; }
 
         public override string ConnectionId { get; set; }
 
-        public override IFeatureCollection Features { get;}
+        public override IFeatureCollection Features { get; }
 
         public override IDictionary<object, object> Items { get; set; } = new ConnectionItems(new ConcurrentDictionary<object, object>());
 
@@ -69,8 +68,10 @@ namespace Microsoft.Azure.SignalR
 
         public string ProtocolName { get; set; }
 
-        public ClaimsPrincipal User { get ; set; }
+        public ClaimsPrincipal User { get; set; }
 
         public Task ApplicationTask { get; set; }
+
+        public bool HasInherentKeepAlive => true;
     }
 }

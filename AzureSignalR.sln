@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2020
 MinimumVisualStudioVersion = 15.0.26730.03
@@ -31,6 +31,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.Pro
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestAPISample", "samples\RestAPISample\RestAPISample.csproj", "{E5D4679E-E7A2-4328-86B6-9FDD823BDF35}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{2429FBD8-1FCE-4C42-AA28-DF32F7249E77}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.SignalR.Tests", "test\Microsoft.Azure.SignalR.Tests\Microsoft.Azure.SignalR.Tests.csproj", "{764DCFF5-D28D-4CEF-B186-B7A62FBB3E98}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +61,10 @@ Global
 		{E5D4679E-E7A2-4328-86B6-9FDD823BDF35}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E5D4679E-E7A2-4328-86B6-9FDD823BDF35}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E5D4679E-E7A2-4328-86B6-9FDD823BDF35}.Release|Any CPU.Build.0 = Release|Any CPU
+		{764DCFF5-D28D-4CEF-B186-B7A62FBB3E98}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{764DCFF5-D28D-4CEF-B186-B7A62FBB3E98}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{764DCFF5-D28D-4CEF-B186-B7A62FBB3E98}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{764DCFF5-D28D-4CEF-B186-B7A62FBB3E98}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -67,6 +75,7 @@ Global
 		{B23C2F84-B0B8-47D1-A8D2-E524F6511215} = {C4BC9889-B49F-41B6-806B-F84941B2549B}
 		{2EBFCD26-6E31-4855-ABF5-0A82E78F87C7} = {DA69F624-5398-4884-87E4-B816698CDE65}
 		{E5D4679E-E7A2-4328-86B6-9FDD823BDF35} = {C4BC9889-B49F-41B6-806B-F84941B2549B}
+		{764DCFF5-D28D-4CEF-B186-B7A62FBB3E98} = {2429FBD8-1FCE-4C42-AA28-DF32F7249E77}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7945A4E4-ACDB-4F6E-95CA-6AC6E7C2CD59}

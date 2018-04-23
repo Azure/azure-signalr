@@ -7,8 +7,8 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.SignalR.Internal;
-using Microsoft.AspNetCore.SignalR.Internal.Protocol;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.SignalR
             }
             foreach (var hubProtocol in _hubProtocolResolver.AllProtocols)
             {
-                httpMessage.Payloads.Add(hubProtocol.Name, Convert.ToBase64String(hubProtocol.WriteToArray(invocationMessage)));
+                httpMessage.Payloads.Add(hubProtocol.Name, Convert.ToBase64String(hubProtocol.GetMessageBytes(invocationMessage).ToArray()));
             }
 
             request.Content = new ByteArrayContent(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(httpMessage)));
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.SignalR
 
         private InvocationMessage CreateInvocationMessage(string methodName, object[] args)
         {
-            return new InvocationMessage(target: methodName, argumentBindingException: null, arguments: args);
+            return new InvocationMessage(methodName, args);
         }
     }
 }

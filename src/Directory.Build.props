@@ -7,10 +7,4 @@
     <PackageTags>aspnetcore;signalr</PackageTags>
     <EnableApiCheck>false</EnableApiCheck>
   </PropertyGroup>
-
-  <!--
-  <ItemGroup>
-    <PackageReference Include="Internal.AspNetCore.Sdk" PrivateAssets="All" Version="$(InternalAspNetCoreSdkPackageVersion)" />
-  </ItemGroup>
-  -->
 </Project>

@@ -14,31 +14,29 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceConnection
     {
-        public static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
-
-        private HttpConnection _httpConnection;
-        private IServiceProtocol _serviceProtocol;
-        private IClientConnectionManager _clientConnectionManager;
-        private ConnectionDelegate _connectionDelegate;
-        private SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
+        private readonly IConnectionFactory _connectionFactory;
+        private readonly IServiceProtocol _serviceProtocol;
+        private readonly IClientConnectionManager _clientConnectionManager;
+        private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
         private readonly ILogger<ServiceConnection> _logger;
 
-        public static TimeSpan HandshakeTimeout { get; set; } = DefaultHandshakeTimeout;
+        private ConnectionContext _connection;
+        private ConnectionDelegate _connectionDelegate;
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
-            Uri serviceUrl, HttpConnection httpConnection, ILoggerFactory loggerFactory)
+            IConnectionFactory connectionFactory, ILoggerFactory loggerFactory)
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
-            _httpConnection = httpConnection;
+            _connectionFactory = connectionFactory;
             _logger = loggerFactory.CreateLogger<ServiceConnection>();
         }
 
         public async Task StartAsync(ConnectionDelegate connectionDelegate)
         {
             _connectionDelegate = connectionDelegate;
-            await _httpConnection.StartAsync(TransferFormat.Binary);
+            _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary);
             // TODO. Handshake with Service for version confirmation
             _ = ProcessIncomingAsync();
         }
@@ -52,8 +50,8 @@ namespace Microsoft.Azure.SignalR
                 await _serviceConnectionLock.WaitAsync();
 
                 // Write the service protocol message
-                _serviceProtocol.WriteMessage(serviceMessage, _httpConnection.Transport.Output);
-                await _httpConnection.Transport.Output.FlushAsync(CancellationToken.None);
+                _serviceProtocol.WriteMessage(serviceMessage, _connection.Transport.Output);
+                await _connection.Transport.Output.FlushAsync(CancellationToken.None);
                 _logger.LogDebug("Send messge to service");
             }
             catch (Exception e)
@@ -72,7 +70,7 @@ namespace Microsoft.Azure.SignalR
             {
                 while (true)
                 {
-                    var result = await _httpConnection.Transport.Input.ReadAsync();
+                    var result = await _connection.Transport.Input.ReadAsync();
                     var buffer = result.Buffer;
 
                     try
@@ -100,7 +98,7 @@ namespace Microsoft.Azure.SignalR
                     }
                     finally
                     {
-                        _httpConnection.Transport.Input.AdvanceTo(buffer.Start, buffer.End);
+                        _connection.Transport.Input.AdvanceTo(buffer.Start, buffer.End);
                     }
                 }
             }
@@ -112,7 +110,7 @@ namespace Microsoft.Azure.SignalR
             }
             finally
             {
-                await _httpConnection.DisposeAsync();
+                await _connectionFactory.DisposeAsync(_connection);
             }
         }
 

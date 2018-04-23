@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
-using Microsoft.AspNetCore.SignalR.Internal.Protocol;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.SignalR
                 new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)));
         }
 
-        public override Task AddGroupAsync(string connectionId, string groupName)
+        public override Task AddToGroupAsync(string connectionId, string groupName)
         {
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.SignalR
             return _serviceConnectionManager.SendServiceMessage(new JoinGroupMessage(connectionId, groupName));
         }
 
-        public override Task RemoveGroupAsync(string connectionId, string groupName)
+        public override Task RemoveFromGroupAsync(string connectionId, string groupName)
         {
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
@@ -167,17 +167,14 @@ namespace Microsoft.Azure.SignalR
             var message = CreateInvocationMessage(method, args);
             foreach (var hubProtocol in _allProtocols)
             {
-                payloads.Add(hubProtocol.Name, hubProtocol.WriteToArray(message));
+                payloads.Add(hubProtocol.Name, hubProtocol.GetMessageBytes(message).ToArray());
             }
             return payloads;
         }
 
         public InvocationMessage CreateInvocationMessage(string methodName, object[] args)
         {
-            var invocationMessage = new InvocationMessage(
-                target: methodName,
-                argumentBindingException: null, arguments: args);
-            return invocationMessage;
+            return new InvocationMessage(methodName, args);
         }
     }
 }
