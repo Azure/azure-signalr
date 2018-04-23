@@ -76,8 +76,17 @@ namespace Microsoft.Azure.SignalR
         public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, CancellationToken cancellationToken = default)
         {
             var httpConnection = new HttpConnection(_httpConnectionOptions, _loggerFactory);
-            await httpConnection.StartAsync(transferFormat);
-            return httpConnection;
+            
+            try
+            {
+                await httpConnection.StartAsync(transferFormat);
+                return httpConnection;
+            }
+            catch
+            {
+                await httpConnection.DisposeAsync();
+                throw;
+            }
         }
 
         public Task DisposeAsync(ConnectionContext connection)
