@@ -53,7 +53,9 @@ namespace Microsoft.Azure.SignalR
             var negotiationResponse = new NegotiationResponse()
             {
                 Url = connectionServiceProvider.GetClientEndpoint(hubName),
-                AccessToken = connectionServiceProvider.GenerateClientAccessToken(hubName, claims)
+                AccessToken = connectionServiceProvider.GenerateClientAccessToken(hubName, claims),
+                // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
+                AvailableTransports = new List<AvailableTransport>()
             };
             return negotiationResponse;
         }
