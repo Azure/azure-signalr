@@ -36,6 +36,11 @@ namespace Microsoft.Azure.SignalR
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
         {
+            if (_clientConnectionManager.ClientConnections.TryGetValue(connection.ConnectionId, out var serviceConnectionContext))
+            {
+                serviceConnectionContext.HubConnectionContext = connection;
+            }
+
             return Task.CompletedTask;
         }
 
@@ -62,10 +67,18 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
-            // TODO. Do not need to serialize to all protocols.
-            // After update SignalR, do not forget to fix this. It impacts "echo" performance.
-            return _serviceConnectionManager.WriteAsync(
-                new MultiConnectionDataMessage(new string[1] { connectionId }, SerializeAllProtocols(methodName, args)));
+
+            if (!_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var serviceConnectionContext))
+            {
+                // Connection isn't on this server so serialize to all protocols and send it to the service
+                return _serviceConnectionManager.WriteAsync(
+                    new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)));
+            }
+
+            var message = CreateInvocationMessage(methodName, args);
+
+            // Write directly to this connection
+            return serviceConnectionContext.HubConnectionContext.WriteAsync(message).AsTask();
         }
 
         public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args)
