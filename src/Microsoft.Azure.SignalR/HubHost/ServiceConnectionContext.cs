@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
@@ -66,12 +67,13 @@ namespace Microsoft.Azure.SignalR
 
         public IDuplexPipe Application { get; set; }
 
-        public string ProtocolName { get; set; }
-
         public ClaimsPrincipal User { get; set; }
 
         public Task ApplicationTask { get; set; }
 
         public bool HasInherentKeepAlive => true;
+
+        // The associated HubConnectionContext
+        public HubConnectionContext HubConnectionContext { get; set; }
     }
 }
