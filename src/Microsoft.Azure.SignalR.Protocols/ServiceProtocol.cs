@@ -242,7 +242,9 @@ namespace Microsoft.Azure.SignalR.Protocol
             MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ConnectionDataMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
-            MessagePackBinary.WriteBytes(packer, message.Payload);
+            bool isArray = MemoryMarshal.TryGetArray(message.Payload, out var segment);
+            Debug.Assert(isArray, "We're not using managed memory");
+            MessagePackBinary.WriteBytes(packer, segment.Array, segment.Offset, segment.Count);
         }
 
         private static void WriteMultiConnectionDataMessage(MultiConnectionDataMessage message, Stream packer)
@@ -310,11 +312,11 @@ namespace Microsoft.Azure.SignalR.Protocol
             WritePayloads(message.Payloads, packer);
         }
 
-        private static void WriteStringArray(string[] array, Stream packer)
+        private static void WriteStringArray(IReadOnlyList<string> array, Stream packer)
         {
-            if (array?.Length > 0)
+            if (array?.Count > 0)
             {
-                MessagePackBinary.WriteArrayHeader(packer, array.Length);
+                MessagePackBinary.WriteArrayHeader(packer, array.Count);
                 foreach (var value in array)
                 {
                     MessagePackBinary.WriteString(packer, value);

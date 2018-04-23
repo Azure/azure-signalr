@@ -17,13 +17,13 @@ namespace Microsoft.Azure.SignalR.Protocol
 
     public class MultiConnectionDataMessage : MulticastDataMessage
     {
-        public MultiConnectionDataMessage(string[] connectionList, IDictionary<string, byte[]> payloads) :
+        public MultiConnectionDataMessage(IReadOnlyList<string> connectionList, IDictionary<string, byte[]> payloads) :
             base(payloads)
         {
             ConnectionList = connectionList;
         }
 
-        public string[] ConnectionList { get; set; }
+        public IReadOnlyList<string> ConnectionList { get; set; }
     }
 
     // It is possible that the same user has multiple connections. So it is a multi-cast message.
@@ -39,19 +39,19 @@ namespace Microsoft.Azure.SignalR.Protocol
 
     public class MultiUserDataMessage : MulticastDataMessage
     {
-        public MultiUserDataMessage(string[] userList, IDictionary<string, byte[]> payloads) : base(payloads)
+        public MultiUserDataMessage(IReadOnlyList<string> userList, IDictionary<string, byte[]> payloads) : base(payloads)
         {
             UserList = userList;
         }
 
-        public string[] UserList { get; set; }
+        public IReadOnlyList<string> UserList { get; set; }
     }
 
     public class BroadcastDataMessage : MulticastDataMessage
     {
-        public string[] ExcludedList { get; set; }
+        public IReadOnlyList<string> ExcludedList { get; set; }
 
-        public BroadcastDataMessage(string[] excludedList, IDictionary<string, byte[]> payloads) : base(payloads)
+        public BroadcastDataMessage(IReadOnlyList<string> excludedList, IDictionary<string, byte[]> payloads) : base(payloads)
         {
             ExcludedList = excludedList;
         }
@@ -60,9 +60,9 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class GroupBroadcastDataMessage : MulticastDataMessage
     {
         public string GroupName { get; set; }
-        public string[] ExcludedList { get; set; }
+        public IReadOnlyList<string> ExcludedList { get; set; }
 
-        public GroupBroadcastDataMessage(string groupName, string[] excludedList, IDictionary<string, byte[]> payloads)
+        public GroupBroadcastDataMessage(string groupName, IReadOnlyList<string> excludedList, IDictionary<string, byte[]> payloads)
             : base(payloads)
         {
             GroupName = groupName;
@@ -72,9 +72,9 @@ namespace Microsoft.Azure.SignalR.Protocol
 
     public class MultiGroupBroadcastDataMessage : MulticastDataMessage
     {
-        public string[] GroupList { get; set; }
+        public IReadOnlyList<string> GroupList { get; set; }
 
-        public MultiGroupBroadcastDataMessage(string[] groupList, IDictionary<string, byte[]> payloads) : base(payloads)
+        public MultiGroupBroadcastDataMessage(IReadOnlyList<string> groupList, IDictionary<string, byte[]> payloads) : base(payloads)
         {
             GroupList = groupList;
         }

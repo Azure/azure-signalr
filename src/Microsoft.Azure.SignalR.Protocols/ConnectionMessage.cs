@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Security.Claims;
 
 namespace Microsoft.Azure.SignalR.Protocol
@@ -37,11 +38,11 @@ namespace Microsoft.Azure.SignalR.Protocol
 
     public class ConnectionDataMessage : ConnectionMessage
     {
-        public ConnectionDataMessage(string connectionId, byte[] payload) : base(connectionId)
+        public ConnectionDataMessage(string connectionId, ReadOnlyMemory<byte> payload) : base(connectionId)
         {
             Payload = payload;
         }
 
-        public byte[] Payload { get; set; }
+        public ReadOnlyMemory<byte> Payload { get; set; }
     }
 }
