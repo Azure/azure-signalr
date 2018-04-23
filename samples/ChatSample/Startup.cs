@@ -32,7 +32,7 @@ namespace ChatSample
                     .AddAzureSignalR(options =>
                     {
                         Configuration.GetSection("AzureSignalRConfiguration").Bind(options);
-                        options.Claims = (httpContext) =>
+                        options.ClaimsProvider = (httpContext) =>
                         {
                             return new[]
                             {
