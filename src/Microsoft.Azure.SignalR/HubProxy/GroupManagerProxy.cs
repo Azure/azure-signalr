@@ -38,13 +38,13 @@ namespace Microsoft.Azure.SignalR
             _accessKey = accessKey;
         }
 
-        public Task AddAsync(string connectionId, string groupName)
+        public Task AddToGroupAsync(string connectionId, string groupName)
         {
             var uri = GetRequestUri(connectionId, groupName);
             return SendAsync(uri, HttpMethod.Post);
         }
 
-        public Task RemoveAsync(string connectionId, string groupName)
+        public Task RemoveFromGroupAsync(string connectionId, string groupName)
         {
             var uri = GetRequestUri(connectionId, groupName);
             return SendAsync(uri, HttpMethod.Delete);
