@@ -3,7 +3,6 @@
 
 using System;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 
@@ -11,66 +10,31 @@ namespace Microsoft.Azure.SignalR
 {
     internal class GroupManagerProxy : IGroupManager
     {
-        private const int ProxyPort = 5002;
-
         private readonly string _baseUri;
+        private readonly IHubMessageSender _hubMessageSender;
         private readonly string _accessKey;
 
         public GroupManagerProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey, string hubName)
         {
-            if (string.IsNullOrEmpty(endpoint))
-            {
-                throw new ArgumentNullException(nameof(endpoint));
-            }
-
-            if (string.IsNullOrEmpty(accessKey))
-            {
-                throw new ArgumentNullException(nameof(accessKey));
-            }
-
-            if (string.IsNullOrEmpty(hubName))
-            {
-                throw new ArgumentNullException(nameof(hubName));
-            }
-
-            var apiVersion = ClientProxy.DefaultApiVersion;
-            _baseUri = $"{endpoint}:{ProxyPort}/{apiVersion}/hub/{hubName.ToLower()}/group";
+            _baseUri = $"{endpoint}:{ProxyConstants.Port}/api/{ProxyConstants.ApiVersion}/hub/{hubName.ToLower()}/group";
+            _hubMessageSender = hubMessageSender;
             _accessKey = accessKey;
         }
 
         public Task AddToGroupAsync(string connectionId, string groupName)
         {
-            var uri = GetRequestUri(connectionId, groupName);
-            return SendAsync(uri, HttpMethod.Post);
+            return InternalSendAsync(connectionId, groupName, HttpMethod.Post);
         }
 
         public Task RemoveFromGroupAsync(string connectionId, string groupName)
         {
-            var uri = GetRequestUri(connectionId, groupName);
-            return SendAsync(uri, HttpMethod.Delete);
+            return InternalSendAsync(connectionId, groupName, HttpMethod.Delete);
         }
 
-        private string GetRequestUri(string connectionId, string groupName)
+        private Task InternalSendAsync(string connectionId, string groupName, HttpMethod method)
         {
-            return $"{_baseUri}/{groupName}/connection/{connectionId}";
-        }
-
-        private Task SendAsync(string uri, HttpMethod method)
-        {
-            var request = new HttpRequestMessage
-            {
-                Method = method,
-                RequestUri = new Uri(uri)
-            };
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", GenerateAccessToken(uri));
-
-            request.Headers.Accept.Clear();
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            request.Headers.AcceptCharset.Clear();
-            request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("UTF-8"));
-
-            return new HttpClient().SendAsync(request);
+            var uri = $"{_baseUri}/{groupName}/connection/{connectionId}";
+            return _hubMessageSender.SendAsync(uri, GenerateAccessToken(uri), method);
         }
 
         private string GenerateAccessToken(string audience)
@@ -78,7 +42,7 @@ namespace Microsoft.Azure.SignalR
             return AuthenticationHelper.GenerateJwtBearer(
                 audience: audience,
                 claims: null,
-                expires: DateTime.UtcNow.Add(ConnectionProvider.DefaultAccessTokenLifetime),
+                expires: DateTime.UtcNow.Add(ServiceEndpointUtility.DefaultAccessTokenLifetime),
                 signingKey: _accessKey
             );
         }

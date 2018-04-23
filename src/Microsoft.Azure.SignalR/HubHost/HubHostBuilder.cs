@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
-using Microsoft.AspNetCore.Http.Connections.Internal;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,39 +39,38 @@ namespace Microsoft.Azure.SignalR
             {
                 authorizationData.Add(attribute);
             }
-            _routes.MapRoute(path + "/negotiate", c => RedirectToServiceUrlWithToken(c, typeof(THub).Name, authorizationData));
+            _routes.MapRoute(path + "/negotiate", c => RedirectToService(c, typeof(THub).Name, authorizationData));
 
             Start<THub>();
         }
 
-        private NegotiationResponse GenServiceUrlAndToken(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
+        private NegotiationResponse GenerateNegotiateResponse(HttpContext context, string hubName)
         {
-            var connectionServiceProvider = _serviceProvider.GetRequiredService<IConnectionProvider>();
+            var serviceEndpointUtility = _serviceProvider.GetRequiredService<IServiceEndpointUtility>();
             var options = _serviceProvider.GetService<IOptions<ServiceOptions>>();
             var claims = options.Value.ClaimsProvider?.Invoke(context) ?? context.User.Claims;
-            var negotiationResponse = new NegotiationResponse()
+            return new NegotiationResponse
             {
-                Url = connectionServiceProvider.GetClientEndpoint(hubName),
-                AccessToken = connectionServiceProvider.GenerateClientAccessToken(hubName, claims),
+                Url = serviceEndpointUtility.GetClientEndpoint(hubName),
+                AccessToken = serviceEndpointUtility.GenerateClientAccessToken(hubName, claims),
                 // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
                 AvailableTransports = new List<AvailableTransport>()
             };
-            return negotiationResponse;
         }
 
-        private async Task RedirectToServiceUrlWithToken(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
+        private async Task RedirectToService(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
         {
             if (!await AuthorizeHelper.AuthorizeAsync(context, authorizationData))
             {
                 return;
             }
             context.Response.ContentType = "application/json";
-            var serviceProviderResponse = GenServiceUrlAndToken(context, hubName, authorizationData);
+            var negotiateResponse = GenerateNegotiateResponse(context, hubName);
             var writer = new MemoryBufferWriter();
 
             try
             {
-                NegotiateProtocol.WriteResponse(serviceProviderResponse, writer);
+                NegotiateProtocol.WriteResponse(negotiateResponse, writer);
                 // Write it out to the response with the right content length
                 context.Response.ContentLength = writer.Length;
                 await writer.CopyToAsync(context.Response.Body);
@@ -85,11 +83,12 @@ namespace Microsoft.Azure.SignalR
 
         private void Start<THub>() where THub : Hub
         {
+            var app = new ConnectionBuilder(_serviceProvider)
+                .UseHub<THub>()
+                .Build();
+
             var hubHost = _serviceProvider.GetRequiredService<HubHost<THub>>();
             hubHost.Configure();
-            var connectionBuilder = new ConnectionBuilder(_serviceProvider);
-            connectionBuilder.UseHub<THub>();
-            var app = connectionBuilder.Build();
             hubHost.StartAsync(app).GetAwaiter().GetResult();
         }
     }

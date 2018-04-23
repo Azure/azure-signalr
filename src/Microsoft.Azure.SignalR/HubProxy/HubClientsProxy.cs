@@ -30,6 +30,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ArgumentNullException(nameof(hubName));
             }
+
             _hubMessageSender = hubMessageSender;
             _endpoint = endpoint;
             _accessKey = accessKey;

@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -19,10 +18,8 @@ namespace Microsoft.Azure.SignalR
         private readonly ILogger<HubHostLifetimeManager<THub>> _logger;
         private readonly IReadOnlyList<IHubProtocol> _allProtocols;
 
-        private long _nextInvocationId;
-        private string InvocationId => Interlocked.Increment(ref _nextInvocationId).ToString();
-        private IServiceConnectionManager _serviceConnectionManager;
-        private IClientConnectionManager _clientConnectionManager;
+        private readonly IServiceConnectionManager _serviceConnectionManager;
+        private readonly IClientConnectionManager _clientConnectionManager;
 
         public HubHostLifetimeManager(IServiceConnectionManager serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
@@ -164,13 +161,6 @@ namespace Microsoft.Azure.SignalR
         private bool IsEmptyString(string value, string message)
         {
             if (!string.IsNullOrEmpty(value)) return false;
-            _logger.LogWarning(message);
-            return true;
-        }
-
-        private bool IsNullObject(object value, string message)
-        {
-            if (value != null) return false;
             _logger.LogWarning(message);
             return true;
         }

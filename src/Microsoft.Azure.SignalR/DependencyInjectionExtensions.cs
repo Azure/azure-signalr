@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol));
             builder.Services.AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager));
             builder.Services.AddSingleton(typeof(IServiceConnectionManager), typeof(ServiceConnectionManager));
-            builder.Services.AddSingleton(typeof(IConnectionProvider), typeof(ConnectionProvider));
+            builder.Services.AddSingleton(typeof(IServiceEndpointUtility), typeof(ServiceEndpointUtility));
             builder.Services.AddSingleton(typeof(HubHost<>));
             builder.Services.AddSingleton(typeof(IHubMessageSender), typeof(HubMessageSender));
             return builder;

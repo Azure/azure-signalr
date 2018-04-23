@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class CloudSignalR
+    public class AzureSignalR
     {
         /// <summary>
         /// Create an instance of ServiceContext.
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
         public static ServiceContext CreateServiceContext(string hubName)
         {
             var connectionString = Environment.GetEnvironmentVariable(ServiceOptions.ConnectionStringDefaultKey);
-            return CreateServiceContextInternal(connectionString, hubName);
+            return InternalCreateServiceContext(connectionString, hubName);
         }
 
         /// <summary>
@@ -27,23 +27,30 @@ namespace Microsoft.Azure.SignalR
         /// <returns>An instance of ServiceContext which can be used to send message to the clients who connected on the Hub</returns>
         public static ServiceContext CreateServiceContext(string connectionString, string hubName)
         {
-            return CreateServiceContextInternal(connectionString, hubName);
+            return InternalCreateServiceContext(connectionString, hubName);
         }
 
-        private static ServiceContext CreateServiceContextInternal(string connectionString, string hubName)
+        private static ServiceContext InternalCreateServiceContext(string connectionString, string hubName)
         {
+            if (string.IsNullOrEmpty(hubName))
+            {
+                throw new ArgumentNullException(nameof(hubName));
+            }
+            
             var serviceCollection = new ServiceCollection();
-
-            serviceCollection.AddLogging();
-            serviceCollection.AddAuthorization();
-            // We need to serialize the request with all protocols, that is why we add those protocols
-            serviceCollection.AddSignalR().AddJsonProtocol().AddMessagePackProtocol().AddAzureSignalR(connectionString);
+            serviceCollection.AddLogging()
+                .AddAuthorization()
+                // We need to serialize the request with all protocols, that is why we add those protocols
+                .AddSignalR()
+                .AddJsonProtocol()
+                .AddMessagePackProtocol()
+                .AddAzureSignalR(connectionString);
             var serviceProvider = serviceCollection.BuildServiceProvider();
 
-            var connectionServiceProvider = serviceProvider.GetService<IConnectionProvider>();
-            var hubMessageSender = serviceProvider.GetService<IHubMessageSender>();
-            var signalrServiceHubContext = new ServiceHubContext(connectionServiceProvider, hubMessageSender, hubName);
-            return new ServiceContext(connectionServiceProvider, signalrServiceHubContext);
+            var serviceEndpointUtility = serviceProvider.GetRequiredService<IServiceEndpointUtility>();
+            var hubMessageSender = serviceProvider.GetRequiredService<IHubMessageSender>();
+            var serviceHubContext = new ServiceHubContext(hubName, serviceEndpointUtility, hubMessageSender);
+            return new ServiceContext(hubName, serviceEndpointUtility, serviceHubContext);
         }
     }
 }

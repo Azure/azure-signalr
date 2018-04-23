@@ -9,7 +9,8 @@ namespace Microsoft.Azure.SignalR
 {
     internal interface IHubMessageSender
     {
-        Task<HttpResponseMessage> PostAsync(string url, string bearer, string method, object[] args, IReadOnlyList<string> excludedIds = null);
+        Task<HttpResponseMessage> SendAsync(string url, string bearer, string method, object[] args,
+            IReadOnlyList<string> excludedIds);
 
         Task<HttpResponseMessage> SendAsync(string url, string bearer, HttpMethod method);
     }
