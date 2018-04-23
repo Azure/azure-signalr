@@ -5,20 +5,20 @@
   <PropertyGroup Label="Package Versions">
     <!-- Azure SignalR -->
     <MessagePackPackageVersion>1.7.3.4</MessagePackPackageVersion>
-    <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0-rc1-30639</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
-    <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0-rc1-30639</MicrosoftAspNetCoreSignalRPackageVersion>
-    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.0.0-rc1-30639</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
+    <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0-rc1-30656</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
+    <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0-rc1-30656</MicrosoftAspNetCoreSignalRPackageVersion>
+    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.0.0-rc1-30656</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
     <MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>3.19.1</MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>
     <MicrosoftAzureKeyVaultPackageVersion>2.3.2</MicrosoftAzureKeyVaultPackageVersion>
     <MicrosoftOwinPackageVersion>4.0.0</MicrosoftOwinPackageVersion>
-    <SystemBuffersPackageVersion>4.5.0-rc1-26420-04</SystemBuffersPackageVersion>
-    <SystemMemoryPackageVersion>4.5.0-rc1-26420-04</SystemMemoryPackageVersion>
+    <SystemBuffersPackageVersion>4.5.0-rc1-26419-03</SystemBuffersPackageVersion>
+    <SystemMemoryPackageVersion>4.5.0-rc1-26419-03</SystemMemoryPackageVersion>
     <SystemIdentityModelTokensJwtPackageVersion>5.2.1</SystemIdentityModelTokensJwtPackageVersion>
-    <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0-rc1-30639</MicrosoftExtensionsDependencyInjectionPackageVersion>
-    <MicrosoftExtensionsLoggingPackageVersion>2.1.0-rc1-30639</MicrosoftExtensionsLoggingPackageVersion>
+    <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0-rc1-30656</MicrosoftExtensionsDependencyInjectionPackageVersion>
+    <MicrosoftExtensionsLoggingPackageVersion>2.1.0-rc1-30656</MicrosoftExtensionsLoggingPackageVersion>
 
     <!-- Samples -->
-    <MicrosoftAspNetCorePackageVersion>2.1.0-rc1-30639</MicrosoftAspNetCorePackageVersion>
+    <MicrosoftAspNetCorePackageVersion>2.1.0-rc1-30656</MicrosoftAspNetCorePackageVersion>
     <NewtonsoftJsonPackageVersion>11.0.2</NewtonsoftJsonPackageVersion>
 
     <!--Testing -->
