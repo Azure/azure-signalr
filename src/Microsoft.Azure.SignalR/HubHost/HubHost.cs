@@ -71,10 +71,10 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public async Task StartAsync(ConnectionDelegate connectionDelegate)
+        public void Start(ConnectionDelegate connectionDelegate)
         {
             _logger.LogInformation($"Starting {_name}...");
-            await _serviceConnectionManager.StartAsync(connectionDelegate);
+            _ = _serviceConnectionManager.StartAsync(connectionDelegate);
         }
 
         private Uri GetServiceUrl()

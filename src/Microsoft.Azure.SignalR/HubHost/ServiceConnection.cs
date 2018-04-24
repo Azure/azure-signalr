@@ -2,11 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Buffers;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
@@ -19,9 +19,12 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
         private readonly ILogger<ServiceConnection> _logger;
+        private readonly TimeSpan DefaultServerTimeout = TimeSpan.FromSeconds(30);// Server ping rate is 15 sec, this is 2 times that.
 
         private ConnectionContext _connection;
         private ConnectionDelegate _connectionDelegate;
+        private ConcurrentDictionary<string, string> _connectionIds = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+        private TimeSpan ReconnectInterval => TimeSpan.FromMilliseconds(StaticRandom.Next(1000));// Start reconnect after a random interval less than 1 second
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
@@ -36,21 +39,12 @@ namespace Microsoft.Azure.SignalR
         public async Task StartAsync(ConnectionDelegate connectionDelegate)
         {
             _connectionDelegate = connectionDelegate;
-
-            // Lock here in case somebody tries to send before the connection is assigned
-            await _serviceConnectionLock.WaitAsync();
-
-            try
+            while (true)
             {
-                _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary);
-            }
-            finally
-            {
-                _serviceConnectionLock.Release();
-            }
+                await StartAsyncCore();
 
-            // TODO. Handshake with Service for version confirmation
-            _ = ProcessIncomingAsync();
+                await ProcessIncomingAsync();
+            }
         }
 
         public async Task WriteAsync(ServiceMessage serviceMessage)
@@ -58,6 +52,12 @@ namespace Microsoft.Azure.SignalR
             // We have to lock around outgoing sends since the pipe is single writer.
             // The lock is per serviceConnection
             await _serviceConnectionLock.WaitAsync();
+
+            if (_connection == null)
+            {
+                _serviceConnectionLock.Release();
+                throw new InvalidOperationException("The connection is not active, data cannot be sent to the service");
+            }
 
             try
             {
@@ -76,8 +76,69 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        private async Task StartAsyncCore()
+        {
+            // Always try until connected
+            while (true)
+            {
+                // Lock here in case somebody tries to send before the connection is assigned
+                await _serviceConnectionLock.WaitAsync();
+
+                try
+                {
+                    _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary);
+                    return;
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError($"Failed to connect to Azure SignalR due to error: {e.Message}");
+                    await Task.Delay(ReconnectInterval);
+                }
+                finally
+                {
+                    _serviceConnectionLock.Release();
+                }
+            }
+        }
+
+        private Timer StartTimeoutTimer()
+        {
+            _logger.LogDebug("Start server timeout timer");
+            return new Timer(state => ((ServiceConnection)state).TimeoutElapsed(),
+                    this, Timeout.Infinite, Timeout.Infinite);
+        }
+
+        private void ResetTimeoutTimer(Timer timeoutTimer)
+        {
+            _logger.LogDebug("Reset server timeout timer");
+            timeoutTimer.Change(DefaultServerTimeout, Timeout.InfiniteTimeSpan);
+        }
+
+        private void TimeoutElapsed()
+        {
+            if (!_serviceConnectionLock.Wait(0))
+            {
+                // Couldn't get the lock so skip the cancellation (we could be in the middle of reconnecting?)
+                return;
+            }
+
+            try
+            {
+                // Stop the reading from connection
+                if (_connection != null)
+                {
+                    _connection.Transport.Input.CancelPendingRead();
+                }
+            }
+            finally
+            {
+                _serviceConnectionLock.Release();
+            }
+        }
+
         private async Task ProcessIncomingAsync()
         {
+            var timeoutTimer = StartTimeoutTimer();
             try
             {
                 while (true)
@@ -87,8 +148,14 @@ namespace Microsoft.Azure.SignalR
 
                     try
                     {
+                        if (result.IsCanceled)
+                        {
+                            _logger.LogDebug("Cancel the read from connection");
+                            break;
+                        }
                         if (!buffer.IsEmpty)
                         {
+                            ResetTimeoutTimer(timeoutTimer);
                             _logger.LogDebug("message received from service");
                             while (_serviceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
                             {
@@ -114,15 +181,52 @@ namespace Microsoft.Azure.SignalR
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 // Fatal error: There is something wrong for the connection between SDK and service.
                 // Abort all the client connections, close the httpConnection.
                 // Only reconnect can recover.
+                _logger.LogError($"connection between SDK and service drops for {e.Message}");
             }
             finally
             {
+                timeoutTimer.Dispose();
                 await _connectionFactory.DisposeAsync(_connection);
+            }
+
+            await _serviceConnectionLock.WaitAsync();
+            try
+            {
+                _connection = null;
+            }
+            finally
+            {
+                _serviceConnectionLock.Release();
+            }
+            // TODO: Never cleanup connections unless Service asks us to do that
+            // Current implementation is based on assumption that Service will drop clients
+            // if server connection fails.
+            await CleanupConnections();
+        }
+
+        private async Task CleanupConnections()
+        {
+            try
+            {
+                if (_connectionIds.Count == 0)
+                {
+                    return;
+                }
+                var tasks = new List<Task>(_connectionIds.Count);
+                foreach (var connectionId in _connectionIds.Keys)
+                {
+                    tasks.Add(PerformDisconnectAsync(connectionId));
+                }
+                await Task.WhenAll(tasks);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Error occurs in cleanup connections {e.Message}");
             }
         }
 
@@ -191,10 +295,23 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        private void AddClientConnection(ServiceConnectionContext connection)
+        {
+            _clientConnectionManager.AddClientConnection(connection);
+            _connectionIds.TryAdd(connection.ConnectionId, connection.ConnectionId);
+        }
+
+        private void RemoveClientConnection(string connectionId)
+        {
+            _clientConnectionManager.ClientConnections.TryRemove(connectionId, out _);
+            _logger.LogDebug($"Remove client connection {connectionId}");
+            _connectionIds.TryRemove(connectionId, out _);
+        }
+
         private Task OnConnectedAsync(OpenConnectionMessage message)
         {
             var connection = new ServiceConnectionContext(message);
-            _clientConnectionManager.AddClientConnection(connection);
+            AddClientConnection(connection);
             _logger.LogDebug("Handle OnConnected command");
 
             // Execute the application code, this will call into the SignalR end point
@@ -212,7 +329,11 @@ namespace Microsoft.Azure.SignalR
             // SignalR stops reading
             connection.Transport.Output.Complete(applicationTask.Exception?.InnerException);
             connection.Transport.Input.Complete();
-            await AbortClientConnection(connection);
+            // Default SDK should send "Abort" to Service
+            if (connection.AbortOnClose)
+            {
+                await AbortClientConnection(connection);
+            }
         }
 
         private async Task WaitOnTransportTask(ServiceConnectionContext connection)
@@ -238,13 +359,19 @@ namespace Microsoft.Azure.SignalR
 
         private async Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
-            if (_clientConnectionManager.ClientConnections.TryGetValue(closeConnectionMessage.ConnectionId, out var connection))
+            await PerformDisconnectAsync(closeConnectionMessage.ConnectionId);
+        }
+
+        private async Task PerformDisconnectAsync(string connectionId)
+        {
+            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var connection))
             {
+                connection.AbortOnClose = false; // Service already knows the client is closed, no need to be informed.
                 await WaitOnTransportTask(connection);
             }
-            // Close this connection gracefully then remove it from the list, this will trigger the hub shutdown logic appropriately
-            _clientConnectionManager.ClientConnections.TryRemove(closeConnectionMessage.ConnectionId, out _);
-            _logger.LogDebug($"Remove client connection {connection.ConnectionId}");
+            // Close this connection gracefully then remove it from the list,
+            // this will trigger the hub shutdown logic appropriately
+            RemoveClientConnection(connectionId);
         }
 
         private async Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)
