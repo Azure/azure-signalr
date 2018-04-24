@@ -116,14 +116,26 @@ namespace Microsoft.Azure.SignalR
 
         private void TimeoutElapsed()
         {
-            _ = AccessConnectionUnderLocked(() =>
+            if (!_serviceConnectionLock.Wait(0))
+            {
+                // Couldn't get the lock so skip the cancellation (we could be in the middle of reconnecting?)
+                return;
+            }
+
+            _serviceConnectionLock.Wait();
+
+            try
             {
                 // Stop the reading from connection
                 if (_connection != null)
                 {
                     _connection.Transport.Input.CancelPendingRead();
                 }
-            });
+            }
+            finally
+            {
+                _serviceConnectionLock.Release();
+            }
         }
 
         private async Task ProcessIncomingAsync()
@@ -184,27 +196,19 @@ namespace Microsoft.Azure.SignalR
                 await _connectionFactory.DisposeAsync(_connection);
             }
 
-            await AccessConnectionUnderLocked(() =>
-            {
-                _connection = null;
-            });
-            // TODO: Never cleanup connections unless Service asks us to do that
-            // Current implementation is based on assumption that Service will drop clients
-            // if server connection fails.
-            await CleanupConnections();
-        }
-
-        private async Task AccessConnectionUnderLocked(Action action)
-        {
             await _serviceConnectionLock.WaitAsync();
             try
             {
-                action.Invoke();
+                _connection = null;
             }
             finally
             {
                 _serviceConnectionLock.Release();
             }
+            // TODO: Never cleanup connections unless Service asks us to do that
+            // Current implementation is based on assumption that Service will drop clients
+            // if server connection fails.
+            await CleanupConnections();
         }
 
         private async Task CleanupConnections()
