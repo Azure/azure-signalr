@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR
         private ConnectionContext _connection;
         private ConnectionDelegate _connectionDelegate;
         private ConcurrentDictionary<string, string> _connectionIds = new ConcurrentDictionary<string, string>();
-        private int _reconnectIntervalInMS => StaticRandom.Next(1000);// Start reconnect after a random interval less than 1 second
+        private TimeSpan ReconnectInterval => TimeSpan.FromMilliseconds(StaticRandom.Next(1000));// Start reconnect after a random interval less than 1 second
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.SignalR
                 catch (Exception e)
                 {
                     _logger.LogError($"Failed to connect to Azure SignalR due to error: {e.Message}");
-                    await Task.Delay(_reconnectIntervalInMS);
+                    await Task.Delay(ReconnectInterval);
                 }
                 finally
                 {
@@ -121,8 +121,6 @@ namespace Microsoft.Azure.SignalR
                 // Couldn't get the lock so skip the cancellation (we could be in the middle of reconnecting?)
                 return;
             }
-
-            _serviceConnectionLock.Wait();
 
             try
             {
