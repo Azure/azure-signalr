@@ -46,21 +46,21 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        public override Task SendAllAsync(string methodName, object[] args)
+        public override Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
             return _serviceConnectionManager.WriteAsync(
                 new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)));
         }
 
-        public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedIds)
+        public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
         {
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
             return _serviceConnectionManager.WriteAsync(
                 new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)));
         }
 
-        public override Task SendConnectionAsync(string connectionId, string methodName, object[] args)
+        public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.SignalR
             return serviceConnectionContext.HubConnectionContext.WriteAsync(message).AsTask();
         }
 
-        public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args)
+        public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (IsInvalidListArgument(nameof(connectionIds), connectionIds)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.SignalR
                 new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)));
         }
 
-        public override Task SendGroupAsync(string groupName, string methodName, object[] args)
+        public override Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.SignalR
                 new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args)));
         }
 
-        public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args)
+        public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (IsInvalidListArgument(nameof(groupNames), groupNames)) return Task.CompletedTask;
 
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.SignalR
                 new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)));
         }
 
-        public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds)
+        public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
         {
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.SignalR
                 new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args)));
         }
 
-        public override Task SendUserAsync(string userId, string methodName, object[] args)
+        public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (IsInvalidStringArgument(nameof(userId), userId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.SignalR
                 new UserDataMessage(userId, SerializeAllProtocols(methodName, args)));
         }
 
-        public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args)
+        public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (IsInvalidListArgument(nameof(userIds), userIds)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(methodName), methodName)) return Task.CompletedTask;
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.SignalR
                 new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)));
         }
 
-        public override Task AddToGroupAsync(string connectionId, string groupName)
+        public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.SignalR
             return _serviceConnectionManager.WriteAsync(new JoinGroupMessage(connectionId, groupName));
         }
 
-        public override Task RemoveFromGroupAsync(string connectionId, string groupName)
+        public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
             if (IsInvalidStringArgument(nameof(connectionId), connectionId)) return Task.CompletedTask;
             if (IsInvalidStringArgument(nameof(groupName), groupName)) return Task.CompletedTask;

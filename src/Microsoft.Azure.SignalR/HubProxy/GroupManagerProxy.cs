@@ -3,6 +3,7 @@
 
 using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 
@@ -21,12 +22,12 @@ namespace Microsoft.Azure.SignalR
             _accessKey = accessKey;
         }
 
-        public Task AddToGroupAsync(string connectionId, string groupName)
+        public Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
             return InternalSendAsync(connectionId, groupName, HttpMethod.Post);
         }
 
-        public Task RemoveFromGroupAsync(string connectionId, string groupName)
+        public Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
             return InternalSendAsync(connectionId, groupName, HttpMethod.Delete);
         }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.SignalR
             _excludedList = excludedList;
         }
 
-        public Task SendCoreAsync(string method, object[] args)
+        public Task SendCoreAsync(string method, object[] args, CancellationToken cancellationToken = default)
         {
             return _hubMessageSender.SendAsync(_url, _accessTokenProvider.Invoke(), method, args, _excludedList);
         }
