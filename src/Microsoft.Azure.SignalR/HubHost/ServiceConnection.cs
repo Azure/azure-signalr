@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
@@ -22,7 +21,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ILogger<ServiceConnection> _logger;
         private readonly TimeSpan DefaultServerTimeout = TimeSpan.FromSeconds(30);// Server ping rate is 15 sec, this is 2 times that.
 
-        private volatile ConnectionContext _connection;
+        private ConnectionContext _connection;
         private ConnectionDelegate _connectionDelegate;
         private ConcurrentDictionary<string, string> _connectionIds = new ConcurrentDictionary<string, string>();
         private int _reconnectIntervalInMS => StaticRandom.Next(1000);// Start reconnect after a random interval less than 1 second
@@ -57,7 +56,7 @@ namespace Microsoft.Azure.SignalR
             if (_connection == null)
             {
                 _serviceConnectionLock.Release();
-                throw new HubException("Connection has not been established, any data cannot be sent to service");
+                throw new InvalidOperationException("The connection is not active, data cannot be sent to the service");
             }
 
             try
@@ -111,17 +110,20 @@ namespace Microsoft.Azure.SignalR
 
         private void ResetTimeoutTimer(Timer timeoutTimer)
         {
-            if (timeoutTimer != null)
-            {
-                _logger.LogDebug("Reset server timeout timer");
-                timeoutTimer.Change(DefaultServerTimeout, Timeout.InfiniteTimeSpan);
-            }
+            _logger.LogDebug("Reset server timeout timer");
+            timeoutTimer.Change(DefaultServerTimeout, Timeout.InfiniteTimeSpan);
         }
 
         private void TimeoutElapsed()
         {
-            // Stop the reading from connection
-            _connection.Transport.Input.CancelPendingRead();
+            _ = AccessConnectionUnderLocked(() =>
+            {
+                // Stop the reading from connection
+                if (_connection != null)
+                {
+                    _connection.Transport.Input.CancelPendingRead();
+                }
+            });
         }
 
         private async Task ProcessIncomingAsync()
@@ -178,23 +180,31 @@ namespace Microsoft.Azure.SignalR
             }
             finally
             {
-                await _connectionFactory.DisposeAsync(_connection);
                 timeoutTimer?.Dispose();
+                await _connectionFactory.DisposeAsync(_connection);
             }
 
+            await AccessConnectionUnderLocked(() =>
+            {
+                _connection = null;
+            });
+            // TODO: Never cleanup connections unless Service asks us to do that
+            // Current implementation is based on assumption that Service will drop clients
+            // if server connection fails.
+            await CleanupConnections();
+        }
+
+        private async Task AccessConnectionUnderLocked(Action action)
+        {
             await _serviceConnectionLock.WaitAsync();
             try
             {
-                _connection = null;
+                action.Invoke();
             }
             finally
             {
                 _serviceConnectionLock.Release();
             }
-            // TODO: Never cleanup connections unless Service asks us to do that
-            // Current implementation is based on assumption that Service will drop clients
-            // if server connection fails.
-            await CleanupConnections();
         }
 
         private async Task CleanupConnections()
