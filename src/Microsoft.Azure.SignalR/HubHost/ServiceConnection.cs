@@ -20,25 +20,26 @@ namespace Microsoft.Azure.SignalR
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
         private readonly ILogger<ServiceConnection> _logger;
         private readonly TimeSpan DefaultServerTimeout = TimeSpan.FromSeconds(30);// Server ping rate is 15 sec, this is 2 times that.
+        private readonly ConcurrentDictionary<string, string> _connectionIds = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
 
         private ConnectionContext _connection;
         private ConnectionDelegate _connectionDelegate;
-        private ConcurrentDictionary<string, string> _connectionIds = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
         private TimeSpan ReconnectInterval => TimeSpan.FromMilliseconds(StaticRandom.Next(1000));// Start reconnect after a random interval less than 1 second
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
-            IConnectionFactory connectionFactory, ILoggerFactory loggerFactory)
+            IConnectionFactory connectionFactory, ILoggerFactory loggerFactory,
+            ConnectionDelegate connectionDelegate)
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
+            _connectionDelegate = connectionDelegate;
             _logger = loggerFactory.CreateLogger<ServiceConnection>();
         }
 
-        public async Task StartAsync(ConnectionDelegate connectionDelegate)
+        public async Task StartAsync()
         {
-            _connectionDelegate = connectionDelegate;
             while (true)
             {
                 await StartAsyncCore();
