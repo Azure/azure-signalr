@@ -18,9 +18,9 @@ namespace Microsoft.Azure.SignalR
             _serviceConnections.Add(serviceConnection);
         }
 
-        public async Task StartAsync(ConnectionDelegate connectionDelegate)
+        public async Task StartAsync()
         {
-            var tasks = _serviceConnections.Select(c => c.StartAsync(connectionDelegate));
+            var tasks = _serviceConnections.Select(c => c.StartAsync());
             await Task.WhenAll(tasks);
         }
 

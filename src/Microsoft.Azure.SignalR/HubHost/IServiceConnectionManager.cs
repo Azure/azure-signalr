@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR
     {
         void AddServiceConnection(ServiceConnection serviceConnection);
 
-        Task StartAsync(ConnectionDelegate connectionDelegate);
+        Task StartAsync();
 
         Task WriteAsync(ServiceMessage seviceMessage);
     }
