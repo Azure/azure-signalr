@@ -3,13 +3,13 @@
  * Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
  */
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('@aspnet/signalr'), require('msgpack5')) :
-	typeof define === 'function' && define.amd ? define(['@aspnet/signalr', 'msgpack5'], factory) :
-	(global.signalR = global.signalR || {}, global.signalR.protocols = global.signalR.protocols || {}, global.signalR.protocols.msgpack = factory(global.signalR,global.msgpack5));
-}(this, (function (signalr,msgpack5) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('msgpack5'), require('@aspnet/signalr')) :
+	typeof define === 'function' && define.amd ? define(['msgpack5', '@aspnet/signalr'], factory) :
+	(global.signalR = global.signalR || {}, global.signalR.protocols = global.signalR.protocols || {}, global.signalR.protocols.msgpack = factory(global.msgpack5,global.signalR));
+}(this, (function (msgpack5,signalr) { 'use strict';
 
-signalr = signalr && signalr.hasOwnProperty('default') ? signalr['default'] : signalr;
 msgpack5 = msgpack5 && msgpack5.hasOwnProperty('default') ? msgpack5['default'] : msgpack5;
+signalr = signalr && signalr.hasOwnProperty('default') ? signalr['default'] : signalr;
 
 function unwrapExports (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -2030,7 +2030,7 @@ var MessagePackHubProtocol = /** @class */ (function () {
     MessagePackHubProtocol.prototype.parseMessages = function (input, logger) {
         var _this = this;
         if (logger === null) {
-            logger = new signalr.NullLogger();
+            logger = signalr.NullLogger.instance;
         }
         return BinaryMessageFormat_1.BinaryMessageFormat.parse(input).map(function (m) { return _this.parseMessage(m, logger); });
     };
