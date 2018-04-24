@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
@@ -19,8 +20,12 @@ namespace Microsoft.Azure.SignalR
                                               IConnectionItemsFeature,
                                               IConnectionIdFeature,
                                               IConnectionTransportFeature,
+                                              IConnectionHeartbeatFeature,
                                               IConnectionInherentKeepAliveFeature
     {
+        private readonly object _heartbeatLock = new object();
+        private List<(Action<object> handler, object state)> _heartbeatHandlers;
+
         public ServiceConnectionContext(OpenConnectionMessage serviceMessage)
         {
             ConnectionId = serviceMessage.ConnectionId;
@@ -46,11 +51,39 @@ namespace Microsoft.Azure.SignalR
 
             Features = new FeatureCollection();
             // Disable Ping for this virtual connection, set any TimeSpan is OK.
-            Features.Set<IConnectionInherentKeepAliveFeature>(this);
+            Features.Set<IConnectionHeartbeatFeature>(this);
             Features.Set<IConnectionUserFeature>(this);
             Features.Set<IConnectionItemsFeature>(this);
             Features.Set<IConnectionIdFeature>(this);
             Features.Set<IConnectionTransportFeature>(this);
+        }
+
+        public void OnHeartbeat(Action<object> action, object state)
+        {
+            lock (_heartbeatLock)
+            {
+                if (_heartbeatHandlers == null)
+                {
+                    _heartbeatHandlers = new List<(Action<object> handler, object state)>();
+                }
+                _heartbeatHandlers.Add((action, state));
+            }
+        }
+
+        public void TickHeartbeat()
+        {
+            lock (_heartbeatLock)
+            {
+                if (_heartbeatHandlers == null)
+                {
+                    return;
+                }
+
+                foreach (var (handler, state) in _heartbeatHandlers)
+                {
+                    handler(state);
+                }
+            }
         }
 
         // Send "Abort" to service on close except that Service asks SDK to close
@@ -70,7 +103,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task ApplicationTask { get; set; }
 
-        public bool HasInherentKeepAlive => true;
+        public bool HasInherentKeepAlive => false;
 
         // The associated HubConnectionContext
         public HubConnectionContext HubConnectionContext { get; set; }
