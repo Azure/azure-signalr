@@ -54,7 +54,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         // Mark the context in OnDisconnected state which means service has dropped the client connection
-        public bool OnDisconnected { get; set; }
+        public bool AbortOnClose { get; set; }
 
         public override string ConnectionId { get; set; }
 

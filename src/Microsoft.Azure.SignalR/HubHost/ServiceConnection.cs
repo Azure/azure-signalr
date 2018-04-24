@@ -303,7 +303,7 @@ namespace Microsoft.Azure.SignalR
             connection.Transport.Output.Complete(applicationTask.Exception?.InnerException);
             connection.Transport.Input.Complete();
             // If Service has already dropped the client, no need to send Abort message.
-            if (!connection.OnDisconnected)
+            if (!connection.AbortOnClose)
             {
                 await AbortClientConnection(connection);
             }
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var connection))
             {
-                connection.OnDisconnected = true;
+                connection.AbortOnClose = true;
                 await WaitOnTransportTask(connection);
             }
             // Close this connection gracefully then remove it from the list,
