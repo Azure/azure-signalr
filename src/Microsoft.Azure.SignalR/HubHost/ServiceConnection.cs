@@ -23,6 +23,7 @@ namespace Microsoft.Azure.SignalR
 
         private ConnectionContext _connection;
         private ConnectionDelegate _connectionDelegate;
+        private ConcurrentDictionary<string, string> _connectionIds = new ConcurrentDictionary<string, string>();
         private int _reconnectIntervalInMS => StaticRandom.Next(1000);// Start reconnect after a random interval less than 1 second
         private volatile bool _connected;
 
@@ -129,7 +130,7 @@ namespace Microsoft.Azure.SignalR
             var timeoutTimer = StartTimeoutTimer();
             try
             {
-                while (_connected)
+                while (true)
                 {
                     var result = await _connection.Transport.Input.ReadAsync();
                     var buffer = result.Buffer;
@@ -181,8 +182,25 @@ namespace Microsoft.Azure.SignalR
                 await _connectionFactory.DisposeAsync(_connection);
                 timeoutTimer?.Dispose();
             }
-
             _connected = false;
+            // TODO: Never cleanup connections unless Service asks us to do that
+            // Current implementation is based on assumption that Service will drop clients
+            // if server connection fails.
+            await CleanupConnections();
+        }
+
+        private async Task CleanupConnections()
+        {
+            if (_connectionIds.Count == 0)
+            {
+                return;
+            }
+            var tasks = new List<Task>(_connectionIds.Count);
+            foreach (var connectionId in _connectionIds.Keys)
+            {
+                tasks.Add(PerformDisconnectAsync(connectionId));
+            }
+            await Task.WhenAll(tasks);
         }
 
         private async Task DispatchMessage(ServiceMessage message)
@@ -253,12 +271,14 @@ namespace Microsoft.Azure.SignalR
         private void AddClientConnection(ServiceConnectionContext connection)
         {
             _clientConnectionManager.AddClientConnection(connection);
+            _connectionIds.TryAdd(connection.ConnectionId, connection.ConnectionId);
         }
 
         private void RemoveClientConnection(string connectionId)
         {
             _clientConnectionManager.ClientConnections.TryRemove(connectionId, out _);
             _logger.LogDebug($"Remove client connection {connectionId}");
+            _connectionIds.TryRemove(connectionId, out _);
         }
 
         private Task OnConnectedAsync(OpenConnectionMessage message)
