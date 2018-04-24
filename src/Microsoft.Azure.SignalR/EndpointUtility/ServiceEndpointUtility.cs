@@ -46,14 +46,22 @@ namespace Microsoft.Azure.SignalR
             return InternalGenerateAccessToken(GetClientEndpoint(hubName), claims, lifetime);
         }
 
-        public string GenerateServerAccessToken<THub>(TimeSpan? lifetime = null) where THub : Hub
+        public string GenerateServerAccessToken<THub>(string userId, TimeSpan? lifetime = null) where THub : Hub
         {
-            return GenerateServerAccessToken(typeof(THub).Name, lifetime);
+            return GenerateServerAccessToken(typeof(THub).Name, userId, lifetime);
         }
 
-        public string GenerateServerAccessToken(string hubName, TimeSpan? lifetime = null)
+        public string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null)
         {
-            return InternalGenerateAccessToken(GetServerEndpoint(hubName), null, lifetime);
+            IEnumerable<Claim> claims = null;
+            if (userId != null)
+            {
+                claims = new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, userId)
+                };
+            }
+            return InternalGenerateAccessToken(GetServerEndpoint(hubName), claims, lifetime);
         }
 
         public string GetClientEndpoint<THub>() where THub : Hub
