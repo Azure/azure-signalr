@@ -58,7 +58,6 @@ namespace Microsoft.Azure.SignalR
             {
                 Url = GetServiceUrl(),
                 AccessTokenProvider = () => Task.FromResult(_serviceEndpointUtility.GenerateServerAccessToken<THub>(_userId)),
-                CloseTimeout = TimeSpan.FromSeconds(300),
                 Transports = HttpTransportType.WebSockets,
                 SkipNegotiation = true
             };
