@@ -14,10 +14,10 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class HubHost<THub> : IConnectionFactory where THub : Hub
+    internal class ServiceHubDispatcher<THub> : IConnectionFactory where THub : Hub
     {
         private readonly ILoggerFactory _loggerFactory;
-        private readonly ILogger<HubHost<THub>> _logger;
+        private readonly ILogger<ServiceHubDispatcher<THub>> _logger;
         private ServiceOptions _options;
         private HttpConnectionOptions _httpConnectionOptions;
         private IServiceEndpointUtility _serviceEndpointUtility;
@@ -25,9 +25,9 @@ namespace Microsoft.Azure.SignalR
         private IClientConnectionManager _clientConnectionManager;
         private IServiceProtocol _serviceProtocol;
         private string _userId;
-        private readonly string _name = $"HubHost<{typeof(THub).FullName}>";
+        private readonly string _name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
 
-        public HubHost(IServiceProtocol serviceProtocol,
+        public ServiceHubDispatcher(IServiceProtocol serviceProtocol,
             IServiceConnectionManager serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
             IServiceEndpointUtility serviceEndpointUtility,
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR
             _options = options != null ? options.Value : throw new ArgumentNullException(nameof(options));
 
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger<HubHost<THub>>();
+            _logger = loggerFactory.CreateLogger<ServiceHubDispatcher<THub>>();
             _userId = GenerateServerName();
         }
 
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.SignalR
             return $"{Environment.MachineName}_{Guid.NewGuid():N}";
         }
 
-        internal void Configure()
+        public void Start(ConnectionDelegate connectionDelegate)
         {
             _httpConnectionOptions = new HttpConnectionOptions
             {
@@ -64,15 +64,12 @@ namespace Microsoft.Azure.SignalR
             };
 
             // Simply create a couple of connections which connect to Azure SignalR
-            for (var i = 0; i < _options.ConnectionNumber; i++)
+            for (var i = 0; i < _options.ConnectionCount; i++)
             {
                 var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, this, _loggerFactory);
                 _serviceConnectionManager.AddServiceConnection(serviceConnection);
             }
-        }
-
-        public void Start(ConnectionDelegate connectionDelegate)
-        {
+            
             _logger.LogInformation($"Starting {_name}...");
             _ = _serviceConnectionManager.StartAsync(connectionDelegate);
         }
