@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
@@ -55,9 +56,8 @@ namespace Microsoft.Azure.SignalR
 
             if (_connection == null)
             {
-                _logger.LogError("Connection has not been established, any data cannot be sent to service");
                 _serviceConnectionLock.Release();
-                return;
+                throw new HubException("Connection has not been established, any data cannot be sent to service");
             }
 
             try
@@ -181,7 +181,16 @@ namespace Microsoft.Azure.SignalR
                 await _connectionFactory.DisposeAsync(_connection);
                 timeoutTimer?.Dispose();
             }
-            _connection = null;
+
+            await _serviceConnectionLock.WaitAsync();
+            try
+            {
+                _connection = null;
+            }
+            finally
+            {
+                _serviceConnectionLock.Release();
+            }
             // TODO: Never cleanup connections unless Service asks us to do that
             // Current implementation is based on assumption that Service will drop clients
             // if server connection fails.
