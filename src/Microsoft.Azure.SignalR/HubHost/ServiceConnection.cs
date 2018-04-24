@@ -21,11 +21,10 @@ namespace Microsoft.Azure.SignalR
         private readonly ILogger<ServiceConnection> _logger;
         private readonly TimeSpan DefaultServerTimeout = TimeSpan.FromSeconds(30);// Server ping rate is 15 sec, this is 2 times that.
 
-        private ConnectionContext _connection;
+        private volatile ConnectionContext _connection;
         private ConnectionDelegate _connectionDelegate;
         private ConcurrentDictionary<string, string> _connectionIds = new ConcurrentDictionary<string, string>();
         private int _reconnectIntervalInMS => StaticRandom.Next(1000);// Start reconnect after a random interval less than 1 second
-        private volatile bool _connected;
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
@@ -50,15 +49,16 @@ namespace Microsoft.Azure.SignalR
 
         public async Task WriteAsync(ServiceMessage serviceMessage)
         {
-            if (!_connected)
-            {
-                _logger.LogError("Connection has not been established, any data cannot be sent to service");
-                return;
-            }
-
             // We have to lock around outgoing sends since the pipe is single writer.
             // The lock is per serviceConnection
             await _serviceConnectionLock.WaitAsync();
+
+            if (_connection == null)
+            {
+                _logger.LogError("Connection has not been established, any data cannot be sent to service");
+                _serviceConnectionLock.Release();
+                return;
+            }
 
             try
             {
@@ -88,7 +88,6 @@ namespace Microsoft.Azure.SignalR
                 try
                 {
                     _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary);
-                    _connected = true;
                     return;
                 }
                 catch (Exception e)
@@ -182,7 +181,7 @@ namespace Microsoft.Azure.SignalR
                 await _connectionFactory.DisposeAsync(_connection);
                 timeoutTimer?.Dispose();
             }
-            _connected = false;
+            _connection = null;
             // TODO: Never cleanup connections unless Service asks us to do that
             // Current implementation is based on assumption that Service will drop clients
             // if server connection fails.
@@ -191,16 +190,23 @@ namespace Microsoft.Azure.SignalR
 
         private async Task CleanupConnections()
         {
-            if (_connectionIds.Count == 0)
+            try
             {
-                return;
+                if (_connectionIds.Count == 0)
+                {
+                    return;
+                }
+                var tasks = new List<Task>(_connectionIds.Count);
+                foreach (var connectionId in _connectionIds.Keys)
+                {
+                    tasks.Add(PerformDisconnectAsync(connectionId));
+                }
+                await Task.WhenAll(tasks);
             }
-            var tasks = new List<Task>(_connectionIds.Count);
-            foreach (var connectionId in _connectionIds.Keys)
+            catch (Exception e)
             {
-                tasks.Add(PerformDisconnectAsync(connectionId));
+                _logger.LogError($"Error occurs in cleanup connections {e.Message}");
             }
-            await Task.WhenAll(tasks);
         }
 
         private async Task DispatchMessage(ServiceMessage message)
@@ -302,8 +308,8 @@ namespace Microsoft.Azure.SignalR
             // SignalR stops reading
             connection.Transport.Output.Complete(applicationTask.Exception?.InnerException);
             connection.Transport.Input.Complete();
-            // If Service has already dropped the client, no need to send Abort message.
-            if (!connection.AbortOnClose)
+            // Default SDK should send "Abort" to Service
+            if (connection.AbortOnClose)
             {
                 await AbortClientConnection(connection);
             }
@@ -339,7 +345,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var connection))
             {
-                connection.AbortOnClose = true;
+                connection.AbortOnClose = false; // Service already knows the client is closed, no need to be informed.
                 await WaitOnTransportTask(connection);
             }
             // Close this connection gracefully then remove it from the list,

@@ -51,9 +51,10 @@ namespace Microsoft.Azure.SignalR
             Features.Set<IConnectionItemsFeature>(this);
             Features.Set<IConnectionIdFeature>(this);
             Features.Set<IConnectionTransportFeature>(this);
+            AbortOnClose = true;
         }
 
-        // Mark the context in OnDisconnected state which means service has dropped the client connection
+        // Send "Abort" to service on close except that Service asks SDK to close
         public bool AbortOnClose { get; set; }
 
         public override string ConnectionId { get; set; }
