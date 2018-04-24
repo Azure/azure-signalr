@@ -23,7 +23,6 @@ namespace Microsoft.Azure.SignalR
 
         private ConnectionContext _connection;
         private ConnectionDelegate _connectionDelegate;
-        private ConcurrentDictionary<string, string> _connectionIds = new ConcurrentDictionary<string, string>();
         private int _reconnectIntervalInMS => StaticRandom.Next(1000);// Start reconnect after a random interval less than 1 second
         private volatile bool _connected;
 
@@ -35,7 +34,6 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _logger = loggerFactory.CreateLogger<ServiceConnection>();
-            _connected = false;
         }
 
         public async Task StartAsync(ConnectionDelegate connectionDelegate)
@@ -96,7 +94,6 @@ namespace Microsoft.Azure.SignalR
                 {
                     _logger.LogError($"Failed to connect to Azure SignalR due to error: {e.Message}");
                     await Task.Delay(_reconnectIntervalInMS);
-                    _connected = false;
                 }
                 finally
                 {
@@ -123,35 +120,8 @@ namespace Microsoft.Azure.SignalR
 
         private void TimeoutElapsed()
         {
-            _ = AbortServiceConnection();
-        }
-
-        private async Task CleanupConnections()
-        {
-            if (_connectionIds.Count == 0)
-            {
-                return;
-            }
-            var tasks = new List<Task>(_connectionIds.Count);
-            foreach (var connectionId in _connectionIds.Keys)
-            {
-                tasks.Add(SafetyDisconnectedAsync(connectionId));
-            }
-            await Task.WhenAll(tasks);
-        }
-
-        private async Task AbortServiceConnection()
-        {
-            // Even if reconnection is successfully immediately after connection drops,
-            // the server connectionId has changed, and Service will not route previous
-            // clients back to us, so clean all client connections once connection aborts.
-            await CleanupConnections();
-            // abort SDK <-> service connection
-            if (_connected)
-            {
-                _connected = false;
-                _connection.Transport.Input.CancelPendingRead();
-            }
+            // Stop the reading from connection
+            _connection.Transport.Input.CancelPendingRead();
         }
 
         private async Task ProcessIncomingAsync()
@@ -199,12 +169,12 @@ namespace Microsoft.Azure.SignalR
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 // Fatal error: There is something wrong for the connection between SDK and service.
                 // Abort all the client connections, close the httpConnection.
                 // Only reconnect can recover.
-                await AbortServiceConnection();
+                _logger.LogError($"connection between SDK and service drops for {e.Message}");
             }
             finally
             {
@@ -283,14 +253,12 @@ namespace Microsoft.Azure.SignalR
         private void AddClientConnection(ServiceConnectionContext connection)
         {
             _clientConnectionManager.AddClientConnection(connection);
-            _connectionIds.TryAdd(connection.ConnectionId, connection.ConnectionId);
         }
 
         private void RemoveClientConnection(string connectionId)
         {
             _clientConnectionManager.ClientConnections.TryRemove(connectionId, out _);
             _logger.LogDebug($"Remove client connection {connectionId}");
-            _connectionIds.TryRemove(connectionId, out _);
         }
 
         private Task OnConnectedAsync(OpenConnectionMessage message)
@@ -344,10 +312,10 @@ namespace Microsoft.Azure.SignalR
 
         private async Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
-            await SafetyDisconnectedAsync(closeConnectionMessage.ConnectionId);
+            await PerformDisconnectAsync(closeConnectionMessage.ConnectionId);
         }
 
-        private async Task SafetyDisconnectedAsync(string connectionId)
+        private async Task PerformDisconnectAsync(string connectionId)
         {
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var connection))
             {
