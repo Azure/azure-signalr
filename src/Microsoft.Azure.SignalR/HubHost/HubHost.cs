@@ -62,7 +62,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public void StartAsync(ConnectionDelegate connectionDelegate)
+        public void Start(ConnectionDelegate connectionDelegate)
         {
             _logger.LogInformation($"Starting {_name}...");
             _ = _serviceConnectionManager.StartAsync(connectionDelegate);

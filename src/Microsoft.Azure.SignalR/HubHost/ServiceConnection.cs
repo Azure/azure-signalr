@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR
 
         private ConnectionContext _connection;
         private ConnectionDelegate _connectionDelegate;
-        private ConcurrentDictionary<string, string> _connectionIds = new ConcurrentDictionary<string, string>();
+        private ConcurrentDictionary<string, string> _connectionIds = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
         private TimeSpan ReconnectInterval => TimeSpan.FromMilliseconds(StaticRandom.Next(1000));// Start reconnect after a random interval less than 1 second
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
