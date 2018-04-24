@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR
             _httpConnectionOptions = new HttpConnectionOptions
             {
                 Url = GetServiceUrl(),
-                AccessTokenProvider = () => Task.FromResult(_serviceEndpointUtility.GenerateServerAccessToken<THub>()),
+                AccessTokenProvider = () => Task.FromResult(_serviceEndpointUtility.GenerateServerAccessToken<THub>(Guid.NewGuid().ToString())),
                 CloseTimeout = TimeSpan.FromSeconds(300),
                 Transports = HttpTransportType.WebSockets,
                 SkipNegotiation = true

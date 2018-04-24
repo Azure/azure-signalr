@@ -19,9 +19,9 @@ namespace Microsoft.Azure.SignalR
 
         string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null);
 
-        string GenerateServerAccessToken<THub>(TimeSpan? lifetime = null) where THub : Hub;
+        string GenerateServerAccessToken<THub>(string userId, TimeSpan? lifetime = null) where THub : Hub;
 
-        string GenerateServerAccessToken(string hubName, TimeSpan? lifetime = null);
+        string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null);
 
         string GetClientEndpoint<THub>() where THub : Hub;
 
