@@ -24,6 +24,7 @@ namespace Microsoft.Azure.SignalR
         private IServiceConnectionManager _serviceConnectionManager;
         private IClientConnectionManager _clientConnectionManager;
         private IServiceProtocol _serviceProtocol;
+        private string _userId = Guid.NewGuid().ToString();
         private readonly string _name = $"HubHost<{typeof(THub).FullName}>";
 
         public HubHost(IServiceProtocol serviceProtocol,
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.SignalR
             _httpConnectionOptions = new HttpConnectionOptions
             {
                 Url = GetServiceUrl(),
-                AccessTokenProvider = () => Task.FromResult(_serviceEndpointUtility.GenerateServerAccessToken<THub>(Guid.NewGuid().ToString())),
+                AccessTokenProvider = () => Task.FromResult(_serviceEndpointUtility.GenerateServerAccessToken<THub>(_userId)),
                 CloseTimeout = TimeSpan.FromSeconds(300),
                 Transports = HttpTransportType.WebSockets,
                 SkipNegotiation = true
