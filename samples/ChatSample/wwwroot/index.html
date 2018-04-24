@@ -144,10 +144,11 @@
                 modal.style = 'display: block;';
             }
 
-            var transport = signalR.HttpTransportType.WebSockets;
-            var connection = new signalR.HubConnection('/chat', { transport: transport });
+            var connection = new signalR.HubConnectionBuilder()
+                        .withUrl('/chat')
+                        .build();
+                            
             bindConnectionMessage(connection);
-            console.log(`connection starts using ${signalR.HttpTransportType[transport]} transport`);
             connection.start()
                 .then(function () {
                     onConnected(connection);
