@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR
         private IServiceConnectionManager _serviceConnectionManager;
         private IClientConnectionManager _clientConnectionManager;
         private IServiceProtocol _serviceProtocol;
-        private string _userId = Guid.NewGuid().ToString();
+        private string _userId;
         private readonly string _name = $"HubHost<{typeof(THub).FullName}>";
 
         public HubHost(IServiceProtocol serviceProtocol,
@@ -42,6 +42,14 @@ namespace Microsoft.Azure.SignalR
 
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<HubHost<THub>>();
+            _userId = GenerateServerName();
+        }
+
+        private static string GenerateServerName()
+        {
+            // Use the machine name for convenient diagnostics, but add a guid to make it unique.
+            // Example: MyServerName_02db60e5fab243b890a847fa5c4dcb29
+            return $"{Environment.MachineName}_{Guid.NewGuid():N}";
         }
 
         internal void Configure()
