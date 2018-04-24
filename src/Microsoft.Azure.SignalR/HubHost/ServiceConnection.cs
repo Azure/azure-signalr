@@ -180,7 +180,7 @@ namespace Microsoft.Azure.SignalR
             }
             finally
             {
-                timeoutTimer?.Dispose();
+                timeoutTimer.Dispose();
                 await _connectionFactory.DisposeAsync(_connection);
             }
 
