@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR
         // Throw exception if 1 and 2 fail to find it.
         public string ConnectionString { get; set; } = null;
 
-        public int? ConnectionNumber { get; set; } = null;
+        public int? ConnectionCount { get; set; } = null;
 
         public Func<HttpContext, IEnumerable<Claim>> ClaimsProvider { get; set; } = null;
     }

@@ -51,11 +51,10 @@ namespace Microsoft.Azure.SignalR
             Features.Set<IConnectionItemsFeature>(this);
             Features.Set<IConnectionIdFeature>(this);
             Features.Set<IConnectionTransportFeature>(this);
-            AbortOnClose = true;
         }
 
         // Send "Abort" to service on close except that Service asks SDK to close
-        public bool AbortOnClose { get; set; }
+        public bool AbortOnClose { get; set; } = true;
 
         public override string ConnectionId { get; set; }
 

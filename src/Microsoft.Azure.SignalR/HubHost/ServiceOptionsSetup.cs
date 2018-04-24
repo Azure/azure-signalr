@@ -9,7 +9,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceOptionsSetup : IConfigureOptions<ServiceOptions>
     {
-        internal static readonly int DefaultConnectionNumber = 5;
+        internal static readonly int DefaultConnectionCount = 5;
         private string _connectionString;
 
         public ServiceOptionsSetup(IConfiguration configuration)
@@ -19,9 +19,9 @@ namespace Microsoft.Azure.SignalR
 
         public void Configure(ServiceOptions options)
         {
-            if (options.ConnectionNumber == null)
+            if (options.ConnectionCount == null)
             {
-                options.ConnectionNumber = DefaultConnectionNumber;
+                options.ConnectionCount = DefaultConnectionCount;
             }
             if (options.ConnectionString == null)
             {

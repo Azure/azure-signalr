@@ -16,12 +16,12 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class HubHostBuilder
+    public class ServiceRouteBuilder
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly RouteBuilder _routes;
 
-        public HubHostBuilder(RouteBuilder routes)
+        public ServiceRouteBuilder(RouteBuilder routes)
         {
             _routes = routes;
             _serviceProvider = _routes.ServiceProvider;
@@ -87,9 +87,8 @@ namespace Microsoft.Azure.SignalR
                 .UseHub<THub>()
                 .Build();
 
-            var hubHost = _serviceProvider.GetRequiredService<HubHost<THub>>();
-            hubHost.Configure();
-            hubHost.Start(app);
+            var dispatcher = _serviceProvider.GetRequiredService<ServiceHubDispatcher<THub>>();
+            dispatcher.Start(app);
         }
     }
 }

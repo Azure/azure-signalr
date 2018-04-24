@@ -9,10 +9,10 @@ namespace Microsoft.AspNetCore.Builder
 {
     public static class AzureSignalRApplicationBuilderExtensions
     {
-        public static IApplicationBuilder UseAzureSignalR(this IApplicationBuilder app, Action<HubHostBuilder> configure)
+        public static IApplicationBuilder UseAzureSignalR(this IApplicationBuilder app, Action<ServiceRouteBuilder> configure)
         {
             var routes = new RouteBuilder(app);
-            configure(new HubHostBuilder(routes));
+            configure(new ServiceRouteBuilder(routes));
             app.UseRouter(routes.Build());
             return app;
         }
