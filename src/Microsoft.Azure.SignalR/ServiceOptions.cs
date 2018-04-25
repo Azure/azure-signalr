@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR
         public static readonly string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
 
         // Default access token lifetime
-        public static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
+        internal static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
 
         // The order to find connection string:
         // 1. options
