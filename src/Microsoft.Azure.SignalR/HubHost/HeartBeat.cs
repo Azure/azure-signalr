@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http.Connections.Internal;
 using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.Azure.SignalR

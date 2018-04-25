@@ -20,8 +20,7 @@ namespace Microsoft.Azure.SignalR
                                               IConnectionItemsFeature,
                                               IConnectionIdFeature,
                                               IConnectionTransportFeature,
-                                              IConnectionHeartbeatFeature,
-                                              IConnectionInherentKeepAliveFeature
+                                              IConnectionHeartbeatFeature
     {
         private readonly object _heartbeatLock = new object();
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
@@ -50,7 +49,6 @@ namespace Microsoft.Azure.SignalR
             Application = pair.Transport;
 
             Features = new FeatureCollection();
-            // Disable Ping for this virtual connection, set any TimeSpan is OK.
             Features.Set<IConnectionHeartbeatFeature>(this);
             Features.Set<IConnectionUserFeature>(this);
             Features.Set<IConnectionItemsFeature>(this);
@@ -102,8 +100,6 @@ namespace Microsoft.Azure.SignalR
         public ClaimsPrincipal User { get; set; }
 
         public Task ApplicationTask { get; set; }
-
-        public bool HasInherentKeepAlive => false;
 
         // The associated HubConnectionContext
         public HubConnectionContext HubConnectionContext { get; set; }
