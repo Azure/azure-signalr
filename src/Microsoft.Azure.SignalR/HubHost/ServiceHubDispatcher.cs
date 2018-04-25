@@ -68,7 +68,6 @@ namespace Microsoft.Azure.SignalR
                 var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, this, _loggerFactory, connectionDelegate);
                 _serviceConnectionManager.AddServiceConnection(serviceConnection);
             }
-
             Log.StartingConnection(_logger, _name);
             _ = _serviceConnectionManager.StartAsync();
         }
@@ -81,7 +80,6 @@ namespace Microsoft.Azure.SignalR
         public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, CancellationToken cancellationToken = default)
         {
             var httpConnection = new HttpConnection(_httpConnectionOptions, _loggerFactory);
-
             try
             {
                 await httpConnection.StartAsync(transferFormat);
