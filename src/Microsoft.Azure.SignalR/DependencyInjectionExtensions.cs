@@ -5,6 +5,7 @@ using System;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -39,6 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.AddSingleton(typeof(IServiceConnectionManager), typeof(ServiceConnectionManager));
             builder.Services.AddSingleton(typeof(IServiceEndpointUtility), typeof(ServiceEndpointUtility));
             builder.Services.AddSingleton(typeof(ServiceHubDispatcher<>));
+            builder.Services.AddSingleton<IHostedService, HeartBeat>();
             builder.Services.AddSingleton(typeof(IHubMessageSender), typeof(HubMessageSender));
             return builder;
         }
