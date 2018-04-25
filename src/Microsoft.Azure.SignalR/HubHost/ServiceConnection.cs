@@ -70,7 +70,7 @@ namespace Microsoft.Azure.SignalR
             }
             catch (Exception ex)
             {
-                Log.FailToWriteAsync(_logger, ex);
+                Log.FailToWrite(_logger, ex);
             }
             finally
             {
@@ -424,8 +424,8 @@ namespace Microsoft.Azure.SignalR
         private static class Log
         {
             // Category: ServiceConnection
-            private static readonly Action<ILogger, Exception> _writeAsyncFailure =
-                LoggerMessage.Define(LogLevel.Error, new EventId(1, "WriteAsyncFailure"), "Fail to send message to the service.");
+            private static readonly Action<ILogger, Exception> _failToWrite =
+                LoggerMessage.Define(LogLevel.Error, new EventId(1, "failToWrite"), "Fail to send message to the service.");
 
             private static readonly Action<ILogger, Exception> _connectionFailure =
                 LoggerMessage.Define(LogLevel.Error, new EventId(2, "ConnectionFailure"), "Fail to connect to the service.");
@@ -484,9 +484,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, Exception> _forwardRequestToApplication =
                 LoggerMessage.Define(LogLevel.Trace, new EventId(20, "ForwardRequestToApplication"), "Forward request to application.");
 
-            public static void FailToWriteAsync(ILogger logger, Exception exception)
+            public static void FailToWrite(ILogger logger, Exception exception)
             {
-                _writeAsyncFailure(logger, exception);
+                _failToWrite(logger, exception);
             }
 
             public static void FailToConnect(ILogger logger, Exception exception)
