@@ -13,7 +13,8 @@ namespace Microsoft.Azure.SignalR
         // Connection string can be passed by setting this environment variable (default key)
         public static readonly string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
 
-        internal static readonly int DefaultConnectionCount = 5;
+        // Default access token lifetime
+        internal static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
 
         // The order to find connection string:
         // 1. options
@@ -21,8 +22,10 @@ namespace Microsoft.Azure.SignalR
         // Throw exception if 1 and 2 fail to find it.
         public string ConnectionString { get; set; } = null;
 
-        public int ConnectionCount { get; set; } = DefaultConnectionCount;
+        public int ConnectionCount { get; set; } = 5;
 
         public Func<HttpContext, IEnumerable<Claim>> ClaimsProvider { get; set; } = null;
+
+        public TimeSpan AccessTokenLifetime { get; set; } = DefaultAccessTokenLifetime;
     }
 }
