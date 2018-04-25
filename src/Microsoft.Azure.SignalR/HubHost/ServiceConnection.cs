@@ -315,38 +315,42 @@ namespace Microsoft.Azure.SignalR
             AddClientConnection(connection);
             _logger.LogDebug("Handle OnConnected command");
 
-            // Execute the application code, this will call into the SignalR end point
-            // SignalR keeps on reading from Transport.Input.
+            // Execute the application code
             connection.ApplicationTask = _connectionDelegate(connection);
-            // Sending SignalR output
+
+            // Writing from the application to the service
             _ = ProcessOutgoingMessagesAsync(connection);
-            _ = WaitOnAppTasks(connection.ApplicationTask, connection);
+
+            // Waiting for the application to shutdown so we can clean up the connection
+            _ = WaitOnApplicationTask(connection);
             return Task.CompletedTask;
         }
 
-        private async Task WaitOnAppTasks(Task applicationTask, ServiceConnectionContext connection)
+        private async Task WaitOnApplicationTask(ServiceConnectionContext connection)
         {
-            await applicationTask;
-            // SignalR stops reading
-            connection.Transport.Output.Complete(applicationTask.Exception?.InnerException);
-            connection.Transport.Input.Complete();
-            // Default SDK should send "Abort" to Service
-            if (connection.AbortOnClose)
-            {
-                await AbortClientConnection(connection);
-            }
-        }
+            Exception exception = null;
 
-        private async Task WaitOnTransportTask(ServiceConnectionContext connection)
-        {
-            connection.Application.Output.Complete();
             try
             {
+                // Wait for the application task to complete
                 await connection.ApplicationTask;
+            }
+            catch (Exception ex)
+            {
+                // Capture the exception to communicate it to the transport (this isn't strictly required)
+                exception = ex;
             }
             finally
             {
-                connection.Application.Input.Complete();
+                // Close the transport side since the application is no longer running
+                connection.Transport.Output.Complete(exception);
+                connection.Transport.Input.Complete();
+            }
+
+            // If we aren't already aborted, we send the abort message to the service
+            if (connection.AbortOnClose)
+            {
+                await AbortClientConnection(connection);
             }
         }
 
@@ -367,8 +371,21 @@ namespace Microsoft.Azure.SignalR
         {
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var connection))
             {
-                connection.AbortOnClose = false; // Service already knows the client is closed, no need to be informed.
-                await WaitOnTransportTask(connection);
+                // Service already knows the client is closed, no need to be informed.
+                connection.AbortOnClose = false;
+
+                // We're done writing to the application output
+                connection.Application.Output.Complete();
+
+                // Wait on the application task to complete
+                try
+                {
+                    await connection.ApplicationTask;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(0, ex, "Application failed");
+                }
             }
             // Close this connection gracefully then remove it from the list,
             // this will trigger the hub shutdown logic appropriately
