@@ -87,7 +87,7 @@ namespace Microsoft.Azure.SignalR
             return AuthenticationHelper.GenerateJwtBearer(
                 audience: audience,
                 claims: null,
-                expires: DateTime.UtcNow.Add(ServiceEndpointUtility.DefaultAccessTokenLifetime),
+                expires: DateTime.UtcNow.Add(ServiceOptions.DefaultAccessTokenLifetime),
                 signingKey: accessKey
             );
         }

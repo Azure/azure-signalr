@@ -16,7 +16,6 @@ namespace Microsoft.Azure.SignalR
         private const string AccessKeyProperty = "accesskey";
         private const int ClientPort = 5001;
         private const int ServerPort = 5002;
-        internal static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromSeconds(30);
 
         public ServiceEndpointUtility(IOptions<ServiceOptions> options)
         {
@@ -27,12 +26,15 @@ namespace Microsoft.Azure.SignalR
                     $"No connection string was specified. Please specify a configuration entry for {ServiceOptions.ConnectionStringDefaultKey} or explicitly pass one using IServiceCollection.AddSignalRService(connectionString) in Startup.ConfigureServices.");
             }
 
+            AccessTokenLifetime = options.Value.AccessTokenLifetime;
+
             (Endpoint, AccessKey) = ParseConnectionString(connectionString);
         }
 
         public string Endpoint { get; }
 
         public string AccessKey { get; }
+        private TimeSpan AccessTokenLifetime { get; }
 
         public string GenerateClientAccessToken<THub>(IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
             where THub : Hub
@@ -43,7 +45,7 @@ namespace Microsoft.Azure.SignalR
         public string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null,
             TimeSpan? lifetime = null)
         {
-            return InternalGenerateAccessToken(GetClientEndpoint(hubName), claims, lifetime);
+            return InternalGenerateAccessToken(GetClientEndpoint(hubName), claims, lifetime ?? AccessTokenLifetime);
         }
 
         public string GenerateServerAccessToken<THub>(string userId, TimeSpan? lifetime = null) where THub : Hub
@@ -61,7 +63,7 @@ namespace Microsoft.Azure.SignalR
                     new Claim(ClaimTypes.NameIdentifier, userId)
                 };
             }
-            return InternalGenerateAccessToken(GetServerEndpoint(hubName), claims, lifetime);
+            return InternalGenerateAccessToken(GetServerEndpoint(hubName), claims, lifetime ?? AccessTokenLifetime);
         }
 
         public string GetClientEndpoint<THub>() where THub : Hub
@@ -99,11 +101,10 @@ namespace Microsoft.Azure.SignalR
             return $"{Endpoint}:{port}/{path}/?hub={hubName.ToLower()}";
         }
 
-        private string InternalGenerateAccessToken(string audience, IEnumerable<Claim> claims, TimeSpan? lifetime)
+        private string InternalGenerateAccessToken(string audience, IEnumerable<Claim> claims, TimeSpan lifetime)
         {
-            var expire = lifetime.HasValue
-                ? DateTime.UtcNow.Add(lifetime.Value)
-                : DateTime.UtcNow.Add(DefaultAccessTokenLifetime);
+            var expire = DateTime.UtcNow.Add(lifetime);
+
             return AuthenticationHelper.GenerateJwtBearer(
                 audience: audience,
                 claims: claims,
@@ -114,8 +115,8 @@ namespace Microsoft.Azure.SignalR
 
         private static (string, string) ParseConnectionString(string connectionString)
         {
-            var dict = connectionString.Split(new[] {';'}, StringSplitOptions.RemoveEmptyEntries)
-                .Select(x => x.Split(new[] {'='}, 2))
+            var dict = connectionString.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Split(new[] { '=' }, 2))
                 .ToDictionary(t => t[0].Trim().ToLower(), t => t[1].Trim(),
                     StringComparer.OrdinalIgnoreCase);
             if (dict.ContainsKey(EndpointProperty) && dict.ContainsKey(AccessKeyProperty))
@@ -123,7 +124,7 @@ namespace Microsoft.Azure.SignalR
                 return (dict[EndpointProperty].TrimEnd('/'), dict[AccessKeyProperty]);
             }
 
-            throw new ArgumentException("");
+            throw new ArgumentException($"Connection string missing required properties {EndpointProperty} and {AccessKeyProperty}.");
         }
     }
 }
