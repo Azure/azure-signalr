@@ -425,7 +425,7 @@ namespace Microsoft.Azure.SignalR
         {
             // Category: ServiceConnection
             private static readonly Action<ILogger, Exception> _failToWrite =
-                LoggerMessage.Define(LogLevel.Error, new EventId(1, "failToWrite"), "Fail to send message to the service.");
+                LoggerMessage.Define(LogLevel.Error, new EventId(1, "FailToWrite"), "Fail to send message to the service.");
 
             private static readonly Action<ILogger, Exception> _connectionFailure =
                 LoggerMessage.Define(LogLevel.Error, new EventId(2, "ConnectionFailure"), "Fail to connect to the service.");

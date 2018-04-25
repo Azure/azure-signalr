@@ -148,20 +148,20 @@ namespace Microsoft.Azure.SignalR
 
         private bool IsInvalidStringArgument(string name, string value)
         {
-            return IsEmptyString(value, $"Null/empty string argument: {name}");
+            return IsEmptyString(value, name);
         }
 
         private bool IsInvalidListArgument(string name, IReadOnlyList<object> list)
         {
             if (list != null && list.Any()) return false;
-            _logger.LogWarning($"Null/empty list argument: {name}");
+            Log.InvalidListArgument(_logger, name);
             return true;
         }
 
-        private bool IsEmptyString(string value, string message)
+        private bool IsEmptyString(string value, string name)
         {
             if (!string.IsNullOrEmpty(value)) return false;
-            _logger.LogWarning(message);
+            Log.InvalidStringArgument(_logger, name);
             return true;
         }
 
@@ -179,6 +179,25 @@ namespace Microsoft.Azure.SignalR
         public InvocationMessage CreateInvocationMessage(string methodName, object[] args)
         {
             return new InvocationMessage(methodName, args);
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, string, Exception> _invalidStringArgument =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(1, "InvalidStringArgument"), "Null/empty string argument: {name}.");
+
+            private static readonly Action<ILogger, string, Exception> _invalidListArgument =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(2, "InvalidListArgument"), "Null/empty list argument: {name}.");
+
+            public static void InvalidStringArgument(ILogger logger, string name)
+            {
+                _invalidStringArgument(logger, name, null);
+            }
+
+            public static void InvalidListArgument(ILogger logger, string name)
+            {
+                _invalidListArgument(logger, name, null);
+            }
         }
     }
 }
