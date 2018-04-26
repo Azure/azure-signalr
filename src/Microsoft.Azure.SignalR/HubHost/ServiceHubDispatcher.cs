@@ -19,7 +19,6 @@ namespace Microsoft.Azure.SignalR
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<ServiceHubDispatcher<THub>> _logger;
         private ServiceOptions _options;
-        private HttpConnectionOptions _httpConnectionOptions;
         private IServiceEndpointUtility _serviceEndpointUtility;
         private IServiceConnectionManager _serviceConnectionManager;
         private IClientConnectionManager _clientConnectionManager;
@@ -54,32 +53,41 @@ namespace Microsoft.Azure.SignalR
 
         public void Start(ConnectionDelegate connectionDelegate)
         {
-            _httpConnectionOptions = new HttpConnectionOptions
-            {
-                Url = GetServiceUrl(),
-                AccessTokenProvider = () => Task.FromResult(_serviceEndpointUtility.GenerateServerAccessToken<THub>(_userId)),
-                Transports = HttpTransportType.WebSockets,
-                SkipNegotiation = true
-            };
-
             // Simply create a couple of connections which connect to Azure SignalR
             for (var i = 0; i < _options.ConnectionCount; i++)
             {
-                var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, this, _loggerFactory, connectionDelegate);
+                var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, this, _loggerFactory, connectionDelegate, Guid.NewGuid().ToString());
                 _serviceConnectionManager.AddServiceConnection(serviceConnection);
             }
             Log.StartingConnection(_logger, _name, _options.ConnectionCount);
             _ = _serviceConnectionManager.StartAsync();
         }
 
-        private Uri GetServiceUrl()
+        private Uri GetServiceUrl(string connectionId)
         {
-            return new Uri(_serviceEndpointUtility.GetServerEndpoint<THub>());
+            var baseUri = new UriBuilder(_serviceEndpointUtility.GetServerEndpoint<THub>());
+            var query = "cid=" + connectionId;
+            if (baseUri.Query != null && baseUri.Query.Length > 1)
+            {
+                baseUri.Query = baseUri.Query.Substring(1) + "&" + query;
+            }
+            else
+            {
+                baseUri.Query = query;
+            }
+            return baseUri.Uri;
         }
 
-        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, CancellationToken cancellationToken = default)
+        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
         {
-            var httpConnection = new HttpConnection(_httpConnectionOptions, _loggerFactory);
+            var httpConnectionOptions = new HttpConnectionOptions
+            {
+                Url = GetServiceUrl(connectionId),
+                AccessTokenProvider = () => Task.FromResult(_serviceEndpointUtility.GenerateServerAccessToken<THub>(_userId)),
+                Transports = HttpTransportType.WebSockets,
+                SkipNegotiation = true
+            };
+            var httpConnection = new HttpConnection(httpConnectionOptions, _loggerFactory);
             try
             {
                 await httpConnection.StartAsync(transferFormat);

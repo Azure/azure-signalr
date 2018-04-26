@@ -27,16 +27,18 @@ namespace Microsoft.Azure.SignalR
         private ConnectionDelegate _connectionDelegate;
         // Start reconnect after a random interval less than 1 second
         private TimeSpan ReconnectInterval => TimeSpan.FromMilliseconds(StaticRandom.Next(1000));
+        private readonly string _connectionId;
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
             IConnectionFactory connectionFactory, ILoggerFactory loggerFactory,
-            ConnectionDelegate connectionDelegate)
+            ConnectionDelegate connectionDelegate, string connectionId)
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
+            _connectionId = connectionId;
             _logger = loggerFactory.CreateLogger<ServiceConnection>();
         }
 
@@ -88,8 +90,8 @@ namespace Microsoft.Azure.SignalR
 
                 try
                 {
-                    _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary);
-                    Log.ServiceConnectionConnected(_logger, _connection.ConnectionId);
+                    _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary, _connectionId);
+                    Log.ServiceConnectionConnected(_logger, _connectionId);
                     return;
                 }
                 catch (Exception ex)
@@ -154,13 +156,13 @@ namespace Microsoft.Azure.SignalR
                     {
                         if (result.IsCanceled)
                         {
-                            Log.ReadingCanceled(_logger, _connection.ConnectionId);
+                            Log.ReadingCanceled(_logger, _connectionId);
                             break;
                         }
                         if (!buffer.IsEmpty)
                         {
                             ResetTimeoutTimer(timeoutTimer);
-                            Log.ReceivedMessage(_logger, buffer.Length, _connection.ConnectionId);
+                            Log.ReceivedMessage(_logger, buffer.Length, _connectionId);
                             while (_serviceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
                             {
                                 _ = DispatchMessage(message);
@@ -169,7 +171,7 @@ namespace Microsoft.Azure.SignalR
                         else if (result.IsCompleted)
                         {
                             // The connection is closed (reconnect)
-                            Log.ServiceConnectionClosed(_logger, _connection.ConnectionId);
+                            Log.ServiceConnectionClosed(_logger, _connectionId);
                             break;
                         }
                     }
@@ -190,7 +192,7 @@ namespace Microsoft.Azure.SignalR
                 // Fatal error: There is something wrong for the connection between SDK and service.
                 // Abort all the client connections, close the httpConnection.
                 // Only reconnect can recover.
-                Log.ConnectionDropped(_logger, _connection.ConnectionId, ex);
+                Log.ConnectionDropped(_logger, _connectionId, ex);
             }
             finally
             {
