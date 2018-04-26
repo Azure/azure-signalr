@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.SignalR
                     new Claim(ClaimTypes.NameIdentifier, userId)
                 };
             }
-            return InternalGenerateAccessToken(GetServerEndpoint(hubName), claims, lifetime ?? AccessTokenLifetime);
+            return InternalGenerateAccessToken(GetServerEndpoint(hubName, null), claims, lifetime ?? AccessTokenLifetime);
         }
 
         public string GetClientEndpoint<THub>() where THub : Hub
@@ -81,19 +82,27 @@ namespace Microsoft.Azure.SignalR
             return InternalGetEndpoint(ClientPort, "client", hubName);
         }
 
-        public string GetServerEndpoint<THub>() where THub : Hub
+        public string GetServerEndpoint<THub>(string connectionId) where THub : Hub
         {
-            return GetServerEndpoint(typeof(THub).Name);
+            return GetServerEndpoint(typeof(THub).Name, connectionId);
         }
 
-        public string GetServerEndpoint(string hubName)
+        public string GetServerEndpoint(string hubName, string connectionId)
         {
             if (string.IsNullOrEmpty(hubName))
             {
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            return InternalGetEndpoint(ServerPort, "server", hubName);
+            if (connectionId != null)
+            {
+                return (new StringBuilder(InternalGetEndpoint(ServerPort, "server", hubName))
+                    .Append("&cid=").Append(connectionId)).ToString();
+            }
+            else
+            {
+                return InternalGetEndpoint(ServerPort, "server", hubName);
+            }
         }
 
         private string InternalGetEndpoint(int port, string path, string hubName)

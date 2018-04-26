@@ -7,14 +7,15 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal partial class ServiceConnection
+    internal partial class ServiceConnection : IConnectionFactory
     {
-        private readonly IConnectionFactory _connectionFactory;
         private readonly IServiceProtocol _serviceProtocol;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
@@ -22,22 +23,42 @@ namespace Microsoft.Azure.SignalR
         // Server ping rate is 15 sec, this is 2 times that.
         private readonly TimeSpan DefaultServerTimeout = TimeSpan.FromSeconds(30);
         private readonly ConcurrentDictionary<string, string> _connectionIds = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+        private readonly string _connectionId;
+        private readonly string _serverId;
+        private readonly string _hubName;
 
         private ConnectionContext _connection;
         private ConnectionDelegate _connectionDelegate;
         // Start reconnect after a random interval less than 1 second
         private TimeSpan ReconnectInterval => TimeSpan.FromMilliseconds(StaticRandom.Next(1000));
+        private HttpConnectionOptions _httpConnectionOptions;
+        private IServiceEndpointUtility _serviceEndpointUtility;
+        private ILoggerFactory _loggerFactory;
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
-            IConnectionFactory connectionFactory, ILoggerFactory loggerFactory,
+            IServiceEndpointUtility serviceEndpointUtility,
+            string serverId,
+            string hubName,
+            ILoggerFactory loggerFactory,
             ConnectionDelegate connectionDelegate)
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
-            _connectionFactory = connectionFactory;
+            _serviceEndpointUtility = serviceEndpointUtility;
+            _serverId = serverId;
+            _hubName = hubName;
             _connectionDelegate = connectionDelegate;
+            _loggerFactory = loggerFactory;
             _logger = loggerFactory.CreateLogger<ServiceConnection>();
+            _connectionId = Guid.NewGuid().ToString();
+            _httpConnectionOptions = new HttpConnectionOptions
+            {
+                Url = new Uri(_serviceEndpointUtility.GetServerEndpoint(_hubName, _connectionId)),
+                AccessTokenProvider = () => Task.FromResult(_serviceEndpointUtility.GenerateServerAccessToken(_hubName, _serverId)),
+                Transports = HttpTransportType.WebSockets,
+                SkipNegotiation = true
+            };
         }
 
         public async Task StartAsync()
@@ -88,14 +109,8 @@ namespace Microsoft.Azure.SignalR
 
                 try
                 {
-                    _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary);
-                    // Here is a workaround for HttpConnection not setting connectionId for Websocket connection without negotiation.
-                    // Otherwise, the debug log will print 'null' for service connectionId.
-                    if (_connection.ConnectionId == null)
-                    {
-                        _connection.ConnectionId = Guid.NewGuid().ToString();
-                    }
-                    Log.ServiceConnectionConnected(_logger, _connection.ConnectionId);
+                    _connection = await ConnectAsync(TransferFormat.Binary);
+                    Log.ServiceConnectionConnected(_logger, _connectionId);
                     return;
                 }
                 catch (Exception ex)
@@ -160,13 +175,13 @@ namespace Microsoft.Azure.SignalR
                     {
                         if (result.IsCanceled)
                         {
-                            Log.ReadingCanceled(_logger, _connection.ConnectionId);
+                            Log.ReadingCanceled(_logger, _connectionId);
                             break;
                         }
                         if (!buffer.IsEmpty)
                         {
                             ResetTimeoutTimer(timeoutTimer);
-                            Log.ReceivedMessage(_logger, buffer.Length, _connection.ConnectionId);
+                            Log.ReceivedMessage(_logger, buffer.Length, _connectionId);
                             while (_serviceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
                             {
                                 _ = DispatchMessage(message);
@@ -175,7 +190,7 @@ namespace Microsoft.Azure.SignalR
                         else if (result.IsCompleted)
                         {
                             // The connection is closed (reconnect)
-                            Log.ServiceConnectionClosed(_logger, _connection.ConnectionId);
+                            Log.ServiceConnectionClosed(_logger, _connectionId);
                             break;
                         }
                     }
@@ -196,12 +211,12 @@ namespace Microsoft.Azure.SignalR
                 // Fatal error: There is something wrong for the connection between SDK and service.
                 // Abort all the client connections, close the httpConnection.
                 // Only reconnect can recover.
-                Log.ConnectionDropped(_logger, _connection.ConnectionId, ex);
+                Log.ConnectionDropped(_logger, _connectionId, ex);
             }
             finally
             {
                 timeoutTimer.Dispose();
-                await _connectionFactory.DisposeAsync(_connection);
+                await DisposeAsync(_connection);
             }
 
             await _serviceConnectionLock.WaitAsync();
@@ -426,6 +441,26 @@ namespace Microsoft.Azure.SignalR
                 // Unexpected error
                 Log.ReceivedMessageForNonExistentConnection(_logger, connectionDataMessage.ConnectionId);
             }
+        }
+
+        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, CancellationToken cancellationToken = default)
+        {
+            var httpConnection = new HttpConnection(_httpConnectionOptions, _loggerFactory);
+            try
+            {
+                await httpConnection.StartAsync(transferFormat);
+                return httpConnection;
+            }
+            catch
+            {
+                await httpConnection.DisposeAsync();
+                throw;
+            }
+        }
+
+        public Task DisposeAsync(ConnectionContext connection)
+        {
+            return ((HttpConnection)connection).DisposeAsync();
         }
     }
 }
