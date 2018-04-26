@@ -68,7 +68,7 @@ namespace Microsoft.Azure.SignalR
                 var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, this, _loggerFactory, connectionDelegate);
                 _serviceConnectionManager.AddServiceConnection(serviceConnection);
             }
-            Log.StartingConnection(_logger, _name);
+            Log.StartingConnection(_logger, _name, _options.ConnectionCount);
             _ = _serviceConnectionManager.StartAsync();
         }
 
@@ -99,12 +99,12 @@ namespace Microsoft.Azure.SignalR
 
         private static class Log
         {
-            private static readonly Action<ILogger, string, Exception> _startingConnection =
-                LoggerMessage.Define<string>(LogLevel.Information, new EventId(1, "StartingConnection"), "Staring {name}...");
+            private static readonly Action<ILogger, string, int, Exception> _startingConnection =
+                LoggerMessage.Define<string, int>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Staring {name} with {connectionNumber} connections...");
 
-            public static void StartingConnection(ILogger logger, string name)
+            public static void StartingConnection(ILogger logger, string name, int connectionNumber)
             {
-                _startingConnection(logger, name, null);
+                _startingConnection(logger, name, connectionNumber, null);
             }
         }
     }

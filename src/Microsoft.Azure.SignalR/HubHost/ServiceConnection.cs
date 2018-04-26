@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceConnection
+    internal partial class ServiceConnection
     {
         private readonly IConnectionFactory _connectionFactory;
         private readonly IServiceProtocol _serviceProtocol;
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.SignalR
             }
             catch (Exception ex)
             {
-                Log.FailToWrite(_logger, ex);
+                Log.FailedToWrite(_logger, ex);
             }
             finally
             {
@@ -89,11 +89,12 @@ namespace Microsoft.Azure.SignalR
                 try
                 {
                     _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary);
+                    Log.ServiceConnectionCreated(_logger, _connection.ConnectionId);
                     return;
                 }
                 catch (Exception ex)
                 {
-                    Log.FailToConnect(_logger, ex);
+                    Log.FailedToConnect(_logger, ex);
                     await Task.Delay(ReconnectInterval);
                 }
                 finally
@@ -153,13 +154,13 @@ namespace Microsoft.Azure.SignalR
                     {
                         if (result.IsCanceled)
                         {
-                            Log.ReadingCanceled(_logger);
+                            Log.ReadingCanceled(_logger, _connection.ConnectionId);
                             break;
                         }
                         if (!buffer.IsEmpty)
                         {
                             ResetTimeoutTimer(timeoutTimer);
-                            Log.ReceivedRequest(_logger);
+                            Log.ReceivedMessage(_logger, buffer.Length, _connection.ConnectionId);
                             while (_serviceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
                             {
                                 _ = DispatchMessage(message);
@@ -168,7 +169,7 @@ namespace Microsoft.Azure.SignalR
                         else if (result.IsCompleted)
                         {
                             // The connection is closed (reconnect)
-                            Log.ConnectionClosed(_logger);
+                            Log.ServiceConnectionClosed(_logger, _connection.ConnectionId);
                             break;
                         }
                     }
@@ -176,7 +177,7 @@ namespace Microsoft.Azure.SignalR
                     {
                         // Error occurs in handling the message, but the connection between SDK and service still works.
                         // So, just log error instead of breaking the connection
-                        Log.ErrorProcessingRequest(_logger, ex);
+                        Log.ErrorProcessingMessages(_logger, ex);
                     }
                     finally
                     {
@@ -189,7 +190,7 @@ namespace Microsoft.Azure.SignalR
                 // Fatal error: There is something wrong for the connection between SDK and service.
                 // Abort all the client connections, close the httpConnection.
                 // Only reconnect can recover.
-                Log.ConnectionDropped(_logger, ex);
+                Log.ConnectionDropped(_logger, _connection.ConnectionId, ex);
             }
             finally
             {
@@ -295,7 +296,7 @@ namespace Microsoft.Azure.SignalR
             }
             catch (Exception ex)
             {
-                Log.SendLoopStopped(_logger, ex);
+                Log.SendLoopStopped(_logger, connection.ConnectionId, ex);
             }
             finally
             {
@@ -319,7 +320,7 @@ namespace Microsoft.Azure.SignalR
         {
             var connection = new ServiceConnectionContext(message);
             AddClientConnection(connection);
-            Log.ConnectedStarting(_logger);
+            Log.ConnectedStarting(_logger, connection.ConnectionId);
 
             // Execute the application code
             connection.ApplicationTask = _connectionDelegate(connection);
@@ -365,7 +366,7 @@ namespace Microsoft.Azure.SignalR
             // Inform the Service that we will remove the client because SignalR told us it is disconnected.
             var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, "");
             await WriteAsync(serviceMessage);
-            Log.InformServiceToRemoveClient(_logger, connection.ConnectionId);
+            Log.CloseConnection(_logger, connection.ConnectionId);
         }
 
         private async Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
@@ -396,7 +397,7 @@ namespace Microsoft.Azure.SignalR
             // Close this connection gracefully then remove it from the list,
             // this will trigger the hub shutdown logic appropriately
             RemoveClientConnection(connectionId);
-            Log.ConnectedEnding(_logger);
+            Log.ConnectedEnding(_logger, connectionId);
         }
 
         private async Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)
@@ -405,183 +406,19 @@ namespace Microsoft.Azure.SignalR
             {
                 try
                 {
-                    Log.ForwardRequestToApplication(_logger);
+                    Log.WriteMessageToApplication(_logger, connectionDataMessage.ConnectionId);
                     // Write the raw connection payload to the pipe let the upstream handle it
                     await connection.Application.Output.WriteAsync(connectionDataMessage.Payload);
                 }
                 catch (Exception ex)
                 {
-                    Log.FailToForwardRequestToApplication(_logger, ex);
+                    Log.FailToWriteMessageToApplication(_logger, connectionDataMessage.ConnectionId, ex);
                 }
             }
             else
             {
                 // Unexpected error
-                Log.ReceivedReorderedRequest(_logger);
-            }
-        }
-
-        private static class Log
-        {
-            // Category: ServiceConnection
-            private static readonly Action<ILogger, Exception> _failToWrite =
-                LoggerMessage.Define(LogLevel.Error, new EventId(1, "FailToWrite"), "Fail to send message to the service.");
-
-            private static readonly Action<ILogger, Exception> _connectionFailure =
-                LoggerMessage.Define(LogLevel.Error, new EventId(2, "ConnectionFailure"), "Fail to connect to the service.");
-
-            private static readonly Action<ILogger, Exception> _errorProcessingRequest =
-                LoggerMessage.Define(LogLevel.Error, new EventId(3, "ErrorProcessingRequest"), "Error when processing requests.");
-
-            private static readonly Action<ILogger, Exception> _connectionDropped =
-                LoggerMessage.Define(LogLevel.Error, new EventId(4, "ConnectionDropped"), "Connection with the service was dropped.");
-
-            private static readonly Action<ILogger, Exception> _failToCleanupConnections =
-                LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailToCleanupConnection"), "Fail to cleanup client connections.");
-
-            private static readonly Action<ILogger, Exception> _errorSendingMessage =
-                LoggerMessage.Define(LogLevel.Error, new EventId(6, "ErrorSendingMessage"), "Error when sending message.");
-
-            private static readonly Action<ILogger, Exception> _sendLoopStopped =
-                LoggerMessage.Define(LogLevel.Error, new EventId(7, "SendLoopStopped"), "Message sending loop stops.");
-
-            private static readonly Action<ILogger, Exception> _applicationTaskFailed =
-                LoggerMessage.Define(LogLevel.Error, new EventId(8, "ApplicationTaskFailed"), "Application task failed to complete.");
-
-            private static readonly Action<ILogger, Exception> _failToForwardRequestToApplication =
-                LoggerMessage.Define(LogLevel.Error, new EventId(9, "FailToForwardRequestToApplication"), "Fail to forward request to application by writing the pipe.");
-
-            private static readonly Action<ILogger, Exception> _receivedReorderedRequest =
-                LoggerMessage.Define(LogLevel.Error, new EventId(10, "ReceivedReorderedRequest"), "Received re-ordered request.");
-
-            private static readonly Action<ILogger, Exception> _connectedStarting =
-                LoggerMessage.Define(LogLevel.Debug, new EventId(11, "ConnectedStarting"), "OnConnectedAsync started.");
-
-            private static readonly Action<ILogger, Exception> _connectedEnding =
-                LoggerMessage.Define(LogLevel.Debug, new EventId(12, "ConnectedEnding"), "OnConnectedAsync ending.");
-
-            private static readonly Action<ILogger, string, Exception> _informServiceToRemoveClient =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(13, "InformServiceToRemoveClient"), "Inform the service to remove client connection {connectionId}.");
-
-            private static readonly Action<ILogger, Exception> _connectionClosed =
-                LoggerMessage.Define(LogLevel.Debug, new EventId(14, "ConnectionClose"), "Connection is closed.");
-
-            private static readonly Action<ILogger, Exception> _readingCanceled =
-                LoggerMessage.Define(LogLevel.Debug, new EventId(15, "ReadingCanceled"), "Reading from transport pipe is canceled.");
-
-            private static readonly Action<ILogger, Exception> _receivedRequest =
-                LoggerMessage.Define(LogLevel.Debug, new EventId(16, "ReceivedRequest"), "Received request from service.");
-
-            private static readonly Action<ILogger, double, Exception> _startingServerTimeoutTimer =
-                LoggerMessage.Define<double>(LogLevel.Debug, new EventId(17, "StartingServerTimeoutTimer"), "Starting server timeout timer. Duration: {ServerTimeout:0.00}ms");
-
-            private static readonly Action<ILogger, double, Exception> _serverTimeout =
-                LoggerMessage.Define<double>(LogLevel.Error, new EventId(18, "ServerTimeout"), "Server timeout ({ServerTimeout:0.00}ms) elapsed without receiving a message from the server.");
-
-            private static readonly Action<ILogger, Exception> _resettingKeepAliveTimer =
-                LoggerMessage.Define(LogLevel.Trace, new EventId(19, "ResettingKeepAliveTimer"), "Resetting keep-alive timer, received a message from the server.");
-
-            private static readonly Action<ILogger, Exception> _forwardRequestToApplication =
-                LoggerMessage.Define(LogLevel.Trace, new EventId(20, "ForwardRequestToApplication"), "Forward request to application.");
-
-            public static void FailToWrite(ILogger logger, Exception exception)
-            {
-                _failToWrite(logger, exception);
-            }
-
-            public static void FailToConnect(ILogger logger, Exception exception)
-            {
-                _connectionFailure(logger, exception);
-            }
-
-            public static void ErrorProcessingRequest(ILogger logger, Exception exception)
-            {
-                _errorProcessingRequest(logger, exception);
-            }
-
-            public static void ConnectionDropped(ILogger logger, Exception exception)
-            {
-                _connectionDropped(logger, exception);
-            }
-
-            public static void FailToCleanupConnections(ILogger logger, Exception exception)
-            {
-                _failToCleanupConnections(logger, exception);
-            }
-
-            public static void ErrorSendingMessage(ILogger logger, Exception exception)
-            {
-                _errorSendingMessage(logger, exception);
-            }
-
-            public static void SendLoopStopped(ILogger logger, Exception exception)
-            {
-                _sendLoopStopped(logger, exception);
-            }
-
-            public static void ApplicaitonTaskFailed(ILogger logger, Exception exception)
-            {
-                _applicationTaskFailed(logger, exception);
-            }
-
-            public static void FailToForwardRequestToApplication(ILogger logger, Exception exception)
-            {
-                _failToForwardRequestToApplication(logger, exception);
-            }
-
-            public static void ReceivedReorderedRequest(ILogger logger)
-            {
-                _receivedReorderedRequest(logger, null);
-            }
-
-            public static void ConnectedStarting(ILogger logger)
-            {
-                _connectedStarting(logger, null);
-            }
-
-            public static void ConnectedEnding(ILogger logger)
-            {
-                _connectedEnding(logger, null);
-            }
-
-            public static void InformServiceToRemoveClient(ILogger logger, string connectionId)
-            {
-                _informServiceToRemoveClient(logger, connectionId, null);
-            }
-
-            public static void ConnectionClosed(ILogger logger)
-            {
-                _connectionClosed(logger, null);
-            }
-
-            public static void ReadingCanceled(ILogger logger)
-            {
-                _readingCanceled(logger, null);
-            }
-
-            public static void ReceivedRequest(ILogger logger)
-            {
-                _receivedRequest(logger, null);
-            }
-
-            public static void StartingServerTimeoutTimer(ILogger logger, TimeSpan serverTimeout)
-            {
-                _startingServerTimeoutTimer(logger, serverTimeout.TotalMilliseconds, null);
-            }
-
-            public static void ServerTimeout(ILogger logger, TimeSpan serverTimeout)
-            {
-                _serverTimeout(logger, serverTimeout.TotalMilliseconds, null);
-            }
-
-            public static void ResettingKeepAliveTimer(ILogger logger)
-            {
-                _resettingKeepAliveTimer(logger, null);
-            }
-
-            public static void ForwardRequestToApplication(ILogger logger)
-            {
-                _forwardRequestToApplication(logger, null);
+                Log.ReceivedMessageBeforeContextCreated(_logger, connectionDataMessage.ConnectionId);
             }
         }
     }
