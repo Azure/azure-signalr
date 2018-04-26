@@ -89,7 +89,7 @@ namespace Microsoft.Azure.SignalR
                 try
                 {
                     _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary);
-                    Log.ServiceConnectionCreated(_logger, _connection.ConnectionId);
+                    Log.ServiceConnectionConnected(_logger, _connection.ConnectionId);
                     return;
                 }
                 catch (Exception ex)
@@ -406,7 +406,7 @@ namespace Microsoft.Azure.SignalR
             {
                 try
                 {
-                    Log.WriteMessageToApplication(_logger, connectionDataMessage.ConnectionId);
+                    Log.WriteMessageToApplication(_logger, connectionDataMessage.Payload.Length, connectionDataMessage.ConnectionId);
                     // Write the raw connection payload to the pipe let the upstream handle it
                     await connection.Application.Output.WriteAsync(connectionDataMessage.Payload);
                 }
@@ -418,7 +418,7 @@ namespace Microsoft.Azure.SignalR
             else
             {
                 // Unexpected error
-                Log.ReceivedMessageBeforeContextCreated(_logger, connectionDataMessage.ConnectionId);
+                Log.ReceivedMessageForNonExistentConnection(_logger, connectionDataMessage.ConnectionId);
             }
         }
     }

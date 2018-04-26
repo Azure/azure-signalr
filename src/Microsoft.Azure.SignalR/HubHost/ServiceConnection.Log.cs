@@ -21,16 +21,16 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define(LogLevel.Error, new EventId(3, "ErrorProcessingMessages"), "Error when processing messages.");
 
             private static readonly Action<ILogger, string, Exception> _connectionDropped =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(4, "ConnectionDropped"), "Connection {ServiceConnectionId} with the service was dropped.");
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(4, "ConnectionDropped"), "Connection {ServiceConnectionId} to the service was dropped.");
 
             private static readonly Action<ILogger, Exception> _failToCleanupConnections =
-                LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailToCleanupConnection"), "Failed to cleanup client connections.");
+                LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailToCleanupConnection"), "Failed to clean up client connections..");
 
             private static readonly Action<ILogger, Exception> _errorSendingMessage =
                 LoggerMessage.Define(LogLevel.Error, new EventId(6, "ErrorSendingMessage"), "Error while sending message to the service.");
 
             private static readonly Action<ILogger, string, Exception> _sendLoopStopped =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, "SendLoopStopped"), "Sending loop completes for connection {TransportConnectionId}.");
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, "SendLoopStopped"), "Error while processing messages from {TransportConnectionId}.");
 
             private static readonly Action<ILogger, Exception> _applicationTaskFailed =
                 LoggerMessage.Define(LogLevel.Error, new EventId(8, "ApplicationTaskFailed"), "Application task failed.");
@@ -38,8 +38,8 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _failToWriteMessageToApplication =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(9, "FailToWriteMessageToApplication"), "Failed to write message to {TransportConnectionId}.");
 
-            private static readonly Action<ILogger, string, Exception> _receivedMessageBeforeContextCreated =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(10, "ReceivedMessageBeforeContextCreated"), "Received message sending to connection {TransportConnectionId} which has not yet been created.");
+            private static readonly Action<ILogger, string, Exception> _receivedMessageForNonExistentConnection =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(10, "ReceivedMessageForNonExistentConnection"), "Received message for connection {TransportConnectionId} which does not exist.");
 
             private static readonly Action<ILogger, string, Exception> _connectedStarting =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(11, "ConnectedStarting"), "Connection {TransportConnectionId} started.");
@@ -68,11 +68,11 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, Exception> _resettingKeepAliveTimer =
                 LoggerMessage.Define(LogLevel.Trace, new EventId(19, "ResettingKeepAliveTimer"), "Resetting keep-alive timer, received a message from the server.");
 
-            private static readonly Action<ILogger, string, Exception> _writeMessageToApplication =
-                LoggerMessage.Define<string>(LogLevel.Trace, new EventId(20, "WriteMessageToApplication"), "Write message to {TransportConnectionId}.");
+            private static readonly Action<ILogger, int, string, Exception> _writeMessageToApplication =
+                LoggerMessage.Define<int, string>(LogLevel.Trace, new EventId(20, "WriteMessageToApplication"), "Writing {ReceivedBytes} to connection {TransportConnectionId}.");
 
-            private static readonly Action<ILogger, string, Exception> _serviceConnectionCreated =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(21, "ServiceConnectionCreated"), "Service connection {ServiceConnectionId} create.");
+            private static readonly Action<ILogger, string, Exception> _serviceConnectionConnected =
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(21, "ServiceConnectionConnected"), "Service connection {ServiceConnectionId} connected.");
 
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
@@ -119,9 +119,9 @@ namespace Microsoft.Azure.SignalR
                 _failToWriteMessageToApplication(logger, connectionId, exception);
             }
 
-            public static void ReceivedMessageBeforeContextCreated(ILogger logger, string connectionId)
+            public static void ReceivedMessageForNonExistentConnection(ILogger logger, string connectionId)
             {
-                _receivedMessageBeforeContextCreated(logger, connectionId, null);
+                _receivedMessageForNonExistentConnection(logger, connectionId, null);
             }
 
             public static void ConnectedStarting(ILogger logger, string connectionId)
@@ -144,9 +144,9 @@ namespace Microsoft.Azure.SignalR
                 _serviceConnectionClosed(logger, serviceConnectionId, null);
             }
 
-            public static void ServiceConnectionCreated(ILogger logger, string serviceConnectionId)
+            public static void ServiceConnectionConnected(ILogger logger, string serviceConnectionId)
             {
-                _serviceConnectionCreated(logger, serviceConnectionId, null);
+                _serviceConnectionConnected(logger, serviceConnectionId, null);
             }
 
             public static void ReadingCanceled(ILogger logger, string serviceConnectionId)
@@ -174,9 +174,9 @@ namespace Microsoft.Azure.SignalR
                 _resettingKeepAliveTimer(logger, null);
             }
 
-            public static void WriteMessageToApplication(ILogger logger, string connectionId)
+            public static void WriteMessageToApplication(ILogger logger, int count, string connectionId)
             {
-                _writeMessageToApplication(logger, connectionId, null);
+                _writeMessageToApplication(logger, count, connectionId, null);
             }
         }
     }
