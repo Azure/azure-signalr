@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(4, "ConnectionDropped"), "Connection {ServiceConnectionId} to the service was dropped.");
 
             private static readonly Action<ILogger, Exception> _failToCleanupConnections =
-                LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailToCleanupConnection"), "Failed to clean up client connections..");
+                LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailToCleanupConnection"), "Failed to clean up client connections.");
 
             private static readonly Action<ILogger, Exception> _errorSendingMessage =
                 LoggerMessage.Define(LogLevel.Error, new EventId(6, "ErrorSendingMessage"), "Error while sending message to the service.");
