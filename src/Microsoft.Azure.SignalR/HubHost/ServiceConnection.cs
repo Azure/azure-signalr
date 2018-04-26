@@ -89,6 +89,9 @@ namespace Microsoft.Azure.SignalR
                 try
                 {
                     _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary);
+                    // Here is a workaround for HttpConnection not setting connectionId for Websocket connection without negotiation.
+                    // Otherwise, the debug log will print 'null' for service connectionId.
+                    _connection.ConnectionId = Guid.NewGuid().ToString();
                     Log.ServiceConnectionConnected(_logger, _connection.ConnectionId);
                     return;
                 }
