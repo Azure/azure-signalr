@@ -68,8 +68,7 @@ namespace Microsoft.Azure.SignalR
                 var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, this, _loggerFactory, connectionDelegate);
                 _serviceConnectionManager.AddServiceConnection(serviceConnection);
             }
-            
-            _logger.LogInformation($"Starting {_name}...");
+            Log.StartingConnection(_logger, _name, _options.ConnectionCount);
             _ = _serviceConnectionManager.StartAsync();
         }
 
@@ -81,7 +80,6 @@ namespace Microsoft.Azure.SignalR
         public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, CancellationToken cancellationToken = default)
         {
             var httpConnection = new HttpConnection(_httpConnectionOptions, _loggerFactory);
-            
             try
             {
                 await httpConnection.StartAsync(transferFormat);
@@ -97,6 +95,17 @@ namespace Microsoft.Azure.SignalR
         public Task DisposeAsync(ConnectionContext connection)
         {
             return ((HttpConnection)connection).DisposeAsync();
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, string, int, Exception> _startingConnection =
+                LoggerMessage.Define<string, int>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Staring {name} with {connectionNumber} connections...");
+
+            public static void StartingConnection(ILogger logger, string name, int connectionNumber)
+            {
+                _startingConnection(logger, name, connectionNumber, null);
+            }
         }
     }
 }

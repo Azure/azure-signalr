@@ -148,20 +148,18 @@ namespace Microsoft.Azure.SignalR
 
         private bool IsInvalidStringArgument(string name, string value)
         {
-            return IsEmptyString(value, $"Null/empty string argument: {name}");
+            return IsEmptyString(value, name);
         }
 
         private bool IsInvalidListArgument(string name, IReadOnlyList<object> list)
         {
             if (list != null && list.Any()) return false;
-            _logger.LogWarning($"Null/empty list argument: {name}");
             return true;
         }
 
-        private bool IsEmptyString(string value, string message)
+        private bool IsEmptyString(string value, string name)
         {
             if (!string.IsNullOrEmpty(value)) return false;
-            _logger.LogWarning(message);
             return true;
         }
 

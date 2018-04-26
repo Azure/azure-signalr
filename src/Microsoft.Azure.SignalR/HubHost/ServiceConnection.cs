@@ -12,19 +12,21 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceConnection
+    internal partial class ServiceConnection
     {
         private readonly IConnectionFactory _connectionFactory;
         private readonly IServiceProtocol _serviceProtocol;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
         private readonly ILogger<ServiceConnection> _logger;
-        private readonly TimeSpan DefaultServerTimeout = TimeSpan.FromSeconds(30);// Server ping rate is 15 sec, this is 2 times that.
+        // Server ping rate is 15 sec, this is 2 times that.
+        private readonly TimeSpan DefaultServerTimeout = TimeSpan.FromSeconds(30);
         private readonly ConcurrentDictionary<string, string> _connectionIds = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
 
         private ConnectionContext _connection;
         private ConnectionDelegate _connectionDelegate;
-        private TimeSpan ReconnectInterval => TimeSpan.FromMilliseconds(StaticRandom.Next(1000));// Start reconnect after a random interval less than 1 second
+        // Start reconnect after a random interval less than 1 second
+        private TimeSpan ReconnectInterval => TimeSpan.FromMilliseconds(StaticRandom.Next(1000));
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
@@ -65,11 +67,10 @@ namespace Microsoft.Azure.SignalR
                 // Write the service protocol message
                 _serviceProtocol.WriteMessage(serviceMessage, _connection.Transport.Output);
                 await _connection.Transport.Output.FlushAsync(CancellationToken.None);
-                _logger.LogDebug("Send messge to service");
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError($"Fail to send message through SDK <-> Service channel: {e.Message}");
+                Log.FailedToWrite(_logger, ex);
             }
             finally
             {
@@ -88,11 +89,12 @@ namespace Microsoft.Azure.SignalR
                 try
                 {
                     _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary);
+                    Log.ServiceConnectionConnected(_logger, _connection.ConnectionId);
                     return;
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    _logger.LogError($"Failed to connect to Azure SignalR due to error: {e.Message}");
+                    Log.FailedToConnect(_logger, ex);
                     await Task.Delay(ReconnectInterval);
                 }
                 finally
@@ -104,14 +106,14 @@ namespace Microsoft.Azure.SignalR
 
         private Timer StartTimeoutTimer()
         {
-            _logger.LogDebug("Start server timeout timer");
+            Log.StartingServerTimeoutTimer(_logger, DefaultServerTimeout);
             return new Timer(state => ((ServiceConnection)state).TimeoutElapsed(),
                     this, Timeout.Infinite, Timeout.Infinite);
         }
 
         private void ResetTimeoutTimer(Timer timeoutTimer)
         {
-            _logger.LogDebug("Reset server timeout timer");
+            Log.ResettingKeepAliveTimer(_logger);
             timeoutTimer.Change(DefaultServerTimeout, Timeout.InfiniteTimeSpan);
         }
 
@@ -129,6 +131,7 @@ namespace Microsoft.Azure.SignalR
                 if (_connection != null)
                 {
                     _connection.Transport.Input.CancelPendingRead();
+                    Log.ServerTimeout(_logger, DefaultServerTimeout);
                 }
             }
             finally
@@ -151,13 +154,13 @@ namespace Microsoft.Azure.SignalR
                     {
                         if (result.IsCanceled)
                         {
-                            _logger.LogDebug("Cancel the read from connection");
+                            Log.ReadingCanceled(_logger, _connection.ConnectionId);
                             break;
                         }
                         if (!buffer.IsEmpty)
                         {
                             ResetTimeoutTimer(timeoutTimer);
-                            _logger.LogDebug("message received from service");
+                            Log.ReceivedMessage(_logger, buffer.Length, _connection.ConnectionId);
                             while (_serviceProtocol.TryParseMessage(ref buffer, out ServiceMessage message))
                             {
                                 _ = DispatchMessage(message);
@@ -166,15 +169,15 @@ namespace Microsoft.Azure.SignalR
                         else if (result.IsCompleted)
                         {
                             // The connection is closed (reconnect)
-                            _logger.LogDebug("Connection is closed");
+                            Log.ServiceConnectionClosed(_logger, _connection.ConnectionId);
                             break;
                         }
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
                         // Error occurs in handling the message, but the connection between SDK and service still works.
                         // So, just log error instead of breaking the connection
-                        _logger.LogError($"Fail to handle message from service {e.Message}");
+                        Log.ErrorProcessingMessages(_logger, ex);
                     }
                     finally
                     {
@@ -182,12 +185,12 @@ namespace Microsoft.Azure.SignalR
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
                 // Fatal error: There is something wrong for the connection between SDK and service.
                 // Abort all the client connections, close the httpConnection.
                 // Only reconnect can recover.
-                _logger.LogError($"connection between SDK and service drops for {e.Message}");
+                Log.ConnectionDropped(_logger, _connection.ConnectionId, ex);
             }
             finally
             {
@@ -225,9 +228,9 @@ namespace Microsoft.Azure.SignalR
                 }
                 await Task.WhenAll(tasks);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError($"Error occurs in cleanup connections {e.Message}");
+                Log.FailToCleanupConnections(_logger, ex);
             }
         }
 
@@ -260,23 +263,28 @@ namespace Microsoft.Azure.SignalR
                     var buffer = result.Buffer;
                     if (!buffer.IsEmpty)
                     {
-                        // Forward the message to the service
-                        if (buffer.IsSingleSegment)
+                        try
                         {
-                            await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, buffer.First));
-                        }
-                        else
-                        {
-                            // This is a multi-segmented buffer so just write each chunk
-                            // TODO: Optimize this by doing it all under a single lock
-                            var position = buffer.Start;
-                            while (buffer.TryGet(ref position, out var memory))
+                            // Forward the message to the service
+                            if (buffer.IsSingleSegment)
                             {
-                                await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, memory));
+                                await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, buffer.First));
+                            }
+                            else
+                            {
+                                // This is a multi-segmented buffer so just write each chunk
+                                // TODO: Optimize this by doing it all under a single lock
+                                var position = buffer.Start;
+                                while (buffer.TryGet(ref position, out var memory))
+                                {
+                                    await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, memory));
+                                }
                             }
                         }
-
-                        _logger.LogDebug($"Send data message back to client through {connection.ConnectionId}");
+                        catch (Exception ex)
+                        {
+                            Log.ErrorSendingMessage(_logger, ex);
+                        }
                     }
                     else if (result.IsCompleted)
                     {
@@ -286,9 +294,9 @@ namespace Microsoft.Azure.SignalR
                     connection.Application.Input.AdvanceTo(buffer.End);
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError($"Error occurs when reading from SignalR or sending to Service: {e.Message}");
+                Log.SendLoopStopped(_logger, connection.ConnectionId, ex);
             }
             finally
             {
@@ -305,7 +313,6 @@ namespace Microsoft.Azure.SignalR
         private void RemoveClientConnection(string connectionId)
         {
             _clientConnectionManager.ClientConnections.TryRemove(connectionId, out _);
-            _logger.LogDebug($"Remove client connection {connectionId}");
             _connectionIds.TryRemove(connectionId, out _);
         }
 
@@ -313,7 +320,7 @@ namespace Microsoft.Azure.SignalR
         {
             var connection = new ServiceConnectionContext(message);
             AddClientConnection(connection);
-            _logger.LogDebug("Handle OnConnected command");
+            Log.ConnectedStarting(_logger, connection.ConnectionId);
 
             // Execute the application code
             connection.ApplicationTask = _connectionDelegate(connection);
@@ -359,7 +366,7 @@ namespace Microsoft.Azure.SignalR
             // Inform the Service that we will remove the client because SignalR told us it is disconnected.
             var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, "");
             await WriteAsync(serviceMessage);
-            _logger.LogDebug($"Inform service that client {connection.ConnectionId} should be removed");
+            Log.CloseConnection(_logger, connection.ConnectionId);
         }
 
         private async Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
@@ -384,12 +391,13 @@ namespace Microsoft.Azure.SignalR
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(0, ex, "Application failed");
+                    Log.ApplicaitonTaskFailed(_logger, ex);
                 }
             }
             // Close this connection gracefully then remove it from the list,
             // this will trigger the hub shutdown logic appropriately
             RemoveClientConnection(connectionId);
+            Log.ConnectedEnding(_logger, connectionId);
         }
 
         private async Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)
@@ -398,19 +406,19 @@ namespace Microsoft.Azure.SignalR
             {
                 try
                 {
-                    _logger.LogDebug("Send message to SignalR Hub handler");
+                    Log.WriteMessageToApplication(_logger, connectionDataMessage.Payload.Length, connectionDataMessage.ConnectionId);
                     // Write the raw connection payload to the pipe let the upstream handle it
                     await connection.Application.Output.WriteAsync(connectionDataMessage.Payload);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    _logger.LogError($"Fail to write message to application pipe: {e.Message}");
+                    Log.FailToWriteMessageToApplication(_logger, connectionDataMessage.ConnectionId, ex);
                 }
             }
             else
             {
-                _logger.LogError("Message re-ordered");
                 // Unexpected error
+                Log.ReceivedMessageForNonExistentConnection(_logger, connectionDataMessage.ConnectionId);
             }
         }
     }
