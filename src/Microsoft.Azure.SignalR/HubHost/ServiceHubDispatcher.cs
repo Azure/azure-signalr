@@ -2,7 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -10,7 +14,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceHubDispatcher<THub> where THub : Hub
+    internal class ServiceHubDispatcher<THub> : IConnectionFactory where THub : Hub
     {
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<ServiceHubDispatcher<THub>> _logger;
@@ -52,11 +56,53 @@ namespace Microsoft.Azure.SignalR
             // Simply create a couple of connections which connect to Azure SignalR
             for (var i = 0; i < _options.ConnectionCount; i++)
             {
-                var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, _serviceEndpointUtility, _userId, typeof(THub).Name, _loggerFactory, connectionDelegate);
+                var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, this, _loggerFactory, connectionDelegate, Guid.NewGuid().ToString());
                 _serviceConnectionManager.AddServiceConnection(serviceConnection);
             }
             Log.StartingConnection(_logger, _name, _options.ConnectionCount);
             _ = _serviceConnectionManager.StartAsync();
+        }
+
+        private Uri GetServiceUrl(string connectionId)
+        {
+            var baseUri = new UriBuilder(_serviceEndpointUtility.GetServerEndpoint<THub>());
+            var query = "cid=" + connectionId;
+            if (baseUri.Query != null && baseUri.Query.Length > 1)
+            {
+                baseUri.Query = baseUri.Query.Substring(1) + "&" + query;
+            }
+            else
+            {
+                baseUri.Query = query;
+            }
+            return baseUri.Uri;
+        }
+
+        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
+        {
+            var httpConnectionOptions = new HttpConnectionOptions
+            {
+                Url = GetServiceUrl(connectionId),
+                AccessTokenProvider = () => Task.FromResult(_serviceEndpointUtility.GenerateServerAccessToken<THub>(_userId)),
+                Transports = HttpTransportType.WebSockets,
+                SkipNegotiation = true
+            };
+            var httpConnection = new HttpConnection(httpConnectionOptions, _loggerFactory);
+            try
+            {
+                await httpConnection.StartAsync(transferFormat);
+                return httpConnection;
+            }
+            catch
+            {
+                await httpConnection.DisposeAsync();
+                throw;
+            }
+        }
+
+        public Task DisposeAsync(ConnectionContext connection)
+        {
+            return ((HttpConnection)connection).DisposeAsync();
         }
 
         private static class Log

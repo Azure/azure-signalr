@@ -27,8 +27,8 @@ namespace Microsoft.Azure.SignalR
 
         string GetClientEndpoint(string hubName);
 
-        string GetServerEndpoint<THub>(string connectionId) where THub : Hub;
+        string GetServerEndpoint<THub>() where THub : Hub;
 
-        string GetServerEndpoint(string hubName, string connectionId);
+        string GetServerEndpoint(string hubName);
     }
 }
