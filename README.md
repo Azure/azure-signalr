@@ -28,6 +28,9 @@ Microsoft.Azure.SignalR.Owin | .NET Framework 4.6.1 | ![MyGet](https://img.shiel
     ```powershell
     install-package Microsoft.AspNet.SignalR.Owin 
     ```
+## Building from source
+
+Run `build.cmd` or `build.sh` without arguments for a complete build including tests. See [Building documents](https://github.com/aspnet/Home/wiki/Building-from-source) for more details.
 
 ## API Reference
 
