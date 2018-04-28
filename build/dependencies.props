@@ -10,10 +10,9 @@
     <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.0.0-rc1-30656</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
     <MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>3.19.1</MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>
     <MicrosoftAzureKeyVaultPackageVersion>2.3.2</MicrosoftAzureKeyVaultPackageVersion>
-    <MicrosoftOwinPackageVersion>4.0.0</MicrosoftOwinPackageVersion>
     <SystemBuffersPackageVersion>4.5.0-rc1-26419-03</SystemBuffersPackageVersion>
     <SystemMemoryPackageVersion>4.5.0-rc1-26419-03</SystemMemoryPackageVersion>
-    <SystemIdentityModelTokensJwtPackageVersion>5.2.1</SystemIdentityModelTokensJwtPackageVersion>
+    <SystemIdentityModelTokensJwtPackageVersion>5.1.3</SystemIdentityModelTokensJwtPackageVersion>
     <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0-rc1-30656</MicrosoftExtensionsDependencyInjectionPackageVersion>
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0-rc1-30656</MicrosoftExtensionsLoggingPackageVersion>
 
