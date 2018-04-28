@@ -159,6 +159,7 @@ namespace Microsoft.Azure.SignalR
                             Log.ReadingCanceled(_logger, _connectionId);
                             break;
                         }
+                        
                         if (!buffer.IsEmpty)
                         {
                             ResetTimeoutTimer(timeoutTimer);
@@ -168,7 +169,8 @@ namespace Microsoft.Azure.SignalR
                                 _ = DispatchMessage(message);
                             }
                         }
-                        else if (result.IsCompleted)
+
+                        if (result.IsCompleted)
                         {
                             // The connection is closed (reconnect)
                             Log.ServiceConnectionClosed(_logger, _connectionId);
@@ -288,11 +290,13 @@ namespace Microsoft.Azure.SignalR
                             Log.ErrorSendingMessage(_logger, ex);
                         }
                     }
-                    else if (result.IsCompleted)
+
+                    if (result.IsCompleted)
                     {
                         // This connection ended (the application itself shut down) we should remove it from the list of connections
                         break;
                     }
+
                     connection.Application.Input.AdvanceTo(buffer.End);
                 }
             }
