@@ -9,7 +9,6 @@ This repository contains the open source subset of the .NET SDK.
 Package Name | Target Framework | Version
 ---|---|---
 Microsoft.Azure.SignalR | .NET Standard 2.0 | ![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.svg)
-Microsoft.Azure.SignalR.Owin | .NET Framework 4.6.1 | ![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.Owin.svg)
 
 ## Getting Started
 
@@ -19,15 +18,10 @@ Microsoft.Azure.SignalR.Owin | .NET Framework 4.6.1 | ![MyGet](https://img.shiel
 
 2. Add Azure SignalR package to your project.
 
-    I. For ASP.NET Core, run below command
     ```bash
     dotnet add package Microsoft.Azure.SignalR
     ```
 
-    II. For ASP.NET MVC with OWIN, run below command
-    ```powershell
-    install-package Microsoft.AspNet.SignalR.Owin 
-    ```
 
 ## API Reference
 
