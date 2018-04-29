@@ -22,6 +22,10 @@ Microsoft.Azure.SignalR | .NET Standard 2.0 | ![MyGet](https://img.shields.io/my
     dotnet add package Microsoft.Azure.SignalR
     ```
 
+## Building from source
+
+Run `build.cmd` or `build.sh` without arguments for a complete build including tests.
+See [Building documents](https://github.com/aspnet/Home/wiki/Building-from-source) for more details.
 
 ## API Reference
 
