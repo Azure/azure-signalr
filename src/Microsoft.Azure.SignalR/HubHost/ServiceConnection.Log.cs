@@ -53,8 +53,8 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _serviceConnectionClosed =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(14, "serviceConnectionClose"), "Service connection {ServiceConnectionId} closed.");
 
-            private static readonly Action<ILogger, string, Exception> _readingCanceled =
-                LoggerMessage.Define<string>(LogLevel.Trace, new EventId(15, "ReadingCanceled"), "Reading from service connection {ServiceConnectionId} cancelled.");
+            private static readonly Action<ILogger, string, Exception> _readingCancelled =
+                LoggerMessage.Define<string>(LogLevel.Trace, new EventId(15, "ReadingCancelled"), "Reading from service connection {ServiceConnectionId} cancelled.");
 
             private static readonly Action<ILogger, long, string, Exception> _receivedMessage =
                 LoggerMessage.Define<long, string>(LogLevel.Debug, new EventId(16, "ReceivedMessage"), "Received {ReceivedBytes} bytes from service {ServiceConnectionId}.");
@@ -73,6 +73,18 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, Exception> _serviceConnectionConnected =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(21, "ServiceConnectionConnected"), "Service connection {ServiceConnectionId} connected.");
+
+            private static readonly Action<ILogger, Exception> _sendingHandshakeRequest =
+                LoggerMessage.Define(LogLevel.Debug, new EventId(22, "SendingHandshakeRequest"), "Sending Handshake request to service.");
+
+            private static readonly Action<ILogger, Exception> _handshakeComplete =
+                LoggerMessage.Define(LogLevel.Debug, new EventId(23, "HandshakeComplete"), "Handshake with service completes.");
+
+            private static readonly Action<ILogger, Exception> _errorReceivingHandshakeResponse =
+                LoggerMessage.Define(LogLevel.Error, new EventId(24, "ErrorReceivingHandshakeResponse"), "Error receiving handshake response.");
+
+            private static readonly Action<ILogger, string, Exception> _handshakeError =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(25, "HandshakeError"), "Service returned handshake error: {Error}");
 
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
@@ -149,9 +161,9 @@ namespace Microsoft.Azure.SignalR
                 _serviceConnectionConnected(logger, serviceConnectionId, null);
             }
 
-            public static void ReadingCanceled(ILogger logger, string serviceConnectionId)
+            public static void ReadingCancelled(ILogger logger, string serviceConnectionId)
             {
-                _readingCanceled(logger, serviceConnectionId, null);
+                _readingCancelled(logger, serviceConnectionId, null);
             }
 
             public static void ReceivedMessage(ILogger logger, long bytes, string serviceConnectionId)
@@ -177,6 +189,26 @@ namespace Microsoft.Azure.SignalR
             public static void WriteMessageToApplication(ILogger logger, int count, string connectionId)
             {
                 _writeMessageToApplication(logger, count, connectionId, null);
+            }
+
+            public static void SendingHandshakeRequest(ILogger logger)
+            {
+                _sendingHandshakeRequest(logger, null);
+            }
+
+            public static void HandshakeComplete(ILogger logger)
+            {
+                _handshakeComplete(logger, null);
+            }
+
+            public static void ErrorReceivingHandshakeResponse(ILogger logger, Exception exception)
+            {
+                _errorReceivingHandshakeResponse(logger, exception);
+            }
+
+            public static void HandshakeError(ILogger logger, string error)
+            {
+                _handshakeError(logger, error, null);
             }
         }
     }
