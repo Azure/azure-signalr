@@ -34,6 +34,7 @@ namespace Microsoft.Azure.SignalR
         private readonly string _connectionId;
         private readonly ConnectionDelegate _connectionDelegate;
         private ConnectionContext _connection;
+        private bool _isStopped;
 
         // Start reconnect after a random interval less than 1 second
         private static TimeSpan ReconnectInterval =>
@@ -53,19 +54,22 @@ namespace Microsoft.Azure.SignalR
             _logger = loggerFactory.CreateLogger<ServiceConnection>();
         }
 
-        public async Task StartAsync(CancellationToken token = default)
+        public async Task StartAsync()
         {
-            while (true)
+            while (!_isStopped)
             {
-                if (token.IsCancellationRequested)
-                {
-                    break;
-                }
+                await StartAsyncCore();
 
-                await StartAsyncCore(token);
-
-                await ProcessIncomingAsync(token);
+                await ProcessIncomingAsync();
             }
+        }
+
+        // For test purpose only
+        internal Task StopAsync()
+        {
+            _isStopped = true;
+            _connection?.Transport.Input.CancelPendingRead();
+            return Task.CompletedTask;
         }
 
         public async Task WriteAsync(ServiceMessage serviceMessage)
@@ -96,16 +100,11 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task StartAsyncCore(CancellationToken token)
+        private async Task StartAsyncCore()
         {
             // Always try until connected
             while (true)
             {
-                if (token.IsCancellationRequested)
-                {
-                    token.ThrowIfCancellationRequested();
-                }
-
                 // Lock here in case somebody tries to send before the connection is assigned
                 await _serviceConnectionLock.WaitAsync();
 
@@ -113,7 +112,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary, _connectionId);
 
-                    await HandshakeAsync(_connection, token);
+                    await HandshakeAsync(_connection);
 
                     Log.ServiceConnectionConnected(_logger, _connectionId);
                     return;
@@ -134,7 +133,7 @@ namespace Microsoft.Azure.SignalR
                         throw;
                     }
 
-                    await Task.Delay(ReconnectInterval, token);
+                    await Task.Delay(ReconnectInterval);
                 }
                 finally
                 {
@@ -143,14 +142,13 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task HandshakeAsync(ConnectionContext connection, CancellationToken token)
+        private async Task HandshakeAsync(ConnectionContext connection)
         {
             await SendHandshakeRequestAsync(connection.Transport.Output);
 
             try
             {
-                using (var handshakeCts = new CancellationTokenSource(DefaultHandshakeTimeout))
-                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(token, handshakeCts.Token))
+                using (var cts = new CancellationTokenSource(DefaultHandshakeTimeout))
                 {
                     await ReceiveHandshakeResponseAsync(connection.Transport.Input, cts.Token);
                 }
@@ -188,6 +186,11 @@ namespace Microsoft.Azure.SignalR
 
                 try
                 {
+                    if (result.IsCanceled)
+                    {
+                        throw new InvalidOperationException("Connection cancelled before handshake complete.");
+                    }
+
                     if (!buffer.IsEmpty)
                     {
                         if (_serviceProtocol.TryParseMessage(ref buffer, out var message))
@@ -271,14 +274,14 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task ProcessIncomingAsync(CancellationToken token)
+        private async Task ProcessIncomingAsync()
         {
             var timeoutTimer = StartTimeoutTimer();
             try
             {
                 while (true)
                 {
-                    var result = await _connection.Transport.Input.ReadAsync(token);
+                    var result = await _connection.Transport.Input.ReadAsync();
                     var buffer = result.Buffer;
 
                     try

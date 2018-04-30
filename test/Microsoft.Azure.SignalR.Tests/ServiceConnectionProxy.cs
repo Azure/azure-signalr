@@ -1,7 +1,9 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
@@ -16,8 +18,6 @@ namespace Microsoft.Azure.SignalR.Tests
         private static readonly IServiceProtocol ServiceProtocol = new ServiceProtocol();
         private static readonly IInvocationBinder Binder = new InvocationBinder();
         private static readonly HubMessage Message = new InvocationMessage("target", new object[] {"argument"});
-
-        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
 
         private readonly IHubProtocol _hubProtocol;
 
@@ -53,12 +53,12 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public void Start()
         {
-            _ = ServiceConnection.StartAsync(_cts.Token);
+            _ = ServiceConnection.StartAsync();
         }
 
         public void Stop()
         {
-            _cts.Cancel();
+            _ = ServiceConnection.StopAsync();
         }
 
         public ReadOnlyMemory<byte> GetHubMessageBytes()
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 while (true)
                 {
-                    var result = await connection.Transport.Input.ReadAsync(_cts.Token);
+                    var result = await connection.Transport.Input.ReadAsync();
 
                     var buffer = result.Buffer;
                     var consumed = buffer.Start;
