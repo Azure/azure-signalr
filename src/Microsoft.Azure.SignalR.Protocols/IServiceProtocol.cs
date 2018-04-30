@@ -8,6 +8,8 @@ namespace Microsoft.Azure.SignalR.Protocol
 {
     public interface IServiceProtocol
     {
+        int Version { get; }
+
         bool TryParseMessage(ref ReadOnlySequence<byte> input, out ServiceMessage message);
 
         void WriteMessage(ServiceMessage message, IBufferWriter<byte> output);

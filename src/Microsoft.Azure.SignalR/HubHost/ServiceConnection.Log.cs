@@ -23,8 +23,8 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _connectionDropped =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(4, "ConnectionDropped"), "Connection {ServiceConnectionId} to the service was dropped.");
 
-            private static readonly Action<ILogger, Exception> _failToCleanupConnections =
-                LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailToCleanupConnection"), "Failed to clean up client connections.");
+            private static readonly Action<ILogger, Exception> _failedToCleanupConnections =
+                LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailedToCleanupConnection"), "Failed to clean up client connections.");
 
             private static readonly Action<ILogger, Exception> _errorSendingMessage =
                 LoggerMessage.Define(LogLevel.Error, new EventId(6, "ErrorSendingMessage"), "Error while sending message to the service.");
@@ -86,6 +86,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _handshakeError =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(25, "HandshakeError"), "Service returned handshake error: {Error}");
 
+            private static readonly Action<ILogger, string, Exception> _protocolVersionError =
+                LoggerMessage.Define<string>(LogLevel.Critical, new EventId(26, "ProtocolVersionError"), "Protocol version error: {Error}");
+
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
                 _failedToWrite(logger, exception);
@@ -106,9 +109,9 @@ namespace Microsoft.Azure.SignalR
                 _connectionDropped(logger, serviceConnectionId, exception);
             }
 
-            public static void FailToCleanupConnections(ILogger logger, Exception exception)
+            public static void FailedToCleanupConnections(ILogger logger, Exception exception)
             {
-                _failToCleanupConnections(logger, exception);
+                _failedToCleanupConnections(logger, exception);
             }
 
             public static void ErrorSendingMessage(ILogger logger, Exception exception)
@@ -209,6 +212,11 @@ namespace Microsoft.Azure.SignalR
             public static void HandshakeError(ILogger logger, string error)
             {
                 _handshakeError(logger, error, null);
+            }
+
+            public static void ProtocolVersionError(ILogger logger, string error)
+            {
+                _protocolVersionError(logger, error, null);
             }
         }
     }

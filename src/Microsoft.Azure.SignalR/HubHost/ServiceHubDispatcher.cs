@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly IServiceProtocol _serviceProtocol;
         private readonly string _userId;
-        private readonly string _name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
+        private static readonly string Name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
 
         public ServiceHubDispatcher(IServiceProtocol serviceProtocol,
             IServiceConnectionManager serviceConnectionManager,
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR
                 var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, this, _loggerFactory, connectionDelegate, Guid.NewGuid().ToString());
                 _serviceConnectionManager.AddServiceConnection(serviceConnection);
             }
-            Log.StartingConnection(_logger, _name, _options.ConnectionCount);
+            Log.StartingConnection(_logger, Name, _options.ConnectionCount);
             _ = _serviceConnectionManager.StartAsync();
         }
 

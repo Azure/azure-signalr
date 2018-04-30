@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -19,14 +20,13 @@ namespace Microsoft.Azure.SignalR
         // Server ping rate is 15 sec, this is 2 times that.
         private static readonly TimeSpan DefaultServerTimeout = TimeSpan.FromSeconds(30);
         private static readonly int MaximumReconnectBackoffInternalInMilliseconds = 1000;
-        // Hard-coded service protocol version because there is only one version now.
-        private static readonly HandshakeRequestMessage HandshakeRequest = new HandshakeRequestMessage(1);
 
         private readonly IConnectionFactory _connectionFactory;
         private readonly IServiceProtocol _serviceProtocol;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
         private readonly ILogger<ServiceConnection> _logger;
+        private readonly HandshakeRequestMessage _handshakeRequest;
 
         private readonly ConcurrentDictionary<string, string> _connectionIds =
             new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
@@ -45,6 +45,7 @@ namespace Microsoft.Azure.SignalR
             ConnectionDelegate connectionDelegate, string connectionId)
         {
             _serviceProtocol = serviceProtocol;
+            _handshakeRequest = new HandshakeRequestMessage(_serviceProtocol.Version);
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
@@ -52,13 +53,18 @@ namespace Microsoft.Azure.SignalR
             _logger = loggerFactory.CreateLogger<ServiceConnection>();
         }
 
-        public async Task StartAsync()
+        public async Task StartAsync(CancellationToken token = default)
         {
             while (true)
             {
-                await StartAsyncCore();
+                if (token.IsCancellationRequested)
+                {
+                    break;
+                }
 
-                await ProcessIncomingAsync();
+                await StartAsyncCore(token);
+
+                await ProcessIncomingAsync(token);
             }
         }
 
@@ -71,14 +77,14 @@ namespace Microsoft.Azure.SignalR
             if (_connection == null)
             {
                 _serviceConnectionLock.Release();
-                throw new InvalidOperationException("The connection is not active, data cannot be sent to the service");
+                throw new InvalidOperationException("The connection is not active, data cannot be sent to the service.");
             }
 
             try
             {
                 // Write the service protocol message
                 _serviceProtocol.WriteMessage(serviceMessage, _connection.Transport.Output);
-                await _connection.Transport.Output.FlushAsync(CancellationToken.None);
+                await _connection.Transport.Output.FlushAsync();
             }
             catch (Exception ex)
             {
@@ -90,29 +96,45 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task StartAsyncCore()
+        private async Task StartAsyncCore(CancellationToken token)
         {
             // Always try until connected
             while (true)
             {
+                if (token.IsCancellationRequested)
+                {
+                    token.ThrowIfCancellationRequested();
+                }
+
                 // Lock here in case somebody tries to send before the connection is assigned
                 await _serviceConnectionLock.WaitAsync();
 
                 try
                 {
-                    var startingConnection = await _connectionFactory.ConnectAsync(TransferFormat.Binary, _connectionId);
-                    
-                    await HandshakeAsync(startingConnection);
+                    _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary, _connectionId);
 
-                    _connection = startingConnection;
+                    await HandshakeAsync(_connection, token);
+
                     Log.ServiceConnectionConnected(_logger, _connectionId);
-
                     return;
                 }
                 catch (Exception ex)
                 {
                     Log.FailedToConnect(_logger, ex);
-                    await Task.Delay(ReconnectInterval);
+
+                    if (_connection != null)
+                    {
+                        await _connectionFactory.DisposeAsync(_connection);
+                        _connection = null;
+                    }
+
+                    // Do not retry when service protocol version is not supported by service.
+                    if (ex is ProtocolVersionNotSupportedException)
+                    {
+                        throw;
+                    }
+
+                    await Task.Delay(ReconnectInterval, token);
                 }
                 finally
                 {
@@ -121,15 +143,16 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task HandshakeAsync(ConnectionContext connection)
+        private async Task HandshakeAsync(ConnectionContext connection, CancellationToken token)
         {
-            await SendHandshakeRequestAsync(connection);
+            await SendHandshakeRequestAsync(connection.Transport.Output);
 
             try
             {
-                using (var cts = new CancellationTokenSource(DefaultHandshakeTimeout))
+                using (var handshakeCts = new CancellationTokenSource(DefaultHandshakeTimeout))
+                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(token, handshakeCts.Token))
                 {
-                    await ReceiveHandshakeResponseAsync(connection, cts.Token);
+                    await ReceiveHandshakeResponseAsync(connection.Transport.Input, cts.Token);
                 }
             }
             catch (Exception ex)
@@ -141,23 +164,23 @@ namespace Microsoft.Azure.SignalR
             Log.HandshakeComplete(_logger);
         }
 
-        private async Task SendHandshakeRequestAsync(ConnectionContext connection)
+        private async Task SendHandshakeRequestAsync(PipeWriter output)
         {
             Log.SendingHandshakeRequest(_logger);
 
-            _serviceProtocol.WriteMessage(HandshakeRequest, connection.Transport.Output);
-            var sendHandshakeResult = await connection.Transport.Output.FlushAsync(CancellationToken.None);
+            _serviceProtocol.WriteMessage(_handshakeRequest, output);
+            var sendHandshakeResult = await output.FlushAsync();
             if (sendHandshakeResult.IsCompleted)
             {
                 throw new InvalidOperationException("Service disconnected before handshake complete.");
             }
         }
 
-        private async Task ReceiveHandshakeResponseAsync(ConnectionContext connection, CancellationToken token)
+        private async Task ReceiveHandshakeResponseAsync(PipeReader input, CancellationToken token)
         {
             while (true)
             {
-                var result = await connection.Transport.Input.ReadAsync(token);
+                var result = await input.ReadAsync(token);
 
                 var buffer = result.Buffer;
                 var consumed = buffer.Start;
@@ -180,9 +203,19 @@ namespace Microsoft.Azure.SignalR
 
                             if (!string.IsNullOrEmpty(handshakeResponse.ErrorMessage))
                             {
-                                Log.HandshakeError(_logger, handshakeResponse.ErrorMessage);
-                                throw new InvalidOperationException(
-                                    $"Handshake with service failed due to an error: {handshakeResponse.ErrorMessage}");
+                                // TODO: use error code to make it accurate
+                                if (handshakeResponse.ErrorMessage.IndexOf("protocol version not supported",
+                                        StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    Log.ProtocolVersionError(_logger, handshakeResponse.ErrorMessage);
+                                    throw new ProtocolVersionNotSupportedException(_serviceProtocol.Version);
+                                }
+                                else
+                                {
+                                    Log.HandshakeError(_logger, handshakeResponse.ErrorMessage);
+                                    throw new InvalidOperationException(
+                                        $"Handshake with service failed due to an error: {handshakeResponse.ErrorMessage}");
+                                }
                             }
 
                             break;
@@ -192,12 +225,12 @@ namespace Microsoft.Azure.SignalR
                     if (result.IsCompleted)
                     {
                         // Not enough data, and we won't be getting any more data.
-                        throw new InvalidOperationException("Service disconnected before sending a handshake response");
+                        throw new InvalidOperationException("Service disconnected before sending a handshake response.");
                     }
                 }
                 finally
                 {
-                    connection.Transport.Input.AdvanceTo(consumed, examined);
+                    input.AdvanceTo(consumed, examined);
                 }
             }
         }
@@ -238,14 +271,14 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task ProcessIncomingAsync()
+        private async Task ProcessIncomingAsync(CancellationToken token)
         {
             var timeoutTimer = StartTimeoutTimer();
             try
             {
                 while (true)
                 {
-                    var result = await _connection.Transport.Input.ReadAsync();
+                    var result = await _connection.Transport.Input.ReadAsync(token);
                     var buffer = result.Buffer;
 
                     try
@@ -330,7 +363,7 @@ namespace Microsoft.Azure.SignalR
             }
             catch (Exception ex)
             {
-                Log.FailToCleanupConnections(_logger, ex);
+                Log.FailedToCleanupConnections(_logger, ex);
             }
         }
 
