@@ -22,57 +22,52 @@ namespace Microsoft.Azure.SignalR
             _hubMessageSender = hubMessageSender ?? throw new ArgumentNullException(nameof(hubMessageSender));
             _hubName = hubName.ToLower();
 
-            All = ClientProxyFactory.CreateAllClientsProxy(_hubMessageSender, _hubName);
+            All = new ClientProxy(hubMessageSender, $"/hub/{hubName}");
         }
 
         public IClientProxy All { get; }
 
         public IClientProxy AllExcept(IReadOnlyList<string> excludedIds)
         {
-            return ClientProxyFactory.CreateAllClientsExceptProxy(_hubMessageSender, _hubName,
-                excludedIds);
+            return new ClientProxy(_hubMessageSender, $"/hub/{_hubName}", excludedIds);
         }
 
         public IClientProxy Client(string connectionId)
         {
-            return ClientProxyFactory.CreateSingleClientProxy(_hubMessageSender, _hubName,
-                connectionId);
+            return new ClientProxy(_hubMessageSender, $"/hub/{_hubName}/connection/{connectionId}");
         }
 
         public IClientProxy Clients(IReadOnlyList<string> connectionIds)
         {
-            return ClientProxyFactory.CreateMultipleClientProxy(_hubMessageSender, _hubName,
-                connectionIds);
+            var path = $"/hub/{_hubName}/connections/{string.Join(",", connectionIds)}";
+            return new ClientProxy(_hubMessageSender, path);
         }
 
         public IClientProxy Group(string groupName)
         {
-            return ClientProxyFactory.CreateSingleGroupProxy(_hubMessageSender, _hubName,
-                groupName);
+            return new ClientProxy(_hubMessageSender, $"/hub/{_hubName}/group/{groupName}");
         }
 
         public IClientProxy Groups(IReadOnlyList<string> groupNames)
         {
-            return ClientProxyFactory.CreateMultipleGroupProxy(_hubMessageSender, _hubName,
-                groupNames);
+            var path = $"/hub/{_hubName}/groups/{string.Join(",", groupNames)}";
+            return new ClientProxy(_hubMessageSender, path);
         }
 
         public IClientProxy GroupExcept(string groupName, IReadOnlyList<string> excludeIds)
         {
-            return ClientProxyFactory.CreateSingleGroupExceptProxy(_hubMessageSender, _hubName,
-                groupName, excludeIds);
+            return new ClientProxy(_hubMessageSender, $"/hub/{_hubName}/group/{groupName}", excludeIds);
         }
 
         public IClientProxy User(string userId)
         {
-            return ClientProxyFactory.CreateSingleUserProxy(_hubMessageSender, _hubName,
-                userId);
+            return new ClientProxy(_hubMessageSender, $"/hub/{_hubName}/user/{userId}");
         }
 
         public IClientProxy Users(IReadOnlyList<string> userIds)
         {
-            return ClientProxyFactory.CreateMultipleUserProxy(_hubMessageSender, _hubName,
-                userIds);
+            var path = $"/hub/{_hubName}/users/{string.Join(",", userIds)}";
+            return new ClientProxy(_hubMessageSender, path);
         }
     }
 }
