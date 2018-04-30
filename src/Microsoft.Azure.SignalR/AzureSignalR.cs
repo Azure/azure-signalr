@@ -32,25 +32,20 @@ namespace Microsoft.Azure.SignalR
 
         private static ServiceContext InternalCreateServiceContext(string connectionString, string hubName)
         {
-            if (string.IsNullOrEmpty(hubName))
-            {
-                throw new ArgumentNullException(nameof(hubName));
-            }
-            
-            var serviceCollection = new ServiceCollection();
-            serviceCollection.AddLogging()
+            return new ServiceContext(hubName, CreateServiceProvider(connectionString));
+        }
+
+        private static ServiceProvider CreateServiceProvider(string connectionString)
+        {
+            return new ServiceCollection()
+                .AddLogging()
                 .AddAuthorization()
                 // We need to serialize the request with all protocols, that is why we add those protocols
                 .AddSignalR()
                 .AddJsonProtocol()
                 .AddMessagePackProtocol()
-                .AddAzureSignalR(connectionString);
-            var serviceProvider = serviceCollection.BuildServiceProvider();
-
-            var serviceEndpointUtility = serviceProvider.GetRequiredService<IServiceEndpointUtility>();
-            var hubMessageSender = serviceProvider.GetRequiredService<IHubMessageSender>();
-            var serviceHubContext = new ServiceHubContext(hubName, serviceEndpointUtility, hubMessageSender);
-            return new ServiceContext(hubName, serviceEndpointUtility, serviceHubContext);
+                .AddAzureSignalR(connectionString)
+                .Services.BuildServiceProvider();
         }
     }
 }
