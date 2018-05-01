@@ -58,7 +58,11 @@ namespace Microsoft.Azure.SignalR
         {
             while (!_isStopped)
             {
-                await StartAsyncCore();
+                // If we are not able to start, we will quit this connection.
+                if (!await StartAsyncCore())
+                {
+                    return;
+                }
 
                 await ProcessIncomingAsync();
             }
@@ -100,7 +104,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task StartAsyncCore()
+        private async Task<bool> StartAsyncCore()
         {
             // Always try until connected
             while (true)
@@ -112,10 +116,16 @@ namespace Microsoft.Azure.SignalR
                 {
                     _connection = await _connectionFactory.ConnectAsync(TransferFormat.Binary, _connectionId);
 
-                    await HandshakeAsync(_connection);
-
-                    Log.ServiceConnectionConnected(_logger, _connectionId);
-                    return;
+                    if (await HandshakeAsync())
+                    {
+                        Log.ServiceConnectionConnected(_logger, _connectionId);
+                        return true;
+                    }
+                    else
+                    {
+                        // False means we got a HandshakeResponseMessage with error. Will stop retry.
+                        return false;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -127,12 +137,6 @@ namespace Microsoft.Azure.SignalR
                         _connection = null;
                     }
 
-                    // Do not retry when service protocol version is not supported by service.
-                    if (ex is ProtocolVersionNotSupportedException)
-                    {
-                        throw;
-                    }
-
                     await Task.Delay(ReconnectInterval);
                 }
                 finally
@@ -142,15 +146,21 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task HandshakeAsync(ConnectionContext connection)
+        private async Task<bool> HandshakeAsync()
         {
-            await SendHandshakeRequestAsync(connection.Transport.Output);
+            await SendHandshakeRequestAsync(_connection.Transport.Output);
 
             try
             {
                 using (var cts = new CancellationTokenSource(DefaultHandshakeTimeout))
                 {
-                    await ReceiveHandshakeResponseAsync(connection.Transport.Input, cts.Token);
+                    if (await ReceiveHandshakeResponseAsync(_connection.Transport.Input, cts.Token))
+                    {
+                        Log.HandshakeComplete(_logger);
+                        return true;
+                    }
+
+                    return false;
                 }
             }
             catch (Exception ex)
@@ -158,8 +168,6 @@ namespace Microsoft.Azure.SignalR
                 Log.ErrorReceivingHandshakeResponse(_logger, ex);
                 throw;
             }
-
-            Log.HandshakeComplete(_logger);
         }
 
         private async Task SendHandshakeRequestAsync(PipeWriter output)
@@ -174,7 +182,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task ReceiveHandshakeResponseAsync(PipeReader input, CancellationToken token)
+        private async Task<bool> ReceiveHandshakeResponseAsync(PipeReader input, CancellationToken token)
         {
             while (true)
             {
@@ -204,24 +212,14 @@ namespace Microsoft.Azure.SignalR
                                     $"{message.GetType().Name} received when waiting for handshake response.");
                             }
 
-                            if (!string.IsNullOrEmpty(handshakeResponse.ErrorMessage))
+                            if (string.IsNullOrEmpty(handshakeResponse.ErrorMessage))
                             {
-                                // TODO: use error code to make it accurate
-                                if (handshakeResponse.ErrorMessage.IndexOf("protocol version not supported",
-                                        StringComparison.OrdinalIgnoreCase) >= 0)
-                                {
-                                    Log.ProtocolVersionError(_logger, handshakeResponse.ErrorMessage);
-                                    throw new ProtocolVersionNotSupportedException(_serviceProtocol.Version);
-                                }
-                                else
-                                {
-                                    Log.HandshakeError(_logger, handshakeResponse.ErrorMessage);
-                                    throw new InvalidOperationException(
-                                        $"Handshake with service failed due to an error: {handshakeResponse.ErrorMessage}");
-                                }
+                                return true;
                             }
 
-                            break;
+                            // Handshake error. Will stop reconnect.
+                            Log.HandshakeError(_logger, handshakeResponse.ErrorMessage);
+                            return false;
                         }
                     }
                     

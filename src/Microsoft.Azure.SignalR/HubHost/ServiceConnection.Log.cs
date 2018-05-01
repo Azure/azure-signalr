@@ -84,10 +84,7 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define(LogLevel.Error, new EventId(24, "ErrorReceivingHandshakeResponse"), "Error receiving handshake response.");
 
             private static readonly Action<ILogger, string, Exception> _handshakeError =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(25, "HandshakeError"), "Service returned handshake error: {Error}");
-
-            private static readonly Action<ILogger, string, Exception> _protocolVersionError =
-                LoggerMessage.Define<string>(LogLevel.Critical, new EventId(26, "ProtocolVersionError"), "Protocol version error: {Error}");
+                LoggerMessage.Define<string>(LogLevel.Critical, new EventId(25, "HandshakeError"), "Service returned handshake error: {Error}");
 
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
@@ -212,11 +209,6 @@ namespace Microsoft.Azure.SignalR
             public static void HandshakeError(ILogger logger, string error)
             {
                 _handshakeError(logger, error, null);
-            }
-
-            public static void ProtocolVersionError(ILogger logger, string error)
-            {
-                _protocolVersionError(logger, error, null);
             }
         }
     }
