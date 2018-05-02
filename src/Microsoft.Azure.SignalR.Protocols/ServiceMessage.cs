@@ -21,6 +21,10 @@ namespace Microsoft.Azure.SignalR.Protocol
     {
         public string ErrorMessage { get; set; }
 
+        public HandshakeResponseMessage() : this(string.Empty)
+        {
+        }
+
         public HandshakeResponseMessage(string errorMessage)
         {
             ErrorMessage = errorMessage;
