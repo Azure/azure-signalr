@@ -123,7 +123,12 @@ namespace Microsoft.Azure.SignalR
                     }
                     else
                     {
-                        // False means we got a HandshakeResponseMessage with error. Will stop retry.
+                        // False means we got a HandshakeResponseMessage with error. Will take below actions:
+                        // - Dispose the connection
+                        // - Stop reconnect
+                        await _connectionFactory.DisposeAsync(_connection);
+                        _connection = null;
+
                         return false;
                     }
                 }
