@@ -28,11 +28,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, Action<ServiceOptions> configure)
         {
-            builder.Services.Configure(configure);
-            return builder.AddAzureSignalRCore();
+            builder.AddAzureSignalR()
+                   .Services.Configure(configure);
+
+            return builder;
         }
 
-        public static ISignalRServerBuilder AddAzureSignalRCore(this ISignalRServerBuilder builder)
+        private static ISignalRServerBuilder AddAzureSignalRCore(this ISignalRServerBuilder builder)
         {
             builder.Services.AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManager<>));
             builder.Services.AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol));
