@@ -3,17 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.IO.Pipelines;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Xunit;
-using HandshakeRequestMessage = Microsoft.Azure.SignalR.Protocol.HandshakeRequestMessage;
-using HandshakeResponseMessage = Microsoft.Azure.SignalR.Protocol.HandshakeResponseMessage;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
