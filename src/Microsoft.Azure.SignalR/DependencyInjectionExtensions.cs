@@ -43,7 +43,6 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.AddSingleton(typeof(IServiceEndpointUtility), typeof(ServiceEndpointUtility));
             builder.Services.AddSingleton(typeof(ServiceHubDispatcher<>));
             builder.Services.AddSingleton<IHostedService, HeartBeat>();
-            builder.Services.AddSingleton(typeof(IHubMessageSender), typeof(HubMessageSender));
             return builder;
         }
     }
