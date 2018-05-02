@@ -227,7 +227,7 @@ namespace Microsoft.Azure.SignalR
                             return false;
                         }
                     }
-                    
+
                     if (result.IsCompleted)
                     {
                         // Not enough data, and we won't be getting any more data.
@@ -294,14 +294,14 @@ namespace Microsoft.Azure.SignalR
                             Log.ReadingCancelled(_logger, _connectionId);
                             break;
                         }
-                        
+
                         if (!buffer.IsEmpty)
                         {
                             ResetTimeoutTimer(timeoutTimer);
                             Log.ReceivedMessage(_logger, buffer.Length, _connectionId);
                             while (_serviceProtocol.TryParseMessage(ref buffer, out var message))
                             {
-                                _ = DispatchMessage(message);
+                                _ = DispatchMessageAsync(message);
                             }
                         }
 
@@ -373,23 +373,21 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task DispatchMessage(ServiceMessage message)
+        private Task DispatchMessageAsync(ServiceMessage message)
         {
             switch (message)
             {
                 case OpenConnectionMessage openConnectionMessage:
-                    await OnConnectedAsync(openConnectionMessage);
-                    break;
+                    return OnConnectedAsync(openConnectionMessage);
                 case CloseConnectionMessage closeConnectionMessage:
-                    await OnDisconnectedAsync(closeConnectionMessage);
-                    break;
+                    return PerformDisconnectAsync(closeConnectionMessage.ConnectionId);
                 case ConnectionDataMessage connectionDataMessage:
-                    await OnMessageAsync(connectionDataMessage);
-                    break;
+                    return OnMessageAsync(connectionDataMessage);
                 case PingMessage _:
                     // ignore ping
                     break;
             }
+            return Task.CompletedTask;
         }
 
         private async Task ProcessOutgoingMessagesAsync(ServiceConnectionContext connection)
@@ -498,21 +496,11 @@ namespace Microsoft.Azure.SignalR
             // If we aren't already aborted, we send the abort message to the service
             if (connection.AbortOnClose)
             {
-                await AbortClientConnection(connection);
+                // Inform the Service that we will remove the client because SignalR told us it is disconnected.
+                var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, errorMessage: "");
+                await WriteAsync(serviceMessage);
+                Log.CloseConnection(_logger, connection.ConnectionId);
             }
-        }
-
-        private async Task AbortClientConnection(ServiceConnectionContext connection)
-        {
-            // Inform the Service that we will remove the client because SignalR told us it is disconnected.
-            var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, "");
-            await WriteAsync(serviceMessage);
-            Log.CloseConnection(_logger, connection.ConnectionId);
-        }
-
-        private async Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
-        {
-            await PerformDisconnectAsync(closeConnectionMessage.ConnectionId);
         }
 
         private async Task PerformDisconnectAsync(string connectionId)
