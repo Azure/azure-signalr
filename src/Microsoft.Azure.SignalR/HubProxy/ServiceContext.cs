@@ -5,31 +5,44 @@ using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class ServiceContext
+    public class ServiceContext : IDisposable
     {
         private readonly string _hubName;
-        private readonly IServiceEndpointUtility _serviceEndpointUtility;
+        private readonly ServiceProvider _serviceProvider;
+        private readonly IServiceEndpointUtility _endpointUtility;
 
-        internal ServiceContext(string hubName, IServiceEndpointUtility serviceEndpointUtility, IHubContext<Hub> hubContext)
+        internal ServiceContext(string hubName, ServiceProvider serviceProvider)
         {
+            if (string.IsNullOrEmpty(hubName))
+            {
+                throw new ArgumentNullException(nameof(hubName));
+            }
+
             _hubName = hubName;
-            _serviceEndpointUtility = serviceEndpointUtility;
-            HubContext = hubContext;
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _endpointUtility = serviceProvider.GetRequiredService<IServiceEndpointUtility>();
+            HubContext = new ServiceHubContext(hubName, serviceProvider.GetRequiredService<IHubMessageSender>());
         }
 
         public IHubContext<Hub> HubContext { get; }
 
         public string GetEndpoint()
         {
-            return _serviceEndpointUtility.GetClientEndpoint(_hubName);
+            return _endpointUtility.GetClientEndpoint(_hubName);
         }
 
         public string GenerateAccessToken(IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
         {
-            return _serviceEndpointUtility.GenerateClientAccessToken(_hubName, claims, lifetime);
+            return _endpointUtility.GenerateClientAccessToken(_hubName, claims, lifetime);
+        }
+
+        public void Dispose()
+        {
+            _serviceProvider?.Dispose();
         }
     }
 }

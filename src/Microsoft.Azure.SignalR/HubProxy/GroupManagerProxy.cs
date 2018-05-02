@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,15 +12,16 @@ namespace Microsoft.Azure.SignalR
 {
     internal class GroupManagerProxy : IGroupManager
     {
-        private readonly string _baseUri;
         private readonly IHubMessageSender _hubMessageSender;
-        private readonly string _accessKey;
+        private readonly string _encodedHubName;
 
-        public GroupManagerProxy(IHubMessageSender hubMessageSender, string endpoint, string accessKey, string hubName)
+        public GroupManagerProxy(IHubMessageSender hubMessageSender, string hubName)
         {
-            _baseUri = $"{endpoint}:{ProxyConstants.Port}/api/{ProxyConstants.ApiVersion}/hub/{hubName.ToLower()}/group";
-            _hubMessageSender = hubMessageSender;
-            _accessKey = accessKey;
+            CheckNullString(hubName, nameof(hubName));
+
+            _encodedHubName = WebUtility.UrlEncode(hubName);
+            _hubMessageSender = hubMessageSender ?? throw new ArgumentNullException(nameof(hubMessageSender));
+            
         }
 
         public Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -34,18 +36,21 @@ namespace Microsoft.Azure.SignalR
 
         private Task InternalSendAsync(string connectionId, string groupName, HttpMethod method)
         {
-            var uri = $"{_baseUri}/{groupName}/connection/{connectionId}";
-            return _hubMessageSender.SendAsync(uri, GenerateAccessToken(uri), method);
+            CheckNullString(connectionId, nameof(connectionId));
+            CheckNullString(groupName, nameof(groupName));
+
+            var encodedGroupName = WebUtility.UrlEncode(groupName);
+            var encodedConnectionId = WebUtility.UrlEncode(connectionId);
+            var path = $"/hub/{_encodedHubName}/group/{encodedGroupName}/connection/{encodedConnectionId}";
+            return _hubMessageSender.SendAsync(path, method);
         }
 
-        private string GenerateAccessToken(string audience)
+        private void CheckNullString(string value, string name)
         {
-            return AuthenticationHelper.GenerateJwtBearer(
-                audience: audience,
-                claims: null,
-                expires: DateTime.UtcNow.Add(ServiceOptions.DefaultAccessTokenLifetime),
-                signingKey: _accessKey
-            );
+            if (string.IsNullOrEmpty(value))
+            {
+                throw new ArgumentNullException(name);
+            }
         }
     }
 }

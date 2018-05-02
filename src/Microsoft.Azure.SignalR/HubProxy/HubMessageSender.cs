@@ -24,40 +24,45 @@ namespace Microsoft.Azure.SignalR
 
     internal class HubMessageSender : IHubMessageSender
     {
+        private static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromSeconds(30);
+
         private readonly IHubProtocolResolver _hubProtocolResolver;
+        private readonly IServiceEndpointUtility _endpointUtility;
+        private readonly string _baseUrl;
         private readonly HttpClient _httpClient = new HttpClient();
 
-        public HubMessageSender(IHubProtocolResolver hubProtocolResolver)
+        public HubMessageSender(IServiceEndpointUtility endpointUtility, IHubProtocolResolver hubProtocolResolver)
         {
-            _hubProtocolResolver = hubProtocolResolver;
+            _endpointUtility = endpointUtility ?? throw new ArgumentNullException(nameof(endpointUtility));
+            _hubProtocolResolver = hubProtocolResolver ?? throw new ArgumentNullException(nameof(hubProtocolResolver));
+            _baseUrl = $"{_endpointUtility.Endpoint}:{ProxyConstants.Port}/api/{ProxyConstants.ApiVersion}";
         }
 
-        public Task<HttpResponseMessage> SendAsync(string url, string bearer, string method, object[] args,
+        public Task<HttpResponseMessage> SendAsync(string path, string method, object[] args,
             IReadOnlyList<string> excludedIds)
         {
-            var request = CreateHttpRequestMessage(HttpMethod.Post, url, bearer);
-            var invocationMessage = CreateInvocationMessage(method, args);
-            var payloadMessage = CreatePayloadMessage(invocationMessage, excludedIds);
-
-            // TODO: need more efficient way to send binary to service
-            request.Content = new StringContent(JsonConvert.SerializeObject(payloadMessage), Encoding.UTF8,
-                "application/json");
+            var request = CreateHttpRequestMessage(HttpMethod.Post, path);
+            var body = GetRequestBody(method, args, excludedIds);
+            request.Content = new StringContent(body, Encoding.UTF8, "application/json");
             return _httpClient.SendAsync(request);
         }
 
-        public Task<HttpResponseMessage> SendAsync(string url, string bearer, HttpMethod method)
+        public Task<HttpResponseMessage> SendAsync(string path, HttpMethod method)
         {
-            var request = CreateHttpRequestMessage(method, url, bearer);
+            var request = CreateHttpRequestMessage(method, path);
             return _httpClient.SendAsync(request);
         }
 
-        private HttpRequestMessage CreateHttpRequestMessage(HttpMethod method, string url, string bearer)
+        private HttpRequestMessage CreateHttpRequestMessage(HttpMethod method, string path)
         {
+            var url = _baseUrl + path;
             var request = new HttpRequestMessage
             {
                 Method = method,
                 RequestUri = new Uri(url)
             };
+
+            var bearer = GenerateAccessToken(url, _endpointUtility.AccessKey);
 
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
             request.Headers.Accept.Clear();
@@ -68,13 +73,9 @@ namespace Microsoft.Azure.SignalR
             return request;
         }
 
-        private InvocationMessage CreateInvocationMessage(string methodName, object[] args)
+        private string GetRequestBody(string method, object[] args, IReadOnlyList<string> excludedList)
         {
-            return new InvocationMessage(methodName, args);
-        }
-
-        private PayloadMessage CreatePayloadMessage(HubMessage message, IReadOnlyList<string> excludedList)
-        {
+            var message = new InvocationMessage(method, args);
             var payloadMessage = new PayloadMessage();
 
             if (_hubProtocolResolver.AllProtocols?.Count > 0)
@@ -95,7 +96,18 @@ namespace Microsoft.Azure.SignalR
                 payloadMessage.ExcludedList = excludedList;
             }
 
-            return payloadMessage;
+            return JsonConvert.SerializeObject(payloadMessage);
+        }
+
+        public static string GenerateAccessToken(string url, string accessKey)
+        {
+            return AuthenticationHelper.GenerateJwtBearer(
+                audience: url,
+                claims: null,
+                expires: DateTime.UtcNow.Add(DefaultAccessTokenLifetime),
+                signingKey: accessKey
+            );
         }
     }
 }
+
