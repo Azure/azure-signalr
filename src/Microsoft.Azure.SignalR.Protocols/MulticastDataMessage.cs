@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiConnectionDataMessage"/> class.
         /// </summary>
-        /// <param name="connectionList">The list of connection Ids.s</param>
+        /// <param name="connectionList">The list of connection Ids.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
         public MultiConnectionDataMessage(IReadOnlyList<string> connectionList,
             IDictionary<string, ReadOnlyMemory<byte>> payloads) : base(payloads)
