@@ -26,17 +26,9 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData("XXX")]
         public void InvalidConnectionStrings(string connectionString)
         {
-            Exception exception = null;
-            try
-            {
-                ServiceEndpointUtility.ParseConnectionString(connectionString);
-            }
-            catch (ArgumentException ex)
-            {
-                exception = ex;
-            }
+            var exception = Assert.Throws<ArgumentException>(() => 
+                ServiceEndpointUtility.ParseConnectionString(connectionString));
 
-            Assert.NotNull(exception);
             Assert.Contains("Connection string missing required properties", exception.Message);
         }
     }
