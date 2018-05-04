@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// The key which will be used to read connection string from environment variables.
         /// </summary>
-        public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
+        public static readonly string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
 
         // Default access token lifetime
         internal static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
