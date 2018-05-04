@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
@@ -17,13 +16,20 @@ namespace Microsoft.Azure.SignalR
         private const int ClientPort = 5001;
         private const int ServerPort = 5002;
 
+        private static readonly string ConnectionStringNotFound =
+            "No connection string was specified. " +
+            $"Please specify a configuration entry for {ServiceOptions.ConnectionStringDefaultKey}, " +
+            "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";
+
+        private static readonly string MissingRequiredProperty =
+            $"Connection string missing required properties {EndpointProperty} and {AccessKeyProperty}.";
+
         public ServiceEndpointUtility(IOptions<ServiceOptions> options)
         {
             var connectionString = options.Value.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new ArgumentException(
-                    $"No connection string was specified. Please specify a configuration entry for {ServiceOptions.ConnectionStringDefaultKey} or explicitly pass one using IServiceCollection.AddSignalRService(connectionString) in Startup.ConfigureServices.");
+                throw new ArgumentException(ConnectionStringNotFound);
             }
 
             AccessTokenLifetime = options.Value.AccessTokenLifetime;
@@ -63,6 +69,7 @@ namespace Microsoft.Azure.SignalR
                     new Claim(ClaimTypes.NameIdentifier, userId)
                 };
             }
+
             return InternalGenerateAccessToken(GetServerEndpoint(hubName), claims, lifetime ?? AccessTokenLifetime);
         }
 
@@ -113,18 +120,36 @@ namespace Microsoft.Azure.SignalR
             );
         }
 
-        private static (string, string) ParseConnectionString(string connectionString)
+        private static readonly char[] PropertySeparator = {';'};
+        private static readonly char[] KeyValueSeparator = {'='};
+
+        internal static (string, string) ParseConnectionString(string connectionString)
         {
-            var dict = connectionString.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(x => x.Split(new[] { '=' }, 2))
-                .ToDictionary(t => t[0].Trim().ToLower(), t => t[1].Trim(),
-                    StringComparer.OrdinalIgnoreCase);
-            if (dict.ContainsKey(EndpointProperty) && dict.ContainsKey(AccessKeyProperty))
+            var properties = connectionString.Split(PropertySeparator, StringSplitOptions.RemoveEmptyEntries);
+            if (properties.Length > 1)
             {
-                return (dict[EndpointProperty].TrimEnd('/'), dict[AccessKeyProperty]);
+                var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var property in properties)
+                {
+                    var kvp = property.Split(KeyValueSeparator, 2);
+                    if (kvp.Length != 2) continue;
+
+                    var key = kvp[0].Trim();
+                    if (dict.ContainsKey(key))
+                    {
+                        throw new ArgumentException($"Duplicate properties found in connection string: {key}.");
+                    }
+
+                    dict.Add(key, kvp[1].Trim());
+                }
+
+                if (dict.ContainsKey(EndpointProperty) && dict.ContainsKey(AccessKeyProperty))
+                {
+                    return (dict[EndpointProperty].TrimEnd('/'), dict[AccessKeyProperty]);
+                }
             }
 
-            throw new ArgumentException($"Connection string missing required properties {EndpointProperty} and {AccessKeyProperty}.");
+            throw new ArgumentException(MissingRequiredProperty);
         }
     }
 }
