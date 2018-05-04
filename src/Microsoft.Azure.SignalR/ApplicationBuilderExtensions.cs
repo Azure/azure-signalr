@@ -7,8 +7,17 @@ using Microsoft.Azure.SignalR;
 
 namespace Microsoft.AspNetCore.Builder
 {
+    /// <summary>
+    /// Extension methods for <see cref="IApplicationBuilder"/>.
+    /// </summary>
     public static class AzureSignalRApplicationBuilderExtensions
     {
+        /// <summary>
+        /// Adds Azure SignalR Service to the <see cref="IApplicationBuilder"/> request execution pipeline.
+        /// </summary>
+        /// <param name="app">The <see cref="IApplicationBuilder"/>.</param>
+        /// <param name="configure">A callback to configure the <see cref="ServiceRouteBuilder"/>.</param>
+        /// <returns>The same instance of the <see cref="IApplicationBuilder"/> for chaining.</returns>
         public static IApplicationBuilder UseAzureSignalR(this IApplicationBuilder app, Action<ServiceRouteBuilder> configure)
         {
             var routes = new RouteBuilder(app);

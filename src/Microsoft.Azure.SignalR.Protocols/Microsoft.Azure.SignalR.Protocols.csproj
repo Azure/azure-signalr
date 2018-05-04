@@ -1,11 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>.NET Standard SDK for Protocol used by Azure SignalR and Azure SignalR service.</Description>
+    <Description>.NET Standard SDK for Azure SignalR Service protocol.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <RootNamespace>Microsoft.Azure.SignalR</RootNamespace>
+    <RootNamespace>Microsoft.Azure.SignalR.Protocol</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\BinaryMessageFormatter.cs" Link="Internal\BinaryMessageFormatter.cs" />
+    <Compile Include="..\Common\BinaryMessageParser.cs" Link="Internal\BinaryMessageParser.cs" />
     <Compile Include="..\Common\MemoryBufferWriter.cs" Link="Internal\MemoryBufferWriter.cs" />
   </ItemGroup>
 

@@ -4,7 +4,7 @@
 using System;
 using System.Buffers;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR.Protocol
 {
     internal static class BinaryMessageParser
     {

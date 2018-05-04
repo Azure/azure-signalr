@@ -16,20 +16,37 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
+    /// <summary>
+    /// Maps incoming requests to <see cref="Hub"/> types.
+    /// </summary>
     public class ServiceRouteBuilder
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly RouteBuilder _routes;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceRouteBuilder"/> class.
+        /// </summary>
+        /// <param name="routes">The routes builder.</param>
         public ServiceRouteBuilder(RouteBuilder routes)
         {
             _routes = routes;
             _serviceProvider = _routes.ServiceProvider;
         }
 
+        /// <summary>
+        /// Maps incoming requests with the specified path to the specified <see cref="Hub"/> type.
+        /// </summary>
+        /// <typeparam name="THub">The <see cref="Hub"/> type to map requests to.</typeparam>
+        /// <param name="path"></param>
         public void MapHub<THub>(string path) where THub : Hub
             => MapHub<THub>(new PathString(path));
 
+        /// <summary>
+        /// Maps incoming requests with the specified path to the specified <see cref="Hub"/> type.
+        /// </summary>
+        /// <typeparam name="THub">The <see cref="Hub"/> type to map requests to.</typeparam>
+        /// <param name="path">The request path.</param>
         public void MapHub<THub>(PathString path) where THub: Hub
         {
             // find auth attributes

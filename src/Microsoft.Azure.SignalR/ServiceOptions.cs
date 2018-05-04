@@ -8,24 +8,39 @@ using Microsoft.AspNetCore.Http;
 
 namespace Microsoft.Azure.SignalR
 {
+    /// <summary>
+    /// Configurable options when using Azure SignalR Service.
+    /// </summary>
     public class ServiceOptions
     {
-        // Connection string can be passed by setting this environment variable (default key)
+        /// <summary>
+        /// The key which will be used to read connection string from environment variables.
+        /// </summary>
         public static readonly string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
 
         // Default access token lifetime
         internal static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
 
-        // The order to find connection string:
-        // 1. options
-        // 2. environment variable
-        // Throw exception if 1 and 2 fail to find it.
+        /// <summary>
+        /// Gets or sets the connection string of Azure SignalR Service instance.
+        /// </summary>
         public string ConnectionString { get; set; } = null;
 
+        /// <summary>
+        /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 5.
+        /// </summary>
         public int ConnectionCount { get; set; } = 5;
 
+        /// <summary>
+        /// Gets or sets the func to generate claims from <see cref="HttpContext" />.
+        /// The claims will be included in the auto-generated token for clients.
+        /// </summary>
         public Func<HttpContext, IEnumerable<Claim>> ClaimsProvider { get; set; } = null;
 
+        /// <summary>
+        /// Gets or sets the lifetime of auto-generated access token, which will be used to authenticate with Azure SignalR Service.
+        /// Default value is one hour.
+        /// </summary>
         public TimeSpan AccessTokenLifetime { get; set; } = DefaultAccessTokenLifetime;
     }
 }

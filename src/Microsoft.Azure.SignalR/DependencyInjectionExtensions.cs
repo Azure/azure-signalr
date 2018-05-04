@@ -10,14 +10,28 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// Extension methods for <see cref="ISignalRServerBuilder"/>.
+    /// </summary>
     public static class AzureSignalRDependencyInjectionExtensions
     {
+        /// <summary>
+        /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
+        /// </summary>
+        /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
+        /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder)
         {
             builder.Services.AddSingleton<IConfigureOptions<ServiceOptions>, ServiceOptionsSetup>();
             return builder.AddAzureSignalRCore();
         }
 
+        /// <summary>
+        /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
+        /// </summary>
+        /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
+        /// <param name="connectionString">The connection string of an Azure SignalR Service instance.</param>
+        /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, string connectionString)
         {
             return builder.AddAzureSignalR(options =>
@@ -26,6 +40,12 @@ namespace Microsoft.Extensions.DependencyInjection
             });
         }
 
+        /// <summary>
+        /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
+        /// </summary>
+        /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
+        /// <param name="configure">A callback to configure the <see cref="ServiceOptions"/>.</param>
+        /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, Action<ServiceOptions> configure)
         {
             builder.AddAzureSignalR()
@@ -36,13 +56,14 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static ISignalRServerBuilder AddAzureSignalRCore(this ISignalRServerBuilder builder)
         {
-            builder.Services.AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManager<>));
-            builder.Services.AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol));
-            builder.Services.AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager));
-            builder.Services.AddSingleton(typeof(IServiceConnectionManager), typeof(ServiceConnectionManager));
-            builder.Services.AddSingleton(typeof(IServiceEndpointUtility), typeof(ServiceEndpointUtility));
-            builder.Services.AddSingleton(typeof(ServiceHubDispatcher<>));
-            builder.Services.AddSingleton<IHostedService, HeartBeat>();
+            builder.Services
+                .AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManager<>))
+                .AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol))
+                .AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager))
+                .AddSingleton(typeof(IServiceConnectionManager), typeof(ServiceConnectionManager))
+                .AddSingleton(typeof(IServiceEndpointUtility), typeof(ServiceEndpointUtility))
+                .AddSingleton(typeof(ServiceHubDispatcher<>))
+                .AddSingleton<IHostedService, HeartBeat>();
             return builder;
         }
     }

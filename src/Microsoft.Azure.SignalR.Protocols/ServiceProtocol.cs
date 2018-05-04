@@ -12,12 +12,17 @@ using MessagePack;
 
 namespace Microsoft.Azure.SignalR.Protocol
 {
+    /// <summary>
+    /// Implements the Azure SignalR Service Protocol.
+    /// </summary>
     public class ServiceProtocol : IServiceProtocol
     {
         private static readonly int ProtocolVersion = 1;
 
+        /// <inheritdoc />
         public int Version => ProtocolVersion;
 
+        /// <inheritdoc />
         public bool TryParseMessage(ref ReadOnlySequence<byte> input, out ServiceMessage message)
         {
             if (!BinaryMessageParser.TryParseMessage(ref input, out var payload))
@@ -89,6 +94,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
+        /// <inheritdoc />
         public void WriteMessage(ServiceMessage message, IBufferWriter<byte> output)
         {
             var writer = MemoryBufferWriter.Get();
@@ -108,6 +114,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
+        /// <inheritdoc />
         public ReadOnlyMemory<byte> GetMessageBytes(ServiceMessage message)
         {
             var writer = MemoryBufferWriter.Get();
