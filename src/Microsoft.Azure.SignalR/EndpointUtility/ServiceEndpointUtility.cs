@@ -123,7 +123,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly char[] PropertySeparator = {';'};
         private static readonly char[] KeyValueSeparator = {'='};
 
-        private static (string, string) ParseConnectionString(string connectionString)
+        internal static (string, string) ParseConnectionString(string connectionString)
         {
             var properties = connectionString.Split(PropertySeparator, StringSplitOptions.RemoveEmptyEntries);
             if (properties.Length > 1)
@@ -133,12 +133,14 @@ namespace Microsoft.Azure.SignalR
                 {
                     var kvp = property.Split(KeyValueSeparator, 2);
                     if (kvp.Length != 2) continue;
-                    if (dict.ContainsKey(kvp[0]))
+
+                    var key = kvp[0].Trim();
+                    if (dict.ContainsKey(key))
                     {
-                        throw new ArgumentException($"Duplicate properties found in connection string: {kvp[0]}.");
+                        throw new ArgumentException($"Duplicate properties found in connection string: {key}.");
                     }
 
-                    dict.Add(kvp[0].Trim(), kvp[1].Trim());
+                    dict.Add(key, kvp[1].Trim());
                 }
 
                 if (dict.ContainsKey(EndpointProperty) && dict.ContainsKey(AccessKeyProperty))
