@@ -27,15 +27,15 @@ You can find samples on how to use Azure SignalR Service at [here](https://githu
 
 ## REST API support
 
-Azure SignalR Service provides a set of REST API, so that you can send messages to the connected clients from anywhere using any programming language or any REST client such as [Postman](https://www.getpostman.com/). REST API definition is described in [this swagger file](docs/swagger.json).
+Azure SignalR Service provides a set of REST APIs, so that you can send messages to the connected clients from anywhere using any programming language or any REST client such as [Postman](https://www.getpostman.com/). REST APIs' definition is described in [this swagger file](docs/swagger.json).
 
 ### Port
 
-REST API is only exposed on port `5002`.
+REST APIs are only exposed on port `5002`.
 
 ### Authentication
 
-In each HTTP request, an authorization header wirh a [JSON Web Token (JWT)](https://en.wikipedia.org/wiki/JSON_Web_Token) is required to authenticate with Azure SignalR Service.
+In each HTTP request, an authorization header with a [JSON Web Token (JWT)](https://en.wikipedia.org/wiki/JSON_Web_Token) is required to authenticate with Azure SignalR Service.
 
 #### Signing Algorithm and Signature
 
