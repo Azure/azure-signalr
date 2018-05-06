@@ -33,7 +33,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/HubMessage"
+                            "$ref": "#/definitions/Message"
                         }
                     }
                 ],
@@ -72,7 +72,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/HubMessage"
+                            "$ref": "#/definitions/Message"
                         }
                     }
                 ],
@@ -104,7 +104,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/HubMessage"
+                            "$ref": "#/definitions/Message"
                         }
                     }
                 ],
@@ -143,7 +143,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/HubMessage"
+                            "$ref": "#/definitions/Message"
                         }
                     }
                 ],
@@ -182,7 +182,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/HubMessage"
+                            "$ref": "#/definitions/Message"
                         }
                     }
                 ],
@@ -195,17 +195,20 @@
         }
     },
     "definitions": {
-        "HubMessage": {
+        "Message": {
             "type": "object",
+            "description": "Method invocation message.",
             "properties": {
                 "target": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Target method name."
                 },
                 "arguments": {
                     "type": "array",
                     "items": {
                         "type": "object"
-                    }
+                    },
+                    "description": "Target method arguments."
                 }
             }
         }
