@@ -9,6 +9,7 @@ This repository contains the open source subset of the .NET SDK.
 Package Name | Target Framework | Version
 ---|---|---
 Microsoft.Azure.SignalR | .NET Standard 2.0 | ![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.svg)
+Microsoft.Azure.SignalR.Protocols | .NET Standard 2.0 | ![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.Protocols.svg)
 
 ## Getting Started
 
@@ -22,16 +23,44 @@ Microsoft.Azure.SignalR | .NET Standard 2.0 | ![MyGet](https://img.shields.io/my
     dotnet add package Microsoft.Azure.SignalR
     ```
 
-## Building from source
+You can find samples on how to use Azure SignalR Service at [here](https://github.com/aspnet/AzureSignalR-samples/).
+
+## REST API support
+
+Azure SignalR Service provides a set of REST API, so that you can send messages to the connected clients from anywhere using any programming language or any REST client such as [Postman](https://www.getpostman.com/). REST API definition is described in [this swagger file](docs/swagger.json).
+
+### Port
+
+REST API is only exposed on port `5002`.
+
+### Authentication
+
+In each HTTP request, an authorization header wirh a [JSON Web Token (JWT)](https://en.wikipedia.org/wiki/JSON_Web_Token) is required to authenticate with Azure SignalR Service.
+
+#### Signing Algorithm and Signature
+
+`HS256`, namely HMAC-SHA256, is used as the signing algorithm.
+
+You should use the `AccessKey` in Azure SignalR Service instance's connection string to sign the generated JWT token.
+
+#### Claims
+
+`aud` (audience) and `exp`(expiration time) are required claims in the JWT token.
+- The `aud` claim should be exactly the same as your HTTP request url, trailing slash and query paramters not included. For example, a broadcast request's audience should look like as below:
+
+    ```
+    https://example.service.signalr.net:5002/api/v1-preview/hub/myhub
+    ```
+
+## Developer Getting Started
+
+### Building from source
 
 Run `build.cmd` or `build.sh` without arguments for a complete build including tests.
 See [Building documents](https://github.com/aspnet/Home/wiki/Building-from-source) for more details.
 
-## API Reference
 
-Detailed API Reference is at [here](./docs/api-reference.md).
-
-## Contributing
+### Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
