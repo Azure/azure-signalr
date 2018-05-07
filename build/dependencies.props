@@ -5,26 +5,26 @@
   <PropertyGroup Label="Package Versions">
     <!-- Azure SignalR -->
     <MessagePackPackageVersion>1.7.3.4</MessagePackPackageVersion>
-    <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0-rc1-30677</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
-    <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0-rc1-30677</MicrosoftAspNetCoreSignalRPackageVersion>
-    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.0.0-rc1-30677</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
+    <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0-rc1-final</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
+    <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0-rc1-final</MicrosoftAspNetCoreSignalRPackageVersion>
     <MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>3.19.1</MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>
     <MicrosoftAzureKeyVaultPackageVersion>2.3.2</MicrosoftAzureKeyVaultPackageVersion>
-    <SystemBuffersPackageVersion>4.5.0-rc1-26423-06</SystemBuffersPackageVersion>
-    <SystemMemoryPackageVersion>4.5.0-rc1-26423-06</SystemMemoryPackageVersion>
+    <SystemBuffersPackageVersion>4.5.0-rc1</SystemBuffersPackageVersion>
+    <SystemMemoryPackageVersion>4.5.0-rc1</SystemMemoryPackageVersion>
     <SystemIdentityModelTokensJwtPackageVersion>5.2.1</SystemIdentityModelTokensJwtPackageVersion>
-    <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0-rc1-30677</MicrosoftExtensionsDependencyInjectionPackageVersion>
-    <MicrosoftExtensionsLoggingPackageVersion>2.1.0-rc1-30677</MicrosoftExtensionsLoggingPackageVersion>
+    <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0-rc1-final</MicrosoftExtensionsDependencyInjectionPackageVersion>
+    <MicrosoftExtensionsLoggingPackageVersion>2.1.0-rc1-final</MicrosoftExtensionsLoggingPackageVersion>
 
     <!-- Samples -->
-    <MicrosoftAspNetCorePackageVersion>2.1.0-rc1-30677</MicrosoftAspNetCorePackageVersion>
+    <MicrosoftAspNetCorePackageVersion>2.1.0-rc1-final</MicrosoftAspNetCorePackageVersion>
     <NewtonsoftJsonPackageVersion>11.0.2</NewtonsoftJsonPackageVersion>
 
     <!--Testing -->
+    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.0.0-rc1-final</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
     <MicrosoftNETTestSdkPackageVersion>15.6.1</MicrosoftNETTestSdkPackageVersion>
     <MoqPackageVersion>4.7.49</MoqPackageVersion>
     <XunitPackageVersion>2.3.1</XunitPackageVersion>
-    <XunitRunnerVisualStudioPackageVersion>2.4.0-beta.1.build3945</XunitRunnerVisualStudioPackageVersion>
+    <XunitRunnerVisualStudioPackageVersion>2.4.0-beta.1.build3958</XunitRunnerVisualStudioPackageVersion>
   </PropertyGroup>
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition=" '$(DotNetPackageVersionPropsPath)' != '' " />
 </Project>
