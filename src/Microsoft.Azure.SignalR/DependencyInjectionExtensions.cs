@@ -48,8 +48,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, Action<ServiceOptions> configure)
         {
-            builder.AddAzureSignalR()
-                   .Services.Configure(configure);
+            builder.Services.Configure(configure);
+            builder.AddAzureSignalR();
+
 
             return builder;
         }
