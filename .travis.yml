@@ -1,0 +1,15 @@
+language: csharp
+branches:
+  only:
+  - dev
+dist: trusty
+mono: none
+os:
+- linux
+- osx
+addons:
+  apt:
+    packages:
+    - libunwind8
+script:
+- ./build.sh --ci
