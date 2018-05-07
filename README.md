@@ -12,16 +12,12 @@ Travis: [![travis](https://travis-ci.org/Azure/azure-signalr.svg?branch=dev)](ht
 
 Package Name | Target Framework | Version
 ---|---|---
-Microsoft.Azure.SignalR | .NET Standard 2.0 | ![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.svg)
-Microsoft.Azure.SignalR.Protocols | .NET Standard 2.0 | ![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.Protocols.svg)
+Microsoft.Azure.SignalR | .NET Standard 2.0 | ![MyGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.svg)
+Microsoft.Azure.SignalR.Protocols | .NET Standard 2.0 | ![MyGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Protocols.svg)
 
 ## Getting Started
 
-1. Add below MyGet feed URL as a package source in your `NuGet.config`.
-
-    `https://www.myget.org/F/azure-signalr-dev/api/v3/index.json`
-
-2. Add Azure SignalR package to your project.
+Add Azure SignalR package to your project.
 
     ```bash
     dotnet add package Microsoft.Azure.SignalR
