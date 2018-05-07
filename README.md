@@ -4,6 +4,10 @@ Microsoft Azure SignalR SDK for .NET helps you to instantly build Azure applicat
 
 This repository contains the open source subset of the .NET SDK.
 
+## Build Status
+
+Travis: [![travis](https://travis-ci.org/Azure/azure-signalr.svg?branch=dev)](https://travis-ci.org/Azure/azure-signalr)
+
 ## Nuget Packages
 
 Package Name | Target Framework | Version
