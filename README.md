@@ -19,9 +19,9 @@ Microsoft.Azure.SignalR.Protocols | .NET Standard 2.0 | ![NuGet](https://img.shi
 
 Add Azure SignalR package to your project.
 
-    ```bash
-    dotnet add package Microsoft.Azure.SignalR
-    ```
+```bash
+dotnet add package Microsoft.Azure.SignalR
+```
 
 You can find samples on how to use Azure SignalR Service at [here](https://github.com/aspnet/AzureSignalR-samples/).
 
