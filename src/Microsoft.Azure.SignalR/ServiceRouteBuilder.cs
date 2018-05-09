@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR
         /// Maps incoming requests with the specified path to the specified <see cref="Hub"/> type.
         /// </summary>
         /// <typeparam name="THub">The <see cref="Hub"/> type to map requests to.</typeparam>
-        /// <param name="path"></param>
+        /// <param name="path">The request path.</param>
         public void MapHub<THub>(string path) where THub : Hub
             => MapHub<THub>(new PathString(path));
 
