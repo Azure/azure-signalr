@@ -9,6 +9,8 @@ namespace Microsoft.Azure.SignalR
     {
         void AddClientConnection(ServiceConnectionContext clientConnection);
 
+        void RemoveClientConnection(string connectionId);
+
         ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections { get; }
     }
 }

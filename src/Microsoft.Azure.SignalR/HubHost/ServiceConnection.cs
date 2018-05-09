@@ -451,7 +451,7 @@ namespace Microsoft.Azure.SignalR
 
         private void RemoveClientConnection(string connectionId)
         {
-            _clientConnectionManager.ClientConnections.TryRemove(connectionId, out _);
+            _clientConnectionManager.RemoveClientConnection(connectionId);
             _connectionIds.TryRemove(connectionId, out _);
         }
 
