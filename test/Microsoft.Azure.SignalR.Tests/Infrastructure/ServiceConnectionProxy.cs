@@ -89,7 +89,7 @@ namespace Microsoft.Azure.SignalR.Tests
             },
             null);
 
-            return tcs.Task; ;
+            return tcs.Task;
         }
 
         public void AddClientConnection(ServiceConnectionContext clientConnection)
