@@ -17,6 +17,11 @@ namespace Microsoft.Azure.SignalR
             ClientConnections[clientConnection.ConnectionId] = clientConnection;
         }
 
+        public void RemoveClientConnection(string connectionId)
+        {
+            ClientConnections.TryRemove(connectionId, out _);
+        }
+
         public ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections { get; }
     }
 }

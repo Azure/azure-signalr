@@ -29,9 +29,14 @@ namespace Microsoft.Azure.SignalR
         {
             ConnectionId = serviceMessage.ConnectionId;
             User = new ClaimsPrincipal();
-            if (serviceMessage.Claims != null)
+            if (serviceMessage.Claims?.Length > 0)
             {
                 User.AddIdentity(new ClaimsIdentity(serviceMessage.Claims, "Bearer"));
+            }
+            else
+            {
+                // Anonymous
+                User.AddIdentity(new ClaimsIdentity());
             }
 
             // Create the Duplix Pipeline for the virtual connection
