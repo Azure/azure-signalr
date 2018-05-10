@@ -10,7 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class AuthenticationHelper
+    internal static class AuthenticationHelper
     {
         private static readonly JwtSecurityTokenHandler JwtTokenHandler = new JwtSecurityTokenHandler();
 
