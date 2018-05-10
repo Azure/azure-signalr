@@ -30,18 +30,24 @@ namespace Microsoft.Azure.SignalR.Tests
 
             Assert.Empty(proxy.ClientConnectionManager.ClientConnections);
 
+            // Wait for the connection to appear, we need to do this before
+            // sending the message to avoid races
+            var connection1Task = proxy.WaitForConnectionAsync(connectionId1);
+
             // Create a new client connection
             await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId1, null));
 
-            // Wait for the connection to appear
-            var connection1 = await proxy.WaitForConnectionAsync(connectionId1).OrTimeout();
+            var connection1 = await connection1Task.OrTimeout();
 
             Assert.Single(proxy.ClientConnectionManager.ClientConnections);
+
+            // Wait for the connection to appear
+            var connectionTask2 = proxy.WaitForConnectionAsync(connectionId2);
 
             // Create another client connection
             await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId2, null));
 
-            var connection2 = await proxy.WaitForConnectionAsync(connectionId2).OrTimeout();
+            var connection2 = await connectionTask2.OrTimeout();
 
             Assert.Equal(2, proxy.ClientConnectionManager.ClientConnections.Count);
 
@@ -52,17 +58,21 @@ namespace Microsoft.Azure.SignalR.Tests
 
             Assert.Equal("Hello", Encoding.ASCII.GetString(item));
 
+            var connection1CloseTask = proxy.WaitForConnectionCloseAsync(connectionId1);
+
             // Close client 1
             await proxy.WriteMessageAsync(new CloseConnectionMessage(connectionId1, null));
 
-            await proxy.WaitForConnectionCloseAsync(connectionId1).OrTimeout();
+            await connection1CloseTask.OrTimeout();
 
             Assert.Single(proxy.ClientConnectionManager.ClientConnections);
 
             // Close client 2
+            var connection2CloseTask = proxy.WaitForConnectionCloseAsync(connectionId2);
+
             await proxy.WriteMessageAsync(new CloseConnectionMessage(connectionId2, null));
 
-            await proxy.WaitForConnectionCloseAsync(connectionId2).OrTimeout();
+            await connection2CloseTask.OrTimeout();
 
             Assert.Empty(proxy.ClientConnectionManager.ClientConnections);
 
