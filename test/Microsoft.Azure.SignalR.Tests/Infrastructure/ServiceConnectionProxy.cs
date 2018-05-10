@@ -23,20 +23,20 @@ namespace Microsoft.Azure.SignalR.Tests
         private static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(5);
         private static readonly IServiceProtocol _serviceProtocol = new ServiceProtocol();
 
-        public IConnectionFactory ConnectionFactory { get; }
+        private IConnectionFactory ConnectionFactory { get; }
 
         public IClientConnectionManager ClientConnectionManager { get; }
 
-        private TestConnection ConnectionContext { get; }
+        public TestConnection ConnectionContext { get; }
 
-        public ServiceConnection ServiceConnection { get; }
+        private ServiceConnection ServiceConnection { get; }
 
         public ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
 
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
 
-        public ServiceConnectionProxy()
+        public ServiceConnectionProxy(ConnectionDelegate callback = null)
         {
             ConnectionContext = new TestConnection();
             ConnectionFactory = new TestConnectionFactory(ConnectionContext);
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 this,
                 ConnectionFactory,
                 NullLoggerFactory.Instance,
-                OnConnectionAsync,
+                callback ?? OnConnectionAsync,
                 Guid.NewGuid().ToString("N"));
         }
 
