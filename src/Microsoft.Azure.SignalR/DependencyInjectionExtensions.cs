@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManager<>))
                 .AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol))
                 .AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager))
-                .AddSingleton(typeof(IServiceConnectionManager), typeof(ServiceConnectionManager))
+                .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
                 .AddSingleton(typeof(IServiceEndpointUtility), typeof(ServiceEndpointUtility))
                 .AddSingleton(typeof(ServiceHubDispatcher<>))
                 .AddSingleton<IHostedService, HeartBeat>();

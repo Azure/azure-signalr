@@ -18,10 +18,10 @@ namespace Microsoft.Azure.SignalR
         private readonly ILogger<ServiceLifetimeManager<THub>> _logger;
         private readonly IReadOnlyList<IHubProtocol> _allProtocols;
 
-        private readonly IServiceConnectionManager _serviceConnectionManager;
+        private readonly IServiceConnectionManager<THub> _serviceConnectionManager;
         private readonly IClientConnectionManager _clientConnectionManager;
 
-        public ServiceLifetimeManager(IServiceConnectionManager serviceConnectionManager,
+        public ServiceLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
             IHubProtocolResolver protocolResolver, ILogger<ServiceLifetimeManager<THub>> logger)
         {
