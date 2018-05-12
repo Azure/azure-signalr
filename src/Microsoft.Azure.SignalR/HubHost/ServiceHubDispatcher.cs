@@ -20,14 +20,14 @@ namespace Microsoft.Azure.SignalR
         private readonly ILogger<ServiceHubDispatcher<THub>> _logger;
         private readonly ServiceOptions _options;
         private readonly IServiceEndpointUtility _serviceEndpointUtility;
-        private readonly IServiceConnectionManager _serviceConnectionManager;
+        private readonly IServiceConnectionManager<THub> _serviceConnectionManager;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly IServiceProtocol _serviceProtocol;
         private readonly string _userId;
         private static readonly string Name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
 
         public ServiceHubDispatcher(IServiceProtocol serviceProtocol,
-            IServiceConnectionManager serviceConnectionManager,
+            IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
             IServiceEndpointUtility serviceEndpointUtility,
             IOptions<ServiceOptions> options,

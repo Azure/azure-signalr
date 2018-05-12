@@ -4,11 +4,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceConnectionManager : IServiceConnectionManager
+    internal class ServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
     {
         private readonly List<ServiceConnection> _serviceConnections = new List<ServiceConnection>();
 

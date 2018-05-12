@@ -4,6 +4,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -32,6 +33,7 @@ namespace ChatSample
             app.UseAzureSignalR(routes =>
             {
                 routes.MapHub<Chat>("/chat");
+                routes.MapHub<NotificationHub>("/notifications");
             });
         }
     }
