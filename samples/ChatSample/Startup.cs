@@ -33,6 +33,7 @@ namespace ChatSample
             app.UseAzureSignalR(routes =>
             {
                 routes.MapHub<Chat>("/chat");
+                routes.MapHub<NotificationHub>("/notifications");
             });
         }
     }
