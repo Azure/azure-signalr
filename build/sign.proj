@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="SignFiles" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Import Project="..\Directory.Build.props" />
+  
+  <PropertyGroup>
+    <NuGetPackagesDir Condition=" '$(NuGetPackagesDir)' == '' ">$(UserProfile)\.nuget\packages</NuGetPackagesDir>
+    <MicroBuildCorePackageVersion>0.2.0</MicroBuildCorePackageVersion>
+    <MicroBuildPropsAndTargetsPath>$(NuGetPackagesDir)\microbuild.core\$(MicroBuildCorePackageVersion)\build\</MicroBuildPropsAndTargetsPath>    
+  </PropertyGroup>
+  
+  <Import Project="$(MicroBuildPropsAndTargetsPath)MicroBuild.Core.props" />
+
+  <!-- This will be overridden if we're building with MicroBuild. -->
+  <Target Name="SignFiles">
+    <Message Text="Fake sign target.  Would sign: @(FilesToSign)" />
+  </Target>
+
+  <Target Name="SignPackages" DependsOnTargets="_GetSignPackages;SignFiles" />
+  
+  <Target Name="_GetSignPackages">
+    <PropertyGroup>
+      <!-- The OutDir and IntermediateOutputPath properties are required by MicroBuild. MicroBuild only
+           signs files that are under these paths. -->
+      <OutDir>$(RepositoryRoot)\</OutDir>
+      <IntermediateOutputPath>$(RepositoryRoot)\artifacts\build</IntermediateOutputPath>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <!-- Adding the assemblies to sign -->
+      <FilesToSign Include="$(OutDir)artifacts\build\*.nupkg">
+        <Authenticode>NuGet</Authenticode>
+      </FilesToSign>
+    </ItemGroup>
+  </Target>
+
+  <Import Project="$(MicroBuildPropsAndTargetsPath)MicroBuild.Core.targets" />
+</Project>
