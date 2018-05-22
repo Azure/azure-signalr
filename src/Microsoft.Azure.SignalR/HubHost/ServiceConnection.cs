@@ -249,14 +249,14 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private Timer StartKeepAliveTimer()
+        private TimerAwaitable StartKeepAliveTimer()
         {
             Log.StartingKeepAliveTimer(_logger, DefaultKeepAliveInterval);
 
             _lastReceiveTimestamp = Stopwatch.GetTimestamp();
+            var timer = new TimerAwaitable(DefaultKeepAliveInterval, DefaultKeepAliveInterval);
+            _ = KeepAliveAsync(timer);
 
-            var timer = new Timer(TimeoutElapsed);
-            timer.Change(DefaultKeepAliveInterval, Timeout.InfiniteTimeSpan);
             return timer;
         }
 
@@ -265,20 +265,25 @@ namespace Microsoft.Azure.SignalR
             Interlocked.Exchange(ref _lastReceiveTimestamp, Stopwatch.GetTimestamp());
         }
 
-        private void TimeoutElapsed(object state)
+        private async Task KeepAliveAsync(TimerAwaitable timer)
         {
-            if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastReceiveTimestamp) > DefaultServiceTimeoutTicks)
+            using (timer)
             {
-                AbortConnection();
-                return;
+                timer.Start();
+
+                while (await timer)
+                {
+                    if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastReceiveTimestamp) > DefaultServiceTimeoutTicks)
+                    {
+                        AbortConnection();
+                        // We shouldn't get here twice.
+                        continue;
+                    }
+
+                    // Send PingMessage to Service
+                    await TrySendPingAsync();
+                }
             }
-
-            // Send PingMessage to Service
-            _ = TrySendPingAsync();
-
-            Log.ResettingKeepAliveTimer(_logger);
-            var timer = (Timer) state;
-            timer.Change(DefaultKeepAliveInterval, Timeout.InfiniteTimeSpan);
         }
 
         private void AbortConnection()
@@ -385,7 +390,7 @@ namespace Microsoft.Azure.SignalR
             }
             finally
             {
-                keepAliveTimer.Dispose();
+                keepAliveTimer.Stop();
                 await _connectionFactory.DisposeAsync(_connection);
             }
 

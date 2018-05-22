@@ -65,32 +65,29 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, double, Exception> _serviceTimeout =
                 LoggerMessage.Define<double>(LogLevel.Error, new EventId(18, "ServiceTimeout"), "Service timeout. {ServiceTimeout:0.00}ms elapsed without receiving a message from service.");
 
-            private static readonly Action<ILogger, Exception> _resettingKeepAliveTimer =
-                LoggerMessage.Define(LogLevel.Trace, new EventId(19, "ResettingKeepAliveTimer"), "Resetting keep-alive timer.");
-
             private static readonly Action<ILogger, int, string, Exception> _writeMessageToApplication =
-                LoggerMessage.Define<int, string>(LogLevel.Trace, new EventId(20, "WriteMessageToApplication"), "Writing {ReceivedBytes} to connection {TransportConnectionId}.");
+                LoggerMessage.Define<int, string>(LogLevel.Trace, new EventId(19, "WriteMessageToApplication"), "Writing {ReceivedBytes} to connection {TransportConnectionId}.");
 
             private static readonly Action<ILogger, string, Exception> _serviceConnectionConnected =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(21, "ServiceConnectionConnected"), "Service connection {ServiceConnectionId} connected.");
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(20, "ServiceConnectionConnected"), "Service connection {ServiceConnectionId} connected.");
 
             private static readonly Action<ILogger, Exception> _sendingHandshakeRequest =
-                LoggerMessage.Define(LogLevel.Debug, new EventId(22, "SendingHandshakeRequest"), "Sending Handshake request to service.");
+                LoggerMessage.Define(LogLevel.Debug, new EventId(21, "SendingHandshakeRequest"), "Sending Handshake request to service.");
 
             private static readonly Action<ILogger, Exception> _handshakeComplete =
-                LoggerMessage.Define(LogLevel.Debug, new EventId(23, "HandshakeComplete"), "Handshake with service completes.");
+                LoggerMessage.Define(LogLevel.Debug, new EventId(22, "HandshakeComplete"), "Handshake with service completes.");
 
             private static readonly Action<ILogger, Exception> _errorReceivingHandshakeResponse =
-                LoggerMessage.Define(LogLevel.Error, new EventId(24, "ErrorReceivingHandshakeResponse"), "Error receiving handshake response.");
+                LoggerMessage.Define(LogLevel.Error, new EventId(23, "ErrorReceivingHandshakeResponse"), "Error receiving handshake response.");
 
             private static readonly Action<ILogger, string, Exception> _handshakeError =
-                LoggerMessage.Define<string>(LogLevel.Critical, new EventId(25, "HandshakeError"), "Service returned handshake error: {Error}");
+                LoggerMessage.Define<string>(LogLevel.Critical, new EventId(24, "HandshakeError"), "Service returned handshake error: {Error}");
 
             private static readonly Action<ILogger, Exception> _sentPing =
-                LoggerMessage.Define(LogLevel.Debug, new EventId(26, "SentPing"), "Sent a ping message to service.");
+                LoggerMessage.Define(LogLevel.Debug, new EventId(25, "SentPing"), "Sent a ping message to service.");
 
             private static readonly Action<ILogger, Exception> _failedSendingPing =
-                LoggerMessage.Define(LogLevel.Warning, new EventId(27, "FailedSendingPing"), "Failed sending a ping message to service.");
+                LoggerMessage.Define(LogLevel.Warning, new EventId(26, "FailedSendingPing"), "Failed sending a ping message to service.");
 
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
@@ -185,11 +182,6 @@ namespace Microsoft.Azure.SignalR
             public static void ServiceTimeout(ILogger logger, TimeSpan serviceTimeout)
             {
                 _serviceTimeout(logger, serviceTimeout.TotalMilliseconds, null);
-            }
-
-            public static void ResettingKeepAliveTimer(ILogger logger)
-            {
-                _resettingKeepAliveTimer(logger, null);
             }
 
             public static void WriteMessageToApplication(ILogger logger, int count, string connectionId)
