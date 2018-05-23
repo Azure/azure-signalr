@@ -6,7 +6,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using Microsoft.VisualStudio.TestPlatform.Common;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Protocol.Tests
@@ -79,8 +78,17 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     {
                         ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
-                    }), 
+                    }),
                 binary: "kwildXNlcjGCpGpzb27EBwYHAQIDBAWrbWVzc2FnZXBhY2vEBwcBAgMEBQY="),
+            new ProtocolTestData(
+                name: "MultiUserData",
+                message: new MultiUserDataMessage(new [] {"user1", "user2"},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    }),
+                binary: "kwmSpXVzZXIxpXVzZXIygqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUG"),
             new ProtocolTestData(
                 name: "Broadcast",
                 message: new BroadcastDataMessage(new Dictionary<string, ReadOnlyMemory<byte>>
@@ -98,6 +106,41 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }),
                 binary: "kwqTpWNvbm43pWNvbm44pWNvbm45gqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUG"),
+            new ProtocolTestData(
+                name: "JoinGroup",
+                message: new JoinGroupMessage("conn10", "group1"),
+                binary: "kwumY29ubjEwpmdyb3VwMQ=="),
+            new ProtocolTestData(
+                name: "LeaveGroup",
+                message: new LeaveGroupMessage("conn11", "group2"),
+                binary: "kwymY29ubjExpmdyb3VwMg=="),
+            new ProtocolTestData(
+                name: "GroupBroadcast",
+                message: new GroupBroadcastDataMessage("group3",
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    }),
+                binary: "lA2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBg=="),
+            new ProtocolTestData(
+                name: "GroupBroadcastExcept",
+                message: new GroupBroadcastDataMessage("group3", new [] {"conn12", "conn13"},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    }),
+                binary: "lA2mZ3JvdXAzkqZjb25uMTKmY29ubjEzgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUG"),
+            new ProtocolTestData(
+                name: "MultiGroupBroadcast",
+                message: new MultiGroupBroadcastDataMessage(new [] {"group4", "group5"},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {1, 2, 3, 4, 5, 6, 7, 8},
+                        ["messagepack"] = new byte[] {7, 8, 1, 2, 3, 4, 5, 6}
+                    }),
+                binary: "kw6Spmdyb3VwNKZncm91cDWCpGpzb27ECAECAwQFBgcIq21lc3NhZ2VwYWNrxAgHCAECAwQFBg=="),
         }.ToDictionary(t => t.Name);
 
         [Theory]

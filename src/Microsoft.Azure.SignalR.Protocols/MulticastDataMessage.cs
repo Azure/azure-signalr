@@ -134,6 +134,16 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Initializes a new instance of the <see cref="GroupBroadcastDataMessage"/> class.
         /// </summary>
         /// <param name="groupName">The group name.</param>
+        /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
+        public GroupBroadcastDataMessage(string groupName, IDictionary<string, ReadOnlyMemory<byte>> payloads)
+            : this(groupName, null, payloads)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GroupBroadcastDataMessage"/> class.
+        /// </summary>
+        /// <param name="groupName">The group name.</param>
         /// <param name="excludedList">The list of excluded connection Ids.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
         public GroupBroadcastDataMessage(string groupName, IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads)

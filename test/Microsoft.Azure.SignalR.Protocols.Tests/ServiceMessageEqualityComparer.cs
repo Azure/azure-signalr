@@ -38,8 +38,19 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return MultiConnectionDataMessagesEqual(multiConnectionDataMessage, (MultiConnectionDataMessage)y);
                 case UserDataMessage userDataMessage:
                     return UserDataMessagesEqual(userDataMessage, (UserDataMessage)y);
+                case MultiUserDataMessage multiUserDataMessage:
+                    return MultiUserDataMessagesEqual(multiUserDataMessage, (MultiUserDataMessage)y);
                 case BroadcastDataMessage broadcastDataMessage:
                     return BroadcastDataMessagesEqual(broadcastDataMessage, (BroadcastDataMessage)y);
+                case JoinGroupMessage joinGroupMessage:
+                    return JoinGroupMessagesEqual(joinGroupMessage, (JoinGroupMessage)y);
+                case LeaveGroupMessage leaveGroupMessage:
+                    return LeaveGroupMessagesEqual(leaveGroupMessage, (LeaveGroupMessage)y);
+                case GroupBroadcastDataMessage groupBroadcastDataMessage:
+                    return GroupBroadcastDataMessagesEqual(groupBroadcastDataMessage, (GroupBroadcastDataMessage)y);
+                case MultiGroupBroadcastDataMessage multiGroupBroadcastDataMessage:
+                    return MultiGroupBroadcastDataMessagesEqual(multiGroupBroadcastDataMessage,
+                        (MultiGroupBroadcastDataMessage)y);
                 default:
                     throw new InvalidOperationException($"Unknown message type: {x.GetType().FullName}");
             }
@@ -90,10 +101,40 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                    PayloadsEqual(x.Payloads, y.Payloads);
         }
 
+        private bool MultiUserDataMessagesEqual(MultiUserDataMessage x, MultiUserDataMessage y)
+        {
+            return SequenceEqual(x.UserList, y.UserList) && PayloadsEqual(x.Payloads, y.Payloads);
+        }
+
         private bool BroadcastDataMessagesEqual(BroadcastDataMessage x, BroadcastDataMessage y)
         {
             return SequenceEqual(x.ExcludedList, y.ExcludedList) &&
                    PayloadsEqual(x.Payloads, y.Payloads);
+        }
+
+        private bool JoinGroupMessagesEqual(JoinGroupMessage x, JoinGroupMessage y)
+        {
+            return string.Equals(x.ConnectionId, y.ConnectionId, StringComparison.Ordinal) &&
+                   string.Equals(x.GroupName, y.GroupName, StringComparison.Ordinal);
+        }
+
+        private bool LeaveGroupMessagesEqual(LeaveGroupMessage x, LeaveGroupMessage y)
+        {
+            return string.Equals(x.ConnectionId, y.ConnectionId, StringComparison.Ordinal) &&
+                   string.Equals(x.GroupName, y.GroupName, StringComparison.Ordinal);
+        }
+
+        private bool GroupBroadcastDataMessagesEqual(GroupBroadcastDataMessage x, GroupBroadcastDataMessage y)
+        {
+            return string.Equals(x.GroupName, y.GroupName, StringComparison.Ordinal) &&
+                   SequenceEqual(x.ExcludedList, y.ExcludedList) &&
+                   PayloadsEqual(x.Payloads, y.Payloads);
+        }
+
+        private bool MultiGroupBroadcastDataMessagesEqual(MultiGroupBroadcastDataMessage x,
+            MultiGroupBroadcastDataMessage y)
+        {
+            return SequenceEqual(x.GroupList, y.GroupList) && PayloadsEqual(x.Payloads, y.Payloads);
         }
 
         private bool ClaimsEqual(Claim[] x, Claim[] y)
