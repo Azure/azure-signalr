@@ -99,6 +99,14 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="BroadcastDataMessage"/> class.
         /// </summary>
+        /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
+        public BroadcastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads) : this(null, payloads)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BroadcastDataMessage"/> class.
+        /// </summary>
         /// <param name="excludedList">The list of excluded connection Ids.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
         public BroadcastDataMessage(IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads) : base(payloads)

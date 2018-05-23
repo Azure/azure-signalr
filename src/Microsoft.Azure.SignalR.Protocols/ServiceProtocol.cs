@@ -272,7 +272,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         private static void WriteMultiUserDataMessage(MultiUserDataMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.UserDataMessageType);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.MultiUserDataMessageType);
             WriteStringArray(message.UserList, packer);
             WritePayloads(message.Payloads, packer);
         }

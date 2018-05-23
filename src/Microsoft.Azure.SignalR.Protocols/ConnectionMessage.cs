@@ -52,6 +52,14 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Initializes a new instance of the <see cref="CloseConnectionMessage"/> class.
         /// </summary>
         /// <param name="connectionId">The connection Id.</param>
+        public CloseConnectionMessage(string connectionId) : this(connectionId, null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CloseConnectionMessage"/> class.
+        /// </summary>
+        /// <param name="connectionId">The connection Id.</param>
         /// <param name="errorMessage">Optional error message.</param>
         public CloseConnectionMessage(string connectionId, string errorMessage) : base(connectionId)
         {
