@@ -3,22 +3,18 @@
 
 using System;
 using System.Buffers;
-using System.IO;
 using System.IO.Pipelines;
-using System.Security.Claims;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
     public class ServiceConnectionFacts
     {
+        private static readonly ServiceProtocol Protocol = new ServiceProtocol();
+
         [Fact]
         public async Task ServiceConnectionStartsConnection()
         {
@@ -83,7 +79,6 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task ClosingConnectionSendsCloseMessage()
         {
-            var protocol = new ServiceProtocol();
             var proxy = new ServiceConnectionProxy(context =>
             {
                 // Just let the connection end immediately
@@ -98,11 +93,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var connection = await task.OrTimeout();
 
-            var data = await proxy.ConnectionContext.Application.Input.ReadSingleAsync().OrTimeout();
-            var buffer = new ReadOnlySequence<byte>(data);
-            Assert.True(protocol.TryParseMessage(ref buffer, out var message));
-            var closeMessage = Assert.IsType<CloseConnectionMessage>(message);
-            Assert.Equal(closeMessage.ConnectionId, connection.ConnectionId);
+            var message = await ReadServiceMessageAsync<CloseConnectionMessage>(proxy.ConnectionContext.Application.Input);
+            Assert.Equal(message.ConnectionId, connection.ConnectionId);
 
             proxy.Stop();
         }
@@ -110,7 +102,6 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task WritingMessagesFromConnectionGetsSentAsConnectionData()
         {
-            var protocol = new ServiceProtocol();
             var proxy = new ServiceConnectionProxy();
 
             await proxy.StartAsync();
@@ -123,14 +114,35 @@ namespace Microsoft.Azure.SignalR.Tests
 
             await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("Hello World"));
 
-            var data = await proxy.ConnectionContext.Application.Input.ReadSingleAsync().OrTimeout();
-            var buffer = new ReadOnlySequence<byte>(data);
-            Assert.True(protocol.TryParseMessage(ref buffer, out var message));
-            var connectionDataMessage = Assert.IsType<ConnectionDataMessage>(message);
-            Assert.Equal(connectionDataMessage.ConnectionId, connection.ConnectionId);
-            Assert.Equal("Hello World", Encoding.ASCII.GetString(connectionDataMessage.Payload.ToArray()));
+            var message = await ReadServiceMessageAsync<ConnectionDataMessage>(proxy.ConnectionContext.Application.Input);
+            Assert.Equal(message.ConnectionId, connection.ConnectionId);
+            Assert.Equal("Hello World", Encoding.ASCII.GetString(message.Payload.ToArray()));
 
             proxy.Stop();
+        }
+
+        [Fact]
+        public async Task ServiceConnectionSendsPingMessage()
+        {
+            var proxy = new ServiceConnectionProxy();
+
+            await proxy.StartAsync();
+
+            // Check more than once since it happens periodically
+            for (int i = 0; i < 2; i++)
+            {
+                await ReadServiceMessageAsync<PingMessage>(proxy.ConnectionContext.Application.Input, 6000);
+            }
+
+            proxy.Stop();
+        }
+
+        private async Task<T> ReadServiceMessageAsync<T>(PipeReader input, int timeout = 5000) where T : ServiceMessage
+        {
+            var data = await input.ReadSingleAsync().OrTimeout(timeout);
+            var buffer = new ReadOnlySequence<byte>(data);
+            Assert.True(Protocol.TryParseMessage(ref buffer, out var message));
+            return Assert.IsType<T>(message);
         }
     }
 }

@@ -59,32 +59,35 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, long, string, Exception> _receivedMessage =
                 LoggerMessage.Define<long, string>(LogLevel.Debug, new EventId(16, "ReceivedMessage"), "Received {ReceivedBytes} bytes from service {ServiceConnectionId}.");
 
-            private static readonly Action<ILogger, double, Exception> _startingServerTimeoutTimer =
-                LoggerMessage.Define<double>(LogLevel.Trace, new EventId(17, "StartingServerTimeoutTimer"), "Starting server timeout timer. Duration: {ServerTimeout:0.00}ms");
+            private static readonly Action<ILogger, double, Exception> _startingKeepAliveTimer =
+                LoggerMessage.Define<double>(LogLevel.Trace, new EventId(17, "StartingKeepAliveTimer"), "Starting keep-alive timer. Duration: {KeepAliveInterval:0.00}ms");
 
-            private static readonly Action<ILogger, double, Exception> _serverTimeout =
-                LoggerMessage.Define<double>(LogLevel.Error, new EventId(18, "ServerTimeout"), "Server timeout ({ServerTimeout:0.00}ms) elapsed without receiving a message from the server.");
-
-            private static readonly Action<ILogger, Exception> _resettingKeepAliveTimer =
-                LoggerMessage.Define(LogLevel.Trace, new EventId(19, "ResettingKeepAliveTimer"), "Resetting keep-alive timer, received a message from the server.");
+            private static readonly Action<ILogger, double, Exception> _serviceTimeout =
+                LoggerMessage.Define<double>(LogLevel.Error, new EventId(18, "ServiceTimeout"), "Service timeout. {ServiceTimeout:0.00}ms elapsed without receiving a message from service.");
 
             private static readonly Action<ILogger, int, string, Exception> _writeMessageToApplication =
-                LoggerMessage.Define<int, string>(LogLevel.Trace, new EventId(20, "WriteMessageToApplication"), "Writing {ReceivedBytes} to connection {TransportConnectionId}.");
+                LoggerMessage.Define<int, string>(LogLevel.Trace, new EventId(19, "WriteMessageToApplication"), "Writing {ReceivedBytes} to connection {TransportConnectionId}.");
 
             private static readonly Action<ILogger, string, Exception> _serviceConnectionConnected =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(21, "ServiceConnectionConnected"), "Service connection {ServiceConnectionId} connected.");
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(20, "ServiceConnectionConnected"), "Service connection {ServiceConnectionId} connected.");
 
             private static readonly Action<ILogger, Exception> _sendingHandshakeRequest =
-                LoggerMessage.Define(LogLevel.Debug, new EventId(22, "SendingHandshakeRequest"), "Sending Handshake request to service.");
+                LoggerMessage.Define(LogLevel.Debug, new EventId(21, "SendingHandshakeRequest"), "Sending Handshake request to service.");
 
             private static readonly Action<ILogger, Exception> _handshakeComplete =
-                LoggerMessage.Define(LogLevel.Debug, new EventId(23, "HandshakeComplete"), "Handshake with service completes.");
+                LoggerMessage.Define(LogLevel.Debug, new EventId(22, "HandshakeComplete"), "Handshake with service completes.");
 
             private static readonly Action<ILogger, Exception> _errorReceivingHandshakeResponse =
-                LoggerMessage.Define(LogLevel.Error, new EventId(24, "ErrorReceivingHandshakeResponse"), "Error receiving handshake response.");
+                LoggerMessage.Define(LogLevel.Error, new EventId(23, "ErrorReceivingHandshakeResponse"), "Error receiving handshake response.");
 
             private static readonly Action<ILogger, string, Exception> _handshakeError =
-                LoggerMessage.Define<string>(LogLevel.Critical, new EventId(25, "HandshakeError"), "Service returned handshake error: {Error}");
+                LoggerMessage.Define<string>(LogLevel.Critical, new EventId(24, "HandshakeError"), "Service returned handshake error: {Error}");
+
+            private static readonly Action<ILogger, Exception> _sentPing =
+                LoggerMessage.Define(LogLevel.Debug, new EventId(25, "SentPing"), "Sent a ping message to service.");
+
+            private static readonly Action<ILogger, Exception> _failedSendingPing =
+                LoggerMessage.Define(LogLevel.Warning, new EventId(26, "FailedSendingPing"), "Failed sending a ping message to service.");
 
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
@@ -171,19 +174,14 @@ namespace Microsoft.Azure.SignalR
                 _receivedMessage(logger, bytes, serviceConnectionId, null);
             }
 
-            public static void StartingServerTimeoutTimer(ILogger logger, TimeSpan serverTimeout)
+            public static void StartingKeepAliveTimer(ILogger logger, TimeSpan keepAliveInterval)
             {
-                _startingServerTimeoutTimer(logger, serverTimeout.TotalMilliseconds, null);
+                _startingKeepAliveTimer(logger, keepAliveInterval.TotalMilliseconds, null);
             }
 
-            public static void ServerTimeout(ILogger logger, TimeSpan serverTimeout)
+            public static void ServiceTimeout(ILogger logger, TimeSpan serviceTimeout)
             {
-                _serverTimeout(logger, serverTimeout.TotalMilliseconds, null);
-            }
-
-            public static void ResettingKeepAliveTimer(ILogger logger)
-            {
-                _resettingKeepAliveTimer(logger, null);
+                _serviceTimeout(logger, serviceTimeout.TotalMilliseconds, null);
             }
 
             public static void WriteMessageToApplication(ILogger logger, int count, string connectionId)
@@ -209,6 +207,16 @@ namespace Microsoft.Azure.SignalR
             public static void HandshakeError(ILogger logger, string error)
             {
                 _handshakeError(logger, error, null);
+            }
+
+            public static void SentPing(ILogger logger)
+            {
+                _sentPing(logger, null);
+            }
+
+            public static void FailedSendingPing(ILogger logger, Exception exception)
+            {
+                _failedSendingPing(logger, exception);
             }
         }
     }

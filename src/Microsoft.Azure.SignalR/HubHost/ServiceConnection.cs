@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
 using System.Threading;
@@ -17,9 +18,12 @@ namespace Microsoft.Azure.SignalR
     internal partial class ServiceConnection
     {
         private static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
-        // Server ping rate is 15 sec, this is 2 times that.
-        private static readonly TimeSpan DefaultServerTimeout = TimeSpan.FromSeconds(30);
-        private static readonly int MaximumReconnectBackoffInternalInMilliseconds = 1000;
+        // Service ping rate is 15 sec; this is 2 times that.
+        private static readonly TimeSpan DefaultServiceTimeout = TimeSpan.FromSeconds(30);
+        private static readonly long DefaultServiceTimeoutTicks = DefaultServiceTimeout.Seconds * Stopwatch.Frequency;
+        // App server ping rate is 5 sec. So service can detect an irresponsive server connection in 10 seconds at most.
+        private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
+        private static readonly int MaxReconnectBackoffInternalInMilliseconds = 1000;
 
         private readonly IConnectionFactory _connectionFactory;
         private readonly IServiceProtocol _serviceProtocol;
@@ -27,6 +31,7 @@ namespace Microsoft.Azure.SignalR
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
         private readonly ILogger<ServiceConnection> _logger;
         private readonly HandshakeRequestMessage _handshakeRequest;
+        private readonly ReadOnlyMemory<byte> _cachedPingBytes;
 
         private readonly ConcurrentDictionary<string, string> _connectionIds =
             new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
@@ -35,10 +40,11 @@ namespace Microsoft.Azure.SignalR
         private readonly ConnectionDelegate _connectionDelegate;
         private ConnectionContext _connection;
         private bool _isStopped;
+        private long _lastReceiveTimestamp;
 
         // Start reconnect after a random interval less than 1 second
         private static TimeSpan ReconnectInterval =>
-            TimeSpan.FromMilliseconds(StaticRandom.Next(MaximumReconnectBackoffInternalInMilliseconds));
+            TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackoffInternalInMilliseconds));
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
@@ -52,6 +58,8 @@ namespace Microsoft.Azure.SignalR
             _connectionDelegate = connectionDelegate;
             _connectionId = connectionId;
             _logger = loggerFactory.CreateLogger<ServiceConnection>();
+
+            _cachedPingBytes = _serviceProtocol.GetMessageBytes(PingMessage.Instance);
         }
 
         public async Task StartAsync()
@@ -241,20 +249,44 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private Timer StartTimeoutTimer()
+        private TimerAwaitable StartKeepAliveTimer()
         {
-            Log.StartingServerTimeoutTimer(_logger, DefaultServerTimeout);
-            return new Timer(state => ((ServiceConnection)state).TimeoutElapsed(),
-                    this, Timeout.Infinite, Timeout.Infinite);
+            Log.StartingKeepAliveTimer(_logger, DefaultKeepAliveInterval);
+
+            _lastReceiveTimestamp = Stopwatch.GetTimestamp();
+            var timer = new TimerAwaitable(DefaultKeepAliveInterval, DefaultKeepAliveInterval);
+            _ = KeepAliveAsync(timer);
+
+            return timer;
         }
 
-        private void ResetTimeoutTimer(Timer timeoutTimer)
+        private void UpdateReceiveTimestamp()
         {
-            Log.ResettingKeepAliveTimer(_logger);
-            timeoutTimer.Change(DefaultServerTimeout, Timeout.InfiniteTimeSpan);
+            Interlocked.Exchange(ref _lastReceiveTimestamp, Stopwatch.GetTimestamp());
         }
 
-        private void TimeoutElapsed()
+        private async Task KeepAliveAsync(TimerAwaitable timer)
+        {
+            using (timer)
+            {
+                timer.Start();
+
+                while (await timer)
+                {
+                    if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastReceiveTimestamp) > DefaultServiceTimeoutTicks)
+                    {
+                        AbortConnection();
+                        // We shouldn't get here twice.
+                        continue;
+                    }
+
+                    // Send PingMessage to Service
+                    await TrySendPingAsync();
+                }
+            }
+        }
+
+        private void AbortConnection()
         {
             if (!_serviceConnectionLock.Wait(0))
             {
@@ -268,8 +300,31 @@ namespace Microsoft.Azure.SignalR
                 if (_connection != null)
                 {
                     _connection.Transport.Input.CancelPendingRead();
-                    Log.ServerTimeout(_logger, DefaultServerTimeout);
+                    Log.ServiceTimeout(_logger, DefaultServiceTimeout);
                 }
+            }
+            finally
+            {
+                _serviceConnectionLock.Release();
+            }
+        }
+
+        private async ValueTask TrySendPingAsync()
+        {
+            if (!_serviceConnectionLock.Wait(0))
+            {
+                // Skip sending PingMessage when failed getting lock
+                return;
+            }
+
+            try
+            {
+                await _connection.Transport.Output.WriteAsync(_cachedPingBytes);
+                Log.SentPing(_logger);
+            }
+            catch (Exception ex)
+            {
+                Log.FailedSendingPing(_logger, ex);
             }
             finally
             {
@@ -279,7 +334,7 @@ namespace Microsoft.Azure.SignalR
 
         private async Task ProcessIncomingAsync()
         {
-            var timeoutTimer = StartTimeoutTimer();
+            var keepAliveTimer = StartKeepAliveTimer();
             try
             {
                 while (true)
@@ -297,8 +352,10 @@ namespace Microsoft.Azure.SignalR
 
                         if (!buffer.IsEmpty)
                         {
-                            ResetTimeoutTimer(timeoutTimer);
                             Log.ReceivedMessage(_logger, buffer.Length, _connectionId);
+
+                            UpdateReceiveTimestamp();
+
                             while (_serviceProtocol.TryParseMessage(ref buffer, out var message))
                             {
                                 _ = DispatchMessageAsync(message);
@@ -333,7 +390,7 @@ namespace Microsoft.Azure.SignalR
             }
             finally
             {
-                timeoutTimer.Dispose();
+                keepAliveTimer.Stop();
                 await _connectionFactory.DisposeAsync(_connection);
             }
 
