@@ -68,37 +68,32 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         private bool HandshakeResponseMessagesEqual(HandshakeResponseMessage x, HandshakeResponseMessage y)
         {
-            return string.Equals(x.ErrorMessage, y.ErrorMessage, StringComparison.Ordinal);
+            return StringEqual(x.ErrorMessage, y.ErrorMessage);
         }
 
         private bool OpenConnectionMessagesEqual(OpenConnectionMessage x, OpenConnectionMessage y)
         {
-            return string.Equals(x.ConnectionId, y.ConnectionId, StringComparison.Ordinal) &&
-                   ClaimsEqual(x.Claims, y.Claims);
+            return StringEqual(x.ConnectionId, y.ConnectionId) && ClaimsEqual(x.Claims, y.Claims);
         }
 
         private bool CloseConnectionMessagesEqual(CloseConnectionMessage x, CloseConnectionMessage y)
         {
-            return string.Equals(x.ConnectionId, y.ConnectionId, StringComparison.Ordinal) &&
-                   string.Equals(x.ErrorMessage, y.ErrorMessage);
+            return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.ErrorMessage, y.ErrorMessage);
         }
 
         private bool ConnectionDataMessagesEqual(ConnectionDataMessage x, ConnectionDataMessage y)
         {
-            return string.Equals(x.ConnectionId, y.ConnectionId, StringComparison.Ordinal) &&
-                   SequenceEqual(x.Payload.ToArray(), y.Payload.ToArray());
+            return StringEqual(x.ConnectionId, y.ConnectionId) && SequenceEqual(x.Payload.ToArray(), y.Payload.ToArray());
         }
 
         private bool MultiConnectionDataMessagesEqual(MultiConnectionDataMessage x, MultiConnectionDataMessage y)
         {
-            return SequenceEqual(x.ConnectionList, y.ConnectionList) &&
-                   PayloadsEqual(x.Payloads, y.Payloads);
+            return SequenceEqual(x.ConnectionList, y.ConnectionList) && PayloadsEqual(x.Payloads, y.Payloads);
         }
 
         private bool UserDataMessagesEqual(UserDataMessage x, UserDataMessage y)
         {
-            return string.Equals(x.UserId, y.UserId, StringComparison.Ordinal) &&
-                   PayloadsEqual(x.Payloads, y.Payloads);
+            return StringEqual(x.UserId, y.UserId) && PayloadsEqual(x.Payloads, y.Payloads);
         }
 
         private bool MultiUserDataMessagesEqual(MultiUserDataMessage x, MultiUserDataMessage y)
@@ -114,19 +109,17 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         private bool JoinGroupMessagesEqual(JoinGroupMessage x, JoinGroupMessage y)
         {
-            return string.Equals(x.ConnectionId, y.ConnectionId, StringComparison.Ordinal) &&
-                   string.Equals(x.GroupName, y.GroupName, StringComparison.Ordinal);
+            return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.GroupName, y.GroupName);
         }
 
         private bool LeaveGroupMessagesEqual(LeaveGroupMessage x, LeaveGroupMessage y)
         {
-            return string.Equals(x.ConnectionId, y.ConnectionId, StringComparison.Ordinal) &&
-                   string.Equals(x.GroupName, y.GroupName, StringComparison.Ordinal);
+            return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.GroupName, y.GroupName);
         }
 
         private bool GroupBroadcastDataMessagesEqual(GroupBroadcastDataMessage x, GroupBroadcastDataMessage y)
         {
-            return string.Equals(x.GroupName, y.GroupName, StringComparison.Ordinal) &&
+            return StringEqual(x.GroupName, y.GroupName) &&
                    SequenceEqual(x.ExcludedList, y.ExcludedList) &&
                    PayloadsEqual(x.Payloads, y.Payloads);
         }
@@ -137,7 +130,12 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return SequenceEqual(x.GroupList, y.GroupList) && PayloadsEqual(x.Payloads, y.Payloads);
         }
 
-        private bool ClaimsEqual(Claim[] x, Claim[] y)
+        private static bool StringEqual(string x, string y)
+        {
+            return string.Equals(x, y, StringComparison.Ordinal);
+        }
+
+        private static bool ClaimsEqual(Claim[] x, Claim[] y)
         {
             if (x == null && y == null)
             {
@@ -149,10 +147,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 return false;
             }
 
-            return !x.Where((t, i) => t.Type != y[i].Type || !string.Equals(t.Value, y[i].Value, StringComparison.Ordinal)).Any();
+            return !x.Where((t, i) => t.Type != y[i].Type || !StringEqual(t.Value, y[i].Value)).Any();
         }
 
-        private bool PayloadsEqual(IDictionary<string, ReadOnlyMemory<byte>> x,
+        private static bool PayloadsEqual(IDictionary<string, ReadOnlyMemory<byte>> x,
             IDictionary<string, ReadOnlyMemory<byte>> y)
         {
             if (x == null && y == null)
@@ -167,7 +165,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
             for (int i = 0; i < x.Count; i++)
             {
-                if (!string.Equals(x.ElementAt(i).Key, y.ElementAt(i).Key, StringComparison.Ordinal) ||
+                if (!StringEqual(x.ElementAt(i).Key, y.ElementAt(i).Key) ||
                     !SequenceEqual(x.ElementAt(i).Value.ToArray(), y.ElementAt(i).Value.ToArray()))
                 {
                     return false;
@@ -177,7 +175,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return true;
         }
 
-        private bool SequenceEqual(object left, object right)
+        private static bool SequenceEqual(object left, object right)
         {
             if (left == null && right == null)
             {

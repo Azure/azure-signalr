@@ -190,8 +190,9 @@ Please verify the MsgPack output and update the baseline");
 
             // Parse the input fully now.
             bytes = Frame(bytes);
-            var message = ParseServiceMessage<OpenConnectionMessage>(bytes);
-            Assert.Equal(expectedMessage, message, ServiceMessageEqualityComparer.Instance);
+            var message = ParseServiceMessage(bytes);
+            var openConnectionMessage = Assert.IsType<OpenConnectionMessage>(message);
+            Assert.Equal(expectedMessage, openConnectionMessage, ServiceMessageEqualityComparer.Instance);
         }
 
         private static byte ArrayBytes(int size)
@@ -229,13 +230,6 @@ Please verify the MsgPack output and update the baseline");
             var data = new ReadOnlySequence<byte>(bytes);
             Assert.True(Protocol.TryParseMessage(ref data, out var message));
             return message;
-        }
-
-        private static T ParseServiceMessage<T>(byte[] bytes) where T : ServiceMessage
-        {
-            var data = new ReadOnlySequence<byte>(bytes);
-            Assert.True(Protocol.TryParseMessage(ref data, out var message));
-            return Assert.IsType<T>(message);
         }
 
         public class ProtocolTestData
