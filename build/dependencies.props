@@ -15,6 +15,9 @@
     <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0-rc1-final</MicrosoftExtensionsDependencyInjectionPackageVersion>
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0-rc1-final</MicrosoftExtensionsLoggingPackageVersion>
 
+    <!-- Signing -->
+    <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>
+
     <!-- Samples -->
     <MicrosoftAspNetCorePackageVersion>2.1.0-rc1-final</MicrosoftAspNetCorePackageVersion>
     <NewtonsoftJsonPackageVersion>11.0.2</NewtonsoftJsonPackageVersion>
