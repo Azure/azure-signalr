@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <PackageReference Include="MessagePack" Version="$(MessagePackPackageVersion)" />
-    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCorePackageVersion)" />
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersPackageVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryPackageVersion)" />
   </ItemGroup>
