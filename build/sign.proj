@@ -2,10 +2,10 @@
 <Project DefaultTargets="SignFiles" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <Import Project="..\Directory.Build.props" />
-  
+
   <PropertyGroup>
     <NuGetPackagesDir Condition=" '$(NuGetPackagesDir)' == '' ">$(UserProfile)\.nuget\packages</NuGetPackagesDir>
-    <MicroBuildCorePackageVersion>0.2.0</MicroBuildCorePackageVersion>
+    <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>
     <MicroBuildPropsAndTargetsPath>$(NuGetPackagesDir)\microbuild.core\$(MicroBuildCorePackageVersion)\build\</MicroBuildPropsAndTargetsPath>    
   </PropertyGroup>
   
