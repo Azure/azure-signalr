@@ -288,3 +288,6 @@ __pycache__/
 *.xsd.cs
 
 .publish/
+
+# VSCode
+.vscode

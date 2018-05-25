@@ -1,18 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.IO.Pipelines;
 using System.Linq;
 using System.Security.Claims;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -36,9 +27,25 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        public void ServiceConnectionContextWithSystemClaimsIsUnauthenticated()
+        {
+            var claims = new[]
+            {
+                new Claim("aud", "http://localhost"),
+                new Claim("exp", "1234567890"),
+                new Claim("iat", "1234567890"),
+                new Claim("nbf", "1234567890")
+            };
+            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", claims));
+            Assert.NotNull(serviceConnectionContext.User.Identity);
+            Assert.False(serviceConnectionContext.User.Identity.IsAuthenticated);
+        }
+
+        [Fact]
         public void ServiceConnectionContextWithClaimsCreatesIdentityWithClaims()
         {
-            var claims = new Claim[] {
+            var claims = new[]
+            {
                 new Claim("k1", "v1"),
                 new Claim("k2", "v2")
             };
