@@ -6,5 +6,10 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>aspnetcore;signalr</PackageTags>
     <EnableApiCheck>false</EnableApiCheck>
+    <EnableSigning>false</EnableSigning>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCorePackageVersion)" Condition="'$(EnableSigning)' == 'true'" />
+  </ItemGroup>
 </Project>
