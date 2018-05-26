@@ -144,12 +144,40 @@
                 modal.style = 'display: block;';
             }
 
+
+            function getAccessToken(url) {
+                return new Promise((resolve, reject) => {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('GET', url, true);
+                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                    xhr.send();
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            resolve(xhr.response || xhr.responseText);
+                        } else {
+                            reject(new Error(xhr.statusText));
+                        }
+                    };
+                    xhr.onerror = () => {
+                        reject(new Error(xhr.statusText));
+                    }
+                });
+            }
+
+            var accessToken = "";
             var connection = new signalR.HubConnectionBuilder()
-                        .withUrl('/chat')
-                        .build();
-                            
+                .withUrl('/chat', {
+                        accessTokenFactory: () => accessToken
+                    })
+                .build();
+
             bindConnectionMessage(connection);
-            connection.start()
+
+            getAccessToken(`/token/?username=${username}`)
+                .then(function (token) {
+                    accessToken = token;
+                    return connection.start();
+                })
                 .then(function () {
                     onConnected(connection);
                 })
