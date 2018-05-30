@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -22,6 +23,14 @@ namespace Microsoft.Azure.SignalR
                                               IConnectionTransportFeature,
                                               IConnectionHeartbeatFeature
     {
+        private static readonly string[] SystemClaims =
+        {
+            "aud", // Audience claim, used by service to make sure token is matched with target resource.
+            "exp", // Expiration time claims. A token is valid only before its expiration time.
+            "iat", // Issued At claim. Added by default. It is not validated by service.
+            "nbf"  // Not Before claim. Added by default. It is not validated by service.
+        }; 
+
         private readonly object _heartbeatLock = new object();
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
@@ -29,15 +38,9 @@ namespace Microsoft.Azure.SignalR
         {
             ConnectionId = serviceMessage.ConnectionId;
             User = new ClaimsPrincipal();
-            if (serviceMessage.Claims?.Length > 0)
-            {
-                User.AddIdentity(new ClaimsIdentity(serviceMessage.Claims, "Bearer"));
-            }
-            else
-            {
-                // Anonymous
-                User.AddIdentity(new ClaimsIdentity());
-            }
+            User.AddIdentity(IsAuthenticatedUser(serviceMessage.Claims)
+                ? new ClaimsIdentity(serviceMessage.Claims, "Bearer")
+                : new ClaimsIdentity());
 
             // Create the Duplix Pipeline for the virtual connection
             var transportPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
@@ -108,5 +111,21 @@ namespace Microsoft.Azure.SignalR
 
         // The associated HubConnectionContext
         public HubConnectionContext HubConnectionContext { get; set; }
+
+        private static bool IsAuthenticatedUser(Claim[] claims)
+        {
+            if (claims?.Length > 0)
+            {
+                foreach (var claim in claims)
+                {
+                    if (!SystemClaims.Contains(claim.Type))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
     }
 }

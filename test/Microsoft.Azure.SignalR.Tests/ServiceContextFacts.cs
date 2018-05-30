@@ -27,9 +27,25 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        public void ServiceConnectionContextWithSystemClaimsIsUnauthenticated()
+        {
+            var claims = new[]
+            {
+                new Claim("aud", "http://localhost"),
+                new Claim("exp", "1234567890"),
+                new Claim("iat", "1234567890"),
+                new Claim("nbf", "1234567890")
+            };
+            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", claims));
+            Assert.NotNull(serviceConnectionContext.User.Identity);
+            Assert.False(serviceConnectionContext.User.Identity.IsAuthenticated);
+        }
+
+        [Fact]
         public void ServiceConnectionContextWithClaimsCreatesIdentityWithClaims()
         {
-            var claims = new Claim[] {
+            var claims = new[]
+            {
                 new Claim("k1", "v1"),
                 new Claim("k2", "v2")
             };
