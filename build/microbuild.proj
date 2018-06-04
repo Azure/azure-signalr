@@ -1,0 +1,12 @@
+<Project>
+  <Import Project="..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <EnableSigning>false</EnableSigning>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCorePackageVersion)" Condition="'$(EnableSigning)' == 'true'" />
+  </ItemGroup>
+  
+</Project>

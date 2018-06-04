@@ -5,7 +5,6 @@
 
   <PropertyGroup>
     <NuGetPackagesDir Condition=" '$(NuGetPackagesDir)' == '' ">$(UserProfile)\.nuget\packages</NuGetPackagesDir>
-    <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>
     <MicroBuildPropsAndTargetsPath>$(NuGetPackagesDir)\microbuild.core\$(MicroBuildCorePackageVersion)\build\</MicroBuildPropsAndTargetsPath>    
   </PropertyGroup>
   
