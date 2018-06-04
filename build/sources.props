@@ -9,6 +9,7 @@
     </RestoreSources>
     <RestoreSources Condition="'$(UseLocalFeed)' == 'true'">
       $(LocalFeed);
+      https://api.nuget.org/v3/index.json;
     </RestoreSources>
   </PropertyGroup>
 </Project>
