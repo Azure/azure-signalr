@@ -4,7 +4,7 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <PackageTags>aspnetcore;signalr</PackageTags>
+    <PackageTags>aspnetcore;azure;signalr</PackageTags>
     <EnableApiCheck>false</EnableApiCheck>
   </PropertyGroup>
 
