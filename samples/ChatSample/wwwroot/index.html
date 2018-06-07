@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width">
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <link href="css/bootstrap.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="css/site.css" rel="stylesheet" />
     <title>Azure SignalR Group Chat</title>
 </head>
@@ -33,14 +33,9 @@
             </div>
         </div>
     </div>
-    <!--Script references. -->
-    <script type="text/javascript" src="scripts/jquery-1.10.2.js"></script>
-    <script type="text/javascript" src="scripts/bootstrap.js"></script>
 
     <!--Reference the SignalR library. -->
-    <script type="text/javascript" src="scripts/msgpack5.js"></script>
-    <script type="text/javascript" src="scripts/signalr.js"></script>
-    <script type="text/javascript" src="scripts/signalr-protocol-msgpack.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@aspnet/signalr@1.0.0/dist/browser/signalr.min.js"></script>
 
     <!--Add script to update the page and send messages.-->
     <script type="text/javascript">
@@ -145,9 +140,9 @@
             }
 
             var connection = new signalR.HubConnectionBuilder()
-                        .withUrl('/chat')
-                        .build();
-                            
+                .withUrl('/chat')
+                .build();
+
             bindConnectionMessage(connection);
             connection.start()
                 .then(function () {
