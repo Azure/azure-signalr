@@ -20,7 +20,7 @@
                         "in": "path",
                         "required": true,
                         "type": "string",
-                        "description": "Target hub name, which should start with alphabetic characters and only contains alpha-numeric characters or underscore."
+                        "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
                     },
                     {
                         "name": "id",
@@ -60,7 +60,7 @@
                         "in": "path",
                         "required": true,
                         "type": "string",
-                        "description": "Target hub name, which should start with alphabetic characters and only contains alpha-numeric characters or underscore."
+                        "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
                     },
                     {
                         "name": "userList",
@@ -100,7 +100,7 @@
                         "in": "path",
                         "required": true,
                         "type": "string",
-                        "description": "Target hub name, which should start with alphabetic characters and only contains alpha-numeric characters or underscore."
+                        "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
                     },
                     {
                         "name": "message",
@@ -133,14 +133,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string",
-                        "description": "Target hub name, which should start with alphabetic characters and only contains alpha-numeric characters or underscore."
+                        "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
                     },
                     {
                         "name": "group",
                         "in": "path",
                         "required": true,
                         "type": "string",
-                        "description": "Target group name, which should start with alphabetic characters and only contains alpha-numeric characters or underscore."
+                        "description": "Target group name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
                     },
                     {
                         "name": "message",
@@ -173,14 +173,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string",
-                        "description": "Target hub name, which should start with alphabetic characters and only contains alpha-numeric characters or underscore."
+                        "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
                     },
                     {
                         "name": "groupList",
                         "in": "path",
                         "required": true,
                         "type": "string",
-                        "description": "Comma-separated list of group names. Each group name should start with alphabetic characters and only contains alpha-numeric characters or underscore."
+                        "description": "Comma-separated list of group names. Each group name should start with alphabetic characters and only contain alpha-numeric characters or underscore."
                     },
                     {
                         "name": "message",
