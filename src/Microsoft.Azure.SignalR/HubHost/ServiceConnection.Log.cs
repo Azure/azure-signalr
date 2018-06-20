@@ -65,8 +65,8 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, double, Exception> _serviceTimeout =
                 LoggerMessage.Define<double>(LogLevel.Error, new EventId(18, "ServiceTimeout"), "Service timeout. {ServiceTimeout:0.00}ms elapsed without receiving a message from service.");
 
-            private static readonly Action<ILogger, int, string, Exception> _writeMessageToApplication =
-                LoggerMessage.Define<int, string>(LogLevel.Trace, new EventId(19, "WriteMessageToApplication"), "Writing {ReceivedBytes} to connection {TransportConnectionId}.");
+            private static readonly Action<ILogger, long, string, Exception> _writeMessageToApplication =
+                LoggerMessage.Define<long, string>(LogLevel.Trace, new EventId(19, "WriteMessageToApplication"), "Writing {ReceivedBytes} to connection {TransportConnectionId}.");
 
             private static readonly Action<ILogger, string, Exception> _serviceConnectionConnected =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(20, "ServiceConnectionConnected"), "Service connection {ServiceConnectionId} connected.");
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.SignalR
                 _serviceTimeout(logger, serviceTimeout.TotalMilliseconds, null);
             }
 
-            public static void WriteMessageToApplication(ILogger logger, int count, string connectionId)
+            public static void WriteMessageToApplication(ILogger logger, long count, string connectionId)
             {
                 _writeMessageToApplication(logger, count, connectionId, null);
             }

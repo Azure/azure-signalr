@@ -63,6 +63,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
                 .AddSingleton(typeof(IServiceEndpointUtility), typeof(ServiceEndpointUtility))
                 .AddSingleton(typeof(ServiceHubDispatcher<>))
+                .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
                 .AddSingleton<IHostedService, HeartBeat>();
             return builder;
         }

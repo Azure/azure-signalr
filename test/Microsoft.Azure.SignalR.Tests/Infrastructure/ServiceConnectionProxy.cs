@@ -15,10 +15,11 @@ using HandshakeResponseMessage = Microsoft.Azure.SignalR.Protocol.HandshakeRespo
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    internal class ServiceConnectionProxy : IClientConnectionManager
+    internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnectionFactory
     {
         private static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(5);
         private static readonly IServiceProtocol _serviceProtocol = new ServiceProtocol();
+        private readonly PipeOptions _clientPipeOptions;
 
         private IConnectionFactory ConnectionFactory { get; }
 
@@ -33,11 +34,12 @@ namespace Microsoft.Azure.SignalR.Tests
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
 
-        public ServiceConnectionProxy(ConnectionDelegate callback = null)
+        public ServiceConnectionProxy(ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null)
         {
             ConnectionContext = new TestConnection();
             ConnectionFactory = new TestConnectionFactory(ConnectionContext);
             ClientConnectionManager = new ClientConnectionManager();
+            _clientPipeOptions = clientPipeOptions;
 
             ServiceConnection = new ServiceConnection(
                 _serviceProtocol,
@@ -45,6 +47,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionFactory,
                 NullLoggerFactory.Instance,
                 callback ?? OnConnectionAsync,
+                this,
                 Guid.NewGuid().ToString("N"));
         }
 
@@ -165,6 +168,11 @@ namespace Microsoft.Azure.SignalR.Tests
                     input.AdvanceTo(consumed, examined);
                 }
             }
+        }
+
+        public ServiceConnectionContext CreateConnection(OpenConnectionMessage message)
+        {
+            return new ServiceConnectionContext(message, _clientPipeOptions, _clientPipeOptions);
         }
     }
 }
