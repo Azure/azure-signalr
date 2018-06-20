@@ -135,12 +135,13 @@ namespace Microsoft.Azure.SignalR.Tests
             await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
 
             var connection = await task.OrTimeout();
+            var outputMessage = "This message should be more than 10 bytes";
 
-            await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("This message should be more than 10 bytes"));
+            await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes(outputMessage));
 
             var message = await ReadServiceMessageAsync<ConnectionDataMessage>(proxy.ConnectionContext.Application.Input);
             Assert.Equal(message.ConnectionId, connection.ConnectionId);
-            Assert.Equal("This message should be more than 10 bytes", Encoding.ASCII.GetString(message.Payload.ToArray()));
+            Assert.Equal(outputMessage, Encoding.ASCII.GetString(message.Payload.ToArray()));
 
             proxy.Stop();
         }
