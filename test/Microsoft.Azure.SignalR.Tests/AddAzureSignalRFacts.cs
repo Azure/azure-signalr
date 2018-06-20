@@ -21,16 +21,16 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var services = new ServiceCollection();
             var config = new ConfigurationBuilder()
-                            .AddInMemoryCollection(new Dictionary<string, string>
-                            {
-                                {"Azure:SignalR:ConnectionString", DefaultValue}
-                            })
-                            .Build();
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    {"Azure:SignalR:ConnectionString", DefaultValue}
+                })
+                .Build();
             var serviceProvider = services.AddSignalR()
-                                          .AddAzureSignalR()
-                                          .Services
-                                          .AddSingleton<IConfiguration>(config)
-                                          .BuildServiceProvider();
+                .AddAzureSignalR()
+                .Services
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
 
             var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
 
@@ -45,19 +45,16 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var services = new ServiceCollection();
             var config = new ConfigurationBuilder()
-                            .AddInMemoryCollection(new Dictionary<string, string>
-                            {
-                                {"Azure:SignalR:ConnectionString", DefaultValue}
-                            })
-                            .Build();
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    {"Azure:SignalR:ConnectionString", DefaultValue}
+                })
+                .Build();
             var serviceProvider = services.AddSignalR()
-                                          .AddAzureSignalR(o =>
-                                          {
-                                              o.ConnectionCount = 1;
-                                          })
-                                          .Services
-                                          .AddSingleton<IConfiguration>(config)
-                                          .BuildServiceProvider();
+                .AddAzureSignalR(o => { o.ConnectionCount = 1; })
+                .Services
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
 
             var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
 
@@ -72,20 +69,17 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var services = new ServiceCollection();
             var config = new ConfigurationBuilder()
-                            .AddInMemoryCollection(new Dictionary<string, string>
-                            {
-                                {"Azure:SignalR:ConnectionString", DefaultValue}
-                            })
-                            .Build();
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    {"Azure:SignalR:ConnectionString", DefaultValue}
+                })
+                .Build();
             string capturedConnectionString = null;
             var serviceProvider = services.AddSignalR()
-                                          .AddAzureSignalR(o =>
-                                          {
-                                              capturedConnectionString = o.ConnectionString;
-                                          })
-                                          .Services
-                                          .AddSingleton<IConfiguration>(config)
-                                          .BuildServiceProvider();
+                .AddAzureSignalR(o => { capturedConnectionString = o.ConnectionString; })
+                .Services
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
 
             var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
 
@@ -103,23 +97,23 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var services = new ServiceCollection();
             var config = new ConfigurationBuilder()
-                            .AddInMemoryCollection(new Dictionary<string, string>
-                            {
-                                {"Azure:SignalR:ConnectionString", defaultValue},
-                                {"ConnectionStrings:Azure:SignalR:ConnectionString", secondaryValue}
-                            })
-                            .Build();
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    {"Azure:SignalR:ConnectionString", defaultValue},
+                    {"ConnectionStrings:Azure:SignalR:ConnectionString", secondaryValue}
+                })
+                .Build();
             var serviceProvider = services.AddSignalR()
-                                          .AddAzureSignalR(o =>
-                                          {
-                                              if (customValue != null)
-                                              {
-                                                  o.ConnectionString = customValue;
-                                              }
-                                          })
-                                          .Services
-                                          .AddSingleton<IConfiguration>(config)
-                                          .BuildServiceProvider();
+                .AddAzureSignalR(o =>
+                {
+                    if (customValue != null)
+                    {
+                        o.ConnectionString = customValue;
+                    }
+                })
+                .Services
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
 
             var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
 
