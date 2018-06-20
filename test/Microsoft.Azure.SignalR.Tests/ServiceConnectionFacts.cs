@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR.Tests
             await proxy.StartAsync();
 
             var task = proxy.WaitForConnectionAsync("1");
-            
+
             await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
 
             var connection = await task.OrTimeout();
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.SignalR.Tests
             await proxy.StartAsync();
 
             var task = proxy.WaitForConnectionAsync("1");
-            
+
             await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
 
             var connection = await task.OrTimeout();
@@ -117,6 +117,30 @@ namespace Microsoft.Azure.SignalR.Tests
             var message = await ReadServiceMessageAsync<ConnectionDataMessage>(proxy.ConnectionContext.Application.Input);
             Assert.Equal(message.ConnectionId, connection.ConnectionId);
             Assert.Equal("Hello World", Encoding.ASCII.GetString(message.Payload.ToArray()));
+
+            proxy.Stop();
+        }
+
+        [Fact]
+        public async Task WritingMultiSegmentMessageConnectionMessageWritesSingleMessage()
+        {
+            // 10 byte segment size
+            var clientPipeOptions = new PipeOptions(minimumSegmentSize: 10);
+            var proxy = new ServiceConnectionProxy(clientPipeOptions: clientPipeOptions);
+
+            await proxy.StartAsync();
+
+            var task = proxy.WaitForConnectionAsync("1");
+
+            await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
+
+            var connection = await task.OrTimeout();
+
+            await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("This message should be more than 10 bytes"));
+
+            var message = await ReadServiceMessageAsync<ConnectionDataMessage>(proxy.ConnectionContext.Application.Input);
+            Assert.Equal(message.ConnectionId, connection.ConnectionId);
+            Assert.Equal("This message should be more than 10 bytes", Encoding.ASCII.GetString(message.Payload.ToArray()));
 
             proxy.Stop();
         }

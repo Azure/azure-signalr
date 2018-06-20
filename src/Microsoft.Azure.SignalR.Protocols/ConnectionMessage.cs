@@ -88,6 +88,11 @@ namespace Microsoft.Azure.SignalR.Protocol
             Payload = new ReadOnlySequence<byte>(payload);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConnectionDataMessage"/> class.
+        /// </summary>
+        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="payload">Binary data to be delivered.</param>
         public ConnectionDataMessage(string connectionId, ReadOnlySequence<byte> payload) : base(connectionId)
         {
             Payload = payload;

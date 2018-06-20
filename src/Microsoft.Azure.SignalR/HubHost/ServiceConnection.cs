@@ -26,6 +26,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly int MaxReconnectBackoffInternalInMilliseconds = 1000;
 
         private readonly IConnectionFactory _connectionFactory;
+        private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly IServiceProtocol _serviceProtocol;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
@@ -47,15 +48,19 @@ namespace Microsoft.Azure.SignalR
             TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackoffInternalInMilliseconds));
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
-            IClientConnectionManager clientConnectionManager,
-            IConnectionFactory connectionFactory, ILoggerFactory loggerFactory,
-            ConnectionDelegate connectionDelegate, string connectionId)
+                                 IClientConnectionManager clientConnectionManager,
+                                 IConnectionFactory connectionFactory, 
+                                 ILoggerFactory loggerFactory,
+                                 ConnectionDelegate connectionDelegate,
+                                 IClientConnectionFactory clientConnectionFactory,
+                                 string connectionId)
         {
             _serviceProtocol = serviceProtocol;
             _handshakeRequest = new HandshakeRequestMessage(_serviceProtocol.Version);
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
+            _clientConnectionFactory = clientConnectionFactory;
             _connectionId = connectionId;
             _logger = loggerFactory.CreateLogger<ServiceConnection>();
 
@@ -501,7 +506,7 @@ namespace Microsoft.Azure.SignalR
 
         private Task OnConnectedAsync(OpenConnectionMessage message)
         {
-            var connection = new ServiceConnectionContext(message);
+            var connection = _clientConnectionFactory.CreateConnection(message);
             AddClientConnection(connection);
             Log.ConnectedStarting(_logger, connection.ConnectionId);
 
