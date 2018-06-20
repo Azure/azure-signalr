@@ -460,20 +460,7 @@ namespace Microsoft.Azure.SignalR
                         try
                         {
                             // Forward the message to the service
-                            if (buffer.IsSingleSegment)
-                            {
-                                await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, buffer.First));
-                            }
-                            else
-                            {
-                                // This is a multi-segmented buffer so just write each chunk
-                                // TODO: Optimize this by doing it all under a single lock
-                                var position = buffer.Start;
-                                while (buffer.TryGet(ref position, out var memory))
-                                {
-                                    await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, memory));
-                                }
-                            }
+                            await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, buffer));
                         }
                         catch (Exception ex)
                         {
@@ -592,9 +579,22 @@ namespace Microsoft.Azure.SignalR
             {
                 try
                 {
-                    Log.WriteMessageToApplication(_logger, connectionDataMessage.Payload.Length, connectionDataMessage.ConnectionId);
-                    // Write the raw connection payload to the pipe let the upstream handle it
-                    await connection.Application.Output.WriteAsync(connectionDataMessage.Payload);
+                    var payload = connectionDataMessage.Payload;
+                    Log.WriteMessageToApplication(_logger, payload.Length, connectionDataMessage.ConnectionId);
+
+                    if (payload.IsSingleSegment)
+                    {
+                        // Write the raw connection payload to the pipe let the upstream handle it
+                        await connection.Application.Output.WriteAsync(payload.First);
+                    }
+                    else
+                    {
+                        var position = payload.Start;
+                        while (connectionDataMessage.Payload.TryGet(ref position, out var memory))
+                        {
+                            await connection.Application.Output.WriteAsync(memory);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
