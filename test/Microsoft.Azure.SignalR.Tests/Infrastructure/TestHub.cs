@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR.Tests.Infrastructure
 {
-    class TestHub : Hub
+    public class TestHub : Hub
     {
     }
 }

@@ -26,12 +26,13 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public TestConnection ConnectionContext { get; }
 
-        private ServiceConnection ServiceConnection { get; }
+        public ServiceConnection ServiceConnection { get; }
 
         public ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
 
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
+        private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForSpecificMessage = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
 
         public ServiceConnectionProxy(ConnectionDelegate callback = null)
         {
@@ -54,6 +55,14 @@ namespace Microsoft.Azure.SignalR.Tests
             return HandshakeAsync();
         }
 
+        public Task ProcessIncomingAsync()
+        {
+            using (var processIncomingCts = new CancellationTokenSource(DefaultHandshakeTimeout))
+            {
+                return ProcessIncomingCoreAsync(ConnectionContext.Application.Input, processIncomingCts.Token);
+            }
+        }
+
         public void Stop()
         {
             _ = ServiceConnection.StopAsync();
@@ -73,6 +82,11 @@ namespace Microsoft.Azure.SignalR.Tests
         public Task WaitForConnectionCloseAsync(string connectionId)
         {
             return _waitForConnectionClose.GetOrAdd(connectionId, key => new TaskCompletionSource<object>()).Task;
+        }
+
+        public Task WaitForSpecificMessage(Type type)
+        {
+            return _waitForSpecificMessage.GetOrAdd(type.FullName, key => new TaskCompletionSource<object>()).Task;
         }
 
         private Task OnConnectionAsync(ConnectionContext connection)
@@ -164,6 +178,52 @@ namespace Microsoft.Azure.SignalR.Tests
                 {
                     input.AdvanceTo(consumed, examined);
                 }
+            }
+        }
+
+        private async Task ProcessIncomingCoreAsync(PipeReader input, CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                var result = await input.ReadAsync(cancellationToken);
+                var buffer = result.Buffer;
+
+                var consumed = buffer.Start;
+                var examined = buffer.End;
+
+                try
+                {
+                    if (!buffer.IsEmpty)
+                    {
+                        if (_serviceProtocol.TryParseMessage(ref buffer, out var message))
+                        {
+                            consumed = buffer.Start;
+                            examined = consumed;
+
+                            _waitForSpecificMessage.SetTaskResult(message.GetType().ToString());
+                        }
+                    }
+
+                    if (result.IsCompleted)
+                    {
+                        break;
+                    }
+                }
+                finally
+                {
+                    input.AdvanceTo(consumed, examined);
+                }
+            }
+        }
+    }
+
+    public static class ConcurrentDictionaryExtensions
+    {
+        public static void SetTaskResult(this ConcurrentDictionary<string, TaskCompletionSource<object>> taskForWaiting, string messageType)
+        {
+            if (taskForWaiting.TryGetValue(messageType, out var tcs))
+            {
+                Task.Run(() => tcs.TrySetResult(null));
             }
         }
     }
