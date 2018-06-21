@@ -28,20 +28,25 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private static readonly List<string> TestConnectionIds = new List<string> {"connectionId1"};
 
-        private static readonly Mock<IServiceConnectionManager<TestHub>> ServiceConnectionManagerMock = new Mock<IServiceConnectionManager<TestHub>>();
+        private Mock<IServiceConnectionManager<TestHub>> ServiceConnectionManagerMock;
 
-        private static readonly Mock<IClientConnectionManager> ClientConnectionManagerMock = new Mock<IClientConnectionManager>();
+        private Mock<IClientConnectionManager> ClientConnectionManagerMock;
 
-        private static readonly ServiceLifetimeManager<TestHub> ServiceLifetimeManager = new ServiceLifetimeManager<TestHub>(ServiceConnectionManagerMock.Object,
-        ClientConnectionManagerMock.Object,
-        new DefaultHubProtocolResolver(new IHubProtocol[] { new JsonHubProtocol(), new MessagePackHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
-        NullLogger<ServiceLifetimeManager<TestHub>>.Instance
-        );
+        private ServiceLifetimeManager<TestHub> ServiceLifetimeManager;
+
+        public ServiceLifetimeManagerFacts()
+        {
+            ServiceConnectionManagerMock = new Mock<IServiceConnectionManager<TestHub>>();
+            ClientConnectionManagerMock = new Mock<IClientConnectionManager>();
+            ServiceLifetimeManager = new ServiceLifetimeManager<TestHub>(ServiceConnectionManagerMock.Object,
+                ClientConnectionManagerMock.Object,
+                new DefaultHubProtocolResolver(new IHubProtocol[] { new JsonHubProtocol(), new MessagePackHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
+                NullLogger<ServiceLifetimeManager<TestHub>>.Instance);
+        }
 
         [Fact]
         public async void SendAllAsync()
         {
-            ServiceConnectionManagerMock.Reset();
             ServiceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<BroadcastDataMessage>())).Returns(Task.CompletedTask);
             
             await ServiceLifetimeManager.SendAllAsync(TestMethod, TestArgs);
@@ -51,7 +56,6 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendAllExceptAsync()
         {
-            ServiceConnectionManagerMock.Reset();
             ServiceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<BroadcastDataMessage>())).Returns(Task.CompletedTask);
 
             await ServiceLifetimeManager.SendAllExceptAsync(TestMethod, TestArgs, TestConnectionIds);
@@ -61,7 +65,6 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendConnectionsAsync()
         {
-            ServiceConnectionManagerMock.Reset();
             ServiceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<MultiConnectionDataMessage>())).Returns(Task.CompletedTask);
 
             await ServiceLifetimeManager.SendConnectionsAsync(TestConnectionIds, TestMethod, TestArgs);
@@ -71,7 +74,6 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendGroupAsync()
         {
-            ServiceConnectionManagerMock.Reset();
             ServiceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<GroupBroadcastDataMessage>())).Returns(Task.CompletedTask);
 
             await ServiceLifetimeManager.SendGroupAsync(TestGroups[0], TestMethod, TestArgs);
@@ -81,7 +83,6 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendGroupsAsync()
         {
-            ServiceConnectionManagerMock.Reset();
             ServiceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<MultiGroupBroadcastDataMessage>())).Returns(Task.CompletedTask);
 
             await ServiceLifetimeManager.SendGroupsAsync(TestGroups, TestMethod, TestArgs);
@@ -91,7 +92,6 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendGroupExceptAsync()
         {
-            ServiceConnectionManagerMock.Reset();
             ServiceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<GroupBroadcastDataMessage>())).Returns(Task.CompletedTask);
 
             await ServiceLifetimeManager.SendGroupExceptAsync(TestGroups[0], TestMethod, TestArgs, TestConnectionIds);
@@ -101,7 +101,6 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendUserAsync()
         {
-            ServiceConnectionManagerMock.Reset();
             ServiceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<UserDataMessage>())).Returns(Task.CompletedTask);
 
             await ServiceLifetimeManager.SendUserAsync(TestUsers[0], TestMethod, TestArgs);
@@ -111,7 +110,6 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendUsersAsync()
         {
-            ServiceConnectionManagerMock.Reset();
             ServiceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<MultiUserDataMessage>())).Returns(Task.CompletedTask);
 
             await ServiceLifetimeManager.SendUsersAsync(TestUsers, TestMethod, TestArgs);
@@ -121,7 +119,6 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void AddToGroupAsync()
         {
-            ServiceConnectionManagerMock.Reset();
             ServiceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<JoinGroupMessage>())).Returns(Task.CompletedTask);
 
             await ServiceLifetimeManager.AddToGroupAsync(TestConnectionIds[0], TestGroups[0]);
@@ -131,7 +128,6 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void RemoveFromGroupAsync()
         {
-            ServiceConnectionManagerMock.Reset();
             ServiceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<LeaveGroupMessage>())).Returns(Task.CompletedTask);
 
             await ServiceLifetimeManager.RemoveFromGroupAsync(TestConnectionIds[0], TestGroups[0]);
