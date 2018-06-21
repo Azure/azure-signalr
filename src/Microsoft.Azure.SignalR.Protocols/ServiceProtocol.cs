@@ -9,6 +9,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Claims;
 using MessagePack;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.Protocol
 {
@@ -53,7 +54,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static ServiceMessage ParseMessage(byte[] input, int startOffset)
         {
-            _ = MessagePackBinary.ReadArrayHeader(input, startOffset, out var readSize);
+            var arrayLength = MessagePackBinary.ReadArrayHeader(input, startOffset, out var readSize);
             startOffset += readSize;
 
             var messageType = ReadInt32(input, ref startOffset, "messageType");
@@ -67,7 +68,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ServiceProtocolConstants.PingMessageType:
                     return PingMessage.Instance;
                 case ServiceProtocolConstants.OpenConnectionMessageType:
-                    return CreateOpenConnectionMessage(input, ref startOffset);
+                    return CreateOpenConnectionMessage(arrayLength, input, ref startOffset);
                 case ServiceProtocolConstants.CloseConnectionMessageType:
                     return CreateCloseConnectionMessage(input, ref startOffset);
                 case ServiceProtocolConstants.ConnectionDataMessageType:
@@ -216,7 +217,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteOpenConnectionMessage(OpenConnectionMessage message, Stream packer)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
+            MessagePackBinary.WriteArrayHeader(packer, 5);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.OpenConnectionMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
 
@@ -233,6 +234,10 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 MessagePackBinary.WriteMapHeader(packer, 0);
             }
+
+            WriteHeaders(message.Headers, packer);
+
+            MessagePackBinary.WriteString(packer, message.QueryString);
         }
 
         private static void WriteCloseConnectionMessage(CloseConnectionMessage message, Stream packer)
@@ -387,6 +392,27 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
+        private static void WriteHeaders(IDictionary<string, StringValues> headers, Stream packer)
+        {
+            if (headers?.Count > 0)
+            {
+                MessagePackBinary.WriteMapHeader(packer, headers.Count);
+                foreach (var header in headers)
+                {
+                    MessagePackBinary.WriteString(packer, header.Key);
+                    MessagePackBinary.WriteArrayHeader(packer, header.Value.Count);
+                    foreach (var stringValue in header.Value)
+                    {
+                        MessagePackBinary.WriteString(packer, stringValue);
+                    }
+                }
+            }
+            else
+            {
+                MessagePackBinary.WriteMapHeader(packer, 0);
+            }
+        }
+
         private static HandshakeRequestMessage CreateHandshakeRequestMessage(byte[] input, ref int offset)
         {
             var version = ReadInt32(input, ref offset, "version");
@@ -401,12 +427,23 @@ namespace Microsoft.Azure.SignalR.Protocol
             return new HandshakeResponseMessage(errorMessage);
         }
 
-        private static OpenConnectionMessage CreateOpenConnectionMessage(byte[] input, ref int offset)
+        private static OpenConnectionMessage CreateOpenConnectionMessage(int arrayLength, byte[] input, ref int offset)
         {
             var connectionId = ReadString(input, ref offset, "connectionId");
             var claims = ReadClaims(input, ref offset);
 
-            return new OpenConnectionMessage(connectionId, claims);
+            // Backward compatible with old versions
+            if (arrayLength > 3)
+            {
+                var headers = ReadHeaders(input, ref offset);
+                var queryString = ReadString(input, ref offset, "queryString");
+
+                return new OpenConnectionMessage(connectionId, claims, headers, queryString);
+            }
+            else
+            {
+                return new OpenConnectionMessage(connectionId, claims);
+            }
         }
 
         private static CloseConnectionMessage CreateCloseConnectionMessage(byte[] input, ref int offset)
@@ -527,6 +564,30 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
 
             return null;
+        }
+
+        private static Dictionary<string, StringValues> ReadHeaders(byte[] input, ref int offset)
+        {
+            var headerCount = ReadMapLength(input, ref offset, "headers");
+            if (headerCount > 0)
+            {
+                var headers = new Dictionary<string, StringValues>((int)headerCount);
+                for (var i = 0; i < headerCount; i++)
+                {
+                    var key = ReadString(input, ref offset, $"headers[{i}].key");
+                    var count = ReadArrayLength(input, ref offset, $"headers[{i}].value.length");
+                    var stringValues = new string[count];
+                    for (var j = 0; j < count; j++)
+                    {
+                        stringValues[j] = ReadString(input, ref offset, $"headers[{i}].value[{j}]");
+                    }
+                    headers.Add(key, stringValues);
+                }
+
+                return headers;
+            }
+
+            return new Dictionary<string, StringValues>();
         }
 
         private static int ReadInt32(byte[] input, ref int offset, string field)

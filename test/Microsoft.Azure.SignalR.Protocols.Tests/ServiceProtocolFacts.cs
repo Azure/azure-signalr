@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using Microsoft.Extensions.Primitives;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Protocol.Tests
@@ -46,11 +47,28 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             new ProtocolTestData(
                 name: "OpenConnection",
                 message: new OpenConnectionMessage("conn1", null),
-                binary: "kwSlY29ubjGA"),
+                binary: "lQSlY29ubjGAgKA="),
             new ProtocolTestData(
                 name: "OpenConnectionWithClaims",
                 message: new OpenConnectionMessage("conn2", new [] {new Claim(ClaimTypes.NameIdentifier, "user1")}),
-                binary: "kwSlY29ubjKB2URodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllcqV1c2VyMQ=="),
+                binary: "lQSlY29ubjKB2URodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllcqV1c2VyMYCg"),
+            new ProtocolTestData(
+                name: "OpenConnectionWithHeaders",
+                message: new OpenConnectionMessage("conn3", null, new Dictionary<string, StringValues>
+                {
+                    {"header-key-1", "heaer-value-1"},
+                    {"header-key-2", new[] {"heaer-value-2a", "header-value-2b"}},
+                    {"header-key-3", new[] {"heaer-value-3a", "header-value-3b", "header-value-3c"}}
+                }, string.Empty),
+                binary: "lQSlY29ubjOAg6xoZWFkZXIta2V5LTGRrWhlYWVyLXZhbHVlLTGsaGVhZGVyLWtleS0ykq5oZWFlci12YWx1ZS0yYa9oZWFkZXItdmFsdWUtMmKsaGVhZGVyLWtleS0zk65oZWFlci12YWx1ZS0zYa9oZWFkZXItdmFsdWUtM2KvaGVhZGVyLXZhbHVlLTNjoA=="),
+            new ProtocolTestData(
+                name: "OpenConnectionWithQueryString1",
+                message: new OpenConnectionMessage("conn4", null, new Dictionary<string, StringValues>(), "query1=value1"),
+                binary: "lQSlY29ubjSAgK1xdWVyeTE9dmFsdWUx"),
+            new ProtocolTestData(
+                name: "OpenConnectionWithQueryString2",
+                message: new OpenConnectionMessage("conn4", null, new Dictionary<string, StringValues>(), "query1=value1&query2=query2&query3=value3"),
+                binary: "lQSlY29ubjSAgNkpcXVlcnkxPXZhbHVlMSZxdWVyeTI9cXVlcnkyJnF1ZXJ5Mz12YWx1ZTM="),
             new ProtocolTestData(
                 name: "CloseConnection",
                 message: new CloseConnectionMessage("conn3"),
@@ -183,15 +201,38 @@ Please verify the MsgPack output and update the baseline");
         [Fact]
         public void ParseMessageWithExtraData()
         {
+            // Legacy protocol
             var expectedMessage = new OpenConnectionMessage("id", null);
+            var bytes = new byte[]
+            {
+                ArrayBytes(3),                          // Array Length
+                4,                                      // Message Type: OpenConnectionMessage
+                StringBytes(2), (byte)'i', (byte)'d',   // OpenConnectionMessage.ConnectionId
+                MapBytes(0),                            // OpenConnectionMessage.Claims
+                StringBytes(2), (byte)'e', (byte)'x'    // Extra trailing data
+            };
 
-            // Verify that the input binary string decodes to the expected MsgPack primitives
-            var bytes = new byte[] { ArrayBytes(3), 4, StringBytes(2), (byte)'i', (byte)'d', MapBytes(0), StringBytes(2), (byte)'e', (byte)'x' };
-
-            // Parse the input fully now.
             bytes = Frame(bytes);
             var message = ParseServiceMessage(bytes);
             var openConnectionMessage = Assert.IsType<OpenConnectionMessage>(message);
+            Assert.Equal(expectedMessage, openConnectionMessage, ServiceMessageEqualityComparer.Instance);
+
+            // Current protocol
+            expectedMessage = new OpenConnectionMessage("id", null, new Dictionary<string, StringValues>(), "?k=v");
+            bytes = new byte[]
+            {
+                ArrayBytes(5),                                              // Array Length
+                4,                                                          // Message Type: OpenConnectionMessage
+                StringBytes(2), (byte)'i', (byte)'d',                       // OpenConnectionMessage.ConnectionId
+                MapBytes(0),                                                // OpenConnectionMessage.Claims
+                MapBytes(0),                                                // OpenConnectionMessage.Headers
+                StringBytes(4), (byte)'?', (byte)'k', (byte)'=', (byte)'v', // OpenConnectionMessage.QueryString
+                StringBytes(2), (byte)'e', (byte)'x'                        // Extra trailing data
+            };
+
+            bytes = Frame(bytes);
+            message = ParseServiceMessage(bytes);
+            openConnectionMessage = Assert.IsType<OpenConnectionMessage>(message);
             Assert.Equal(expectedMessage, openConnectionMessage, ServiceMessageEqualityComparer.Instance);
         }
 

@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.Protocol.Tests
 {
@@ -74,7 +75,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         private bool OpenConnectionMessagesEqual(OpenConnectionMessage x, OpenConnectionMessage y)
         {
-            return StringEqual(x.ConnectionId, y.ConnectionId) && ClaimsEqual(x.Claims, y.Claims);
+            return StringEqual(x.ConnectionId, y.ConnectionId) && 
+                   ClaimsEqual(x.Claims, y.Claims) &&
+                   HeadersEqual(x.Headers, y.Headers) &&
+                   StringEqual(x.QueryString, y.QueryString);
         }
 
         private bool CloseConnectionMessagesEqual(CloseConnectionMessage x, CloseConnectionMessage y)
@@ -143,7 +147,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 return true;
             }
 
-            if (x.Length != y.Length)
+            if (x?.Length != y?.Length)
             {
                 return false;
             }
@@ -159,7 +163,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 return true;
             }
 
-            if (x.Count != y.Count)
+            if (x?.Count != y?.Count)
             {
                 return false;
             }
@@ -168,6 +172,30 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             {
                 if (!StringEqual(x.ElementAt(i).Key, y.ElementAt(i).Key) ||
                     !SequenceEqual(x.ElementAt(i).Value.ToArray(), y.ElementAt(i).Value.ToArray()))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool HeadersEqual(IDictionary<string, StringValues> x, IDictionary<string, StringValues> y)
+        {
+            if (x == null && y == null)
+            {
+                return true;
+            }
+
+            if (x?.Count != y?.Count)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < x.Count; i++)
+            {
+                if (!StringEqual(x.ElementAt(i).Key, y.ElementAt(i).Key) ||
+                    !SequenceEqual(x.ElementAt(i).Value, y.ElementAt(i).Value))
                 {
                     return false;
                 }
