@@ -13,9 +13,9 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class ServiceEndpointUtilityFacts
     {
-        private static readonly string Endpoint = "https://myendpoint";
+        private const string Endpoint = "https://myendpoint";
 
-        private static readonly string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
+        private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
 
         private static readonly string ConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};";
 
@@ -25,6 +25,8 @@ namespace Microsoft.Azure.SignalR.Tests
         };
 
         private static readonly IServiceEndpointUtility EndpointUtility = new ServiceEndpointUtility(Options.Create(ServiceOptions));
+
+        private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
 
         [Fact]
         public void GetServerEndpoint()
@@ -45,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             string userId = "UserA";
             var token = EndpointUtility.GenerateServerAccessToken<TestHub>(userId);
-            var expireDate = new JwtSecurityTokenHandler().ReadJwtToken(token).ValidTo;
+            var expireDate = JwtSecurityTokenHandler.ReadJwtToken(token).ValidTo;
             Assert.Equal(token, AuthenticationHelper.GenerateJwtBearer(
                 audience: $"{Endpoint}:5002/server/?hub={nameof(TestHub).ToLower()}",
                 claims: new[]
@@ -61,7 +63,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void GenerateClientAccessToken()
         {
             var token = EndpointUtility.GenerateClientAccessToken<TestHub>();
-            var expireDate = new JwtSecurityTokenHandler().ReadJwtToken(token).ValidTo;
+            var expireDate = JwtSecurityTokenHandler.ReadJwtToken(token).ValidTo;
             Assert.Equal(token, AuthenticationHelper.GenerateJwtBearer(
                 audience: $"{Endpoint}:5001/client/?hub={nameof(TestHub).ToLower()}",
                 claims: null,

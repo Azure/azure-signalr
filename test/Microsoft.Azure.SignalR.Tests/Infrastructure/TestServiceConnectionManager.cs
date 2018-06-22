@@ -15,9 +15,9 @@ namespace Microsoft.Azure.SignalR.Tests.Infrastructure
     class TestServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
     {
         private readonly ConcurrentDictionary<Type, int> _writeAsyncCallCount = new ConcurrentDictionary<Type, int>();
+
         public void AddServiceConnection(ServiceConnection serviceConnection)
         {
-            return;
         }
 
         public async Task StartAsync()

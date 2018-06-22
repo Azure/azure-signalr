@@ -12,12 +12,10 @@ namespace Microsoft.Azure.SignalR.Tests.Infrastructure
     {
         public void AddClientConnection(ServiceConnectionContext clientConnection)
         {
-            return;
         }
 
         public void RemoveClientConnection(string connectionId)
         {
-            return;
         }
 
         public ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections { get; }

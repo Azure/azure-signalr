@@ -5,7 +5,9 @@ using System;
 using System.Buffers;
 using System.IO.Pipelines;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Xunit;
 
@@ -88,7 +90,7 @@ namespace Microsoft.Azure.SignalR.Tests
             await proxy.StartAsync();
 
             var task = proxy.WaitForConnectionAsync("1");
-
+            
             await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
 
             var connection = await task.OrTimeout();
@@ -107,7 +109,7 @@ namespace Microsoft.Azure.SignalR.Tests
             await proxy.StartAsync();
 
             var task = proxy.WaitForConnectionAsync("1");
-
+            
             await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
 
             var connection = await task.OrTimeout();
@@ -162,12 +164,54 @@ namespace Microsoft.Azure.SignalR.Tests
             proxy.Stop();
         }
 
+        [Fact]
+        public async Task ServiceConnectionReconnect()
+        {
+            var connectionContext = new TestConnection();
+            var connectionFactory = new ConnectionFactoryForReconnection(connectionContext);
+
+            var proxy = new ServiceConnectionProxy(connectionContext: connectionContext,
+                connectionFactory: connectionFactory);
+
+            await proxy.StartAsync().OrTimeout();
+        }
+
         private async Task<T> ReadServiceMessageAsync<T>(PipeReader input, int timeout = 5000) where T : ServiceMessage
         {
             var data = await input.ReadSingleAsync().OrTimeout(timeout);
             var buffer = new ReadOnlySequence<byte>(data);
             Assert.True(Protocol.TryParseMessage(ref buffer, out var message));
             return Assert.IsType<T>(message);
+        }
+
+        private class ConnectionFactoryForReconnection : IConnectionFactory
+        {
+            private readonly ConnectionContext _connection;
+
+            private static readonly int RestartCountMax = 4;
+
+            private static int _currentRestartCount = 0;
+
+            public ConnectionFactoryForReconnection(ConnectionContext connection)
+            {
+                _connection = connection;
+            }
+
+            public Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
+            {
+                // Throw exception to test reconnection
+                if (_currentRestartCount < RestartCountMax)
+                {
+                    _currentRestartCount = _currentRestartCount + 1;
+                    throw new Exception();
+                }
+                return Task.FromResult(_connection);
+            }
+
+            public Task DisposeAsync(ConnectionContext connection)
+            {
+                return Task.CompletedTask;
+            }
         }
     }
 }

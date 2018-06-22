@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private static readonly List<string> TestGroups = new List<string> {"TestGroup"};
 
-        private static readonly string TestMethod = "TestMethod";
+        private const string TestMethod = "TestMethod";
 
         private static readonly object[] TestArgs = new[] {"TestArgs"};
 
