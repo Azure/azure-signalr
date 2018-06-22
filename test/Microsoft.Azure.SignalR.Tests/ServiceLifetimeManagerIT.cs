@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
@@ -26,19 +27,19 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private static readonly List<string> TestConnectionIds = new List<string> { "connectionId1" };
 
-        private ServiceConnectionProxy Proxy;
+        private readonly ServiceConnectionProxy _proxy;
 
-        private ServiceLifetimeManager<TestHub> ServiceLifetimeManager;
+        private readonly ServiceLifetimeManager<TestHub> _serviceLifetimeManager;
 
         public ServiceLifetimeManagerIT()
         {
-            Proxy = new ServiceConnectionProxy();
+            _proxy = new ServiceConnectionProxy();
 
             var serviceConnectionManager = new ServiceConnectionManager<TestHub>();
-            serviceConnectionManager.AddServiceConnection(Proxy.ServiceConnection);
+            serviceConnectionManager.AddServiceConnection(_proxy.ServiceConnection);
 
-            ServiceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                Proxy.ClientConnectionManager,
+            _serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+                _proxy.ClientConnectionManager,
                 new DefaultHubProtocolResolver(new IHubProtocol[] { new JsonHubProtocol(), new MessagePackHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
                 NullLogger<ServiceLifetimeManager<TestHub>>.Instance
                 );
@@ -47,13 +48,13 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendAllAsync()
         {
-            await Proxy.StartAsync().OrTimeout();
+            await _proxy.StartAsync().OrTimeout();
 
-            var _ = Proxy.ProcessIncomingAsync();
+            var _ = _proxy.ProcessIncomingAsync();
 
-            Task task = Proxy.WaitForSpecificMessage(typeof(BroadcastDataMessage));
+            Task task = _proxy.WaitForSpecificMessage(typeof(BroadcastDataMessage));
 
-            await ServiceLifetimeManager.SendAllAsync(TestMethod, TestArgs);
+            await _serviceLifetimeManager.SendAllAsync(TestMethod, TestArgs);
 
             await task.OrTimeout();
         }
@@ -61,13 +62,13 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendAllExceptAsync()
         {
-            await Proxy.StartAsync().OrTimeout();
+            await _proxy.StartAsync().OrTimeout();
 
-            var _ = Proxy.ProcessIncomingAsync();
+            var _ = _proxy.ProcessIncomingAsync();
 
-            Task task = Proxy.WaitForSpecificMessage(typeof(BroadcastDataMessage));
+            Task task = _proxy.WaitForSpecificMessage(typeof(BroadcastDataMessage));
 
-            await ServiceLifetimeManager.SendAllExceptAsync(TestMethod, TestArgs, TestConnectionIds);
+            await _serviceLifetimeManager.SendAllExceptAsync(TestMethod, TestArgs, TestConnectionIds);
 
             await task.OrTimeout();
         }
@@ -75,38 +76,33 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendConnectionAsync()
         {
-            await Proxy.StartAsync().OrTimeout();
-            var _ = Proxy.ProcessIncomingAsync();
+            await _proxy.StartAsync().OrTimeout();
+            var _ = _proxy.ProcessIncomingAsync();
 
             // Create a client connection
-            var connection1Task = Proxy.WaitForConnectionAsync(TestConnectionIds[0]);
+            var connection1Task = _proxy.WaitForConnectionAsync(TestConnectionIds[0]);
 
-            await Proxy.WriteMessageAsync(new OpenConnectionMessage(TestConnectionIds[0], null));
+            await _proxy.WriteMessageAsync(new OpenConnectionMessage(TestConnectionIds[0], null));
 
             var connection1 = await connection1Task.OrTimeout();
 
-            // Test when connection is on the server
-            //Task task = Proxy.WaitForSpecificMessage(typeof(InvocationMessage));
-            //await ServiceLifetimeManager.SendConnectionAsync(TestConnectionIds[0], TestMethod, TestArgs);
-            //await task.OrTimeout();
-
             // Test when connection is not on the server
             string anotherConnectionId = "anotherConnectionId";
-            Task task = Proxy.WaitForSpecificMessage(typeof(MultiConnectionDataMessage));
-            await ServiceLifetimeManager.SendConnectionAsync(anotherConnectionId, TestMethod, TestArgs);
+            Task task = _proxy.WaitForSpecificMessage(typeof(MultiConnectionDataMessage));
+            await _serviceLifetimeManager.SendConnectionAsync(anotherConnectionId, TestMethod, TestArgs);
             await task.OrTimeout();
         }
 
         [Fact]
         public async void SendConnectionsAsync()
         {
-            await Proxy.StartAsync().OrTimeout();
+            await _proxy.StartAsync().OrTimeout();
 
-            var _ = Proxy.ProcessIncomingAsync();
+            var _ = _proxy.ProcessIncomingAsync();
 
-            Task task = Proxy.WaitForSpecificMessage(typeof(MultiConnectionDataMessage));
+            Task task = _proxy.WaitForSpecificMessage(typeof(MultiConnectionDataMessage));
 
-            await ServiceLifetimeManager.SendConnectionsAsync(TestConnectionIds, TestMethod, TestArgs);
+            await _serviceLifetimeManager.SendConnectionsAsync(TestConnectionIds, TestMethod, TestArgs);
 
             await task.OrTimeout();
         }
@@ -114,13 +110,13 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendGroupAsync()
         {
-            await Proxy.StartAsync().OrTimeout();
+            await _proxy.StartAsync().OrTimeout();
 
-            var _ = Proxy.ProcessIncomingAsync();
+            var _ = _proxy.ProcessIncomingAsync();
 
-            Task task = Proxy.WaitForSpecificMessage(typeof(GroupBroadcastDataMessage));
+            Task task = _proxy.WaitForSpecificMessage(typeof(GroupBroadcastDataMessage));
 
-            await ServiceLifetimeManager.SendGroupAsync(TestGroups[0], TestMethod, TestArgs);
+            await _serviceLifetimeManager.SendGroupAsync(TestGroups[0], TestMethod, TestArgs);
 
             await task.OrTimeout();
         }
@@ -128,13 +124,13 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendGroupsAsync()
         {
-            await Proxy.StartAsync().OrTimeout();
+            await _proxy.StartAsync().OrTimeout();
 
-            var _ = Proxy.ProcessIncomingAsync();
+            var _ = _proxy.ProcessIncomingAsync();
 
-            Task task = Proxy.WaitForSpecificMessage(typeof(MultiGroupBroadcastDataMessage));
+            Task task = _proxy.WaitForSpecificMessage(typeof(MultiGroupBroadcastDataMessage));
 
-            await ServiceLifetimeManager.SendGroupsAsync(TestGroups, TestMethod, TestArgs);
+            await _serviceLifetimeManager.SendGroupsAsync(TestGroups, TestMethod, TestArgs);
 
             await task.OrTimeout();
         }
@@ -142,13 +138,13 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendGroupExceptAsync()
         {
-            await Proxy.StartAsync().OrTimeout();
+            await _proxy.StartAsync().OrTimeout();
 
-            var _ = Proxy.ProcessIncomingAsync();
+            var _ = _proxy.ProcessIncomingAsync();
 
-            Task task = Proxy.WaitForSpecificMessage(typeof(GroupBroadcastDataMessage));
+            Task task = _proxy.WaitForSpecificMessage(typeof(GroupBroadcastDataMessage));
 
-            await ServiceLifetimeManager.SendGroupExceptAsync(TestGroups[0], TestMethod, TestArgs, TestConnectionIds);
+            await _serviceLifetimeManager.SendGroupExceptAsync(TestGroups[0], TestMethod, TestArgs, TestConnectionIds);
 
             await task.OrTimeout();
         }
@@ -156,13 +152,13 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendUserAsync()
         {
-            await Proxy.StartAsync().OrTimeout();
+            await _proxy.StartAsync().OrTimeout();
 
-            var _ = Proxy.ProcessIncomingAsync();
+            var _ = _proxy.ProcessIncomingAsync();
 
-            Task task = Proxy.WaitForSpecificMessage(typeof(UserDataMessage));
+            Task task = _proxy.WaitForSpecificMessage(typeof(UserDataMessage));
 
-            await ServiceLifetimeManager.SendUserAsync(TestUsers[0], TestMethod, TestArgs);
+            await _serviceLifetimeManager.SendUserAsync(TestUsers[0], TestMethod, TestArgs);
 
             await task.OrTimeout();
         }
@@ -170,13 +166,13 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void SendUsersAsync()
         {
-            await Proxy.StartAsync().OrTimeout();
+            await _proxy.StartAsync().OrTimeout();
 
-            var _ = Proxy.ProcessIncomingAsync();
+            var _ = _proxy.ProcessIncomingAsync();
 
-            Task task = Proxy.WaitForSpecificMessage(typeof(MultiUserDataMessage));
+            Task task = _proxy.WaitForSpecificMessage(typeof(MultiUserDataMessage));
 
-            await ServiceLifetimeManager.SendUsersAsync(TestUsers, TestMethod, TestArgs);
+            await _serviceLifetimeManager.SendUsersAsync(TestUsers, TestMethod, TestArgs);
 
             await task.OrTimeout();
         }
@@ -184,13 +180,13 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void AddToGroupAsync()
         {
-            await Proxy.StartAsync().OrTimeout();
+            await _proxy.StartAsync().OrTimeout();
 
-            var _ = Proxy.ProcessIncomingAsync();
+            var _ = _proxy.ProcessIncomingAsync();
 
-            Task task = Proxy.WaitForSpecificMessage(typeof(JoinGroupMessage));
+            Task task = _proxy.WaitForSpecificMessage(typeof(JoinGroupMessage));
 
-            await ServiceLifetimeManager.AddToGroupAsync(TestConnectionIds[0], TestGroups[0]);
+            await _serviceLifetimeManager.AddToGroupAsync(TestConnectionIds[0], TestGroups[0]);
 
             await task.OrTimeout();
         }
@@ -198,13 +194,13 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void RemoveFromGroupAsync()
         {
-            await Proxy.StartAsync().OrTimeout();
+            await _proxy.StartAsync().OrTimeout();
 
-            var _ = Proxy.ProcessIncomingAsync();
+            var _ = _proxy.ProcessIncomingAsync();
 
-            Task task = Proxy.WaitForSpecificMessage(typeof(LeaveGroupMessage));
+            Task task = _proxy.WaitForSpecificMessage(typeof(LeaveGroupMessage));
 
-            await ServiceLifetimeManager.RemoveFromGroupAsync(TestConnectionIds[0], TestGroups[0]);
+            await _serviceLifetimeManager.RemoveFromGroupAsync(TestConnectionIds[0], TestGroups[0]);
 
             await task.OrTimeout();
         }
