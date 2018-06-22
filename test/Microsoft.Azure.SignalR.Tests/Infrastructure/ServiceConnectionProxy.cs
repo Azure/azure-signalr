@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
-        private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForSpecificMessage = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
+        private readonly ConcurrentDictionary<Type, TaskCompletionSource<object>> _waitForSpecificMessage = new ConcurrentDictionary<Type, TaskCompletionSource<object>>();
 
         public ServiceConnectionProxy(ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null)
         {
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public Task WaitForSpecificMessage(Type type)
         {
-            return _waitForSpecificMessage.GetOrAdd(type.FullName, key => new TaskCompletionSource<object>()).Task;
+            return _waitForSpecificMessage.GetOrAdd(type, key => new TaskCompletionSource<object>()).Task;
         }
 
         private Task OnConnectionAsync(ConnectionContext connection)
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.SignalR.Tests
                             consumed = buffer.Start;
                             examined = consumed;
 
-                            _waitForSpecificMessage.SetTaskResult(message.GetType().ToString());
+                            _waitForSpecificMessage.SetTaskResult(message.GetType());
                         }
                     }
 
@@ -227,9 +227,9 @@ namespace Microsoft.Azure.SignalR.Tests
 
     public static class ConcurrentDictionaryExtensions
     {
-        public static void SetTaskResult(this ConcurrentDictionary<string, TaskCompletionSource<object>> taskForWaiting, string messageType)
+        public static void SetTaskResult(this ConcurrentDictionary<Type, TaskCompletionSource<object>> taskForWaiting, Type type)
         {
-            if (taskForWaiting.TryGetValue(messageType, out var tcs))
+            if (taskForWaiting.TryGetValue(type, out var tcs))
             {
                 Task.Run(() => tcs.TrySetResult(null));
             }

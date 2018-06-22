@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Infrastructure;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -28,108 +27,106 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private static readonly List<string> TestConnectionIds = new List<string> {"connectionId1"};
 
-        private readonly Mock<IServiceConnectionManager<TestHub>> _serviceConnectionManagerMock;
-
-        private readonly ServiceLifetimeManager<TestHub> _serviceLifetimeManager;
-
-        public ServiceLifetimeManagerFacts()
+        [Theory]
+        [InlineData("SendAllAsync", typeof(BroadcastDataMessage))]
+        [InlineData("SendAllExceptAsync", typeof(BroadcastDataMessage))]
+        [InlineData("SendConnectionsAsync", typeof(MultiConnectionDataMessage))]
+        [InlineData("SendGroupAsync", typeof(GroupBroadcastDataMessage))]
+        [InlineData("SendGroupsAsync", typeof(MultiGroupBroadcastDataMessage))]
+        [InlineData("SendGroupExceptAsync", typeof(GroupBroadcastDataMessage))]
+        [InlineData("SendUserAsync", typeof(UserDataMessage))]
+        [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
+        [InlineData("AddToGroupAsync", typeof(JoinGroupMessage))]
+        [InlineData("RemoveFromGroupAsync", typeof(LeaveGroupMessage))]
+        public async void ServiceLifetimeManagerTest(string functionName, Type type)
         {
-            _serviceConnectionManagerMock = new Mock<IServiceConnectionManager<TestHub>>();
-            var clientConnectionManagerMock = new Mock<IClientConnectionManager>();
-            _serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(_serviceConnectionManagerMock.Object,
-                clientConnectionManagerMock.Object,
+            var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
+            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+                new TestClientConnectionManager(),
                 new DefaultHubProtocolResolver(new IHubProtocol[] { new JsonHubProtocol(), new MessagePackHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
                 NullLogger<ServiceLifetimeManager<TestHub>>.Instance);
+
+            await CallFunction(serviceLifetimeManager, functionName);
+
+            Assert.Equal(1, serviceConnectionManager.GetCallCount(type));
         }
 
-        [Fact]
-        public async void SendAllAsync()
+        [Theory]
+        [InlineData("SendAllAsync", typeof(BroadcastDataMessage))]
+        [InlineData("SendAllExceptAsync", typeof(BroadcastDataMessage))]
+        [InlineData("SendConnectionAsync", typeof(MultiConnectionDataMessage))]
+        [InlineData("SendConnectionsAsync", typeof(MultiConnectionDataMessage))]
+        [InlineData("SendGroupAsync", typeof(GroupBroadcastDataMessage))]
+        [InlineData("SendGroupsAsync", typeof(MultiGroupBroadcastDataMessage))]
+        [InlineData("SendGroupExceptAsync", typeof(GroupBroadcastDataMessage))]
+        [InlineData("SendUserAsync", typeof(UserDataMessage))]
+        [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
+        [InlineData("AddToGroupAsync", typeof(JoinGroupMessage))]
+        [InlineData("RemoveFromGroupAsync", typeof(LeaveGroupMessage))]
+        public async void ServiceLifetimeManagerIntegrationTest(string functionName, Type type)
         {
-            _serviceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<BroadcastDataMessage>())).Returns(Task.CompletedTask);
-            
-            await _serviceLifetimeManager.SendAllAsync(TestMethod, TestArgs);
-            _serviceConnectionManagerMock.Verify(m => m.WriteAsync(It.IsAny<BroadcastDataMessage>()), Times.Once);
+            var proxy = new ServiceConnectionProxy();
+
+            var serviceConnectionManager = new ServiceConnectionManager<TestHub>();
+            serviceConnectionManager.AddServiceConnection(proxy.ServiceConnection);
+
+            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+                proxy.ClientConnectionManager,
+                new DefaultHubProtocolResolver(new IHubProtocol[] { new JsonHubProtocol(), new MessagePackHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
+                NullLogger<ServiceLifetimeManager<TestHub>>.Instance
+            );
+
+            await proxy.StartAsync().OrTimeout();
+
+            var _ = proxy.ProcessIncomingAsync();
+
+            Task task = proxy.WaitForSpecificMessage(type);
+
+            await CallFunction(serviceLifetimeManager, functionName);
+
+            await task.OrTimeout();
         }
 
-        [Fact]
-        public async void SendAllExceptAsync()
+        private async Task CallFunction(ServiceLifetimeManager<TestHub> serviceLifetimeManager, string functionName)
         {
-            _serviceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<BroadcastDataMessage>())).Returns(Task.CompletedTask);
-
-            await _serviceLifetimeManager.SendAllExceptAsync(TestMethod, TestArgs, TestConnectionIds);
-            _serviceConnectionManagerMock.Verify(m => m.WriteAsync(It.IsAny<BroadcastDataMessage>()), Times.Once);
-        }
-
-        [Fact]
-        public async void SendConnectionsAsync()
-        {
-            _serviceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<MultiConnectionDataMessage>())).Returns(Task.CompletedTask);
-
-            await _serviceLifetimeManager.SendConnectionsAsync(TestConnectionIds, TestMethod, TestArgs);
-            _serviceConnectionManagerMock.Verify(m => m.WriteAsync(It.IsAny<MultiConnectionDataMessage>()), Times.Once);
-        }
-
-        [Fact]
-        public async void SendGroupAsync()
-        {
-            _serviceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<GroupBroadcastDataMessage>())).Returns(Task.CompletedTask);
-
-            await _serviceLifetimeManager.SendGroupAsync(TestGroups[0], TestMethod, TestArgs);
-            _serviceConnectionManagerMock.Verify(m => m.WriteAsync(It.IsAny<GroupBroadcastDataMessage>()), Times.Once);
-        }
-
-        [Fact]
-        public async void SendGroupsAsync()
-        {
-            _serviceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<MultiGroupBroadcastDataMessage>())).Returns(Task.CompletedTask);
-
-            await _serviceLifetimeManager.SendGroupsAsync(TestGroups, TestMethod, TestArgs);
-            _serviceConnectionManagerMock.Verify(m => m.WriteAsync(It.IsAny<MultiGroupBroadcastDataMessage>()), Times.Once);
-        }
-
-        [Fact]
-        public async void SendGroupExceptAsync()
-        {
-            _serviceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<GroupBroadcastDataMessage>())).Returns(Task.CompletedTask);
-
-            await _serviceLifetimeManager.SendGroupExceptAsync(TestGroups[0], TestMethod, TestArgs, TestConnectionIds);
-            _serviceConnectionManagerMock.Verify(m => m.WriteAsync(It.IsAny<GroupBroadcastDataMessage>()), Times.Once);
-        }
-
-        [Fact]
-        public async void SendUserAsync()
-        {
-            _serviceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<UserDataMessage>())).Returns(Task.CompletedTask);
-
-            await _serviceLifetimeManager.SendUserAsync(TestUsers[0], TestMethod, TestArgs);
-            _serviceConnectionManagerMock.Verify(m => m.WriteAsync(It.IsAny<UserDataMessage>()), Times.Once);
-        }
-
-        [Fact]
-        public async void SendUsersAsync()
-        {
-            _serviceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<MultiUserDataMessage>())).Returns(Task.CompletedTask);
-
-            await _serviceLifetimeManager.SendUsersAsync(TestUsers, TestMethod, TestArgs);
-            _serviceConnectionManagerMock.Verify(m => m.WriteAsync(It.IsAny<MultiUserDataMessage>()), Times.Once);
-        }
-
-        [Fact]
-        public async void AddToGroupAsync()
-        {
-            _serviceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<JoinGroupMessage>())).Returns(Task.CompletedTask);
-
-            await _serviceLifetimeManager.AddToGroupAsync(TestConnectionIds[0], TestGroups[0]);
-            _serviceConnectionManagerMock.Verify(m => m.WriteAsync(It.IsAny<JoinGroupMessage>()), Times.Once);
-        }
-
-        [Fact]
-        public async void RemoveFromGroupAsync()
-        {
-            _serviceConnectionManagerMock.Setup(m => m.WriteAsync(It.IsAny<LeaveGroupMessage>())).Returns(Task.CompletedTask);
-
-            await _serviceLifetimeManager.RemoveFromGroupAsync(TestConnectionIds[0], TestGroups[0]);
-            _serviceConnectionManagerMock.Verify(m => m.WriteAsync(It.IsAny<LeaveGroupMessage>()), Times.Once);
+            switch (functionName)
+            {
+                case "SendAllAsync":
+                    await serviceLifetimeManager.SendAllAsync(TestMethod, TestArgs);
+                    break;
+                case "SendAllExceptAsync":
+                    await serviceLifetimeManager.SendAllExceptAsync(TestMethod, TestArgs, TestConnectionIds);
+                    break;
+                case "SendConnectionAsync":
+                    await serviceLifetimeManager.SendConnectionAsync(TestConnectionIds[0], TestMethod, TestArgs);
+                    break;
+                case "SendConnectionsAsync":
+                    await serviceLifetimeManager.SendConnectionsAsync(TestConnectionIds, TestMethod, TestArgs);
+                    break;
+                case "SendGroupAsync":
+                    await serviceLifetimeManager.SendGroupAsync(TestGroups[0], TestMethod, TestArgs);
+                    break;
+                case "SendGroupsAsync":
+                    await serviceLifetimeManager.SendGroupsAsync(TestGroups, TestMethod, TestArgs);
+                    break;
+                case "SendGroupExceptAsync":
+                    await serviceLifetimeManager.SendGroupExceptAsync(TestGroups[0], TestMethod, TestArgs, TestConnectionIds);
+                    break;
+                case "SendUserAsync":
+                    await serviceLifetimeManager.SendUserAsync(TestUsers[0], TestMethod, TestArgs);
+                    break;
+                case "SendUsersAsync":
+                    await serviceLifetimeManager.SendUsersAsync(TestUsers, TestMethod, TestArgs);
+                    break;
+                case "AddToGroupAsync":
+                    await serviceLifetimeManager.AddToGroupAsync(TestConnectionIds[0], TestGroups[0]);
+                    break;
+                case "RemoveFromGroupAsync":
+                    await serviceLifetimeManager.RemoveFromGroupAsync(TestConnectionIds[0], TestGroups[0]);
+                    break;
+                default:
+                    break;
+            }
         }
     }
 }
