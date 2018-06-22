@@ -248,9 +248,43 @@ namespace Microsoft.Azure.SignalR.Protocol
             MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ConnectionDataMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
-            bool isArray = MemoryMarshal.TryGetArray(message.Payload, out var segment);
-            Debug.Assert(isArray, "We're not using managed memory");
-            MessagePackBinary.WriteBytes(packer, segment.Array, segment.Offset, segment.Count);
+            WriteBinary(packer, message.Payload);
+        }
+
+        private static void WriteBinary(Stream packer, ReadOnlySequence<byte> payload)
+        {
+            // We're manually writing the message pack binary payload to the stream directly
+            // because MessagePack-Csharp doesn't support writing the binary header outside of 
+            // calling WriteBytes directly
+            var count = (int)payload.Length;
+            if (count <= byte.MaxValue)
+            {
+                packer.WriteByte(MessagePackCode.Bin8);
+                packer.WriteByte((byte)count);
+            }
+            else if (count <= UInt16.MaxValue)
+            {
+                packer.WriteByte(MessagePackCode.Bin16);
+                packer.WriteByte((byte)(count >> 8));
+                packer.WriteByte((byte)count);
+            }
+            else
+            {
+                packer.WriteByte(MessagePackCode.Bin32);
+                packer.WriteByte((byte)(count >> 24));
+                packer.WriteByte((byte)(count >> 16));
+                packer.WriteByte((byte)(count >> 8));
+                packer.WriteByte((byte)count);
+            }
+
+            // Now writes the raw bytes to the stream directly
+            var position = payload.Start;
+            while (payload.TryGet(ref position, out var memory))
+            {
+                bool isArray = MemoryMarshal.TryGetArray(memory, out var segment);
+                Debug.Assert(isArray, "We're not using managed memory");
+                packer.Write(segment.Array, segment.Offset, segment.Count);
+            }
         }
 
         private static void WriteMultiConnectionDataMessage(MultiConnectionDataMessage message, Stream packer)

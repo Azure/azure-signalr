@@ -23,6 +23,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IServiceConnectionManager<THub> _serviceConnectionManager;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly IServiceProtocol _serviceProtocol;
+        private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly string _userId;
         private static readonly string Name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
 
@@ -31,7 +32,8 @@ namespace Microsoft.Azure.SignalR
             IClientConnectionManager clientConnectionManager,
             IServiceEndpointUtility serviceEndpointUtility,
             IOptions<ServiceOptions> options,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory,
+            IClientConnectionFactory clientConnectionFactory)
         {
             _serviceProtocol = serviceProtocol;
             _serviceConnectionManager = serviceConnectionManager;
@@ -41,6 +43,7 @@ namespace Microsoft.Azure.SignalR
 
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<ServiceHubDispatcher<THub>>();
+            _clientConnectionFactory = clientConnectionFactory;
             _userId = GenerateServerName();
         }
 
@@ -56,7 +59,7 @@ namespace Microsoft.Azure.SignalR
             // Simply create a couple of connections which connect to Azure SignalR
             for (var i = 0; i < _options.ConnectionCount; i++)
             {
-                var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, this, _loggerFactory, connectionDelegate, Guid.NewGuid().ToString());
+                var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, this, _loggerFactory, connectionDelegate, _clientConnectionFactory, Guid.NewGuid().ToString());
                 _serviceConnectionManager.AddServiceConnection(serviceConnection);
             }
             Log.StartingConnection(_logger, Name, _options.ConnectionCount);

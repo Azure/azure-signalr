@@ -26,6 +26,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly int MaxReconnectBackoffInternalInMilliseconds = 1000;
 
         private readonly IConnectionFactory _connectionFactory;
+        private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly IServiceProtocol _serviceProtocol;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
@@ -47,15 +48,19 @@ namespace Microsoft.Azure.SignalR
             TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackoffInternalInMilliseconds));
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
-            IClientConnectionManager clientConnectionManager,
-            IConnectionFactory connectionFactory, ILoggerFactory loggerFactory,
-            ConnectionDelegate connectionDelegate, string connectionId)
+                                 IClientConnectionManager clientConnectionManager,
+                                 IConnectionFactory connectionFactory, 
+                                 ILoggerFactory loggerFactory,
+                                 ConnectionDelegate connectionDelegate,
+                                 IClientConnectionFactory clientConnectionFactory,
+                                 string connectionId)
         {
             _serviceProtocol = serviceProtocol;
             _handshakeRequest = new HandshakeRequestMessage(_serviceProtocol.Version);
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
+            _clientConnectionFactory = clientConnectionFactory;
             _connectionId = connectionId;
             _logger = loggerFactory.CreateLogger<ServiceConnection>();
 
@@ -460,20 +465,7 @@ namespace Microsoft.Azure.SignalR
                         try
                         {
                             // Forward the message to the service
-                            if (buffer.IsSingleSegment)
-                            {
-                                await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, buffer.First));
-                            }
-                            else
-                            {
-                                // This is a multi-segmented buffer so just write each chunk
-                                // TODO: Optimize this by doing it all under a single lock
-                                var position = buffer.Start;
-                                while (buffer.TryGet(ref position, out var memory))
-                                {
-                                    await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, memory));
-                                }
-                            }
+                            await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, buffer));
                         }
                         catch (Exception ex)
                         {
@@ -514,7 +506,7 @@ namespace Microsoft.Azure.SignalR
 
         private Task OnConnectedAsync(OpenConnectionMessage message)
         {
-            var connection = new ServiceConnectionContext(message);
+            var connection = _clientConnectionFactory.CreateConnection(message);
             AddClientConnection(connection);
             Log.ConnectedStarting(_logger, connection.ConnectionId);
 
@@ -592,9 +584,22 @@ namespace Microsoft.Azure.SignalR
             {
                 try
                 {
-                    Log.WriteMessageToApplication(_logger, connectionDataMessage.Payload.Length, connectionDataMessage.ConnectionId);
-                    // Write the raw connection payload to the pipe let the upstream handle it
-                    await connection.Application.Output.WriteAsync(connectionDataMessage.Payload);
+                    var payload = connectionDataMessage.Payload;
+                    Log.WriteMessageToApplication(_logger, payload.Length, connectionDataMessage.ConnectionId);
+
+                    if (payload.IsSingleSegment)
+                    {
+                        // Write the raw connection payload to the pipe let the upstream handle it
+                        await connection.Application.Output.WriteAsync(payload.First);
+                    }
+                    else
+                    {
+                        var position = payload.Start;
+                        while (connectionDataMessage.Payload.TryGet(ref position, out var memory))
+                        {
+                            await connection.Application.Output.WriteAsync(memory);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {

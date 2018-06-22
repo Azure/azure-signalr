@@ -29,12 +29,12 @@ namespace Microsoft.Azure.SignalR
             "exp", // Expiration time claims. A token is valid only before its expiration time.
             "iat", // Issued At claim. Added by default. It is not validated by service.
             "nbf"  // Not Before claim. Added by default. It is not validated by service.
-        }; 
+        };
 
         private readonly object _heartbeatLock = new object();
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
-        public ServiceConnectionContext(OpenConnectionMessage serviceMessage)
+        public ServiceConnectionContext(OpenConnectionMessage serviceMessage, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
             ConnectionId = serviceMessage.ConnectionId;
             User = new ClaimsPrincipal();
@@ -43,11 +43,12 @@ namespace Microsoft.Azure.SignalR
                 : new ClaimsIdentity());
 
             // Create the Duplix Pipeline for the virtual connection
-            var transportPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
+            transportPipeOptions = transportPipeOptions ?? new PipeOptions(pauseWriterThreshold: 0,
                 resumeWriterThreshold: 0,
                 readerScheduler: PipeScheduler.ThreadPool,
                 useSynchronizationContext: false);
-            var appPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
+
+            appPipeOptions = appPipeOptions ?? new PipeOptions(pauseWriterThreshold: 0,
                 resumeWriterThreshold: 0,
                 readerScheduler: PipeScheduler.ThreadPool,
                 useSynchronizationContext: false);

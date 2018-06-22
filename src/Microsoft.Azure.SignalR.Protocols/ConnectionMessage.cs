@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Buffers;
 using System.Security.Claims;
 
 namespace Microsoft.Azure.SignalR.Protocol
@@ -84,12 +85,22 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="payload">Binary data to be delivered.</param>
         public ConnectionDataMessage(string connectionId, ReadOnlyMemory<byte> payload) : base(connectionId)
         {
+            Payload = new ReadOnlySequence<byte>(payload);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConnectionDataMessage"/> class.
+        /// </summary>
+        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="payload">Binary data to be delivered.</param>
+        public ConnectionDataMessage(string connectionId, ReadOnlySequence<byte> payload) : base(connectionId)
+        {
             Payload = payload;
         }
 
         /// <summary>
         /// Gets or sets the binary payload.
         /// </summary>
-        public ReadOnlyMemory<byte> Payload { get; set; }
+        public ReadOnlySequence<byte> Payload { get; set; }
     }
 }
