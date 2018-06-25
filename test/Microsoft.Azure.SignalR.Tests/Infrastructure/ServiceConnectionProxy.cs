@@ -22,9 +22,9 @@ namespace Microsoft.Azure.SignalR.Tests
         private static readonly IServiceProtocol _serviceProtocol = new ServiceProtocol();
         private readonly PipeOptions _clientPipeOptions;
 
-        private IHandshackMessageFactory HandshackMessageFactory { get; }
+        public IHandshackMessageFactory HandshackMessageFactory { get; }
 
-        private IConnectionFactory ConnectionFactory { get; }
+        public IConnectionFactory ConnectionFactory { get; }
 
         public IClientConnectionManager ClientConnectionManager { get; }
 
@@ -160,6 +160,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
 
             await WriteMessageAsync(HandshackMessageFactory.GetHandshackResposeMessage());
+            AddServerConnection();
         }
 
         private async Task ReceiveHandshakeRequestAsync(PipeReader input, CancellationToken cancellationToken)

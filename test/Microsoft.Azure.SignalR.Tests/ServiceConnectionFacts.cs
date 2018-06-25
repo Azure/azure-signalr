@@ -91,7 +91,9 @@ namespace Microsoft.Azure.SignalR.Tests
                 return Task.CompletedTask;
             });
 
-            await proxy.StartAsync();
+            var serverTask = proxy.WaitForServerConnection(1);
+            _ = proxy.StartAsync();
+            await serverTask.OrTimeout();
 
             var task = proxy.WaitForConnectionAsync("1");
             
@@ -110,7 +112,9 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var proxy = new ServiceConnectionProxy();
 
-            await proxy.StartAsync();
+            var serverTask = proxy.WaitForServerConnection(1);
+            _ = proxy.StartAsync();
+            await serverTask.OrTimeout();
 
             var task = proxy.WaitForConnectionAsync("1");
             
@@ -134,7 +138,9 @@ namespace Microsoft.Azure.SignalR.Tests
             var clientPipeOptions = new PipeOptions(minimumSegmentSize: 10);
             var proxy = new ServiceConnectionProxy(clientPipeOptions: clientPipeOptions);
 
-            await proxy.StartAsync();
+            var serverTask = proxy.WaitForServerConnection(1);
+            _ = proxy.StartAsync();
+            await serverTask.OrTimeout();
 
             var task = proxy.WaitForConnectionAsync("1");
 
@@ -157,7 +163,9 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var proxy = new ServiceConnectionProxy();
 
-            await proxy.StartAsync();
+            var serverTask = proxy.WaitForServerConnection(1);
+            _ = proxy.StartAsync();
+            await serverTask.OrTimeout();
 
             // Check more than once since it happens periodically
             for (int i = 0; i < 2; i++)
@@ -177,7 +185,11 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var proxy = new ServiceConnectionProxy(connectionContext: connectionContext,
                 connectionFactory: connectionFactory);
-            await proxy.StartAsync().OrTimeout();
+            ((ConnectionFactoryForReconnection)proxy.ConnectionFactory).SetProxy(proxy);
+
+            var serverTask = proxy.WaitForServerConnection(1);
+            _ = proxy.StartAsync();
+            await serverTask.OrTimeout();
 
             var connectionId = Guid.NewGuid().ToString("N");
 
@@ -191,7 +203,10 @@ namespace Microsoft.Azure.SignalR.Tests
         public async Task ServiceReconnectWhenHandshackErrorMessage()
         {
             var proxy = new ServiceConnectionProxy(handshackMessageFactory: new TestHandshackMessageFactory("Got Error"));
-            await proxy.StartAsync().OrTimeout();
+
+            var serverTask = proxy.WaitForServerConnection(1);
+            _ = proxy.StartAsync();
+            await serverTask.OrTimeout();
 
             var connectionId = Guid.NewGuid().ToString("N");
             var connectionTask = proxy.WaitForConnectionAsync(connectionId);
@@ -207,7 +222,11 @@ namespace Microsoft.Azure.SignalR.Tests
         public async Task ServiceReconnectWhenHandshackThrowException()
         {
             var proxy = new ServiceConnectionProxy(handshackMessageFactory: new HandshackMessageFactoryForReconnection());
-            await proxy.StartAsync().OrTimeout();
+
+            // Throw exception for 3 times and succeed in the 4th retry
+            var serverTask = proxy.WaitForServerConnection(4);
+            _ = proxy.StartAsync();
+            await serverTask.OrTimeout();
 
             var connectionId = Guid.NewGuid().ToString("N");
 
@@ -232,9 +251,16 @@ namespace Microsoft.Azure.SignalR.Tests
 
             private int _currentRestartCount = 0;
 
+            private ServiceConnectionProxy _proxy;
+
             public ConnectionFactoryForReconnection(ConnectionContext connection)
             {
                 _connection = connection;
+            }
+
+            public void SetProxy(ServiceConnectionProxy proxy)
+            {
+                _proxy = proxy;
             }
 
             public Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
@@ -245,6 +271,8 @@ namespace Microsoft.Azure.SignalR.Tests
                     _currentRestartCount = _currentRestartCount + 1;
                     throw new Exception();
                 }
+
+                _ = _proxy.HandshakeAsync();
                 return Task.FromResult(_connection);
             }
 

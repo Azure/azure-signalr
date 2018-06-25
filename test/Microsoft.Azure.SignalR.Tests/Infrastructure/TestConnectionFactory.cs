@@ -18,11 +18,10 @@ namespace Microsoft.Azure.SignalR.Tests
             _proxy = proxy;
         }
 
-        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
+        public Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
         {
-            await _proxy.HandshakeAsync();
-            _proxy.AddServerConnection();
-            return _connection;
+            _ =  _proxy.HandshakeAsync();
+            return Task.FromResult(_connection);
         }
 
         public Task DisposeAsync(ConnectionContext connection)
