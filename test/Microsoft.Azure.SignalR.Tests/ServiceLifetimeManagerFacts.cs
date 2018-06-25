@@ -81,7 +81,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var _ = proxy.ProcessIncomingAsync();
 
-            var task = proxy.WaitForSpecificMessage(type);
+            var task = proxy.WaitForMessage(type);
 
             await CallFunction(serviceLifetimeManager, functionName);
 

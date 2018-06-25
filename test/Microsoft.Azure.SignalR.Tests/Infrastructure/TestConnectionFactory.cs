@@ -7,18 +7,22 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    public class TestConnectionFactory : IConnectionFactory
+    internal class TestConnectionFactory : IConnectionFactory
     {
         private readonly ConnectionContext _connection;
+        private readonly ServiceConnectionProxy _proxy;
 
-        public TestConnectionFactory(ConnectionContext connection)
+        public TestConnectionFactory(ConnectionContext connection, ServiceConnectionProxy proxy)
         {
             _connection = connection;
+            _proxy = proxy;
         }
 
-        public Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
+        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(_connection);
+            await _proxy.HandshakeAsync();
+            _proxy.AddServerConnection();
+            return _connection;
         }
 
         public Task DisposeAsync(ConnectionContext connection)

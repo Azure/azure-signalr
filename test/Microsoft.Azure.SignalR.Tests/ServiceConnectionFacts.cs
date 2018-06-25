@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests.Infrastructure;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -25,7 +26,10 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var proxy = new ServiceConnectionProxy();
 
-            await proxy.StartAsync().OrTimeout();
+            var serverTask = proxy.WaitForServerConnection(1);
+            _ =  proxy.StartAsync();
+            await serverTask.OrTimeout();
+
 
             Assert.Empty(proxy.ClientConnectionManager.ClientConnections);
 
@@ -164,16 +168,52 @@ namespace Microsoft.Azure.SignalR.Tests
             proxy.Stop();
         }
 
+        // Test when ConnectAsync throws Exception
         [Fact]
-        public async Task ServiceConnectionReconnect()
+        public async Task ServiceReconnectWhenConnectionAsyncThrowException()
         {
             var connectionContext = new TestConnection();
             var connectionFactory = new ConnectionFactoryForReconnection(connectionContext);
 
             var proxy = new ServiceConnectionProxy(connectionContext: connectionContext,
                 connectionFactory: connectionFactory);
-
             await proxy.StartAsync().OrTimeout();
+
+            var connectionId = Guid.NewGuid().ToString("N");
+
+            var connectionTask = proxy.WaitForConnectionAsync(connectionId);
+            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, null));
+            await connectionTask.OrTimeout();
+        }
+
+        //Test when Handshack return ErrorMessage
+        [Fact]
+        public async Task ServiceReconnectWhenHandshackErrorMessage()
+        {
+            var proxy = new ServiceConnectionProxy(handshackMessageFactory: new TestHandshackMessageFactory("Got Error"));
+            await proxy.StartAsync().OrTimeout();
+
+            var connectionId = Guid.NewGuid().ToString("N");
+            var connectionTask = proxy.WaitForConnectionAsync(connectionId);
+
+            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, null));
+            
+            // Connection exits so the Task should be timeout
+            Assert.False(Task.WaitAll(new[] {connectionTask}, TimeSpan.FromSeconds(1)));
+        }
+
+        //Test when Handshack throws Exception
+        [Fact]
+        public async Task ServiceReconnectWhenHandshackThrowException()
+        {
+            var proxy = new ServiceConnectionProxy(handshackMessageFactory: new HandshackMessageFactoryForReconnection());
+            await proxy.StartAsync().OrTimeout();
+
+            var connectionId = Guid.NewGuid().ToString("N");
+
+            var connectionTask = proxy.WaitForConnectionAsync(connectionId);
+            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, null));
+            await connectionTask.OrTimeout();
         }
 
         private async Task<T> ReadServiceMessageAsync<T>(PipeReader input, int timeout = 5000) where T : ServiceMessage
@@ -188,9 +228,9 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             private readonly ConnectionContext _connection;
 
-            private static readonly int RestartCountMax = 4;
+            private const int RestartCountMax = 3;
 
-            private static int _currentRestartCount = 0;
+            private int _currentRestartCount = 0;
 
             public ConnectionFactoryForReconnection(ConnectionContext connection)
             {
@@ -211,6 +251,24 @@ namespace Microsoft.Azure.SignalR.Tests
             public Task DisposeAsync(ConnectionContext connection)
             {
                 return Task.CompletedTask;
+            }
+        }
+
+        private class HandshackMessageFactoryForReconnection : IHandshackMessageFactory
+        {
+            private const int RestartCountMax = 3;
+
+            private int _currentRestartCount = 0;
+
+            public ServiceMessage GetHandshackResposeMessage()
+            {
+                if (_currentRestartCount < RestartCountMax)
+                {
+                    _currentRestartCount = _currentRestartCount + 1;
+                    return new BroadcastDataMessage(null);
+                }
+
+                return new HandshakeResponseMessage();
             }
         }
     }

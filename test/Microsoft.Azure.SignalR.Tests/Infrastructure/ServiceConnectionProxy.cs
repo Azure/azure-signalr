@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests.Infrastructure;
 using Microsoft.Extensions.Logging.Abstractions;
 using HandshakeRequestMessage = Microsoft.Azure.SignalR.Protocol.HandshakeRequestMessage;
 using HandshakeResponseMessage = Microsoft.Azure.SignalR.Protocol.HandshakeResponseMessage;
@@ -20,6 +21,8 @@ namespace Microsoft.Azure.SignalR.Tests
         private static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(5);
         private static readonly IServiceProtocol _serviceProtocol = new ServiceProtocol();
         private readonly PipeOptions _clientPipeOptions;
+
+        private IHandshackMessageFactory HandshackMessageFactory { get; }
 
         private IConnectionFactory ConnectionFactory { get; }
 
@@ -33,14 +36,22 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
+        private readonly ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>> _waitForServerConnection = new ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>>();
         private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
 
-        public ServiceConnectionProxy(ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null, TestConnection connectionContext = null, IConnectionFactory connectionFactory = null)
+        private int _serverConnectionCount = 0;
+
+        public ServiceConnectionProxy(ConnectionDelegate callback = null,
+            PipeOptions clientPipeOptions = null,
+            TestConnection connectionContext = null,
+            IConnectionFactory connectionFactory = null,
+            IHandshackMessageFactory handshackMessageFactory = null)
         {
             ConnectionContext = connectionContext ?? new TestConnection();
-            ConnectionFactory = connectionFactory ?? new TestConnectionFactory(ConnectionContext);
+            ConnectionFactory = connectionFactory ?? new TestConnectionFactory(ConnectionContext, this);
             ClientConnectionManager = new ClientConnectionManager();
             _clientPipeOptions = clientPipeOptions;
+            HandshackMessageFactory = handshackMessageFactory ?? new TestHandshackMessageFactory();
 
             ServiceConnection = new ServiceConnection(
                 _serviceProtocol,
@@ -54,8 +65,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public Task StartAsync()
         {
-            _ = ServiceConnection.StartAsync();
-            return HandshakeAsync();
+            return ServiceConnection.StartAsync();
         }
 
         public Task ProcessIncomingAsync()
@@ -87,9 +97,15 @@ namespace Microsoft.Azure.SignalR.Tests
             return _waitForConnectionClose.GetOrAdd(connectionId, key => new TaskCompletionSource<object>()).Task;
         }
 
-        public Task<ServiceMessage> WaitForSpecificMessage(Type type)
+        public Task<ServiceMessage> WaitForMessage(Type type)
         {
             return _waitForMessage.GetOrAdd(type, key => new TaskCompletionSource<ServiceMessage>()).Task;
+        }
+
+        public Task<ConnectionContext> WaitForServerConnection(int connectionCount)
+        {
+            return _waitForServerConnection.GetOrAdd(connectionCount, key => new TaskCompletionSource<ConnectionContext>())
+                .Task;
         }
 
         private Task OnConnectionAsync(ConnectionContext connection)
@@ -126,14 +142,24 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private async Task HandshakeAsync()
+        public void AddServerConnection()
+        {
+            Interlocked.Increment(ref _serverConnectionCount);
+
+            if (_waitForServerConnection.TryGetValue(_serverConnectionCount, out var tcs))
+            {
+                tcs.TrySetResult(null);
+            }
+        }
+
+        public async Task HandshakeAsync()
         {
             using (var handshakeCts = new CancellationTokenSource(DefaultHandshakeTimeout))
             {
                 await ReceiveHandshakeRequestAsync(ConnectionContext.Application.Input, handshakeCts.Token);
             }
 
-            await WriteMessageAsync(new HandshakeResponseMessage());
+            await WriteMessageAsync(HandshackMessageFactory.GetHandshackResposeMessage());
         }
 
         private async Task ReceiveHandshakeRequestAsync(PipeReader input, CancellationToken cancellationToken)
