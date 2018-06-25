@@ -5,8 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.Azure.SignalR.Tests.Infrastructure;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -46,30 +48,56 @@ namespace Microsoft.Azure.SignalR.Tests
         public void GenerateServerAccessToken()
         {
             string userId = "UserA";
-            var token = EndpointUtility.GenerateServerAccessToken<TestHub>(userId);
-            var expireDate = JwtSecurityTokenHandler.ReadJwtToken(token).ValidTo;
-            Assert.Equal(token, AuthenticationHelper.GenerateJwtBearer(
-                audience: $"{Endpoint}:5002/server/?hub={nameof(TestHub).ToLower()}",
-                claims: new[]
-                    {
-                        new Claim(ClaimTypes.NameIdentifier, userId)
-                    },
-                expires: expireDate,
-                signingKey: AccessKey
-            ));
+            var tokenString = EndpointUtility.GenerateServerAccessToken<TestHub>(userId);
+            var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
+
+            var expectedTokenString = GenerateJwtBearer($"{Endpoint}:5002/server/?hub={nameof(TestHub).ToLower()}",
+                new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, userId)
+                },
+                token.ValidTo,
+                token.ValidFrom,
+                token.ValidFrom,
+                AccessKey);
+
+            Assert.Equal(expectedTokenString, tokenString);
         }
 
         [Fact]
         public void GenerateClientAccessToken()
         {
-            var token = EndpointUtility.GenerateClientAccessToken<TestHub>();
-            var expireDate = JwtSecurityTokenHandler.ReadJwtToken(token).ValidTo;
-            Assert.Equal(token, AuthenticationHelper.GenerateJwtBearer(
-                audience: $"{Endpoint}:5001/client/?hub={nameof(TestHub).ToLower()}",
-                claims: null,
-                expires: expireDate,
-                signingKey: AccessKey
-            ));
+            var tokenString = EndpointUtility.GenerateClientAccessToken<TestHub>();
+            var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
+
+            var expectedTokenString = GenerateJwtBearer($"{Endpoint}:5001/client/?hub={nameof(TestHub).ToLower()}",
+                null,
+                token.ValidTo,
+                token.ValidFrom,
+                token.ValidFrom,
+                AccessKey);
+
+            Assert.Equal(expectedTokenString, tokenString);
+        }
+
+        private string GenerateJwtBearer(string audience,
+            IEnumerable<Claim> subject,
+            DateTime expires,
+            DateTime notBefore,
+            DateTime issueAt,
+            string signingKey)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            return JwtSecurityTokenHandler.WriteToken(JwtSecurityTokenHandler.CreateJwtSecurityToken(
+                issuer: null,
+                audience: audience,
+                subject: subject == null ? null : new ClaimsIdentity(subject),
+                notBefore: notBefore,
+                expires: expires,
+                issuedAt: issueAt,
+                signingCredentials: credentials));
         }
     }
 }

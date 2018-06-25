@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
@@ -43,12 +41,14 @@ namespace Microsoft.Azure.SignalR.Tests
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
                 new TestClientConnectionManager(),
-                new DefaultHubProtocolResolver(new IHubProtocol[] { new JsonHubProtocol(), new MessagePackHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
+                new DefaultHubProtocolResolver(new IHubProtocol[] {new JsonHubProtocol(), new MessagePackHubProtocol()},
+                    NullLogger<DefaultHubProtocolResolver>.Instance),
                 NullLogger<ServiceLifetimeManager<TestHub>>.Instance);
 
             await CallFunction(serviceLifetimeManager, functionName);
 
             Assert.Equal(1, serviceConnectionManager.GetCallCount(type));
+            VerifyMessageFileds(serviceConnectionManager.ServiceMessage, functionName);
         }
 
         [Theory]
@@ -72,7 +72,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
                 proxy.ClientConnectionManager,
-                new DefaultHubProtocolResolver(new IHubProtocol[] { new JsonHubProtocol(), new MessagePackHubProtocol() }, NullLogger<DefaultHubProtocolResolver>.Instance),
+                new DefaultHubProtocolResolver(new IHubProtocol[] {new JsonHubProtocol(), new MessagePackHubProtocol()},
+                    NullLogger<DefaultHubProtocolResolver>.Instance),
                 NullLogger<ServiceLifetimeManager<TestHub>>.Instance
             );
 
@@ -80,11 +81,13 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var _ = proxy.ProcessIncomingAsync();
 
-            Task task = proxy.WaitForSpecificMessage(type);
+            var task = proxy.WaitForSpecificMessage(type);
 
             await CallFunction(serviceLifetimeManager, functionName);
 
-            await task.OrTimeout();
+            var message = await task.OrTimeout();
+
+            VerifyMessageFileds(message, functionName);
         }
 
         private async Task CallFunction(ServiceLifetimeManager<TestHub> serviceLifetimeManager, string functionName)
@@ -110,7 +113,8 @@ namespace Microsoft.Azure.SignalR.Tests
                     await serviceLifetimeManager.SendGroupsAsync(TestGroups, TestMethod, TestArgs);
                     break;
                 case "SendGroupExceptAsync":
-                    await serviceLifetimeManager.SendGroupExceptAsync(TestGroups[0], TestMethod, TestArgs, TestConnectionIds);
+                    await serviceLifetimeManager.SendGroupExceptAsync(TestGroups[0], TestMethod, TestArgs,
+                        TestConnectionIds);
                     break;
                 case "SendUserAsync":
                     await serviceLifetimeManager.SendUserAsync(TestUsers[0], TestMethod, TestArgs);
@@ -123,6 +127,52 @@ namespace Microsoft.Azure.SignalR.Tests
                     break;
                 case "RemoveFromGroupAsync":
                     await serviceLifetimeManager.RemoveFromGroupAsync(TestConnectionIds[0], TestGroups[0]);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private void VerifyMessageFileds(ServiceMessage serviceMessage, string functionName)
+        {
+            switch (functionName)
+            {
+                case "SendAllAsync":
+                    Assert.Null(((BroadcastDataMessage) serviceMessage).ExcludedList);
+                    break;
+                case "SendAllExceptAsync":
+                    Assert.Equal(TestConnectionIds, ((BroadcastDataMessage) serviceMessage).ExcludedList);
+                    break;
+                case "SendConnectionAsync":
+                    Assert.Equal(TestConnectionIds[0], ((MultiConnectionDataMessage) serviceMessage).ConnectionList[0]);
+                    break;
+                case "SendConnectionsAsync":
+                    Assert.Equal(TestConnectionIds, ((MultiConnectionDataMessage) serviceMessage).ConnectionList);
+                    break;
+                case "SendGroupAsync":
+                    Assert.Equal(TestGroups[0], ((GroupBroadcastDataMessage) serviceMessage).GroupName);
+                    Assert.Null(((GroupBroadcastDataMessage) serviceMessage).ExcludedList);
+                    break;
+                case "SendGroupsAsync":
+                    Assert.Equal(TestGroups, ((MultiGroupBroadcastDataMessage) serviceMessage).GroupList);
+                    break;
+                case "SendGroupExceptAsync":
+                    Assert.Equal(TestGroups[0], ((GroupBroadcastDataMessage) serviceMessage).GroupName);
+                    Assert.Equal(TestConnectionIds, ((GroupBroadcastDataMessage) serviceMessage).ExcludedList);
+                    break;
+                case "SendUserAsync":
+                    Assert.Equal(TestUsers[0], ((UserDataMessage) serviceMessage).UserId);
+                    break;
+                case "SendUsersAsync":
+                    Assert.Equal(TestUsers, ((MultiUserDataMessage) serviceMessage).UserList);
+                    break;
+                case "AddToGroupAsync":
+                    Assert.Equal(TestConnectionIds[0], ((JoinGroupMessage) serviceMessage).ConnectionId);
+                    Assert.Equal(TestGroups[0], ((JoinGroupMessage) serviceMessage).GroupName);
+                    break;
+                case "RemoveFromGroupAsync":
+                    Assert.Equal(TestConnectionIds[0], ((LeaveGroupMessage) serviceMessage).ConnectionId);
+                    Assert.Equal(TestGroups[0], ((LeaveGroupMessage) serviceMessage).GroupName);
                     break;
                 default:
                     break;

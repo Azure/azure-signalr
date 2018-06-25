@@ -16,6 +16,8 @@ namespace Microsoft.Azure.SignalR.Tests.Infrastructure
     {
         private readonly ConcurrentDictionary<Type, int> _writeAsyncCallCount = new ConcurrentDictionary<Type, int>();
 
+        public ServiceMessage ServiceMessage { get; private set; }
+
         public void AddServiceConnection(ServiceConnection serviceConnection)
         {
         }
@@ -28,6 +30,7 @@ namespace Microsoft.Azure.SignalR.Tests.Infrastructure
         public async Task WriteAsync(ServiceMessage serviceMessage)
         {
             _writeAsyncCallCount.AddOrUpdate(serviceMessage.GetType(), 1, (_, value) => value + 1);
+            ServiceMessage = serviceMessage;
             await Task.CompletedTask;
         }
 
