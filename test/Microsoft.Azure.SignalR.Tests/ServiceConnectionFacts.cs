@@ -96,7 +96,7 @@ namespace Microsoft.Azure.SignalR.Tests
             await serverTask.OrTimeout();
 
             var task = proxy.WaitForConnectionAsync("1");
-            
+
             await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
 
             var connection = await task.OrTimeout();
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.SignalR.Tests
             await serverTask.OrTimeout();
 
             var task = proxy.WaitForConnectionAsync("1");
-            
+
             await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
 
             var connection = await task.OrTimeout();
