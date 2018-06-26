@@ -235,6 +235,30 @@ namespace Microsoft.Azure.SignalR.Tests
             await connectionTask.OrTimeout();
         }
 
+        // Test when Connection throws Exception
+        [Fact]
+        public async Task ServiceReconnectWhenConnectionThrowException()
+        {
+            var connection = new TestConnection();
+            var proxy = new ServiceConnectionProxy(connectionContext: connection);
+
+            var serverTask1 = proxy.WaitForServerConnection(1);
+            _ = proxy.StartAsync();
+            await serverTask1.OrTimeout();
+
+            // Try to wait the second handshack after reconnection
+            var serverTask2 = proxy.WaitForServerConnection(2);
+
+            // Dispose the connection and send one message, so that it will throw exception in ServiceConnection
+            //await Task.Delay(TimeSpan.FromSeconds(20));
+            connection.Dispose();
+
+            var connectionId1 = Guid.NewGuid().ToString("N");
+            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId1, null));
+
+            await serverTask2.OrTimeout();
+        }
+
         private async Task<T> ReadServiceMessageAsync<T>(PipeReader input, int timeout = 5000) where T : ServiceMessage
         {
             var data = await input.ReadSingleAsync().OrTimeout(timeout);
