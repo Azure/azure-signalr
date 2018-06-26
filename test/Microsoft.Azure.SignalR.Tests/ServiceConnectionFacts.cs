@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var proxy = new ServiceConnectionProxy();
 
-            var serverTask = proxy.WaitForServerConnection(1);
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ =  proxy.StartAsync();
             await serverTask.OrTimeout();
 
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 return Task.CompletedTask;
             });
 
-            var serverTask = proxy.WaitForServerConnection(1);
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
             await serverTask.OrTimeout();
 
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var proxy = new ServiceConnectionProxy();
 
-            var serverTask = proxy.WaitForServerConnection(1);
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
             await serverTask.OrTimeout();
 
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var clientPipeOptions = new PipeOptions(minimumSegmentSize: 10);
             var proxy = new ServiceConnectionProxy(clientPipeOptions: clientPipeOptions);
 
-            var serverTask = proxy.WaitForServerConnection(1);
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
             await serverTask.OrTimeout();
 
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var proxy = new ServiceConnectionProxy();
 
-            var serverTask = proxy.WaitForServerConnection(1);
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
             await serverTask.OrTimeout();
 
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 connectionFactory: connectionFactory);
             ((ConnectionFactoryForReconnection)proxy.ConnectionFactory).SetProxy(proxy);
 
-            var serverTask = proxy.WaitForServerConnection(1);
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
             await serverTask.OrTimeout();
 
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var proxy = new ServiceConnectionProxy(handshackMessageFactory: new TestHandshackMessageFactory("Got Error"));
 
-            var serverTask = proxy.WaitForServerConnection(1);
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
             await serverTask.OrTimeout();
 
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var proxy = new ServiceConnectionProxy(handshackMessageFactory: new HandshackMessageFactoryForReconnection());
 
             // Throw exception for 3 times and succeed in the 4th retry
-            var serverTask = proxy.WaitForServerConnection(4);
+            var serverTask = proxy.WaitForServerConnectionAsync(4);
             _ = proxy.StartAsync();
             await serverTask.OrTimeout();
 
@@ -242,21 +242,26 @@ namespace Microsoft.Azure.SignalR.Tests
             var connection = new TestConnection();
             var proxy = new ServiceConnectionProxy(connectionContext: connection);
 
-            var serverTask1 = proxy.WaitForServerConnection(1);
+            var serverTask1 = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
             await serverTask1.OrTimeout();
 
             // Try to wait the second handshack after reconnection
-            var serverTask2 = proxy.WaitForServerConnection(2);
+            var serverTask2 = proxy.WaitForServerConnectionAsync(2);
 
             // Dispose the connection and send one message, so that it will throw exception in ServiceConnection
-            //await Task.Delay(TimeSpan.FromSeconds(20));
             connection.Dispose();
-
             var connectionId1 = Guid.NewGuid().ToString("N");
             await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId1, null));
 
             await serverTask2.OrTimeout();
+
+            // Verify the server connection works well
+            var connectionId2 = Guid.NewGuid().ToString("N");
+            var connectionTask = proxy.WaitForConnectionAsync(connectionId2);
+            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId2, null));
+
+            await connectionTask.OrTimeout();
         }
 
         private async Task<T> ReadServiceMessageAsync<T>(PipeReader input, int timeout = 5000) where T : ServiceMessage

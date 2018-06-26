@@ -77,13 +77,13 @@ namespace Microsoft.Azure.SignalR.Tests
                 NullLogger<ServiceLifetimeManager<TestHub>>.Instance
             );
 
-            var serverTask = proxy.WaitForServerConnection(1);
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
             await serverTask.OrTimeout();
 
             _ = proxy.ProcessIncomingAsync();
 
-            var task = proxy.WaitForMessage(type);
+            var task = proxy.WaitForMessageAsync(type);
 
             await CallFunction(serviceLifetimeManager, functionName);
 

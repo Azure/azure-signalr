@@ -12,17 +12,15 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class TestConnection : ConnectionContext, IDisposable
     {
-        private readonly DuplexPipe.DuplexPipePair _pair;
-
         public TestConnection()
         {
             Features = new FeatureCollection();
             Items = new ConcurrentDictionary<object, object>();
 
             var pipeOptions = new PipeOptions();
-            _pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
-            Transport = _pair.Transport;
-            Application = _pair.Application;
+            var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+            Transport = pair.Transport;
+            Application = pair.Application;
         }
 
         public override string ConnectionId { get; set; }
@@ -38,10 +36,10 @@ namespace Microsoft.Azure.SignalR.Tests
         // To simulate the reconnection after disposed.
         public void SafeReconnect()
         {
-            if (Transport == null)
-            {
-                Transport = _pair.Transport;
-            }
+            var pipeOptions = new PipeOptions();
+            var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+            Transport = pair.Transport;
+            Application = pair.Application;
         }
 
         public void Dispose()

@@ -97,12 +97,12 @@ namespace Microsoft.Azure.SignalR.Tests
             return _waitForConnectionClose.GetOrAdd(connectionId, key => new TaskCompletionSource<object>()).Task;
         }
 
-        public Task<ServiceMessage> WaitForMessage(Type type)
+        public Task<ServiceMessage> WaitForMessageAsync(Type type)
         {
             return _waitForMessage.GetOrAdd(type, key => new TaskCompletionSource<ServiceMessage>()).Task;
         }
 
-        public Task<ConnectionContext> WaitForServerConnection(int connectionCount)
+        public Task<ConnectionContext> WaitForServerConnectionAsync(int connectionCount)
         {
             return _waitForServerConnection.GetOrAdd(connectionCount, key => new TaskCompletionSource<ConnectionContext>())
                 .Task;
@@ -149,6 +149,14 @@ namespace Microsoft.Azure.SignalR.Tests
             if (_waitForServerConnection.TryGetValue(_serverConnectionCount, out var tcs))
             {
                 tcs.TrySetResult(null);
+            }
+        }
+
+        public void AddMessage(Type type, ServiceMessage message)
+        {
+            if (_waitForMessage.TryGetValue(type, out var tcs))
+            {
+                tcs.TrySetResult(message);
             }
         }
 
@@ -230,7 +238,7 @@ namespace Microsoft.Azure.SignalR.Tests
                             consumed = buffer.Start;
                             examined = consumed;
 
-                            _waitForMessage.SetTaskResult(message.GetType(), message);
+                            AddMessage(message.GetType(), message);
                         }
                     }
 
@@ -249,17 +257,6 @@ namespace Microsoft.Azure.SignalR.Tests
         public ServiceConnectionContext CreateConnection(OpenConnectionMessage message)
         {
             return new ServiceConnectionContext(message, _clientPipeOptions, _clientPipeOptions);
-        }
-    }
-
-    public static class ConcurrentDictionaryExtensions
-    {
-        public static void SetTaskResult(this ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> taskForWaiting, Type type, ServiceMessage message)
-        {
-            if (taskForWaiting.TryGetValue(type, out var tcs))
-            {
-                Task.Run(() => tcs.TrySetResult(message));
-            }
         }
     }
 }

@@ -20,11 +20,12 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
         {
-            _ =  _proxy.HandshakeAsync();
-            if (_connection is TestConnection testConnection)
+            if (_connection is TestConnection testConnection 
+                && testConnection.Transport == null)
             {
                 testConnection.SafeReconnect();
             }
+            _ = _proxy.HandshakeAsync();
 
             return Task.FromResult(_connection);
         }
