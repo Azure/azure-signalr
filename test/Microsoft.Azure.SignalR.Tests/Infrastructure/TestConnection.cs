@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public IDuplexPipe Application { get; set; }
 
         // To simulate the reconnection after disposed.
-        public void SafeReconnect()
+        public void Reconnect()
         {
             var pipeOptions = new PipeOptions();
             var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public void Dispose()
         {
-            Transport = null;
+            Transport.Input.CancelPendingRead();
         }
     }
 }

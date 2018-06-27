@@ -176,6 +176,26 @@ namespace Microsoft.Azure.SignalR.Tests
             proxy.Stop();
         }
 
+        // Test when keepalive failed
+        [Fact]
+        public async Task ServiceReconnectWhenKeepaliveFailed()
+        {
+            var proxy = new ServiceConnectionProxy();
+
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
+            _ = proxy.StartAsync();
+            await serverTask.OrTimeout();
+
+            // Wait for 35s to make the server side timeout
+            // Assert the server will reconnect
+            var serverTask2 = proxy.WaitForServerConnectionAsync(2);
+            Assert.False(Task.WaitAll(new[] { serverTask2 }, TimeSpan.FromSeconds(1)));
+
+            await Task.Delay(TimeSpan.FromSeconds(35));
+
+            await serverTask2.OrTimeout();
+        }
+
         // Test when ConnectAsync throws Exception
         [Fact]
         public async Task ServiceReconnectWhenConnectionAsyncThrowException()
@@ -198,7 +218,7 @@ namespace Microsoft.Azure.SignalR.Tests
             await connectionTask.OrTimeout();
         }
 
-        //Test when Handshack return ErrorMessage
+        // Test when Handshack return ErrorMessage
         [Fact]
         public async Task ServiceReconnectWhenHandshackErrorMessage()
         {
@@ -217,13 +237,13 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.False(Task.WaitAll(new[] {connectionTask}, TimeSpan.FromSeconds(1)));
         }
 
-        //Test when Handshack throws Exception
+        // Test when Handshack throws Exception
         [Fact]
         public async Task ServiceReconnectWhenHandshackThrowException()
         {
             var proxy = new ServiceConnectionProxy(handshackMessageFactory: new HandshackMessageFactoryForReconnection());
 
-            // Throw exception for 3 times and succeed in the 4th retry
+            // Throw exception for 3 times and will be success in the 4th retry
             var serverTask = proxy.WaitForServerConnectionAsync(4);
             _ = proxy.StartAsync();
             await serverTask.OrTimeout();
@@ -248,18 +268,17 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // Try to wait the second handshack after reconnection
             var serverTask2 = proxy.WaitForServerConnectionAsync(2);
+            Assert.False(Task.WaitAll(new[] { serverTask2 }, TimeSpan.FromSeconds(1)));
 
-            // Dispose the connection and send one message, so that it will throw exception in ServiceConnection
+            // Dispose the connection, then server will throw exception and reconnect
             connection.Dispose();
-            var connectionId1 = Guid.NewGuid().ToString("N");
-            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId1, null));
 
             await serverTask2.OrTimeout();
 
             // Verify the server connection works well
-            var connectionId2 = Guid.NewGuid().ToString("N");
-            var connectionTask = proxy.WaitForConnectionAsync(connectionId2);
-            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId2, null));
+            var connectionId = Guid.NewGuid().ToString("N");
+            var connectionTask = proxy.WaitForConnectionAsync(connectionId);
+            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, null));
 
             await connectionTask.OrTimeout();
         }
