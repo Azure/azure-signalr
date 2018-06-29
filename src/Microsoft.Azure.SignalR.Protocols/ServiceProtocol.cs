@@ -571,7 +571,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             var headerCount = ReadMapLength(input, ref offset, "headers");
             if (headerCount > 0)
             {
-                var headers = new Dictionary<string, StringValues>((int)headerCount);
+                var headers = new Dictionary<string, StringValues>((int)headerCount, StringComparer.OrdinalIgnoreCase);
                 for (var i = 0; i < headerCount; i++)
                 {
                     var key = ReadString(input, ref offset, $"headers[{i}].key");
@@ -587,7 +587,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 return headers;
             }
 
-            return new Dictionary<string, StringValues>();
+            return new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
         }
 
         private static int ReadInt32(byte[] input, ref int offset, string field)

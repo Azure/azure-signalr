@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.SignalR.Tests
             const string value1 = "header-value-1";
             var value2 = new[] {"header-value-2a", "header-value-2b"};
             var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", new Claim[0],
-                new Dictionary<string, StringValues>
+                new Dictionary<string, StringValues> (StringComparer.OrdinalIgnoreCase)
                 {
                     {key1, value1},
                     {key2, value2}

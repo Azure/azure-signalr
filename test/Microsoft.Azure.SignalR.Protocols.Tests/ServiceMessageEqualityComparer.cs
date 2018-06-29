@@ -140,6 +140,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return string.Equals(x, y, StringComparison.Ordinal);
         }
 
+        private static bool StringEqualIgnoreCase(string x, string y)
+        {
+            return string.Equals(x, y, StringComparison.OrdinalIgnoreCase);
+        }
+
         private static bool ClaimsEqual(Claim[] x, Claim[] y)
         {
             if (x == null && y == null)
@@ -194,8 +199,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
             for (int i = 0; i < x.Count; i++)
             {
-                if (!StringEqual(x.ElementAt(i).Key, y.ElementAt(i).Key) ||
-                    !SequenceEqual(x.ElementAt(i).Value, y.ElementAt(i).Value))
+                var xKey = x.ElementAt(i).Key;
+                var yKey = y.ElementAt(i).Key;
+                if (!StringEqualIgnoreCase(xKey, yKey) ||
+                    !SequenceEqual(x[xKey], y[yKey]) ||
+                    !SequenceEqual(x[xKey], y[yKey.ToUpper()]))
                 {
                     return false;
                 }

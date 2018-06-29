@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="claims">An array of <see cref="Claim"/> associated with the connection.</param>
         public OpenConnectionMessage(string connectionId, Claim[] claims)
-            : this(connectionId, claims, new Dictionary<string, StringValues>(), string.Empty)
+            : this(connectionId, claims, new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase), string.Empty)
         {
         }
 

@@ -56,11 +56,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "OpenConnectionWithHeaders",
                 message: new OpenConnectionMessage("conn3", null, new Dictionary<string, StringValues>
                 {
-                    {"header-key-1", "heaer-value-1"},
+                    {"header-key-1", "header-value-1"},
                     {"header-key-2", new[] {"heaer-value-2a", "header-value-2b"}},
                     {"header-key-3", new[] {"heaer-value-3a", "header-value-3b", "header-value-3c"}}
                 }, string.Empty),
-                binary: "lQSlY29ubjOAg6xoZWFkZXIta2V5LTGRrWhlYWVyLXZhbHVlLTGsaGVhZGVyLWtleS0ykq5oZWFlci12YWx1ZS0yYa9oZWFkZXItdmFsdWUtMmKsaGVhZGVyLWtleS0zk65oZWFlci12YWx1ZS0zYa9oZWFkZXItdmFsdWUtM2KvaGVhZGVyLXZhbHVlLTNjoA=="),
+                binary: "lQSlY29ubjOAg6xoZWFkZXIta2V5LTGRrmhlYWRlci12YWx1ZS0xrGhlYWRlci1rZXktMpKuaGVhZXItdmFsdWUtMmGvaGVhZGVyLXZhbHVlLTJirGhlYWRlci1rZXktM5OuaGVhZXItdmFsdWUtM2GvaGVhZGVyLXZhbHVlLTNir2hlYWRlci12YWx1ZS0zY6A="),
             new ProtocolTestData(
                 name: "OpenConnectionWithQueryString1",
                 message: new OpenConnectionMessage("conn4", null, new Dictionary<string, StringValues>(), "query1=value1"),
