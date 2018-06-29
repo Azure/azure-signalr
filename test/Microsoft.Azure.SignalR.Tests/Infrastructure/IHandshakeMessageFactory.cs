@@ -9,8 +9,8 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests.Infrastructure
 {
-    interface IHandshackMessageFactory
+    interface IHandshakeMessageFactory
     {
-        ServiceMessage GetHandshackResposeMessage();
+        ServiceMessage GetHandshakeResponseMessage();
     }
 }

@@ -218,11 +218,11 @@ namespace Microsoft.Azure.SignalR.Tests
             await connectionTask.OrTimeout();
         }
 
-        // Test when Handshack return ErrorMessage
+        // Test when Handshake return ErrorMessage
         [Fact]
-        public async Task ServiceReconnectWhenHandshackErrorMessage()
+        public async Task ServiceReconnectWhenHandshakeErrorMessage()
         {
-            var proxy = new ServiceConnectionProxy(handshackMessageFactory: new TestHandshackMessageFactory("Got Error"));
+            var proxy = new ServiceConnectionProxy(handshakeMessageFactory: new TestHandshakeMessageFactory("Got Error"));
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
@@ -237,11 +237,11 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.False(Task.WaitAll(new[] {connectionTask}, TimeSpan.FromSeconds(1)));
         }
 
-        // Test when Handshack throws Exception
+        // Test when Handshake throws Exception
         [Fact]
-        public async Task ServiceReconnectWhenHandshackThrowException()
+        public async Task ServiceReconnectWhenHandshakeThrowException()
         {
-            var proxy = new ServiceConnectionProxy(handshackMessageFactory: new HandshackMessageFactoryForReconnection());
+            var proxy = new ServiceConnectionProxy(handshakeMessageFactory: new HandshakeMessageFactoryForReconnection());
 
             // Throw exception for 3 times and will be success in the 4th retry
             var serverTask = proxy.WaitForServerConnectionAsync(4);
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.SignalR.Tests
             _ = proxy.StartAsync();
             await serverTask1.OrTimeout();
 
-            // Try to wait the second handshack after reconnection
+            // Try to wait the second handshake after reconnection
             var serverTask2 = proxy.WaitForServerConnectionAsync(2);
             Assert.False(Task.WaitAll(new[] { serverTask2 }, TimeSpan.FromSeconds(1)));
 
@@ -330,13 +330,13 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private class HandshackMessageFactoryForReconnection : IHandshackMessageFactory
+        private class HandshakeMessageFactoryForReconnection : IHandshakeMessageFactory
         {
             private const int RestartCountMax = 3;
 
             private int _currentRestartCount = 0;
 
-            public ServiceMessage GetHandshackResposeMessage()
+            public ServiceMessage GetHandshakeResponseMessage()
             {
                 if (_currentRestartCount < RestartCountMax)
                 {

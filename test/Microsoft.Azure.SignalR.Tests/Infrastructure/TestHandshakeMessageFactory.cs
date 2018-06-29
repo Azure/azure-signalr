@@ -8,16 +8,16 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests.Infrastructure
 {
-    class TestHandshackMessageFactory : IHandshackMessageFactory
+    class TestHandshakeMessageFactory : IHandshakeMessageFactory
     {
         private readonly string _errorMessage;
 
-        public TestHandshackMessageFactory(string errorMessage = null)
+        public TestHandshakeMessageFactory(string errorMessage = null)
         {
             _errorMessage = errorMessage ?? string.Empty;
         }
 
-        public ServiceMessage GetHandshackResposeMessage()
+        public ServiceMessage GetHandshakeResponseMessage()
         {
             return new HandshakeResponseMessage(_errorMessage);
         }
