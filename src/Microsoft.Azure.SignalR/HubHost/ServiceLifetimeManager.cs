@@ -24,11 +24,12 @@ namespace Microsoft.Azure.SignalR
         public ServiceLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
             IHubProtocolResolver protocolResolver, ILogger<ServiceLifetimeManager<THub>> logger,
-            AzureSignalRMarkerService azureSignalRMarkerService)
+            AzureSignalRMarkerService marker)
         {
-            if (!azureSignalRMarkerService.UseAzureSignalRFlag)
+            if (!marker.IsConfigured)
             {
-                throw new InvalidOperationException("Please call UseAzureSignalR(...) when using AddAzureSignalR(...)");
+                throw new InvalidOperationException("'UseAzureSignalR(...)' not called after calling 'AddAzureSignalR(...)'." + 
+                                                    " Please always use 'AddAzureSignalR(...)' and 'UseAzureSignalR(...)' altogether.");
             }
 
             _serviceConnectionManager = serviceConnectionManager;

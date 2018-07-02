@@ -5,6 +5,6 @@ namespace Microsoft.Azure.SignalR
 {
     internal class AzureSignalRMarkerService
     {
-        internal bool UseAzureSignalRFlag { set; get; }
+        internal bool IsConfigured { set; get; }
     }
 }

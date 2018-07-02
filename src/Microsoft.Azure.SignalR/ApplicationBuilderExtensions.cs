@@ -4,6 +4,7 @@
 using System;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Azure.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.AspNetCore.Builder
 {
@@ -20,8 +21,14 @@ namespace Microsoft.AspNetCore.Builder
         /// <returns>The same instance of the <see cref="IApplicationBuilder"/> for chaining.</returns>
         public static IApplicationBuilder UseAzureSignalR(this IApplicationBuilder app, Action<ServiceRouteBuilder> configure)
         {
-            var marker = app.ApplicationServices.GetService(typeof(AzureSignalRMarkerService));
-            ((AzureSignalRMarkerService) marker).UseAzureSignalRFlag = true;
+            var marker = app.ApplicationServices.GetService<AzureSignalRMarkerService>();
+            if (marker == null)
+            {
+                throw new InvalidOperationException(
+                    "Unable to find the required services. Please add all the required services by calling " +
+                    "'IServiceCollection.AddAzureSignalR' inside the call to 'ConfigureServices(...)' in the application startup code.");
+            }
+            marker.IsConfigured = true;
             var routes = new RouteBuilder(app);
             configure(new ServiceRouteBuilder(routes));
             app.UseRouter(routes.Build());
