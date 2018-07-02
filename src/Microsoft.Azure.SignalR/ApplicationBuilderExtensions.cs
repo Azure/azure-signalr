@@ -20,6 +20,8 @@ namespace Microsoft.AspNetCore.Builder
         /// <returns>The same instance of the <see cref="IApplicationBuilder"/> for chaining.</returns>
         public static IApplicationBuilder UseAzureSignalR(this IApplicationBuilder app, Action<ServiceRouteBuilder> configure)
         {
+            var marker = app.ApplicationServices.GetService(typeof(AzureSignalRMarkerService));
+            ((AzureSignalRMarkerService) marker).UseAzureSignalRFlag = true;
             var routes = new RouteBuilder(app);
             configure(new ServiceRouteBuilder(routes));
             app.UseRouter(routes.Build());
