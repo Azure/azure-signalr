@@ -12,7 +12,6 @@ addons:
   apt:
     packages:
     - libunwind8
-    - nuget
 script:
 - "./build.sh --ci /p:BuildNumber=$((10000+TRAVIS_BUILD_NUMBER))"
 - "./publish.sh $API_KEY $NUGET_SOURCE"
