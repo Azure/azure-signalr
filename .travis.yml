@@ -4,6 +4,7 @@ branches:
   - dev
 dist: trusty
 mono: none
+dotnet: 2.1.301
 os:
 - linux
 - osx
@@ -13,6 +14,7 @@ addons:
     - libunwind8
 script:
 - "./build.sh --ci /p:BuildNumber=$((10000+TRAVIS_BUILD_NUMBER))"
+- dotnet --version
 - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then dotnet nuget push ./artifacts/build/*.nupkg -ApiKey $API_KEY -Source $NUGET_SOURCE; fi
 env:
   global:
