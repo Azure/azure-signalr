@@ -13,7 +13,6 @@ addons:
     - libunwind8
 script:
 - "./build.sh --ci /p:BuildNumber=$((10000+TRAVIS_BUILD_NUMBER))"
-- nuget pack ./artifacts/build/*.nupkg
 - nuget push ./artifacts/build/*.nupkg -ApiKey $API_KEY -Source $NUGET_SOURCE
 env:
   global:
