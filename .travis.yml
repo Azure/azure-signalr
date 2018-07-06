@@ -14,7 +14,6 @@ addons:
     - libunwind8
 script:
 - "./build.sh --ci /p:BuildNumber=$((10000+TRAVIS_BUILD_NUMBER))"
-- dotnet --version
 - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then dotnet nuget push ./artifacts/build/*.nupkg -ApiKey $API_KEY -Source $NUGET_SOURCE; fi
 env:
   global:
