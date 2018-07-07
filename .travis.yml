@@ -12,8 +12,6 @@ addons:
   apt:
     packages:
     - libunwind8
-before_script:
-- chmod +x ./publish.sh
 script:
 - "./build.sh --ci /p:BuildNumber=$((10000+TRAVIS_BUILD_NUMBER))"
 - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
