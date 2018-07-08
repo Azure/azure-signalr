@@ -10,9 +10,13 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -21,7 +25,8 @@ namespace Microsoft.Azure.SignalR
                                               IConnectionItemsFeature,
                                               IConnectionIdFeature,
                                               IConnectionTransportFeature,
-                                              IConnectionHeartbeatFeature
+                                              IConnectionHeartbeatFeature,
+                                              IHttpContextFeature
     {
         private static readonly string[] SystemClaims =
         {
@@ -30,6 +35,11 @@ namespace Microsoft.Azure.SignalR
             "iat", // Issued At claim. Added by default. It is not validated by service.
             "nbf"  // Not Before claim. Added by default. It is not validated by service.
         };
+
+        private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
+            resumeWriterThreshold: 0,
+            readerScheduler: PipeScheduler.ThreadPool,
+            useSynchronizationContext: false);
 
         private readonly object _heartbeatLock = new object();
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
@@ -43,26 +53,16 @@ namespace Microsoft.Azure.SignalR
                 : new ClaimsIdentity());
 
             // Create the Duplix Pipeline for the virtual connection
-            transportPipeOptions = transportPipeOptions ?? new PipeOptions(pauseWriterThreshold: 0,
-                resumeWriterThreshold: 0,
-                readerScheduler: PipeScheduler.ThreadPool,
-                useSynchronizationContext: false);
-
-            appPipeOptions = appPipeOptions ?? new PipeOptions(pauseWriterThreshold: 0,
-                resumeWriterThreshold: 0,
-                readerScheduler: PipeScheduler.ThreadPool,
-                useSynchronizationContext: false);
+            transportPipeOptions = transportPipeOptions ?? DefaultPipeOptions;
+            appPipeOptions = appPipeOptions ?? DefaultPipeOptions;
 
             var pair = DuplexPipe.CreateConnectionPair(transportPipeOptions, appPipeOptions);
             Transport = pair.Application;
             Application = pair.Transport;
 
-            Features = new FeatureCollection();
-            Features.Set<IConnectionHeartbeatFeature>(this);
-            Features.Set<IConnectionUserFeature>(this);
-            Features.Set<IConnectionItemsFeature>(this);
-            Features.Set<IConnectionIdFeature>(this);
-            Features.Set<IConnectionTransportFeature>(this);
+            HttpContext = BuildHttpContext(serviceMessage);
+
+            Features = BuildFeatures();
         }
 
         public void OnHeartbeat(Action<object> action, object state)
@@ -113,6 +113,8 @@ namespace Microsoft.Azure.SignalR
         // The associated HubConnectionContext
         public HubConnectionContext HubConnectionContext { get; set; }
 
+        public HttpContext HttpContext { get; set; }
+
         private static bool IsAuthenticatedUser(Claim[] claims)
         {
             if (claims?.Length > 0)
@@ -127,6 +129,34 @@ namespace Microsoft.Azure.SignalR
             }
 
             return false;
+        }
+
+        private FeatureCollection BuildFeatures()
+        {
+            var features = new FeatureCollection();
+            features.Set<IConnectionHeartbeatFeature>(this);
+            features.Set<IConnectionUserFeature>(this);
+            features.Set<IConnectionItemsFeature>(this);
+            features.Set<IConnectionIdFeature>(this);
+            features.Set<IConnectionTransportFeature>(this);
+            features.Set<IHttpContextFeature>(this);
+            return features;
+        }
+
+        private HttpContext BuildHttpContext(OpenConnectionMessage message)
+        {
+            var httpContextFeatures = new FeatureCollection();
+            httpContextFeatures.Set<IHttpRequestFeature>(new HttpRequestFeature
+            {
+                Headers = new HeaderDictionary((Dictionary<string, StringValues>) message.Headers),
+                QueryString = message.QueryString
+            });
+            httpContextFeatures.Set<IHttpAuthenticationFeature>(new HttpAuthenticationFeature
+            {
+                User = User
+            });
+
+            return new DefaultHttpContext(httpContextFeatures);
         }
     }
 }

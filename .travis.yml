@@ -4,6 +4,7 @@ branches:
   - dev
 dist: trusty
 mono: none
+dotnet: 2.1.301
 os:
 - linux
 - osx
@@ -12,4 +13,12 @@ addons:
     packages:
     - libunwind8
 script:
-- ./build.sh --ci
+- "./build.sh --ci /p:BuildNumber=$((10000+TRAVIS_BUILD_NUMBER))"
+- if [ "$TRAVIS_OS_NAME" == "linux" ]; then
+    if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+      for nupkg in ./artifacts/build/*.nupkg ; do dotnet nuget push $nupkg -s https://www.myget.org/F/azure-signalr-dev/api/v2/package -k $API_KEY ; done
+    fi
+  fi
+env:
+  global:
+    - secure: pQP7BWiWG8MWnpaBnMMIeNfrunJKzs6R+vXKGU/mBZVRgQ1T022bcjBKb3kCu+OUDvxueNGKyRYauC15NVVRx4SuzWZM/Rpac/UJjfF/5ptFzuilcyKrGgZnVpVTmX9Xifie3Jh5JHMoBG8NhCO1W4/OARlcTaaUIN6QnNLNLA0PYX955zIzGsGA5sTV7KsjxvbYY2gdL2qTUqVe6O4vM/tm3es/etdbHUbQcqFBXHfJWKTK1BbX4BTNH9s3BFNzabQIUGTHOAARQL+iB+SPg9CQ7c+W2pyQXbF1buRwAwf0lsVmpPOorypSHZYZtcd/kSohQ7AXaMfOm2+1hwoLGRYl5B7PwQFlem52UEC9LiUgFVUrY1PUthbQ2vOIr0Rk37cJsiciD3lbSSZp4fRn7YS/iD7uUh+dL2tUpMi/lYyLQ3IuMQW6RHwGiG7qBPkXY+s1eGLSr690dnugNavGQL44Wn+BsNp1w2xkdgErpyHHE/lr5CFjSb3nH5CjuYfmUM6ppyb5oafaqlTfzahIXJzl3tcmn011333OBFGcgV7FS6FcZe/PLGgdcD7yQ0x4MW2o2Wvd7C7DceA5cUAEB/H2pGgaaj6RkA3aXX2Gx1W1IrYFcquJmSo0pdTtAGi0YmSGvPKa/YbfxPAKANssTKc1/93k8tsFCpdxCYlCe6c=

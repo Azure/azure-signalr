@@ -3,7 +3,9 @@
 
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Security.Claims;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.Protocol
 {
@@ -33,15 +35,40 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="claims">An array of <see cref="Claim"/> associated with the connection.</param>
-        public OpenConnectionMessage(string connectionId, Claim[] claims) : base(connectionId)
+        public OpenConnectionMessage(string connectionId, Claim[] claims)
+            : this(connectionId, claims, new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase), string.Empty)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="OpenConnectionMessage"/> class.
+        /// </summary>
+        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="claims">An array of <see cref="Claim"/> associated with the connection.</param>
+        /// <param name="headers">A <see cref="IDictionary{TKey,TValue}"/> associated with the connection.</param>
+        /// <param name="queryString">Query string associated with the connection.</param>
+        public OpenConnectionMessage(string connectionId, Claim[] claims, IDictionary<string, StringValues> headers, string queryString)
+            : base(connectionId)
         {
             Claims = claims;
+            Headers = headers;
+            QueryString = queryString;
         }
 
         /// <summary>
         /// Gets or sets the associated claims.
         /// </summary>
         public Claim[] Claims { get; set; }
+
+        /// <summary>
+        /// Gets or sets the associated headers.
+        /// </summary>
+        public IDictionary<string, StringValues> Headers { get; set; }
+
+        /// <summary>
+        /// Gets or sets the associated query string.
+        /// </summary>
+        public string QueryString { get; set; }
     }
 
     /// <summary>

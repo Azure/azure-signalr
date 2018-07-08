@@ -3,12 +3,15 @@
 
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Primitives;
 using Microsoft.Azure.SignalR.Tests.Infrastructure;
 using Xunit;
 
@@ -44,15 +47,42 @@ namespace Microsoft.Azure.SignalR.Tests
 
             Assert.Single(proxy.ClientConnectionManager.ClientConnections);
 
+            var httpContext1 = connection1.GetHttpContext();
+            Assert.NotNull(httpContext1);
+            Assert.Empty(httpContext1.Request.Headers);
+            Assert.Empty(httpContext1.Request.Query);
+
             // Wait for the connection to appear
             var connectionTask2 = proxy.WaitForConnectionAsync(connectionId2);
 
             // Create another client connection
-            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId2, null));
+            const string headerKey1 = "custom-header-1";
+            const string headerValue1 = "custom-value-1";
+            const string headerKey2 = "custom-header-2";
+            var headerValue2 = new[] {"custom-value-2a", "custom-value-2b"};
+            const string headerKey3 = "custom-header-3";
+            var headerValue3 = new[] {"custom-value-3a", "custom-value-3b", "custom-value-3c"};
+            
+            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId2, null, new Dictionary<string, StringValues> 
+            {
+                {headerKey1, headerValue1},
+                {headerKey2, headerValue2},
+                {headerKey3, headerValue3}
+            }, "?customQuery1=customValue1&customQuery2=customValue2"));
 
             var connection2 = await connectionTask2.OrTimeout();
 
             Assert.Equal(2, proxy.ClientConnectionManager.ClientConnections.Count);
+
+            var httpContext2 = connection2.GetHttpContext();
+            Assert.NotNull(httpContext2);
+            Assert.Equal(3, httpContext2.Request.Headers.Count);
+            Assert.Equal(headerValue1, httpContext2.Request.Headers[headerKey1]);
+            Assert.Equal(headerValue2, httpContext2.Request.Headers[headerKey2]);
+            Assert.Equal(headerValue3, httpContext2.Request.Headers[headerKey3]);
+            Assert.Equal(2, httpContext2.Request.Query.Count);
+            Assert.Equal("customValue1", httpContext2.Request.Query["customQuery1"]);
+            Assert.Equal("customValue2", httpContext2.Request.Query["customQuery2"]);
 
             // Send a message to client 1
             await proxy.WriteMessageAsync(new ConnectionDataMessage(connectionId1, Encoding.ASCII.GetBytes("Hello")));
