@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR.Tests.Infrastructure
+namespace Microsoft.Azure.SignalR.Tests
 {
-    class TestServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
+    internal class TestServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
     {
         private readonly ConcurrentDictionary<Type, int> _writeAsyncCallCount = new ConcurrentDictionary<Type, int>();
 
@@ -33,12 +33,7 @@ namespace Microsoft.Azure.SignalR.Tests.Infrastructure
 
         public int GetCallCount(Type type)
         {
-            if (_writeAsyncCallCount.TryGetValue(type, out var count))
-            {
-                return count;
-            }
-
-            return 0;
+            return _writeAsyncCallCount.TryGetValue(type, out var count) ? count : 0;
         }
     }
 }

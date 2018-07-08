@@ -3,7 +3,7 @@
 
 using Microsoft.AspNetCore.SignalR;
 
-namespace Microsoft.Azure.SignalR.Tests.Infrastructure
+namespace Microsoft.Azure.SignalR.Tests
 {
     public class TestHub : Hub
     {

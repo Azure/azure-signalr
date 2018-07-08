@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Azure.SignalR.Tests.Infrastructure;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -34,6 +34,9 @@ namespace Microsoft.Azure.SignalR.Tests
                 },
                 NullLogger<DefaultHubProtocolResolver>.Instance);
 
+        private static readonly ILogger<ServiceLifetimeManager<TestHub>> Logger =
+            NullLogger<ServiceLifetimeManager<TestHub>>.Instance;
+
         private static readonly AzureSignalRMarkerService Marker = new AzureSignalRMarkerService();
 
         public ServiceLifetimeManagerFacts()
@@ -55,11 +58,8 @@ namespace Microsoft.Azure.SignalR.Tests
         public async void ServiceLifetimeManagerTest(string functionName, Type type)
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
-            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(
-                serviceConnectionManager,
-                new TestClientConnectionManager(),
-                HubProtocolResolver,
-                NullLogger<ServiceLifetimeManager<TestHub>>.Instance, Marker);
+            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
@@ -86,21 +86,16 @@ namespace Microsoft.Azure.SignalR.Tests
             var serviceConnectionManager = new ServiceConnectionManager<TestHub>();
             serviceConnectionManager.AddServiceConnection(proxy.ServiceConnection);
 
-            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(
-                serviceConnectionManager,
-                proxy.ClientConnectionManager,
-                HubProtocolResolver,
-                NullLogger<ServiceLifetimeManager<TestHub>>.Instance,
-                Marker
-            );
+            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+                proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker);
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
             await serverTask.OrTimeout();
 
-            _ = proxy.ProcessIncomingAsync();
+            _ = proxy.ProcessApplicationMessagesAsync();
 
-            var task = proxy.WaitForMessageAsync(messageType);
+            var task = proxy.WaitForApplicationMessageAsync(messageType);
 
             await InvokeMethod(serviceLifetimeManager, methodName);
 

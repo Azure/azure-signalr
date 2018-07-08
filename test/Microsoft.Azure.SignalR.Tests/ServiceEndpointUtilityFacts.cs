@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.Azure.SignalR.Tests.Infrastructure;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Xunit;
@@ -33,21 +32,23 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public void GetServerEndpoint()
         {
-            string endpoint = EndpointUtility.GetServerEndpoint<TestHub>();
-            Assert.Equal(endpoint, $"{Endpoint}:5002/server/?hub={nameof(TestHub).ToLower()}");
+            var expected = $"{Endpoint}:5002/server/?hub={nameof(TestHub).ToLower()}";
+            var actual = EndpointUtility.GetServerEndpoint<TestHub>();
+            Assert.Equal(expected, actual);
         }
 
         [Fact]
         public void GetClientEndpoint()
         {
-            string endpoint = EndpointUtility.GetClientEndpoint<TestHub>();
-            Assert.Equal(endpoint, $"{Endpoint}:5001/client/?hub={nameof(TestHub).ToLower()}");
+            var expected = $"{Endpoint}:5001/client/?hub={nameof(TestHub).ToLower()}";
+            var actual = EndpointUtility.GetClientEndpoint<TestHub>();
+            Assert.Equal(expected, actual);
         }
 
         [Fact]
         public void GenerateServerAccessToken()
         {
-            string userId = "UserA";
+            const string userId = "UserA";
             var tokenString = EndpointUtility.GenerateServerAccessToken<TestHub>(userId);
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
 

@@ -6,13 +6,10 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
-using Microsoft.Azure.SignalR.Tests.Infrastructure;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -32,7 +29,6 @@ namespace Microsoft.Azure.SignalR.Tests
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ =  proxy.StartAsync();
             await serverTask.OrTimeout();
-
 
             Assert.Empty(proxy.ClientConnectionManager.ClientConnections);
 
@@ -206,9 +202,12 @@ namespace Microsoft.Azure.SignalR.Tests
             proxy.Stop();
         }
 
-        // Test when keepalive failed
+        /// <summary>
+        /// When keep-alive is timed out, service connection should start reconnecting to service.
+        /// </summary>
+        /// <returns></returns>
         [Fact]
-        public async Task ServiceReconnectWhenKeepaliveFailed()
+        public async Task ReconnectWhenKeepAliveFailed()
         {
             var proxy = new ServiceConnectionProxy();
 
@@ -219,23 +218,21 @@ namespace Microsoft.Azure.SignalR.Tests
             // Wait for 35s to make the server side timeout
             // Assert the server will reconnect
             var serverTask2 = proxy.WaitForServerConnectionAsync(2);
-            Assert.False(Task.WaitAll(new[] { serverTask2 }, TimeSpan.FromSeconds(1)));
+            Assert.False(Task.WaitAll(new Task[] {serverTask2}, TimeSpan.FromSeconds(1)));
 
             await Task.Delay(TimeSpan.FromSeconds(35));
 
             await serverTask2.OrTimeout();
         }
 
-        // Test when ConnectAsync throws Exception
+        /// <summary>
+        /// When having intermittent connectivity failure, service connection should keep reconnecting to service.
+        /// </summary>
         [Fact]
-        public async Task ServiceReconnectWhenConnectionAsyncThrowException()
+        public async Task ReconnectWhenHavingIntermittentConnectivityFailure()
         {
-            var connectionContext = new TestConnection();
-            var connectionFactory = new ConnectionFactoryForReconnection(connectionContext);
-
-            var proxy = new ServiceConnectionProxy(connectionContext: connectionContext,
-                connectionFactory: connectionFactory);
-            ((ConnectionFactoryForReconnection)proxy.ConnectionFactory).SetProxy(proxy);
+            var connectionFactory = new TestConnectionFactory(new IntermittentConnectivityFailure().ConnectCallback);
+            var proxy = new ServiceConnectionProxy(connectionFactory: connectionFactory);
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
@@ -248,11 +245,13 @@ namespace Microsoft.Azure.SignalR.Tests
             await connectionTask.OrTimeout();
         }
 
-        // Test when Handshake return ErrorMessage
+        /// <summary>
+        /// Service connection should stop reconnecting to service after receiving a handshake response with error message.
+        /// </summary>
         [Fact]
-        public async Task ServiceReconnectWhenHandshakeErrorMessage()
+        public async Task StopReconnectAfterReceivingHandshakeErrorMessage()
         {
-            var proxy = new ServiceConnectionProxy(handshakeMessageFactory: new TestHandshakeMessageFactory("Got Error"));
+            var proxy = new ServiceConnectionProxy(connectionFactory: new TestConnectionFactoryWithHandshakeError());
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
@@ -264,14 +263,17 @@ namespace Microsoft.Azure.SignalR.Tests
             await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, null));
             
             // Connection exits so the Task should be timeout
-            Assert.False(Task.WaitAll(new[] {connectionTask}, TimeSpan.FromSeconds(1)));
+            Assert.False(Task.WaitAll(new Task[] {connectionTask}, TimeSpan.FromSeconds(1)));
         }
 
-        // Test when Handshake throws Exception
+        /// <summary>
+        /// Service connection should keep reconnecting to service when receiving invalid handshake response messages intermittently.
+        /// </summary>
         [Fact]
-        public async Task ServiceReconnectWhenHandshakeThrowException()
+        public async Task ReconnectWhenHandshakeThrowException()
         {
-            var proxy = new ServiceConnectionProxy(handshakeMessageFactory: new HandshakeMessageFactoryForReconnection());
+            var connectionFactory = new TestConnectionFactory(new IntermittentInvalidHandshakeResponseMessage().ConnectCallback);
+            var proxy = new ServiceConnectionProxy(connectionFactory: connectionFactory);
 
             // Throw exception for 3 times and will be success in the 4th retry
             var serverTask = proxy.WaitForServerConnectionAsync(4);
@@ -285,23 +287,24 @@ namespace Microsoft.Azure.SignalR.Tests
             await connectionTask.OrTimeout();
         }
 
-        // Test when Connection throws Exception
+        /// <summary>
+        /// Service connection should keep reconnecting to service when it is closed after handshake complete.
+        /// </summary>
         [Fact]
-        public async Task ServiceReconnectWhenConnectionThrowException()
+        public async Task ReconnectWhenConnectionThrowException()
         {
-            var connection = new TestConnection();
-            var proxy = new ServiceConnectionProxy(connectionContext: connection);
+            var proxy = new ServiceConnectionProxy();
 
             var serverTask1 = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
-            await serverTask1.OrTimeout();
+            var serverConnection1 = await serverTask1.OrTimeout();
 
-            // Try to wait the second handshake after reconnection
+            // Try to wait the second handshake after reconnect
             var serverTask2 = proxy.WaitForServerConnectionAsync(2);
-            Assert.False(Task.WaitAll(new[] { serverTask2 }, TimeSpan.FromSeconds(1)));
+            Assert.False(Task.WaitAll(new Task[] {serverTask2 }, TimeSpan.FromSeconds(1)));
 
             // Dispose the connection, then server will throw exception and reconnect
-            connection.Dispose();
+            serverConnection1.Transport.Input.CancelPendingRead();
 
             await serverTask2.OrTimeout();
 
@@ -313,7 +316,8 @@ namespace Microsoft.Azure.SignalR.Tests
             await connectionTask.OrTimeout();
         }
 
-        private async Task<T> ReadServiceMessageAsync<T>(PipeReader input, int timeout = 5000) where T : ServiceMessage
+        private static async Task<T> ReadServiceMessageAsync<T>(PipeReader input, int timeout = 5000)
+            where T : ServiceMessage
         {
             var data = await input.ReadSingleAsync().OrTimeout(timeout);
             var buffer = new ReadOnlySequence<byte>(data);
@@ -321,60 +325,50 @@ namespace Microsoft.Azure.SignalR.Tests
             return Assert.IsType<T>(message);
         }
 
-        private class ConnectionFactoryForReconnection : IConnectionFactory
+        private class IntermittentConnectivityFailure
         {
-            private readonly ConnectionContext _connection;
+            private const int MaxErrorCount = 3;
 
-            private const int RestartCountMax = 3;
+            private int _connectCount;
 
-            private int _currentRestartCount = 0;
-
-            private ServiceConnectionProxy _proxy;
-
-            public ConnectionFactoryForReconnection(ConnectionContext connection)
+            public Task ConnectCallback(TestConnection connection)
             {
-                _connection = connection;
-            }
-
-            public void SetProxy(ServiceConnectionProxy proxy)
-            {
-                _proxy = proxy;
-            }
-
-            public Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
-            {
-                // Throw exception to test reconnection
-                if (_currentRestartCount < RestartCountMax)
+                // Throw exception to test reconnect
+                if (_connectCount < MaxErrorCount)
                 {
-                    _currentRestartCount = _currentRestartCount + 1;
-                    throw new Exception();
+                    _connectCount++;
+                    throw new Exception("Connect error.");
                 }
 
-                _ = _proxy.HandshakeAsync();
-                return Task.FromResult(_connection);
-            }
-
-            public Task DisposeAsync(ConnectionContext connection)
-            {
                 return Task.CompletedTask;
             }
         }
 
-        private class HandshakeMessageFactoryForReconnection : IHandshakeMessageFactory
+        private class TestConnectionFactoryWithHandshakeError : TestConnectionFactory
         {
-            private const int RestartCountMax = 3;
-
-            private int _currentRestartCount = 0;
-
-            public ServiceMessage GetHandshakeResponseMessage()
+            protected override async Task DoHandshakeAsync(TestConnection connection)
             {
-                if (_currentRestartCount < RestartCountMax)
-                {
-                    _currentRestartCount = _currentRestartCount + 1;
-                    return new BroadcastDataMessage(null);
-                }
+                await HandshakeUtils.ReceiveHandshakeRequestAsync(connection.Application.Input);
+                await HandshakeUtils.SendHandshakeResponseAsync(connection.Application.Output,
+                    new HandshakeResponseMessage("Handshake error."));
+            }
+        }
 
-                return new HandshakeResponseMessage();
+        private class IntermittentInvalidHandshakeResponseMessage
+        {
+            private const int MaxErrorCount = 3;
+
+            private int _connectCount;
+
+            public async Task ConnectCallback(TestConnection connection)
+            {
+                // Throw exception to test reconnect
+                if (_connectCount < MaxErrorCount)
+                {
+                    _connectCount++;
+                    Protocol.WriteMessage(PingMessage.Instance, connection.Application.Output);
+                    await connection.Application.Output.FlushAsync();
+                }
             }
         }
     }
