@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
@@ -15,15 +16,30 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class ServiceLifetimeManagerFacts
     {
-        private static readonly List<string> TestUsers = new List<string> {"TestUser"};
+        private static readonly List<string> TestUsers = new List<string> {"user1", "user2"};
 
-        private static readonly List<string> TestGroups = new List<string> {"TestGroup"};
+        private static readonly List<string> TestGroups = new List<string> {"group1", "group2"};
 
         private const string TestMethod = "TestMethod";
 
-        private static readonly object[] TestArgs = new[] {"TestArgs"};
+        private static readonly object[] TestArgs = {"TestArgs"};
 
-        private static readonly List<string> TestConnectionIds = new List<string> {"connectionId1"};
+        private static readonly List<string> TestConnectionIds = new List<string> {"connection1", "connection2"};
+
+        private static readonly IHubProtocolResolver HubProtocolResolver =
+            new DefaultHubProtocolResolver(new IHubProtocol[]
+                {
+                    new JsonHubProtocol(),
+                    new MessagePackHubProtocol()
+                },
+                NullLogger<DefaultHubProtocolResolver>.Instance);
+
+        private static readonly AzureSignalRMarkerService Marker = new AzureSignalRMarkerService();
+
+        public ServiceLifetimeManagerFacts()
+        {
+            Marker.IsConfigured = true;
+        }
 
         [Theory]
         [InlineData("SendAllAsync", typeof(BroadcastDataMessage))]
@@ -39,16 +55,16 @@ namespace Microsoft.Azure.SignalR.Tests
         public async void ServiceLifetimeManagerTest(string functionName, Type type)
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
-            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(
+                serviceConnectionManager,
                 new TestClientConnectionManager(),
-                new DefaultHubProtocolResolver(new IHubProtocol[] {new JsonHubProtocol(), new MessagePackHubProtocol()},
-                    NullLogger<DefaultHubProtocolResolver>.Instance),
-                NullLogger<ServiceLifetimeManager<TestHub>>.Instance);
+                HubProtocolResolver,
+                NullLogger<ServiceLifetimeManager<TestHub>>.Instance, Marker);
 
-            await CallFunction(serviceLifetimeManager, functionName);
+            await InvokeMethod(serviceLifetimeManager, functionName);
 
             Assert.Equal(1, serviceConnectionManager.GetCallCount(type));
-            VerifyMessageFileds(serviceConnectionManager.ServiceMessage, functionName);
+            VerifyServiceMessage(functionName, serviceConnectionManager.ServiceMessage);
         }
 
         [Theory]
@@ -63,18 +79,19 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
         [InlineData("AddToGroupAsync", typeof(JoinGroupMessage))]
         [InlineData("RemoveFromGroupAsync", typeof(LeaveGroupMessage))]
-        public async void ServiceLifetimeManagerIntegrationTest(string functionName, Type type)
+        public async void ServiceLifetimeManagerIntegrationTest(string methodName, Type messageType)
         {
             var proxy = new ServiceConnectionProxy();
 
             var serviceConnectionManager = new ServiceConnectionManager<TestHub>();
             serviceConnectionManager.AddServiceConnection(proxy.ServiceConnection);
 
-            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(
+                serviceConnectionManager,
                 proxy.ClientConnectionManager,
-                new DefaultHubProtocolResolver(new IHubProtocol[] {new JsonHubProtocol(), new MessagePackHubProtocol()},
-                    NullLogger<DefaultHubProtocolResolver>.Instance),
-                NullLogger<ServiceLifetimeManager<TestHub>>.Instance
+                HubProtocolResolver,
+                NullLogger<ServiceLifetimeManager<TestHub>>.Instance,
+                Marker
             );
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
@@ -83,18 +100,18 @@ namespace Microsoft.Azure.SignalR.Tests
 
             _ = proxy.ProcessIncomingAsync();
 
-            var task = proxy.WaitForMessageAsync(type);
+            var task = proxy.WaitForMessageAsync(messageType);
 
-            await CallFunction(serviceLifetimeManager, functionName);
+            await InvokeMethod(serviceLifetimeManager, methodName);
 
             var message = await task.OrTimeout();
 
-            VerifyMessageFileds(message, functionName);
+            VerifyServiceMessage(methodName, message);
         }
 
-        private async Task CallFunction(ServiceLifetimeManager<TestHub> serviceLifetimeManager, string functionName)
+        private static async Task InvokeMethod(HubLifetimeManager<TestHub> serviceLifetimeManager, string methodName)
         {
-            switch (functionName)
+            switch (methodName)
             {
                 case "SendAllAsync":
                     await serviceLifetimeManager.SendAllAsync(TestMethod, TestArgs);
@@ -135,9 +152,9 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private void VerifyMessageFileds(ServiceMessage serviceMessage, string functionName)
+        private static void VerifyServiceMessage(string methodName, ServiceMessage serviceMessage)
         {
-            switch (functionName)
+            switch (methodName)
             {
                 case "SendAllAsync":
                     Assert.Null(((BroadcastDataMessage) serviceMessage).ExcludedList);
