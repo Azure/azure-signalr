@@ -3,9 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.IO;
 using System.IO.Pipelines;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
@@ -15,32 +13,32 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnectionFactory
     {
-        private static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(5);
-        private static readonly IServiceProtocol _serviceProtocol = new ServiceProtocol();
+        private static readonly IServiceProtocol ServiceProtocol = new ServiceProtocol();
         private readonly PipeOptions _clientPipeOptions;
 
-        private IConnectionFactory ConnectionFactory { get; }
+        public TestConnectionFactory ConnectionFactory { get; }
 
         public IClientConnectionManager ClientConnectionManager { get; }
 
-        public TestConnection ConnectionContext { get; }
+        public TestConnection ConnectionContext => ConnectionFactory.CurrentConnectionContext;
 
-        private ServiceConnection ServiceConnection { get; }
+        public ServiceConnection ServiceConnection { get; }
 
         public ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
 
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
+        private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
 
-        public ServiceConnectionProxy(ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null)
+        public ServiceConnectionProxy(ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null,
+            TestConnectionFactory connectionFactory = null)
         {
-            ConnectionContext = new TestConnection();
-            ConnectionFactory = new TestConnectionFactory(ConnectionContext);
+            ConnectionFactory = connectionFactory ?? new TestConnectionFactory();
             ClientConnectionManager = new ClientConnectionManager();
             _clientPipeOptions = clientPipeOptions;
 
             ServiceConnection = new ServiceConnection(
-                _serviceProtocol,
+                ServiceProtocol,
                 this,
                 ConnectionFactory,
                 NullLoggerFactory.Instance,
@@ -51,8 +49,54 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public Task StartAsync()
         {
-            _ = ServiceConnection.StartAsync();
-            return HandshakeAsync();
+            return ServiceConnection.StartAsync();
+        }
+
+        public async Task ProcessApplicationMessagesAsync()
+        {
+            try
+            {
+                while (true)
+                {
+                    var result = await ConnectionContext.Application.Input.ReadAsync();
+                    var buffer = result.Buffer;
+
+                    var consumed = buffer.Start;
+                    var examined = buffer.End;
+
+                    try
+                    {
+                        if (result.IsCanceled)
+                        {
+                            break;
+                        }
+
+                        if (!buffer.IsEmpty)
+                        {
+                            if (ServiceProtocol.TryParseMessage(ref buffer, out var message))
+                            {
+                                consumed = buffer.Start;
+                                examined = consumed;
+
+                                AddApplicationMessage(message.GetType(), message);
+                            }
+                        }
+
+                        if (result.IsCompleted)
+                        {
+                            break;
+                        }
+                    }
+                    finally
+                    {
+                        ConnectionContext.Application.Input.AdvanceTo(consumed, examined);
+                    }
+                }
+            }
+            catch
+            {
+                // Ignored.
+            }
         }
 
         public void Stop()
@@ -62,7 +106,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public async Task WriteMessageAsync(ServiceMessage message)
         {
-            _serviceProtocol.WriteMessage(message, ConnectionContext.Application.Output);
+            ServiceProtocol.WriteMessage(message, ConnectionContext.Application.Output);
             await ConnectionContext.Application.Output.FlushAsync();
         }
 
@@ -74,6 +118,16 @@ namespace Microsoft.Azure.SignalR.Tests
         public Task WaitForConnectionCloseAsync(string connectionId)
         {
             return _waitForConnectionClose.GetOrAdd(connectionId, key => new TaskCompletionSource<object>()).Task;
+        }
+
+        public Task<ServiceMessage> WaitForApplicationMessageAsync(Type type)
+        {
+            return _waitForApplicationMessage.GetOrAdd(type, key => new TaskCompletionSource<ServiceMessage>()).Task;
+        }
+
+        public Task<ConnectionContext> WaitForServerConnectionAsync(int count)
+        {
+            return ConnectionFactory.WaitForConnectionAsync(count);
         }
 
         private Task OnConnectionAsync(ConnectionContext connection)
@@ -110,67 +164,17 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private async Task HandshakeAsync()
-        {
-            using (var handshakeCts = new CancellationTokenSource(DefaultHandshakeTimeout))
-            {
-                await ReceiveHandshakeRequestAsync(ConnectionContext.Application.Input, handshakeCts.Token);
-            }
-
-            await WriteMessageAsync(new HandshakeResponseMessage());
-        }
-
-        private async Task ReceiveHandshakeRequestAsync(PipeReader input, CancellationToken cancellationToken)
-        {
-            while (true)
-            {
-                var result = await input.ReadAsync(cancellationToken);
-
-                var buffer = result.Buffer;
-                var consumed = buffer.Start;
-                var examined = buffer.End;
-
-                try
-                {
-                    if (!buffer.IsEmpty)
-                    {
-                        if (_serviceProtocol.TryParseMessage(ref buffer, out var message))
-                        {
-                            consumed = buffer.Start;
-                            examined = consumed;
-
-                            if (!(message is HandshakeRequestMessage handshakeRequest))
-                            {
-                                throw new InvalidDataException(
-                                    $"{message.GetType().Name} received when waiting for handshake request.");
-                            }
-
-                            if (handshakeRequest.Version != _serviceProtocol.Version)
-                            {
-                                throw new InvalidDataException("Protocol version not supported.");
-                            }
-
-                            break;
-                        }
-                    }
-
-                    if (result.IsCompleted)
-                    {
-                        // Not enough data, and we won't be getting any more data.
-                        throw new InvalidOperationException(
-                            "Service connectioned disconnected before sending a handshake request");
-                    }
-                }
-                finally
-                {
-                    input.AdvanceTo(consumed, examined);
-                }
-            }
-        }
-
         public ServiceConnectionContext CreateConnection(OpenConnectionMessage message)
         {
             return new ServiceConnectionContext(message, _clientPipeOptions, _clientPipeOptions);
+        }
+
+        private void AddApplicationMessage(Type type, ServiceMessage message)
+        {
+            if (_waitForApplicationMessage.TryGetValue(type, out var tcs))
+            {
+                tcs.TrySetResult(message);
+            }
         }
     }
 }

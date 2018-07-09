@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Builder.Internal;
@@ -94,10 +93,6 @@ namespace Microsoft.Azure.SignalR.Tests
                 routes.MapHub<TestHub>("/chat");
             }));
         }
-    }
-
-    class TestHub : Hub
-    {
     }
 
     public class EmptyApplicationLifetime : IApplicationLifetime
