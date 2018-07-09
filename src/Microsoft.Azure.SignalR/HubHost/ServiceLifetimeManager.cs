@@ -16,8 +16,7 @@ namespace Microsoft.Azure.SignalR
     internal class ServiceLifetimeManager<THub> : HubLifetimeManager<THub> where THub : Hub
     {
         private const string MarkerNotConfiguredError =
-            "'UseAzureSignalR(...)' not called after calling 'AddAzureSignalR(...)'." +
-            " Please always use 'AddAzureSignalR(...)' and 'UseAzureSignalR(...)' altogether.";
+            "'AddAzureSignalR(...)' was called without a matching call to 'IApplicationBuilder.AddAzureSignalR(...)'.";
 
         private readonly ILogger<ServiceLifetimeManager<THub>> _logger;
         private readonly IReadOnlyList<IHubProtocol> _allProtocols;

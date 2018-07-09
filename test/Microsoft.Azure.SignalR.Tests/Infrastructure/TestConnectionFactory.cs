@@ -71,9 +71,9 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private void AddConnection(ConnectionContext connection)
         {
-            Interlocked.Increment(ref _connectionCount);
+            var count = Interlocked.Increment(ref _connectionCount);
 
-            if (_waitForConnection.TryGetValue(_connectionCount, out var tcs))
+            if (_waitForConnection.TryGetValue(count, out var tcs))
             {
                 tcs.TrySetResult(connection);
             }
