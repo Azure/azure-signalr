@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var exception = Assert.Throws<ArgumentException>(() =>
                 ServiceEndpointUtility.ParseConnectionString(connectionString));
 
-            Assert.Contains("Endpoint is not valid", exception.Message);
+            Assert.Contains("Endpoint is invalid", exception.Message);
         }
     }
 }
