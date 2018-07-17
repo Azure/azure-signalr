@@ -9,13 +9,13 @@ namespace Microsoft.Azure.SignalR.Tests
     public class ConnectionStringParsingFacts
     {
         [Theory]
-        [InlineData("Endpoint=aaa;AccessKey=bbb;")]
-        [InlineData("ENDPOINT=aaa/;ACCESSKEY=bbb;")]
+        [InlineData("endpoint=https://aaa;AccessKey=bbb;")]
+        [InlineData("ENDPOINT=https://aaa/;ACCESSKEY=bbb;")]
         public void ValidConnectionString(string connectionString)
         {
             (var endpoint, var accessKey) = ServiceEndpointUtility.ParseConnectionString(connectionString);
 
-            Assert.Equal("aaa", endpoint);
+            Assert.Equal("https://aaa", endpoint);
             Assert.Equal("bbb", accessKey);
         }
 
@@ -30,6 +30,17 @@ namespace Microsoft.Azure.SignalR.Tests
                 ServiceEndpointUtility.ParseConnectionString(connectionString));
 
             Assert.Contains("Connection string missing required properties", exception.Message);
+        }
+
+        [Theory]
+        [InlineData("Endpoint=aaa;AccessKey=bbb;")]
+        [InlineData("Endpoint=endpoint=aaa;AccessKey=bbb;")]
+        public void InvalidEndpoint(string connectionString)
+        {
+            var exception = Assert.Throws<ArgumentException>(() =>
+                ServiceEndpointUtility.ParseConnectionString(connectionString));
+
+            Assert.Contains("Endpoint is not valid", exception.Message);
         }
     }
 }
