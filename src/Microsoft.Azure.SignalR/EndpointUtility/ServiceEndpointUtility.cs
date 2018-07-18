@@ -145,11 +145,22 @@ namespace Microsoft.Azure.SignalR
 
                 if (dict.ContainsKey(EndpointProperty) && dict.ContainsKey(AccessKeyProperty))
                 {
+                    if (!ValidateEndpoint(dict[EndpointProperty]))
+                    {
+                        throw new ArgumentException($"Endpoint property in connection string is not a valid URI: {dict[EndpointProperty]}.");
+                    }
+
                     return (dict[EndpointProperty].TrimEnd('/'), dict[AccessKeyProperty]);
                 }
             }
 
             throw new ArgumentException(MissingRequiredProperty);
+        }
+
+        internal static bool ValidateEndpoint(string endpoint)
+        {
+            return Uri.TryCreate(endpoint, UriKind.Absolute, out var uriResult) &&
+                   (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         }
     }
 }
