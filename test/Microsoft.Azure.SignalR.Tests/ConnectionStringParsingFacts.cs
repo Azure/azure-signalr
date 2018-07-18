@@ -9,13 +9,15 @@ namespace Microsoft.Azure.SignalR.Tests
     public class ConnectionStringParsingFacts
     {
         [Theory]
-        [InlineData("endpoint=https://aaa;AccessKey=bbb;")]
-        [InlineData("ENDPOINT=https://aaa/;ACCESSKEY=bbb;")]
-        public void ValidConnectionString(string connectionString)
+        [InlineData("https://aaa", "endpoint=https://aaa;AccessKey=bbb;")]
+        [InlineData("https://aaa", "ENDPOINT=https://aaa/;ACCESSKEY=bbb;")]
+        [InlineData("http://aaa", "endpoint=http://aaa;AccessKey=bbb;")]
+        [InlineData("http://aaa", "ENDPOINT=http://aaa/;ACCESSKEY=bbb;")]
+        public void ValidConnectionString(string expectedEndpoint, string connectionString)
         {
             (var endpoint, var accessKey) = ServiceEndpointUtility.ParseConnectionString(connectionString);
 
-            Assert.Equal("https://aaa", endpoint);
+            Assert.Equal(expectedEndpoint, endpoint);
             Assert.Equal("bbb", accessKey);
         }
 
@@ -40,7 +42,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var exception = Assert.Throws<ArgumentException>(() =>
                 ServiceEndpointUtility.ParseConnectionString(connectionString));
 
-            Assert.Contains("Endpoint is invalid", exception.Message);
+            Assert.Contains("Endpoint property in connection string is not a valid URI", exception.Message);
         }
     }
 }

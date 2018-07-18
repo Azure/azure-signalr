@@ -147,7 +147,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     if (!ValidateEndpoint(dict[EndpointProperty]))
                     {
-                        throw new ArgumentException($"Endpoint is invalid: {dict[EndpointProperty]}");
+                        throw new ArgumentException($"Endpoint property in connection string is not a valid URI: {dict[EndpointProperty]}.");
                     }
 
                     return (dict[EndpointProperty].TrimEnd('/'), dict[AccessKeyProperty]);
