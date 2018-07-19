@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Description>.NET Framework SDK for Azure ASP.NET SignalR.</Description>
     <TargetFramework>net461</TargetFramework>
-    <RootNamespace>Microsoft.Azure.AspNet.SignalR</RootNamespace>
+    <RootNamespace>Microsoft.Azure.SignalR.AspNet</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 

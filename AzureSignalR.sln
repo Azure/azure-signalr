@@ -34,7 +34,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.Tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.Protocols.Tests", "test\Microsoft.Azure.SignalR.Protocols.Tests\Microsoft.Azure.SignalR.Protocols.Tests.csproj", "{E2094C87-C0F2-471D-A399-0B78CC32C1AA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.AspNet.SignalR", "src\Microsoft.Azure.AspNet.SignalR\Microsoft.Azure.AspNet.SignalR.csproj", "{A8E6A862-8621-4F4E-8E10-3AF8D6F00882}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.AspNet", "src\Microsoft.Azure.SignalR.AspNet\Microsoft.Azure.SignalR.AspNet.csproj", "{235BF797-E3A2-4EEB-8D82-0C0BE1380663}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -62,10 +62,10 @@ Global
 		{E2094C87-C0F2-471D-A399-0B78CC32C1AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E2094C87-C0F2-471D-A399-0B78CC32C1AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E2094C87-C0F2-471D-A399-0B78CC32C1AA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A8E6A862-8621-4F4E-8E10-3AF8D6F00882}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A8E6A862-8621-4F4E-8E10-3AF8D6F00882}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A8E6A862-8621-4F4E-8E10-3AF8D6F00882}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A8E6A862-8621-4F4E-8E10-3AF8D6F00882}.Release|Any CPU.Build.0 = Release|Any CPU
+		{235BF797-E3A2-4EEB-8D82-0C0BE1380663}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{235BF797-E3A2-4EEB-8D82-0C0BE1380663}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{235BF797-E3A2-4EEB-8D82-0C0BE1380663}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{235BF797-E3A2-4EEB-8D82-0C0BE1380663}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -76,7 +76,7 @@ Global
 		{2EBFCD26-6E31-4855-ABF5-0A82E78F87C7} = {DA69F624-5398-4884-87E4-B816698CDE65}
 		{764DCFF5-D28D-4CEF-B186-B7A62FBB3E98} = {2429FBD8-1FCE-4C42-AA28-DF32F7249E77}
 		{E2094C87-C0F2-471D-A399-0B78CC32C1AA} = {2429FBD8-1FCE-4C42-AA28-DF32F7249E77}
-		{A8E6A862-8621-4F4E-8E10-3AF8D6F00882} = {DA69F624-5398-4884-87E4-B816698CDE65}
+		{235BF797-E3A2-4EEB-8D82-0C0BE1380663} = {DA69F624-5398-4884-87E4-B816698CDE65}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7945A4E4-ACDB-4F6E-95CA-6AC6E7C2CD59}
