@@ -170,8 +170,13 @@ namespace Microsoft.Azure.SignalR
 
             try
             {
-                using (var cts = new CancellationTokenSource(DefaultHandshakeTimeout))
+                using (var cts = new CancellationTokenSource())
                 {
+                    if (!Debugger.IsAttached)
+                    {
+                        cts.CancelAfter(DefaultHandshakeTimeout);
+                    }
+                    
                     if (await ReceiveHandshakeResponseAsync(_connection.Transport.Input, cts.Token))
                     {
                         Log.HandshakeComplete(_logger);
