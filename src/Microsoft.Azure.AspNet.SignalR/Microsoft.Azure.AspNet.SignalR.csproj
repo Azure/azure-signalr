@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNet.SignalR" Version="$(MicrosoftAspNetSignalRPackageVersion)" />
-    <PackageReference Include="owin" Version="$(OwinPackageVersion)" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="$(SystemIdentityModelTokensJwtPackageVersion)" />
   </ItemGroup>
 
