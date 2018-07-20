@@ -1,0 +1,99 @@
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Microsoft.AspNet.SignalR.Infrastructure
+{
+    /// <summary>
+    /// Copied from https://github.com/SignalR/SignalR/blob/dev/src/Microsoft.AspNet.SignalR.Core/Infrastructure/PrefixHelper.cs
+    /// </summary>
+    internal static class PrefixHelper
+    {
+        // Hubs
+        internal const string HubPrefix = "h-";
+        internal const string HubGroupPrefix = "hg-";
+        internal const string HubConnectionIdPrefix = "hc-";
+        internal const string HubUserPrefix = "hu-";
+
+        // Persistent Connections
+        internal const string PersistentConnectionPrefix = "pc-";
+        internal const string PersistentConnectionGroupPrefix = "pcg-";
+
+        // Both
+        internal const string ConnectionIdPrefix = "c-";
+
+        public static bool HasGroupPrefix(string value)
+        {
+            return value.StartsWith(HubGroupPrefix, StringComparison.Ordinal) ||
+                   value.StartsWith(PersistentConnectionGroupPrefix, StringComparison.Ordinal);
+        }
+
+        public static string GetConnectionId(string connectionId)
+        {
+            return ConnectionIdPrefix + connectionId;
+        }
+
+        public static string GetHubConnectionId(string connectionId)
+        {
+            return HubConnectionIdPrefix + connectionId;
+        }
+
+        public static string GetHubName(string connectionId)
+        {
+            return HubPrefix + connectionId;
+        }
+
+        public static string GetHubGroupName(string groupName)
+        {
+            return HubGroupPrefix + groupName;
+        }
+
+        public static string GetHubUserId(string userId)
+        {
+            return HubUserPrefix + userId;
+        }
+
+        public static string GetPersistentConnectionGroupName(string groupName)
+        {
+            return PersistentConnectionGroupPrefix + groupName;
+        }
+
+        public static string GetPersistentConnectionName(string connectionName)
+        {
+            return PersistentConnectionPrefix + connectionName;
+        }
+
+        public static IList<string> GetPrefixedConnectionIds(IList<string> connectionIds)
+        {
+            if (connectionIds.Count == 0)
+            {
+                return ListHelper<string>.Empty;
+            }
+
+            return connectionIds.Select(PrefixHelper.GetConnectionId).ToList();
+        }
+
+        public static IEnumerable<string> RemoveGroupPrefixes(IEnumerable<string> groups)
+        {
+            return groups.Select(PrefixHelper.RemoveGroupPrefix);
+        }
+
+        public static string RemoveGroupPrefix(string name)
+        {
+            if (name.StartsWith(HubGroupPrefix, StringComparison.Ordinal))
+            {
+                return name.Substring(HubGroupPrefix.Length);
+            }
+
+            if (name.StartsWith(PersistentConnectionGroupPrefix, StringComparison.Ordinal))
+            {
+                return name.Substring(PersistentConnectionGroupPrefix.Length);
+            }
+
+            return name;
+        }
+    }
+}
