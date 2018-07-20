@@ -3,7 +3,7 @@
     <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
   </PropertyGroup>
   <PropertyGroup Label="Package Versions">
-    <!-- Azure SignalR -->
+    <!-- Azure ASP.NET Core SignalR -->
     <MessagePackPackageVersion>1.7.3.4</MessagePackPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
     <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0</MicrosoftAspNetCoreSignalRPackageVersion>
@@ -16,6 +16,9 @@
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.0</MicrosoftExtensionsPrimitivesPackageVersion>
 
+    <!-- Azure ASP.NET SignalR -->
+    <MicrosoftAspNetSignalRPackageVersion>2.3.0</MicrosoftAspNetSignalRPackageVersion>
+    
     <!-- Signing -->
     <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>
 
