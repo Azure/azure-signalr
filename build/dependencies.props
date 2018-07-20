@@ -18,7 +18,9 @@
 
     <!-- Azure ASP.NET SignalR -->
     <MicrosoftAspNetSignalRPackageVersion>2.3.0</MicrosoftAspNetSignalRPackageVersion>
-    
+    <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.0</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
+    <MicrosoftExtensionsLoggingTraceSourcePackageVersion>2.1.0</MicrosoftExtensionsLoggingTraceSourcePackageVersion>
+
     <!-- Signing -->
     <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>
 
@@ -32,6 +34,7 @@
     <MoqPackageVersion>4.7.49</MoqPackageVersion>
     <XunitPackageVersion>2.4.0</XunitPackageVersion>
     <XunitRunnerVisualStudioPackageVersion>2.4.0</XunitRunnerVisualStudioPackageVersion>
+    <MicrosoftOwinTestingPackageVersion>4.0.0</MicrosoftOwinTestingPackageVersion>
   </PropertyGroup>
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition=" '$(DotNetPackageVersionPropsPath)' != '' " />
 </Project>
