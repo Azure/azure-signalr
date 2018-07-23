@@ -9,6 +9,7 @@ using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.AspNet;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Options;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
@@ -39,10 +40,22 @@ namespace Owin
 
         public static void RunAzureSignalR(this IAppBuilder builder, HubConfiguration configuration)
         {
-            RunAzureSignalRCore(builder, configuration);
+            RunAzureSignalR(builder, configuration, ConfigurationManager.ConnectionStrings[ServiceOptions.ConnectionStringDefaultKey]?.ConnectionString);
         }
 
-        private static void RunAzureSignalRCore(IAppBuilder builder, HubConfiguration configuration)
+        public static void RunAzureSignalR(this IAppBuilder builder, HubConfiguration configuration, string connectionString)
+        {
+            RunAzureSignalR(builder, configuration, s => s.ConnectionString = connectionString);
+        }
+
+        public static void RunAzureSignalR(this IAppBuilder builder, HubConfiguration configuration, Action<ServiceOptions> optionsConfigure)
+        {
+            var serviceOptions = new ServiceOptions();
+            optionsConfigure?.Invoke(serviceOptions);
+            RunAzureSignalRCore(builder, configuration, serviceOptions);
+        }
+
+        private static void RunAzureSignalRCore(IAppBuilder builder, HubConfiguration configuration, ServiceOptions options)
         {
             // Replace default HubDispatcher with a custom one, which has its own negotiation logic
             // https://github.com/SignalR/SignalR/blob/dev/src/Microsoft.AspNet.SignalR.Core/Hosting/PersistentConnectionFactory.cs#L42
@@ -50,7 +63,7 @@ namespace Owin
             configuration.Resolver.Register(typeof(PersistentConnection), () => hubDispatcher);
             builder.RunSignalR(typeof(PersistentConnection), configuration);
 
-            RegisterServiceObjects(configuration);
+            RegisterServiceObjects(configuration, options);
 
             var hubs = GetAvailableHubNames(configuration);
             if (hubs?.Count > 0)
@@ -64,13 +77,10 @@ namespace Owin
             }
         }
 
-        private static void RegisterServiceObjects(HubConfiguration configuration)
+        private static void RegisterServiceObjects(HubConfiguration configuration, ServiceOptions options)
         {
             // share the same object all through
-            var serviceOptions = new OptionsWrapper<ServiceOptions>(new ServiceOptions
-            {
-                ConnectionString = ConfigurationManager.ConnectionStrings[ServiceOptions.ConnectionStringDefaultKey]?.ConnectionString,
-            });
+            var serviceOptions = Options.Create(options);
 
             var serviceProtocol = new ServiceProtocol();
             var endpoint = new ServiceEndpoint(serviceOptions.Value);
