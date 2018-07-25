@@ -10,7 +10,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class ProductInfo
     {
-        public static string Get()
+        public static string GetProductInfo()
         {
             var packageId = typeof(ProductInfo).GetTypeInfo().Assembly.GetName().Name;
             var version = typeof(ProductInfo).GetTypeInfo().Assembly.GetCustomAttribute(typeof(AssemblyInformationalVersionAttribute)) as AssemblyInformationalVersionAttribute;

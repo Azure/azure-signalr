@@ -10,9 +10,9 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public void GetProductInfo()
         {
-            var productInfo = ProductInfo.Get();
+            var productInfo = ProductInfo.GetProductInfo();
 
-            Assert.NotNull(productInfo.ToString());
+            Assert.NotNull(productInfo);
         }
     }
 }
