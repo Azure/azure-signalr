@@ -48,13 +48,9 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData("SendAllAsync", typeof(BroadcastDataMessage))]
         [InlineData("SendAllExceptAsync", typeof(BroadcastDataMessage))]
         [InlineData("SendConnectionsAsync", typeof(MultiConnectionDataMessage))]
-        [InlineData("SendGroupAsync", typeof(GroupBroadcastDataMessage))]
         [InlineData("SendGroupsAsync", typeof(MultiGroupBroadcastDataMessage))]
-        [InlineData("SendGroupExceptAsync", typeof(GroupBroadcastDataMessage))]
         [InlineData("SendUserAsync", typeof(UserDataMessage))]
         [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
-        [InlineData("AddToGroupAsync", typeof(JoinGroupMessage))]
-        [InlineData("RemoveFromGroupAsync", typeof(LeaveGroupMessage))]
         public async void ServiceLifetimeManagerTest(string functionName, Type type)
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
@@ -64,6 +60,23 @@ namespace Microsoft.Azure.SignalR.Tests
             await InvokeMethod(serviceLifetimeManager, functionName);
 
             Assert.Equal(1, serviceConnectionManager.GetCallCount(type));
+            VerifyServiceMessage(functionName, serviceConnectionManager.ServiceMessage);
+        }
+
+        [Theory]
+        [InlineData("SendGroupAsync", typeof(GroupBroadcastDataMessage))]
+        [InlineData("SendGroupExceptAsync", typeof(GroupBroadcastDataMessage))]
+        [InlineData("AddToGroupAsync", typeof(JoinGroupMessage))]
+        [InlineData("RemoveFromGroupAsync", typeof(LeaveGroupMessage))]
+        public async void ServiceLifetimeManagerGroupTest(string functionName, Type type)
+        {
+            var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
+            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker);
+
+            await InvokeMethod(serviceLifetimeManager, functionName);
+
+            Assert.Equal(1, serviceConnectionManager.GetIndexedCallCount(type));
             VerifyServiceMessage(functionName, serviceConnectionManager.ServiceMessage);
         }
 

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -27,6 +28,14 @@ namespace Microsoft.Azure.SignalR
         public async Task WriteAsync(ServiceMessage serviceMessage)
         {
             var index = StaticRandom.Next(_serviceConnections.Count);
+            await _serviceConnections[index].WriteAsync(serviceMessage);
+        }
+
+        public async Task WriteAsync(ServiceMessage serviceMessage, int index)
+        {
+            if (_serviceConnections.Count == 0) return;
+
+            index = Math.Abs(index % _serviceConnections.Count);
             await _serviceConnections[index].WriteAsync(serviceMessage);
         }
     }
