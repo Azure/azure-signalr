@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly string _userId;
         private static readonly string Name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
-        private static Dictionary<string, string> customHeader = ProductInfo.ToHeader();
+        private static Dictionary<string, string> CustomHeader = ProductInfo.ToHeader();
 
         public ServiceHubDispatcher(IServiceProtocol serviceProtocol,
             IServiceConnectionManager<THub> serviceConnectionManager,
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.SignalR
                 AccessTokenProvider = () => Task.FromResult(_serviceEndpointUtility.GenerateServerAccessToken<THub>(_userId)),
                 Transports = HttpTransportType.WebSockets,
                 SkipNegotiation = true,
-                Headers = customHeader
+                Headers = CustomHeader
             };
             var httpConnection = new HttpConnection(httpConnectionOptions, _loggerFactory);
             try
