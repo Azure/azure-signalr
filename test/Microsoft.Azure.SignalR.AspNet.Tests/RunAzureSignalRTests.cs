@@ -1,6 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Messaging;
@@ -9,10 +13,6 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Options;
 using Microsoft.Owin.Hosting;
 using Owin;
-using System;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests

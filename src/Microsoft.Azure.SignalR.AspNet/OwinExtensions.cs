@@ -1,6 +1,10 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Linq;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
@@ -9,10 +13,6 @@ using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.AspNet;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Linq;
 
 namespace Owin
 {
