@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly string _userId;
         private static readonly string Name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
+        private static ProductInfo _productInfo;
 
         public ServiceHubDispatcher(IServiceProtocol serviceProtocol,
             IServiceConnectionManager<THub> serviceConnectionManager,
@@ -45,6 +47,7 @@ namespace Microsoft.Azure.SignalR
             _logger = loggerFactory.CreateLogger<ServiceHubDispatcher<THub>>();
             _clientConnectionFactory = clientConnectionFactory;
             _userId = GenerateServerName();
+            _productInfo = new ProductInfo();
         }
 
         private static string GenerateServerName()
@@ -83,12 +86,17 @@ namespace Microsoft.Azure.SignalR
 
         public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
         {
+            var customHeaders = new Dictionary<string, string>
+            {
+                { "User-Agent", _productInfo.ToString() }
+            };
             var httpConnectionOptions = new HttpConnectionOptions
             {
                 Url = GetServiceUrl(connectionId),
                 AccessTokenProvider = () => Task.FromResult(_serviceEndpointUtility.GenerateServerAccessToken<THub>(_userId)),
                 Transports = HttpTransportType.WebSockets,
-                SkipNegotiation = true
+                SkipNegotiation = true,
+                Headers = customHeaders
             };
             var httpConnection = new HttpConnection(httpConnectionOptions, _loggerFactory);
             try
