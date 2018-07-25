@@ -12,13 +12,14 @@ namespace Microsoft.Azure.SignalR
     {
         public static string GetProductInfo()
         {
-            var packageId = typeof(ProductInfo).GetTypeInfo().Assembly.GetName().Name;
-            var version = typeof(ProductInfo).GetTypeInfo().Assembly.GetCustomAttribute(typeof(AssemblyInformationalVersionAttribute)) as AssemblyInformationalVersionAttribute;
+            var assembly = typeof(ProductInfo).GetTypeInfo().Assembly;
+            var packageId = assembly.GetName().Name;
+            var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
             var runtime = RuntimeInformation.FrameworkDescription.Trim();
             var operatingSystem = RuntimeInformation.OSDescription.Trim();
             var processorArchitecture = RuntimeInformation.ProcessArchitecture.ToString().Trim();
             
-            return $"{packageId}/{version.InformationalVersion} ({runtime}; {operatingSystem}; {processorArchitecture})";
+            return $"{packageId}/{version} ({runtime}; {operatingSystem}; {processorArchitecture})";
         }
     }
 }
