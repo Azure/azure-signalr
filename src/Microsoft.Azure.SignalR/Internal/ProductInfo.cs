@@ -8,23 +8,17 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ProductInfo
+    internal static class ProductInfo
     {
-        public override string ToString()
+        public static string Get()
         {
-            var packageId = Assembly.GetExecutingAssembly().GetName().Name;
-            var version = Assembly.GetExecutingAssembly().GetCustomAttribute(typeof(AssemblyInformationalVersionAttribute)) as AssemblyInformationalVersionAttribute;
+            var packageId = typeof(ProductInfo).GetTypeInfo().Assembly.GetName().Name;
+            var version = typeof(ProductInfo).GetTypeInfo().Assembly.GetCustomAttribute(typeof(AssemblyInformationalVersionAttribute)) as AssemblyInformationalVersionAttribute;
             var runtime = RuntimeInformation.FrameworkDescription.Trim();
             var operatingSystem = RuntimeInformation.OSDescription.Trim();
             var processorArchitecture = RuntimeInformation.ProcessArchitecture.ToString().Trim();
             
             return $"{packageId}/{version.InformationalVersion} ({runtime}; {operatingSystem}; {processorArchitecture})";
-        }
-
-        public static Dictionary<string, string> ToHeader()
-        {
-            var productInfo = new ProductInfo();
-            return new Dictionary<string, string> { { "User-Agent", productInfo.ToString() } };
         }
     }
 }
