@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
@@ -116,7 +115,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args));
             // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionManager.WriteAsync(message, groupName.GetHashCode());
+            return _serviceConnectionManager.WriteAsync(groupName, message);
         }
 
         public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -141,7 +140,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args));
             // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionManager.WriteAsync(message, groupName.GetHashCode());
+            return _serviceConnectionManager.WriteAsync(groupName, message);
         }
 
         public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -176,7 +175,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new JoinGroupMessage(connectionId, groupName);
             // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionManager.WriteAsync(message, groupName.GetHashCode());
+            return _serviceConnectionManager.WriteAsync(groupName, message);
         }
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -188,7 +187,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new LeaveGroupMessage(connectionId, groupName);
             // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionManager.WriteAsync(message, groupName.GetHashCode());
+            return _serviceConnectionManager.WriteAsync(groupName, message);
         }
 
         private static bool IsInvalidArgument(string value)
@@ -198,7 +197,7 @@ namespace Microsoft.Azure.SignalR
 
         private static bool IsInvalidArgument(IReadOnlyList<object> list)
         {
-            return list == null || !list.Any();
+            return list == null || list.Count == 0;
         }
 
         private IDictionary<string, ReadOnlyMemory<byte>> SerializeAllProtocols(string method, object[] args)

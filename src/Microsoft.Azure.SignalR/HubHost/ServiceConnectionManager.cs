@@ -12,6 +12,8 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
     {
+        private static readonly int DefaultHashCode = string.Empty.GetHashCode();
+
         private readonly List<ServiceConnection> _serviceConnections = new List<ServiceConnection>();
 
         public void AddServiceConnection(ServiceConnection serviceConnection)
@@ -31,11 +33,12 @@ namespace Microsoft.Azure.SignalR
             await _serviceConnections[index].WriteAsync(serviceMessage);
         }
 
-        public async Task WriteAsync(ServiceMessage serviceMessage, int index)
+        public async Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
         {
             if (_serviceConnections.Count == 0) return;
 
-            index = Math.Abs(index % _serviceConnections.Count);
+            var hash = partitionKey?.GetHashCode() ?? DefaultHashCode;
+            var index = Math.Abs(hash % _serviceConnections.Count);
             await _serviceConnections[index].WriteAsync(serviceMessage);
         }
     }

@@ -76,7 +76,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
-            Assert.Equal(1, serviceConnectionManager.GetIndexedCallCount(type));
+            Assert.Equal(1, serviceConnectionManager.GetPartitionedCallCount(type));
             VerifyServiceMessage(functionName, serviceConnectionManager.ServiceMessage);
         }
 

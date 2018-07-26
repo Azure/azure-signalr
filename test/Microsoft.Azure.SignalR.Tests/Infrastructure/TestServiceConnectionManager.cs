@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR.Tests
     internal class TestServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
     {
         private readonly ConcurrentDictionary<Type, int> _writeAsyncCallCount = new ConcurrentDictionary<Type, int>();
-        private readonly ConcurrentDictionary<Type, int> _indexedWriteAsyncCallCount = new ConcurrentDictionary<Type, int>();
+        private readonly ConcurrentDictionary<Type, int> _partitionedWriteAsyncCallCount = new ConcurrentDictionary<Type, int>();
 
         public ServiceMessage ServiceMessage { get; private set; }
 
@@ -32,9 +32,9 @@ namespace Microsoft.Azure.SignalR.Tests
             return Task.CompletedTask;
         }
 
-        public Task WriteAsync(ServiceMessage serviceMessage, int index)
+        public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
         {
-            _indexedWriteAsyncCallCount.AddOrUpdate(serviceMessage.GetType(), 1, (_, value) => value + 1);
+            _partitionedWriteAsyncCallCount.AddOrUpdate(serviceMessage.GetType(), 1, (_, value) => value + 1);
             ServiceMessage = serviceMessage;
             return Task.CompletedTask;
         }
@@ -44,9 +44,9 @@ namespace Microsoft.Azure.SignalR.Tests
             return _writeAsyncCallCount.TryGetValue(type, out var count) ? count : 0;
         }
 
-        public int GetIndexedCallCount(Type type)
+        public int GetPartitionedCallCount(Type type)
         {
-            return _indexedWriteAsyncCallCount.TryGetValue(type, out var count) ? count : 0;
+            return _partitionedWriteAsyncCallCount.TryGetValue(type, out var count) ? count : 0;
         }
     }
 }
