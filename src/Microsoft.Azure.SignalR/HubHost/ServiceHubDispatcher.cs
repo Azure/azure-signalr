@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly string _userId;
         private static readonly string Name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
+        private static Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "User-Agent", ProductInfo.GetProductInfo() } };
 
         public ServiceHubDispatcher(IServiceProtocol serviceProtocol,
             IServiceConnectionManager<THub> serviceConnectionManager,
@@ -88,7 +90,8 @@ namespace Microsoft.Azure.SignalR
                 Url = GetServiceUrl(connectionId),
                 AccessTokenProvider = () => Task.FromResult(_serviceEndpointUtility.GenerateServerAccessToken<THub>(_userId)),
                 Transports = HttpTransportType.WebSockets,
-                SkipNegotiation = true
+                SkipNegotiation = true,
+                Headers = CustomHeader
             };
             var httpConnection = new HttpConnection(httpConnectionOptions, _loggerFactory);
             try
