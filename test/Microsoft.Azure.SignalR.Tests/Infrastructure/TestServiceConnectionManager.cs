@@ -12,6 +12,7 @@ namespace Microsoft.Azure.SignalR.Tests
     internal class TestServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
     {
         private readonly ConcurrentDictionary<Type, int> _writeAsyncCallCount = new ConcurrentDictionary<Type, int>();
+        private readonly ConcurrentDictionary<Type, int> _partitionedWriteAsyncCallCount = new ConcurrentDictionary<Type, int>();
 
         public ServiceMessage ServiceMessage { get; private set; }
 
@@ -24,16 +25,28 @@ namespace Microsoft.Azure.SignalR.Tests
             await Task.CompletedTask;
         }
 
-        public async Task WriteAsync(ServiceMessage serviceMessage)
+        public Task WriteAsync(ServiceMessage serviceMessage)
         {
             _writeAsyncCallCount.AddOrUpdate(serviceMessage.GetType(), 1, (_, value) => value + 1);
             ServiceMessage = serviceMessage;
-            await Task.CompletedTask;
+            return Task.CompletedTask;
+        }
+
+        public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+        {
+            _partitionedWriteAsyncCallCount.AddOrUpdate(serviceMessage.GetType(), 1, (_, value) => value + 1);
+            ServiceMessage = serviceMessage;
+            return Task.CompletedTask;
         }
 
         public int GetCallCount(Type type)
         {
             return _writeAsyncCallCount.TryGetValue(type, out var count) ? count : 0;
+        }
+
+        public int GetPartitionedCallCount(Type type)
+        {
+            return _partitionedWriteAsyncCallCount.TryGetValue(type, out var count) ? count : 0;
         }
     }
 }

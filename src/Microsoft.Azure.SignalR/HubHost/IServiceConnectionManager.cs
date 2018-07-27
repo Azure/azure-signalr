@@ -14,5 +14,7 @@ namespace Microsoft.Azure.SignalR
         Task StartAsync();
 
         Task WriteAsync(ServiceMessage seviceMessage);
+
+        Task WriteAsync(string partitionKey, ServiceMessage serviceMessage);
     }
 }
