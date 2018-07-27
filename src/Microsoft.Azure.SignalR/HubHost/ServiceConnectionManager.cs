@@ -12,8 +12,6 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
     {
-        private static readonly int DefaultHashCode = string.Empty.GetHashCode();
-
         private readonly List<ServiceConnection> _serviceConnections = new List<ServiceConnection>();
 
         public void AddServiceConnection(ServiceConnection serviceConnection)
@@ -37,8 +35,13 @@ namespace Microsoft.Azure.SignalR
         {
             if (_serviceConnections.Count == 0) return;
 
-            var hash = partitionKey?.GetHashCode() ?? DefaultHashCode;
-            var index = Math.Abs(hash % _serviceConnections.Count);
+            // If we hit this check, it is a code bug.
+            if (string.IsNullOrEmpty(partitionKey))
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            var index = Math.Abs(partitionKey.GetHashCode() % _serviceConnections.Count);
             await _serviceConnections[index].WriteAsync(serviceMessage);
         }
     }
