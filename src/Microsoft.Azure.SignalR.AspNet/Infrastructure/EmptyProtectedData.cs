@@ -7,6 +7,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     /// <summary>
     /// The token is no long Base64 encoded as the DefaultProtectedData does
+    /// TODO: remove it when SignalR is ready
     /// </summary>
     internal class EmptyProtectedData : IProtectedData
     {

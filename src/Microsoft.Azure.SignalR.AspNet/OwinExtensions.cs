@@ -79,6 +79,7 @@ namespace Owin
 
         private static void RegisterServiceObjects(HubConfiguration configuration, ServiceOptions options)
         {
+            // TODO: Using IOptions looks wierd, thinking of a way removing it
             // share the same object all through
             var serviceOptions = Options.Create(options);
 
