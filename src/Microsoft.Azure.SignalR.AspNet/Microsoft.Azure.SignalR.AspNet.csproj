@@ -7,9 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Microsoft.Azure.SignalR\HubHost\TimerAwaitable.cs" Link="Utilities\TimerAwaitable.cs" />
     <Compile Include="..\Microsoft.Azure.SignalR\Utilities\AuthenticationHelper.cs" Link="Utilities\AuthenticationHelper.cs" />
-    <Compile Include="..\Microsoft.Azure.SignalR\Utilities\StaticRandom.cs" Link="Utilities\StaticRandom.cs" />
   </ItemGroup>
   
   <ItemGroup>
@@ -21,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Azure.SignalR.Protocols\Microsoft.Azure.SignalR.Protocols.csproj" />
+    <ProjectReference Include="..\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" IncludeAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
