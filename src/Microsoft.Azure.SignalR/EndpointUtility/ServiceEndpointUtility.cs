@@ -24,6 +24,8 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly string MissingRequiredProperty =
             $"Connection string missing required properties {EndpointProperty} and {AccessKeyProperty}.";
+        private static readonly string InvalidPortValue =
+            $"Invalid value for {PortProperty} property.";
 
         private readonly IServiceEndpointGenerator _generator;
 
@@ -204,17 +206,23 @@ namespace Microsoft.Azure.SignalR
 
                     var version = dict.TryGetValue(VersionProperty, out var v) ? v : null;
                     int? port = null;
-                    if (dict.TryGetValue(PortProperty, out var ps) &&
-                        int.TryParse(ps, out var p) &&
-                        p > 0 && p < 65535)
+                    if (dict.TryGetValue(PortProperty, out var s))
                     {
-                        port = p;
+                        if (int.TryParse(s, out var p) &&
+                            p > 0 && p <= 0xFFFF)
+                        {
+                            port = p;
+                        }
+                        else
+                        {
+                            throw new ArgumentException(InvalidPortValue, nameof(connectionString));
+                        }
                     }
                     return (dict[EndpointProperty].TrimEnd('/'), dict[AccessKeyProperty], version, port);
                 }
             }
 
-            throw new ArgumentException(MissingRequiredProperty);
+            throw new ArgumentException(MissingRequiredProperty, nameof(connectionString));
         }
 
         internal static bool ValidateEndpoint(string endpoint)
