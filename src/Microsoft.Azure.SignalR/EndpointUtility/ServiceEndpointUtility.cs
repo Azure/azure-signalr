@@ -16,8 +16,6 @@ namespace Microsoft.Azure.SignalR
         private const string VersionProperty = "version";
         private const string PortProperty = "port";
         private const string PreviewVersion = "v1-preview";
-        private const int PreviewClientPort = 5001;
-        private const int PreviewServerPort = 5002;
 
         private static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
@@ -26,6 +24,8 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly string MissingRequiredProperty =
             $"Connection string missing required properties {EndpointProperty} and {AccessKeyProperty}.";
+
+        private readonly IServiceEndpointGenerator _generator;
 
         public ServiceEndpointUtility(IOptions<ServiceOptions> options)
         {
@@ -42,23 +42,13 @@ namespace Microsoft.Azure.SignalR
 
             Version = NormalizeVersion(version);
 
-            if (string.Equals(Version, PreviewVersion, StringComparison.Ordinal))
+            if (Version == PreviewVersion)
             {
-                ClientPath = "client";
-                ServerPath = "server";
-                ClientAudiencePath = ":" + PreviewClientPort.ToString() + "/client";
-                ServerAudiencePath = ":" + PreviewServerPort.ToString() + "/server";
-                ClientPort = PreviewClientPort;
-                ServerPort = PreviewServerPort;
+                _generator = new PreviewServiceEndpointGenerator(Endpoint, AccessKey);
             }
             else
             {
-                ClientPath = Version + "/client";
-                ServerPath = Version + "/server";
-                ClientAudiencePath = "/" + Version + "/client";
-                ServerAudiencePath = "/" + Version + "/server";
-                ClientPort = Port;
-                ServerPort = Port;
+                _generator = new DefaultServiceEndpointGenerator(Endpoint, AccessKey, Version, Port);
             }
         }
 
@@ -69,18 +59,6 @@ namespace Microsoft.Azure.SignalR
         public string Version { get; }
 
         public int? Port { get; }
-
-        public string ClientPath { get; }
-
-        public string ServerPath { get; }
-
-        public string ClientAudiencePath { get; }
-
-        public string ServerAudiencePath { get; }
-
-        public int? ClientPort { get; }
-
-        public int? ServerPort { get; }
 
         private TimeSpan AccessTokenLifetime { get; }
 
@@ -114,10 +92,8 @@ namespace Microsoft.Azure.SignalR
             return InternalGenerateAccessToken(GetServerAudience(hubName), claims, lifetime ?? AccessTokenLifetime);
         }
 
-        public string GetClientEndpoint<THub>() where THub : Hub
-        {
-            return GetClientEndpoint(typeof(THub).Name);
-        }
+        public string GetClientEndpoint<THub>() where THub : Hub =>
+            GetClientEndpoint(typeof(THub).Name);
 
         public string GetClientEndpoint(string hubName)
         {
@@ -126,7 +102,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            return InternalGetEndpoint(ClientPort, ClientPath, hubName);
+            return _generator.GetClientEndpoint(hubName);
         }
 
         public string GetClientAudience(string hubName)
@@ -136,13 +112,11 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            return InternalGetAudience(ClientAudiencePath, hubName);
+            return _generator.GetClientAudience(hubName);
         }
 
-        public string GetServerEndpoint<THub>() where THub : Hub
-        {
-            return GetServerEndpoint(typeof(THub).Name);
-        }
+        public string GetServerEndpoint<THub>() where THub : Hub =>
+            GetServerEndpoint(typeof(THub).Name);
 
         public string GetServerEndpoint(string hubName)
         {
@@ -151,7 +125,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            return InternalGetEndpoint(ServerPort, ServerPath, hubName);
+            return _generator.GetServerEndpoint(hubName);
         }
 
         public string GetServerAudience(string hubName)
@@ -161,7 +135,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            return InternalGetAudience(ServerAudiencePath, hubName);
+            return _generator.GetServerAudience(hubName);
         }
 
         private static string NormalizeVersion(string version)
@@ -184,20 +158,6 @@ namespace Microsoft.Azure.SignalR
                 return "v" + version.Remove(version.Length - 2) + previewPostfix;
             }
             return "v" + version + previewPostfix;
-        }
-
-        private string InternalGetEndpoint(int? port, string path, string hubName)
-        {
-            if (port == null)
-            {
-                return $"{Endpoint}/{path}/?hub={hubName.ToLower()}";
-            }
-            return $"{Endpoint}:{port}/{path}/?hub={hubName.ToLower()}";
-        }
-
-        private string InternalGetAudience(string path, string hubName)
-        {
-            return $"{Endpoint}{path}/?hub={hubName.ToLower()}";
         }
 
         private string InternalGenerateAccessToken(string audience, IEnumerable<Claim> claims, TimeSpan lifetime)
