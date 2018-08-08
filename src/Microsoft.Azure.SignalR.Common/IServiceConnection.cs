@@ -6,7 +6,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    public interface IServiceConnection
+    internal interface IServiceConnection
     {
         Task StartAsync();
 

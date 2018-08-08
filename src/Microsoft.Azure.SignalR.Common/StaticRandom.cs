@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class StaticRandom
+    internal class StaticRandom
     {
         private static readonly object RandomLock = new object();
         private static readonly Random RandomInterval = new Random((int)DateTime.UtcNow.Ticks);

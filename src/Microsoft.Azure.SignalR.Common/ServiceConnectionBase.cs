@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    public abstract class ServiceConnectionBase : IServiceConnection
+    internal abstract class ServiceConnectionBase : IServiceConnection
     {
         private static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
         // Service ping rate is 15 sec; this is 2 times that.

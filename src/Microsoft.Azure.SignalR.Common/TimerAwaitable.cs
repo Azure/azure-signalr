@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class TimerAwaitable : IDisposable, ICriticalNotifyCompletion
+    internal class TimerAwaitable : IDisposable, ICriticalNotifyCompletion
     {
         private Timer _timer;
         private Action _callback;
