@@ -170,7 +170,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        protected override Task PerformDisconnectAsync(CloseConnectionMessage closeConnectionMessage)
+        protected override Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             var connectionId = closeConnectionMessage.ConnectionId;
             return PerformDisconnectAsyncCore(connectionId);

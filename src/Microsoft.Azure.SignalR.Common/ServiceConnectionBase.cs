@@ -108,7 +108,7 @@ namespace Microsoft.Azure.SignalR
 
         protected abstract Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage);
 
-        protected abstract Task PerformDisconnectAsync(CloseConnectionMessage closeConnectionMessage);
+        protected abstract Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage);
 
         protected abstract Task OnMessageAsync(ConnectionDataMessage connectionDataMessage);
 
@@ -333,7 +333,7 @@ namespace Microsoft.Azure.SignalR
                 case OpenConnectionMessage openConnectionMessage:
                     return OnConnectedAsync(openConnectionMessage);
                 case CloseConnectionMessage closeConnectionMessage:
-                    return PerformDisconnectAsync(closeConnectionMessage);
+                    return OnDisconnectedAsync(closeConnectionMessage);
                 case ConnectionDataMessage connectionDataMessage:
                     return OnMessageAsync(connectionDataMessage);
                 case PingMessage _:
