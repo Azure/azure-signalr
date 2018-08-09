@@ -18,38 +18,62 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
 
-        private static readonly string ConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};";
-
-        private static readonly ServiceOptions ServiceOptions = new ServiceOptions
+        public static IEnumerable<object[]> PreviewEndpointUtility()
         {
-            ConnectionString = ConnectionString
-        };
+            yield return new object[]
+            {
+                new ServiceEndpointUtility(
+                    Options.Create(
+                        new ServiceOptions
+                        {
+                            ConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};"
+                        }))
+            };
+            yield return new object[]
+            {
+                new ServiceEndpointUtility(
+                    Options.Create(
+                        new ServiceOptions
+                        {
+                            ConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0-preview"
+                        }))
+            };
+        }
 
-        private static readonly IServiceEndpointUtility EndpointUtility = new ServiceEndpointUtility(Options.Create(ServiceOptions));
+        private static readonly IServiceEndpointUtility V1EndpointUtility =
+            new ServiceEndpointUtility(
+                Options.Create(
+                    new ServiceOptions
+                    {
+                        ConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0"
+                    }));
 
         private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
 
-        [Fact]
-        public void GetServerEndpoint()
+        [Theory]
+        [MemberData(nameof(PreviewEndpointUtility))]
+        internal void GetPreviewServerEndpoint(IServiceEndpointUtility utility)
         {
             var expected = $"{Endpoint}:5002/server/?hub={nameof(TestHub).ToLower()}";
-            var actual = EndpointUtility.GetServerEndpoint<TestHub>();
+            var actual = utility.GetServerEndpoint<TestHub>();
             Assert.Equal(expected, actual);
         }
 
-        [Fact]
-        public void GetClientEndpoint()
+        [Theory]
+        [MemberData(nameof(PreviewEndpointUtility))]
+        internal void GetPreviewClientEndpoint(IServiceEndpointUtility utility)
         {
             var expected = $"{Endpoint}:5001/client/?hub={nameof(TestHub).ToLower()}";
-            var actual = EndpointUtility.GetClientEndpoint<TestHub>();
+            var actual = utility.GetClientEndpoint<TestHub>();
             Assert.Equal(expected, actual);
         }
 
-        [Fact]
-        public void GenerateServerAccessToken()
+        [Theory]
+        [MemberData(nameof(PreviewEndpointUtility))]
+        internal void GeneratePreviewServerAccessToken(IServiceEndpointUtility utility)
         {
             const string userId = "UserA";
-            var tokenString = EndpointUtility.GenerateServerAccessToken<TestHub>(userId);
+            var tokenString = utility.GenerateServerAccessToken<TestHub>(userId);
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = GenerateJwtBearer($"{Endpoint}:5002/server/?hub={nameof(TestHub).ToLower()}",
@@ -65,13 +89,66 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(expectedTokenString, tokenString);
         }
 
-        [Fact]
-        public void GenerateClientAccessToken()
+        [Theory]
+        [MemberData(nameof(PreviewEndpointUtility))]
+        internal void GeneratePreviewClientAccessToken(IServiceEndpointUtility utility)
         {
-            var tokenString = EndpointUtility.GenerateClientAccessToken<TestHub>();
+            var tokenString = utility.GenerateClientAccessToken<TestHub>();
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = GenerateJwtBearer($"{Endpoint}:5001/client/?hub={nameof(TestHub).ToLower()}",
+                null,
+                token.ValidTo,
+                token.ValidFrom,
+                token.ValidFrom,
+                AccessKey);
+
+            Assert.Equal(expectedTokenString, tokenString);
+        }
+
+        [Fact]
+        public void GetV1ServerEndpoint()
+        {
+            var expected = $"{Endpoint}/server/?hub={nameof(TestHub).ToLower()}";
+            var actual = V1EndpointUtility.GetServerEndpoint<TestHub>();
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void GetV1ClientEndpoint()
+        {
+            var expected = $"{Endpoint}/client/?hub={nameof(TestHub).ToLower()}";
+            var actual = V1EndpointUtility.GetClientEndpoint<TestHub>();
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void GenerateV1ServerAccessToken()
+        {
+            const string userId = "UserA";
+            var tokenString = V1EndpointUtility.GenerateServerAccessToken<TestHub>(userId);
+            var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
+
+            var expectedTokenString = GenerateJwtBearer($"{Endpoint}/server/?hub={nameof(TestHub).ToLower()}",
+                new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, userId)
+                },
+                token.ValidTo,
+                token.ValidFrom,
+                token.ValidFrom,
+                AccessKey);
+
+            Assert.Equal(expectedTokenString, tokenString);
+        }
+
+        [Fact]
+        public void GenerateV1ClientAccessToken()
+        {
+            var tokenString = V1EndpointUtility.GenerateClientAccessToken<TestHub>();
+            var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
+
+            var expectedTokenString = GenerateJwtBearer($"{Endpoint}/client/?hub={nameof(TestHub).ToLower()}",
                 null,
                 token.ValidTo,
                 token.ValidFrom,

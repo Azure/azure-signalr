@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 
@@ -13,8 +14,12 @@ namespace Microsoft.Azure.SignalR
     {
         private const string EndpointProperty = "endpoint";
         private const string AccessKeyProperty = "accesskey";
-        private const int ClientPort = 5001;
-        private const int ServerPort = 5002;
+        private const string VersionProperty = "version";
+        private const string PortProperty = "port";
+        private const string PreviewVersion = "1.0-preview";
+        // For SDK 1.x, only support Azure SignalR Service 1.x
+        private const string SupportedVersion = "1";
+        private const string ValidVersionRegex = "^" + SupportedVersion + @"\.\d+(?:[\w-.]+)?$";
 
         private static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
@@ -23,6 +28,12 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly string MissingRequiredProperty =
             $"Connection string missing required properties {EndpointProperty} and {AccessKeyProperty}.";
+        private static readonly string InvalidVersionValueFormat =
+            "Version {0} is not supported.";
+        private static readonly string InvalidPortValue =
+            $"Invalid value for {PortProperty} property.";
+
+        private readonly IServiceEndpointGenerator _generator;
 
         public ServiceEndpointUtility(IOptions<ServiceOptions> options)
         {
@@ -34,12 +45,29 @@ namespace Microsoft.Azure.SignalR
 
             AccessTokenLifetime = options.Value.AccessTokenLifetime;
 
-            (Endpoint, AccessKey) = ParseConnectionString(connectionString);
+            string version;
+            (Endpoint, AccessKey, version, Port) = ParseConnectionString(connectionString);
+
+            Version = version ?? PreviewVersion;
+
+            if (Version == PreviewVersion)
+            {
+                _generator = new PreviewServiceEndpointGenerator(Endpoint, AccessKey);
+            }
+            else
+            {
+                _generator = new DefaultServiceEndpointGenerator(Endpoint, AccessKey, Version, Port);
+            }
         }
 
         public string Endpoint { get; }
 
         public string AccessKey { get; }
+
+        public string Version { get; }
+
+        public int? Port { get; }
+
         private TimeSpan AccessTokenLifetime { get; }
 
         public string GenerateClientAccessToken<THub>(IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
@@ -51,7 +79,7 @@ namespace Microsoft.Azure.SignalR
         public string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null,
             TimeSpan? lifetime = null)
         {
-            return InternalGenerateAccessToken(GetClientEndpoint(hubName), claims, lifetime ?? AccessTokenLifetime);
+            return InternalGenerateAccessToken(GetClientAudience(hubName), claims, lifetime ?? AccessTokenLifetime);
         }
 
         public string GenerateServerAccessToken<THub>(string userId, TimeSpan? lifetime = null) where THub : Hub
@@ -69,14 +97,11 @@ namespace Microsoft.Azure.SignalR
                     new Claim(ClaimTypes.NameIdentifier, userId)
                 };
             }
-
-            return InternalGenerateAccessToken(GetServerEndpoint(hubName), claims, lifetime ?? AccessTokenLifetime);
+            return InternalGenerateAccessToken(GetServerAudience(hubName), claims, lifetime ?? AccessTokenLifetime);
         }
 
-        public string GetClientEndpoint<THub>() where THub : Hub
-        {
-            return GetClientEndpoint(typeof(THub).Name);
-        }
+        public string GetClientEndpoint<THub>() where THub : Hub =>
+            GetClientEndpoint(typeof(THub).Name);
 
         public string GetClientEndpoint(string hubName)
         {
@@ -85,13 +110,21 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            return InternalGetEndpoint(ClientPort, "client", hubName);
+            return _generator.GetClientEndpoint(hubName);
         }
 
-        public string GetServerEndpoint<THub>() where THub : Hub
+        public string GetClientAudience(string hubName)
         {
-            return GetServerEndpoint(typeof(THub).Name);
+            if (string.IsNullOrEmpty(hubName))
+            {
+                throw new ArgumentNullException(nameof(hubName));
+            }
+
+            return _generator.GetClientAudience(hubName);
         }
+
+        public string GetServerEndpoint<THub>() where THub : Hub =>
+            GetServerEndpoint(typeof(THub).Name);
 
         public string GetServerEndpoint(string hubName)
         {
@@ -100,12 +133,17 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            return InternalGetEndpoint(ServerPort, "server", hubName);
+            return _generator.GetServerEndpoint(hubName);
         }
 
-        private string InternalGetEndpoint(int port, string path, string hubName)
+        public string GetServerAudience(string hubName)
         {
-            return $"{Endpoint}:{port}/{path}/?hub={hubName.ToLower()}";
+            if (string.IsNullOrEmpty(hubName))
+            {
+                throw new ArgumentNullException(nameof(hubName));
+            }
+
+            return _generator.GetServerAudience(hubName);
         }
 
         private string InternalGenerateAccessToken(string audience, IEnumerable<Claim> claims, TimeSpan lifetime)
@@ -120,10 +158,10 @@ namespace Microsoft.Azure.SignalR
             );
         }
 
-        private static readonly char[] PropertySeparator = {';'};
-        private static readonly char[] KeyValueSeparator = {'='};
+        private static readonly char[] PropertySeparator = { ';' };
+        private static readonly char[] KeyValueSeparator = { '=' };
 
-        internal static (string, string) ParseConnectionString(string connectionString)
+        internal static (string endpoint, string accessKey, string version, int? port) ParseConnectionString(string connectionString)
         {
             var properties = connectionString.Split(PropertySeparator, StringSplitOptions.RemoveEmptyEntries);
             if (properties.Length > 1)
@@ -150,11 +188,36 @@ namespace Microsoft.Azure.SignalR
                         throw new ArgumentException($"Endpoint property in connection string is not a valid URI: {dict[EndpointProperty]}.");
                     }
 
-                    return (dict[EndpointProperty].TrimEnd('/'), dict[AccessKeyProperty]);
+                    string version = null;
+                    if (dict.TryGetValue(VersionProperty, out var v))
+                    {
+                        if (Regex.IsMatch(v, ValidVersionRegex))
+                        {
+                            version = v;
+                        }
+                        else
+                        {
+                            throw new ArgumentException(string.Format(InvalidVersionValueFormat, v), nameof(connectionString));
+                        }
+                    }
+                    int? port = null;
+                    if (dict.TryGetValue(PortProperty, out var s))
+                    {
+                        if (int.TryParse(s, out var p) &&
+                            p > 0 && p <= 0xFFFF)
+                        {
+                            port = p;
+                        }
+                        else
+                        {
+                            throw new ArgumentException(InvalidPortValue, nameof(connectionString));
+                        }
+                    }
+                    return (dict[EndpointProperty].TrimEnd('/'), dict[AccessKeyProperty], version, port);
                 }
             }
 
-            throw new ArgumentException(MissingRequiredProperty);
+            throw new ArgumentException(MissingRequiredProperty, nameof(connectionString));
         }
 
         internal static bool ValidateEndpoint(string endpoint)
