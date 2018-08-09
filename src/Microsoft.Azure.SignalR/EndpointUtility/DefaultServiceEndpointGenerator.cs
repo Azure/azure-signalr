@@ -38,10 +38,10 @@ namespace Microsoft.Azure.SignalR
 
         private string InternalGetEndpoint(string path, string hubName) =>
             Port.HasValue ?
-            $"{Endpoint}:{Port}/{Version}/{path}/?hub={hubName.ToLower()}" :
-            $"{Endpoint}/{Version}/{path}/?hub={hubName.ToLower()}";
+            $"{Endpoint}:{Port}/{path}/?hub={hubName.ToLower()}" :
+            $"{Endpoint}/{path}/?hub={hubName.ToLower()}";
 
         private string InternalGetAudience(string path, string hubName) =>
-            $"{Endpoint}/{Version}/{path}/?hub={hubName.ToLower()}";
+            $"{Endpoint}/{path}/?hub={hubName.ToLower()}";
     }
 }

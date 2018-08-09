@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 
@@ -15,7 +16,8 @@ namespace Microsoft.Azure.SignalR
         private const string AccessKeyProperty = "accesskey";
         private const string VersionProperty = "version";
         private const string PortProperty = "port";
-        private const string PreviewVersion = "v1-preview";
+        private const string PreviewVersion = "1.0-preview";
+        private const string ValidVersionRegex = @"^1\.\d+(?:[\w-.]+)?$";
 
         private static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
@@ -24,6 +26,8 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly string MissingRequiredProperty =
             $"Connection string missing required properties {EndpointProperty} and {AccessKeyProperty}.";
+        private static readonly string InvalidVersionValue =
+            $"Invalid value for {VersionProperty} property, value must follow regex: {ValidVersionRegex}.";
         private static readonly string InvalidPortValue =
             $"Invalid value for {PortProperty} property.";
 
@@ -42,7 +46,7 @@ namespace Microsoft.Azure.SignalR
             string version;
             (Endpoint, AccessKey, version, Port) = ParseConnectionString(connectionString);
 
-            Version = NormalizeVersion(version);
+            Version = version ?? PreviewVersion;
 
             if (Version == PreviewVersion)
             {
@@ -140,28 +144,6 @@ namespace Microsoft.Azure.SignalR
             return _generator.GetServerAudience(hubName);
         }
 
-        private static string NormalizeVersion(string version)
-        {
-            if (version == null)
-            {
-                return PreviewVersion;
-            }
-            string previewPostfix = "-preview";
-            if (version.EndsWith(previewPostfix))
-            {
-                version = version.Remove(version.Length - previewPostfix.Length);
-            }
-            else
-            {
-                previewPostfix = string.Empty;
-            }
-            if (version.EndsWith(".0"))
-            {
-                return "v" + version.Remove(version.Length - 2) + previewPostfix;
-            }
-            return "v" + version + previewPostfix;
-        }
-
         private string InternalGenerateAccessToken(string audience, IEnumerable<Claim> claims, TimeSpan lifetime)
         {
             var expire = DateTime.UtcNow.Add(lifetime);
@@ -204,7 +186,18 @@ namespace Microsoft.Azure.SignalR
                         throw new ArgumentException($"Endpoint property in connection string is not a valid URI: {dict[EndpointProperty]}.");
                     }
 
-                    var version = dict.TryGetValue(VersionProperty, out var v) ? v : null;
+                    string version = null;
+                    if (dict.TryGetValue(VersionProperty, out var v))
+                    {
+                        if (Regex.IsMatch(v, ValidVersionRegex))
+                        {
+                            version = v;
+                        }
+                        else
+                        {
+                            throw new ArgumentException(InvalidVersionValue, nameof(connectionString));
+                        }
+                    }
                     int? port = null;
                     if (dict.TryGetValue(PortProperty, out var s))
                     {

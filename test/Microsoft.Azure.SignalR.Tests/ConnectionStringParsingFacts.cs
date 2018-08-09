@@ -25,9 +25,9 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [InlineData("https://aaa", "1.0", null, "endpoint=https://aaa;AccessKey=bbb;version=1.0")]
-        [InlineData("https://aaa", "1.0", null, "ENDPOINT=https://aaa/;ACCESSKEY=bbb;VERSION=1.0")]
+        [InlineData("https://aaa", "1.0-preview", null, "ENDPOINT=https://aaa/;ACCESSKEY=bbb;VERSION=1.0-preview")]
         [InlineData("http://aaa", "1.1", null, "endpoint=http://aaa;AccessKey=bbb;Version=1.1")]
-        [InlineData("http://aaa", "2.0", 1234, "ENDPOINT=http://aaa/;ACCESSKEY=bbb;Version=2.0;Port=1234")]
+        [InlineData("http://aaa", "1.1-beta2", 1234, "ENDPOINT=http://aaa/;ACCESSKEY=bbb;Version=1.1-beta2;Port=1234")]
         public void ValidConnectionString(string expectedEndpoint, string expectedVersion, int? expectedPort, string connectionString)
         {
             (var endpoint, var accessKey, var version, var port) = ServiceEndpointUtility.ParseConnectionString(connectionString);
@@ -60,6 +60,30 @@ namespace Microsoft.Azure.SignalR.Tests
                 ServiceEndpointUtility.ParseConnectionString(connectionString));
 
             Assert.Contains("Endpoint property in connection string is not a valid URI", exception.Message);
+        }
+
+        [Theory]
+        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=a.b")]
+        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=1.x")]
+        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=2.0")]
+        public void InvalidVersion(string connectionString)
+        {
+            var exception = Assert.Throws<ArgumentException>(() =>
+                ServiceEndpointUtility.ParseConnectionString(connectionString));
+
+            Assert.Contains(@"Invalid value for version property, value must follow regex: ^1\.\d+(?:[\w-.]+)?$.", exception.Message);
+        }
+
+        [Theory]
+        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=1.0;port=2.3")]
+        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=1.1;port=1000000")]
+        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=1.0-preview;port=0")]
+        public void InvalidPort(string connectionString)
+        {
+            var exception = Assert.Throws<ArgumentException>(() =>
+                ServiceEndpointUtility.ParseConnectionString(connectionString));
+
+            Assert.Contains(@"Invalid value for port property.", exception.Message);
         }
     }
 }

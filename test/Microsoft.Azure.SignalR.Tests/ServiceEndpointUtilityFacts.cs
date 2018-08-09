@@ -109,7 +109,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public void GetV1ServerEndpoint()
         {
-            var expected = $"{Endpoint}/v1/server/?hub={nameof(TestHub).ToLower()}";
+            var expected = $"{Endpoint}/server/?hub={nameof(TestHub).ToLower()}";
             var actual = V1EndpointUtility.GetServerEndpoint<TestHub>();
             Assert.Equal(expected, actual);
         }
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public void GetV1ClientEndpoint()
         {
-            var expected = $"{Endpoint}/v1/client/?hub={nameof(TestHub).ToLower()}";
+            var expected = $"{Endpoint}/client/?hub={nameof(TestHub).ToLower()}";
             var actual = V1EndpointUtility.GetClientEndpoint<TestHub>();
             Assert.Equal(expected, actual);
         }
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var tokenString = V1EndpointUtility.GenerateServerAccessToken<TestHub>(userId);
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
 
-            var expectedTokenString = GenerateJwtBearer($"{Endpoint}/v1/server/?hub={nameof(TestHub).ToLower()}",
+            var expectedTokenString = GenerateJwtBearer($"{Endpoint}/server/?hub={nameof(TestHub).ToLower()}",
                 new[]
                 {
                     new Claim(ClaimTypes.NameIdentifier, userId)
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var tokenString = V1EndpointUtility.GenerateClientAccessToken<TestHub>();
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
 
-            var expectedTokenString = GenerateJwtBearer($"{Endpoint}/v1/client/?hub={nameof(TestHub).ToLower()}",
+            var expectedTokenString = GenerateJwtBearer($"{Endpoint}/client/?hub={nameof(TestHub).ToLower()}",
                 null,
                 token.ValidTo,
                 token.ValidFrom,
