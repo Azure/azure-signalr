@@ -17,6 +17,7 @@ namespace Microsoft.Azure.SignalR
         private const string VersionProperty = "version";
         private const string PortProperty = "port";
         private const string PreviewVersion = "1.0-preview";
+        // For SDK 1.x, only support Azure SignalR Service 1.x
         private const string SupportedVersion = "1";
         private const string ValidVersionRegex = "^" + SupportedVersion + @"\.\d+(?:[\w-.]+)?$";
 
@@ -27,8 +28,8 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly string MissingRequiredProperty =
             $"Connection string missing required properties {EndpointProperty} and {AccessKeyProperty}.";
-        private static readonly string InvalidVersionValue =
-            $"Invalid value for {VersionProperty} property, value must follow regex: {ValidVersionRegex}.";
+        private static readonly string InvalidVersionValueFormat =
+            "Version {0} is not supportted.";
         private static readonly string InvalidPortValue =
             $"Invalid value for {PortProperty} property.";
 
@@ -196,7 +197,7 @@ namespace Microsoft.Azure.SignalR
                         }
                         else
                         {
-                            throw new ArgumentException(InvalidVersionValue, nameof(connectionString));
+                            throw new ArgumentException(string.Format(InvalidVersionValueFormat, v), nameof(connectionString));
                         }
                     }
                     int? port = null;

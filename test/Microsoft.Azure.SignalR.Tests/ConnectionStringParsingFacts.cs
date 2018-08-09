@@ -63,15 +63,15 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=a.b")]
-        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=1.x")]
-        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=2.0")]
-        public void InvalidVersion(string connectionString)
+        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=abc", "abc")]
+        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=1.x", "1.x")]
+        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=2.0", "2.0")]
+        public void InvalidVersion(string connectionString, string version)
         {
             var exception = Assert.Throws<ArgumentException>(() =>
                 ServiceEndpointUtility.ParseConnectionString(connectionString));
 
-            Assert.Contains(@"Invalid value for version property, value must follow regex: ^1\.\d+(?:[\w-.]+)?$.", exception.Message);
+            Assert.Contains(string.Format("Version {0} is not supportted.", version), exception.Message);
         }
 
         [Theory]
