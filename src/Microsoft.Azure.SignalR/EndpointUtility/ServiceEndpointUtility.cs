@@ -17,7 +17,8 @@ namespace Microsoft.Azure.SignalR
         private const string VersionProperty = "version";
         private const string PortProperty = "port";
         private const string PreviewVersion = "1.0-preview";
-        private const string ValidVersionRegex = @"^1\.\d+(?:[\w-.]+)?$";
+        private const string SupportedVersion = "1";
+        private const string ValidVersionRegex = "^" + SupportedVersion + @"\.\d+(?:[\w-.]+)?$";
 
         private static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
