@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Azure.SignalR.Protocols\Microsoft.Azure.SignalR.Protocols.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="$(SystemIdentityModelTokensJwtPackageVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="$(MicrosoftAspNetCoreHttpConnectionsClientPackageVersion)" />
+  </ItemGroup>
+</Project>
