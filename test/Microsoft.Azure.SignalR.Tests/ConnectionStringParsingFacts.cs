@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var exception = Assert.Throws<ArgumentException>(() =>
                 ServiceEndpointUtility.ParseConnectionString(connectionString));
 
-            Assert.Contains(string.Format("Version {0} is not supportted.", version), exception.Message);
+            Assert.Contains(string.Format("Version {0} is not supported.", version), exception.Message);
         }
 
         [Theory]

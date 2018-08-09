@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly string MissingRequiredProperty =
             $"Connection string missing required properties {EndpointProperty} and {AccessKeyProperty}.";
         private static readonly string InvalidVersionValueFormat =
-            "Version {0} is not supportted.";
+            "Version {0} is not supported.";
         private static readonly string InvalidPortValue =
             $"Invalid value for {PortProperty} property.";
 
