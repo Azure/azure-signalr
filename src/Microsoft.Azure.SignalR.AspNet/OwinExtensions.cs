@@ -96,7 +96,7 @@ namespace Owin
             configuration.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             configuration.Resolver.Register(typeof(IProtectedData), () => provider);
             configuration.Resolver.Register(typeof(IMessageBus), () => new ServiceMessageBus(configuration.Resolver));
-            configuration.Resolver.Register(typeof(ITransportManager), () => new AzureTransportManager());
+            configuration.Resolver.Register(typeof(ITransportManager), () => new AzureTransportManager(configuration.Resolver));
             configuration.Resolver.Register(typeof(IServiceProtocol), () => serviceProtocol);
             
             // TODO: Register LoggerFactory
