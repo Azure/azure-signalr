@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceEndpointUtility : IServiceEndpointUtility
+    internal class ServiceEndpointProvider : IServiceEndpointProvider
     {
         private const string EndpointProperty = "endpoint";
         private const string AccessKeyProperty = "accesskey";
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IServiceEndpointGenerator _generator;
 
-        public ServiceEndpointUtility(IOptions<ServiceOptions> options)
+        public ServiceEndpointProvider(IOptions<ServiceOptions> options)
         {
             var connectionString = options.Value.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))

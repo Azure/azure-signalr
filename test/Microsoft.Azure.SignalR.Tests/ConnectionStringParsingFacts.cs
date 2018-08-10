@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData("http://aaa", "ENDPOINT=http://aaa/;ACCESSKEY=bbb;")]
         public void ValidPreviewConnectionString(string expectedEndpoint, string connectionString)
         {
-            (var endpoint, var accessKey, var version, var port) = ServiceEndpointUtility.ParseConnectionString(connectionString);
+            (var endpoint, var accessKey, var version, var port) = ServiceEndpointProvider.ParseConnectionString(connectionString);
 
             Assert.Equal(expectedEndpoint, endpoint);
             Assert.Equal("bbb", accessKey);
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData("http://aaa", "1.1-beta2", 1234, "ENDPOINT=http://aaa/;ACCESSKEY=bbb;Version=1.1-beta2;Port=1234")]
         public void ValidConnectionString(string expectedEndpoint, string expectedVersion, int? expectedPort, string connectionString)
         {
-            (var endpoint, var accessKey, var version, var port) = ServiceEndpointUtility.ParseConnectionString(connectionString);
+            (var endpoint, var accessKey, var version, var port) = ServiceEndpointProvider.ParseConnectionString(connectionString);
 
             Assert.Equal(expectedEndpoint, endpoint);
             Assert.Equal("bbb", accessKey);
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void InvalidConnectionStrings(string connectionString)
         {
             var exception = Assert.Throws<ArgumentException>(() =>
-                ServiceEndpointUtility.ParseConnectionString(connectionString));
+                ServiceEndpointProvider.ParseConnectionString(connectionString));
 
             Assert.Contains("Connection string missing required properties", exception.Message);
         }
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void InvalidEndpoint(string connectionString)
         {
             var exception = Assert.Throws<ArgumentException>(() =>
-                ServiceEndpointUtility.ParseConnectionString(connectionString));
+                ServiceEndpointProvider.ParseConnectionString(connectionString));
 
             Assert.Contains("Endpoint property in connection string is not a valid URI", exception.Message);
         }
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void InvalidVersion(string connectionString, string version)
         {
             var exception = Assert.Throws<ArgumentException>(() =>
-                ServiceEndpointUtility.ParseConnectionString(connectionString));
+                ServiceEndpointProvider.ParseConnectionString(connectionString));
 
             Assert.Contains(string.Format("Version {0} is not supported.", version), exception.Message);
         }
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void InvalidPort(string connectionString)
         {
             var exception = Assert.Throws<ArgumentException>(() =>
-                ServiceEndpointUtility.ParseConnectionString(connectionString));
+                ServiceEndpointProvider.ParseConnectionString(connectionString));
 
             Assert.Contains(@"Invalid value for port property.", exception.Message);
         }

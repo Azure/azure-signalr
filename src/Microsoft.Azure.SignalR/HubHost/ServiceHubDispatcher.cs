@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<ServiceHubDispatcher<THub>> _logger;
         private readonly ServiceOptions _options;
-        private readonly IServiceEndpointUtility _serviceEndpointUtility;
+        private readonly IServiceEndpointProvider _serviceEndpointProvider;
         private readonly IServiceConnectionManager<THub> _serviceConnectionManager;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly IServiceProtocol _serviceProtocol;
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR
         public ServiceHubDispatcher(IServiceProtocol serviceProtocol,
             IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
-            IServiceEndpointUtility serviceEndpointUtility,
+            IServiceEndpointProvider serviceEndpointProvider,
             IOptions<ServiceOptions> options,
             ILoggerFactory loggerFactory,
             IClientConnectionFactory clientConnectionFactory)
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR
             _serviceProtocol = serviceProtocol;
             _serviceConnectionManager = serviceConnectionManager;
             _clientConnectionManager = clientConnectionManager;
-            _serviceEndpointUtility = serviceEndpointUtility;
+            _serviceEndpointProvider = serviceEndpointProvider;
             _options = options != null ? options.Value : throw new ArgumentNullException(nameof(options));
 
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.SignalR
 
         private Uri GetServiceUrl(string connectionId)
         {
-            var baseUri = new UriBuilder(_serviceEndpointUtility.GetServerEndpoint<THub>());
+            var baseUri = new UriBuilder(_serviceEndpointProvider.GetServerEndpoint<THub>());
             var query = "cid=" + connectionId;
             if (baseUri.Query != null && baseUri.Query.Length > 1)
             {
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR
             var httpConnectionOptions = new HttpConnectionOptions
             {
                 Url = GetServiceUrl(connectionId),
-                AccessTokenProvider = () => Task.FromResult(_serviceEndpointUtility.GenerateServerAccessToken<THub>(_userId)),
+                AccessTokenProvider = () => Task.FromResult(_serviceEndpointProvider.GenerateServerAccessToken<THub>(_userId)),
                 Transports = HttpTransportType.WebSockets,
                 SkipNegotiation = true,
                 Headers = CustomHeader
