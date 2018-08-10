@@ -3,8 +3,12 @@
 
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
+using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Transports;
+using Microsoft.Azure.SignalR.Protocol;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
@@ -12,11 +16,17 @@ namespace Microsoft.Azure.SignalR.AspNet
     {
         private readonly TaskCompletionSource<object> _lifetimeTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly HostContext _context;
+        private readonly IMemoryPool _pool;
+        private readonly JsonSerializer _serializer;
+        private readonly IServiceProtocol _serviceProtocol;
 
-        public AzureTransport(HostContext context)
+        public AzureTransport(HostContext context, IDependencyResolver resolver)
         {
             _context = context;
             context.Environment[Constants.Context.AzureSignalRTransportKey] = this;
+            _pool = resolver.Resolve<IMemoryPool>();
+            _serializer = resolver.Resolve<JsonSerializer>();
+            _serviceProtocol = resolver.Resolve<IServiceProtocol>();
         }
 
         public Func<string, Task> Received { get; set; }
@@ -56,7 +66,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             if (_context.Environment.TryGetValue(Constants.Context.AzureServiceConnectionKey, out var connection) && connection is IServiceConnection serviceConnection)
             {
                 // Invoke service connection
-                return serviceConnection.WriteAsync(ConnectionId, value);
+                return serviceConnection.WriteAsync(ConnectionId, value, _serviceProtocol, _serializer, _pool);
             }
 
             throw new InvalidOperationException("No service connection found when sending message");

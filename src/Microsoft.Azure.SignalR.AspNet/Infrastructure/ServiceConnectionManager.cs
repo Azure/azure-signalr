@@ -18,6 +18,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             throw new System.NotImplementedException();
         }
 
+        public Task StopAsync()
+        {
+            throw new System.NotImplementedException();
+        }
+
         public IServiceConnection WithHub(string hubName)
         {
             throw new System.NotImplementedException();
