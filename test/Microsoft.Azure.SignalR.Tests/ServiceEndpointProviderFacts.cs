@@ -12,17 +12,17 @@ using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    public class ServiceEndpointUtilityFacts
+    public class ServiceEndpointProviderFacts
     {
         private const string Endpoint = "https://myendpoint";
 
         private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
 
-        public static IEnumerable<object[]> PreviewEndpointUtility()
+        public static IEnumerable<object[]> PreviewEndpointProviders()
         {
             yield return new object[]
             {
-                new ServiceEndpointUtility(
+                new ServiceEndpointProvider(
                     Options.Create(
                         new ServiceOptions
                         {
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Tests
             };
             yield return new object[]
             {
-                new ServiceEndpointUtility(
+                new ServiceEndpointProvider(
                     Options.Create(
                         new ServiceOptions
                         {
@@ -40,8 +40,8 @@ namespace Microsoft.Azure.SignalR.Tests
             };
         }
 
-        private static readonly IServiceEndpointUtility V1EndpointUtility =
-            new ServiceEndpointUtility(
+        private static readonly IServiceEndpointProvider V1EndpointProvider =
+            new ServiceEndpointProvider(
                 Options.Create(
                     new ServiceOptions
                     {
@@ -51,8 +51,8 @@ namespace Microsoft.Azure.SignalR.Tests
         private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
 
         [Theory]
-        [MemberData(nameof(PreviewEndpointUtility))]
-        internal void GetPreviewServerEndpoint(IServiceEndpointUtility utility)
+        [MemberData(nameof(PreviewEndpointProviders))]
+        internal void GetPreviewServerEndpoint(IServiceEndpointProvider utility)
         {
             var expected = $"{Endpoint}:5002/server/?hub={nameof(TestHub).ToLower()}";
             var actual = utility.GetServerEndpoint<TestHub>();
@@ -60,8 +60,8 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [MemberData(nameof(PreviewEndpointUtility))]
-        internal void GetPreviewClientEndpoint(IServiceEndpointUtility utility)
+        [MemberData(nameof(PreviewEndpointProviders))]
+        internal void GetPreviewClientEndpoint(IServiceEndpointProvider utility)
         {
             var expected = $"{Endpoint}:5001/client/?hub={nameof(TestHub).ToLower()}";
             var actual = utility.GetClientEndpoint<TestHub>();
@@ -69,8 +69,8 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [MemberData(nameof(PreviewEndpointUtility))]
-        internal void GeneratePreviewServerAccessToken(IServiceEndpointUtility utility)
+        [MemberData(nameof(PreviewEndpointProviders))]
+        internal void GeneratePreviewServerAccessToken(IServiceEndpointProvider utility)
         {
             const string userId = "UserA";
             var tokenString = utility.GenerateServerAccessToken<TestHub>(userId);
@@ -90,8 +90,8 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [MemberData(nameof(PreviewEndpointUtility))]
-        internal void GeneratePreviewClientAccessToken(IServiceEndpointUtility utility)
+        [MemberData(nameof(PreviewEndpointProviders))]
+        internal void GeneratePreviewClientAccessToken(IServiceEndpointProvider utility)
         {
             var tokenString = utility.GenerateClientAccessToken<TestHub>();
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void GetV1ServerEndpoint()
         {
             var expected = $"{Endpoint}/server/?hub={nameof(TestHub).ToLower()}";
-            var actual = V1EndpointUtility.GetServerEndpoint<TestHub>();
+            var actual = V1EndpointProvider.GetServerEndpoint<TestHub>();
             Assert.Equal(expected, actual);
         }
 
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void GetV1ClientEndpoint()
         {
             var expected = $"{Endpoint}/client/?hub={nameof(TestHub).ToLower()}";
-            var actual = V1EndpointUtility.GetClientEndpoint<TestHub>();
+            var actual = V1EndpointProvider.GetClientEndpoint<TestHub>();
             Assert.Equal(expected, actual);
         }
 
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void GenerateV1ServerAccessToken()
         {
             const string userId = "UserA";
-            var tokenString = V1EndpointUtility.GenerateServerAccessToken<TestHub>(userId);
+            var tokenString = V1EndpointProvider.GenerateServerAccessToken<TestHub>(userId);
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = GenerateJwtBearer($"{Endpoint}/server/?hub={nameof(TestHub).ToLower()}",
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public void GenerateV1ClientAccessToken()
         {
-            var tokenString = V1EndpointUtility.GenerateClientAccessToken<TestHub>();
+            var tokenString = V1EndpointProvider.GenerateClientAccessToken<TestHub>();
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = GenerateJwtBearer($"{Endpoint}/client/?hub={nameof(TestHub).ToLower()}",

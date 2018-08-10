@@ -63,13 +63,13 @@ namespace Microsoft.Azure.SignalR
 
         private NegotiationResponse GenerateNegotiateResponse(HttpContext context, string hubName)
         {
-            var serviceEndpointUtility = _serviceProvider.GetRequiredService<IServiceEndpointUtility>();
+            var serviceEndpointProvider = _serviceProvider.GetRequiredService<IServiceEndpointProvider>();
             var options = _serviceProvider.GetService<IOptions<ServiceOptions>>();
             var claims = options.Value.ClaimsProvider?.Invoke(context) ?? context.User.Claims;
             return new NegotiationResponse
             {
-                Url = serviceEndpointUtility.GetClientEndpoint(hubName),
-                AccessToken = serviceEndpointUtility.GenerateClientAccessToken(hubName, claims),
+                Url = serviceEndpointProvider.GetClientEndpoint(hubName),
+                AccessToken = serviceEndpointProvider.GenerateClientAccessToken(hubName, claims),
                 // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
                 AvailableTransports = new List<AvailableTransport>()
             };
