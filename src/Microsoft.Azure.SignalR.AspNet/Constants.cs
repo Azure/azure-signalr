@@ -7,8 +7,14 @@ namespace Microsoft.Azure.SignalR.AspNet
     {
         public static class ClaimType
         {
-            public const string AuthenticationType = "azure.signalr.authenticationtype";
-            public const string UserId = "azure.signalr.userid";
+            public const string AzureSignalRSysPrefix = "azure.signalr.sys.";
+            public const string AuthenticationType = AzureSignalRSysPrefix + "authenticationtype";
+            public const string UserId = AzureSignalRSysPrefix + "userid";
+        }
+
+        public static class QueryString
+        {
+            public const string ConnectionToken = "connectionToken";
         }
 
         public static class Path
