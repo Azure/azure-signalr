@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Connections;
@@ -23,6 +24,7 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly RouteBuilder _routes;
+        private readonly bool _isDefaultUserIdProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceRouteBuilder"/> class.
@@ -32,6 +34,9 @@ namespace Microsoft.Azure.SignalR
         {
             _routes = routes;
             _serviceProvider = _routes.ServiceProvider;
+
+            var userIdProvider = _serviceProvider.GetService<IUserIdProvider>();
+            _isDefaultUserIdProvider = userIdProvider is DefaultUserIdProvider;
         }
 
         /// <summary>
@@ -64,8 +69,7 @@ namespace Microsoft.Azure.SignalR
         private NegotiationResponse GenerateNegotiateResponse(HttpContext context, string hubName)
         {
             var serviceEndpointProvider = _serviceProvider.GetRequiredService<IServiceEndpointProvider>();
-            var options = _serviceProvider.GetService<IOptions<ServiceOptions>>();
-            var claims = options.Value.ClaimsProvider?.Invoke(context) ?? context.User.Claims;
+            var claims = BuildClaims(context);
             return new NegotiationResponse
             {
                 Url = serviceEndpointProvider.GetClientEndpoint(hubName),
@@ -73,6 +77,28 @@ namespace Microsoft.Azure.SignalR
                 // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
                 AvailableTransports = new List<AvailableTransport>()
             };
+        }
+
+        private IEnumerable<Claim> BuildClaims(HttpContext context)
+        {
+            var options = _serviceProvider.GetService<IOptions<ServiceOptions>>();
+            var claims = options.Value.ClaimsProvider?.Invoke(context) ?? context.User.Claims;
+
+            if (_isDefaultUserIdProvider)
+            {
+                return claims;
+            }
+
+            // Add an empty user Id claim to tell service that user has a custom IUserIdProvider.
+            var customUserIdClaim = new Claim(Constants.ClaimType.UserId, string.Empty);
+            if (claims == null)
+            {
+                return new[] {customUserIdClaim};
+            }
+            else
+            {
+                return new List<Claim>(claims) {customUserIdClaim};
+            }
         }
 
         private async Task RedirectToService(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)

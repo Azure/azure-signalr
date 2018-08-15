@@ -34,6 +34,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 },
                 NullLogger<DefaultHubProtocolResolver>.Instance);
 
+        private static readonly IUserIdProvider UserIdProvider = new DefaultUserIdProvider();
+
         private static readonly ILogger<ServiceLifetimeManager<TestHub>> Logger =
             NullLogger<ServiceLifetimeManager<TestHub>>.Instance;
 
@@ -55,7 +57,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker);
+                new ClientConnectionManager(), HubProtocolResolver, UserIdProvider, Logger, Marker);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
@@ -72,7 +74,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker);
+                new ClientConnectionManager(), HubProtocolResolver,  UserIdProvider, Logger, Marker);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
@@ -100,7 +102,7 @@ namespace Microsoft.Azure.SignalR.Tests
             serviceConnectionManager.AddServiceConnection(proxy.ServiceConnection);
 
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker);
+                proxy.ClientConnectionManager, HubProtocolResolver, UserIdProvider, Logger, Marker);
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
