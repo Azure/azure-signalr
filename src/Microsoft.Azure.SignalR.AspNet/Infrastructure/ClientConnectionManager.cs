@@ -10,6 +10,7 @@ using System.Security.Claims;
 using System.Web;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
+using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Owin;
 
@@ -27,24 +28,27 @@ namespace Microsoft.Azure.SignalR.AspNet
             "nbf"  // Not Before claim. Added by default. It is not validated by service.
         };
 
-        private readonly PersistentConnection _dispatcher;
+        private readonly HubConfiguration _configuration;
 
-        public ClientConnectionManager(IDependencyResolver resolver)
+        public ClientConnectionManager(HubConfiguration configuration)
         {
-            _dispatcher = resolver.Resolve<PersistentConnection>() ?? throw new ArgumentNullException(nameof(resolver));
+            _configuration = configuration;
         }
 
         public AzureTransport CreateConnection(OpenConnectionMessage message)
         {
+            var dispatcher = new HubDispatcher(_configuration);
+            dispatcher.Initialize(_configuration.Resolver);
+
             var connectionId = message.ConnectionId;
 
             var responseStream = new MemoryStream();
             var hostContext = GetHostContext(message, responseStream);
 
-            if (_dispatcher.Authorize(hostContext.Request))
+            if (dispatcher.Authorize(hostContext.Request))
             {
                 // ProcessRequest checks if the connectionToken matches "{connectionid}:{userName}" format with context.User
-                _ = _dispatcher.ProcessRequest(hostContext);
+                _ = dispatcher.ProcessRequest(hostContext);
 
                 // TODO: check for errors written to the response
                 if (hostContext.Response.StatusCode != 200)

@@ -22,15 +22,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public ClientConnectionManagerTests()
         {
             var hubConfig = new HubConfiguration();
-            var dispatcher = new ServiceHubDispatcher(hubConfig);
             var protectedData = new EmptyProtectedData();
             var transport = new AzureTransportManager(hubConfig.Resolver);
-            hubConfig.Resolver.Register(typeof(PersistentConnection), () => dispatcher);
             hubConfig.Resolver.Register(typeof(IProtectedData), () => protectedData);
             hubConfig.Resolver.Register(typeof(ITransportManager), () => transport);
 
-            dispatcher.Initialize(hubConfig.Resolver);
-            _clientConnectionManager = new ClientConnectionManager(hubConfig.Resolver);
+            _clientConnectionManager = new ClientConnectionManager(hubConfig);
         }
 
         [Theory]

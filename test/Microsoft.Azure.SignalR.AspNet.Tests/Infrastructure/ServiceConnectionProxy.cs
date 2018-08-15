@@ -14,52 +14,103 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
-    internal class ServiceConnectionProxy : IDisposable
+    internal class ServiceConnectionProxy : ServiceConnection, IDisposable
     {
-        private static readonly IServiceProtocol ServiceProtocol = new ServiceProtocol();
+        private static readonly ServiceProtocol ServiceProtocol = new ServiceProtocol();
 
-        private readonly LogWaiterProvider _logWaiterProvider;
-        private readonly TestServiceConnection _serviceConnection;
+        private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
+        private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
+        private readonly ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>>();
 
-        public ServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null)
+        private TestConnectionContext _connectionContext;
+
+        public ServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null) :
+            base(
+                Guid.NewGuid().ToString("N"),
+                Guid.NewGuid().ToString("N"),
+                ServiceProtocol,
+                new TestConnectionFactory(),
+                clientConnectionManager,
+                loggerFactory.CreateLogger<ServiceConnectionProxy>())
         {
-            _logWaiterProvider = new LogWaiterProvider();
-            loggerFactory.AddProvider(_logWaiterProvider);
-            var logger = loggerFactory.CreateLogger<ServiceConnectionProxy>();
-            var connectionFactory = new TestConnectionFactory();
-            _serviceConnection = new TestServiceConnection(connectionFactory, clientConnectionManager, logger, callback, clientPipeOptions);
         }
 
-        public Task StartServiceAsync()
+        public async Task StartServiceAsync()
         {
-            _ = _serviceConnection.StartAsync();
+            _ = StartAsync();
 
-            return _logWaiterProvider.WaitFor(new EventId(20, "ServiceConnectionConnected"));
+            await WaitForConnectionStart;
+        }
+
+        protected override async Task<ConnectionContext> CreateConnection()
+        {
+            _connectionContext = await base.CreateConnection() as TestConnectionContext;
+
+            await WriteMessageAsync(new HandshakeResponseMessage());
+            return _connectionContext;
+        }
+
+        protected override async Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage)
+        {
+            await base.OnConnectedAsync(openConnectionMessage);
+
+            var tcs = _waitForConnectionOpen.GetOrAdd(openConnectionMessage.ConnectionId, i => new TaskCompletionSource<ConnectionContext>());
+
+            tcs.TrySetResult(null);
+        }
+
+        protected override async Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
+        {
+            await base.OnDisconnectedAsync(closeConnectionMessage);
+            var tcs = _waitForConnectionClose.GetOrAdd(closeConnectionMessage.ConnectionId, i => new TaskCompletionSource<object>());
+
+            tcs.TrySetResult(null);
+        }
+
+        protected override async Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)
+        {
+            await base.OnMessageAsync(connectionDataMessage);
+
+            var tcs = _waitForApplicationMessage.GetOrAdd(connectionDataMessage.ConnectionId, i => new TaskCompletionSource<ServiceMessage>());
+
+            tcs.TrySetResult(connectionDataMessage);
         }
 
         public Task WaitForClientConnectAsync(string connectionId)
         {
-            return _serviceConnection.WaitForClientConnectAsync(connectionId);
+            var tcs = _waitForConnectionOpen.GetOrAdd(connectionId, i => new TaskCompletionSource<ConnectionContext>());
+
+            return tcs.Task;
         }
 
         public Task WaitForApplicationMessageAsync(string connectionId)
         {
-            return _serviceConnection.WaitForApplicationMessageAsync(connectionId);
+            var tcs = _waitForApplicationMessage.GetOrAdd(connectionId, i => new TaskCompletionSource<ServiceMessage>());
+
+            return tcs.Task;
         }
 
         public Task WaitForClientDisconnectAsync(string connectionId)
         {
-            return _serviceConnection.WaitForClientDisconnectAsync(connectionId);
+            var tcs = _waitForConnectionClose.GetOrAdd(connectionId, i => new TaskCompletionSource<object>());
+
+            return tcs.Task;
         }
 
-        public Task WriteMessageAsync(ServiceMessage message)
+        public async Task WriteMessageAsync(ServiceMessage message)
         {
-            return _serviceConnection.WriteMessageAsync(message);
+            if (_connectionContext == null)
+            {
+                throw new InvalidOperationException("Server connection is not yet established.");
+            }
+
+            ServiceProtocol.WriteMessage(message, _connectionContext.Application.Output);
+            await _connectionContext.Application.Output.FlushAsync();
         }
 
         public void Dispose()
         {
-            _serviceConnection.Dispose();
+            _ = StopAsync();
         }
 
         private sealed class TestConnectionFactory : IConnectionFactory
@@ -103,109 +154,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 null);
 
                 return tcs.Task;
-            }
-        }
-
-        private sealed class TestServiceConnection : ServiceConnection, IDisposable
-        {
-            private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
-            private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
-            private readonly ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>>();
-
-            public TestConnectionContext ConnectionContext { get; private set; }
-
-            private readonly TaskCompletionSource<ConnectionContext> _waitForServiceDisconnected = new TaskCompletionSource<ConnectionContext>();
-
-            public TestServiceConnection(TestConnectionFactory connectionFactory, IClientConnectionManager clientConnectionManager, ILogger logger, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null) :
-                base(
-                    Guid.NewGuid().ToString("N"),
-                    Guid.NewGuid().ToString("N"),
-                    ServiceProtocol,
-                    connectionFactory,
-                    clientConnectionManager,
-                    logger)
-            {
-            }
-
-            public Task WaitForServiceDisconnectAsync()
-            {
-                return _waitForServiceDisconnected.Task;
-            }
-
-            protected override async Task<ConnectionContext> CreateConnection()
-            {
-                ConnectionContext = (TestConnectionContext)await base.CreateConnection();
-                await WriteMessageAsync(new HandshakeResponseMessage());
-                return ConnectionContext;
-            }
-
-            protected override async Task DisposeConnection()
-            {
-                await base.DisposeConnection();
-                _waitForServiceDisconnected.TrySetResult(_connection);
-            }
-
-            protected override async Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage)
-            {
-                await base.OnConnectedAsync(openConnectionMessage);
-
-                var tcs = _waitForConnectionOpen.GetOrAdd(openConnectionMessage.ConnectionId, i => new TaskCompletionSource<ConnectionContext>());
-
-                tcs.TrySetResult(null);
-            }
-
-            protected override async Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
-            {
-                await base.OnDisconnectedAsync(closeConnectionMessage);
-                var tcs = _waitForConnectionClose.GetOrAdd(closeConnectionMessage.ConnectionId, i => new TaskCompletionSource<object>());
-
-                tcs.TrySetResult(null);
-            }
-
-            protected override async Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)
-            {
-                await base.OnMessageAsync(connectionDataMessage);
-
-                var tcs = _waitForApplicationMessage.GetOrAdd(connectionDataMessage.ConnectionId, i => new TaskCompletionSource<ServiceMessage>());
-
-                tcs.TrySetResult(connectionDataMessage);
-            }
-
-            public Task WaitForClientConnectAsync(string connectionId)
-            {
-                var tcs = _waitForConnectionOpen.GetOrAdd(connectionId, i => new TaskCompletionSource<ConnectionContext>());
-
-                return tcs.Task;
-            }
-
-            public Task WaitForApplicationMessageAsync(string connectionId)
-            {
-                var tcs = _waitForApplicationMessage.GetOrAdd(connectionId, i => new TaskCompletionSource<ServiceMessage>());
-
-                return tcs.Task;
-            }
-
-            public Task WaitForClientDisconnectAsync(string connectionId)
-            {
-                var tcs = _waitForConnectionClose.GetOrAdd(connectionId, i => new TaskCompletionSource<object>());
-
-                return tcs.Task;
-            }
-
-            public async Task WriteMessageAsync(ServiceMessage message)
-            {
-                if (ConnectionContext == null)
-                {
-                    throw new InvalidOperationException("Server connection is not yet established.");
-                }
-
-                ServiceProtocol.WriteMessage(message, ConnectionContext.Application.Output);
-                await ConnectionContext.Application.Output.FlushAsync();
-            }
-
-            public void Dispose()
-            {
-                _ = StopAsync();
             }
         }
 
