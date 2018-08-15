@@ -59,8 +59,7 @@ namespace Owin
         {
             // Replace default HubDispatcher with a custom one, which has its own negotiation logic
             // https://github.com/SignalR/SignalR/blob/dev/src/Microsoft.AspNet.SignalR.Core/Hosting/PersistentConnectionFactory.cs#L42
-            var hubDispatcher = new ServiceHubDispatcher(configuration);
-            configuration.Resolver.Register(typeof(PersistentConnection), () => hubDispatcher);
+            configuration.Resolver.Register(typeof(PersistentConnection), () => new ServiceHubDispatcher(configuration));
             builder.RunSignalR(typeof(PersistentConnection), configuration);
 
             RegisterServiceObjects(configuration, options);
