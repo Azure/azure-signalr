@@ -10,8 +10,8 @@ namespace Microsoft.Azure.SignalR
         public static class ClaimType
         {
             public const string AzureSignalRSysPrefix = "asrs.s.";
-            public const string AuthenticationType = AzureSignalRSysPrefix + "au";
-            public const string UserId = AzureSignalRSysPrefix + "ur";
+            public const string AuthenticationType = AzureSignalRSysPrefix + "aut";
+            public const string UserId = AzureSignalRSysPrefix + "uid";
 
             public const string AzureSignalRUserPrefix = "asrs.u.";
         }
