@@ -54,7 +54,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 if (hostContext.Response.StatusCode != 200)
                 {
                     Debug.Fail("Response StatusCode is " + hostContext.Response.StatusCode);
-                    var errorResponse = GetMemoryString(responseStream);
+                    var errorResponse = GetContentAndDispose(responseStream);
                     throw new InvalidOperationException(errorResponse);
                 }
                 return (AzureTransport)hostContext.Environment[Constants.Context.AzureSignalRTransportKey];
@@ -80,6 +80,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             var userToken = string.IsNullOrEmpty(user.Identity.Name) ? string.Empty : ":" + user.Identity.Name;
 
+            // TODO: when https://github.com/SignalR/SignalR/issues/4175 is resolved, we can get rid of paring query string
             var queryCollection = HttpUtility.ParseQueryString(message.QueryString ?? string.Empty);
             queryCollection[Constants.QueryString.ConnectionToken] = $"{connectionId}{userToken}";
 
@@ -123,7 +124,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             return new ClaimsPrincipal(new ClaimsIdentity(claims, authenticationType));
         }
 
-        internal static string GetMemoryString(MemoryStream stream)
+        internal static string GetContentAndDispose(MemoryStream stream)
         {
             stream.Seek(0, SeekOrigin.Begin);
             using (var reader = new StreamReader(stream))

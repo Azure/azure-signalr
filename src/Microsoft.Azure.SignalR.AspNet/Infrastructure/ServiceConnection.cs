@@ -53,9 +53,9 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             try
             {
-                foreach (var connectionId in _clientConnections.Keys)
+                foreach (var connection in _clientConnections)
                 {
-                    PerformDisconnectCore(connectionId);
+                    PerformDisconnectCore(connection.Key);
                 }
             }
             catch (Exception ex)
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 {
                     var payload = connectionDataMessage.Payload;
                     Log.WriteMessageToApplication(_logger, payload.Length, connectionDataMessage.ConnectionId);
-                    OnReceived(transport, payload);
+                    transport.OnReceived(GetString(payload));
                 }
                 catch (Exception ex)
                 {
@@ -112,11 +112,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             Log.ConnectedEnding(_logger, connectionId);
-        }
-
-        private void OnReceived(AzureTransport transport, ReadOnlySequence<byte> payload)
-        {
-            transport.OnReceived(GetString(payload));
         }
 
         private Task OnConnectedAsyncCore(OpenConnectionMessage message)

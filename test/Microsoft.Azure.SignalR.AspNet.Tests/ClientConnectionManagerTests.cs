@@ -57,7 +57,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var response = new MemoryStream();
             var context = _clientConnectionManager.GetHostContext(message, response);
             Assert.Equal(200, context.Response.StatusCode);
-            Assert.Equal("", ClientConnectionManager.GetMemoryString(response));
+            Assert.Equal("", ClientConnectionManager.GetContentAndDispose(response));
             Assert.Equal("value1", context.Request.Headers["custom1"]);
             Assert.Equal($"{message.ConnectionId}:user1", context.Request.QueryString["connectionToken"]);
         }
