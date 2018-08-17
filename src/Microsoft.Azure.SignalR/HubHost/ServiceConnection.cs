@@ -58,9 +58,9 @@ namespace Microsoft.Azure.SignalR
                     return;
                 }
                 var tasks = new List<Task>(_connectionIds.Count);
-                foreach (var connectionId in _connectionIds.Keys)
+                foreach (var connection in _connectionIds)
                 {
-                    tasks.Add(PerformDisconnectAsyncCore(connectionId));
+                    tasks.Add(PerformDisconnectAsyncCore(connection.Key));
                 }
                 await Task.WhenAll(tasks);
             }
