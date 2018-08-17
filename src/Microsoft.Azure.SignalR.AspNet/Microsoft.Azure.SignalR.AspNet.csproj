@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <Reference Include="System.Configuration" />
+    <Reference Include="System.Web" />
   </ItemGroup>
 
   <!-- Copy the referenced Microsoft.Azure.SignalR.Common.dll into the package https://github.com/nuget/home/issues/3891#issuecomment-397481361 -->

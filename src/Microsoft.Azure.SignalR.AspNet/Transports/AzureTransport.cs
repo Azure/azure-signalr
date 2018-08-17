@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         public AzureTransport(HostContext context, IDependencyResolver resolver)
         {
             _context = context;
-            context.Environment[Constants.Context.AzureSignalRTransportKey] = this;
+            context.Environment[AspNetConstants.Context.AzureSignalRTransportKey] = this;
             _pool = resolver.Resolve<IMemoryPool>();
             _serializer = resolver.Resolve<JsonSerializer>();
             _serviceProtocol = resolver.Resolve<IServiceProtocol>();
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public Task Send(object value)
         {
-            if (_context.Environment.TryGetValue(Constants.Context.AzureServiceConnectionKey, out var connection) && connection is IServiceConnection serviceConnection)
+            if (_context.Environment.TryGetValue(AspNetConstants.Context.AzureServiceConnectionKey, out var connection) && connection is IServiceConnection serviceConnection)
             {
                 // Invoke service connection
                 return serviceConnection.WriteAsync(ConnectionId, value, _serviceProtocol, _serializer, _pool);
