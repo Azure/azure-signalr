@@ -57,7 +57,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                     var errorResponse = GetContentAndDispose(responseStream);
                     throw new InvalidOperationException(errorResponse);
                 }
-                return (AzureTransport)hostContext.Environment[Constants.Context.AzureSignalRTransportKey];
+                return (AzureTransport)hostContext.Environment[AspNetConstants.Context.AzureSignalRTransportKey];
             }
 
             // This happens when hub is not found
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             // TODO: when https://github.com/SignalR/SignalR/issues/4175 is resolved, we can get rid of paring query string
             var queryCollection = HttpUtility.ParseQueryString(message.QueryString ?? string.Empty);
-            queryCollection[Constants.QueryString.ConnectionToken] = $"{connectionId}{userToken}";
+            queryCollection[AspNetConstants.QueryString.ConnectionToken] = $"{connectionId}{userToken}";
 
             request.QueryString = new QueryString(queryCollection.ToString());
 
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 }
             }
 
-            context.Environment[Constants.Context.AzureServiceConnectionKey] = this;
+            context.Environment[AspNetConstants.Context.AzureServiceConnectionKey] = this;
             return new HostContext(context.Environment);
         }
 
