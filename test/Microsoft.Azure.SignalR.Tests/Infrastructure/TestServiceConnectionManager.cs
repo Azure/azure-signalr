@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public ServiceMessage ServiceMessage { get; private set; }
 
-        public void AddServiceConnection(ServiceConnection serviceConnection)
+        public void AddServiceConnection(IServiceConnection serviceConnection)
         {
         }
 
