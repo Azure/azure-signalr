@@ -110,10 +110,19 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private void AddClientConnection(ServiceConnectionContext connection)
+        private ServiceConnectionContext CreateClientConnection(OpenConnectionMessage message)
         {
+            var connection = _clientConnectionFactory.CreateConnection(message);
+
+            connection.ServiceConnection = this;
+            
+            // Add client connection to ClientConnectionManager
             _clientConnectionManager.AddClientConnection(connection);
             _connectionIds.TryAdd(connection.ConnectionId, connection.ConnectionId);
+
+            Log.ConnectedStarting(_logger, connection.ConnectionId);
+
+            return connection;
         }
 
         private void RemoveClientConnection(string connectionId)
@@ -124,9 +133,7 @@ namespace Microsoft.Azure.SignalR
 
         protected override Task OnConnectedAsync(OpenConnectionMessage message)
         {
-            var connection = _clientConnectionFactory.CreateConnection(message);
-            AddClientConnection(connection);
-            Log.ConnectedStarting(_logger, connection.ConnectionId);
+            var connection = CreateClientConnection(message);
 
             // Execute the application code
             connection.ApplicationTask = _connectionDelegate(connection);
