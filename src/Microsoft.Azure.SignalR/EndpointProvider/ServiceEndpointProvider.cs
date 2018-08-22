@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 
@@ -33,6 +34,9 @@ namespace Microsoft.Azure.SignalR
         private static readonly string InvalidPortValue =
             $"Invalid value for {PortProperty} property.";
 
+        private readonly string _endpoint;
+        private readonly string _accessKey;
+        private readonly TimeSpan _accessTokenLifetime;
         private readonly IServiceEndpointGenerator _generator;
 
         public ServiceEndpointProvider(IOptions<ServiceOptions> options)
@@ -43,107 +47,64 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(ConnectionStringNotFound);
             }
 
-            AccessTokenLifetime = options.Value.AccessTokenLifetime;
+            _accessTokenLifetime = options.Value.AccessTokenLifetime;
 
             string version;
-            (Endpoint, AccessKey, version, Port) = ParseConnectionString(connectionString);
+            int? port;
+            (_endpoint, _accessKey, version, port) = ParseConnectionString(connectionString);
 
-            Version = version ?? PreviewVersion;
-
-            if (Version == PreviewVersion)
+            if (version == null || version == PreviewVersion)
             {
-                _generator = new PreviewServiceEndpointGenerator(Endpoint, AccessKey);
+                _generator = new PreviewServiceEndpointGenerator(_endpoint, _accessKey);
             }
             else
             {
-                _generator = new DefaultServiceEndpointGenerator(Endpoint, AccessKey, Version, Port);
+                _generator = new DefaultServiceEndpointGenerator(_endpoint, _accessKey, version, port);
             }
         }
 
-        public string Endpoint { get; }
-
-        public string AccessKey { get; }
-
-        public string Version { get; }
-
-        public int? Port { get; }
-
-        private TimeSpan AccessTokenLifetime { get; }
-
-        public string GenerateClientAccessToken<THub>(IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
-            where THub : Hub
+        public string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
         {
-            return GenerateClientAccessToken(typeof(THub).Name, claims, lifetime);
-        }
+            if (string.IsNullOrEmpty(hubName))
+            {
+                throw new ArgumentNullException(nameof(hubName));
+            }
 
-        public string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null,
-            TimeSpan? lifetime = null)
-        {
-            return InternalGenerateAccessToken(GetClientAudience(hubName), claims, lifetime ?? AccessTokenLifetime);
+            var audience = _generator.GetClientAudience(hubName);
+
+            return InternalGenerateAccessToken(audience, claims, lifetime ?? _accessTokenLifetime);
         }
 
         public string GenerateServerAccessToken<THub>(string userId, TimeSpan? lifetime = null) where THub : Hub
         {
-            return GenerateServerAccessToken(typeof(THub).Name, userId, lifetime);
+            var audience = _generator.GetServerAudience(typeof(THub).Name);
+            var claims = userId != null ? new[] {new Claim(ClaimTypes.NameIdentifier, userId)} : null;
+
+            return InternalGenerateAccessToken(audience, claims, lifetime ?? _accessTokenLifetime);
         }
 
-        public string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null)
-        {
-            IEnumerable<Claim> claims = null;
-            if (userId != null)
-            {
-                claims = new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, userId)
-                };
-            }
-            return InternalGenerateAccessToken(GetServerAudience(hubName), claims, lifetime ?? AccessTokenLifetime);
-        }
-
-        public string GetClientEndpoint<THub>() where THub : Hub =>
-            GetClientEndpoint(typeof(THub).Name);
-
-        public string GetClientEndpoint(string hubName)
+        public string GetClientEndpoint(string hubName, QueryString queryString)
         {
             if (string.IsNullOrEmpty(hubName))
             {
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            return _generator.GetClientEndpoint(hubName);
-        }
+            var endpoint = _generator.GetClientEndpoint(hubName);
 
-        public string GetClientAudience(string hubName)
-        {
-            if (string.IsNullOrEmpty(hubName))
+            if (queryString == QueryString.Empty)
             {
-                throw new ArgumentNullException(nameof(hubName));
+                return endpoint;
             }
 
-            return _generator.GetClientAudience(hubName);
+            return endpoint.Contains("?") 
+                ? $"{endpoint}&{queryString.Value.Substring(1)}"
+                : $"{endpoint}{queryString}";
         }
 
-        public string GetServerEndpoint<THub>() where THub : Hub =>
-            GetServerEndpoint(typeof(THub).Name);
-
-        public string GetServerEndpoint(string hubName)
+        public string GetServerEndpoint<THub>() where THub : Hub
         {
-            if (string.IsNullOrEmpty(hubName))
-            {
-                throw new ArgumentNullException(nameof(hubName));
-            }
-
-            return _generator.GetServerEndpoint(hubName);
-        }
-
-        public string GetServerAudience(string hubName)
-        {
-            if (string.IsNullOrEmpty(hubName))
-            {
-                throw new ArgumentNullException(nameof(hubName));
-            }
-
-            return _generator.GetServerAudience(hubName);
+            return _generator.GetServerEndpoint(typeof(THub).Name);
         }
 
         private string InternalGenerateAccessToken(string audience, IEnumerable<Claim> claims, TimeSpan lifetime)
@@ -154,7 +115,7 @@ namespace Microsoft.Azure.SignalR
                 audience: audience,
                 claims: claims,
                 expires: expire,
-                signingKey: AccessKey
+                signingKey: _accessKey
             );
         }
 
