@@ -19,6 +19,5 @@ namespace Microsoft.Azure.SignalR.Protocol
         public const int LeaveGroupMessageType = 12;
         public const int GroupBroadcastDataMessageType = 13;
         public const int MultiGroupBroadcastDataMessageType = 14;
-        public const int UpdateConnectionMessageType = 15;
     }
 }

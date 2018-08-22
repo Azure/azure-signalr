@@ -130,25 +130,4 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public ReadOnlySequence<byte> Payload { get; set; }
     }
-
-    /// <summary>
-    /// A update-connection message.
-    /// </summary>
-    public class UpdateConnectionMessage : ConnectionMessage
-    {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="UpdateConnectionMessage"/> class.
-        /// </summary>
-        /// <param name="connectionId">The connection Id.</param>
-        /// <param name="userId">New user Id of the connection.</param>
-        public UpdateConnectionMessage(string connectionId, string userId) : base(connectionId)
-        {
-            UserId = userId;
-        }
-
-        /// <summary>
-        /// Gets or sets connection's new user Id.
-        /// </summary>
-        public string UserId { get; set; }
-    }
 }

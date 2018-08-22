@@ -12,9 +12,9 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
     {
-        private readonly List<IServiceConnection> _serviceConnections = new List<IServiceConnection>();
+        private readonly List<ServiceConnection> _serviceConnections = new List<ServiceConnection>();
 
-        public void AddServiceConnection(IServiceConnection serviceConnection)
+        public void AddServiceConnection(ServiceConnection serviceConnection)
         {
             _serviceConnections.Add(serviceConnection);
         }

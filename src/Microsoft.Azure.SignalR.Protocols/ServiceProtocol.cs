@@ -73,8 +73,6 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateCloseConnectionMessage(input, ref startOffset);
                 case ServiceProtocolConstants.ConnectionDataMessageType:
                     return CreateConnectionDataMessage(input, ref startOffset);
-                case ServiceProtocolConstants.UpdateConnectionMessageType:
-                    return CreateUpdateConnectionMessage(input, ref startOffset);
                 case ServiceProtocolConstants.MultiConnectionDataMessageType:
                     return CreateMultiConnectionDataMessage(input, ref startOffset);
                 case ServiceProtocolConstants.UserDataMessageType:
@@ -168,9 +166,6 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ConnectionDataMessage connectionDataMessage:
                     WriteConnectionDataMessage(connectionDataMessage, packer);
                     break;
-                case UpdateConnectionMessage updateConnectionMessage:
-                    WriteUpdateConnectionMessage(updateConnectionMessage, packer);
-                    break;
                 case MultiConnectionDataMessage multiConnectionDataMessage:
                     WriteMultiConnectionDataMessage(multiConnectionDataMessage, packer);
                     break;
@@ -259,14 +254,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ConnectionDataMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
             WriteBinary(packer, message.Payload);
-        }
-
-        private static void WriteUpdateConnectionMessage(UpdateConnectionMessage message, Stream packer)
-        {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.UpdateConnectionMessageType);
-            MessagePackBinary.WriteString(packer, message.ConnectionId);
-            MessagePackBinary.WriteString(packer, message.UserId);
         }
 
         private static void WriteBinary(Stream packer, ReadOnlySequence<byte> payload)
@@ -473,14 +460,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             var payload = ReadBytes(input, ref offset, "payload");
 
             return new ConnectionDataMessage(connectionId, payload);
-        }
-
-        private static UpdateConnectionMessage CreateUpdateConnectionMessage(byte[] input, ref int offset)
-        {
-            var connectionId = ReadString(input, ref offset, "connectionId");
-            var userId = ReadString(input, ref offset, "userID");
-
-            return new UpdateConnectionMessage(connectionId, userId);
         }
 
         private static MultiConnectionDataMessage CreateMultiConnectionDataMessage(byte[] input, ref int offset)

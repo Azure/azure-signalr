@@ -9,7 +9,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal interface IServiceConnectionManager<THub> where THub : Hub
     {
-        void AddServiceConnection(IServiceConnection serviceConnection);
+        void AddServiceConnection(ServiceConnection serviceConnection);
 
         Task StartAsync();
 
