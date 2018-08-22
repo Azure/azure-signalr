@@ -18,13 +18,13 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Microsoft.Azure.SignalR
 {
     /// <summary>
-    /// ServiceHubConnectionContext is only passed to IUserIdProvider.GetUserId as a paramter.
+    /// ServiceHubConnectionContext is only passed to IUserIdProvider.GetUserId as a parameter.
     /// Only HttpContext and User properties are available for access.
     /// Exception will be thrown when other properties are accessed.
     /// </summary>
     internal class ServiceHubConnectionContext : HubConnectionContext
     {
-        public const string UnavailableErrorTemplate = " property is not available in current context of Azure SignalR Service.";
+        public const string UnavailableErrorTemplate = " property is not available in context of Azure SignalR Service.";
         public const string ConnectionAbortedUnavailableError = nameof(ConnectionAborted) + UnavailableErrorTemplate;
         public const string ConnectionIdUnavailableError = nameof(ConnectionId) + UnavailableErrorTemplate;
         public const string ItemsUnavailableError = nameof(Items) + UnavailableErrorTemplate;
