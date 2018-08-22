@@ -36,8 +36,6 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return CloseConnectionMessagesEqual(closeConnectionMessage, (CloseConnectionMessage)y);
                 case ConnectionDataMessage connectionDataMessage:
                     return ConnectionDataMessagesEqual(connectionDataMessage, (ConnectionDataMessage)y);
-                case UpdateConnectionMessage updateConnectionMessage:
-                    return UpdateConnectionMessageEqual(updateConnectionMessage, (UpdateConnectionMessage)y);
                 case MultiConnectionDataMessage multiConnectionDataMessage:
                     return MultiConnectionDataMessagesEqual(multiConnectionDataMessage, (MultiConnectionDataMessage)y);
                 case UserDataMessage userDataMessage:
@@ -65,17 +63,17 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return 0;
         }
 
-        private static bool HandshakeRequestMessagesEqual(HandshakeRequestMessage x, HandshakeRequestMessage y)
+        private bool HandshakeRequestMessagesEqual(HandshakeRequestMessage x, HandshakeRequestMessage y)
         {
             return x.Version == y.Version;
         }
 
-        private static bool HandshakeResponseMessagesEqual(HandshakeResponseMessage x, HandshakeResponseMessage y)
+        private bool HandshakeResponseMessagesEqual(HandshakeResponseMessage x, HandshakeResponseMessage y)
         {
             return StringEqual(x.ErrorMessage, y.ErrorMessage);
         }
 
-        private static bool OpenConnectionMessagesEqual(OpenConnectionMessage x, OpenConnectionMessage y)
+        private bool OpenConnectionMessagesEqual(OpenConnectionMessage x, OpenConnectionMessage y)
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) && 
                    ClaimsEqual(x.Claims, y.Claims) &&
@@ -83,60 +81,55 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                    StringEqual(x.QueryString, y.QueryString);
         }
 
-        private static bool CloseConnectionMessagesEqual(CloseConnectionMessage x, CloseConnectionMessage y)
+        private bool CloseConnectionMessagesEqual(CloseConnectionMessage x, CloseConnectionMessage y)
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.ErrorMessage, y.ErrorMessage);
         }
 
-        private static bool ConnectionDataMessagesEqual(ConnectionDataMessage x, ConnectionDataMessage y)
+        private bool ConnectionDataMessagesEqual(ConnectionDataMessage x, ConnectionDataMessage y)
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) && SequenceEqual(x.Payload.ToArray(), y.Payload.ToArray());
         }
 
-        private static bool UpdateConnectionMessageEqual(UpdateConnectionMessage x, UpdateConnectionMessage y)
-        {
-            return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.UserId, y.UserId);
-        }
-
-        private static bool MultiConnectionDataMessagesEqual(MultiConnectionDataMessage x, MultiConnectionDataMessage y)
+        private bool MultiConnectionDataMessagesEqual(MultiConnectionDataMessage x, MultiConnectionDataMessage y)
         {
             return SequenceEqual(x.ConnectionList, y.ConnectionList) && PayloadsEqual(x.Payloads, y.Payloads);
         }
 
-        private static bool UserDataMessagesEqual(UserDataMessage x, UserDataMessage y)
+        private bool UserDataMessagesEqual(UserDataMessage x, UserDataMessage y)
         {
             return StringEqual(x.UserId, y.UserId) && PayloadsEqual(x.Payloads, y.Payloads);
         }
 
-        private static bool MultiUserDataMessagesEqual(MultiUserDataMessage x, MultiUserDataMessage y)
+        private bool MultiUserDataMessagesEqual(MultiUserDataMessage x, MultiUserDataMessage y)
         {
             return SequenceEqual(x.UserList, y.UserList) && PayloadsEqual(x.Payloads, y.Payloads);
         }
 
-        private static bool BroadcastDataMessagesEqual(BroadcastDataMessage x, BroadcastDataMessage y)
+        private bool BroadcastDataMessagesEqual(BroadcastDataMessage x, BroadcastDataMessage y)
         {
             return SequenceEqual(x.ExcludedList, y.ExcludedList) &&
                    PayloadsEqual(x.Payloads, y.Payloads);
         }
 
-        private static bool JoinGroupMessagesEqual(JoinGroupMessage x, JoinGroupMessage y)
+        private bool JoinGroupMessagesEqual(JoinGroupMessage x, JoinGroupMessage y)
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.GroupName, y.GroupName);
         }
 
-        private static bool LeaveGroupMessagesEqual(LeaveGroupMessage x, LeaveGroupMessage y)
+        private bool LeaveGroupMessagesEqual(LeaveGroupMessage x, LeaveGroupMessage y)
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.GroupName, y.GroupName);
         }
 
-        private static bool GroupBroadcastDataMessagesEqual(GroupBroadcastDataMessage x, GroupBroadcastDataMessage y)
+        private bool GroupBroadcastDataMessagesEqual(GroupBroadcastDataMessage x, GroupBroadcastDataMessage y)
         {
             return StringEqual(x.GroupName, y.GroupName) &&
                    SequenceEqual(x.ExcludedList, y.ExcludedList) &&
                    PayloadsEqual(x.Payloads, y.Payloads);
         }
 
-        private static bool MultiGroupBroadcastDataMessagesEqual(MultiGroupBroadcastDataMessage x,
+        private bool MultiGroupBroadcastDataMessagesEqual(MultiGroupBroadcastDataMessage x,
             MultiGroupBroadcastDataMessage y)
         {
             return SequenceEqual(x.GroupList, y.GroupList) && PayloadsEqual(x.Payloads, y.Payloads);

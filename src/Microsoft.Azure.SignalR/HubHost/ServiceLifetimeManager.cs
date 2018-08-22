@@ -23,14 +23,9 @@ namespace Microsoft.Azure.SignalR
         private readonly IServiceConnectionManager<THub> _serviceConnectionManager;
         private readonly IClientConnectionManager _clientConnectionManager;
 
-        private readonly bool _isDefaultUserIdProvider;
-
         public ServiceLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager,
-                                      IClientConnectionManager clientConnectionManager,
-                                      IHubProtocolResolver protocolResolver,
-                                      IUserIdProvider userIdProvider,
-                                      ILogger<ServiceLifetimeManager<THub>> logger,
-                                      AzureSignalRMarkerService marker)
+            IClientConnectionManager clientConnectionManager, IHubProtocolResolver protocolResolver,
+            ILogger<ServiceLifetimeManager<THub>> logger, AzureSignalRMarkerService marker)
         {
             if (!marker.IsConfigured)
             {
@@ -41,8 +36,6 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionManager = clientConnectionManager;
             _allProtocols = protocolResolver.AllProtocols;
             _logger = logger;
-
-            _isDefaultUserIdProvider = userIdProvider is DefaultUserIdProvider;
         }
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
@@ -50,12 +43,6 @@ namespace Microsoft.Azure.SignalR
             if (_clientConnectionManager.ClientConnections.TryGetValue(connection.ConnectionId, out var serviceConnectionContext))
             {
                 serviceConnectionContext.HubConnectionContext = connection;
-
-                if (!_isDefaultUserIdProvider && !string.IsNullOrEmpty(connection.UserIdentifier))
-                {
-                    return serviceConnectionContext.ServiceConnection.WriteAsync(
-                        new UpdateConnectionMessage(connection.ConnectionId, connection.UserIdentifier));
-                }
             }
 
             return Task.CompletedTask;

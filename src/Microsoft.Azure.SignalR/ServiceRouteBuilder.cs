@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -22,7 +23,6 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly RouteBuilder _routes;
-        private readonly NegotiateHandler _negotiateHandler;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceRouteBuilder"/> class.
@@ -32,7 +32,6 @@ namespace Microsoft.Azure.SignalR
         {
             _routes = routes;
             _serviceProvider = _routes.ServiceProvider;
-            _negotiateHandler = _serviceProvider.GetRequiredService<NegotiateHandler>();
         }
 
         /// <summary>
@@ -62,19 +61,32 @@ namespace Microsoft.Azure.SignalR
             Start<THub>();
         }
 
+        private NegotiationResponse GenerateNegotiateResponse(HttpContext context, string hubName)
+        {
+            var serviceEndpointProvider = _serviceProvider.GetRequiredService<IServiceEndpointProvider>();
+            var options = _serviceProvider.GetService<IOptions<ServiceOptions>>();
+            var claims = options.Value.ClaimsProvider?.Invoke(context) ?? context.User.Claims;
+            return new NegotiationResponse
+            {
+                Url = serviceEndpointProvider.GetClientEndpoint(hubName),
+                AccessToken = serviceEndpointProvider.GenerateClientAccessToken(hubName, claims),
+                // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
+                AvailableTransports = new List<AvailableTransport>()
+            };
+        }
+
         private async Task RedirectToService(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
         {
             if (!await AuthorizeHelper.AuthorizeAsync(context, authorizationData))
             {
                 return;
             }
-
-            var negotiateResponse = _negotiateHandler.Process(context, hubName);
-
+            context.Response.ContentType = "application/json";
+            var negotiateResponse = GenerateNegotiateResponse(context, hubName);
             var writer = new MemoryBufferWriter();
+
             try
             {
-                context.Response.ContentType = "application/json";
                 NegotiateProtocol.WriteResponse(negotiateResponse, writer);
                 // Write it out to the response with the right content length
                 context.Response.ContentLength = writer.Length;

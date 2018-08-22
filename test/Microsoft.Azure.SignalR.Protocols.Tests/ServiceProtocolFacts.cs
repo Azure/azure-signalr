@@ -159,10 +159,6 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["messagepack"] = new byte[] {7, 8, 1, 2, 3, 4, 5, 6}
                     }),
                 binary: "kw6Spmdyb3VwNKZncm91cDWCpGpzb27ECAECAwQFBgcIq21lc3NhZ2VwYWNrxAgHCAECAwQFBg=="),
-            new ProtocolTestData(
-                name: "UpdateConnectionMessage",
-                message: new UpdateConnectionMessage("13", "customUserId"),
-                binary: "kw+iMTOsY3VzdG9tVXNlcklk"),
         }.ToDictionary(t => t.Name);
 
         [Theory]

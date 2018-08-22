@@ -33,8 +33,7 @@ namespace Microsoft.Azure.SignalR
             "aud", // Audience claim, used by service to make sure token is matched with target resource.
             "exp", // Expiration time claims. A token is valid only before its expiration time.
             "iat", // Issued At claim. Added by default. It is not validated by service.
-            "nbf",  // Not Before claim. Added by default. It is not validated by service.
-            Constants.ClaimType.UserId // Custom user Id claim.
+            "nbf"  // Not Before claim. Added by default. It is not validated by service.
         };
 
         private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
@@ -115,11 +114,6 @@ namespace Microsoft.Azure.SignalR
         public HubConnectionContext HubConnectionContext { get; set; }
 
         public HttpContext HttpContext { get; set; }
-
-        /// <summary>
-        /// The associated service connection which sends data to SignalR Service.
-        /// </summary>
-        internal IServiceConnection ServiceConnection { get; set; }
 
         private static bool IsAuthenticatedUser(Claim[] claims)
         {

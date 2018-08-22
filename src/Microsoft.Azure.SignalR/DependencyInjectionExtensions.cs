@@ -65,8 +65,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton(typeof(ServiceHubDispatcher<>))
                 .AddSingleton(typeof(AzureSignalRMarkerService))
                 .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
-                .AddSingleton<IHostedService, HeartBeat>()
-                .AddSingleton<NegotiateHandler>();
+                .AddSingleton<IHostedService, HeartBeat>();
             return builder;
         }
     }
