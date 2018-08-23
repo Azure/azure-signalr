@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
@@ -13,26 +12,12 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceEndpointProvider : IServiceEndpointProvider
     {
-        private const string EndpointProperty = "endpoint";
-        private const string AccessKeyProperty = "accesskey";
-        private const string VersionProperty = "version";
-        private const string PortProperty = "port";
         private const string PreviewVersion = "1.0-preview";
-        // For SDK 1.x, only support Azure SignalR Service 1.x
-        private const string SupportedVersion = "1";
-        private const string ValidVersionRegex = "^" + SupportedVersion + @"\.\d+(?:[\w-.]+)?$";
 
         private static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
             $"Please specify a configuration entry for {ServiceOptions.ConnectionStringDefaultKey}, " +
             "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";
-
-        private static readonly string MissingRequiredProperty =
-            $"Connection string missing required properties {EndpointProperty} and {AccessKeyProperty}.";
-        private static readonly string InvalidVersionValueFormat =
-            "Version {0} is not supported.";
-        private static readonly string InvalidPortValue =
-            $"Invalid value for {PortProperty} property.";
 
         private readonly string _endpoint;
         private readonly string _accessKey;
@@ -51,7 +36,7 @@ namespace Microsoft.Azure.SignalR
 
             string version;
             int? port;
-            (_endpoint, _accessKey, version, port) = ParseConnectionString(connectionString);
+            (_endpoint, _accessKey, version, port) = ConnectionStringParser.Parse(connectionString);
 
             if (version == null || version == PreviewVersion)
             {
@@ -117,74 +102,6 @@ namespace Microsoft.Azure.SignalR
                 expires: expire,
                 signingKey: _accessKey
             );
-        }
-
-        private static readonly char[] PropertySeparator = { ';' };
-        private static readonly char[] KeyValueSeparator = { '=' };
-
-        internal static (string endpoint, string accessKey, string version, int? port) ParseConnectionString(string connectionString)
-        {
-            var properties = connectionString.Split(PropertySeparator, StringSplitOptions.RemoveEmptyEntries);
-            if (properties.Length > 1)
-            {
-                var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var property in properties)
-                {
-                    var kvp = property.Split(KeyValueSeparator, 2);
-                    if (kvp.Length != 2) continue;
-
-                    var key = kvp[0].Trim();
-                    if (dict.ContainsKey(key))
-                    {
-                        throw new ArgumentException($"Duplicate properties found in connection string: {key}.");
-                    }
-
-                    dict.Add(key, kvp[1].Trim());
-                }
-
-                if (dict.ContainsKey(EndpointProperty) && dict.ContainsKey(AccessKeyProperty))
-                {
-                    if (!ValidateEndpoint(dict[EndpointProperty]))
-                    {
-                        throw new ArgumentException($"Endpoint property in connection string is not a valid URI: {dict[EndpointProperty]}.");
-                    }
-
-                    string version = null;
-                    if (dict.TryGetValue(VersionProperty, out var v))
-                    {
-                        if (Regex.IsMatch(v, ValidVersionRegex))
-                        {
-                            version = v;
-                        }
-                        else
-                        {
-                            throw new ArgumentException(string.Format(InvalidVersionValueFormat, v), nameof(connectionString));
-                        }
-                    }
-                    int? port = null;
-                    if (dict.TryGetValue(PortProperty, out var s))
-                    {
-                        if (int.TryParse(s, out var p) &&
-                            p > 0 && p <= 0xFFFF)
-                        {
-                            port = p;
-                        }
-                        else
-                        {
-                            throw new ArgumentException(InvalidPortValue, nameof(connectionString));
-                        }
-                    }
-                    return (dict[EndpointProperty].TrimEnd('/'), dict[AccessKeyProperty], version, port);
-                }
-            }
-
-            throw new ArgumentException(MissingRequiredProperty, nameof(connectionString));
-        }
-
-        internal static bool ValidateEndpoint(string endpoint)
-        {
-            return Uri.TryCreate(endpoint, UriKind.Absolute, out var uriResult) &&
-                   (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         }
     }
 }
