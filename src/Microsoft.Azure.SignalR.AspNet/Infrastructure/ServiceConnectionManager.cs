@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _hubs = hubs;
         }
 
-        public Task StartAsync(Func<string, IServiceConnection> connectionGenerator, int connectionCount)
+        public void Initialize(Func<string, IServiceConnection> connectionGenerator, int connectionCount)
         {
             if (connectionGenerator == null)
             {
@@ -38,15 +38,15 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             if (_serviceConnections != null)
             {
-                // TODO: log something to indicate the connection is already established?
-                return Task.CompletedTask;
+                // TODO: log something to indicate the connection is already initialized.
+                return;
             }
 
             lock (_lock)
             {
                 if (_serviceConnections != null)
                 {
-                    return Task.CompletedTask;
+                    return;
                 }
 
                 var connections = new Dictionary<string, IServiceConnectionContainer>();
@@ -60,8 +60,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 
                 _serviceConnections = connections;
             }
-
-            return StartAsync();
         }
 
         public Task StartAsync()

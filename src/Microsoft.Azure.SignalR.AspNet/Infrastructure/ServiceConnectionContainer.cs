@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class ServiceConnectionContainer : IServiceConnectionContainer
     {
-        private readonly IReadOnlyList<IServiceConnection> _serviceConnections;
+        private readonly List<IServiceConnection> _serviceConnections;
 
         public ServiceConnectionContainer(Func<IServiceConnection> generator, int count)
         {
@@ -25,7 +25,11 @@ namespace Microsoft.Azure.SignalR.AspNet
                 throw new ArgumentException($"{nameof(count)} must be greater than 0.");
             }
 
-            _serviceConnections = Enumerable.Repeat(generator(), count).ToList();
+            _serviceConnections = new List<IServiceConnection>(count);
+            for (int i = 0; i < count; i++)
+            {
+                _serviceConnections.Add(generator());
+            }
         }
 
         public Task StartAsync()

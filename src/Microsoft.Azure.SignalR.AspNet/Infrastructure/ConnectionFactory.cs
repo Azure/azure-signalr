@@ -80,10 +80,13 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public Task StartAsync()
         {
-            Log.StartingConnection(_logger, _name, _options.ConnectionCount, _hubNames.Count);
-            return _serviceConnectionManager.StartAsync(
+            _serviceConnectionManager.Initialize(
                 hub => new ServiceConnection(hub, Guid.NewGuid().ToString(), _protocol, this, _clientConnectionManager, _logger),
                 _options.ConnectionCount);
+
+            Log.StartingConnection(_logger, _name, _options.ConnectionCount, _hubNames.Count);
+
+            return _serviceConnectionManager.StartAsync();
         }
 
         private Uri GetServiceUrl(string connectionId, string hubName)
