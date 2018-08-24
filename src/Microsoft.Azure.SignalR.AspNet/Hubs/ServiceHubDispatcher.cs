@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -100,10 +101,9 @@ namespace Microsoft.Azure.SignalR.AspNet
                 return context.Response.End(jsonPayload);
             }
 
-            // Send JSONP response since a callback is specified by the query string
-            var callbackInvocation = JsonUtility.CreateJsonpCallback(callback, jsonPayload);
-            context.Response.ContentType = JsonUtility.JavaScriptMimeType;
-            return context.Response.End(callbackInvocation);
+            // JSONP response is no longer supported.
+            context.Response.StatusCode = 400;
+            context.Response.End("JSONP is no longer supported.");
         }
     }
 }
