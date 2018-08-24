@@ -103,7 +103,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             // JSONP response is no longer supported.
             context.Response.StatusCode = 400;
-            context.Response.End("JSONP is no longer supported.");
+            return context.Response.End("JSONP is no longer supported.");
         }
     }
 }
