@@ -41,8 +41,8 @@ namespace Microsoft.Azure.SignalR
         private string InternalGetEndpoint(string path, string hubName, QueryString queryString)
         {
             var finalQueryString = queryString == QueryString.Empty
-                ? $"?hub={hubName.ToLower()}"
-                : $"?hub={hubName.ToLower()}&{queryString.Value.Substring(1)}";
+                ? $"hub={hubName.ToLower()}"
+                : $"hub={hubName.ToLower()}&{queryString.Value.Substring(1)}";
             return Port.HasValue ?
                 $"{Endpoint}:{Port}/{path}/?{finalQueryString}" :
                 $"{Endpoint}/{path}/?{finalQueryString}";
