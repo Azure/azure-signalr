@@ -60,14 +60,11 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             advancedClaims.Add(new Claim(Constants.ClaimType.UserId, userId));
 
-            var payload = new
-            {
-                // Redirect to Service
-                Url = _endpoint.GetClientEndpoint(),
-                AccessToken = _endpoint.GenerateClientAccessToken(advancedClaims)
-            };
+            // Redirect to Service
+            var url = _endpoint.GetClientEndpoint(),
+            var accessToken = _endpoint.GenerateClientAccessToken(advancedClaims)
 
-            return SendJsonResponse(context, GetRedirectNegotiateResponse(payload.Url, payload.AccessToken));
+            return SendJsonResponse(context, GetRedirectNegotiateResponse(url, accessToken));
         }
 
         private static string GetRedirectNegotiateResponse(string url, string token)
