@@ -10,25 +10,12 @@ namespace Microsoft.Azure.SignalR
 {
     internal interface IServiceEndpointProvider
     {
-        string Endpoint { get; }
-
-        string AccessKey { get; }
-
-        string GenerateClientAccessToken<THub>(IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
-            where THub : Hub;
-
         string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null);
-
-        string GenerateServerAccessToken<THub>(string userId, TimeSpan? lifetime = null) where THub : Hub;
-
-        string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null);
-
-        string GetClientEndpoint<THub>() where THub : Hub;
 
         string GetClientEndpoint(string hubName);
 
-        string GetServerEndpoint<THub>() where THub : Hub;
+        string GenerateServerAccessToken<THub>(string userId, TimeSpan? lifetime = null) where THub : Hub;
 
-        string GetServerEndpoint(string hubName);
+        string GetServerEndpoint<THub>() where THub : Hub;
     }
 }
