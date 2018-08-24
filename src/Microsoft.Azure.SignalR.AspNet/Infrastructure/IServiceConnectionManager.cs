@@ -2,13 +2,14 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
-    internal interface IServiceConnectionManager : IServiceConnection
+    internal interface IServiceConnectionManager : IServiceConnectionContainer
     {
-        void AddConnection(string hubName, IServiceConnection connection);
+        void AddConnection(string hubName, IServiceConnectionContainer connection);
 
-        IServiceConnection WithHub(string hubName);
+        IServiceConnectionContainer WithHub(string hubName);
     }
 }
