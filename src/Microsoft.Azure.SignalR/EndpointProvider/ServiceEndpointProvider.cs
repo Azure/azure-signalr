@@ -75,16 +75,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            var endpoint = _generator.GetClientEndpoint(hubName);
-
-            if (queryString == QueryString.Empty)
-            {
-                return endpoint;
-            }
-
-            return endpoint.Contains("?") 
-                ? $"{endpoint}&{queryString.Value.Substring(1)}"
-                : $"{endpoint}{queryString}";
+            return _generator.GetClientEndpoint(hubName, queryString);
         }
 
         public string GetServerEndpoint<THub>() where THub : Hub

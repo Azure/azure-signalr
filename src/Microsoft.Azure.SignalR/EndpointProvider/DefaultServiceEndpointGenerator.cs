@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.AspNetCore.Http;
+
 namespace Microsoft.Azure.SignalR
 {
     internal sealed class DefaultServiceEndpointGenerator : IServiceEndpointGenerator
@@ -27,19 +29,24 @@ namespace Microsoft.Azure.SignalR
         public string GetClientAudience(string hubName) =>
             InternalGetAudience(ClientPath, hubName);
 
-        public string GetClientEndpoint(string hubName) =>
-            InternalGetEndpoint(ClientPath, hubName);
+        public string GetClientEndpoint(string hubName, QueryString queryString) =>
+            InternalGetEndpoint(ClientPath, hubName, queryString);
 
         public string GetServerAudience(string hubName) =>
             InternalGetAudience(ServerPath, hubName);
 
         public string GetServerEndpoint(string hubName) =>
-            InternalGetEndpoint(ServerPath, hubName);
+            InternalGetEndpoint(ServerPath, hubName, QueryString.Empty);
 
-        private string InternalGetEndpoint(string path, string hubName) =>
-            Port.HasValue ?
-            $"{Endpoint}:{Port}/{path}/?hub={hubName.ToLower()}" :
-            $"{Endpoint}/{path}/?hub={hubName.ToLower()}";
+        private string InternalGetEndpoint(string path, string hubName, QueryString queryString)
+        {
+            var finalQueryString = queryString == QueryString.Empty
+                ? $"?hub={hubName.ToLower()}"
+                : $"?hub={hubName.ToLower()}&{queryString.Value.Substring(1)}";
+            return Port.HasValue ?
+                $"{Endpoint}:{Port}/{path}/?{finalQueryString}" :
+                $"{Endpoint}/{path}/?{finalQueryString}";
+        }
 
         private string InternalGetAudience(string path, string hubName) =>
             $"{Endpoint}/{path}/?hub={hubName.ToLower()}";
