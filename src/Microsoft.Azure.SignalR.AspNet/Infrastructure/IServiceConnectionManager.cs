@@ -1,14 +1,15 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
+using System;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
-    internal interface IServiceConnectionManager : IServiceConnection
+    internal interface IServiceConnectionManager : IServiceConnectionContainer
     {
-        void AddConnection(string hubName, IServiceConnection connection);
+        void Initialize(Func<string, IServiceConnection> connectionGenerator, int connectionCount);
 
-        IServiceConnection WithHub(string hubName);
+        IServiceConnectionContainer WithHub(string hubName);
     }
 }
