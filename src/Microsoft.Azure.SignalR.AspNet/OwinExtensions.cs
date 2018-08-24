@@ -57,14 +57,15 @@ namespace Owin
 
         private static void RunAzureSignalRCore(IAppBuilder builder, HubConfiguration configuration, ServiceOptions options)
         {
+            var hubs = GetAvailableHubNames(configuration);
+
             // Replace default HubDispatcher with a custom one, which has its own negotiation logic
             // https://github.com/SignalR/SignalR/blob/dev/src/Microsoft.AspNet.SignalR.Core/Hosting/PersistentConnectionFactory.cs#L42
             configuration.Resolver.Register(typeof(PersistentConnection), () => new ServiceHubDispatcher(configuration));
             builder.RunSignalR(typeof(PersistentConnection), configuration);
 
-            RegisterServiceObjects(configuration, options);
+            RegisterServiceObjects(configuration, options, hubs);
 
-            var hubs = GetAvailableHubNames(configuration);
             if (hubs?.Count > 0)
             {
                 // Start the server->service connection asynchronously 
@@ -76,7 +77,7 @@ namespace Owin
             }
         }
 
-        private static void RegisterServiceObjects(HubConfiguration configuration, ServiceOptions options)
+        private static void RegisterServiceObjects(HubConfiguration configuration, ServiceOptions options, IReadOnlyList<string> hubs)
         {
             // TODO: Using IOptions looks wierd, thinking of a way removing it
             // share the same object all through
@@ -85,7 +86,7 @@ namespace Owin
             var serviceProtocol = new ServiceProtocol();
             var endpoint = new ServiceEndpoint(serviceOptions.Value);
             var provider = new EmptyProtectedData();
-            var scm = new ServiceConnectionManager();
+            var scm = new ServiceConnectionManager(hubs);
 
             // For safety, ALWAYS register abstract classes or interfaces
             // Some third-party DI frameworks such as Ninject, implicit self-binding concrete types:

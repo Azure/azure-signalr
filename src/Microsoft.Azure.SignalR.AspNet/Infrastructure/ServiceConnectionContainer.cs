@@ -11,15 +11,21 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class ServiceConnectionContainer : IServiceConnectionContainer
     {
-        private readonly IReadOnlyList<ServiceConnection> _serviceConnections;
+        private readonly IReadOnlyList<IServiceConnection> _serviceConnections;
 
-        public ServiceConnectionContainer(Func<ServiceConnection> generator, int count) : this(Enumerable.Repeat(generator(), count).ToList())
+        public ServiceConnectionContainer(Func<IServiceConnection> generator, int count)
         {
-        }
+            if (generator == null)
+            {
+                throw new ArgumentNullException(nameof(generator));
+            }
 
-        public ServiceConnectionContainer(IReadOnlyList<ServiceConnection> connections)
-        {
-            _serviceConnections = connections ?? new List<ServiceConnection>();
+            if (count <= 0)
+            {
+                throw new ArgumentException($"{nameof(count)} must be greater than 0.");
+            }
+
+            _serviceConnections = Enumerable.Repeat(generator(), count).ToList();
         }
 
         public Task StartAsync()

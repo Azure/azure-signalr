@@ -3,14 +3,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Json;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
@@ -63,7 +66,23 @@ namespace Microsoft.Azure.SignalR.AspNet
                 AccessToken = _endpoint.GenerateClientAccessToken(advancedClaims)
             };
 
-            return SendJsonResponse(context, JsonSerializer.Stringify(payload));
+            return SendJsonResponse(context, GetRedirectNegotiateResponse(payload.Url, payload.AccessToken));
+        }
+
+        private static string GetRedirectNegotiateResponse(string url, string token)
+        {
+            var sb = new StringBuilder();
+            using (var jsonWriter = new JsonTextWriter(new StringWriter(sb)))
+            {
+                jsonWriter.WriteStartObject();
+                jsonWriter.WritePropertyName("Url");
+                jsonWriter.WriteValue(url);
+                jsonWriter.WritePropertyName("AccessToken");
+                jsonWriter.WriteValue(token);
+                jsonWriter.WriteEndObject();
+            }
+
+            return sb.ToString();
         }
 
         private static bool IsNegotiationRequest(IRequest request)

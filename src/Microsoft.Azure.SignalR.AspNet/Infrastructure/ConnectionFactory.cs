@@ -80,17 +80,10 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public Task StartAsync()
         {
-            foreach (var hub in _hubNames)
-            {
-                // Simply create a couple of connections which connect to Azure SignalR
-                _serviceConnectionManager.AddConnection(hub,
-                    new ServiceConnectionContainer(
-                        () => new ServiceConnection(hub, Guid.NewGuid().ToString(), _protocol, this, _clientConnectionManager, _logger), 
-                        _options.ConnectionCount));
-            }
-
-            Log.StartingConnection(_logger, _name, _options.ConnectionCount, _hubNames.Count + 1);
-            return _serviceConnectionManager.StartAsync();
+            Log.StartingConnection(_logger, _name, _options.ConnectionCount, _hubNames.Count);
+            return _serviceConnectionManager.StartAsync(
+                hub => new ServiceConnection(hub, Guid.NewGuid().ToString(), _protocol, this, _clientConnectionManager, _logger),
+                _options.ConnectionCount);
         }
 
         private Uri GetServiceUrl(string connectionId, string hubName)
