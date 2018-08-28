@@ -115,20 +115,12 @@ namespace Microsoft.Azure.SignalR
 
         public HttpContext HttpContext { get; set; }
 
-        private static bool IsAuthenticatedUser(Claim[] claims)
+        private static bool IsAuthenticatedUser(IReadOnlyCollection<Claim> claims)
         {
-            if (claims?.Length > 0)
-            {
-                foreach (var claim in claims)
-                {
-                    if (!SystemClaims.Contains(claim.Type))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            return claims?.Count > 0 &&
+                   claims.Any(claim =>
+                       !SystemClaims.Contains(claim.Type) &&
+                       !claim.Type.StartsWith(Constants.ClaimType.AzureSignalRSysPrefix, StringComparison.OrdinalIgnoreCase));
         }
 
         private FeatureCollection BuildFeatures()
