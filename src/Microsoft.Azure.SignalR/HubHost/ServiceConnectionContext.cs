@@ -33,8 +33,7 @@ namespace Microsoft.Azure.SignalR
             "aud", // Audience claim, used by service to make sure token is matched with target resource.
             "exp", // Expiration time claims. A token is valid only before its expiration time.
             "iat", // Issued At claim. Added by default. It is not validated by service.
-            "nbf", // Not Before claim. Added by default. It is not validated by service.
-            Constants.ClaimType.UserId // Custom user id claim.
+            "nbf"  // Not Before claim. Added by default. It is not validated by service.
         };
 
         private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
@@ -116,20 +115,12 @@ namespace Microsoft.Azure.SignalR
 
         public HttpContext HttpContext { get; set; }
 
-        private static bool IsAuthenticatedUser(Claim[] claims)
+        private static bool IsAuthenticatedUser(IReadOnlyCollection<Claim> claims)
         {
-            if (claims?.Length > 0)
-            {
-                foreach (var claim in claims)
-                {
-                    if (!SystemClaims.Contains(claim.Type))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            return claims?.Count > 0 &&
+                   claims.Any(claim =>
+                       !SystemClaims.Contains(claim.Type) &&
+                       !claim.Type.StartsWith(Constants.ClaimType.AzureSignalRSysPrefix, StringComparison.OrdinalIgnoreCase));
         }
 
         private FeatureCollection BuildFeatures()
