@@ -120,7 +120,8 @@ namespace Microsoft.Azure.SignalR
             return claims?.Count > 0 &&
                    claims.Any(claim =>
                        !SystemClaims.Contains(claim.Type) &&
-                       !claim.Type.StartsWith(Constants.ClaimType.AzureSignalRSysPrefix, StringComparison.OrdinalIgnoreCase));
+                       // Claim name is case sensitive. See https://tools.ietf.org/html/rfc7519#section-10.1.1 .
+                       !claim.Type.StartsWith(Constants.ClaimType.AzureSignalRSysPrefix, StringComparison.Ordinal));
         }
 
         private FeatureCollection BuildFeatures()
