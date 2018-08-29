@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.AspNet
     {
         private static readonly ProtocolResolver ProtocolResolver = new ProtocolResolver();
 
-        private IServiceEndpoint _endpoint;
+        private IServiceEndpointProvider _endpoint;
 
         public ServiceHubDispatcher(HubConfiguration configuration) : base(configuration)
         {
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public override void Initialize(IDependencyResolver resolver)
         {
-            _endpoint = resolver.Resolve<IServiceEndpoint>();
+            _endpoint = resolver.Resolve<IServiceEndpointProvider>();
             base.Initialize(resolver);
         }
 
