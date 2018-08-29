@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 
@@ -67,14 +68,14 @@ namespace Microsoft.Azure.SignalR
             return InternalGenerateAccessToken(audience, claims, lifetime ?? _accessTokenLifetime);
         }
 
-        public string GetClientEndpoint(string hubName, string originalPath)
+        public string GetClientEndpoint(string hubName, string originalPath, QueryString queryString)
         {
             if (string.IsNullOrEmpty(hubName))
             {
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            return _generator.GetClientEndpoint(hubName, originalPath);
+            return _generator.GetClientEndpoint(hubName, originalPath, queryString);
         }
 
         public string GetServerEndpoint<THub>() where THub : Hub

@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net;
+using System.Text;
+using Microsoft.AspNetCore.Http;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -29,19 +31,30 @@ namespace Microsoft.Azure.SignalR
         public string GetClientAudience(string hubName) =>
             InternalGetAudience(ClientPath, hubName);
 
-        public string GetClientEndpoint(string hubName, string originalPath) =>
-            string.IsNullOrEmpty(originalPath)
-                ? InternalGetEndpoint(ClientPath, hubName)
-                : GetClientEndpoint(ClientPath, hubName, originalPath);
+        public string GetClientEndpoint(string hubName, string originalPath, QueryString queryString)
+        {
+            var queryBuilder = new StringBuilder();
+            if (!string.IsNullOrEmpty(originalPath))
+            {
+                queryBuilder.Append("&")
+                    .Append(Constants.QueryParameter.OriginalPath)
+                    .Append("=")
+                    .Append(WebUtility.UrlEncode(originalPath));
+            }
+
+            if (queryString.HasValue)
+            {
+                queryBuilder.Append("&").Append(queryString.Value.Substring(1));
+            }
+
+            return $"{InternalGetEndpoint(ClientPath, hubName)}{queryBuilder}";
+        }
 
         public string GetServerAudience(string hubName) =>
             InternalGetAudience(ServerPath, hubName);
 
         public string GetServerEndpoint(string hubName) =>
             InternalGetEndpoint(ServerPath, hubName);
-
-        private string GetClientEndpoint(string path, string hubName, string originalPath) =>
-            $"{InternalGetEndpoint(path, hubName)}&{Constants.QueryParameter.OriginalPath}={WebUtility.UrlEncode(originalPath)}";
 
         private string InternalGetEndpoint(string path, string hubName) =>
             Port.HasValue ?

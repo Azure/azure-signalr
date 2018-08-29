@@ -4,7 +4,6 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
-using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
@@ -62,9 +61,11 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [InlineData("/user/path/negotiate", UserPath)]
-        [InlineData("/user/path/negotiate/", UserPath)]
-        public void GenerateNegotiateResponseWithPath(string path, string expectedPath)
+        [InlineData("/user/path/negotiate", "", "asrs.op=%2Fuser%2Fpath")]
+        [InlineData("/user/path/negotiate/", "", "asrs.op=%2Fuser%2Fpath")]
+        [InlineData("", "?customKey=custome=Value", "customKey=custome=Value")]
+        [InlineData("/user/path/negotiate", "?customKey=custome=Value", "asrs.op=%2Fuser%2Fpath&customKey=custome=Value")]
+        public void GenerateNegotiateResponseWithPathAndQuery(string path, string queryString, string expectedQueryString)
         {
             var config = new ConfigurationBuilder().Build();
             var serviceProvider = new ServiceCollection().AddSignalR()
@@ -73,7 +74,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddSingleton<IConfiguration>(config)
                 .BuildServiceProvider();
 
-            var requestFeature = new HttpRequestFeature { Path = path };
+            var requestFeature = new HttpRequestFeature
+            {
+                Path = path,
+                QueryString = queryString
+            };
             var features = new FeatureCollection();
             features.Set<IHttpRequestFeature>(requestFeature);
             var httpContext = new DefaultHttpContext(features);
@@ -82,7 +87,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var negotiateResponse = handler.Process(httpContext, "chat");
 
             Assert.NotNull(negotiateResponse);
-            Assert.EndsWith($"?hub=chat&{Constants.QueryParameter.OriginalPath}={WebUtility.UrlEncode(expectedPath)}", negotiateResponse.Url);
+            Assert.EndsWith($"?hub=chat&{expectedQueryString}", negotiateResponse.Url);
         }
 
         [Theory]

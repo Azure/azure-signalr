@@ -7,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Xunit;
@@ -40,23 +41,25 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
 
-        private static readonly (string path, string expectedQuery)[] OriginalPathArray =
+        private static readonly (string path, string queryString, string expectedQuery)[] PathAndQueryArray =
         {
-            ("", ""),
-            (null, ""),
-            ("/user/path", $"&{Constants.QueryParameter.OriginalPath}=%2Fuser%2Fpath")
+            ("", "", ""),
+            (null, "", ""),
+            ("/user/path", "", $"&{Constants.QueryParameter.OriginalPath}=%2Fuser%2Fpath"),
+            ("", "?customKey=customValue", "&customKey=customValue"),
+            ("/user/path", "?customKey=customValue", $"&{Constants.QueryParameter.OriginalPath}=%2Fuser%2Fpath&customKey=customValue")
         };
 
         public static IEnumerable<object[]> PreviewEndpointProviders =>
             PreviewEndpointProviderArray.Select(provider => new object[] {provider});
 
-        public static IEnumerable<object[]> OriginalPaths =>
-            OriginalPathArray.Select(t => new object[] {t.path, t.expectedQuery});
+        public static IEnumerable<object[]> PathAndQueries =>
+            PathAndQueryArray.Select(t => new object[] {t.path, t.queryString, t.expectedQuery});
 
         public static IEnumerable<object[]> PreviewEndpointProvidersWithPath =>
             from provider in PreviewEndpointProviderArray
-            from t in OriginalPathArray
-            select new object[] { provider, t.path, t.expectedQuery} ;
+            from t in PathAndQueryArray
+            select new object[] { provider, t.path, t.queryString, t.expectedQuery} ;
 
         [Theory]
         [MemberData(nameof(PreviewEndpointProviders))]
@@ -69,10 +72,10 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [MemberData(nameof(PreviewEndpointProvidersWithPath))]
-        internal void GetPreviewClientEndpoint(IServiceEndpointProvider provider, string originalPath, string expectedQueryString)
+        internal void GetPreviewClientEndpoint(IServiceEndpointProvider provider, string path, string queryString, string expectedQueryString)
         {
             var expected = $"{Endpoint}:5001/client/?hub={HubName}{expectedQueryString}";
-            var actual = provider.GetClientEndpoint(HubName, originalPath);
+            var actual = provider.GetClientEndpoint(HubName, path, new QueryString(queryString));
             Assert.Equal(expected, actual);
         }
 
@@ -123,11 +126,11 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [MemberData(nameof(OriginalPaths))]
-        public void GetV1ClientEndpoint(string originalPath, string expectedQueryString)
+        [MemberData(nameof(PathAndQueries))]
+        public void GetV1ClientEndpoint(string path, string queryString, string expectedQueryString)
         {
             var expected = $"{Endpoint}/client/?hub={HubName}{expectedQueryString}";
-            var actual = V1EndpointProvider.GetClientEndpoint(HubName, originalPath);
+            var actual = V1EndpointProvider.GetClientEndpoint(HubName, path, new QueryString(queryString));
             Assert.Equal(expected, actual);
         }
 

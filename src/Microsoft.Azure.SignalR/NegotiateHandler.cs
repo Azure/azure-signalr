@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR
             var originalPath = GetOriginalPath(context.Request.Path);
             return new NegotiationResponse
             {
-                Url = _endpointProvider.GetClientEndpoint(hubName, originalPath),
+                Url = _endpointProvider.GetClientEndpoint(hubName, originalPath, context.Request.QueryString),
                 AccessToken = _endpointProvider.GenerateClientAccessToken(hubName, claims),
                 // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
                 AvailableTransports = new List<AvailableTransport>()
