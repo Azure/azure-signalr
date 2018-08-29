@@ -68,7 +68,7 @@ namespace Microsoft.Azure.SignalR
             return InternalGenerateAccessToken(audience, claims, lifetime ?? _accessTokenLifetime);
         }
 
-        public string GetClientEndpoint(string hubName, string originalPath, QueryString queryString)
+        public string GetClientEndpoint(string hubName, string originalPath, string queryString)
         {
             if (string.IsNullOrEmpty(hubName))
             {

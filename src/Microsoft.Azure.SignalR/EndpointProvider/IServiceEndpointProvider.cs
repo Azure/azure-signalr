@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
@@ -13,7 +12,7 @@ namespace Microsoft.Azure.SignalR
     {
         string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null);
 
-        string GetClientEndpoint(string hubName, string originalPath, QueryString queryString);
+        string GetClientEndpoint(string hubName, string originalPath, string queryString);
 
         string GenerateServerAccessToken<THub>(string userId, TimeSpan? lifetime = null) where THub : Hub;
 

@@ -46,8 +46,8 @@ namespace Microsoft.Azure.SignalR.Tests
             ("", "", ""),
             (null, "", ""),
             ("/user/path", "", $"&{Constants.QueryParameter.OriginalPath}=%2Fuser%2Fpath"),
-            ("", "?customKey=customValue", "&customKey=customValue"),
-            ("/user/path", "?customKey=customValue", $"&{Constants.QueryParameter.OriginalPath}=%2Fuser%2Fpath&customKey=customValue")
+            ("", "customKey=customValue", "&customKey=customValue"),
+            ("/user/path", "customKey=customValue", $"&{Constants.QueryParameter.OriginalPath}=%2Fuser%2Fpath&customKey=customValue")
         };
 
         public static IEnumerable<object[]> PreviewEndpointProviders =>
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.SignalR.Tests
         internal void GetPreviewClientEndpoint(IServiceEndpointProvider provider, string path, string queryString, string expectedQueryString)
         {
             var expected = $"{Endpoint}:5001/client/?hub={HubName}{expectedQueryString}";
-            var actual = provider.GetClientEndpoint(HubName, path, new QueryString(queryString));
+            var actual = provider.GetClientEndpoint(HubName, path, queryString);
             Assert.Equal(expected, actual);
         }
 
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void GetV1ClientEndpoint(string path, string queryString, string expectedQueryString)
         {
             var expected = $"{Endpoint}/client/?hub={HubName}{expectedQueryString}";
-            var actual = V1EndpointProvider.GetClientEndpoint(HubName, path, new QueryString(queryString));
+            var actual = V1EndpointProvider.GetClientEndpoint(HubName, path, queryString);
             Assert.Equal(expected, actual);
         }
 

@@ -3,7 +3,6 @@
 
 using System.Net;
 using System.Text;
-using Microsoft.AspNetCore.Http;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -31,7 +30,7 @@ namespace Microsoft.Azure.SignalR
         public string GetClientAudience(string hubName) =>
             InternalGetAudience(ClientPath, hubName);
 
-        public string GetClientEndpoint(string hubName, string originalPath, QueryString queryString)
+        public string GetClientEndpoint(string hubName, string originalPath, string queryString)
         {
             var queryBuilder = new StringBuilder();
             if (!string.IsNullOrEmpty(originalPath))
@@ -42,9 +41,9 @@ namespace Microsoft.Azure.SignalR
                     .Append(WebUtility.UrlEncode(originalPath));
             }
 
-            if (queryString.HasValue)
+            if (!string.IsNullOrEmpty(queryString))
             {
-                queryBuilder.Append("&").Append(queryString.Value.Substring(1));
+                queryBuilder.Append("&").Append(queryString);
             }
 
             return $"{InternalGetEndpoint(ClientPath, hubName)}{queryBuilder}";
