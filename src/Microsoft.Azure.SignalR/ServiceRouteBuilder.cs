@@ -57,12 +57,12 @@ namespace Microsoft.Azure.SignalR
             {
                 authorizationData.Add(attribute);
             }
-            _routes.MapRoute(path + "/negotiate", c => RedirectToService(c, typeof(THub).Name, authorizationData));
+            _routes.MapRoute(path + Constants.Path.Negotiate, c => RedirectToService(c, typeof(THub).Name, authorizationData));
 
             Start<THub>();
         }
 
-        private async Task RedirectToService(HttpContext context, string hubName, List<IAuthorizeData> authorizationData)
+        private async Task RedirectToService(HttpContext context, string hubName, IList<IAuthorizeData> authorizationData)
         {
             if (!await AuthorizeHelper.AuthorizeAsync(context, authorizationData))
             {

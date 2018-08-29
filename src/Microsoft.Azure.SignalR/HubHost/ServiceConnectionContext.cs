@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Http.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
 
@@ -142,7 +143,8 @@ namespace Microsoft.Azure.SignalR
             httpContextFeatures.Set<IHttpRequestFeature>(new HttpRequestFeature
             {
                 Headers = new HeaderDictionary((Dictionary<string, StringValues>) message.Headers),
-                QueryString = message.QueryString
+                QueryString = message.QueryString,
+                Path = GetOriginalPath(message.QueryString)
             });
             httpContextFeatures.Set<IHttpAuthenticationFeature>(new HttpAuthenticationFeature
             {
@@ -150,6 +152,14 @@ namespace Microsoft.Azure.SignalR
             });
 
             return new DefaultHttpContext(httpContextFeatures);
+        }
+
+        private static string GetOriginalPath(string queryString)
+        {
+            var query = QueryHelpers.ParseNullableQuery(queryString);
+            return query?.TryGetValue(Constants.QueryParameter.OriginalPath, out var originalPath) == true
+                ? originalPath.FirstOrDefault()
+                : string.Empty;
         }
     }
 }

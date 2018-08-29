@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR
     {
         string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null);
 
-        string GetClientEndpoint(string hubName);
+        string GetClientEndpoint(string hubName, string originalPath);
 
         string GenerateServerAccessToken<THub>(string userId, TimeSpan? lifetime = null) where THub : Hub;
 
