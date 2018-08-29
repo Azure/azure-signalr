@@ -4,8 +4,10 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +21,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string CustomUserId = "customUserId";
         private const string DefaultUserId = "nameId";
         private const string DefaultConnectionString = "Endpoint=https://localhost;AccessKey=nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=;";
+        private const string UserPath = "/user/path";
 
         private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
 
@@ -26,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(typeof(CustomUserIdProvider), CustomUserId)]
         [InlineData(typeof(NullUserIdProvider), "")]
         [InlineData(typeof(DefaultUserIdProvider), DefaultUserId)]
-        public void GenerateNegotiateResponse(Type type, string expectedUserId)
+        public void GenerateNegotiateResponseWithUserId(Type type, string expectedUserId)
         {
             var config = new ConfigurationBuilder().Build();
             var serviceProvider = new ServiceCollection().AddSignalR()
@@ -36,7 +39,6 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddSingleton(typeof(IUserIdProvider), type)
                 .BuildServiceProvider();
 
-            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
             var httpContext = new DefaultHttpContext
             {
                 User = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -45,16 +47,42 @@ namespace Microsoft.Azure.SignalR.Tests
                     new Claim(ClaimTypes.NameIdentifier, DefaultUserId)
                 }))
             };
-            var negotiateReponse = handler.Process(httpContext, "hub");
 
-            Assert.NotNull(negotiateReponse);
-            Assert.NotNull(negotiateReponse.Url);
-            Assert.NotNull(negotiateReponse.AccessToken);
-            Assert.Null(negotiateReponse.ConnectionId);
-            Assert.Empty(negotiateReponse.AvailableTransports);
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            var negotiateResponse = handler.Process(httpContext, "hub");
 
-            var token = JwtSecurityTokenHandler.ReadJwtToken(negotiateReponse.AccessToken);
-            Assert.Equal(expectedUserId, token.Claims.First(x => x.Type == Constants.ClaimType.UserId)?.Value);
+            Assert.NotNull(negotiateResponse);
+            Assert.NotNull(negotiateResponse.Url);
+            Assert.NotNull(negotiateResponse.AccessToken);
+            Assert.Null(negotiateResponse.ConnectionId);
+            Assert.Empty(negotiateResponse.AvailableTransports);
+
+            var token = JwtSecurityTokenHandler.ReadJwtToken(negotiateResponse.AccessToken);
+            Assert.Equal(expectedUserId, token.Claims.First(x => x.Type == Constants.ClaimType.UserId).Value);
+        }
+
+        [Theory]
+        [InlineData("/user/path/negotiate", UserPath)]
+        [InlineData("/user/path/negotiate/", UserPath)]
+        public void GenerateNegotiateResponseWithPath(string path, string expectedPath)
+        {
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR(o => o.ConnectionString = DefaultConnectionString)
+                .Services
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var requestFeature = new HttpRequestFeature { Path = path };
+            var features = new FeatureCollection();
+            features.Set<IHttpRequestFeature>(requestFeature);
+            var httpContext = new DefaultHttpContext(features);
+
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            var negotiateResponse = handler.Process(httpContext, "chat");
+
+            Assert.NotNull(negotiateResponse);
+            Assert.EndsWith($"?hub=chat&{Constants.QueryParameter.OriginalPath}={WebUtility.UrlEncode(expectedPath)}", negotiateResponse.Url);
         }
 
         [Theory]

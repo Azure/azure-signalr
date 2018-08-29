@@ -40,8 +40,23 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
 
+        private static readonly (string path, string expectedQuery)[] OriginalPathArray =
+        {
+            ("", ""),
+            (null, ""),
+            ("/user/path", $"&{Constants.QueryParameter.OriginalPath}=%2Fuser%2Fpath")
+        };
+
         public static IEnumerable<object[]> PreviewEndpointProviders =>
             PreviewEndpointProviderArray.Select(provider => new object[] {provider});
+
+        public static IEnumerable<object[]> OriginalPaths =>
+            OriginalPathArray.Select(t => new object[] {t.path, t.expectedQuery});
+
+        public static IEnumerable<object[]> PreviewEndpointProvidersWithPath =>
+            from provider in PreviewEndpointProviderArray
+            from t in OriginalPathArray
+            select new object[] { provider, t.path, t.expectedQuery} ;
 
         [Theory]
         [MemberData(nameof(PreviewEndpointProviders))]
@@ -53,11 +68,11 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [MemberData(nameof(PreviewEndpointProviders))]
-        internal void GetPreviewClientEndpoint(IServiceEndpointProvider provider)
+        [MemberData(nameof(PreviewEndpointProvidersWithPath))]
+        internal void GetPreviewClientEndpoint(IServiceEndpointProvider provider, string originalPath, string expectedQueryString)
         {
-            var expected = $"{Endpoint}:5001/client/?hub={HubName}";
-            var actual = provider.GetClientEndpoint(HubName);
+            var expected = $"{Endpoint}:5001/client/?hub={HubName}{expectedQueryString}";
+            var actual = provider.GetClientEndpoint(HubName, originalPath);
             Assert.Equal(expected, actual);
         }
 
@@ -107,11 +122,12 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Fact]
-        public void GetV1ClientEndpoint()
+        [Theory]
+        [MemberData(nameof(OriginalPaths))]
+        public void GetV1ClientEndpoint(string originalPath, string expectedQueryString)
         {
-            var expected = $"{Endpoint}/client/?hub={HubName}";
-            var actual = V1EndpointProvider.GetClientEndpoint(HubName);
+            var expected = $"{Endpoint}/client/?hub={HubName}{expectedQueryString}";
+            var actual = V1EndpointProvider.GetClientEndpoint(HubName, originalPath);
             Assert.Equal(expected, actual);
         }
 

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
@@ -13,6 +14,8 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class ServiceContextFacts
     {
+        private static readonly IDictionary<string, StringValues> EmptyHeaders = new Dictionary<string, StringValues>();
+
         [Fact]
         public void ServiceConnectionContextWithEmptyClaimsIsUnauthenticated()
         {
@@ -91,28 +94,48 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.NotNull(serviceConnectionContext.User.Identity);
             Assert.NotNull(serviceConnectionContext.HttpContext);
             Assert.Equal(serviceConnectionContext.User, serviceConnectionContext.HttpContext.User);
-            Assert.Equal(2, serviceConnectionContext.HttpContext.Request.Headers.Count);
-            Assert.Equal(value1, serviceConnectionContext.HttpContext.Request.Headers[key1]);
-            Assert.Equal(value2, serviceConnectionContext.HttpContext.Request.Headers[key2]);
-            Assert.Empty(serviceConnectionContext.HttpContext.Request.Query);
+            var request = serviceConnectionContext.HttpContext.Request;
+            Assert.Equal(2, request.Headers.Count);
+            Assert.Equal(value1, request.Headers[key1]);
+            Assert.Equal(value2, request.Headers[key2]);
+            Assert.Empty(request.Query);
+            Assert.Equal(string.Empty, request.Path);
         }
 
         [Fact]
         public void ServiceConnectionContextWithNonEmptyQueries()
         {
             const string queryString = "?query1=value1&query2=value2&query3=value3";
-            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", new Claim[0],
-                new Dictionary<string, StringValues>(), queryString));
+            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
 
             Assert.NotNull(serviceConnectionContext.User.Identity);
             Assert.NotNull(serviceConnectionContext.HttpContext);
             Assert.Equal(serviceConnectionContext.User, serviceConnectionContext.HttpContext.User);
-            Assert.Empty(serviceConnectionContext.HttpContext.Request.Headers);
-            Assert.Equal(queryString, serviceConnectionContext.HttpContext.Request.QueryString.ToString());
-            Assert.Equal(3, serviceConnectionContext.HttpContext.Request.Query.Count);
-            Assert.Equal("value1", serviceConnectionContext.HttpContext.Request.Query["query1"]);
-            Assert.Equal("value2", serviceConnectionContext.HttpContext.Request.Query["query2"]);
-            Assert.Equal("value3", serviceConnectionContext.HttpContext.Request.Query["query3"]);
+            var request = serviceConnectionContext.HttpContext.Request;
+            Assert.Empty(request.Headers);
+            Assert.Equal(queryString, request.QueryString.Value);
+            Assert.Equal(3, request.Query.Count);
+            Assert.Equal("value1", request.Query["query1"]);
+            Assert.Equal("value2", request.Query["query2"]);
+            Assert.Equal("value3", request.Query["query3"]);
+            Assert.Equal(string.Empty, request.Path);
+        }
+
+        [Fact]
+        public void ServiceConnectionContextWithRequestPath()
+        {
+            const string path = "/this/is/user/path";
+            var queryString = $"?{Constants.QueryParameter.OriginalPath}={WebUtility.UrlEncode(path)}";
+            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", null, EmptyHeaders, queryString));
+
+            Assert.NotNull(serviceConnectionContext.User.Identity);
+            Assert.NotNull(serviceConnectionContext.HttpContext);
+            Assert.Equal(serviceConnectionContext.User, serviceConnectionContext.HttpContext.User);
+            var request = serviceConnectionContext.HttpContext.Request;
+            Assert.Empty(request.Headers);
+            Assert.Equal(1, request.Query.Count);
+            Assert.Equal(path, request.Query[Constants.QueryParameter.OriginalPath]);
+            Assert.Equal(path, request.Path);
         }
     }
 }
