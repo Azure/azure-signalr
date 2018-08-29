@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IServiceConnectionManager _serviceConnectionManager;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly IServiceProtocol _protocol;
-        private readonly IServiceEndpoint _endpoint;
+        private readonly IServiceEndpointProvider _endpoint;
         private readonly string _name;
         private readonly string _userId;
 
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _protocol = hubConfig.Resolver.Resolve<IServiceProtocol>();
             _serviceConnectionManager = hubConfig.Resolver.Resolve<IServiceConnectionManager>();
             _clientConnectionManager = hubConfig.Resolver.Resolve<IClientConnectionManager>();
-            _endpoint = hubConfig.Resolver.Resolve<IServiceEndpoint>();
+            _endpoint = hubConfig.Resolver.Resolve<IServiceEndpointProvider>();
             _options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>().Value;
 
             _logger = _loggerFactory.CreateLogger<ConnectionFactory>();

@@ -38,6 +38,11 @@ namespace Owin
             builder.RunAzureSignalR(new HubConfiguration());
         }
 
+        public static void RunAzureSignalR(this IAppBuilder builder, string connectionString)
+        {
+            RunAzureSignalR(builder, new HubConfiguration(), connectionString);
+        }
+
         public static void RunAzureSignalR(this IAppBuilder builder, HubConfiguration configuration)
         {
             RunAzureSignalR(builder, configuration, ConfigurationManager.ConnectionStrings[ServiceOptions.ConnectionStringDefaultKey]?.ConnectionString);
@@ -84,7 +89,7 @@ namespace Owin
             var serviceOptions = Options.Create(options);
 
             var serviceProtocol = new ServiceProtocol();
-            var endpoint = new ServiceEndpoint(serviceOptions.Value);
+            var endpoint = new ServiceEndpointProvider(serviceOptions.Value);
             var provider = new EmptyProtectedData();
             var scm = new ServiceConnectionManager(hubs);
 
@@ -92,7 +97,7 @@ namespace Owin
             // Some third-party DI frameworks such as Ninject, implicit self-binding concrete types:
             // https://github.com/ninject/ninject/wiki/dependency-injection-with-ninject#skipping-the-type-binding-bit--implicit-self-binding-of-concrete-types
             configuration.Resolver.Register(typeof(IOptions<ServiceOptions>), () => serviceOptions);
-            configuration.Resolver.Register(typeof(IServiceEndpoint), () => endpoint);
+            configuration.Resolver.Register(typeof(IServiceEndpointProvider), () => endpoint);
             configuration.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
             configuration.Resolver.Register(typeof(IProtectedData), () => provider);
             configuration.Resolver.Register(typeof(IMessageBus), () => new ServiceMessageBus(configuration.Resolver));
