@@ -4,7 +4,7 @@
 using System;
 using Xunit;
 
-namespace Microsoft.Azure.SignalR.Tests
+namespace Microsoft.Azure.SignalR.Common.Tests
 {
     public class ConnectionStringParserFacts
     {
