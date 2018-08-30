@@ -63,8 +63,8 @@ namespace Microsoft.Azure.SignalR.Tests
         [Theory]
         [InlineData("/user/path/negotiate", "", "asrs.op=%2Fuser%2Fpath")]
         [InlineData("/user/path/negotiate/", "", "asrs.op=%2Fuser%2Fpath")]
-        [InlineData("", "?customKey=custome=Value", "customKey=custome=Value")]
-        [InlineData("/user/path/negotiate", "?customKey=custome=Value", "asrs.op=%2Fuser%2Fpath&customKey=custome=Value")]
+        [InlineData("", "?customKey=customeValue", "customKey=customeValue")]
+        [InlineData("/user/path/negotiate", "?customKey=customeValue", "asrs.op=%2Fuser%2Fpath&customKey=customeValue")]
         public void GenerateNegotiateResponseWithPathAndQuery(string path, string queryString, string expectedQueryString)
         {
             var config = new ConfigurationBuilder().Build();
