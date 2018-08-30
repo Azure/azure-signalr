@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net;
+using System.Text;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -25,19 +26,31 @@ namespace Microsoft.Azure.SignalR
         public string GetClientAudience(string hubName) =>
             InternalGetEndpoint(ClientPort, ClientPath, hubName);
 
-        public string GetClientEndpoint(string hubName, string originalPath) =>
-            string.IsNullOrEmpty(originalPath)
-                ? InternalGetEndpoint(ClientPort, ClientPath, hubName)
-                : GetClientEndpoint(ClientPort, ClientPath, hubName, originalPath);
+        public string GetClientEndpoint(string hubName, string originalPath, string queryString)
+        {
+            var queryBuilder = new StringBuilder();
+            if (!string.IsNullOrEmpty(originalPath))
+            {
+                queryBuilder.Append("&")
+                    .Append(Constants.QueryParameter.OriginalPath)
+                    .Append("=")
+                    .Append(WebUtility.UrlEncode(originalPath));
+            }
+
+            if (!string.IsNullOrEmpty(queryString))
+            {
+                queryBuilder.Append("&").Append(queryString);
+            }
+
+            return $"{InternalGetEndpoint(ClientPort, ClientPath, hubName)}{queryBuilder}";
+        }
+            
 
         public string GetServerAudience(string hubName) =>
             InternalGetEndpoint(ServerPort, ServerPath, hubName);
 
         public string GetServerEndpoint(string hubName) =>
             InternalGetEndpoint(ServerPort, ServerPath, hubName);
-
-        private string GetClientEndpoint(int port, string path, string hubName, string originalPath) =>
-            $"{InternalGetEndpoint(port, path, hubName)}&{Constants.QueryParameter.OriginalPath}={WebUtility.UrlEncode(originalPath)}";
 
         private string InternalGetEndpoint(int port, string path, string hubName) =>
             $"{Endpoint}:{port}/{path}/?hub={hubName.ToLower()}";
