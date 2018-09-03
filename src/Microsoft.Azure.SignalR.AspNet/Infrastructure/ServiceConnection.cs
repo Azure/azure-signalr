@@ -90,7 +90,15 @@ namespace Microsoft.Azure.SignalR.AspNet
                 {
                     var payload = connectionDataMessage.Payload;
                     Log.WriteMessageToApplication(_logger, payload.Length, connectionDataMessage.ConnectionId);
-                    transport.OnReceived(GetString(payload));
+                    var message = GetString(payload);
+                    if (message == "Asrs.Reconnect")
+                    {
+                        transport.Reconnected?.Invoke();
+                    }
+                    else
+                    {
+                        transport.OnReceived(GetString(payload));
+                    }
                 }
                 catch (Exception ex)
                 {
