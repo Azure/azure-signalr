@@ -73,7 +73,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             using (var jsonWriter = new JsonTextWriter(new StringWriter(sb)))
             {
                 jsonWriter.WriteStartObject();
-                jsonWriter.WritePropertyName("Url");
+                jsonWriter.WritePropertyName("ProtocolVersion");
+                jsonWriter.WriteValue("2.0");
+                jsonWriter.WritePropertyName("RedirectUrl");
                 jsonWriter.WriteValue(url);
                 jsonWriter.WritePropertyName("AccessToken");
                 jsonWriter.WriteValue(token);
