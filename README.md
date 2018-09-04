@@ -1,6 +1,6 @@
-# Microsoft Azure SignalR SDK for .NET
+# Azure SignalR Service SDK for .NET
 
-Microsoft Azure SignalR SDK for .NET helps you to instantly build Azure applications with real-time messaging functionality, taking advantage of scalable cloud computing resources.
+Azure SignalR Service SDK for .NET helps you to instantly build Azure applications with real-time messaging functionality, taking advantage of scalable cloud computing resources.
 
 This repository contains the open source subset of the .NET SDK.
 
@@ -10,20 +10,18 @@ Travis: [![travis](https://travis-ci.org/Azure/azure-signalr.svg?branch=dev)](ht
 
 ## Nuget Packages
 
-Package Name | Target Framework | Version
----|---|---
-Microsoft.Azure.SignalR | .NET Standard 2.0 | ![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.svg)
-Microsoft.Azure.SignalR.Protocols | .NET Standard 2.0 | ![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Protocols.svg)
+Package Name | Target Framework | NuGet | MyGet
+---|---|---|---
+Microsoft.Azure.SignalR | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR)
+Microsoft.Azure.SignalR.Protocols | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Protocols.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Protocols) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.Protocols.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Protocols)
 
 ## Getting Started
 
-Add Azure SignalR package to your project.
+Azure SignalR Service is based on [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) framework. And SignalR Service SDK also depends on ASP.NET Core SignalR packages. If you are not familiar with ASP.NET Core SignalR yet, we recommend you to read [ASP.NET Core SignalR's documentation](https://docs.microsoft.com/en-us/aspnet/core/signalr/) first.
 
-```bash
-dotnet add package Microsoft.Azure.SignalR
-```
+Follow the tutorial at [here](https://aka.ms/signalr_service_doc) to get started with Azure SignalR Service.
 
-You can find samples on how to use Azure SignalR Service at [here](https://github.com/aspnet/AzureSignalR-samples/).
+You can find more samples on how to use Azure SignalR Service at [here](https://github.com/aspnet/AzureSignalR-samples/).
 
 ## REST API support
 
