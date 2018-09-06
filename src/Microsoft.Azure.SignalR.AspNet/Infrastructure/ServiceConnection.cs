@@ -97,7 +97,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                     }
                     else
                     {
-                        transport.OnReceived(GetString(payload));
+                        transport.OnReceived(message);
                     }
                 }
                 catch (Exception ex)
