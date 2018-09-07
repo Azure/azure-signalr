@@ -17,6 +17,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal partial class ServiceConnection : ServiceConnectionBase
     {
+        private const string ReconnectMessage = "{\"Reconnect\":true}";
         private readonly ConcurrentDictionary<string, AzureTransport> _clientConnections = new ConcurrentDictionary<string, AzureTransport>(StringComparer.Ordinal);
 
         private readonly string _hubName;
@@ -91,7 +92,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                     var payload = connectionDataMessage.Payload;
                     Log.WriteMessageToApplication(_logger, payload.Length, connectionDataMessage.ConnectionId);
                     var message = GetString(payload);
-                    if (message == "Asrs.Reconnect")
+                    if (message == ReconnectMessage)
                     {
                         transport.Reconnected?.Invoke();
                     }
