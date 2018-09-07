@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestCreateConnectionWithCustomQueryStringSucceeds(string queryString)
         {
             var message = new OpenConnectionMessage(Guid.NewGuid().ToString("N"), new Claim[0], null, queryString);
-            var connection = _clientConnectionManager.CreateConnection(message);
+            var connection = _clientConnectionManager.CreateConnection(message, null);
         }
 
         [Theory]
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 }
                 , queryString);
             var response = new MemoryStream();
-            var context = _clientConnectionManager.GetHostContext(message, response);
+            var context = _clientConnectionManager.GetHostContext(message, response, null);
             Assert.Equal(200, context.Response.StatusCode);
             Assert.Equal("", ClientConnectionManager.GetContentAndDispose(response));
             Assert.Equal("value1", context.Request.Headers["custom1"]);

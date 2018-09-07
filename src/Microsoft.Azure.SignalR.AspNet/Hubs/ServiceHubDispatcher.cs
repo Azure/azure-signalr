@@ -22,10 +22,13 @@ namespace Microsoft.Azure.SignalR.AspNet
     {
         private static readonly ProtocolResolver ProtocolResolver = new ProtocolResolver();
 
+        private readonly string _appName;
+
         private IServiceEndpointProvider _endpoint;
 
-        public ServiceHubDispatcher(HubConfiguration configuration) : base(configuration)
+        public ServiceHubDispatcher(HubConfiguration configuration, string appName) : base(configuration)
         {
+            _appName = appName;
         }
 
         public override void Initialize(IDependencyResolver resolver)
@@ -59,6 +62,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             advancedClaims.Add(new Claim(Constants.ClaimType.UserId, userId));
+
+            // Pass appname through jwt token to client, so that when client establishes connection with service, it will also create a corresponding AppName-connection
+            advancedClaims.Add(new Claim(Constants.ClaimType.AppName, _appName));
 
             // Redirect to Service
             var url = _endpoint.GetClientEndpoint();

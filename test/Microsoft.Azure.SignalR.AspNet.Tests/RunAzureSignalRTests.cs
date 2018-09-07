@@ -21,12 +21,13 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
     {
         private const string ServiceUrl = "http://localhost:8086";
         private const string ConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+        private const string AppName = "AzureSignalRTest";
 
         [Fact]
         public void TestRunAzureSignalRWithDefaultOptions()
         {
             var hubConfig = new HubConfiguration();
-            using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(hubConfig, ConnectionString)))
+            using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, ConnectionString, hubConfig)))
             {
                 var resolver = hubConfig.Resolver;
                 var options = resolver.Resolve<IOptions<ServiceOptions>>();
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var exception = Assert.Throws<ArgumentException>(
                 () =>
                 {
-                    using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR()))
+                    using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName)))
                     {
                     }
                 });
@@ -58,7 +59,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestRunAzureSignalRWithConnectionString()
         {
             var hubConfig = new HubConfiguration();
-            using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(hubConfig, ConnectionString)))
+            using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, ConnectionString, hubConfig)))
             {
                 var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
                 Assert.Equal(ConnectionString, options.Value.ConnectionString);
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestRunAzureSignalRWithOptions()
         {
             var hubConfig = new HubConfiguration();
-            using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(hubConfig, o =>
+            using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, o =>
             {
                 o.ConnectionString = ConnectionString;
                 o.ConnectionCount = -1;
@@ -84,7 +85,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public async Task TestNegotiateWithRunAzureSignalR()
         {
-            using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(ConnectionString)))
+            using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, ConnectionString)))
             {
                 var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
                 var response = await client.GetAsync("/negotiate");
