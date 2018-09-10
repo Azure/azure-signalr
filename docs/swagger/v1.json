@@ -1,0 +1,217 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "version": "v1",
+        "title": "Azure SignalR Service REST API"
+    },
+    "paths": {
+        "/api/v1/hubs/{hub}/users/{id}": {
+            "post": {
+                "description": "Send a message to a single user.",
+                "tags": [],
+                "operationId": "SendMessageToUser",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [],
+                "parameters": [
+                    {
+                        "name": "hub",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Target user Id."
+                    },
+                    {
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    }
+                }
+            }
+        },
+        "/api/v1/hubs/{hub}": {
+            "post": {
+                "description": "Broadcast a message to all clients connected to target hub.",
+                "tags": [],
+                "operationId": "BroadcastMessage",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [],
+                "parameters": [
+                    {
+                        "name": "hub",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+                    },
+                    {
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    }
+                }
+            }
+        },
+        "/api/v1/hubs/{hub}/groups/{group}": {
+            "post": {
+                "description": "Broadcast a message to all clients within the target group.",
+                "tags": [],
+                "operationId": "SendMessageToGroup",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [],
+                "parameters": [
+                    {
+                        "name": "hub",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+                    },
+                    {
+                        "name": "group",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Target group name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+                    },
+                    {
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Message"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    }
+                }
+            }
+        },
+        "/api/v1/hubs/{hub}/groups/{group}/users/{id}": {
+            "put": {
+                "description": "Add a user to the target group.",
+                "tags": [],
+                "operationId": "AddUserToGroup",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [],
+                "parameters": [
+                    {
+                        "name": "hub",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+                    },
+                    {
+                        "name": "group",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Target group name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Target user Id."
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove a user from the target group.",
+                "tags": [],
+                "operationId": "RemoveUserFromGroup",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [],
+                "parameters": [
+                    {
+                        "name": "hub",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+                    },
+                    {
+                        "name": "group",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Target group name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Target user Id."
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Message": {
+            "type": "object",
+            "description": "Method invocation message.",
+            "properties": {
+                "target": {
+                    "type": "string",
+                    "description": "Target method name."
+                },
+                "arguments": {
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    },
+                    "description": "Target method arguments."
+                }
+            }
+        }
+    }
+}
