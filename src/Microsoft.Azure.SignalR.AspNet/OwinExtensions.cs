@@ -153,7 +153,7 @@ namespace Owin
             }
             else
             {
-                logger.CreateLogger<IAppBuilder>().Log(LogLevel.Information, "No hub is found.");
+                logger.CreateLogger<IAppBuilder>().Log(LogLevel.Warning, "No hubs found.");
             }
         }
 
