@@ -173,23 +173,34 @@ namespace Owin
             // share the same object all through
             var serviceOptions = Options.Create(options);
 
-            var serviceProtocol = new ServiceProtocol();
-            var endpoint = new ServiceEndpointProvider(serviceOptions.Value);
-            var provider = new EmptyProtectedData();
-            var scm = new ServiceConnectionManager(applicationName, hubs);
-            var ccm = new ClientConnectionManager(configuration);
-
             // For safety, ALWAYS register abstract classes or interfaces
             // Some third-party DI frameworks such as Ninject, implicit self-binding concrete types:
             // https://github.com/ninject/ninject/wiki/dependency-injection-with-ninject#skipping-the-type-binding-bit--implicit-self-binding-of-concrete-types
             configuration.Resolver.Register(typeof(IOptions<ServiceOptions>), () => serviceOptions);
-            configuration.Resolver.Register(typeof(IServiceEndpointProvider), () => endpoint);
-            configuration.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
-            configuration.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
-            configuration.Resolver.Register(typeof(IProtectedData), () => provider);
-            configuration.Resolver.Register(typeof(IMessageBus), () => new ServiceMessageBus(configuration.Resolver));
-            configuration.Resolver.Register(typeof(ITransportManager), () => new AzureTransportManager(configuration.Resolver));
+
+            var serviceProtocol = new ServiceProtocol();
             configuration.Resolver.Register(typeof(IServiceProtocol), () => serviceProtocol);
+
+            var provider = new EmptyProtectedData();
+            configuration.Resolver.Register(typeof(IProtectedData), () => provider);
+
+            var endpoint = new ServiceEndpointProvider(serviceOptions.Value);
+            configuration.Resolver.Register(typeof(IServiceEndpointProvider), () => endpoint);
+
+            var scm = new ServiceConnectionManager(applicationName, hubs);
+            configuration.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
+
+            var ccm = new ClientConnectionManager(configuration);
+            configuration.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
+
+            var atm = new AzureTransportManager(configuration.Resolver);
+            configuration.Resolver.Register(typeof(ITransportManager), () => atm);
+
+            var parser = new SignalRMessageParser(hubs, configuration.Resolver);
+            configuration.Resolver.Register(typeof(IMessageParser), () => parser);
+
+            var smb = new ServiceMessageBus(configuration.Resolver);
+            configuration.Resolver.Register(typeof(IMessageBus), () => smb);
         }
 
         private static IReadOnlyList<string> GetAvailableHubNames(HubConfiguration configuration)

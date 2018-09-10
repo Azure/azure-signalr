@@ -218,6 +218,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             resolver.Register(typeof(IServiceProtocol), () => new ServiceProtocol());
             var connectionManager = new ServiceConnectionManager(AppName, hubs);
             resolver.Register(typeof(IServiceConnectionManager), () => connectionManager);
+            resolver.Register(typeof(IMessageParser), () => new SignalRMessageParser(hubs, resolver));
             scm = connectionManager;
             return resolver;
         }

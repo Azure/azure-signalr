@@ -2,12 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
@@ -15,10 +11,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class ServiceConnectionManager : IServiceConnectionManager
     {
-        private const char DotChar = '.';
-
         private IReadOnlyDictionary<string, IServiceConnectionContainer> _serviceConnections = null;
-        private readonly HashSet<string> _hubNameWithDots = new HashSet<string>();
 
         private readonly object _lock = new object();
 
@@ -70,16 +63,6 @@ namespace Microsoft.Azure.SignalR.AspNet
                             () => connectionGenerator(hub),
                             connectionCount);
                     connections.Add(hub, connection);
-
-                    // It is possible that the hub contains dot character, while the fully qualified name is formed as {HubName}.{Name} (Name can be connectionId or userId or groupId)
-                    // So keep a copy of the hub names containing dots and return all the possible combinations when the fully qualified name is provided
-                    if (hub.IndexOf(DotChar) > -1)
-                    {
-                        lock (_hubNameWithDots)
-                        {
-                            _hubNameWithDots.Add(hub);
-                        }
-                    }
                 }
 
                 _serviceConnections = connections;
@@ -124,35 +107,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             return _appConnection.WriteAsync(partitionKey, serviceMessage);
-        }
-
-        /// <summary>
-        /// The fully qualified name is as {HubName}.{Name}
-        /// </summary>
-        /// <param name="nameWithHubPrefix"></param>
-        /// <returns>The connection and the name without hub prefix</returns>
-        public IEnumerable<(IServiceConnectionContainer, string)> GetPossibleConnections(string nameWithHubPrefix)
-        {
-            var index = nameWithHubPrefix.IndexOf(DotChar);
-            if (index == -1)
-            {
-                throw new InvalidDataException($"Name {nameWithHubPrefix} does not contain the required separator {DotChar}");
-            }
-
-            // It is rare that hubname contains '.'
-            foreach (var hub in _hubNameWithDots)
-            {
-                if (nameWithHubPrefix.Length > hub.Length + 1
-                    && nameWithHubPrefix[hub.Length] == DotChar
-                    && hub == nameWithHubPrefix.Substring(0, hub.Length))
-                {
-                    yield return (_serviceConnections[hub], nameWithHubPrefix.Substring(hub.Length + 1));
-                }
-            }
-
-            var hubName = nameWithHubPrefix.Substring(0, index);
-            var name = nameWithHubPrefix.Substring(index + 1);
-            yield return (WithHub(hubName), name);
         }
 
         private IEnumerable<IServiceConnectionContainer> GetConnections()
