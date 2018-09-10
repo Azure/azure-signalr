@@ -35,7 +35,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _configuration = configuration;
         }
 
-        public AzureTransport CreateConnection(OpenConnectionMessage message)
+        public AzureTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
         {
             var dispatcher = new HubDispatcher(_configuration);
             dispatcher.Initialize(_configuration.Resolver);
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             var connectionId = message.ConnectionId;
 
             var responseStream = new MemoryStream();
-            var hostContext = GetHostContext(message, responseStream);
+            var hostContext = GetHostContext(message, responseStream, serviceConnection);
 
             if (dispatcher.Authorize(hostContext.Request))
             {
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             throw new InvalidOperationException("Unable to authorize request");
         }
 
-        internal HostContext GetHostContext(OpenConnectionMessage message, Stream responseStream)
+        internal HostContext GetHostContext(OpenConnectionMessage message, Stream responseStream, IServiceConnection serviceConnection)
         {
             var connectionId = message.ConnectionId;
             var context = new OwinContext();
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 }
             }
 
-            context.Environment[AspNetConstants.Context.AzureServiceConnectionKey] = this;
+            context.Environment[AspNetConstants.Context.AzureServiceConnectionKey] = serviceConnection;
             return new HostContext(context.Environment);
         }
 

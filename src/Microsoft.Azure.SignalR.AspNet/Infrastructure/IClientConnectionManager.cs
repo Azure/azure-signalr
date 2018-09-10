@@ -7,6 +7,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal interface IClientConnectionManager
     {
-        AzureTransport CreateConnection(OpenConnectionMessage message);
+        AzureTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection);
     }
 }

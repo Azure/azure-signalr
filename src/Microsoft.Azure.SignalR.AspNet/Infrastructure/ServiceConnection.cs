@@ -128,7 +128,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             var connectionId = message.ConnectionId;
             try
             {
-                var transport = _clientConnectionManager.CreateConnection(message);
+                var transport = _clientConnectionManager.CreateConnection(message, this);
                 _clientConnections.TryAdd(transport.ConnectionId, transport);
                 Log.ConnectedStarting(_logger, connectionId);
                 return Task.CompletedTask;
