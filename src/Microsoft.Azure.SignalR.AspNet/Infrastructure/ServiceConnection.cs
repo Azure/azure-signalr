@@ -17,7 +17,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal partial class ServiceConnection : ServiceConnectionBase
     {
-        private const string ReconnectMessage = "{\"Reconnect\":true}";
+        private const string ReconnectMessage = "asrs:reconnect";
         private readonly ConcurrentDictionary<string, AzureTransport> _clientConnections = new ConcurrentDictionary<string, AzureTransport>(StringComparer.Ordinal);
 
         private readonly string _hubName;
