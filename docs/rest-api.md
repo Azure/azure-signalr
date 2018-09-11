@@ -8,10 +8,11 @@
     - [Add a user to a group](#add-user-to-group)
     - [Remove a user from a group](#remove-user-from-group)
 - [Using REST API](#using-rest-api)
-    - [User-related REST API](#user-api)
     - [Authentication](#authentication)
         - [Signing Algorithm and Signature](#signing)
         - [Claims](#claims)
+    - [User-related REST API](#user-api)
+    - [Sample](#sample)
 
 On top of classical client-server pattern, Azure SignalR Service provides a set of REST APIs, so that you can easily integrate real-time functionality into your server-less architecture.
 
@@ -88,14 +89,6 @@ API Version | HTTP Method | Request URL
 
 ## Using REST API
 
-<a name="user-api"></a>
-### User-related REST API
-
-In order to call user-related REST API, each of your clients should identify themselves to Azure SignalR Service.
-
-This can be achieved by including a `nameid` claim in each client's JWT token when they are connecting to Azure SignalR Service.
-Then SignalR Service will use the value of `nameid` claim as the user id of each client connection.
-
 ### Authentication
 
 In each HTTP request, an authorization header with a [JSON Web Token (JWT)](https://en.wikipedia.org/wiki/JSON_Web_Token) is required to authenticate with Azure SignalR Service.
@@ -115,3 +108,28 @@ Claim Type | Is Required | Description
 ---|---|---
 `aud` | true | Should be the **SAME** as your HTTP request url, trailing slash and query paramters not included. For example, a broadcast request's audience should look like: `https://example.service.signalr.net/api/v1/hubs/myhub`.
 `exp` | true | Epoch time when this token will be expired.
+
+<a name="user-api"></a>
+### User-related REST API
+
+In order to call user-related REST API, each of your clients should identify themselves to Azure SignalR Service.
+
+This can be achieved by including a `nameid` claim in each client's JWT token when they are connecting to Azure SignalR Service.
+Then SignalR Service will use the value of `nameid` claim as the user id of each client connection.
+
+As shown in the [architecture section](#serverlss), the `redirect` function will return a redirect negotiation response to client.
+A typical negotiation response looks like as folllowing. The `nameid` claim should be included in the access token.
+
+    ```json
+    {
+        "url":"https://test.service.signalr.net:5001/client/?hub=chat&...",
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOjE1MzY2NTYzMjYsImV4cCI6MTUzNjY1OTkyNiwiaWF0IjoxNTM2NjU2MzI2LCJhdWQiOiJodHRwczovL3Rlc3Quc2VydmljZS5zaWduYWxyLm5ldDo1MDAxL2NsaWVudC8_aHViPWNoYXQiLCJuYW1laWQiOiJ1c2VyLWlkIn0.k24D5kk7KeA_JKmxaEU0gGtF4JhOlyQ2VDmITHrzPtA" ,
+        "availableTransports":[]
+    }
+    ```
+
+Read more about redirecting client to Azure SignalR Service at [here](TODO).
+
+### Sample
+
+You can find a complete console app to demonstrate how to use REST API in Azure SignalR Service at [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Serverless).
