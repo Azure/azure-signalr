@@ -18,7 +18,7 @@ On top of classical client-server pattern, Azure SignalR Service provides a set 
 <a name="serverless"></a>
 ## Typical Server-less Architecture with Azure Functions
 
-The follow diagram shows a typical server-less architecture of using Azure SignalR Service with Azure Functions.
+The following diagram shows a typical server-less architecture of using Azure SignalR Service with Azure Functions.
 
 ![Typical Serverless Architecture](./images/serverless-arch.png)
 
