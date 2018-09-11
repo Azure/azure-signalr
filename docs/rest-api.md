@@ -113,6 +113,7 @@ Claim Type | Is Required | Description
 ### User-related REST API
 
 In order to call user-related REST API, each of your clients should identify themselves to Azure SignalR Service.
+Otherwise SignalR Service can't find target connections from a given user id.
 
 This can be achieved by including a `nameid` claim in each client's JWT token when they are connecting to Azure SignalR Service.
 Then SignalR Service will use the value of `nameid` claim as the user id of each client connection.
