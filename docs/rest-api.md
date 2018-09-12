@@ -26,6 +26,15 @@ The following diagram shows a typical server-less architecture of using Azure Si
 - `redirect` function will return negotiation response and redirect all clients to Azure SignalR Service.
 - `broadcast` function will call Azure SignalR Service's REST API. Then SignalR Service will broadcast the message to all connected clients.
 
+In server-less architecture, clients still have persistent connections to Azure SignalR Service.
+Since there are no application server to handle traffic, clients are in `LISTEN` mode, which means they can only receive messages but can't send messages.
+SignalR Service will disconnect any client who sends messages because it is an invalid operation.
+
+> NOTE: In version 1.1.0-preview of ASP.NET Core SignalR, client will send `PingMessage` to server.
+> Right now it will cause SignalR Service disconnecting clients.
+> So the latest 1.0.x version of ASP.NET Core SignalR client library is recommended to use with Azure SignalR Service.
+> We are working in progress to support the new version of ASP.NET Core SignalR.
+
 You can find a complete sample of using Azure SignalR Service with Azure Functions at [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/RealtimeSignIn).
 
 ## API
@@ -35,7 +44,7 @@ The following table shows all versions of REST API we have for now. You can also
 API Version | Status | Port | Spec
 ---|---|---|---
 `1.0-preview` | Available | 5002 | [swagger](./swagger/v1-preview.json)
-`1.0` | *Not Available until GA* | Default | [swagger](./swagger/v1.json)
+`1.0` | *Not Available until GA* | Standard | [swagger](./swagger/v1.json)
 
 Available APIs of each version are listed as following.
 
