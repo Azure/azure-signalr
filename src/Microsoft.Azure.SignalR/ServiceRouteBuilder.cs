@@ -91,9 +91,8 @@ namespace Microsoft.Azure.SignalR
             var app = new ConnectionBuilder(_serviceProvider)
                 .UseHub<THub>()
                 .Build();
-
             var dispatcher = _serviceProvider.GetRequiredService<ServiceHubDispatcher<THub>>();
-            dispatcher.Start(app);
+            dispatcher.ConnectionDelegate = app;
         }
     }
 }

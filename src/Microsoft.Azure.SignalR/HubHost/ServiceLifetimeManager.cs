@@ -25,21 +25,26 @@ namespace Microsoft.Azure.SignalR
         private readonly IServiceConnectionManager<THub> _serviceConnectionManager;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly AzureSignalRMarkerService _marker;
+        private readonly ServiceHubDispatcher<THub> _dispatcher;
+
+        private readonly Lazy<object> _initializer;
 
         public ServiceLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager, IHubProtocolResolver protocolResolver,
-            ILogger<ServiceLifetimeManager<THub>> logger, AzureSignalRMarkerService marker)
+            ILogger<ServiceLifetimeManager<THub>> logger, AzureSignalRMarkerService marker, ServiceHubDispatcher<THub> dispatcher)
         {
             _serviceConnectionManager = serviceConnectionManager;
             _clientConnectionManager = clientConnectionManager;
             _allProtocols = protocolResolver.AllProtocols;
             _logger = logger;
             _marker = marker;
+            _dispatcher = dispatcher;
+            _initializer = new Lazy<object>(InitializeConnection);
         }
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
         {
-            EnsureMarker();
+            Initialize();
 
             if (_clientConnectionManager.ClientConnections.TryGetValue(connection.ConnectionId, out var serviceConnectionContext))
             {
@@ -51,14 +56,12 @@ namespace Microsoft.Azure.SignalR
 
         public override Task OnDisconnectedAsync(HubConnectionContext connection)
         {
-            EnsureMarker();
-
             return Task.CompletedTask;
         }
 
         public override Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            EnsureMarker();
+            Initialize();
 
             if (IsInvalidArgument(methodName))
             {
@@ -71,7 +74,7 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
         {
-            EnsureMarker();
+            Initialize();
 
             if (IsInvalidArgument(methodName))
             {
@@ -84,7 +87,7 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            EnsureMarker();
+            Initialize();
 
             if (IsInvalidArgument(connectionId) || IsInvalidArgument(methodName))
             {
@@ -106,7 +109,7 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            EnsureMarker();
+            Initialize();
 
             if (IsInvalidArgument(connectionIds) || IsInvalidArgument(methodName))
             {
@@ -119,7 +122,7 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            EnsureMarker();
+            Initialize();
 
             if (IsInvalidArgument(groupName) || IsInvalidArgument(methodName))
             {
@@ -133,7 +136,7 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            EnsureMarker();
+            Initialize();
 
             if (IsInvalidArgument(groupNames))
             {
@@ -148,7 +151,7 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
         {
-            EnsureMarker();
+            Initialize();
 
             if (IsInvalidArgument(groupName) || IsInvalidArgument(methodName))
             {
@@ -162,7 +165,7 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            EnsureMarker();
+            Initialize();
 
             if (IsInvalidArgument(userId) || IsInvalidArgument(methodName))
             {
@@ -176,7 +179,7 @@ namespace Microsoft.Azure.SignalR
         public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args,
             CancellationToken cancellationToken = default)
         {
-            EnsureMarker();
+            Initialize();
 
             if (IsInvalidArgument(userIds) || IsInvalidArgument(methodName))
             {
@@ -189,7 +192,7 @@ namespace Microsoft.Azure.SignalR
 
         public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
-            EnsureMarker();
+            Initialize();
 
             if (IsInvalidArgument(connectionId) || IsInvalidArgument(groupName))
             {
@@ -203,7 +206,7 @@ namespace Microsoft.Azure.SignalR
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
-            EnsureMarker();
+            Initialize();
 
             if (IsInvalidArgument(connectionId) || IsInvalidArgument(groupName))
             {
@@ -216,12 +219,28 @@ namespace Microsoft.Azure.SignalR
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void EnsureMarker()
+        private void Initialize()
+        {
+            if (_initializer.IsValueCreated)
+            {
+                return;
+            }
+            InitializeCore();
+        }
+
+        private void InitializeCore()
         {
             if (!_marker.IsConfigured)
             {
                 throw new InvalidOperationException(MarkerNotConfiguredError);
             }
+            _ = _initializer.Value;
+        }
+
+        private object InitializeConnection()
+        {
+            _dispatcher.Start();
+            return null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
