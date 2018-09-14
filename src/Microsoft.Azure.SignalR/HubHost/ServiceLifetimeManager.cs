@@ -3,8 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
@@ -22,24 +24,28 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IServiceConnectionManager<THub> _serviceConnectionManager;
         private readonly IClientConnectionManager _clientConnectionManager;
+        private readonly AzureSignalRMarkerService _marker;
+        private readonly ServiceHubDispatcher<THub> _dispatcher;
+
+        private readonly Lazy<object> _initializer;
 
         public ServiceLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager, IHubProtocolResolver protocolResolver,
-            ILogger<ServiceLifetimeManager<THub>> logger, AzureSignalRMarkerService marker)
+            ILogger<ServiceLifetimeManager<THub>> logger, AzureSignalRMarkerService marker, ServiceHubDispatcher<THub> dispatcher)
         {
-            if (!marker.IsConfigured)
-            {
-                throw new InvalidOperationException(MarkerNotConfiguredError);
-            }
-
             _serviceConnectionManager = serviceConnectionManager;
             _clientConnectionManager = clientConnectionManager;
             _allProtocols = protocolResolver.AllProtocols;
             _logger = logger;
+            _marker = marker;
+            _dispatcher = dispatcher;
+            _initializer = new Lazy<object>(InitializeConnection);
         }
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
         {
+            Initialize();
+
             if (_clientConnectionManager.ClientConnections.TryGetValue(connection.ConnectionId, out var serviceConnectionContext))
             {
                 serviceConnectionContext.HubConnectionContext = connection;
@@ -55,6 +61,8 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
         {
+            Initialize();
+
             if (IsInvalidArgument(methodName))
             {
                 return Task.CompletedTask;
@@ -66,6 +74,8 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
         {
+            Initialize();
+
             if (IsInvalidArgument(methodName))
             {
                 return Task.CompletedTask;
@@ -77,6 +87,8 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
+            Initialize();
+
             if (IsInvalidArgument(connectionId) || IsInvalidArgument(methodName))
             {
                 return Task.CompletedTask;
@@ -97,6 +109,8 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
+            Initialize();
+
             if (IsInvalidArgument(connectionIds) || IsInvalidArgument(methodName))
             {
                 return Task.CompletedTask;
@@ -108,6 +122,8 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
+            Initialize();
+
             if (IsInvalidArgument(groupName) || IsInvalidArgument(methodName))
             {
                 return Task.CompletedTask;
@@ -120,6 +136,8 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
+            Initialize();
+
             if (IsInvalidArgument(groupNames))
             {
                 return Task.CompletedTask;
@@ -133,6 +151,8 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
         {
+            Initialize();
+
             if (IsInvalidArgument(groupName) || IsInvalidArgument(methodName))
             {
                 return Task.CompletedTask;
@@ -145,6 +165,8 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
+            Initialize();
+
             if (IsInvalidArgument(userId) || IsInvalidArgument(methodName))
             {
                 return Task.CompletedTask;
@@ -157,6 +179,8 @@ namespace Microsoft.Azure.SignalR
         public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args,
             CancellationToken cancellationToken = default)
         {
+            Initialize();
+
             if (IsInvalidArgument(userIds) || IsInvalidArgument(methodName))
             {
                 return Task.CompletedTask;
@@ -168,6 +192,8 @@ namespace Microsoft.Azure.SignalR
 
         public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
+            Initialize();
+
             if (IsInvalidArgument(connectionId) || IsInvalidArgument(groupName))
             {
                 return Task.CompletedTask;
@@ -180,6 +206,8 @@ namespace Microsoft.Azure.SignalR
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
+            Initialize();
+
             if (IsInvalidArgument(connectionId) || IsInvalidArgument(groupName))
             {
                 return Task.CompletedTask;
@@ -190,11 +218,38 @@ namespace Microsoft.Azure.SignalR
             return _serviceConnectionManager.WriteAsync(groupName, message);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Initialize()
+        {
+            if (_initializer.IsValueCreated)
+            {
+                return;
+            }
+            InitializeCore();
+        }
+
+        private void InitializeCore()
+        {
+            if (!_marker.IsConfigured)
+            {
+                throw new InvalidOperationException(MarkerNotConfiguredError);
+            }
+            _ = _initializer.Value;
+        }
+
+        private object InitializeConnection()
+        {
+            _dispatcher.Start();
+            return null;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsInvalidArgument(string value)
         {
             return string.IsNullOrEmpty(value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsInvalidArgument(IReadOnlyList<object> list)
         {
             return list == null || list.Count == 0;

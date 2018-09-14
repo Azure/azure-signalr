@@ -63,10 +63,21 @@ namespace Microsoft.Azure.SignalR.Tests
                 .BuildServiceProvider();
 
             var app = new ApplicationBuilder(serviceProvider);
-            app.UseSignalR(routes =>
-            {
-                Assert.Throws<InvalidOperationException>(() => routes.MapHub<TestHub>("/chat"));
-            });
+            app.UseSignalR(routes => routes.MapHub<TestHub>("/chat"));
+            var hub = serviceProvider.GetRequiredService<HubLifetimeManager<TestHub>>();
+            Assert.NotNull(hub);
+            Assert.ThrowsAsync<InvalidOperationException>(() => hub.AddToGroupAsync(null, null));
+            Assert.ThrowsAsync<InvalidOperationException>(() => hub.OnConnectedAsync(null));
+            Assert.ThrowsAsync<InvalidOperationException>(() => hub.RemoveFromGroupAsync(null, null));
+            Assert.ThrowsAsync<InvalidOperationException>(() => hub.SendAllAsync(null, null));
+            Assert.ThrowsAsync<InvalidOperationException>(() => hub.SendAllExceptAsync(null, null, null));
+            Assert.ThrowsAsync<InvalidOperationException>(() => hub.SendConnectionAsync(null, null, null));
+            Assert.ThrowsAsync<InvalidOperationException>(() => hub.SendConnectionsAsync(null, null, null));
+            Assert.ThrowsAsync<InvalidOperationException>(() => hub.SendGroupAsync(null, null, null));
+            Assert.ThrowsAsync<InvalidOperationException>(() => hub.SendGroupExceptAsync(null, null, null, null));
+            Assert.ThrowsAsync<InvalidOperationException>(() => hub.SendGroupsAsync(null, null, null));
+            Assert.ThrowsAsync<InvalidOperationException>(() => hub.SendUserAsync(null, null, null));
+            Assert.ThrowsAsync<InvalidOperationException>(() => hub.SendUsersAsync(null, null, null));
         }
 
         [Fact]

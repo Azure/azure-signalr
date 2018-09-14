@@ -56,6 +56,13 @@ namespace Microsoft.Azure.SignalR
             return $"{Environment.MachineName}_{Guid.NewGuid():N}";
         }
 
+        public ConnectionDelegate ConnectionDelegate { get; set; }
+
+        public virtual void Start()
+        {
+            Start(ConnectionDelegate);
+        }
+
         public void Start(ConnectionDelegate connectionDelegate)
         {
             // Simply create a couple of connections which connect to Azure SignalR
