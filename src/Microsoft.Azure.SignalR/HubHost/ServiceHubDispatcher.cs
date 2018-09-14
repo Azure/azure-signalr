@@ -27,6 +27,8 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly string _userId;
         private static readonly string Name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
+        // Fix issue: https://github.com/Azure/azure-signalr/issues/198
+        // .NET Framework has restriction about reserved string as the header name like "User-Agent"
         private static Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "Asrs-UserAgent", ProductInfo.GetProductInfo() } };
 
         public ServiceHubDispatcher(IServiceProtocol serviceProtocol,
