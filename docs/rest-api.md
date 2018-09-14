@@ -23,7 +23,7 @@ The following diagram shows a typical server-less architecture of using Azure Si
 
 ![Typical Serverless Architecture](./images/serverless-arch.png)
 
-- `redirect` function will return negotiation response and redirect all clients to Azure SignalR Service.
+- `negotiate` function will return negotiation response and redirect all clients to Azure SignalR Service.
 - `broadcast` function will call Azure SignalR Service's REST API. Then SignalR Service will broadcast the message to all connected clients.
 
 In server-less architecture, clients still have persistent connections to Azure SignalR Service.
@@ -127,7 +127,7 @@ Otherwise SignalR Service can't find target connections from a given user id.
 This can be achieved by including a `nameid` claim in each client's JWT token when they are connecting to Azure SignalR Service.
 Then SignalR Service will use the value of `nameid` claim as the user id of each client connection.
 
-As shown in the [architecture section](#serverlss), the `redirect` function will return a redirect negotiation response to client.
+As shown in the [architecture section](#serverlss), the `negotiate` function will return a redirect negotiation response to client.
 A typical negotiation response looks like as folllowing. The `nameid` claim should be included in the access token.
 
     ```json
