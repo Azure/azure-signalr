@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly string _userId;
         private static readonly string Name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
-        private static Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "User-Agent", ProductInfo.GetProductInfo() } };
+        private static Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "Asrs-UserAgent", ProductInfo.GetProductInfo() } };
 
         public ServiceHubDispatcher(IServiceProtocol serviceProtocol,
             IServiceConnectionManager<THub> serviceConnectionManager,
