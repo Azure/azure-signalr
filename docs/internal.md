@@ -1,4 +1,4 @@
-# Internal of Azure SignalR Service
+# Internals of Azure SignalR Service
 
 - [Server Connections](#server-connections)
 - [Client Connections](#client-connections)
