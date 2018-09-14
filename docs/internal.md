@@ -17,16 +17,15 @@ More details are explained in below sections.
 
 When self-hosting ASP.NET Core SignalR, application server will listen for client connections and serve them directly.
 
-With SignalR Service, application server will not accept SignalR client connections anymore.
+With SignalR Service, the application server is no longer responsible for accepting persistent client connections.
 A `negotiate` endpoint will be exposed by Azure SignalR Service SDK for each hub.
 It will respond to clients' negotiate requests and redirect them to SignalR Service.
 Eventually, all clients will be connected to SignalR Service.
 Read more about it in [Client Connections](#client-connections) section.
 
-Right after application server is started, a few WebSocket connections are initiated to SignalR Service.
-By default the connection count is 5 and it is configurable.
-Apparently, client count will be far more than the connnection count between application server and SignalR Service.
-So messages from/to clients will be multiplexed into these connections.
+After application server is started, the Azure SignalR SDK will open 5 WebSocket connections to the SignalR Service.
+The number of used connections is configurable.
+Messages from/to clients will be multiplexed into these connections.
 
 These connections are supposed to be connected to SignalR Service all the time.
 If interrupted due to network issues, it will automatically start reconnecting.
@@ -56,11 +55,11 @@ Learn more details in ASP.NET Core SignalR's [transport protocols](https://githu
 ## Transport Data between Client and Server
 
 When a client is connected to SignalR Service, service runtime will find a server connection to serve this client.
-It only happens once and is a one-to-one mapping between client connections and server connections.
-The mapping is valid in SignalR Service until either the client connection or the server connection disconnects.
+- It only happens once and is a one-to-one mapping between client connections and server connections.
+- The mapping is valid in SignalR Service until either the client connection or the server connection disconnects.
 
-Then application server will receive an event with information of the new client.
-A logical client connection will be rebuilt in application server to start the processing pipeline of ASP.NET Core SignalR.
+Then the application server will receive an event with information of the new client.
+A logical client connection will be created in the application server to start the processing pipeline of ASP.NET Core SignalR.
 
 Now the data channel between a client and application server has been established.
 SignalR Service will transport data from the client to the pairing application server.
