@@ -117,13 +117,11 @@ namespace Owin
 
         private static void RunAzureSignalRCore(IAppBuilder builder, string applicationName, HubConfiguration configuration, ServiceOptions options)
         {
+            // applicationName is case insensitive, it will be lower cased in the service side
             if (string.IsNullOrEmpty(applicationName))
             {
                 throw new ArgumentException(nameof(applicationName), "Empty application name is not allowed.");
             }
-
-            // app name is case-insensitive, to keep consistency with hubs, always to lower-case
-            applicationName = applicationName.ToLower();
 
             var hubs = GetAvailableHubNames(configuration);
 
