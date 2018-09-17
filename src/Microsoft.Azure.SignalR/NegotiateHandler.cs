@@ -42,7 +42,10 @@ namespace Microsoft.Azure.SignalR
         private IEnumerable<Claim> BuildClaims(HttpContext context)
         {
             var userId = _userIdProvider.GetUserId(new ServiceHubConnectionContext(context));
-            yield return new Claim(Constants.ClaimType.UserId, userId ?? string.Empty);
+            if (userId != null)
+            {
+                yield return new Claim(Constants.ClaimType.UserId, userId);
+            }
 
             var claims = _claimsProvider == null ? context.User.Claims : _claimsProvider.Invoke(context);
             if (claims == null) yield break;
