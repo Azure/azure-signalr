@@ -13,10 +13,10 @@ namespace ChatSample
             Clients.All.SendAsync("broadcastMessage", name, message);
         }
 
-        [Authorize]
+        //[Authorize]
         public void Echo(string name, string message)
         {
-            Clients.Client(Context.ConnectionId).SendAsync("echo", name, message + " (echo from server)");
+            Clients.Client(Context.ConnectionId).SendAsync("echo", name, $"{message} (echo from server, Client IP: {Context.GetHttpContext().Connection.RemoteIpAddress})");
         }
     }
 }

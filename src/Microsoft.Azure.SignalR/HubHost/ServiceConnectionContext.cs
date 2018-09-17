@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -142,13 +143,17 @@ namespace Microsoft.Azure.SignalR
             var httpContextFeatures = new FeatureCollection();
             httpContextFeatures.Set<IHttpRequestFeature>(new HttpRequestFeature
             {
-                Headers = new HeaderDictionary((Dictionary<string, StringValues>) message.Headers),
+                Headers = new HeaderDictionary((Dictionary<string, StringValues>)message.Headers),
                 QueryString = message.QueryString,
                 Path = GetOriginalPath(message.QueryString)
             });
             httpContextFeatures.Set<IHttpAuthenticationFeature>(new HttpAuthenticationFeature
             {
                 User = User
+            });
+            httpContextFeatures.Set<IHttpConnectionFeature>(new HttpConnectionFeature
+            {
+                RemoteIpAddress = IPAddress.Parse(message.Headers["X-Real-IP"][0])
             });
 
             return new DefaultHttpContext(httpContextFeatures);
