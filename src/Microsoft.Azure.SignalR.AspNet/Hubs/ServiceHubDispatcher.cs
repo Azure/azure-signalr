@@ -61,7 +61,11 @@ namespace Microsoft.Azure.SignalR.AspNet
                 advancedClaims.Add(new Claim(Constants.ClaimType.AuthenticationType, authenticationType));
             }
 
-            advancedClaims.Add(new Claim(Constants.ClaimType.UserId, userId));
+            // UserId can be null in self-host Owin
+            if (userId != null)
+            {
+                advancedClaims.Add(new Claim(Constants.ClaimType.UserId, userId));
+            }
 
             // Pass appname through jwt token to client, so that when client establishes connection with service, it will also create a corresponding AppName-connection
             advancedClaims.Add(new Claim(Constants.ClaimType.AppName, _appName));

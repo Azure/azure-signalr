@@ -2,8 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
@@ -12,6 +15,8 @@ using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Options;
 using Microsoft.Owin.Hosting;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Owin;
 using Xunit;
 
@@ -82,17 +87,56 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             }
         }
 
-        [Fact]
-        public async Task TestNegotiateWithRunAzureSignalR()
+        [Theory]
+        [InlineData(typeof(NullUserIdProvider), null)]
+        [InlineData(typeof(CustomUserIdProvider), "hello")]
+        public async Task TestNegotiateWithRunAzureSignalR(Type providerType, string expectedUser)
         {
-            using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, ConnectionString)))
+            var hubConfiguration = new HubConfiguration();
+            hubConfiguration.Resolver.Register(typeof(IUserIdProvider), () => Activator.CreateInstance(providerType));
+            using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, ConnectionString, hubConfiguration)))
             {
                 var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
                 var response = await client.GetAsync("/negotiate");
 
-                // TODO: Currently NotImplemented
-                Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                var message = await response.Content.ReadAsStringAsync();
+                var responseObject = JsonConvert.DeserializeObject<ResponseMessage>(message);
+                Assert.Equal("2.0", responseObject.ProtocolVersion);
+                Assert.Equal("http://localhost/aspnetclient", responseObject.RedirectUrl);
+                Assert.NotNull(responseObject.AccessToken);
+                var token = JwtSecurityTokenHandler.ReadJwtToken(responseObject.AccessToken);
+                Assert.Equal(AppName, token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.AppName).Value);
+                var user = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.UserId)?.Value;
+                Assert.Equal(expectedUser, user);
             }
+        }
+
+        private sealed class NullUserIdProvider : IUserIdProvider
+        {
+            public string GetUserId(IRequest request)
+            {
+                return null;
+            }
+        }
+
+        private sealed class CustomUserIdProvider : IUserIdProvider
+        {
+            public string GetUserId(IRequest request)
+            {
+                return "hello";
+            }
+        }
+
+        private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
+
+        private sealed class ResponseMessage
+        {
+            public string ProtocolVersion { get; set; }
+
+            public string RedirectUrl { get; set; }
+
+            public string AccessToken { get; set; }
         }
     }
 }
