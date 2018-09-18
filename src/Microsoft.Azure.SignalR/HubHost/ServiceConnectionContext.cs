@@ -151,12 +151,10 @@ namespace Microsoft.Azure.SignalR
             {
                 User = User
             });
-            if (message.Headers.ContainsKey("X-Forwarded-For"))
+            if (message.Headers.ContainsKey("X-Forwarded-For") &&
+                IPAddress.TryParse(message.Headers["X-Forwarded-For"][0], out var address))
             {
-                httpContextFeatures.Set<IHttpConnectionFeature>(new HttpConnectionFeature
-                {
-                    RemoteIpAddress = IPAddress.Parse(message.Headers["X-Forwarded-For"][0])
-                });
+                httpContextFeatures.Set<IHttpConnectionFeature>(new HttpConnectionFeature { RemoteIpAddress = address });
             }
 
             return new DefaultHttpContext(httpContextFeatures);
