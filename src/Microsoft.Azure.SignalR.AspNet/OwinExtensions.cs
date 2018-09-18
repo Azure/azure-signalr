@@ -86,7 +86,7 @@ namespace Owin
         /// <param name="configuration">The hub configuration <see cref="HubConfiguration"/>.</param>
         public static void RunAzureSignalR(this IAppBuilder builder, string applicationName, HubConfiguration configuration)
         {
-            RunAzureSignalR(builder, applicationName, ConfigurationManager.ConnectionStrings[ServiceOptions.ConnectionStringDefaultKey]?.ConnectionString, configuration);
+            RunAzureSignalR(builder, applicationName, configuration, null);
         }
 
         /// <summary>
@@ -99,6 +99,18 @@ namespace Owin
         public static void RunAzureSignalR(this IAppBuilder builder, string applicationName, string connectionString, HubConfiguration configuration)
         {
             RunAzureSignalR(builder, applicationName, configuration, s => s.ConnectionString = connectionString);
+        }
+
+
+        /// <summary>
+        /// Adds Azure SignalR hubs to the app builder pipeline at "/signalr".
+        /// </summary>
+        /// <param name="builder">The app builder</param>
+        /// <param name="applicationName">The name of your app, it is case-incensitive</param>
+        /// <param name="optionsConfigure">A callback to configure the <see cref="ServiceOptions"/>.</param>
+        public static void RunAzureSignalR(this IAppBuilder builder, string applicationName, Action<ServiceOptions> optionsConfigure)
+        {
+            RunAzureSignalR(builder, applicationName, new HubConfiguration(), optionsConfigure);
         }
 
         /// <summary>
