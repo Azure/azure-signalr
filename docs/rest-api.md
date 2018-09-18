@@ -133,12 +133,12 @@ A typical negotiation response looks like as folllowing. The `nameid` claim shou
     ```json
     {
         "url":"https://test.service.signalr.net:5001/client/?hub=chat&...",
-        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOjE1MzY2NTYzMjYsImV4cCI6MTUzNjY1OTkyNiwiaWF0IjoxNTM2NjU2MzI2LCJhdWQiOiJodHRwczovL3Rlc3Quc2VydmljZS5zaWduYWxyLm5ldDo1MDAxL2NsaWVudC8_aHViPWNoYXQiLCJuYW1laWQiOiJ1c2VyLWlkIn0.k24D5kk7KeA_JKmxaEU0gGtF4JhOlyQ2VDmITHrzPtA" ,
+        "accessToken":"<a typical JWT token>",
         "availableTransports":[]
     }
     ```
 
-Read more about redirecting client to Azure SignalR Service at [here](TODO).
+Read more about redirecting client to Azure SignalR Service at [here](./internal.md#client-connections).
 
 ### Sample
 

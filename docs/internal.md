@@ -24,11 +24,13 @@ Eventually, all clients will be connected to SignalR Service.
 Read more about it in [Client Connections](#client-connections) section.
 
 After application server is started, the Azure SignalR SDK will open 5 WebSocket connections to the SignalR Service.
-The number of used connections is configurable.
+The number of used connections is configurable as described at [here](./use-signalr-service.md#connectioncount).
 Messages from/to clients will be multiplexed into these connections.
 
 These connections are supposed to be connected to SignalR Service all the time.
-If interrupted due to network issues, it will automatically start reconnecting.
+If a server connection is disconnected due to network issues,
+- all clients which are served by this server connection will be disconnected (read more about client and server pairing at [Transport Data between Client and Server](#transport) section);
+- the server connection will automatically start reconnecting.
 
 ## Client Connections
 
@@ -42,7 +44,7 @@ Typical redirect response looks like as following:
     ```json
     {
         "url":"https://test.service.signalr.net:5001/client/?hub=chat&...",
-        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOjE1MzY2NTYzMjYsImV4cCI6MTUzNjY1OTkyNiwiaWF0IjoxNTM2NjU2MzI2LCJhdWQiOiJodHRwczovL3Rlc3Quc2VydmljZS5zaWduYWxyLm5ldDo1MDAxL2NsaWVudC8_aHViPWNoYXQiLCJuYW1laWQiOiJ1c2VyLWlkIn0.k24D5kk7KeA_JKmxaEU0gGtF4JhOlyQ2VDmITHrzPtA" ,
+        "accessToken":"<a typical JWT token>",
         "availableTransports":[]
     }
     ```
