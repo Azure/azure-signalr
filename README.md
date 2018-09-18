@@ -27,6 +27,7 @@ More samples on how to use Azure SignalR Service can be found at [here](https://
 
 For more information, see the following resources.
 
+- [Use SignalR Service](./docs/use-signalr-service.md)
 - [REST API support](./docs/rest-api.md)
 
 ## Developer Getting Started

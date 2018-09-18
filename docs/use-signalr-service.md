@@ -45,14 +45,14 @@ There are two approaches to configure SignalR Service's connection string in you
 
     ```csharp
     services.AddSignalR()
-            .AddAzureSignalR("Endpoint=...;AccessKey=...;");
+            .AddAzureSignalR(<replace with your connection string>);
     ```
 
     or 
 
     ```csharp
     services.AddSignalR()
-            .AddAzureSignalR(options => options.ConnectionString = "Endpoint=...;AccessKey=...;");
+            .AddAzureSignalR(options => options.ConnectionString = <replace with your connection string>);
     ```
 
 ## Configure Service Options
