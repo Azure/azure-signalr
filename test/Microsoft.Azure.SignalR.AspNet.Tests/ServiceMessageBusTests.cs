@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 Assert.True(result.TryGetValue(expectedHubs[i], out var current));
                 var message = current as BroadcastDataMessage;
                 Assert.NotNull(message);
-                Assert.Equal($"{{\"C\":\"Cursor\",\"M\":[{messageValue}]}}", GetSingleFramePayload(message.Payloads["json"]));
+                Assert.Equal(messageValue, message.Payloads["json"].GetSingleFramePayload());
             }
         }
 
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 Assert.NotNull(message);
 
                 Assert.Equal(expectedConnectionIds[i], message.ConnectionId);
-                Assert.Equal($"{{\"C\":\"Cursor\",\"M\":[{messageValue}]}}", GetSingleFramePayload(message.Payload.First));
+                Assert.Equal(messageValue, message.Payload.First.GetSingleFramePayload());
             }
         }
 
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var message = current as GroupBroadcastDataMessage;
                 Assert.NotNull(message);
                 Assert.Equal(message.GroupName, expectedGroups[i]);
-                Assert.Equal($"{{\"C\":\"Cursor\",\"M\":[{messageValue}]}}", GetSingleFramePayload(message.Payloads["json"]));
+                Assert.Equal(messageValue, message.Payloads["json"].GetSingleFramePayload());
             }
         }
 
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 Assert.NotNull(message);
 
                 Assert.Equal(expectedUsers[i], message.UserId);
-                Assert.Equal($"{{\"C\":\"Cursor\",\"M\":[{messageValue}]}}", GetSingleFramePayload(message.Payloads["json"]));
+                Assert.Equal(messageValue, message.Payloads["json"].GetSingleFramePayload());
             }
         }
 
@@ -270,15 +270,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var inner = Encoding.UTF8.GetBytes(message);
             var singleFrameMessage = new ConnectionDataMessage(string.Empty, inner);
             return DefaultServiceProtocol.GetMessageBytes(singleFrameMessage);
-        }
-
-        private static string GetSingleFramePayload(ReadOnlyMemory<byte> payload)
-        {
-            var buffer = new ReadOnlySequence<byte>(payload);
-            DefaultServiceProtocol.TryParseMessage(ref buffer, out var message);
-            var frame = message as ConnectionDataMessage;
-            Assert.NotNull(frame);
-            return Encoding.UTF8.GetString(frame.Payload.First.ToArray());
         }
     }
 }

@@ -20,6 +20,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private const char DotChar = '.';
 
         private readonly HashSet<string> _hubNameWithDots = new HashSet<string>();
+        private readonly HashSet<string> _hubs = new HashSet<string>();
 
         private readonly JsonSerializer _serializer;
         private readonly IMemoryPool _pool;
@@ -31,7 +32,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             _serviceProtocol = resolver.Resolve<IServiceProtocol>() ?? throw new ArgumentNullException(nameof(IServiceProtocol));
             _pool = resolver.Resolve<IMemoryPool>() ?? throw new ArgumentNullException(nameof(IMemoryPool));
 
-            foreach(var hub in hubs)
+            // Hubs are fetched from IHubManager.GetHubs()'s Name property, and by default it is the type Name instead of FullName, or it is the value of HubName attribute
+            foreach (var hub in hubs)
             {
                 // It is possible that the hub contains dot character, while the fully qualified name is formed as {HubName}.{Name} (Name can be connectionId or userId or groupId)
                 // So keep a copy of the hub names containing dots and return all the possible combinations when the fully qualified name is provided
@@ -39,6 +41,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                 {
                     _hubNameWithDots.Add(hub);
                 }
+
+                _hubs.Add(hub);
             }
         }
 
@@ -130,7 +134,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private ReadOnlyMemory<byte> GetPayload(Message message)
         {
-            IJsonWritable value = new PersistentResponse(m => false, tw => tw.Write("Cursor"))
+            IJsonWritable value = new PersistentResponse(m => false, tw => tw.Write("0"))
             {
                 Messages = new List<ArraySegment<Message>>
                 {
@@ -169,8 +173,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             var hubName = fullName.Substring(0, index);
-            var name = fullName.Substring(index + 1);
-            yield return (hubName, name);
+            if (_hubs.Contains(hubName))
+            {
+                var name = fullName.Substring(index + 1);
+                yield return (hubName, name);
+            }
         }
 
         private static IReadOnlyList<string> GetExcludedIds(string filter)
