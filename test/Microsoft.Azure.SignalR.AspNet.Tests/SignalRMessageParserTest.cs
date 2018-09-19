@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.AspNet.SignalR;
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             };
 
             var connectionId = GenerateRandomName();
-            var message = CreateMessage(PrefixHelper.GetConnectionId(connectionId), command);
+            var message = SignalRMessageUtility.CreateMessage(PrefixHelper.GetConnectionId(connectionId), command);
 
             var msgs = parser.GetMessages(message).ToList();
             Assert.Single(msgs);
@@ -59,6 +60,32 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             Assert.NotNull(msg);
             Assert.Equal(connectionId, msg.ConnectionId);
             Assert.Equal(groupName, msg.GroupName);
+        }
+
+        [Theory]
+        [InlineData(CommandType.AddToGroup, "")]
+        [InlineData(CommandType.AddToGroup, "a")]
+        [InlineData(CommandType.AddToGroup, "c-")]
+        [InlineData(CommandType.AddToGroup, "h-a")]
+        [InlineData(CommandType.RemoveFromGroup, "")]
+        [InlineData(CommandType.RemoveFromGroup, "a")]
+        [InlineData(CommandType.RemoveFromGroup, "c-")]
+        [InlineData(CommandType.RemoveFromGroup, "h-a")]
+        public void TestAddToGroupCommandMessageWithInvalidKeyThrows(CommandType type, string invalidKey)
+        {
+            var hubs = new List<string> { };
+            var parser = new SignalRMessageParser(hubs, _resolver);
+            var groupName = GenerateRandomName();
+            var command = new Command
+            {
+                CommandType = type,
+                Value = groupName,
+                WaitForAck = true
+            };
+
+            var message = SignalRMessageUtility.CreateMessage(invalidKey, command);
+
+            Assert.Throws<InvalidDataException>(() => parser.GetMessages(message).ToList());
         }
 
         [Fact]
@@ -75,7 +102,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             };
 
             var connectionId = GenerateRandomName();
-            var message = CreateMessage(PrefixHelper.GetConnectionId(connectionId), command);
+            var message = SignalRMessageUtility.CreateMessage(PrefixHelper.GetConnectionId(connectionId), command);
 
             var msgs = parser.GetMessages(message).ToList();
             Assert.Single(msgs);
@@ -101,26 +128,34 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             };
 
             var connectionId = GenerateRandomName();
-            var message = CreateMessage(PrefixHelper.GetConnectionId(connectionId), command);
+            var message = SignalRMessageUtility.CreateMessage(PrefixHelper.GetConnectionId(connectionId), command);
 
             var msgs = parser.GetMessages(message).ToList();
             Assert.Empty(msgs);
         }
 
+
         [Theory]
-        [InlineData("msg")]
-        [InlineData(null)]
-        [InlineData("")]
-        public void TestHubMessage(string input)
+        [InlineData("connection1", "msg")]
+        [InlineData("a.connection1", null)]
+        [InlineData("h-a.connection1", "")]
+        [InlineData("h-", "")]
+        [InlineData("", "", typeof(NotSupportedException))]
+        public void TestHubMessage(string connectionId, string input, Type exceptionType = null)
         {
-            var hubs = new List<string> { };
+            var hubs = new List<string> { "h-", "a", "a.connection1" };
             var parser = new SignalRMessageParser(hubs, _resolver);
             var groupName = GenerateRandomName();
 
-            var connectionId = GenerateRandomName();
-            var message = CreateMessage(PrefixHelper.GetHubName(connectionId), input);
+            var message = SignalRMessageUtility.CreateMessage(PrefixHelper.GetHubName(connectionId), input);
             var excludedConnectionIds = new string[] { GenerateRandomName(), GenerateRandomName() };
             message.Filter = GetFilter(excludedConnectionIds.Select(s => PrefixHelper.GetConnectionId(s)).ToList());
+
+            if (exceptionType != null)
+            {
+                Assert.Throws(exceptionType, () => parser.GetMessages(message).ToList());
+                return;
+            }
 
             var msgs = parser.GetMessages(message).ToList();
             Assert.Single(msgs);
@@ -131,25 +166,34 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Theory]
-        [InlineData("msg", "hub1")]
-        [InlineData(null, "hub.hub1")]
-        [InlineData("", "hub.hub1.h.hub2")]
-        public void TestHubConnectionMessage(string input, string hub)
+        [InlineData("hc-hub.hub1", null, "hub1")]
+        [InlineData("hc-hub.hub1.h....user1", null, "user1")]
+        [InlineData("hc-hub1.connection1", "", "connection1")]
+        [InlineData("hub1.connection1", "", "connection1")]
+        [InlineData("key", "", null, typeof(ArgumentException))]
+        [InlineData("", "", null, typeof(NotSupportedException))]
+        [InlineData("hc-hub1", "msg", null, typeof(ArgumentException))]
+        public void TestHubConnectionMessage(string connectionId, string input, string expectedId, Type exceptionType = null)
         {
-            var hubs = new List<string> { };
+            var hubs = new List<string> { "hub", "hub1", "hub.hub1", "h", "hub.hub1.h.hub2", "hub.hub1.h" };
             var parser = new SignalRMessageParser(hubs, _resolver);
             var groupName = GenerateRandomName();
 
-            var connectionId = GenerateRandomName();
-            var message = CreateMessage(PrefixHelper.GetHubConnectionId(hub + "." + connectionId), input);
+            var message = SignalRMessageUtility.CreateMessage(PrefixHelper.GetHubConnectionId(connectionId), input);
             var excludedConnectionIds = new string[] { GenerateRandomName(), GenerateRandomName() };
             message.Filter = GetFilter(excludedConnectionIds.Select(s => PrefixHelper.GetConnectionId(s)).ToList());
+
+            if (exceptionType != null)
+            {
+                Assert.Throws(exceptionType, () => parser.GetMessages(message).ToList());
+                return;
+            }
 
             var msgs = parser.GetMessages(message).ToList();
             Assert.Single(msgs);
             var msg = msgs[0].Message as ConnectionDataMessage;
             Assert.NotNull(msg);
-            Assert.Equal(connectionId, msg.ConnectionId);
+            Assert.Equal(expectedId, msg.ConnectionId);
             Assert.Equal(input, msg.Payload.First.GetSingleFramePayload());
         }
 
@@ -163,7 +207,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var parser = new SignalRMessageParser(hubs, _resolver);
             var groupName = GenerateRandomName();
             var fullName = PrefixHelper.GetHubGroupName(hub + "." + groupName);
-            var message = CreateMessage(fullName, input);
+            var message = SignalRMessageUtility.CreateMessage(fullName, input);
             var excludedConnectionIds = new string[] { GenerateRandomName(), GenerateRandomName() };
             message.Filter = GetFilter(excludedConnectionIds.Select(s => PrefixHelper.GetConnectionId(s)).ToList());
 
@@ -179,18 +223,23 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Theory]
-        [InlineData("msg", "hub1")]
-        [InlineData(null, "hub.hub1")]
-        [InlineData("", "hub2.hub1.h.hub2")]
-        public void TestHubUserMessage(string input, string hub)
+        [InlineData("user", "msg", "hub1")]
+        [InlineData(".", null, "hub.hub1")]
+        [InlineData("..hub1.user1", "", "hub2.hub1.h.hub2")]
+        public void TestHubUserMessage(string userName, string input, string hub, Type exceptionType = null)
         {
-            var hubs = new List<string> { "hub1", "hub.hub1", "hub2.hub1.h.hub2" };
+            var hubs = new List<string> { "hub1", "hub.hub1", "hub2.hub1.h.hub2", ".", ".." };
             var parser = new SignalRMessageParser(hubs, _resolver);
-            var userName = GenerateRandomName();
 
-            var message = CreateMessage(PrefixHelper.GetHubUserId(hub + "." + userName), input);
+            var message = SignalRMessageUtility.CreateMessage(PrefixHelper.GetHubUserId(hub + "." + userName), input);
             var excludedConnectionIds = new string[] { GenerateRandomName(), GenerateRandomName() };
             message.Filter = GetFilter(excludedConnectionIds.Select(s => PrefixHelper.GetConnectionId(s)).ToList());
+
+            if (exceptionType != null)
+            {
+                Assert.Throws(exceptionType, () => parser.GetMessages(message).ToList());
+                return;
+            }
 
             var msgs = parser.GetMessages(message).ToList();
             Assert.Single(msgs);
@@ -203,10 +252,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public void TestHubUserMessageWithMultiplePossiblities()
         {
-            var hubs = new List<string> { "hub", "hub.hub1", "hub.hub1.h.hub2" };
+            var hubs = new List<string> { "hub", "hub.hub1", "hub.hub1.h.hub2", ".", "......" };
             var parser = new SignalRMessageParser(hubs, _resolver);
             var fullName = "hub.hub1.h.hub2.user1";
-            var message = CreateMessage(PrefixHelper.GetHubUserId(fullName), null);
+            var message = SignalRMessageUtility.CreateMessage(PrefixHelper.GetHubUserId(fullName), null);
 
             var msgs = parser.GetMessages(message).ToList();
             Assert.Equal(3, msgs.Count);
@@ -224,67 +273,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         private string GenerateRandomName()
         {
             return Guid.NewGuid().ToString("N");
-        }
-
-        private Message CreateMessage(string key, object value)
-        {
-            ArraySegment<byte> messageBuffer = GetMessageBuffer(value);
-
-            var message = new Message(Guid.NewGuid().ToString("N"), key, messageBuffer);
-
-            var command = value as Command;
-            if (command != null)
-            {
-                // Set the command id
-                message.CommandId = command.Id;
-                message.WaitForAck = command.WaitForAck;
-            }
-
-            return message;
-        }
-
-        private ArraySegment<byte> GetMessageBuffer(object value)
-        {
-            ArraySegment<byte> messageBuffer;
-            // We can't use "as" like we do for Command since ArraySegment is a struct
-            if (value is ArraySegment<byte>)
-            {
-                // We assume that any ArraySegment<byte> is already JSON serialized
-                messageBuffer = (ArraySegment<byte>)value;
-            }
-            else
-            {
-                messageBuffer = SerializeMessageValue(value);
-            }
-            return messageBuffer;
-        }
-
-        private ArraySegment<byte> SerializeMessageValue(object value)
-        {
-            using (var writer = new MemoryPoolTextWriter(_pool))
-            {
-
-                var selfSerializer = value as IJsonWritable;
-
-                if (selfSerializer != null)
-                {
-                    selfSerializer.WriteJson(writer);
-                }
-                else
-                {
-                    _serializer.Serialize(writer, value);
-                }
-
-                writer.Flush();
-
-                var data = writer.Buffer;
-
-                var buffer = new byte[data.Count];
-
-                Buffer.BlockCopy(data.Array, data.Offset, buffer, 0, data.Count);
-
-                return new ArraySegment<byte>(buffer);
-            }
         }
 
         private static IDependencyResolver GetDefaultResolver()

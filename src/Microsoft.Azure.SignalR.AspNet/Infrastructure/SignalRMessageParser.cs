@@ -200,9 +200,10 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private static bool TryGetName(string qualifiedName, string prefix, out string name)
         {
-            if (qualifiedName.StartsWith(prefix))
+            if (qualifiedName.Length > prefix.Length && qualifiedName.StartsWith(prefix))
             {
                 name = qualifiedName.Substring(prefix.Length);
+
                 return true;
             }
 
@@ -217,7 +218,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 return name;
             }
 
-            throw new InvalidDataException($"Invalid name: {qualifiedName} does not start with {prefix}.");
+            throw new InvalidDataException($"{qualifiedName} is not valid.");
         }
     }
 }

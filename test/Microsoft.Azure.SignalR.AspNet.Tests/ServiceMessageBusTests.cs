@@ -48,6 +48,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new object[]
                 {
                     "h-a.b", "hello", new string[] { "h-c1", "h", "a.b" }, new string[] { "a.b" },
+                },
+                // hub connection "..." gets this connection message
+                new object[]
+                {
+                    "h-...", "hello", new string[] { "h-c1", "h", "a.b", "...", "..", "." }, new string[] { "..." },
                 }
             };
 
@@ -61,7 +66,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             using (var bus = new ServiceMessageBus(dr))
             {
-                await bus.Publish("test", messageKey, messageValue);
+                await bus.Publish(SignalRMessageUtility.CreateMessage(messageKey, messageValue));
             }
 
             Assert.Equal(expectedHubs.Length, result.Count);
@@ -99,7 +104,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             using (var bus = new ServiceMessageBus(dr))
             {
-                await bus.Publish("test", messageKey, messageValue);
+                await bus.Publish(SignalRMessageUtility.CreateMessage(messageKey, messageValue));
             }
 
             Assert.Equal(expectedHubs.Length, result.Count);
@@ -141,7 +146,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             using (var bus = new ServiceMessageBus(dr))
             {
-                await bus.Publish("test", messageKey, messageValue);
+                await bus.Publish(SignalRMessageUtility.CreateMessage(messageKey, messageValue));
             }
 
             Assert.Equal(expectedHubs.Length, result.Count);
@@ -181,7 +186,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             using (var bus = new ServiceMessageBus(dr))
             {
-                await bus.Publish("test", messageKey, messageValue);
+                await bus.Publish(SignalRMessageUtility.CreateMessage(messageKey, messageValue));
             }
 
             Assert.Equal(expectedHubs.Length, result.Count);

@@ -19,6 +19,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public ServiceMessageBus(IDependencyResolver resolver) : base(resolver)
         {
+            // TODO: find a more decent way instead of DI, it can be easily overriden
             _serviceConnectionManager = resolver.Resolve<IServiceConnectionManager>() ?? throw new ArgumentNullException(nameof(IServiceConnectionManager));
             _parser = resolver.Resolve<IMessageParser>() ?? throw new ArgumentNullException(nameof(IMessageParser));
             _ackHandler = resolver.Resolve<IAckHandler>() ?? throw new ArgumentNullException(nameof(IAckHandler));
@@ -57,8 +58,14 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 // For group related messages, make sure messages are written to the same partition
                 case JoinGroupMessage joinGroupMessage:
-                    await connection.WriteAsync(joinGroupMessage.GroupName, joinGroupMessage);
-                    _ackHandler.TriggerAck(appMessage.RawMessage.CommandId);
+                    try
+                    {
+                        await connection.WriteAsync(joinGroupMessage.GroupName, joinGroupMessage);
+                    }
+                    finally
+                    {
+                        _ackHandler.TriggerAck(appMessage.RawMessage.CommandId);
+                    }
                     break;
                 case LeaveGroupMessage leaveGroupMessage:
                     await connection.WriteAsync(leaveGroupMessage.GroupName, leaveGroupMessage);
