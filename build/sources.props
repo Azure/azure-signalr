@@ -2,7 +2,7 @@
   <Import Project="$(DotNetRestoreSourcePropsPath)" Condition="'$(DotNetRestoreSourcePropsPath)' != ''"/>
 
   <PropertyGroup Label="RestoreSources">
-    <RestoreSources>$(DotNetRestoreSources)</RestoreSources>
+    <RestoreSources>$(DotNetRestoreSources);https://dotnet.myget.org/F/dotnet-core/api/v3/index.json;</RestoreSources>
     <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
       $(RestoreSources);
       https://api.nuget.org/v3/index.json;

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Configuration;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// <summary>
         /// Gets or sets the connection string of Azure SignalR Service instance.
         /// </summary>
-        public string ConnectionString { get; set; } = null;
+        public string ConnectionString { get; set; } = GetDefaultConnectionString();
 
         /// <summary>
         /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 5.
@@ -33,5 +34,11 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// Default value is one hour.
         /// </summary>
         public TimeSpan AccessTokenLifetime { get; set; } = DefaultAccessTokenLifetime;
+
+        private static string GetDefaultConnectionString()
+        {
+            return ConfigurationManager.ConnectionStrings[ConnectionStringDefaultKey]?.ConnectionString
+                ?? ConfigurationManager.AppSettings[ConnectionStringDefaultKey];
+        }
     }
 }
