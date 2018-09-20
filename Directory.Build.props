@@ -9,6 +9,13 @@
 
   <PropertyGroup>
     <Product>Azure SignalR</Product>
+    <Authors>Microsoft</Authors>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <Owners>microsoft,azure-sdk</Owners>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/Azure/azure-signalr/dev/LICENSE</PackageLicenseUrl>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageProjectUrl>https://aka.ms/signalr_service</PackageProjectUrl>
+    <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
     <RepositoryUrl>https://github.com/azure/azure-signalr</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryRoot>$(MSBuildThisFileDirectory)</RepositoryRoot>
@@ -17,5 +24,6 @@
     <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <LangVersion>latest</LangVersion>
+    <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>
   </PropertyGroup>
 </Project>

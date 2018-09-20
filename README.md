@@ -1,39 +1,44 @@
-# Microsoft Azure SignalR SDK for .NET
+# Azure SignalR Service SDK for .NET
 
-Microsoft Azure SignalR SDK for .NET helps you to instantly build Azure applications with real-time messaging functionality, taking advantage of scalable cloud computing resources.
+Azure SignalR Service SDK for .NET helps you to instantly build Azure applications with real-time messaging functionality, taking advantage of scalable cloud computing resources.
 
 This repository contains the open source subset of the .NET SDK.
 
+## Build Status
+
+[![Travis build status](https://img.shields.io/travis/Azure/azure-signalr.svg?label=travis-ci&branch=dev&style=flat-square)](https://travis-ci.org/Azure/azure-signalr/branches)
+[![AppVeyor build status](https://img.shields.io/appveyor/ci/vicancy/azure-signalr.svg?label=appveyor&style=flat-square)](https://ci.appveyor.com/project/vicancy/azure-signalr)
+
 ## Nuget Packages
 
-Package Name | Target Framework | Version
----|---|---
-Microsoft.Azure.SignalR | .NET Standard 2.0 | ![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.svg)
-Microsoft.Azure.SignalR.Owin | .NET Framework 4.6.1 | ![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.Owin.svg)
+Package Name | Target Framework | NuGet | MyGet
+---|---|---|---
+Microsoft.Azure.SignalR | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR)
+Microsoft.Azure.SignalR.Protocols | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Protocols.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Protocols) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.Protocols.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Protocols)
 
 ## Getting Started
 
-1. Add below MyGet feed URL as a package source in your `NuGet.config`.
+Azure SignalR Service is based on [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) framework. And SignalR Service SDK also depends on ASP.NET Core SignalR packages. If you are not familiar with ASP.NET Core SignalR yet, we recommend you to read [ASP.NET Core SignalR's documentation](https://docs.microsoft.com/en-us/aspnet/core/signalr/) first.
 
-    `https://www.myget.org/F/azure-signalr-dev/api/v3/index.json`
+Follow the tutorial at [here](https://aka.ms/signalr_service_doc) to get started with Azure SignalR Service.
 
-2. Add Azure SignalR package to your project.
+More samples on how to use Azure SignalR Service can be found at [here](https://github.com/aspnet/AzureSignalR-samples/).
 
-    I. For ASP.NET Core, run below command
-    ```bash
-    dotnet add package Microsoft.Azure.SignalR
-    ```
+## Next Steps
 
-    II. For ASP.NET MVC with OWIN, run below command
-    ```powershell
-    install-package Microsoft.AspNet.SignalR.Owin 
-    ```
+For more information, see the following resources.
 
-## API Reference
+- [REST API support](./docs/rest-api.md)
 
-Detailed API Reference is at [here](./docs/api-reference.md).
+## Developer Getting Started
 
-## Contributing
+### Building from source
+
+Run `build.cmd` or `build.sh` without arguments for a complete build including tests.
+See [Building documents](https://github.com/aspnet/Home/wiki/Building-from-source) for more details.
+
+
+### Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us

@@ -3,34 +3,71 @@
 
 using System;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Core;
-using Microsoft.AspNetCore.SignalR.Internal;
-using Microsoft.AspNetCore.SignalR.Internal.Protocol;
 using Microsoft.Azure.SignalR;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// Extension methods for <see cref="ISignalRServerBuilder"/>.
+    /// </summary>
     public static class AzureSignalRDependencyInjectionExtensions
     {
-        public static IServiceCollection AddAzureSignalR(this IServiceCollection services,
-            Action<HubHostOptions> configure = null)
+        /// <summary>
+        /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
+        /// </summary>
+        /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
+        /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
+        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder)
         {
-            if (configure != null) services.Configure(configure);
-            
-            services.AddSingleton(typeof(HubLifetimeManager<>), typeof(HubHostLifetimeManager<>));
-            services.AddSingleton(typeof(IHubProtocolResolver), typeof(DefaultHubProtocolResolver));
-            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHubProtocol, JsonHubProtocol>());
-            services.AddSingleton(typeof(IHubContext<>), typeof(HubContext<>));
-            services.AddSingleton(typeof(IUserIdProvider), typeof(DefaultUserIdProvider));
-            services.AddScoped(typeof(IHubActivator<>), typeof(DefaultHubActivator<>));
+            builder.Services.AddSingleton<IConfigureOptions<ServiceOptions>, ServiceOptionsSetup>();
+            return builder.AddAzureSignalRCore();
+        }
 
-            services.AddSingleton(typeof(HubDispatcher<>), typeof(HubHostDispatcher<>));
-            services.AddSingleton(typeof(HubHost<>));
+        /// <summary>
+        /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
+        /// </summary>
+        /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
+        /// <param name="connectionString">The connection string of an Azure SignalR Service instance.</param>
+        /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
+        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, string connectionString)
+        {
+            return builder.AddAzureSignalR(options =>
+            {
+                options.ConnectionString = connectionString;
+            });
+        }
 
-            services.AddAuthorization();
+        /// <summary>
+        /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
+        /// </summary>
+        /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
+        /// <param name="configure">A callback to configure the <see cref="ServiceOptions"/>.</param>
+        /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
+        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, Action<ServiceOptions> configure)
+        {
+            builder.AddAzureSignalR()
+                   .Services.Configure(configure);
 
-            return services;
+            return builder;
+        }
+
+        private static ISignalRServerBuilder AddAzureSignalRCore(this ISignalRServerBuilder builder)
+        {
+            builder.Services
+                .AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManager<>))
+                .AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol))
+                .AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager))
+                .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
+                .AddSingleton(typeof(IServiceEndpointProvider), typeof(ServiceEndpointProvider))
+                .AddSingleton(typeof(ServiceHubDispatcher<>))
+                .AddSingleton(typeof(AzureSignalRMarkerService))
+                .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
+                .AddSingleton<IHostedService, HeartBeat>()
+                .AddSingleton<NegotiateHandler>();
+            return builder;
         }
     }
 }

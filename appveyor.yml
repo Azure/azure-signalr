@@ -1,0 +1,4 @@
+version: 1.0.{build}
+build_script:
+- cmd: ./build.cmd -ci /p:BuildNumber=%APPVEYOR_BUILD_NUMBER%
+test: off
