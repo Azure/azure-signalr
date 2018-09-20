@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [InlineData(typeof(CustomUserIdProvider), CustomUserId)]
-        [InlineData(typeof(NullUserIdProvider), "")]
+        [InlineData(typeof(NullUserIdProvider), null)]
         [InlineData(typeof(DefaultUserIdProvider), DefaultUserId)]
         public void GenerateNegotiateResponseWithUserId(Type type, string expectedUserId)
         {
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Empty(negotiateResponse.AvailableTransports);
 
             var token = JwtSecurityTokenHandler.ReadJwtToken(negotiateResponse.AccessToken);
-            Assert.Equal(expectedUserId, token.Claims.First(x => x.Type == Constants.ClaimType.UserId).Value);
+            Assert.Equal(expectedUserId, token.Claims.FirstOrDefault(x => x.Type == Constants.ClaimType.UserId)?.Value);
         }
 
         [Theory]
