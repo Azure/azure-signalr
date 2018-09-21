@@ -6,8 +6,8 @@ This repository contains the open source subset of the .NET SDK.
 
 ## Build Status
 
-[![Travis build status](https://img.shields.io/travis/Azure/azure-signalr.svg?label=travis-ci&branch=dev&style=flat-square)](https://travis-ci.org/Azure/azure-signalr/branches)
-[![AppVeyor build status](https://img.shields.io/appveyor/ci/vicancy/azure-signalr.svg?label=appveyor&style=flat-square)](https://ci.appveyor.com/project/vicancy/azure-signalr)
+[![Travis build status](https://img.shields.io/travis/Azure/azure-signalr.svg?label=travis-ci&branch=master&style=flat-square)](https://travis-ci.org/Azure/azure-signalr/branches)
+[![AppVeyor build status](https://img.shields.io/appveyor/ci/vicancy/azure-signalr/master.svg?label=appveyor&style=flat-square)](https://ci.appveyor.com/project/vicancy/azure-signalr)
 
 ## Nuget Packages
 
