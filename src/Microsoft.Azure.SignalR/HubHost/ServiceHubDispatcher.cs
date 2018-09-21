@@ -110,6 +110,11 @@ namespace Microsoft.Azure.SignalR
 
         public Task DisposeAsync(ConnectionContext connection)
         {
+            if (connection == null)
+            {
+                return Task.CompletedTask;
+            }
+            
             return ((HttpConnection)connection).DisposeAsync();
         }
 
