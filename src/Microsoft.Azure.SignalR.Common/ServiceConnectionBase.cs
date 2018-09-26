@@ -33,12 +33,16 @@ namespace Microsoft.Azure.SignalR
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
         private readonly IServiceProtocol _serviceProtocol;
 
+        private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+
         protected readonly ILogger _logger;
         protected readonly string _connectionId;
 
         private bool _isStopped;
         private long _lastReceiveTimestamp;
         protected ConnectionContext _connection;
+
+        public Task WaitForConnectionStart => _serviceConnectionStartTcs.Task;
 
         public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId)
         {
@@ -57,8 +61,11 @@ namespace Microsoft.Azure.SignalR
                 // If we are not able to start, we will quit this connection.
                 if (!await StartAsyncCore())
                 {
+                    _serviceConnectionStartTcs.TrySetResult(false);
                     return;
                 }
+
+                _serviceConnectionStartTcs.TrySetResult(true);
 
                 await ProcessIncomingAsync();
             }

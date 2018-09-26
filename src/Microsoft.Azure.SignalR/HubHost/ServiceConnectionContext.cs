@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -142,7 +143,7 @@ namespace Microsoft.Azure.SignalR
             var httpContextFeatures = new FeatureCollection();
             httpContextFeatures.Set<IHttpRequestFeature>(new HttpRequestFeature
             {
-                Headers = new HeaderDictionary((Dictionary<string, StringValues>) message.Headers),
+                Headers = new HeaderDictionary((Dictionary<string, StringValues>)message.Headers),
                 QueryString = message.QueryString,
                 Path = GetOriginalPath(message.QueryString)
             });
@@ -150,6 +151,11 @@ namespace Microsoft.Azure.SignalR
             {
                 User = User
             });
+            if (message.Headers.ContainsKey("X-Forwarded-For") &&
+                IPAddress.TryParse(message.Headers["X-Forwarded-For"][0], out var address))
+            {
+                httpContextFeatures.Set<IHttpConnectionFeature>(new HttpConnectionFeature { RemoteIpAddress = address });
+            }
 
             return new DefaultHttpContext(httpContextFeatures);
         }
