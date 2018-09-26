@@ -1,5 +1,8 @@
 # Internals of Azure SignalR Service
 
+> NOTE: This document describes the use of Azure SignalR Service with ASP.NET Core SignalR for now.
+> Documentation about ASP.NET SignalR support will be added shortly.
+
 - [Server Connections](#server-connections)
 - [Client Connections](#client-connections)
 - [Transport Data between Client and Server](#transport)
