@@ -19,7 +19,7 @@ Microsoft.Azure.SignalR.AspNet | .NET Standard 2.0 | [![NuGet](https://img.shiel
 
 ## Getting Started
 
-Azure SignalR Service supports both [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) and [ASP.NET SignalR](https://github.com/SignalR/SignalR). The support for [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) is generally availble, while the support for [ASP.NET SignalR](https://github.com/SignalR/SignalR) is in preview stage at this time.
+Azure SignalR Service is based on [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) framework, and it supports both [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) and [ASP.NET SignalR](https://github.com/SignalR/SignalR) applications. The support for [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) is generally available, while the support for [ASP.NET SignalR](https://github.com/SignalR/SignalR) is in preview stage at this time.
 
 ### ASP.NET Core SignalR
 Package [Microsoft.Azure.SignalR](https://www.nuget.org/packages/Microsoft.Azure.SignalR) is the one to use when you are using [ASP.NET Core SignalR](https://github.com/aspnet/SignalR). If you are not familiar with ASP.NET Core SignalR yet, we recommend you to read [ASP.NET Core SignalR's documentation](https://docs.microsoft.com/en-us/aspnet/core/signalr/) first.
