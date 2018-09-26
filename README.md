@@ -39,19 +39,19 @@ Samples on how to use Azure SignalR Service can be found [here](https://github.c
 
 ## Next Steps
 
-For more information, see the following resources.
+The following documents describe more details about Azure SignalR Service.
 
 - [Use Azure SignalR Service](./docs/use-signalr-service.md)
 - [REST API support](./docs/rest-api.md)
 - [Azure SignalR Service Internals](./docs/internal.md)
+- [FAQ](./docs/faq.md)
 
-## Developer Getting Started
+Contributions are highly welcome. Keep reading if you want to contribute to our repository.
 
 ### Building from source
 
 Run `build.cmd` or `build.sh` without arguments for a complete build including tests.
 See [Building documents](https://github.com/aspnet/Home/wiki/Building-from-source) for more details.
-
 
 ### Contributing
 
