@@ -5,7 +5,7 @@
 - [When there are multiple application servers, are messages from clients sent to all of them or just one of them?](#client-server-mapping)
 - [If one of my application servers is down, will SignalR Service know about it? Will clients be notified too?](#server-down)
 - [Why is exception thrown from my custom `IUserIdProvider` when switching from ASP.NET Core SignalR to Azure SignalR Service SDK?](#limited-context)
-- [Can I configure available transports in Azure SignalR Service like ASP.NET Core SignalR?](#configure-transports)
+- [Can I configure available transports at server side in Azure SignalR Service like ASP.NET Core SignalR?](#configure-transports)
 
 <a name="production-use"></a>
 ## Is Azure SignalR Service ready for production use?
@@ -18,7 +18,7 @@ The support of [ASP.NET SignalR](https://github.com/SignalR/SignalR) is still in
 <a name="no-server-available"></a>
 ## Client connection is closed with error message "No server available". What does that mean?
 
-This error will happen only when clients are sending messages to SignalR Service.
+This error occurs only when clients are sending messages to SignalR Service.
 
 If you don't have any application server and only use SignalR Service's REST APIs, this is **by design**.
 In serverless architecture, client connections are in **LISTEN** mode and should not send any messages to SignalR Service.
@@ -26,7 +26,8 @@ Read more about [REST API](./rest-api.md) in SignalR Service.
 
 If you have application servers, this means there is no application server connected with your SignalR Service instance.
 Possible root causes are:
-- All of your application servers are down.
+- None of your application servers are connected to SignalR Service.
+Check application server logs to see whether there are connection errors.
 This should be very rare when you have multiple application servers for high availability.
 - There are some connectivity issues inside SignalR Service instances.
 It should be transient and recovered automatically within a couple of minutes.
@@ -64,9 +65,11 @@ For now, only `HubConnectionContext.GetHttpContext()` and `HubConnectionContext.
 You can find the source code at [here](https://github.com/Azure/azure-signalr/blob/kevinzha/faq/src/Microsoft.Azure.SignalR/ServiceHubConnectionContext.cs).
 
 <a name="configure-transports"></a>
-## Can I configure available transports in Azure SignalR Service like ASP.NET Core SignalR? Say WebSocket transport is disabled.
+## Can I configure available transports at server side in Azure SignalR Service like ASP.NET Core SignalR? Say WebSocket transport is disabled.
 
 No.
 
 Azure SignalR Service provides all 3 transports by default and you can't configure it.
 As a matter of fact, you don't have to worry about transports because clients are all connected to Azure SignalR Service and service will handle connection management.
+
+But you can still configure allowed transports at client side as documented [here](https://docs.microsoft.com/en-us/aspnet/core/signalr/configuration?view=aspnetcore-2.1#configure-allowed-transports).
