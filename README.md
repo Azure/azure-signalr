@@ -42,8 +42,8 @@ Samples on how to use Azure SignalR Service can be found [here](https://github.c
 The following documents describe more details about Azure SignalR Service.
 
 - [Use Azure SignalR Service](./docs/use-signalr-service.md)
-- [REST API support](./docs/rest-api.md)
-- [Azure SignalR Service Internals](./docs/internal.md)
+- [REST API in Azure SignalR Service](./docs/rest-api.md)
+- [Internals of Azure SignalR Service](./docs/internal.md)
 - [FAQ](./docs/faq.md)
 
 Contributions are highly welcome. Keep reading if you want to contribute to our repository.

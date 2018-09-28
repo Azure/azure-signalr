@@ -5,6 +5,7 @@
 - [When there are multiple application servers, are messages from clients sent to all of them or just one of them?](#client-server-mapping)
 - [If one of my application servers is down, will SignalR Service know about it? Will clients be notified too?](#server-down)
 - [Why is exception thrown from my custom `IUserIdProvider` when switching from ASP.NET Core SignalR to Azure SignalR Service SDK?](#limited-context)
+- [Can I configure available transports in Azure SignalR Service like ASP.NET Core SignalR?](#configure-transports)
 
 <a name="production-use"></a>
 ## Is Azure SignalR Service ready for production use?
@@ -61,3 +62,11 @@ The physical client connection is connected to SignalR Service instance.
 So only limited properties are provided.
 For now, only `HubConnectionContext.GetHttpContext()` and `HubConnectionContext.User` is available for access.
 You can find the source code at [here](https://github.com/Azure/azure-signalr/blob/kevinzha/faq/src/Microsoft.Azure.SignalR/ServiceHubConnectionContext.cs).
+
+<a name="configure-transports"></a>
+## Can I configure available transports in Azure SignalR Service like ASP.NET Core SignalR? Say WebSocket transport is disabled.
+
+No.
+
+Azure SignalR Service provides all 3 transports by default and you can't configure it.
+As a matter of fact, you don't have to worry about transports because clients are all connected to Azure SignalR Service and service will handle connection management.
