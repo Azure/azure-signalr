@@ -12,6 +12,8 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Owin;
 
 namespace Microsoft.Azure.SignalR.AspNet
@@ -29,18 +31,19 @@ namespace Microsoft.Azure.SignalR.AspNet
         };
 
         private readonly HubConfiguration _configuration;
+        private readonly ILogger _logger;
 
         public ClientConnectionManager(HubConfiguration configuration)
         {
             _configuration = configuration;
+            var loggerFactory = configuration.Resolver.Resolve<ILoggerFactory>() ?? NullLoggerFactory.Instance;
+            _logger = loggerFactory.CreateLogger<ClientConnectionManager>();
         }
 
         public AzureTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
         {
             var dispatcher = new HubDispatcher(_configuration);
             dispatcher.Initialize(_configuration.Resolver);
-
-            var connectionId = message.ConnectionId;
 
             var responseStream = new MemoryStream();
             var hostContext = GetHostContext(message, responseStream, serviceConnection);
@@ -53,10 +56,12 @@ namespace Microsoft.Azure.SignalR.AspNet
                 // TODO: check for errors written to the response
                 if (hostContext.Response.StatusCode != 200)
                 {
+                    Log.ProcessRequestError(_logger, message.ConnectionId, hostContext.Request.QueryString.ToString());
                     Debug.Fail("Response StatusCode is " + hostContext.Response.StatusCode);
                     var errorResponse = GetContentAndDispose(responseStream);
                     throw new InvalidOperationException(errorResponse);
                 }
+
                 return (AzureTransport)hostContext.Environment[AspNetConstants.Context.AzureSignalRTransportKey];
             }
 
@@ -130,6 +135,17 @@ namespace Microsoft.Azure.SignalR.AspNet
             using (var reader = new StreamReader(stream))
             {
                 return reader.ReadToEnd();
+            }
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, string, string, Exception> _processRequestError =
+                LoggerMessage.Define<string, string>(LogLevel.Debug, new EventId(1, "ProcessRequestError"), "ProcessRequest for {connectionId} fails with {queryString} ");
+
+            public static void ProcessRequestError(ILogger logger, string connectionId, string queryString)
+            {
+                _processRequestError(logger, connectionId, queryString, null);
             }
         }
     }
