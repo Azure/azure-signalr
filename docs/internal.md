@@ -6,7 +6,7 @@
 
 Azure SignalR Service is built on top of ASP.NET Core SignalR framework, and it supports running both ASP.NET Core SignalR and ASP.NET SignalR. **SignalR** is used in below section as a general term for both ASP.NET Core SignalR and ASP.NET SignalR. 
 
-> To support ASP.NET SignalR, Azure SignalR Service reimplement ASP.NET SignalR data protocol on top of ASP.NET Core framework.
+> To support ASP.NET SignalR, Azure SignalR Service reimplements ASP.NET SignalR's data protocol on top of the ASP.NET Core framework.
 
 You can start from a local **SignalR** application, then seamlessly move to Azure SignalR Service with a few lines of code change.
 
@@ -33,7 +33,7 @@ After application server is started,
 * For ASP.NET Core SignalR, the Azure SignalR SDK will open 5 WebSocket connections to the SignalR Service per hub.
 * For ASP.NET SignalR, the Azure SignalR SDK will open 5 WebSocket connections to the SignalR Service per hub, and 1 per-application WebSocket connection.
 
-The number of used connections per hub is configurable as described at [here](./use-signalr-service.md#connectioncount).
+The number of used connections per hub is configurable as described [here](./use-signalr-service.md#connectioncount).
 Messages from/to clients will be multiplexed into these connections.
 
 These connections are supposed to be connected to SignalR Service all the time.
@@ -53,15 +53,15 @@ With Azure SignalR Service SDK, application server will return a redirect negoti
         ```json
         {
             "url":"https://test.service.signalr.net/client/?hub=chat&...",
-            "accessToken":"<a typical JWT token>",
-            "availableTransports":[]
+            "accessToken":"<a typical JWT token>"
         }
         ```
 
-    * For ASP.NET Core SignalR, a typical redirect response looks like as following:
+    * For ASP.NET SignalR, a typical redirect response looks like as following:
 
         ```json
         {
+            "ProtocolVersion": "2.0",
             "RedirectUrl":"https://test.service.signalr.net/aspnetclient",
             "AccessToken":"<a typical JWT token>"
         }
