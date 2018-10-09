@@ -1,22 +1,25 @@
 # Use Azure SignalR Service
 
 - [Provision a Service Instance](#provision)
-- [Run ASP.NET CORE SignalR]
+- [Run ASP.NET CORE SignalR](#coresignalr)
     - [Install and Use Service SDK](#use-sdk)
     - [Configure Connection String](#connection-string)
     - [Configure Service Options](#service-options)
-- [Run ASP.NET SignalR]
-    - [Install and Use Service SDK](#use-sdk)
-    - [Configure Connection String](#connection-string)
-    - [Configure Service Options](#service-options)
+- [Run ASP.NET SignalR](#aspnetsignalr)
+    - [Install and Use Service SDK](#aspnetsignalr-use-sdk)
+    - [Configure Connection String](#aspnetsignalr-connection-string)
+    - [Configure Service Options](#aspnetsignalr-service-options)
 - [Scale Out Application Server](#scaleout)
 
+<a name="provision"></a>
 ## Provision an Azure SignalR Service instance
 
 Go to [Azure Portal](https://portal.azure.com) to provision a SignalR service instance.
 
+<a name="coresignalr"></a>
 ## Run ASP.NET CORE SignalR
 
+<a name="use-sdk"></a>
 ### 1. Install and Use Service SDK
 Run below command to install SignalR Service SDK to your ASP.NET Core project.
 
@@ -42,6 +45,7 @@ public void Configure(IApplicationBuilder app)
 }
 ```
 
+<a name="connection-string"></a>
 ### 2. Configure Connection String
 
 There are two approaches to configure SignalR Service's connection string in your application.
@@ -61,6 +65,7 @@ There are two approaches to configure SignalR Service's connection string in you
             .AddAzureSignalR(options => options.ConnectionString = <replace with your connection string>);
     ```
 
+<a name="service-options"></a>
 ### 3.Configure Service Options
 
 There are a few options you can customize when using Azure SignalR Service SDK.
@@ -100,9 +105,11 @@ services.AddSignalR()
             });
 ```
 
+<a name="aspnetsignalr"></a>
 ## Run ASP.NET SignalR
 > If it is your first time trying SignalR, we recommend you to use the ASP.NET Core SignalR, it is **simpler, more reliable, and easier to use**.
 
+<a name="aspnetsignalr-use-sdk"></a>
 ### 1. Install and Use Service SDK
 Install SignalR Service SDK to your ASP.NET project with **Package Manager Console**:
 
@@ -119,6 +126,7 @@ public void Configuration(IAppBuilder app)
 }
 ```
 
+<a name="aspnetsignalr-connection-string"></a>
 ### 2. Configure Connection String
 Set the connection string in the `web.config` file, to the `connectionStrings` section:
 ```xml
@@ -130,6 +138,7 @@ Set the connection string in the `web.config` file, to the `connectionStrings` s
 </configuration>
 ```
 
+<a name="aspnetsignalr-service-options"></a>
 ### 3.Configure Service Options
 
 There are a few [options](https://github.com/Azure/azure-signalr/blob/dev/src/Microsoft.Azure.SignalR.AspNet/ServiceOptions.cs) you can customize when using Azure SignalR Service SDK.
@@ -156,15 +165,14 @@ You can increase this value to avoid client disconnect.
 You can configure above options like the following sample code.
 
 ```csharp
-services.AddSignalR()
-        .AddAzureSignalR(options =>
-            {
-                options.ConnectionCount = 10;
-                options.AccessTokenLifetime = TimeSpan.FromDays(1);
-                options.ClaimsProvider = context => context.User.Claims;
-            });
+app.Map("/signalr",subApp => subApp.RunAzureSignalR(this.GetType().FullName, new HubConfiguration(), options =>
+{
+    options.ConnectionCount = 1;
+    options.AccessTokenLifetime = TimeSpan.FromDays(1);
+}));
 ```
 
+<a name="scaleout"></a>
 ## Scale Out Application Server
 
 With Azure SignalR Service, persistent connections are offloaded from application server.
