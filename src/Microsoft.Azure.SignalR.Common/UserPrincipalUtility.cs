@@ -20,7 +20,10 @@ namespace Microsoft.Azure.SignalR
             "nbf"  // Not Before claim. Added by default. It is not validated by service.
         };
 
-        private static readonly ClaimsPrincipal EmptyPrincipal = new ClaimsPrincipal(new ClaimsIdentity());
+        private static readonly ClaimsIdentity DefaultClaimsIdentity = new ClaimsIdentity();
+        private static readonly ClaimsPrincipal EmptyPrincipal = new ClaimsPrincipal(DefaultClaimsIdentity);
+        private static readonly string DefaultNameClaimType = DefaultClaimsIdentity.NameClaimType;
+        private static readonly string DefaultRoleClaimType = DefaultClaimsIdentity.RoleClaimType;
 
         public static IEnumerable<Claim> GetSystemClaims(ClaimsPrincipal user)
         {
@@ -43,13 +46,13 @@ namespace Microsoft.Azure.SignalR
             }
 
             var nameType = identity.NameClaimType;
-            if (nameType != null)
+            if (nameType != null && nameType != DefaultNameClaimType)
             {
                yield return new Claim(Constants.ClaimType.NameType, nameType);
             }
 
             var roleType = identity.RoleClaimType;
-            if (roleType != null)
+            if (roleType != null && roleType != DefaultRoleClaimType)
             {
                 yield return new Claim(Constants.ClaimType.RoleType, roleType);
             }
@@ -93,6 +96,7 @@ namespace Microsoft.Azure.SignalR
 
             if (claims.Count == 0)
             {
+                // For JWT token, the authenticated claims must contain non-system claims
                 return EmptyPrincipal;
             }
 
