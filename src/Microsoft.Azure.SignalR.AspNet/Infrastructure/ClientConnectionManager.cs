@@ -20,16 +20,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class ClientConnectionManager : IClientConnectionManager
     {
-        private static readonly ClaimsPrincipal EmptyPrincipal = new ClaimsPrincipal(new ClaimsIdentity());
-
-        private static readonly string[] SystemClaims =
-        {
-            "aud", // Audience claim, used by service to make sure token is matched with target resource.
-            "exp", // Expiration time claims. A token is valid only before its expiration time.
-            "iat", // Issued At claim. Added by default. It is not validated by service.
-            "nbf"  // Not Before claim. Added by default. It is not validated by service.
-        };
-
         private readonly HubConfiguration _configuration;
         private readonly ILogger _logger;
 
@@ -79,7 +69,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             response.Body = responseStream;
 
-            var user = request.User = GetUserPrincipal(message);
+            var user = request.User = message.GetUserPrincipal();
 
             request.Path = new PathString("/");
 
@@ -101,32 +91,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             context.Environment[AspNetConstants.Context.AzureServiceConnectionKey] = serviceConnection;
             return new HostContext(context.Environment);
-        }
-
-        internal static ClaimsPrincipal GetUserPrincipal(OpenConnectionMessage message)
-        {
-            if (message.Claims == null || message.Claims.Length == 0)
-            {
-                return EmptyPrincipal;
-            }
-
-            var claims = new List<Claim>();
-            var authenticationType = "Bearer";
-
-            foreach (var claim in message.Claims)
-            {
-                // TODO: Add prefix "azure.signalr.user." to user claims instead of guessing them?
-                if (claim.Type == Constants.ClaimType.AuthenticationType)
-                {
-                    authenticationType = claim.Value;
-                }
-                else if (!SystemClaims.Contains(claim.Type) && !claim.Type.StartsWith(Constants.ClaimType.AzureSignalRSysPrefix))
-                {
-                    claims.Add(claim);
-                }
-            }
-
-            return new ClaimsPrincipal(new ClaimsIdentity(claims, authenticationType));
         }
 
         internal static string GetContentAndDispose(MemoryStream stream)

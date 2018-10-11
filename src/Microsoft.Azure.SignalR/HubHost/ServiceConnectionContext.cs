@@ -30,14 +30,6 @@ namespace Microsoft.Azure.SignalR
                                               IConnectionHeartbeatFeature,
                                               IHttpContextFeature
     {
-        private static readonly string[] SystemClaims =
-        {
-            "aud", // Audience claim, used by service to make sure token is matched with target resource.
-            "exp", // Expiration time claims. A token is valid only before its expiration time.
-            "iat", // Issued At claim. Added by default. It is not validated by service.
-            "nbf"  // Not Before claim. Added by default. It is not validated by service.
-        };
-
         private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
             resumeWriterThreshold: 0,
             readerScheduler: PipeScheduler.ThreadPool,
@@ -49,10 +41,7 @@ namespace Microsoft.Azure.SignalR
         public ServiceConnectionContext(OpenConnectionMessage serviceMessage, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
             ConnectionId = serviceMessage.ConnectionId;
-            User = new ClaimsPrincipal();
-            User.AddIdentity(IsAuthenticatedUser(serviceMessage.Claims)
-                ? new ClaimsIdentity(serviceMessage.Claims, "Bearer")
-                : new ClaimsIdentity());
+            User = serviceMessage.GetUserPrincipal();
 
             // Create the Duplix Pipeline for the virtual connection
             transportPipeOptions = transportPipeOptions ?? DefaultPipeOptions;
@@ -116,15 +105,6 @@ namespace Microsoft.Azure.SignalR
         public HubConnectionContext HubConnectionContext { get; set; }
 
         public HttpContext HttpContext { get; set; }
-
-        private static bool IsAuthenticatedUser(IReadOnlyCollection<Claim> claims)
-        {
-            return claims?.Count > 0 &&
-                   claims.Any(claim =>
-                       !SystemClaims.Contains(claim.Type) &&
-                       // Claim name is case sensitive. See https://tools.ietf.org/html/rfc7519#section-10.1.1 .
-                       !claim.Type.StartsWith(Constants.ClaimType.AzureSignalRSysPrefix, StringComparison.Ordinal));
-        }
 
         private FeatureCollection BuildFeatures()
         {
