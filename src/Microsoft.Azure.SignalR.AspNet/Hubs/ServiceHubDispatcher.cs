@@ -61,29 +61,13 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private IEnumerable<Claim> BuildClaims(HostContext context)
         {
-            var user = new Owin.OwinContext(context.Environment).Authentication?.User;
-
-            var sysClaims = UserPrincipalUtility.GetSystemClaims(user);
-            foreach (var claim in sysClaims)
-            {
-                yield return claim;
-            }
-
-            // UserId can be null in self-host Owin
-            var userId = UserIdProvider?.GetUserId(context.Request);
-            if (userId != null)
-            {
-                yield return new Claim(Constants.ClaimType.UserId, userId);
-            }
-
             // Pass appname through jwt token to client, so that when client establishes connection with service, it will also create a corresponding AppName-connection
             yield return new Claim(Constants.ClaimType.AppName, _appName);
 
-            var claims = user?.Claims;
-            if (claims == null)
-            {
-                yield break;
-            }
+            var user = new Owin.OwinContext(context.Environment).Authentication?.User;
+            var userId = UserIdProvider?.GetUserId(context.Request);
+
+            var claims = ClaimsUtility.BuildJwtClaims(user, userId, null);
 
             foreach (var claim in claims)
             {

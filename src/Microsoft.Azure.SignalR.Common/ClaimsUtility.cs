@@ -9,7 +9,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal static class UserPrincipalUtility
+    internal static class ClaimsUtility
     {
         private const string DefaultAuthenticationType = "Bearer";
         private static readonly string[] SystemClaims =
@@ -25,36 +25,45 @@ namespace Microsoft.Azure.SignalR
         private static readonly string DefaultNameClaimType = DefaultClaimsIdentity.NameClaimType;
         private static readonly string DefaultRoleClaimType = DefaultClaimsIdentity.RoleClaimType;
 
-        public static IEnumerable<Claim> GetSystemClaims(ClaimsPrincipal user)
+        public static IEnumerable<Claim> BuildJwtClaims(ClaimsPrincipal user, string userId, Func<IEnumerable<Claim>> claimsProvider)
         {
-            if (user == null)
+            if (userId != null)
             {
-                yield break;
+                yield return new Claim(Constants.ClaimType.UserId, userId);
             }
 
-            var authenticationType = user.Identity?.AuthenticationType;
-            if (authenticationType != null)
+            var authenticationType = user?.Identity?.AuthenticationType;
+
+            // No need to pass it when the authentication type is Bearer
+            if (authenticationType != null && authenticationType != DefaultAuthenticationType)
             {
                 yield return new Claim(Constants.ClaimType.AuthenticationType, authenticationType);
             }
 
-            var identity = user.Identity as ClaimsIdentity;
-
-            if (identity == null)
+            // return custom NameClaimType and RoleClaimType
+            if (user?.Identity is ClaimsIdentity identity)
             {
-                yield break;
+                var nameType = identity.NameClaimType;
+                if (nameType != null && nameType != DefaultNameClaimType)
+                {
+                    yield return new Claim(Constants.ClaimType.NameType, nameType);
+                }
+
+                var roleType = identity.RoleClaimType;
+                if (roleType != null && roleType != DefaultRoleClaimType)
+                {
+                    yield return new Claim(Constants.ClaimType.RoleType, roleType);
+                }
             }
 
-            var nameType = identity.NameClaimType;
-            if (nameType != null && nameType != DefaultNameClaimType)
+            // return customer's claims
+            var customerClaims = claimsProvider == null ? user?.Claims : claimsProvider.Invoke();
+            if (customerClaims != null)
             {
-               yield return new Claim(Constants.ClaimType.NameType, nameType);
-            }
-
-            var roleType = identity.RoleClaimType;
-            if (roleType != null && roleType != DefaultRoleClaimType)
-            {
-                yield return new Claim(Constants.ClaimType.RoleType, roleType);
+                foreach (var claim in customerClaims)
+                {
+                    yield return claim;
+                }
             }
         }
 
@@ -65,7 +74,12 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(message));
             }
 
-            if (message.Claims == null || message.Claims.Length == 0)
+            return GetUserPrincipal(message.Claims);
+        }
+
+        internal static ClaimsPrincipal GetUserPrincipal(Claim[] messageClaims)
+        {
+            if (messageClaims == null || messageClaims.Length == 0)
             {
                 return EmptyPrincipal;
             }
@@ -74,7 +88,7 @@ namespace Microsoft.Azure.SignalR
             var authenticationType = DefaultAuthenticationType;
             string nameType = null;
             string roleType = null;
-            foreach (var claim in message.Claims)
+            foreach (var claim in messageClaims)
             {
                 if (claim.Type == Constants.ClaimType.AuthenticationType)
                 {
