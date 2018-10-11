@@ -20,6 +20,8 @@ namespace Microsoft.Azure.SignalR
         private static readonly TimeSpan DefaultServiceTimeout = TimeSpan.FromSeconds(30);
         private static readonly long DefaultServiceTimeoutTicks = DefaultServiceTimeout.Seconds * Stopwatch.Frequency;
         // App server ping rate is 5 sec. So service can detect an irresponsive server connection in 10 seconds at most.
+        private static readonly TimeSpan DefaultKeepAliveSlowTimeSpan = TimeSpan.FromSeconds(10);
+        private static readonly long DefaultKeepAliveSlowTicks = DefaultKeepAliveSlowTimeSpan.Seconds * Stopwatch.Frequency;
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
         private static readonly int MaxReconnectBackoffInternalInMilliseconds = 1000;
 
@@ -40,6 +42,7 @@ namespace Microsoft.Azure.SignalR
 
         private bool _isStopped;
         private long _lastReceiveTimestamp;
+        private long _lastKeepAliveTimestamp;
         protected ConnectionContext _connection;
 
         public Task WaitForConnectionStart => _serviceConnectionStartTcs.Task;
@@ -354,7 +357,8 @@ namespace Microsoft.Azure.SignalR
         {
             Log.StartingKeepAliveTimer(_logger, DefaultKeepAliveInterval);
 
-            _lastReceiveTimestamp = Stopwatch.GetTimestamp();
+            _lastReceiveTimestamp = _lastKeepAliveTimestamp = Stopwatch.GetTimestamp();
+
             var timer = new TimerAwaitable(DefaultKeepAliveInterval, DefaultKeepAliveInterval);
             _ = KeepAliveAsync(timer);
 
@@ -374,7 +378,15 @@ namespace Microsoft.Azure.SignalR
 
                 while (await timer)
                 {
-                    if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastReceiveTimestamp) > DefaultServiceTimeoutTicks)
+                    var now = Stopwatch.GetTimestamp();
+
+                    if (now - Interlocked.Exchange(ref _lastKeepAliveTimestamp, now) > DefaultKeepAliveSlowTicks)
+                    {
+                        // Warn if keep alive takes much longer than expected
+                        Log.KeepAliveSlow(_logger, DefaultKeepAliveSlowTimeSpan);
+                    }
+
+                    if (now - Interlocked.Read(ref _lastReceiveTimestamp) > DefaultServiceTimeoutTicks)
                     {
                         AbortConnection();
                         // We shouldn't get here twice.
@@ -514,6 +526,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, Exception> _failedSendingPing =
                 LoggerMessage.Define(LogLevel.Warning, new EventId(26, "FailedSendingPing"), "Failed sending a ping message to service.");
 
+            private static readonly Action<ILogger, TimeSpan, Exception> _keepAliveSlow =
+                LoggerMessage.Define<TimeSpan>(LogLevel.Warning, new EventId(27, nameof(KeepAliveSlow)), @"Heartbeat to service took longer than ""{interval}"".");
+
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
                 _failedToWrite(logger, exception);
@@ -642,6 +657,11 @@ namespace Microsoft.Azure.SignalR
             public static void FailedSendingPing(ILogger logger, Exception exception)
             {
                 _failedSendingPing(logger, exception);
+            }
+
+            public static void KeepAliveSlow(ILogger logger, TimeSpan interval)
+            {
+                _keepAliveSlow(logger, interval, null);
             }
         }
     }
