@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 5.
         /// </summary>
-        public int ConnectionCount { get; set; } = 5;
+        public int ConnectionCount { get; set; } = 1;
 
         /// <summary>
         /// Gets or sets the func to generate claims from <see cref="HttpContext" />.
