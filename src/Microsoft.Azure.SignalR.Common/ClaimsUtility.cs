@@ -40,7 +40,8 @@ namespace Microsoft.Azure.SignalR
                 yield return new Claim(Constants.ClaimType.AuthenticationType, authenticationType);
             }
 
-            // return custom NameClaimType and RoleClaimType
+            // Return custom NameClaimType and RoleClaimType
+            // We can have multiple Identities, for now, choose the default one 
             if (user?.Identity is ClaimsIdentity identity)
             {
                 var nameType = identity.NameClaimType;
