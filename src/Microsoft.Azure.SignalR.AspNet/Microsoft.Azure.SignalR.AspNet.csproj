@@ -5,7 +5,7 @@
     <RootNamespace>Microsoft.Azure.SignalR.AspNet</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- Fix AspNet version to preview1 -->
-    <PackageVersion>$(VersionPrefix)-preview1-$(BuildNumber)</PackageVersion>
+    <PackageVersion>1.0.0-preview1-$(BuildNumber)</PackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
