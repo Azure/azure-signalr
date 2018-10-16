@@ -75,12 +75,12 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public Task DisposeAsync(ConnectionContext connection)
         {
-            if (connection != null)
+            if (connection == null)
             {
-                return ((HttpConnection)connection).DisposeAsync();
+                return Task.CompletedTask;
             }
-
-            return Task.CompletedTask;
+            
+            return ((HttpConnection)connection).DisposeAsync();
         }
 
         public Task StartAsync()

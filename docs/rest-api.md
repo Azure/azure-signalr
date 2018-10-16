@@ -1,5 +1,9 @@
 # REST API in Azure SignalR Service
 
+> **NOTE**
+>
+> Azure SignalR Service only supports REST API for ASP.NET CORE SignalR applications.
+
 - [Typical Server-less Architecture](#serverless)
 - [API](#api)
     - [Broadcast message to all clients](#broadcast)
@@ -127,18 +131,17 @@ Otherwise SignalR Service can't find target connections from a given user id.
 This can be achieved by including a `nameid` claim in each client's JWT token when they are connecting to Azure SignalR Service.
 Then SignalR Service will use the value of `nameid` claim as the user id of each client connection.
 
-As shown in the [architecture section](#serverlss), the `negotiate` function will return a redirect negotiation response to client.
+As shown in the [architecture section](#serverless), the `negotiate` function will return a redirect negotiation response to client.
 A typical negotiation response looks like as folllowing. The `nameid` claim should be included in the access token.
 
     ```json
     {
         "url":"https://test.service.signalr.net:5001/client/?hub=chat&...",
-        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOjE1MzY2NTYzMjYsImV4cCI6MTUzNjY1OTkyNiwiaWF0IjoxNTM2NjU2MzI2LCJhdWQiOiJodHRwczovL3Rlc3Quc2VydmljZS5zaWduYWxyLm5ldDo1MDAxL2NsaWVudC8_aHViPWNoYXQiLCJuYW1laWQiOiJ1c2VyLWlkIn0.k24D5kk7KeA_JKmxaEU0gGtF4JhOlyQ2VDmITHrzPtA" ,
-        "availableTransports":[]
+        "accessToken":"<a typical JWT token>"
     }
     ```
 
-Read more about redirecting client to Azure SignalR Service at [here](TODO).
+Read more about redirecting client to Azure SignalR Service at [here](./internal.md#client-connections).
 
 ### Sample
 

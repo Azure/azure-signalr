@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
@@ -42,18 +43,7 @@ namespace Microsoft.Azure.SignalR
         private IEnumerable<Claim> BuildClaims(HttpContext context)
         {
             var userId = _userIdProvider.GetUserId(new ServiceHubConnectionContext(context));
-            if (userId != null)
-            {
-                yield return new Claim(Constants.ClaimType.UserId, userId);
-            }
-
-            var claims = _claimsProvider == null ? context.User.Claims : _claimsProvider.Invoke(context);
-            if (claims == null) yield break;
-
-            foreach (var claim in claims)
-            {
-                yield return claim;
-            }
+            return ClaimsUtility.BuildJwtClaims(context.User, userId, () => _claimsProvider?.Invoke(context));
         }
 
         private static string GetOriginalPath(string path)

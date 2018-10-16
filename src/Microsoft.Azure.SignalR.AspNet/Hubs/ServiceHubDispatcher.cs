@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public ServiceHubDispatcher(HubConfiguration configuration, string appName) : base(configuration)
         {
-            _appName = appName;
+            _appName = appName ?? throw new ArgumentException(nameof(appName));
         }
 
         public override void Initialize(IDependencyResolver resolver)
@@ -50,31 +50,29 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private Task ProcessNegotiationRequest(HostContext context)
         {
-            var user = new Owin.OwinContext(context.Environment).Authentication.User;
-            var claims = user?.Claims;
-            var authenticationType = user?.Identity?.AuthenticationType;
-            var userId = UserIdProvider.GetUserId(context.Request);
-            var advancedClaims = claims?.ToList() ?? new List<Claim>();
-
-            if (authenticationType != null)
-            {
-                advancedClaims.Add(new Claim(Constants.ClaimType.AuthenticationType, authenticationType));
-            }
-
-            // UserId can be null in self-host Owin
-            if (userId != null)
-            {
-                advancedClaims.Add(new Claim(Constants.ClaimType.UserId, userId));
-            }
-
-            // Pass appname through jwt token to client, so that when client establishes connection with service, it will also create a corresponding AppName-connection
-            advancedClaims.Add(new Claim(Constants.ClaimType.AppName, _appName));
+            var claims = BuildClaims(context);
 
             // Redirect to Service
             var url = _endpoint.GetClientEndpoint();
-            var accessToken = _endpoint.GenerateClientAccessToken(advancedClaims);
+            var accessToken = _endpoint.GenerateClientAccessToken(claims);
 
             return SendJsonResponse(context, GetRedirectNegotiateResponse(url, accessToken));
+        }
+
+        private IEnumerable<Claim> BuildClaims(HostContext context)
+        {
+            // Pass appname through jwt token to client, so that when client establishes connection with service, it will also create a corresponding AppName-connection
+            yield return new Claim(Constants.ClaimType.AppName, _appName);
+
+            var user = new Owin.OwinContext(context.Environment).Authentication?.User;
+            var userId = UserIdProvider?.GetUserId(context.Request);
+
+            var claims = ClaimsUtility.BuildJwtClaims(user, userId, null);
+
+            foreach (var claim in claims)
+            {
+                yield return claim;
+            }
         }
 
         private static string GetRedirectNegotiateResponse(string url, string token)
