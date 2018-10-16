@@ -49,6 +49,28 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        public void ServiceConnectionContextWithCustomNameTypeIsAuthenticated()
+        {
+            var claims = new[]
+            {
+                new Claim("aud", "http://localhost"),
+                new Claim("exp", "1234567890"),
+                new Claim("iat", "1234567890"),
+                new Claim("nbf", "1234567890"),
+                new Claim("customNameType", "customUserName"),
+                new Claim("customRoleType", "customRole"),
+                new Claim(Constants.ClaimType.NameType, "customNameType"),
+                new Claim(Constants.ClaimType.RoleType, "customRoleType"),
+            };
+            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", claims));
+            Assert.NotNull(serviceConnectionContext.User.Identity);
+            Assert.False(serviceConnectionContext.User.IsInRole("Admin"));
+            Assert.True(serviceConnectionContext.User.IsInRole("customRole"));
+            Assert.Equal("customUserName", serviceConnectionContext.User.Identity.Name);
+            Assert.True(serviceConnectionContext.User.Identity.IsAuthenticated);
+        }
+
+        [Fact]
         public void ServiceConnectionContextWithClaimsCreatesIdentityWithClaims()
         {
             var claims = new[]

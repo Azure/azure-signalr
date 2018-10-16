@@ -12,35 +12,28 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Owin;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class ClientConnectionManager : IClientConnectionManager
     {
-        private static readonly ClaimsPrincipal EmptyPrincipal = new ClaimsPrincipal(new ClaimsIdentity());
-
-        private static readonly string[] SystemClaims =
-        {
-            "aud", // Audience claim, used by service to make sure token is matched with target resource.
-            "exp", // Expiration time claims. A token is valid only before its expiration time.
-            "iat", // Issued At claim. Added by default. It is not validated by service.
-            "nbf"  // Not Before claim. Added by default. It is not validated by service.
-        };
-
         private readonly HubConfiguration _configuration;
+        private readonly ILogger _logger;
 
         public ClientConnectionManager(HubConfiguration configuration)
         {
             _configuration = configuration;
+            var loggerFactory = configuration.Resolver.Resolve<ILoggerFactory>() ?? NullLoggerFactory.Instance;
+            _logger = loggerFactory.CreateLogger<ClientConnectionManager>();
         }
 
         public AzureTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
         {
             var dispatcher = new HubDispatcher(_configuration);
             dispatcher.Initialize(_configuration.Resolver);
-
-            var connectionId = message.ConnectionId;
 
             var responseStream = new MemoryStream();
             var hostContext = GetHostContext(message, responseStream, serviceConnection);
@@ -53,10 +46,12 @@ namespace Microsoft.Azure.SignalR.AspNet
                 // TODO: check for errors written to the response
                 if (hostContext.Response.StatusCode != 200)
                 {
+                    Log.ProcessRequestError(_logger, message.ConnectionId, hostContext.Request.QueryString.ToString());
                     Debug.Fail("Response StatusCode is " + hostContext.Response.StatusCode);
                     var errorResponse = GetContentAndDispose(responseStream);
                     throw new InvalidOperationException(errorResponse);
                 }
+
                 return (AzureTransport)hostContext.Environment[AspNetConstants.Context.AzureSignalRTransportKey];
             }
 
@@ -74,7 +69,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             response.Body = responseStream;
 
-            var user = request.User = GetUserPrincipal(message);
+            var user = request.User = message.GetUserPrincipal();
 
             request.Path = new PathString("/");
 
@@ -98,38 +93,23 @@ namespace Microsoft.Azure.SignalR.AspNet
             return new HostContext(context.Environment);
         }
 
-        internal static ClaimsPrincipal GetUserPrincipal(OpenConnectionMessage message)
-        {
-            if (message.Claims == null || message.Claims.Length == 0)
-            {
-                return EmptyPrincipal;
-            }
-
-            var claims = new List<Claim>();
-            var authenticationType = "Bearer";
-
-            foreach (var claim in message.Claims)
-            {
-                // TODO: Add prefix "azure.signalr.user." to user claims instead of guessing them?
-                if (claim.Type == Constants.ClaimType.AuthenticationType)
-                {
-                    authenticationType = claim.Value;
-                }
-                else if (!SystemClaims.Contains(claim.Type) && !claim.Type.StartsWith(Constants.ClaimType.AzureSignalRSysPrefix))
-                {
-                    claims.Add(claim);
-                }
-            }
-
-            return new ClaimsPrincipal(new ClaimsIdentity(claims, authenticationType));
-        }
-
         internal static string GetContentAndDispose(MemoryStream stream)
         {
             stream.Seek(0, SeekOrigin.Begin);
             using (var reader = new StreamReader(stream))
             {
                 return reader.ReadToEnd();
+            }
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, string, string, Exception> _processRequestError =
+                LoggerMessage.Define<string, string>(LogLevel.Debug, new EventId(1, "ProcessRequestError"), "ProcessRequest for {connectionId} fails with {queryString} ");
+
+            public static void ProcessRequestError(ILogger logger, string connectionId, string queryString)
+            {
+                _processRequestError(logger, connectionId, queryString, null);
             }
         }
     }

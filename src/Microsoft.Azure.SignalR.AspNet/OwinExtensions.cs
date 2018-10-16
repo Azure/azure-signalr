@@ -153,7 +153,7 @@ namespace Owin
             }
             else
             {
-                logger = new NullLoggerFactory();
+                logger = NullLoggerFactory.Instance;
             }
 
             if (hubs?.Count > 0)
