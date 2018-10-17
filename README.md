@@ -13,9 +13,9 @@ This repository contains the open source subset of the .NET SDK.
 
 Package Name | Target Framework | NuGet | MyGet
 ---|---|---|---
-Microsoft.Azure.SignalR | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR)
-Microsoft.Azure.SignalR.Protocols | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Protocols.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Protocols) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.Protocols.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Protocols)
-Microsoft.Azure.SignalR.AspNet | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.AspNet.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.AspNet) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/v/Microsoft.Azure.SignalR.AspNet.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.AspNet)
+Microsoft.Azure.SignalR | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR)
+Microsoft.Azure.SignalR.Protocols | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Protocols.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Protocols) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Protocols.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Protocols)
+Microsoft.Azure.SignalR.AspNet | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.AspNet.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.AspNet) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.AspNet.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.AspNet)
 
 ## Getting Started
 
