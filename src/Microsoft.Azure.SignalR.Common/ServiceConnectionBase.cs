@@ -56,19 +56,32 @@ namespace Microsoft.Azure.SignalR
 
         public async Task StartAsync()
         {
+            int retryCount = 0;
             while (!_isStopped)
             {
                 // If we are not able to start, we will quit this connection.
                 if (!await StartAsyncCore())
                 {
                     _serviceConnectionStartTcs.TrySetResult(false);
-                    return;
+
+                    await Task.Delay(GetRetryDelay(ref retryCount));
+                    continue;
                 }
 
                 _serviceConnectionStartTcs.TrySetResult(true);
+                retryCount = 0;
 
                 await ProcessIncomingAsync();
             }
+        }
+
+        private static TimeSpan GetRetryDelay(ref int retryCount)
+        {
+            if (retryCount > 5)
+            {
+                return TimeSpan.FromMinutes(1) + ReconnectInterval;
+            }
+            return TimeSpan.FromSeconds(1 << retryCount++) + ReconnectInterval;
         }
 
         // For test purpose only
