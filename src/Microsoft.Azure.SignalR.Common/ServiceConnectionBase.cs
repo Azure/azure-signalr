@@ -75,8 +75,13 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        /// <summary>
+        /// exponential back off with max 1 minute.
+        /// </summary>
         private static TimeSpan GetRetryDelay(ref int retryCount)
         {
+            // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
+            // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
             if (retryCount > 5)
             {
                 return TimeSpan.FromMinutes(1) + ReconnectInterval;
