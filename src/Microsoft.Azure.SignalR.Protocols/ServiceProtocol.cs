@@ -89,6 +89,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateGroupBroadcastDataMessage(input, ref startOffset);
                 case ServiceProtocolConstants.MultiGroupBroadcastDataMessageType:
                     return CreateMultiGroupBroadcastDataMessage(input, ref startOffset);
+                case ServiceProtocolConstants.ServerCloseMessageType:
+                    return createServerCloseMessage(input, ref startOffset);
                 default:
                     // Future protocol changes can add message types, old clients can ignore them
                     return null;
@@ -189,6 +191,9 @@ namespace Microsoft.Azure.SignalR.Protocol
                     break;
                 case MultiGroupBroadcastDataMessage multiGroupBroadcastDataMessage:
                     WriteMultiGroupBroadcastDataMessage(multiGroupBroadcastDataMessage, packer);
+                    break;
+                case ServerCloseMessage serverCloseMessage:
+                    WriteServerCloseMessage(serverCloseMessage, packer);
                     break;
                 default:
                     throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
@@ -355,6 +360,13 @@ namespace Microsoft.Azure.SignalR.Protocol
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.MultiGroupBroadcastDataMessageType);
             WriteStringArray(message.GroupList, packer);
             WritePayloads(message.Payloads, packer);
+        }
+
+        private static void WriteServerCloseMessage(ServerCloseMessage message, Stream packer)
+        {
+            MessagePackBinary.WriteArrayHeader(packer,2);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ServerCloseMessageType);
+            MessagePackBinary.WriteString(packer, message.CloseMessage);
         }
 
         private static void WriteStringArray(IReadOnlyList<string> array, Stream packer)
@@ -525,6 +537,13 @@ namespace Microsoft.Azure.SignalR.Protocol
             var payloads = ReadPayloads(input, ref offset);
 
             return new MultiGroupBroadcastDataMessage(groupList, payloads);
+        }
+
+        private static ServerCloseMessage createServerCloseMessage(byte[] input, ref int offset)
+        {
+            var closeMessage = ReadString(input, ref offset, "closeMessage");
+
+            return new ServerCloseMessage(closeMessage);
         }
 
         private static Claim[] ReadClaims(byte[] input, ref int offset)

@@ -119,6 +119,16 @@ namespace Microsoft.Azure.SignalR
 
         protected abstract Task OnMessageAsync(ConnectionDataMessage connectionDataMessage);
 
+        protected Task OnServerCloseAsync(ServerCloseMessage serverCloseMessage)
+        {
+            if (!string.IsNullOrEmpty(serverCloseMessage.CloseMessage))
+            {
+                throw new Exception(serverCloseMessage.CloseMessage);
+            }
+
+            return Task.CompletedTask;
+        }
+
         private async Task<bool> StartAsyncCore()
         {
             // Always try until connected
@@ -343,6 +353,8 @@ namespace Microsoft.Azure.SignalR
                     return OnDisconnectedAsync(closeConnectionMessage);
                 case ConnectionDataMessage connectionDataMessage:
                     return OnMessageAsync(connectionDataMessage);
+                case ServerCloseMessage serverCloseMessage:
+                    return OnServerCloseAsync(serverCloseMessage);
                 case PingMessage _:
                     // ignore ping
                     break;

@@ -67,4 +67,31 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public static PingMessage Instance = new PingMessage();
     }
+
+    /// <summary>
+    /// A server close message
+    /// </summary>
+    public class ServerCloseMessage : ServiceMessage
+    {
+        /// <summary>
+        /// Gets or sets the optional close message
+        /// </summary>
+        public string CloseMessage { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServerCloseMessage"/> class.
+        /// </summary>
+        public ServerCloseMessage() : this(string.Empty)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServerCloseMessage"/> class.
+        /// </summary>
+        /// <param name="closeMessage">An optional close message. A <c>null</c> or empty error message indicates a close without errors.</param>
+        public ServerCloseMessage(string closeMessage)
+        {
+            CloseMessage = closeMessage;
+        }
+    }
 }
