@@ -41,6 +41,7 @@ namespace Microsoft.Azure.SignalR
         private bool _isStopped;
         private long _lastReceiveTimestamp;
         protected ConnectionContext _connection;
+        protected string _errorMessage;
 
         public Task WaitForConnectionStart => _serviceConnectionStartTcs.Task;
 
@@ -85,6 +86,12 @@ namespace Microsoft.Azure.SignalR
             // The lock is per serviceConnection
             await _serviceConnectionLock.WaitAsync();
 
+            if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                _serviceConnectionLock.Release();
+                throw new InvalidOperationException(_errorMessage);
+            }
+
             if (_connection == null)
             {
                 _serviceConnectionLock.Release();
@@ -123,6 +130,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (!string.IsNullOrEmpty(serverCloseMessage.ErrorMessage))
             {
+                _errorMessage = serverCloseMessage.ErrorMessage;
                 throw new Exception(serverCloseMessage.ErrorMessage);
             }
 
@@ -140,6 +148,7 @@ namespace Microsoft.Azure.SignalR
                 try
                 {
                     _connection = await CreateConnection();
+                    _errorMessage = null;
 
                     if (await HandshakeAsync())
                     {

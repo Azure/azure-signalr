@@ -141,6 +141,26 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        public async Task ThrowingExceptionAfterServerCloseMessage()
+        {
+            var proxy = new ServiceConnectionProxy();
+
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
+            _ = proxy.StartAsync();
+            await serverTask.OrTimeout();
+
+            string errorMessage = "Maximum message count limit reached: 100000";
+
+            await proxy.WriteMessageAsync(new ServerCloseMessage(errorMessage));
+            await Task.Delay(200);
+
+            var serviceConnection = proxy.ServiceConnection;
+            var excption = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                serviceConnection.WriteAsync(new ConnectionDataMessage("1", null)));
+            Assert.Equal(errorMessage, excption.Message);
+        }
+
+        [Fact]
         public async Task WritingMessagesFromConnectionGetsSentAsConnectionData()
         {
             var proxy = new ServiceConnectionProxy();
