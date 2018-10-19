@@ -43,7 +43,17 @@ namespace Microsoft.Azure.SignalR
         private IEnumerable<Claim> BuildClaims(HttpContext context)
         {
             var userId = _userIdProvider.GetUserId(new ServiceHubConnectionContext(context));
-            return ClaimsUtility.BuildJwtClaims(context.User, userId, () => _claimsProvider?.Invoke(context));
+            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context)).ToList();
+        }
+
+        private Func<IEnumerable<Claim>> GetClaimsProvider(HttpContext context)
+        {
+            if (_claimsProvider == null)
+            {
+                return null;
+            }
+
+            return () => _claimsProvider.Invoke(context);
         }
 
         private static string GetOriginalPath(string path)
