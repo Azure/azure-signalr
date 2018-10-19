@@ -366,7 +366,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             MessagePackBinary.WriteArrayHeader(packer,2);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ServerCloseMessageType);
-            MessagePackBinary.WriteString(packer, message.CloseMessage);
+            MessagePackBinary.WriteString(packer, message.ErrorMessage);
         }
 
         private static void WriteStringArray(IReadOnlyList<string> array, Stream packer)

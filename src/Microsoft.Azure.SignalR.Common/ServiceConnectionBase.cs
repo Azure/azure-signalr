@@ -121,9 +121,9 @@ namespace Microsoft.Azure.SignalR
 
         protected Task OnServerCloseAsync(ServerCloseMessage serverCloseMessage)
         {
-            if (!string.IsNullOrEmpty(serverCloseMessage.CloseMessage))
+            if (!string.IsNullOrEmpty(serverCloseMessage.ErrorMessage))
             {
-                throw new Exception(serverCloseMessage.CloseMessage);
+                throw new Exception(serverCloseMessage.ErrorMessage);
             }
 
             return Task.CompletedTask;

@@ -74,24 +74,17 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class ServerCloseMessage : ServiceMessage
     {
         /// <summary>
-        /// Gets or sets the optional close message
+        /// Gets or sets the error message
         /// </summary>
-        public string CloseMessage { get; set; }
+        public string ErrorMessage { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServerCloseMessage"/> class.
         /// </summary>
-        public ServerCloseMessage() : this(string.Empty)
+        /// <param name="errorMessage">An error message.</param>
+        public ServerCloseMessage(string errorMessage)
         {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ServerCloseMessage"/> class.
-        /// </summary>
-        /// <param name="closeMessage">An optional close message. A <c>null</c> or empty error message indicates a close without errors.</param>
-        public ServerCloseMessage(string closeMessage)
-        {
-            CloseMessage = closeMessage;
+            ErrorMessage = errorMessage;
         }
     }
 }
