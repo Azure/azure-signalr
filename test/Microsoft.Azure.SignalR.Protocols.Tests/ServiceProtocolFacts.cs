@@ -159,6 +159,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["messagepack"] = new byte[] {7, 8, 1, 2, 3, 4, 5, 6}
                     }),
                 binary: "kw6Spmdyb3VwNKZncm91cDWCpGpzb27ECAECAwQFBgcIq21lc3NhZ2VwYWNrxAgHCAECAwQFBg=="),
+            new ProtocolTestData(
+                name: "ServerClose",
+                message: new ServerCloseMessage("Message count reach limit: 100000"),
+                binary: "kg/ZIU1lc3NhZ2UgY291bnQgcmVhY2ggbGltaXQ6IDEwMDAwMA=="),
         }.ToDictionary(t => t.Name);
 
         [Theory]
