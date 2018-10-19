@@ -52,6 +52,8 @@ namespace Microsoft.Azure.SignalR.Tests
             return ServiceConnection.StartAsync();
         }
 
+        public bool IsConnected => ServiceConnection.IsConnected;
+
         public async Task ProcessApplicationMessagesAsync()
         {
             try

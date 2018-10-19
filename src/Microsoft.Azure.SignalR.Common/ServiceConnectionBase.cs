@@ -40,6 +40,7 @@ namespace Microsoft.Azure.SignalR
 
         private bool _isStopped;
         private long _lastReceiveTimestamp;
+        private volatile bool _isConnected;
         protected ConnectionContext _connection;
 
         public Task WaitForConnectionStart => _serviceConnectionStartTcs.Task;
@@ -70,15 +71,16 @@ namespace Microsoft.Azure.SignalR
 
                 _serviceConnectionStartTcs.TrySetResult(true);
                 retryCount = 0;
-
+                _isConnected = true;
                 await ProcessIncomingAsync();
+                _isConnected = false;
             }
         }
 
         /// <summary>
         /// exponential back off with max 1 minute.
         /// </summary>
-        private static TimeSpan GetRetryDelay(ref int retryCount)
+        public static TimeSpan GetRetryDelay(ref int retryCount)
         {
             // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
             // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
@@ -96,6 +98,9 @@ namespace Microsoft.Azure.SignalR
             _connection?.Transport.Input.CancelPendingRead();
             return Task.CompletedTask;
         }
+
+        // For test purpose only
+        public bool IsConnected => _isConnected;
 
         public async virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
@@ -139,43 +144,38 @@ namespace Microsoft.Azure.SignalR
 
         private async Task<bool> StartAsyncCore()
         {
-            // Always try until connected
-            while (true)
+            // Lock here in case somebody tries to send before the connection is assigned
+            await _serviceConnectionLock.WaitAsync();
+
+            try
             {
-                // Lock here in case somebody tries to send before the connection is assigned
-                await _serviceConnectionLock.WaitAsync();
+                _connection = await CreateConnection();
 
-                try
+                if (await HandshakeAsync())
                 {
-                    _connection = await CreateConnection();
-
-                    if (await HandshakeAsync())
-                    {
-                        Log.ServiceConnectionConnected(_logger, _connectionId);
-                        return true;
-                    }
-                    else
-                    {
-                        // False means we got a HandshakeResponseMessage with error. Will take below actions:
-                        // - Dispose the connection
-                        // - Stop reconnect
-                        await DisposeConnection();
-
-                        return false;
-                    }
+                    Log.ServiceConnectionConnected(_logger, _connectionId);
+                    return true;
                 }
-                catch (Exception ex)
+                else
                 {
-                    Log.FailedToConnect(_logger, ex);
-
+                    // False means we got a HandshakeResponseMessage with error. Will take below actions:
+                    // - Dispose the connection
                     await DisposeConnection();
 
-                    await Task.Delay(ReconnectInterval);
+                    return false;
                 }
-                finally
-                {
-                    _serviceConnectionLock.Release();
-                }
+            }
+            catch (Exception ex)
+            {
+                Log.FailedToConnect(_logger, ex);
+
+                await DisposeConnection();
+
+                return false;
+            }
+            finally
+            {
+                _serviceConnectionLock.Release();
             }
         }
 
