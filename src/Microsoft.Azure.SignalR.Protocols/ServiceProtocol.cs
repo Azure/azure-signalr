@@ -90,7 +90,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ServiceProtocolConstants.MultiGroupBroadcastDataMessageType:
                     return CreateMultiGroupBroadcastDataMessage(input, ref startOffset);
                 case ServiceProtocolConstants.ServerCloseMessageType:
-                    return createServerCloseMessage(input, ref startOffset);
+                    return CreateServerCloseMessage(input, ref startOffset);
                 default:
                     // Future protocol changes can add message types, old clients can ignore them
                     return null;
@@ -539,7 +539,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             return new MultiGroupBroadcastDataMessage(groupList, payloads);
         }
 
-        private static ServerCloseMessage createServerCloseMessage(byte[] input, ref int offset)
+        private static ServerCloseMessage CreateServerCloseMessage(byte[] input, ref int offset)
         {
             var closeMessage = ReadString(input, ref offset, "closeMessage");
 
