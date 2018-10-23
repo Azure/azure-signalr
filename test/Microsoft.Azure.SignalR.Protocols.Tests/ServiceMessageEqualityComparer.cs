@@ -54,7 +54,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return MultiGroupBroadcastDataMessagesEqual(multiGroupBroadcastDataMessage,
                         (MultiGroupBroadcastDataMessage)y);
                 case ServerCloseMessage serverCloseMessage:
-                    return ServerCloseMessageEqual(serverCloseMessage, (ServerCloseMessage) y);
+                    return ServerCloseMessageEqual(serverCloseMessage, (ServerCloseMessage)y);
                 default:
                     throw new InvalidOperationException($"Unknown message type: {x.GetType().FullName}");
             }
