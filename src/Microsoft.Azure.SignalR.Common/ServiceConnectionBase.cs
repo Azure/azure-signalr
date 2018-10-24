@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR
         private bool _isStopped;
         private long _lastReceiveTimestamp;
         protected ConnectionContext _connection;
-        protected string _errorMessage;
+        protected string ErrorMessage;
 
         public Task WaitForConnectionStart => _serviceConnectionStartTcs.Task;
 
@@ -86,10 +86,10 @@ namespace Microsoft.Azure.SignalR
             // The lock is per serviceConnection
             await _serviceConnectionLock.WaitAsync();
 
-            if (!string.IsNullOrEmpty(_errorMessage))
+            if (!string.IsNullOrEmpty(ErrorMessage))
             {
                 _serviceConnectionLock.Release();
-                throw new InvalidOperationException(_errorMessage);
+                throw new InvalidOperationException(ErrorMessage);
             }
 
             if (_connection == null)
@@ -131,10 +131,10 @@ namespace Microsoft.Azure.SignalR
             if (!string.IsNullOrEmpty(serviceErrorMessage.ErrorMessage))
             {
                 // When receives service error message, we suppose server -> service connection doesn't work,
-                // and set _errorMessage to prevent sending message from server to service
+                // and set ErrorMessage to prevent sending message from server to service
                 // But messages in the pipe from service -> server should be processed as usual. Just log without
                 // throw exception here.
-                _errorMessage = serviceErrorMessage.ErrorMessage;
+                ErrorMessage = serviceErrorMessage.ErrorMessage;
                 Log.ReceivedServiceErrorMessage(_logger, serviceErrorMessage.ErrorMessage);
             }
 
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.SignalR
                 try
                 {
                     _connection = await CreateConnection();
-                    _errorMessage = null;
+                    ErrorMessage = null;
 
                     if (await HandshakeAsync())
                     {
