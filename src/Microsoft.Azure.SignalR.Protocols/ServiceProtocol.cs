@@ -89,8 +89,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateGroupBroadcastDataMessage(input, ref startOffset);
                 case ServiceProtocolConstants.MultiGroupBroadcastDataMessageType:
                     return CreateMultiGroupBroadcastDataMessage(input, ref startOffset);
-                case ServiceProtocolConstants.ServerCloseMessageType:
-                    return CreateServerCloseMessage(input, ref startOffset);
+                case ServiceProtocolConstants.ServiceErrorMessageType:
+                    return CreateServiceErrorMessage(input, ref startOffset);
                 default:
                     // Future protocol changes can add message types, old clients can ignore them
                     return null;
@@ -192,8 +192,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case MultiGroupBroadcastDataMessage multiGroupBroadcastDataMessage:
                     WriteMultiGroupBroadcastDataMessage(multiGroupBroadcastDataMessage, packer);
                     break;
-                case ServerCloseMessage serverCloseMessage:
-                    WriteServerCloseMessage(serverCloseMessage, packer);
+                case ServiceErrorMessage serviceErrorMessage:
+                    WriteServiceErrorMessage(serviceErrorMessage, packer);
                     break;
                 default:
                     throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
@@ -362,10 +362,10 @@ namespace Microsoft.Azure.SignalR.Protocol
             WritePayloads(message.Payloads, packer);
         }
 
-        private static void WriteServerCloseMessage(ServerCloseMessage message, Stream packer)
+        private static void WriteServiceErrorMessage(ServiceErrorMessage message, Stream packer)
         {
             MessagePackBinary.WriteArrayHeader(packer,2);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ServerCloseMessageType);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ServiceErrorMessageType);
             MessagePackBinary.WriteString(packer, message.ErrorMessage);
         }
 
@@ -539,11 +539,11 @@ namespace Microsoft.Azure.SignalR.Protocol
             return new MultiGroupBroadcastDataMessage(groupList, payloads);
         }
 
-        private static ServerCloseMessage CreateServerCloseMessage(byte[] input, ref int offset)
+        private static ServiceErrorMessage CreateServiceErrorMessage(byte[] input, ref int offset)
         {
-            var closeMessage = ReadString(input, ref offset, "closeMessage");
+            var errorMessage = ReadString(input, ref offset, "errorMessage");
 
-            return new ServerCloseMessage(closeMessage);
+            return new ServiceErrorMessage(errorMessage);
         }
 
         private static Claim[] ReadClaims(byte[] input, ref int offset)

@@ -141,7 +141,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async Task ThrowingExceptionAfterServerCloseMessage()
+        public async Task ThrowingExceptionAfterServiceErrorMessage()
         {
             var proxy = new ServiceConnectionProxy();
 
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             string errorMessage = "Maximum message count limit reached: 100000";
 
-            await proxy.WriteMessageAsync(new ServerCloseMessage(errorMessage));
+            await proxy.WriteMessageAsync(new ServiceErrorMessage(errorMessage));
             await Task.Delay(200);
 
             var serviceConnection = proxy.ServiceConnection;

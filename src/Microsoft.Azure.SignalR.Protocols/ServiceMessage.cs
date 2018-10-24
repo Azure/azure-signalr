@@ -69,9 +69,9 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
-    /// A server close message
+    /// A service error message
     /// </summary>
-    public class ServerCloseMessage : ServiceMessage
+    public class ServiceErrorMessage : ServiceMessage
     {
         /// <summary>
         /// Gets or sets the error message
@@ -79,10 +79,10 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string ErrorMessage { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ServerCloseMessage"/> class.
+        /// Initializes a new instance of the <see cref="ServiceErrorMessage"/> class.
         /// </summary>
         /// <param name="errorMessage">An error message.</param>
-        public ServerCloseMessage(string errorMessage)
+        public ServiceErrorMessage(string errorMessage)
         {
             ErrorMessage = errorMessage;
         }

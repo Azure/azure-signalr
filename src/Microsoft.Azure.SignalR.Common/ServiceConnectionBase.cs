@@ -126,12 +126,16 @@ namespace Microsoft.Azure.SignalR
 
         protected abstract Task OnMessageAsync(ConnectionDataMessage connectionDataMessage);
 
-        protected Task OnServerCloseAsync(ServerCloseMessage serverCloseMessage)
+        protected Task OnServiceErrorAsync(ServiceErrorMessage serviceErrorMessage)
         {
-            if (!string.IsNullOrEmpty(serverCloseMessage.ErrorMessage))
+            if (!string.IsNullOrEmpty(serviceErrorMessage.ErrorMessage))
             {
-                _errorMessage = serverCloseMessage.ErrorMessage;
-                throw new Exception(serverCloseMessage.ErrorMessage);
+                // When receives service error message, we suppose server -> service connection doesn't work,
+                // and set _errorMessage to prevent sending message from server to service
+                // But messages in the pipe from service -> server should be processed as usual. Just log without
+                // throw exception here.
+                _errorMessage = serviceErrorMessage.ErrorMessage;
+                Log.ReceivedServiceErrorMessage(_logger, serviceErrorMessage.ErrorMessage);
             }
 
             return Task.CompletedTask;
@@ -362,8 +366,8 @@ namespace Microsoft.Azure.SignalR
                     return OnDisconnectedAsync(closeConnectionMessage);
                 case ConnectionDataMessage connectionDataMessage:
                     return OnMessageAsync(connectionDataMessage);
-                case ServerCloseMessage serverCloseMessage:
-                    return OnServerCloseAsync(serverCloseMessage);
+                case ServiceErrorMessage serviceErrorMessage:
+                    return OnServiceErrorAsync(serviceErrorMessage);
                 case PingMessage _:
                     // ignore ping
                     break;
@@ -535,6 +539,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, Exception> _failedSendingPing =
                 LoggerMessage.Define(LogLevel.Warning, new EventId(26, "FailedSendingPing"), "Failed sending a ping message to service.");
 
+            private static readonly Action<ILogger, string, Exception> _receivedServiceErrorMessage =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(27, "ReceivedServiceErrorMessage"), "Received error message from service: {Error}");
+
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
                 _failedToWrite(logger, exception);
@@ -663,6 +670,11 @@ namespace Microsoft.Azure.SignalR
             public static void FailedSendingPing(ILogger logger, Exception exception)
             {
                 _failedSendingPing(logger, exception);
+            }
+
+            public static void ReceivedServiceErrorMessage(ILogger logger, string errorMessage)
+            {
+                _receivedServiceErrorMessage(logger, errorMessage, null);
             }
         }
     }
