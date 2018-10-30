@@ -43,7 +43,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 User = new ClaimsPrincipal(new ClaimsIdentity(new[]
                 {
                     new Claim(CustomClaimType, CustomUserId),
-                    new Claim(ClaimTypes.NameIdentifier, DefaultUserId)
+                    new Claim(ClaimTypes.NameIdentifier, DefaultUserId),
+                    new Claim("custom", "custom"),
                 }))
             };
 
@@ -58,6 +59,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var token = JwtSecurityTokenHandler.ReadJwtToken(negotiateResponse.AccessToken);
             Assert.Equal(expectedUserId, token.Claims.FirstOrDefault(x => x.Type == Constants.ClaimType.UserId)?.Value);
+            Assert.Equal("custom", token.Claims.FirstOrDefault(x => x.Type == "custom")?.Value);
         }
 
         [Theory]
