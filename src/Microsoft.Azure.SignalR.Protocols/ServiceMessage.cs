@@ -67,4 +67,24 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public static PingMessage Instance = new PingMessage();
     }
+
+    /// <summary>
+    /// A service error message
+    /// </summary>
+    public class ServiceErrorMessage : ServiceMessage
+    {
+        /// <summary>
+        /// Gets or sets the error message
+        /// </summary>
+        public string ErrorMessage { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceErrorMessage"/> class.
+        /// </summary>
+        /// <param name="errorMessage">An error message.</param>
+        public ServiceErrorMessage(string errorMessage)
+        {
+            ErrorMessage = errorMessage;
+        }
+    }
 }
