@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var proxy = new ServiceConnectionProxy();
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
-            _ =  proxy.StartAsync();
+            _ = proxy.StartAsync();
             await serverTask.OrTimeout();
 
             Assert.Empty(proxy.ClientConnectionManager.ClientConnections);
@@ -57,9 +57,9 @@ namespace Microsoft.Azure.SignalR.Tests
             const string headerKey1 = "custom-header-1";
             const string headerValue1 = "custom-value-1";
             const string headerKey2 = "custom-header-2";
-            var headerValue2 = new[] {"custom-value-2a", "custom-value-2b"};
+            var headerValue2 = new[] { "custom-value-2a", "custom-value-2b" };
             const string headerKey3 = "custom-header-3";
-            var headerValue3 = new[] {"custom-value-3a", "custom-value-3b", "custom-value-3c"};
+            var headerValue3 = new[] { "custom-value-3a", "custom-value-3b", "custom-value-3c" };
             const string path = "/this/is/user/path";
 
             await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId2, null,
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.SignalR.Tests
             // Wait for 35s to make the server side timeout
             // Assert the server will reconnect
             var serverTask2 = proxy.WaitForServerConnectionAsync(2);
-            Assert.False(Task.WaitAll(new Task[] {serverTask2}, TimeSpan.FromSeconds(1)));
+            Assert.False(Task.WaitAll(new Task[] { serverTask2 }, TimeSpan.FromSeconds(1)));
 
             await Task.Delay(TimeSpan.FromSeconds(35));
 
@@ -263,22 +263,33 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
-            await serverTask.OrTimeout();
+            // fail 3 times, 1~2 + 2~3 + 4~5 = 7~10
+            await serverTask.OrTimeout(11 * 1000);
 
             var connectionId = Guid.NewGuid().ToString("N");
 
             var connectionTask = proxy.WaitForConnectionAsync(connectionId);
             await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, null));
             await connectionTask.OrTimeout();
+
+            Assert.True(proxy.IsConnected);
+            var list = connectionFactory.Times;
+            Assert.True(TimeSpan.FromSeconds(0.9) < list[1] - list[0]);
+            Assert.True(TimeSpan.FromSeconds(2.1) > list[1] - list[0]);
+            Assert.True(TimeSpan.FromSeconds(1.9) < list[2] - list[1]);
+            Assert.True(TimeSpan.FromSeconds(3.1) > list[2] - list[1]);
+            Assert.True(TimeSpan.FromSeconds(3.9) < list[3] - list[2]);
+            Assert.True(TimeSpan.FromSeconds(5.1) > list[3] - list[2]);
         }
 
         /// <summary>
-        /// Service connection should stop reconnecting to service after receiving a handshake response with error message.
+        /// Service connection should reconnecting to service after receiving a handshake response with error message.
         /// </summary>
         [Fact]
-        public async Task StopReconnectAfterReceivingHandshakeErrorMessage()
+        public async Task ReconnectAfterReceivingHandshakeErrorMessage()
         {
-            var proxy = new ServiceConnectionProxy(connectionFactory: new TestConnectionFactoryWithHandshakeError());
+            var connectionFactory = new TestConnectionFactoryWithHandshakeError();
+            var proxy = new ServiceConnectionProxy(connectionFactory: connectionFactory);
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
@@ -288,9 +299,19 @@ namespace Microsoft.Azure.SignalR.Tests
             var connectionTask = proxy.WaitForConnectionAsync(connectionId);
 
             await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, null));
-            
+
             // Connection exits so the Task should be timeout
-            Assert.False(Task.WaitAll(new Task[] {connectionTask}, TimeSpan.FromSeconds(1)));
+            Assert.False(Task.WaitAll(new Task[] { connectionTask }, TimeSpan.FromSeconds(1)));
+
+            await Task.Delay(10 * 1000);
+            Assert.False(proxy.IsConnected);
+            var list = connectionFactory.Times;
+            Assert.True(TimeSpan.FromSeconds(0.9) < list[1] - list[0]);
+            Assert.True(TimeSpan.FromSeconds(2.1) > list[1] - list[0]);
+            Assert.True(TimeSpan.FromSeconds(1.9) < list[2] - list[1]);
+            Assert.True(TimeSpan.FromSeconds(3.1) > list[2] - list[1]);
+            Assert.True(TimeSpan.FromSeconds(3.9) < list[3] - list[2]);
+            Assert.True(TimeSpan.FromSeconds(5.1) > list[3] - list[2]);
         }
 
         /// <summary>
@@ -305,13 +326,24 @@ namespace Microsoft.Azure.SignalR.Tests
             // Throw exception for 3 times and will be success in the 4th retry
             var serverTask = proxy.WaitForServerConnectionAsync(4);
             _ = proxy.StartAsync();
-            await serverTask.OrTimeout();
+            // fail 3 times, 1~2 + 2~3 + 4~5 = 7~10
+            await serverTask.OrTimeout(11 * 1000);
 
             var connectionId = Guid.NewGuid().ToString("N");
 
             var connectionTask = proxy.WaitForConnectionAsync(connectionId);
             await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, null));
             await connectionTask.OrTimeout();
+
+            Assert.True(proxy.IsConnected);
+            var list = connectionFactory.Times;
+            Assert.True(TimeSpan.FromSeconds(0.9) < list[1] - list[0]);
+            Assert.True(TimeSpan.FromSeconds(2.1) > list[1] - list[0]);
+            Assert.True(TimeSpan.FromSeconds(1.9) < list[2] - list[1]);
+            Assert.True(TimeSpan.FromSeconds(3.1) > list[2] - list[1]);
+            Assert.True(TimeSpan.FromSeconds(3.9) < list[3] - list[2]);
+            Assert.True(TimeSpan.FromSeconds(5.1) > list[3] - list[2]);
+
         }
 
         /// <summary>
@@ -328,7 +360,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // Try to wait the second handshake after reconnect
             var serverTask2 = proxy.WaitForServerConnectionAsync(2);
-            Assert.False(Task.WaitAll(new Task[] {serverTask2 }, TimeSpan.FromSeconds(1)));
+            Assert.False(Task.WaitAll(new Task[] { serverTask2 }, TimeSpan.FromSeconds(1)));
 
             // Dispose the connection, then server will throw exception and reconnect
             serverConnection1.Transport.Input.CancelPendingRead();

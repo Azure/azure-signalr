@@ -40,6 +40,7 @@ namespace Microsoft.Azure.SignalR
 
         private bool _isStopped;
         private long _lastReceiveTimestamp;
+        private volatile bool _isConnected;
         protected ConnectionContext _connection;
         protected string ErrorMessage;
 
@@ -57,19 +58,38 @@ namespace Microsoft.Azure.SignalR
 
         public async Task StartAsync()
         {
+            int retryCount = 0;
             while (!_isStopped)
             {
                 // If we are not able to start, we will quit this connection.
                 if (!await StartAsyncCore())
                 {
                     _serviceConnectionStartTcs.TrySetResult(false);
-                    return;
+
+                    await Task.Delay(GetRetryDelay(ref retryCount));
+                    continue;
                 }
 
                 _serviceConnectionStartTcs.TrySetResult(true);
-
+                retryCount = 0;
+                _isConnected = true;
                 await ProcessIncomingAsync();
+                _isConnected = false;
             }
+        }
+
+        /// <summary>
+        /// exponential back off with max 1 minute.
+        /// </summary>
+        public static TimeSpan GetRetryDelay(ref int retryCount)
+        {
+            // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
+            // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
+            if (retryCount > 5)
+            {
+                return TimeSpan.FromMinutes(1) + ReconnectInterval;
+            }
+            return TimeSpan.FromSeconds(1 << retryCount++) + ReconnectInterval;
         }
 
         // For test purpose only
@@ -79,6 +99,9 @@ namespace Microsoft.Azure.SignalR
             _connection?.Transport.Input.CancelPendingRead();
             return Task.CompletedTask;
         }
+
+        // For test purpose only
+        public bool IsConnected => _isConnected;
 
         public async virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
@@ -144,44 +167,39 @@ namespace Microsoft.Azure.SignalR
 
         private async Task<bool> StartAsyncCore()
         {
-            // Always try until connected
-            while (true)
+            // Lock here in case somebody tries to send before the connection is assigned
+            await _serviceConnectionLock.WaitAsync();
+
+            try
             {
-                // Lock here in case somebody tries to send before the connection is assigned
-                await _serviceConnectionLock.WaitAsync();
+                _connection = await CreateConnection();
+                ErrorMessage = null;
 
-                try
+                if (await HandshakeAsync())
                 {
-                    _connection = await CreateConnection();
-                    ErrorMessage = null;
-
-                    if (await HandshakeAsync())
-                    {
-                        Log.ServiceConnectionConnected(_logger, _connectionId);
-                        return true;
-                    }
-                    else
-                    {
-                        // False means we got a HandshakeResponseMessage with error. Will take below actions:
-                        // - Dispose the connection
-                        // - Stop reconnect
-                        await DisposeConnection();
-
-                        return false;
-                    }
+                    Log.ServiceConnectionConnected(_logger, _connectionId);
+                    return true;
                 }
-                catch (Exception ex)
+                else
                 {
-                    Log.FailedToConnect(_logger, ex);
-
+                    // False means we got a HandshakeResponseMessage with error. Will take below actions:
+                    // - Dispose the connection
                     await DisposeConnection();
 
-                    await Task.Delay(ReconnectInterval);
+                    return false;
                 }
-                finally
-                {
-                    _serviceConnectionLock.Release();
-                }
+            }
+            catch (Exception ex)
+            {
+                Log.FailedToConnect(_logger, ex);
+
+                await DisposeConnection();
+
+                return false;
+            }
+            finally
+            {
+                _serviceConnectionLock.Release();
             }
         }
 
