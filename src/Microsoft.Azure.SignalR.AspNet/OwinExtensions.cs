@@ -159,7 +159,7 @@ namespace Owin
             if (hubs?.Count > 0)
             {
                 // Start the server->service connection asynchronously 
-                _ = new ConnectionFactory(hubs, configuration).StartAsync();
+                _ = new ConnectionFactory(hubs, configuration, logger).StartAsync();
             }
             else
             {
