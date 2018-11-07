@@ -11,6 +11,7 @@ using System.Web;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
+using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -40,8 +41,17 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             if (dispatcher.Authorize(hostContext.Request))
             {
-                // ProcessRequest checks if the connectionToken matches "{connectionid}:{userName}" format with context.User
-                _ = dispatcher.ProcessRequest(hostContext);
+                try
+                {
+                    // ProcessRequest checks if the connectionToken matches "{connectionid}:{userName}" format with context.User
+                    _ = dispatcher.ProcessRequest(hostContext);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    var dataProtection = _configuration.Resolver.Resolve<IProtectedData>();
+                    _logger.LogError($"IProtectedData is {dataProtection.GetType()} : {ex.ToString()}");
+                    throw;
+                }
 
                 // TODO: check for errors written to the response
                 if (hostContext.Response.StatusCode != 200)
