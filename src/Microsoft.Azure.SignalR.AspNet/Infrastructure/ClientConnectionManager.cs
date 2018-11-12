@@ -59,6 +59,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                     Log.ProcessRequestError(_logger, message.ConnectionId, hostContext.Request.QueryString.ToString());
                     Debug.Fail("Response StatusCode is " + hostContext.Response.StatusCode);
                     var errorResponse = GetContentAndDispose(responseStream);
+                    _logger.LogError($"StatusCode: {hostContext.Response.StatusCode}, error: {errorResponse}");
                     throw new InvalidOperationException(errorResponse);
                 }
 
