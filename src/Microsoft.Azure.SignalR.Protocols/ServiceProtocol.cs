@@ -89,6 +89,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateGroupBroadcastDataMessage(input, ref startOffset);
                 case ServiceProtocolConstants.MultiGroupBroadcastDataMessageType:
                     return CreateMultiGroupBroadcastDataMessage(input, ref startOffset);
+                case ServiceProtocolConstants.ServiceErrorMessageType:
+                    return CreateServiceErrorMessage(input, ref startOffset);
                 default:
                     // Future protocol changes can add message types, old clients can ignore them
                     return null;
@@ -189,6 +191,9 @@ namespace Microsoft.Azure.SignalR.Protocol
                     break;
                 case MultiGroupBroadcastDataMessage multiGroupBroadcastDataMessage:
                     WriteMultiGroupBroadcastDataMessage(multiGroupBroadcastDataMessage, packer);
+                    break;
+                case ServiceErrorMessage serviceErrorMessage:
+                    WriteServiceErrorMessage(serviceErrorMessage, packer);
                     break;
                 default:
                     throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
@@ -355,6 +360,13 @@ namespace Microsoft.Azure.SignalR.Protocol
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.MultiGroupBroadcastDataMessageType);
             WriteStringArray(message.GroupList, packer);
             WritePayloads(message.Payloads, packer);
+        }
+
+        private static void WriteServiceErrorMessage(ServiceErrorMessage message, Stream packer)
+        {
+            MessagePackBinary.WriteArrayHeader(packer,2);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ServiceErrorMessageType);
+            MessagePackBinary.WriteString(packer, message.ErrorMessage);
         }
 
         private static void WriteStringArray(IReadOnlyList<string> array, Stream packer)
@@ -525,6 +537,13 @@ namespace Microsoft.Azure.SignalR.Protocol
             var payloads = ReadPayloads(input, ref offset);
 
             return new MultiGroupBroadcastDataMessage(groupList, payloads);
+        }
+
+        private static ServiceErrorMessage CreateServiceErrorMessage(byte[] input, ref int offset)
+        {
+            var errorMessage = ReadString(input, ref offset, "errorMessage");
+
+            return new ServiceErrorMessage(errorMessage);
         }
 
         private static Claim[] ReadClaims(byte[] input, ref int offset)

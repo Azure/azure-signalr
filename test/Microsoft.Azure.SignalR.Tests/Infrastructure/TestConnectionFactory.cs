@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -20,14 +21,17 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public virtual TestConnection CurrentConnectionContext { get; private set; }
 
+        public List<DateTime> Times { get; } = new List<DateTime>();
+
         public TestConnectionFactory(Func<TestConnection, Task> connectCallback = null)
         {
             _connectCallback = connectCallback;
         }
-
+        
         public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId,
             CancellationToken cancellationToken = default)
         {
+            Times.Add(DateTime.Now);
             CurrentConnectionContext = null;
 
             var connection = new TestConnection();

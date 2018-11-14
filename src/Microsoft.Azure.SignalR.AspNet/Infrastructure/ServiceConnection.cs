@@ -106,10 +106,12 @@ namespace Microsoft.Azure.SignalR.AspNet
                     Log.FailToWriteMessageToApplication(_logger, connectionDataMessage.ConnectionId, ex);
                 }
             }
-
-            // Unexpected error
-            Log.ReceivedMessageForNonExistentConnection(_logger, connectionDataMessage.ConnectionId);
-
+            else
+            {
+                // Unexpected error
+                Log.ReceivedMessageForNonExistentConnection(_logger, connectionDataMessage.ConnectionId);
+            }
+            
             return Task.CompletedTask;
         }
 

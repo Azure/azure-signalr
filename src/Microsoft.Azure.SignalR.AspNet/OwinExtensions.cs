@@ -37,11 +37,36 @@ namespace Owin
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
         /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="optionsConfigure">A callback to configure the <see cref="ServiceOptions"/>.</param>
+        /// <returns>The app builder</returns>
+        public static IAppBuilder MapAzureSignalR(this IAppBuilder builder, string applicationName, Action<ServiceOptions> optionsConfigure)
+        {
+            return builder.MapAzureSignalR(applicationName, new HubConfiguration(), optionsConfigure);
+        }
+
+        /// <summary>
+        /// Maps Azure SignalR hubs to the app builder pipeline at "/signalr".
+        /// </summary>
+        /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
+        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
         /// <param name="configuration">The hub configuration <see cref="HubConfiguration"/>.</param>
         /// <returns>The app builder</returns>
         public static IAppBuilder MapAzureSignalR(this IAppBuilder builder, string applicationName, HubConfiguration configuration)
         {
             return builder.MapAzureSignalR("/signalr", applicationName, configuration);
+        }
+
+        /// <summary>
+        /// Maps Azure SignalR hubs to the app builder pipeline at "/signalr".
+        /// </summary>
+        /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
+        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="configuration">The hub configuration <see cref="HubConfiguration"/>.</param>
+        /// <param name="optionsConfigure">A callback to configure the <see cref="ServiceOptions"/>.</param>
+        /// <returns>The app builder</returns>
+        public static IAppBuilder MapAzureSignalR(this IAppBuilder builder, string applicationName, HubConfiguration configuration, Action<ServiceOptions> optionsConfigure)
+        {
+            return builder.MapAzureSignalR("/signalr", applicationName, configuration, optionsConfigure);
         }
 
         /// <summary>
@@ -55,6 +80,20 @@ namespace Owin
         public static IAppBuilder MapAzureSignalR(this IAppBuilder builder, string path, string applicationName, HubConfiguration configuration)
         {
             return builder.Map(path, subApp => subApp.RunAzureSignalR(applicationName, configuration));
+        }
+
+        /// <summary>
+        /// Maps Azure SignalR hubs to the app builder pipeline at the specified path.
+        /// </summary>
+        /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
+        /// <param name="path">The path to map signalr hubs.</param>
+        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="configuration">The hub configuration <see cref="HubConfiguration"/>.</param>
+        /// <param name="optionsConfigure">A callback to configure the <see cref="ServiceOptions"/>.</param>
+        /// <returns>The app builder</returns>
+        public static IAppBuilder MapAzureSignalR(this IAppBuilder builder, string path, string applicationName, HubConfiguration configuration, Action<ServiceOptions> optionsConfigure)
+        {
+            return builder.Map(path, subApp => subApp.RunAzureSignalR(applicationName, configuration, optionsConfigure));
         }
 
         /// <summary>
@@ -159,7 +198,7 @@ namespace Owin
             if (hubs?.Count > 0)
             {
                 // Start the server->service connection asynchronously 
-                _ = new ConnectionFactory(hubs, configuration).StartAsync();
+                _ = new ConnectionFactory(hubs, configuration, logger).StartAsync();
             }
             else
             {

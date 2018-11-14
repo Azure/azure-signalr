@@ -159,6 +159,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["messagepack"] = new byte[] {7, 8, 1, 2, 3, 4, 5, 6}
                     }),
                 binary: "kw6Spmdyb3VwNKZncm91cDWCpGpzb27ECAECAwQFBgcIq21lc3NhZ2VwYWNrxAgHCAECAwQFBg=="),
+            new ProtocolTestData(
+                name: "ServiceError",
+                message: new ServiceErrorMessage("Maximum message count limit reached: 100000"),
+                binary: "kg/ZK01heGltdW0gbWVzc2FnZSBjb3VudCBsaW1pdCByZWFjaGVkOiAxMDAwMDA="),
         }.ToDictionary(t => t.Name);
 
         [Theory]

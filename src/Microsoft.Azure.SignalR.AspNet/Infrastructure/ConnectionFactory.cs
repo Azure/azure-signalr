@@ -34,14 +34,14 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly string _name;
         private readonly string _userId;
 
-        public ConnectionFactory(IReadOnlyList<string> hubNames, HubConfiguration hubConfig)
+        public ConnectionFactory(IReadOnlyList<string> hubNames, HubConfiguration hubConfig, ILoggerFactory loggerFactory)
         {
             _config = hubConfig;
             _hubNames = hubNames;
             _name = $"{nameof(ConnectionFactory)}[{string.Join(",", hubNames)}]";
             _userId = GenerateServerName();
 
-            _loggerFactory = hubConfig.Resolver.Resolve<ILoggerFactory>() ?? NullLoggerFactory.Instance;
+            _loggerFactory = loggerFactory;
             _protocol = hubConfig.Resolver.Resolve<IServiceProtocol>();
             _serviceConnectionManager = hubConfig.Resolver.Resolve<IServiceConnectionManager>();
             _clientConnectionManager = hubConfig.Resolver.Resolve<IClientConnectionManager>();

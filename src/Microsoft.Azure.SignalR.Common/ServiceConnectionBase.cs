@@ -40,7 +40,9 @@ namespace Microsoft.Azure.SignalR
 
         private bool _isStopped;
         private long _lastReceiveTimestamp;
+        private volatile bool _isConnected;
         protected ConnectionContext _connection;
+        protected string ErrorMessage;
 
         public Task WaitForConnectionStart => _serviceConnectionStartTcs.Task;
 
@@ -56,19 +58,38 @@ namespace Microsoft.Azure.SignalR
 
         public async Task StartAsync()
         {
+            int retryCount = 0;
             while (!_isStopped)
             {
                 // If we are not able to start, we will quit this connection.
                 if (!await StartAsyncCore())
                 {
                     _serviceConnectionStartTcs.TrySetResult(false);
-                    return;
+
+                    await Task.Delay(GetRetryDelay(ref retryCount));
+                    continue;
                 }
 
                 _serviceConnectionStartTcs.TrySetResult(true);
-
+                retryCount = 0;
+                _isConnected = true;
                 await ProcessIncomingAsync();
+                _isConnected = false;
             }
+        }
+
+        /// <summary>
+        /// exponential back off with max 1 minute.
+        /// </summary>
+        public static TimeSpan GetRetryDelay(ref int retryCount)
+        {
+            // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
+            // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
+            if (retryCount > 5)
+            {
+                return TimeSpan.FromMinutes(1) + ReconnectInterval;
+            }
+            return TimeSpan.FromSeconds(1 << retryCount++) + ReconnectInterval;
         }
 
         // For test purpose only
@@ -79,11 +100,21 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
+        // For test purpose only
+        public bool IsConnected => _isConnected;
+
         public async virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
             // We have to lock around outgoing sends since the pipe is single writer.
             // The lock is per serviceConnection
             await _serviceConnectionLock.WaitAsync();
+
+            var errorMessage = ErrorMessage;
+            if (!string.IsNullOrEmpty(errorMessage))
+            {
+                _serviceConnectionLock.Release();
+                throw new InvalidOperationException(errorMessage);
+            }
 
             if (_connection == null)
             {
@@ -119,45 +150,56 @@ namespace Microsoft.Azure.SignalR
 
         protected abstract Task OnMessageAsync(ConnectionDataMessage connectionDataMessage);
 
+        protected Task OnServiceErrorAsync(ServiceErrorMessage serviceErrorMessage)
+        {
+            if (!string.IsNullOrEmpty(serviceErrorMessage.ErrorMessage))
+            {
+                // When receives service error message, we suppose server -> service connection doesn't work,
+                // and set ErrorMessage to prevent sending message from server to service
+                // But messages in the pipe from service -> server should be processed as usual. Just log without
+                // throw exception here.
+                ErrorMessage = serviceErrorMessage.ErrorMessage;
+                Log.ReceivedServiceErrorMessage(_logger, _connectionId, serviceErrorMessage.ErrorMessage);
+            }
+
+            return Task.CompletedTask;
+        }
+
         private async Task<bool> StartAsyncCore()
         {
-            // Always try until connected
-            while (true)
+            // Lock here in case somebody tries to send before the connection is assigned
+            await _serviceConnectionLock.WaitAsync();
+
+            try
             {
-                // Lock here in case somebody tries to send before the connection is assigned
-                await _serviceConnectionLock.WaitAsync();
+                _connection = await CreateConnection();
+                ErrorMessage = null;
 
-                try
+                if (await HandshakeAsync())
                 {
-                    _connection = await CreateConnection();
-
-                    if (await HandshakeAsync())
-                    {
-                        Log.ServiceConnectionConnected(_logger, _connectionId);
-                        return true;
-                    }
-                    else
-                    {
-                        // False means we got a HandshakeResponseMessage with error. Will take below actions:
-                        // - Dispose the connection
-                        // - Stop reconnect
-                        await DisposeConnection();
-
-                        return false;
-                    }
+                    Log.ServiceConnectionConnected(_logger, _connectionId);
+                    return true;
                 }
-                catch (Exception ex)
+                else
                 {
-                    Log.FailedToConnect(_logger, ex);
-
+                    // False means we got a HandshakeResponseMessage with error. Will take below actions:
+                    // - Dispose the connection
                     await DisposeConnection();
 
-                    await Task.Delay(ReconnectInterval);
+                    return false;
                 }
-                finally
-                {
-                    _serviceConnectionLock.Release();
-                }
+            }
+            catch (Exception ex)
+            {
+                Log.FailedToConnect(_logger, ex);
+
+                await DisposeConnection();
+
+                return false;
+            }
+            finally
+            {
+                _serviceConnectionLock.Release();
             }
         }
 
@@ -343,6 +385,8 @@ namespace Microsoft.Azure.SignalR
                     return OnDisconnectedAsync(closeConnectionMessage);
                 case ConnectionDataMessage connectionDataMessage:
                     return OnMessageAsync(connectionDataMessage);
+                case ServiceErrorMessage serviceErrorMessage:
+                    return OnServiceErrorAsync(serviceErrorMessage);
                 case PingMessage _:
                     // ignore ping
                     break;
@@ -514,6 +558,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, Exception> _failedSendingPing =
                 LoggerMessage.Define(LogLevel.Warning, new EventId(26, "FailedSendingPing"), "Failed sending a ping message to service.");
 
+            private static readonly Action<ILogger, string, string, Exception> _receivedServiceErrorMessage =
+                LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(27, "ReceivedServiceErrorMessage"), "Connection {ServiceConnectionId} received error message from service: {Error}");
+
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
                 _failedToWrite(logger, exception);
@@ -642,6 +689,11 @@ namespace Microsoft.Azure.SignalR
             public static void FailedSendingPing(ILogger logger, Exception exception)
             {
                 _failedSendingPing(logger, exception);
+            }
+
+            public static void ReceivedServiceErrorMessage(ILogger logger, string connectionId, string errorMessage)
+            {
+                _receivedServiceErrorMessage(logger, connectionId, errorMessage, null);
             }
         }
     }

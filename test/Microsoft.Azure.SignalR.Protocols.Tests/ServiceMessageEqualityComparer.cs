@@ -53,6 +53,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 case MultiGroupBroadcastDataMessage multiGroupBroadcastDataMessage:
                     return MultiGroupBroadcastDataMessagesEqual(multiGroupBroadcastDataMessage,
                         (MultiGroupBroadcastDataMessage)y);
+                case ServiceErrorMessage serviceErrorMessage:
+                    return ServiceErrorMessageEqual(serviceErrorMessage, (ServiceErrorMessage)y);
                 default:
                     throw new InvalidOperationException($"Unknown message type: {x.GetType().FullName}");
             }
@@ -133,6 +135,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             MultiGroupBroadcastDataMessage y)
         {
             return SequenceEqual(x.GroupList, y.GroupList) && PayloadsEqual(x.Payloads, y.Payloads);
+        }
+
+        private bool ServiceErrorMessageEqual(ServiceErrorMessage x, ServiceErrorMessage y)
+        {
+            return StringEqual(x.ErrorMessage, y.ErrorMessage);
         }
 
         private static bool StringEqual(string x, string y)
