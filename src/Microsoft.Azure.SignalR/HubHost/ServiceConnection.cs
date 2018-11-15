@@ -28,18 +28,22 @@ namespace Microsoft.Azure.SignalR
                                  ILoggerFactory loggerFactory,
                                  ConnectionDelegate connectionDelegate,
                                  IClientConnectionFactory clientConnectionFactory,
-                                 string connectionId) :
+                                 string connectionId,
+                                 ConnectionEndpoint endpoint) :
             base(serviceProtocol, loggerFactory.CreateLogger<ServiceConnection>(), connectionId)
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
+            Endpoint = endpoint;
         }
+
+        public ConnectionEndpoint Endpoint { get; }
 
         protected override Task<ConnectionContext> CreateConnection()
         {
-            return _connectionFactory.ConnectAsync(TransferFormat.Binary, _connectionId);
+            return _connectionFactory.ConnectAsync(TransferFormat.Binary, _connectionId, endpoint);
         }
 
         protected override Task DisposeConnection()

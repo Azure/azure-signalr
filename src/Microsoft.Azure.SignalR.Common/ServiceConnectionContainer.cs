@@ -7,8 +7,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR.AspNet
+namespace Microsoft.Azure.SignalR
 {
+    /// <summary>
+    /// For each service endpoint, we have one service connection container for one hub
+    /// </summary>
     internal class ServiceConnectionContainer : IServiceConnectionContainer
     {
         private readonly List<IServiceConnection> _serviceConnections;

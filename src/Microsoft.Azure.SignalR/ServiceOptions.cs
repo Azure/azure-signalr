@@ -26,6 +26,8 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public string ConnectionString { get; set; } = null;
 
+        public ConnectionEndpoint[] ConnectionStrings { get; set; }
+
         /// <summary>
         /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 5.
         /// </summary>
@@ -42,5 +44,9 @@ namespace Microsoft.Azure.SignalR
         /// Default value is one hour.
         /// </summary>
         public TimeSpan AccessTokenLifetime { get; set; } = DefaultAccessTokenLifetime;
+
+        public Func<ConnectionEndpoint[], ConnectionEndpoint> EndpointRouter { get; set; }
+
+        public Func<ConnectionEndpoint[], ConnectionEndpoint[]> ConnectServiceStrategy { get; set; }
     }
 }

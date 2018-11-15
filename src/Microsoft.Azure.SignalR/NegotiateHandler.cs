@@ -14,13 +14,13 @@ namespace Microsoft.Azure.SignalR
 {
     internal class NegotiateHandler
     {
-        private readonly IServiceEndpointProvider _endpointProvider;
+        private readonly IEndpointRouter _endpointRouter;
         private readonly IUserIdProvider _userIdProvider;
         private readonly Func<HttpContext, IEnumerable<Claim>> _claimsProvider;
 
-        public NegotiateHandler(IServiceEndpointProvider endpointProvider, IUserIdProvider userIdProvider, IOptions<ServiceOptions> options)
+        public NegotiateHandler(IEndpointRouter endpointRouter, IUserIdProvider userIdProvider, IOptions<ServiceOptions> options)
         {
-            _endpointProvider = endpointProvider ?? throw new ArgumentNullException(nameof(endpointProvider));
+            _endpointRouter = endpointRouter ?? throw new ArgumentNullException(nameof(endpointRouter));
             _userIdProvider = userIdProvider ?? throw new ArgumentNullException(nameof(userIdProvider));
             _claimsProvider = options?.Value?.ClaimsProvider;
         }
@@ -30,11 +30,12 @@ namespace Microsoft.Azure.SignalR
             var claims = BuildClaims(context);
             var request = context.Request;
             var originalPath = GetOriginalPath(request.Path);
+            var endpointProvider = _endpointRouter.GetNegotiateEndpoint(context);
             return new NegotiationResponse
             {
-                Url = _endpointProvider.GetClientEndpoint(hubName, originalPath,
+                Url = endpointProvider.GetClientEndpoint(hubName, originalPath,
                     request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : string.Empty),
-                AccessToken = _endpointProvider.GenerateClientAccessToken(hubName, claims),
+                AccessToken = endpointProvider.GenerateClientAccessToken(hubName, claims),
                 // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
                 AvailableTransports = new List<AvailableTransport>()
             };

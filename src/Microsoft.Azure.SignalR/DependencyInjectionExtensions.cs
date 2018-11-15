@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol))
                 .AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager))
                 .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
-                .AddSingleton(typeof(IServiceEndpointProvider), typeof(ServiceEndpointProvider))
+                .AddSingleton(typeof(IEndpointRouter), typeof(EndpointRouter))
                 .AddSingleton(typeof(ServiceHubDispatcher<>))
                 .AddSingleton(typeof(AzureSignalRMarkerService))
                 .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()

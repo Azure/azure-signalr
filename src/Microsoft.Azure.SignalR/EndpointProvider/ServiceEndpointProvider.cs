@@ -23,15 +23,14 @@ namespace Microsoft.Azure.SignalR
         private readonly TimeSpan _accessTokenLifetime;
         private readonly IServiceEndpointGenerator _generator;
 
-        public ServiceEndpointProvider(IOptions<ServiceOptions> options)
+        public ServiceEndpointProvider(string connectionString, TimeSpan accessTokenLifetime)
         {
-            var connectionString = options.Value.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
             {
                 throw new ArgumentException(ConnectionStringNotFound);
             }
 
-            _accessTokenLifetime = options.Value.AccessTokenLifetime;
+            _accessTokenLifetime = accessTokenLifetime;
 
             string version;
             int? port;

@@ -4,7 +4,7 @@
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR.AspNet
+namespace Microsoft.Azure.SignalR
 {
     internal interface IServiceConnectionContainer : IServiceConnection
     {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<ServiceHubDispatcher<THub>> _logger;
         private readonly ServiceOptions _options;
-        private readonly IServiceEndpointProvider _serviceEndpointProvider;
+        private readonly IEndpointRouter _serviceEndpointProvider;
         private readonly IServiceConnectionManager<THub> _serviceConnectionManager;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly IServiceProtocol _serviceProtocol;
@@ -34,7 +35,7 @@ namespace Microsoft.Azure.SignalR
         public ServiceHubDispatcher(IServiceProtocol serviceProtocol,
             IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
-            IServiceEndpointProvider serviceEndpointProvider,
+            IEndpointRouter endpointRouter,
             IOptions<ServiceOptions> options,
             ILoggerFactory loggerFactory,
             IClientConnectionFactory clientConnectionFactory)
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.SignalR
             _serviceProtocol = serviceProtocol;
             _serviceConnectionManager = serviceConnectionManager;
             _clientConnectionManager = clientConnectionManager;
-            _serviceEndpointProvider = serviceEndpointProvider;
+            _serviceEndpointProvider = endpointRouter;
             _options = options != null ? options.Value : throw new ArgumentNullException(nameof(options));
 
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -61,18 +62,39 @@ namespace Microsoft.Azure.SignalR
         public void Start(ConnectionDelegate connectionDelegate)
         {
             // Simply create a couple of connections which connect to Azure SignalR
-            for (var i = 0; i < _options.ConnectionCount; i++)
-            {
-                var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, this, _loggerFactory, connectionDelegate, _clientConnectionFactory, Guid.NewGuid().ToString());
-                _serviceConnectionManager.AddServiceConnection(serviceConnection);
-            }
+            var serviceConnection = new MultiEndpointServiceConnection(endpoint => new ServiceConnectionContainer(() => GetServiceConnection(connectionDelegate, endpoint), _options.ConnectionCount), _options.ConnectionStrings);
+            _serviceConnectionManager.AddServiceConnection(serviceConnection);
+            
             Log.StartingConnection(_logger, Name, _options.ConnectionCount);
             _ = _serviceConnectionManager.StartAsync();
         }
 
-        private Uri GetServiceUrl(string connectionId)
+        private ServiceConnection GetServiceConnection(ConnectionDelegate connectionDelegate, ConnectionEndpoint endpoint)
         {
-            var baseUri = new UriBuilder(_serviceEndpointProvider.GetServerEndpoint<THub>());
+            return new ServiceConnection(
+                _serviceProtocol,
+                _clientConnectionManager,
+                this,
+                _loggerFactory,
+                connectionDelegate,
+                _clientConnectionFactory,
+                Guid.NewGuid().ToString(),
+                endpoint);
+        }
+
+        private IEnumerable<ConnectionEndpoint> GetServiceEndpoints(ConnectionEndpoint[] endpoints)
+        {
+            if (_options.ConnectServiceStrategy == null)
+            {
+                return endpoints;
+            }
+
+            return _options.ConnectServiceStrategy(endpoints);
+        }
+
+        private Uri GetServiceUrl(string connectionId, IServiceEndpointProvider provider)
+        {
+            var baseUri = new UriBuilder(provider.GetServerEndpoint<THub>());
             var query = "cid=" + connectionId;
             if (baseUri.Query != null && baseUri.Query.Length > 1)
             {
@@ -85,12 +107,57 @@ namespace Microsoft.Azure.SignalR
             return baseUri.Uri;
         }
 
-        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
+        internal class ServiceConnectionWithEndpoint
+        {
+            public ConnectionEndpoint Endpoint { get; set; }
+            public IServiceConnectionContainer Connection { get; set; }
+        }
+
+        internal class MultiEndpointServiceConnection : IServiceConnectionContainer
+        {
+            public ServiceConnectionWithEndpoint[] Connections { get; }
+
+            public MultiEndpointServiceConnection(Func<ConnectionEndpoint, IServiceConnectionContainer> generator, ConnectionEndpoint[] endpoints)
+            {
+                Connections = endpoints.Select(s => new ServiceConnectionWithEndpoint
+                {
+                    Connection = generator(s),
+                    Endpoint = s
+                }).ToArray();
+            }
+
+            public Task SendToEndpointAsync(ConnectionEndpoint endpoint, ServiceMessage serviceMessage)
+            {
+                return Connections.First(s => s.Endpoint == endpoint).Connection.WriteAsync(serviceMessage);
+            }
+
+            public Task StartAsync()
+            {
+                return Task.WhenAll(Connections.Select(s => s.Connection.StartAsync()));
+            }
+
+            public Task WriteAsync(ServiceMessage serviceMessage)
+            {
+                return Task.WhenAll(Connections.Select(s => s.Connection.WriteAsync(serviceMessage)));
+            }
+
+            public Task StopAsync()
+            {
+                return Task.WhenAll(Connections.Select(s => s.Connection.StopAsync()));
+            }
+
+            public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+            {
+                return Task.WhenAll(Connections.Select(s => s.Connection.WriteAsync(partitionKey, serviceMessage)));
+            }
+        }
+
+        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, IServiceEndpointProvider provider, CancellationToken cancellationToken = default)
         {
             var httpConnectionOptions = new HttpConnectionOptions
             {
-                Url = GetServiceUrl(connectionId),
-                AccessTokenProvider = () => Task.FromResult(_serviceEndpointProvider.GenerateServerAccessToken<THub>(_userId)),
+                Url = GetServiceUrl(connectionId, provider),
+                AccessTokenProvider = () => Task.FromResult(provider.GenerateServerAccessToken<THub>(_userId)),
                 Transports = HttpTransportType.WebSockets,
                 SkipNegotiation = true,
                 Headers = CustomHeader
