@@ -72,6 +72,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             // Writing from the application to the service
             _ = OnConnectedAsyncCore(openConnectionMessage);
 
+            _ = ProcessingOutgoingMessage(openConnectionMessage.ConnectionId);
+
             return Task.CompletedTask;
         }
 
@@ -98,7 +100,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                     }
                     else
                     {
-                        transport.OnReceived(message);
+                        transport.Output.WriteAsync(message);
                     }
                 }
                 catch (Exception ex)
@@ -119,6 +121,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             if (_clientConnections.TryRemove(connectionId, out var transport))
             {
+                transport.Output.TryComplete();
                 transport.OnDisconnected();
             }
 
@@ -140,6 +143,32 @@ namespace Microsoft.Azure.SignalR.AspNet
                 Log.ConnectedStartingFailed(_logger, connectionId, e);
                 PerformDisconnectCore(connectionId);
                 return WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
+            }
+        }
+
+        private async Task ProcessingOutgoingMessage(string connectionId)
+        {
+            if(_clientConnections.TryGetValue(connectionId, out var transport))
+            {
+                try
+                {
+                    while (true)
+                    {
+                        var item = await transport.Input.ReadAsync();
+                        if(item != null)
+                        {
+                            transport.OnReceived(item);
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.SendLoopStopped(_logger, connectionId, ex);
+                }
             }
         }
 
