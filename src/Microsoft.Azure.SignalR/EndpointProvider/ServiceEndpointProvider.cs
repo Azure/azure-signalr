@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
+        public string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, string requestId = null)
         {
             if (string.IsNullOrEmpty(hubName))
             {
@@ -56,15 +56,15 @@ namespace Microsoft.Azure.SignalR
 
             var audience = _generator.GetClientAudience(hubName);
 
-            return InternalGenerateAccessToken(audience, claims, lifetime ?? _accessTokenLifetime);
+            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
         }
 
-        public string GenerateServerAccessToken<THub>(string userId, TimeSpan? lifetime = null) where THub : Hub
+        public string GenerateServerAccessToken<THub>(string userId, TimeSpan? lifetime = null, string requestId = null) where THub : Hub
         {
             var audience = _generator.GetServerAudience(typeof(THub).Name);
             var claims = userId != null ? new[] {new Claim(ClaimTypes.NameIdentifier, userId)} : null;
 
-            return InternalGenerateAccessToken(audience, claims, lifetime ?? _accessTokenLifetime);
+            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
         }
 
         public string GetClientEndpoint(string hubName, string originalPath, string queryString)
@@ -80,18 +80,6 @@ namespace Microsoft.Azure.SignalR
         public string GetServerEndpoint<THub>() where THub : Hub
         {
             return _generator.GetServerEndpoint(typeof(THub).Name);
-        }
-
-        private string InternalGenerateAccessToken(string audience, IEnumerable<Claim> claims, TimeSpan lifetime)
-        {
-            var expire = DateTime.UtcNow.Add(lifetime);
-
-            return AuthenticationHelper.GenerateJwtBearer(
-                audience: audience,
-                claims: claims,
-                expires: expire,
-                signingKey: _accessKey
-            );
         }
     }
 }

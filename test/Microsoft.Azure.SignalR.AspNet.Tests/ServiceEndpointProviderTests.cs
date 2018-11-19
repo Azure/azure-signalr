@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -14,6 +16,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
     {
         private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         private static readonly SymmetricSecurityKey SecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SigningKey));
+        private const string DefaultConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
+
 
         [Theory]
         [InlineData("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost/aspnetclient")]
@@ -98,6 +102,23 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var clientEndpoint = provider.GetServerEndpoint("hub1");
 
             Assert.Equal(expectedEndpoint, clientEndpoint);
+        }
+
+        [Fact]
+        public void GenerateMutlipleAccessTokenShouldBeUnique()
+        {
+            var count = 1000;
+            var sep = new ServiceEndpointProvider(new ServiceOptions { ConnectionString = DefaultConnectionString });
+            var userId = Guid.NewGuid().ToString();
+            var tokens = new List<string>();
+            for (int i = 0; i < count; i++)
+            {
+                tokens.Add(sep.GenerateClientAccessToken());
+                tokens.Add(sep.GenerateServerAccessToken("test1", userId));
+            }
+
+            var distinct = tokens.Distinct();
+            Assert.Equal(tokens.Count, distinct.Count());
         }
     }
 }

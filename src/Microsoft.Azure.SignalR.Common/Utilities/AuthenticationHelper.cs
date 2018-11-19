@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
@@ -15,6 +16,33 @@ namespace Microsoft.Azure.SignalR
         private static readonly JwtSecurityTokenHandler JwtTokenHandler = new JwtSecurityTokenHandler();
 
         public static string GenerateJwtBearer(
+            string issuer = null,
+            string audience = null,
+            IEnumerable<Claim> claims = null,
+            DateTime? expires = null,
+            string signingKey = null,
+            string requestId = null)
+        {
+            var requestIdClaim = new Claim[] { new Claim(Constants.ClaimType.Id, requestId ?? Guid.NewGuid().ToString("N")) };
+            var claimsWithRequestId = claims == null ? requestIdClaim : claims.Concat(requestIdClaim);
+            var subject = new ClaimsIdentity(claimsWithRequestId);
+            return GenerateJwtBearer(issuer, audience, subject, expires, signingKey);
+        }
+
+        public static string GenerateAccessToken(string signingKey, string audience, IEnumerable<Claim> claims, TimeSpan lifetime, string requestId = null)
+        {
+            var expire = DateTime.UtcNow.Add(lifetime);
+
+            return GenerateJwtBearer(
+                audience: audience,
+                claims: claims,
+                expires: expire,
+                signingKey: signingKey,
+                requestId: requestId
+            );
+        }
+
+        private static string GenerateJwtBearer(
             string issuer = null,
             string audience = null,
             ClaimsIdentity subject = null,
@@ -35,17 +63,6 @@ namespace Microsoft.Azure.SignalR
                 expires: expires,
                 signingCredentials: credentials);
             return JwtTokenHandler.WriteToken(token);
-        }
-
-        public static string GenerateJwtBearer(
-            string issuer = null,
-            string audience = null,
-            IEnumerable<Claim> claims = null,
-            DateTime? expires = null,
-            string signingKey = null)
-        {
-            var subject = claims == null ? null : new ClaimsIdentity(claims);
-            return GenerateJwtBearer(issuer, audience, subject, expires, signingKey);
         }
     }
 }
