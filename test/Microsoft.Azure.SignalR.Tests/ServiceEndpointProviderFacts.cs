@@ -78,12 +78,29 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(expected, actual);
         }
 
+        [Fact]
+        internal void GenerateMutlipleAccessTokenShouldBeUnique()
+        {
+            var count = 1000;
+            var sep = new ServiceEndpointProvider(Options.Create(new ServiceOptions { ConnectionString = PreviewConnectionStringWithVersion }));
+            var userId = Guid.NewGuid().ToString();
+            var tokens = new List<string>();
+            for (int i = 0; i < count; i++)
+            {
+                tokens.Add(sep.GenerateClientAccessToken(nameof(TestHub)));
+                tokens.Add(sep.GenerateServerAccessToken<TestHub>(userId));
+            }
+
+            var distinct = tokens.Distinct();
+            Assert.Equal(tokens.Count, distinct.Count());
+        }
+
         [Theory]
         [MemberData(nameof(PreviewEndpointProviders))]
         internal void GeneratePreviewServerAccessToken(IServiceEndpointProvider provider)
         {
             const string userId = "UserA";
-            var tokenString = provider.GenerateServerAccessToken<TestHub>(userId);
+            var tokenString = provider.GenerateServerAccessToken<TestHub>(userId, requestId: string.Empty);
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = GenerateJwtBearer($"{Endpoint}:5002/server/?hub={HubName}",
@@ -94,7 +111,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 token.ValidTo,
                 token.ValidFrom,
                 token.ValidFrom,
-                AccessKey);
+                AccessKey,
+                string.Empty);
 
             Assert.Equal(expectedTokenString, tokenString);
         }
@@ -103,7 +121,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [MemberData(nameof(PreviewEndpointProviders))]
         internal void GeneratePreviewClientAccessToken(IServiceEndpointProvider provider)
         {
-            var tokenString = provider.GenerateClientAccessToken(HubName);
+            var tokenString = provider.GenerateClientAccessToken(HubName, requestId: string.Empty);
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = GenerateJwtBearer($"{Endpoint}:5001/client/?hub={HubName}",
@@ -111,7 +129,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 token.ValidTo,
                 token.ValidFrom,
                 token.ValidFrom,
-                AccessKey);
+                AccessKey,
+                string.Empty);
 
             Assert.Equal(expectedTokenString, tokenString);
         }
@@ -137,7 +156,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void GenerateV1ServerAccessToken()
         {
             const string userId = "UserA";
-            var tokenString = V1EndpointProvider.GenerateServerAccessToken<TestHub>(userId);
+            var tokenString = V1EndpointProvider.GenerateServerAccessToken<TestHub>(userId, requestId: string.Empty);
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = GenerateJwtBearer($"{Endpoint}/server/?hub={HubName}",
@@ -148,7 +167,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 token.ValidTo,
                 token.ValidFrom,
                 token.ValidFrom,
-                AccessKey);
+                AccessKey,
+                string.Empty);
 
             Assert.Equal(expectedTokenString, tokenString);
         }
@@ -156,7 +176,8 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public void GenerateV1ClientAccessToken()
         {
-            var tokenString = V1EndpointProvider.GenerateClientAccessToken(HubName);
+            var requestId = Guid.NewGuid().ToString();
+            var tokenString = V1EndpointProvider.GenerateClientAccessToken(HubName, requestId: requestId);
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = GenerateJwtBearer($"{Endpoint}/client/?hub={HubName}",
@@ -164,7 +185,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 token.ValidTo,
                 token.ValidFrom,
                 token.ValidFrom,
-                AccessKey);
+                AccessKey,
+                requestId);
 
             Assert.Equal(expectedTokenString, tokenString);
         }
@@ -174,15 +196,18 @@ namespace Microsoft.Azure.SignalR.Tests
             DateTime expires,
             DateTime notBefore,
             DateTime issueAt,
-            string signingKey)
+            string signingKey,
+            string requestId)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
+            var requestIdClaims = requestId == null ? null : new Claim[] { new Claim(Constants.ClaimType.Id, requestId) };
+
             return JwtSecurityTokenHandler.WriteToken(JwtSecurityTokenHandler.CreateJwtSecurityToken(
                 issuer: null,
                 audience: audience,
-                subject: subject == null ? null : new ClaimsIdentity(subject),
+                subject: requestIdClaims == null && subject == null ? null : new ClaimsIdentity(subject == null ? requestIdClaims : subject.Concat(requestIdClaims)),
                 notBefore: notBefore,
                 expires: expires,
                 issuedAt: issueAt,
