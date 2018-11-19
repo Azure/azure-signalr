@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.SignalR
             string signingKey = null,
             string requestId = null)
         {
-            var requestIdClaim = new Claim[] { new Claim(Constants.ClaimType.Id, requestId ?? Guid.NewGuid().ToString("N")) };
+            var requestIdClaim = new Claim[] { new Claim(Constants.ClaimType.Id, requestId ?? GenerateRequestId()) };
             var claimsWithRequestId = claims == null ? requestIdClaim : claims.Concat(requestIdClaim);
             var subject = new ClaimsIdentity(claimsWithRequestId);
             return GenerateJwtBearer(issuer, audience, subject, expires, signingKey);
@@ -40,6 +41,11 @@ namespace Microsoft.Azure.SignalR
                 signingKey: signingKey,
                 requestId: requestId
             );
+        }
+
+        private static string GenerateRequestId()
+        {
+            return Convert.ToBase64String(BitConverter.GetBytes(Stopwatch.GetTimestamp()));
         }
 
         private static string GenerateJwtBearer(
