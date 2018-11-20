@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Buffers;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _serializer = resolver.Resolve<JsonSerializer>();
             _serviceProtocol = resolver.Resolve<IServiceProtocol>();
 
-            var channel = Channel.CreateUnbounded<string>();
+            var channel = Channel.CreateUnbounded<ReadOnlySequence<byte>>();
             Input = channel.Reader;
             Output = channel.Writer;
         }
@@ -44,9 +45,9 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public string ConnectionId { get; set; }
 
-        public ChannelReader<string> Input { get; set; }
-        public ChannelWriter<string> Output { get; set; }
+        public ChannelReader<ReadOnlySequence<byte>> Input { get; set; }
 
+        public ChannelWriter<ReadOnlySequence<byte>> Output { get; set; }
 
         public Task<string> GetGroupsToken()
         {
