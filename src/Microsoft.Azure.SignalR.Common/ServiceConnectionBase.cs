@@ -388,8 +388,7 @@ namespace Microsoft.Azure.SignalR
                 case ServiceErrorMessage serviceErrorMessage:
                     return OnServiceErrorAsync(serviceErrorMessage);
                 case PingMessage _:
-                    // ignore ping
-                    break;
+                    return TrySendPingAsync().AsTask();
             }
             return Task.CompletedTask;
         }
@@ -424,9 +423,6 @@ namespace Microsoft.Azure.SignalR
                         // We shouldn't get here twice.
                         continue;
                     }
-
-                    // Send PingMessage to Service
-                    await TrySendPingAsync();
                 }
             }
         }

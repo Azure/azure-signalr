@@ -72,8 +72,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             // Writing from the application to the service
             _ = OnConnectedAsyncCore(openConnectionMessage);
 
-            _ = ProcessingOutgoingMessage(openConnectionMessage.ConnectionId);
-
             return Task.CompletedTask;
         }
 
@@ -94,14 +92,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                     var payload = connectionDataMessage.Payload;
                     Log.WriteMessageToApplication(_logger, payload.Length, connectionDataMessage.ConnectionId);
                     var message = GetString(payload);
-                    if (message == ReconnectMessage)
-                    {
-                        transport.Reconnected?.Invoke();
-                    }
-                    else
-                    {
-                        transport.Output.WriteAsync(message);
-                    }
+                    transport.Output.WriteAsync(message);
                 }
                 catch (Exception ex)
                 {
@@ -121,7 +112,8 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             if (_clientConnections.TryRemove(connectionId, out var transport))
             {
-                transport.Output.TryComplete();
+                // Mark the channel complete
+                transport.Output.Complete();
                 transport.OnDisconnected();
             }
 
@@ -135,6 +127,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 var transport = _clientConnectionManager.CreateConnection(message, this);
                 _clientConnections.TryAdd(transport.ConnectionId, transport);
+
+                _ = ProcessingOutgoingMessage(connectionId);
                 Log.ConnectedStarting(_logger, connectionId);
                 return Task.CompletedTask;
             }
@@ -148,20 +142,21 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private async Task ProcessingOutgoingMessage(string connectionId)
         {
-            if(_clientConnections.TryGetValue(connectionId, out var transport))
+            if (_clientConnections.TryGetValue(connectionId, out var transport))
             {
                 try
                 {
-                    while (true)
+                    // check if channel closed
+                    while (await transport.Input.WaitToReadAsync())
                     {
-                        var item = await transport.Input.ReadAsync();
-                        if(item != null)
+                        var message = await transport.Input.ReadAsync();
+                        if (message == ReconnectMessage)
                         {
-                            transport.OnReceived(item);
+                            transport.Reconnected?.Invoke();
                         }
                         else
                         {
-                            break;
+                            transport.OnReceived(message);
                         }
                     }
                 }
