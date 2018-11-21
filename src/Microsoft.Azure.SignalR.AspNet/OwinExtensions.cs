@@ -104,6 +104,9 @@ namespace Owin
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
         /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <remarks>
+        /// The connection string is read from the ConnectionString section of application config (web.config or app.config), with name "Azure:SignalR:ConnectionString"
+        /// </remarks>
         public static void RunAzureSignalR(this IAppBuilder builder, string applicationName)
         {
             builder.RunAzureSignalR(applicationName, new HubConfiguration());
