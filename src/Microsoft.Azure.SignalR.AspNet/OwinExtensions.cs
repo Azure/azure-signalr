@@ -40,6 +40,18 @@ namespace Owin
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
         /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="connectionString">The connection string of an Azure SignalR Service instance.</param>
+        /// <returns>The app builder</returns>
+        public static IAppBuilder MapAzureSignalR(this IAppBuilder builder, string applicationName, string connectionString)
+        {
+            return builder.MapAzureSignalR(applicationName, options => options.ConnectionString = connectionString);
+        }
+
+        /// <summary>
+        /// Maps Azure SignalR hubs to the app builder pipeline at "/signalr".
+        /// </summary>
+        /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
+        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
         /// <param name="optionsConfigure">A callback to configure the <see cref="ServiceOptions"/>.</param>
         /// <returns>The app builder</returns>
         public static IAppBuilder MapAzureSignalR(this IAppBuilder builder, string applicationName, Action<ServiceOptions> optionsConfigure)
