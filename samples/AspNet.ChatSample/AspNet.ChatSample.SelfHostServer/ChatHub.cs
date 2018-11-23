@@ -10,7 +10,7 @@ namespace AspNet.ChatSample.SelfHostServer
     {
         public void BroadcastMessage(string name, string message)
         {
-            Clients.All.roadcastMessage("broadcastMessage", name, message);
+            Clients.All.BroadcastMessage(name, message);
             Trace.TraceInformation("Broadcasting...");
         }
 
