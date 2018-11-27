@@ -157,6 +157,13 @@ The access token is returned in the response to client's negotiate request.
 - When `ServerSentEvent` or `LongPolling` is used as transport, client connection will be closed due to authentication failure after the expire time.
 You can increase this value to avoid client disconnect.
 
+#### `ClaimProvider`
+- Default value is `null`.
+- This option controls what claims you want to associate with the client connection.
+It will be used when Service SDK generates access token for client in client's negotiate request.
+By default, all claims from `IOwinContext.Authentication.User` of the negotiate request will be reserved.
+- Normally you should leave this option as is. Make sure you understand what will happen before customizing it.
+
 #### `ConnectionString`
 - Default value is the `Azure:SignalR:ConnectionString` `connectionString` or `appSetting` in `web.config` file.
 - It can be reconfigured, but please make sure the value is **NOT** hard coded.
@@ -169,6 +176,7 @@ app.Map("/signalr",subApp => subApp.RunAzureSignalR(this.GetType().FullName, new
 {
     options.ConnectionCount = 1;
     options.AccessTokenLifetime = TimeSpan.FromDays(1);
+    options.ClaimProvider = context => context.Authentication?.User.Claims;
 }));
 ```
 

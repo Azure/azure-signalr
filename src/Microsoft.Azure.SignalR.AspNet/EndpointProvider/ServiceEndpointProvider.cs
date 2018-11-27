@@ -36,13 +36,13 @@ namespace Microsoft.Azure.SignalR.AspNet
             (_endpoint, _accessKey, _, _port) = ConnectionStringParser.Parse(connectionString);
         }
 
-        public string GenerateClientAccessToken(IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
+        public string GenerateClientAccessToken(IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, string requestId = null)
         {
             var audience = $"{_endpoint}/{ClientPath}";
-            return InternalGenerateAccessToken(audience, claims, lifetime ?? _accessTokenLifetime);
+            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
         }
 
-        public string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null)
+        public string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null, string requestId = null)
         {
             IEnumerable<Claim> claims = null;
             if (userId != null)
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             var audience = $"{_endpoint}/{ServerPath}/?hub={hubName.ToLower()}";
 
-            return InternalGenerateAccessToken(audience, claims, lifetime ?? _accessTokenLifetime);
+            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
         }
 
         public string GetClientEndpoint()
@@ -70,18 +70,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _port.HasValue ?
                 $"{_endpoint}:{_port}/{ServerPath}/?hub={hubName.ToLower()}" :
                 $"{_endpoint}/{ServerPath}/?hub={hubName.ToLower()}";
-        }
-
-        private string InternalGenerateAccessToken(string audience, IEnumerable<Claim> claims, TimeSpan lifetime)
-        {
-            var expire = DateTime.UtcNow.Add(lifetime);
-
-            return AuthenticationHelper.GenerateJwtBearer(
-                audience: audience,
-                claims: claims,
-                expires: expire,
-                signingKey: _accessKey
-            );
         }
     }
 }

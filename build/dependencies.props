@@ -17,7 +17,7 @@
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.0</MicrosoftExtensionsPrimitivesPackageVersion>
 
     <!-- Azure ASP.NET SignalR -->
-    <MicrosoftAspNetSignalRPackageVersion>2.4.0-preview2-20181018-02</MicrosoftAspNetSignalRPackageVersion>
+    <MicrosoftAspNetSignalRPackageVersion>2.4.0</MicrosoftAspNetSignalRPackageVersion>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.0</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
     <MicrosoftExtensionsLoggingTraceSourcePackageVersion>2.1.0</MicrosoftExtensionsLoggingTraceSourcePackageVersion>
 
@@ -27,6 +27,8 @@
     <!-- Samples -->
     <MicrosoftAspNetCorePackageVersion>2.1.0</MicrosoftAspNetCorePackageVersion>
     <NewtonsoftJsonPackageVersion>11.0.2</NewtonsoftJsonPackageVersion>
+    <MicrosoftOwinPackageVersion>2.1.0</MicrosoftOwinPackageVersion>
+    <OwinPackageVersion>1.0.0</OwinPackageVersion>
 
     <!--Testing -->
     <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.0.0</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>

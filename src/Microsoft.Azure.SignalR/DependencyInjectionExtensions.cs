@@ -20,6 +20,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
         /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
+        /// <remarks>
+        /// It reads connection string from a configuration entry Azure:SignalR:ConnectionString.
+        /// In development environment, try `dotnet user-secrets set Azure:SignalR:ConnectionString {YourConnectionString}`.
+        /// </remarks>
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder)
         {
             builder.Services.AddSingleton<IConfigureOptions<ServiceOptions>, ServiceOptionsSetup>();

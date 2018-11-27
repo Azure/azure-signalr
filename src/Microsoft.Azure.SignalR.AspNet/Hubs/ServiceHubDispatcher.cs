@@ -14,6 +14,7 @@ using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Json;
+using Microsoft.Owin;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.AspNet
@@ -23,12 +24,14 @@ namespace Microsoft.Azure.SignalR.AspNet
         private static readonly ProtocolResolver ProtocolResolver = new ProtocolResolver();
 
         private readonly string _appName;
+        private readonly Func<IOwinContext, IEnumerable<Claim>> _claimsProvider;
 
         private IServiceEndpointProvider _endpoint;
 
-        public ServiceHubDispatcher(HubConfiguration configuration, string appName) : base(configuration)
+        public ServiceHubDispatcher(HubConfiguration configuration, string appName, ServiceOptions options) : base(configuration)
         {
             _appName = appName ?? throw new ArgumentException(nameof(appName));
+            _claimsProvider = options?.ClaimsProvider;
         }
 
         public override void Initialize(IDependencyResolver resolver)
@@ -63,16 +66,26 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             // Pass appname through jwt token to client, so that when client establishes connection with service, it will also create a corresponding AppName-connection
             yield return new Claim(Constants.ClaimType.AppName, _appName);
-
-            var user = new Owin.OwinContext(context.Environment).Authentication?.User;
+            var owinContext = new OwinContext(context.Environment);
+            var user = owinContext.Authentication?.User;
             var userId = UserIdProvider?.GetUserId(context.Request);
 
-            var claims = ClaimsUtility.BuildJwtClaims(user, userId, null);
+            var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext));
 
             foreach (var claim in claims)
             {
                 yield return claim;
             }
+        }
+
+        private Func<IEnumerable<Claim>> GetClaimsProvider(IOwinContext context)
+        {
+            if (_claimsProvider == null)
+            {
+                return null;
+            }
+
+            return () => _claimsProvider.Invoke(context);
         }
 
         private static string GetRedirectNegotiateResponse(string url, string token)
