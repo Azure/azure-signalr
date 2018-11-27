@@ -16,11 +16,12 @@ namespace Microsoft.Azure.SignalR
     internal abstract class ServiceConnectionBase : IServiceConnection
     {
         private static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
-        // Service ping rate is 15 sec; this is 2 times that.
+        // Service ping rate is 5 sec. Set timeout 30s for some space.
         private static readonly TimeSpan DefaultServiceTimeout = TimeSpan.FromSeconds(30);
         private static readonly long DefaultServiceTimeoutTicks = DefaultServiceTimeout.Seconds * Stopwatch.Frequency;
-        // App server ping rate is 5 sec. So service can detect an irresponsive server connection in 10 seconds at most.
+        // App server ping rate is 5 sec.
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
+        private static readonly long DefaultKeepAliveTicks = DefaultKeepAliveInterval.Seconds * Stopwatch.Frequency;
         private static readonly int MaxReconnectBackoffInternalInMilliseconds = 1000;
 
         // Start reconnect after a random interval less than 1 second
@@ -39,7 +40,10 @@ namespace Microsoft.Azure.SignalR
         protected readonly string _connectionId;
 
         private bool _isStopped;
-        private long _lastReceiveTimestamp;
+        // Check connection timeout
+        protected long _lastReceiveTimestamp;
+        // Keep-alive tick
+        protected long _lastSendTimestamp;
         private volatile bool _isConnected;
         protected ConnectionContext _connection;
         protected string ErrorMessage;
@@ -321,9 +325,12 @@ namespace Microsoft.Azure.SignalR
                             Log.ReceivedMessage(_logger, buffer.Length, _connectionId);
 
                             UpdateReceiveTimestamp();
+                            // no matter what message coming, trigger send ping by last send time.
+                            await TrySendPingAsync();
 
                             while (_serviceProtocol.TryParseMessage(ref buffer, out var message))
                             {
+                                _logger.LogInformation($"Received. ping.. {DateTime.Now} message type: {message.GetType()} ConnectionId: {_connectionId}");
                                 _ = DispatchMessageAsync(message);
                             }
                         }
@@ -388,7 +395,8 @@ namespace Microsoft.Azure.SignalR
                 case ServiceErrorMessage serviceErrorMessage:
                     return OnServiceErrorAsync(serviceErrorMessage);
                 case PingMessage _:
-                    return TrySendPingAsync().AsTask();
+                    _logger.LogInformation($"Received. ping.. {DateTime.Now} {_connectionId}");
+                    break;
             }
             return Task.CompletedTask;
         }
@@ -398,6 +406,7 @@ namespace Microsoft.Azure.SignalR
             Log.StartingKeepAliveTimer(_logger, DefaultKeepAliveInterval);
 
             _lastReceiveTimestamp = Stopwatch.GetTimestamp();
+            _lastSendTimestamp = Stopwatch.GetTimestamp();
             var timer = new TimerAwaitable(DefaultKeepAliveInterval, DefaultKeepAliveInterval);
             _ = KeepAliveAsync(timer);
 
@@ -437,8 +446,14 @@ namespace Microsoft.Azure.SignalR
 
             try
             {
-                await _connection.Transport.Output.WriteAsync(_cachedPingBytes);
-                Log.SentPing(_logger);
+                // check if last send time is longer than default keep-alive ticks and send ping
+                if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendTimestamp) > DefaultKeepAliveTicks)
+                {
+                    await _connection.Transport.Output.WriteAsync(_cachedPingBytes);
+                    _logger.LogInformation($"Sending. ping.. {DateTime.Now} {_connectionId}");
+                    Interlocked.Exchange(ref _lastSendTimestamp, Stopwatch.GetTimestamp());
+                    Log.SentPing(_logger);
+                }
             }
             catch (Exception ex)
             {
