@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Owin;
+using Microsoft.Owin.Cors;
 using Owin;
 
 [assembly: OwinStartup(typeof(AspNet.ChatSample.SelfHostServer.Startup))]
@@ -15,6 +16,7 @@ namespace AspNet.ChatSample.SelfHostServer
         public void Configuration(IAppBuilder app)
         {
             // app.MapSignalR();
+            app.UseCors(CorsOptions.AllowAll);
             app.MapAzureSignalR(GetType().FullName);
             GlobalHost.TraceManager.Switch.Level = SourceLevels.Information;
         }
