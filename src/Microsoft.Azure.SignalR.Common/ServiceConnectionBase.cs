@@ -325,12 +325,11 @@ namespace Microsoft.Azure.SignalR
                             Log.ReceivedMessage(_logger, buffer.Length, _connectionId);
 
                             UpdateReceiveTimestamp();
-                            // no matter what message coming, trigger send ping by last send time.
+                            // no matter what message coming, trigger send ping and check last send time.
                             await TrySendPingAsync();
 
                             while (_serviceProtocol.TryParseMessage(ref buffer, out var message))
                             {
-                                _logger.LogInformation($"Received. ping.. {DateTime.Now} message type: {message.GetType()} ConnectionId: {_connectionId}");
                                 _ = DispatchMessageAsync(message);
                             }
                         }
@@ -395,7 +394,6 @@ namespace Microsoft.Azure.SignalR
                 case ServiceErrorMessage serviceErrorMessage:
                     return OnServiceErrorAsync(serviceErrorMessage);
                 case PingMessage _:
-                    _logger.LogInformation($"Received. ping.. {DateTime.Now} {_connectionId}");
                     break;
             }
             return Task.CompletedTask;
@@ -446,11 +444,10 @@ namespace Microsoft.Azure.SignalR
 
             try
             {
-                // check if last send time is longer than default keep-alive ticks and send ping
+                // check if last send time is longer than default keep-alive ticks and then send ping
                 if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendTimestamp) > DefaultKeepAliveTicks)
                 {
                     await _connection.Transport.Output.WriteAsync(_cachedPingBytes);
-                    _logger.LogInformation($"Sending. ping.. {DateTime.Now} {_connectionId}");
                     Interlocked.Exchange(ref _lastSendTimestamp, Stopwatch.GetTimestamp());
                     Log.SentPing(_logger);
                 }

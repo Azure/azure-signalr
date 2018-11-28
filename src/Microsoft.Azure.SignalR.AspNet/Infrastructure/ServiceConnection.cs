@@ -86,7 +86,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         protected override async Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
-            _logger.LogInformation($"{_hubName}:{DateTime.Now}: {closeConnectionMessage.ConnectionId} received close connection message.");
             var connectionId = closeConnectionMessage.ConnectionId;
             if (_clientChannels.TryGetValue(connectionId, out var channel))
             {
