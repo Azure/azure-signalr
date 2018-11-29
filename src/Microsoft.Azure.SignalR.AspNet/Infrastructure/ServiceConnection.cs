@@ -211,7 +211,11 @@ namespace Microsoft.Azure.SignalR.AspNet
                 }
                 catch (Exception e)
                 {
+                    // Internal exception is already catched and here only for channel exception.
+                    // Notify client to disconnect.
                     Log.SendLoopStopped(_logger, connectionId, e);
+                    PerformDisconnectCore(connectionId);
+                    await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
                 }
             }
         }
