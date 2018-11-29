@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
@@ -163,6 +164,37 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 Assert.Equal(AppName, token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.AppName).Value);
                 var user = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.UserId)?.Value;
                 Assert.Equal(expectedUser, user);
+            }
+        }
+
+        [Fact]
+        public async Task TestClaimsProviderInServiceOptionsTakeEffect()
+        {
+            var hubConfiguration = new HubConfiguration();
+            using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, hubConfiguration, options =>
+            {
+                options.ConnectionString = ConnectionString;
+                options.ClaimsProvider = context => new Claim[]
+                {
+                    new Claim("user", "hello"),
+                };
+            })))
+            {
+                var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
+                var response = await client.GetAsync("/negotiate");
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                var message = await response.Content.ReadAsStringAsync();
+                var responseObject = JsonConvert.DeserializeObject<ResponseMessage>(message);
+                Assert.Equal("2.0", responseObject.ProtocolVersion);
+                Assert.Equal("http://localhost/aspnetclient", responseObject.RedirectUrl);
+                Assert.NotNull(responseObject.AccessToken);
+                var token = JwtSecurityTokenHandler.ReadJwtToken(responseObject.AccessToken);
+                Assert.Equal(AppName, token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.AppName).Value);
+                var user = token.Claims.FirstOrDefault(s => s.Type == "user")?.Value;
+                Assert.Equal("hello", user);
+                var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
+                Assert.NotNull(requestId);
             }
         }
 

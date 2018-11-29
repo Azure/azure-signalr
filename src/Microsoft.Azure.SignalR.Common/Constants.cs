@@ -12,6 +12,7 @@ namespace Microsoft.Azure.SignalR
             public const string NameType = AzureSignalRSysPrefix + "nt";
             public const string RoleType = AzureSignalRSysPrefix + "rt";
             public const string UserId = AzureSignalRSysPrefix + "uid";
+            public const string Id = AzureSignalRSysPrefix + "id";
             public const string AppName = AzureSignalRSysPrefix + "apn";
 
             public const string AzureSignalRUserPrefix = "asrs.u.";

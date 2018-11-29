@@ -9,9 +9,9 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal interface IServiceEndpointProvider
     {
-        string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null);
+        string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null, string requestId = null);
 
-        string GenerateClientAccessToken(IEnumerable<Claim> claims = null, TimeSpan? lifetime = null);
+        string GenerateClientAccessToken(IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, string requestId = null);
 
         string GetServerEndpoint(string hubName);
 

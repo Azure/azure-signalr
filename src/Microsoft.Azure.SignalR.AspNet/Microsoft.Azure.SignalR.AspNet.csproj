@@ -7,10 +7,6 @@
     <!-- Fix AspNet version to preview1 -->
     <PackageVersion>1.0.0-preview1-$(BuildNumber)</PackageVersion>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="..\Microsoft.Azure.SignalR\Utilities\AuthenticationHelper.cs" Link="Utilities\AuthenticationHelper.cs" />
-  </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNet.SignalR" Version="$(MicrosoftAspNetSignalRPackageVersion)" />

@@ -27,9 +27,24 @@ namespace Owin
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
         /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
         /// <returns>The app builder</returns>
+        /// <remarks>
+        /// The connection string is read from the ConnectionString section of application config (web.config or app.config), with name "Azure:SignalR:ConnectionString"
+        /// </remarks>
         public static IAppBuilder MapAzureSignalR(this IAppBuilder builder, string applicationName)
         {
             return builder.MapAzureSignalR(applicationName, new HubConfiguration());
+        }
+
+        /// <summary>
+        /// Maps Azure SignalR hubs to the app builder pipeline at "/signalr".
+        /// </summary>
+        /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
+        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="connectionString">The connection string of an Azure SignalR Service instance.</param>
+        /// <returns>The app builder</returns>
+        public static IAppBuilder MapAzureSignalR(this IAppBuilder builder, string applicationName, string connectionString)
+        {
+            return builder.MapAzureSignalR(applicationName, options => options.ConnectionString = connectionString);
         }
 
         /// <summary>
@@ -101,6 +116,9 @@ namespace Owin
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
         /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <remarks>
+        /// The connection string is read from the ConnectionString section of application config (web.config or app.config), with name "Azure:SignalR:ConnectionString"
+        /// </remarks>
         public static void RunAzureSignalR(this IAppBuilder builder, string applicationName)
         {
             builder.RunAzureSignalR(applicationName, new HubConfiguration());
@@ -179,7 +197,7 @@ namespace Owin
             // TODO: Update to use Middleware when SignalR SDK is ready
             // Replace default HubDispatcher with a custom one, which has its own negotiation logic
             // https://github.com/SignalR/SignalR/blob/dev/src/Microsoft.AspNet.SignalR.Core/Hosting/PersistentConnectionFactory.cs#L42
-            configuration.Resolver.Register(typeof(PersistentConnection), () => new ServiceHubDispatcher(configuration, applicationName));
+            configuration.Resolver.Register(typeof(PersistentConnection), () => new ServiceHubDispatcher(configuration, applicationName, options));
             builder.RunSignalR(typeof(PersistentConnection), configuration);
 
             RegisterServiceObjects(configuration, options, applicationName, hubs);
