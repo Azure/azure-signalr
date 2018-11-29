@@ -220,10 +220,11 @@ namespace Microsoft.Azure.SignalR.Tests
             _ = proxy.StartAsync();
             await serverTask.OrTimeout();
 
-            await proxy.WriteMessageAsync(new PingMessage());
-
-            // Check server PingMessage will send after reveive service PingMessage
-            await ReadServiceMessageAsync<PingMessage>(proxy.ConnectionContext.Application.Input, 500);
+            // Check more than once since it happens periodically
+            for (int i = 0; i < 2; i++)
+            {
+                await ReadServiceMessageAsync<PingMessage>(proxy.ConnectionContext.Application.Input, 6000);
+            }
 
             proxy.Stop();
         }
