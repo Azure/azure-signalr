@@ -70,18 +70,27 @@ namespace Microsoft.Azure.SignalR.AspNet
             return Task.CompletedTask;
         }
 
-        protected override Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage)
+        protected override async Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage)
         {
             // Create channel per client to async process message
             var connectionId = openConnectionMessage.ConnectionId;
             var channel = Channel.CreateUnbounded<ServiceMessage>();
-            channel.Writer.TryWrite(openConnectionMessage);
-            _clientChannels.TryAdd(connectionId, channel);
-            
-            // Writing from the application to the service
-            _ = ProcessMessageAsync(connectionId);
+            try
+            {
+                await channel.Writer.WriteAsync(openConnectionMessage);
+                _clientChannels.TryAdd(connectionId, channel);
 
-            return Task.CompletedTask;
+                // Writing from the application to the service
+                _ = ProcessMessageAsync(connectionId);
+            }
+            catch (Exception e)
+            {
+                // Fail to write initial open connection message to channel
+                Log.ConnectedStartingFailed(_logger, connectionId, e);
+                // Close channel and notify client to close connection
+                channel.Writer.TryComplete(e);
+                await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
+            }
         }
 
         protected override async Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
@@ -120,7 +129,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             if (_clientChannels.TryRemove(connectionId, out var channel))
             {
-                channel.Writer.Complete();
+                channel.Writer.TryComplete();
             }
             if (_clientConnections.TryRemove(connectionId, out var transport))
             {

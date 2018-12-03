@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Features;
@@ -22,7 +23,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>>();
 
-        private TestConnectionContext _connectionContext;
+        public TestConnectionContext ConnectionContext;
+        
 
         public ServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null) :
             base(
@@ -44,10 +46,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         protected override async Task<ConnectionContext> CreateConnection()
         {
-            _connectionContext = await base.CreateConnection() as TestConnectionContext;
+            ConnectionContext = await base.CreateConnection() as TestConnectionContext;
 
             await WriteMessageAsync(new HandshakeResponseMessage());
-            return _connectionContext;
+            return ConnectionContext;
         }
 
         protected override async Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage)
@@ -99,21 +101,23 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         public async Task WriteMessageAsync(ServiceMessage message)
         {
-            if (_connectionContext == null)
+            if (ConnectionContext == null)
             {
                 throw new InvalidOperationException("Server connection is not yet established.");
             }
 
-            ServiceProtocol.WriteMessage(message, _connectionContext.Application.Output);
-            await _connectionContext.Application.Output.FlushAsync();
+            await ConnectionContext.Output.WriteAsync(message);
+            ServiceProtocol.WriteMessage(message, ConnectionContext.Application.Output);
+            await ConnectionContext.Application.Output.FlushAsync();
         }
 
         public void Dispose()
         {
+            ConnectionContext.Output.TryComplete();
             _ = StopAsync();
         }
 
-        private sealed class TestConnectionFactory : IConnectionFactory
+        public sealed class TestConnectionFactory : IConnectionFactory
         {
             private readonly ConnectionDelegate _connectCallback;
             private TaskCompletionSource<TestConnectionContext> _waitForServerConnection = new TaskCompletionSource<TestConnectionContext>();
@@ -157,7 +161,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             }
         }
 
-        private sealed class TestConnectionContext : ConnectionContext
+        public sealed class TestConnectionContext : ConnectionContext
         {
             public TestConnectionContext()
             {
@@ -170,6 +174,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                 Transport = pair.Transport;
                 Application = pair.Application;
+
+                var channel = Channel.CreateUnbounded<ServiceMessage>();
+
+                Input = channel.Reader;
+                Output = channel.Writer;
             }
 
             public override string ConnectionId { get; set; }
@@ -181,6 +190,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             public override IDuplexPipe Transport { get; set; }
 
             public IDuplexPipe Application { get; set; }
+
+            public ChannelReader<ServiceMessage> Input { get; set; }
+
+            public ChannelWriter<ServiceMessage> Output { get; set; }
         }
     }
 }

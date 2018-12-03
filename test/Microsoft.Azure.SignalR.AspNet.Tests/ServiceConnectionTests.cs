@@ -3,6 +3,7 @@
 
 using System;
 using System.Security.Claims;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public async Task ServiceConnectionDispatchTest()
         {
+            int count = 0;
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
                 using (var proxy = new ServiceConnectionProxy(_clientConnectionManager, loggerFactory: loggerFactory))
@@ -43,20 +45,30 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     var clientConnection = Guid.NewGuid().ToString("N");
 
+                    await ReadSingleServiceMessageAsync<HandshakeResponseMessage>(proxy.ConnectionContext.Input);
+
                     // Application layer sends OpenConnectionMessage
                     var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null, "?transport=webSockets");
                     await proxy.WriteMessageAsync(new OpenConnectionMessage(clientConnection, new Claim[0]));
-
                     await proxy.WaitForClientConnectAsync(clientConnection).OrTimeout();
+                    await ReadSingleServiceMessageAsync<OpenConnectionMessage>(proxy.ConnectionContext.Input);
 
                     // TODO: Check response when integrated with ServiceMessageBus
-                    await proxy.WriteMessageAsync(new ConnectionDataMessage(clientConnection, GetPayload("Hello World")));
-
-                    await proxy.WaitForApplicationMessageAsync(clientConnection).OrTimeout();
+                    while(count < 1000)
+                    {
+                        await proxy.WriteMessageAsync(new ConnectionDataMessage(clientConnection, GetPayload("Hello World")));
+                        await proxy.WaitForApplicationMessageAsync(clientConnection).OrTimeout();
+                        count++;
+                    }
+                    while(count > 0)
+                    {
+                        await ReadSingleServiceMessageAsync<ConnectionDataMessage>(proxy.ConnectionContext.Input);
+                        count--;
+                    }
 
                     await proxy.WriteMessageAsync(new CloseConnectionMessage(clientConnection));
-
                     await proxy.WaitForClientDisconnectAsync(clientConnection).OrTimeout();
+                    await ReadSingleServiceMessageAsync<CloseConnectionMessage>(proxy.ConnectionContext.Input);
                 }
             }
         }
@@ -64,6 +76,21 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         private ReadOnlyMemory<byte> GetPayload(string message)
         {
             return Protocol.GetMessageBytes(new ConnectionDataMessage(string.Empty, System.Text.Encoding.UTF8.GetBytes(message)));
+        }
+
+        private static async Task<T> ReadSingleServiceMessageAsync<T>(ChannelReader<ServiceMessage> input, int timeout = 5000) 
+            where T: ServiceMessage
+        {
+            ServiceMessage message = null;
+
+            while(await input.WaitToReadAsync())
+            {
+                if(input.TryRead(out message))
+                {
+                    return Assert.IsType<T>(message);
+                }
+            }
+            return Assert.IsType<T>(message);
         }
     }
 }
