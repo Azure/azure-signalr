@@ -16,10 +16,12 @@ namespace Microsoft.Azure.SignalR
     internal abstract class ServiceConnectionBase : IServiceConnection
     {
         private static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
-        // Service ping rate is 5 sec. Set timeout for 30 sec for some space.
+        // Service ping rate is 5 sec to let server know service status. Set timeout for 30 sec for some space.
         private static readonly TimeSpan DefaultServiceTimeout = TimeSpan.FromSeconds(30);
         private static readonly long DefaultServiceTimeoutTicks = DefaultServiceTimeout.Seconds * Stopwatch.Frequency;
-        // App server ping rate is 5 sec. Tigger by incoming requests and send by checking last send timestamp.
+        // App server ping rate is 5 sec to let service know if app server is still alive
+        // Service will abort both server and client connections link to this server when server is down.
+        // App server ping is triggered by incoming requests and send by checking last send timestamp.
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
         private static readonly long DefaultKeepAliveTicks = DefaultKeepAliveInterval.Seconds * Stopwatch.Frequency;
         private static readonly int MaxReconnectBackoffInternalInMilliseconds = 1000;
@@ -327,7 +329,7 @@ namespace Microsoft.Azure.SignalR
                             UpdateReceiveTimestamp();
 
                             // No matter what kind of message come in, trigger send ping check
-                            await TrySendPingAsync();
+                            _ = TrySendPingAsync();
 
                             while (_serviceProtocol.TryParseMessage(ref buffer, out var message))
                             {
@@ -406,7 +408,7 @@ namespace Microsoft.Azure.SignalR
             Log.StartingKeepAliveTimer(_logger, DefaultKeepAliveInterval);
 
             _lastReceiveTimestamp = Stopwatch.GetTimestamp();
-            _lastSendTimestamp = Stopwatch.GetTimestamp();
+            _lastSendTimestamp = _lastReceiveTimestamp;
             var timer = new TimerAwaitable(DefaultKeepAliveInterval, DefaultKeepAliveInterval);
             _ = KeepAliveAsync(timer);
 
