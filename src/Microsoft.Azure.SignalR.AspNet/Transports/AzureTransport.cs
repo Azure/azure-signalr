@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
@@ -29,6 +30,12 @@ namespace Microsoft.Azure.SignalR.AspNet
             _serviceProtocol = resolver.Resolve<IServiceProtocol>();
         }
 
+        public AzureTransport(string connectionId, Channel<ServiceMessage> channel)
+        {
+            ConnectionId = connectionId;
+            Channel = channel;
+        }
+
         public Func<string, Task> Received { get; set; }
 
         public Func<Task> Connected { get; set; }
@@ -38,6 +45,9 @@ namespace Microsoft.Azure.SignalR.AspNet
         public Func<bool, Task> Disconnected { get; set; }
 
         public string ConnectionId { get; set; }
+
+        public Channel<ServiceMessage> Channel {get;set;}
+        public Task ApplicationTask { get; set; }
 
         public Task<string> GetGroupsToken()
         {
