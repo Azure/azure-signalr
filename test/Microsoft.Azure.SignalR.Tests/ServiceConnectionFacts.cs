@@ -225,14 +225,14 @@ namespace Microsoft.Azure.SignalR.Tests
             await proxy.WriteMessageAsync(new PingMessage());
 
             // Check server PingMessage will send after reveive service PingMessage
-            await ReadServiceMessageAsync<PingMessage>(proxy.ConnectionContext.Application.Input, 500);
+            await ReadServiceMessageAsync<PingMessage>(proxy.ConnectionContext.Application.Input);
 
             // Wait another 5 sec and recived connection message will also trigger ping
             await Task.Delay(TimeSpan.FromSeconds(5));
             await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
 
             // Check server PingMessage will send after reveive service PingMessage
-            await ReadServiceMessageAsync<PingMessage>(proxy.ConnectionContext.Application.Input, 500);
+            await ReadServiceMessageAsync<PingMessage>(proxy.ConnectionContext.Application.Input);
             
             proxy.Stop();
         }
