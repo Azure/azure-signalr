@@ -123,7 +123,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private async Task PerformDisconnectCore(string connectionId)
         {
-            Exception exception = null;
             if (_clientConnections.TryRemove(connectionId, out var transport))
             {
                 try
@@ -134,7 +133,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 }
                 catch (Exception e)
                 {
-                    exception = e;
+                    Log.ApplicaitonTaskFailed(_logger, e);
                 }
                 finally
                 {
