@@ -4,13 +4,11 @@
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using Microsoft.AspNet.SignalR;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -20,7 +18,7 @@ namespace Microsoft.Azure.SignalR.AspNet
     internal partial class ServiceConnection : ServiceConnectionBase
     {
         private const string ReconnectMessage = "asrs:reconnect";
-        private readonly ConcurrentDictionary<string, AzureTransport> _clientConnections = new ConcurrentDictionary<string, AzureTransport>(StringComparer.Ordinal);
+        private readonly ConcurrentDictionary<string, IServiceTransport> _clientConnections = new ConcurrentDictionary<string, IServiceTransport>(StringComparer.Ordinal);
         private readonly ConcurrentDictionary<string, Channel<ServiceMessage>> _clientChannels = new ConcurrentDictionary<string, Channel<ServiceMessage>>();
 
         private readonly string _hubName;

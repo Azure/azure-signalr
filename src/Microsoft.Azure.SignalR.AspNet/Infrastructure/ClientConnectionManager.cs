@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _logger = loggerFactory.CreateLogger<ClientConnectionManager>();
         }
 
-        public AzureTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
+        public IServiceTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
         {
             var dispatcher = new HubDispatcher(_configuration);
             dispatcher.Initialize(_configuration.Resolver);
