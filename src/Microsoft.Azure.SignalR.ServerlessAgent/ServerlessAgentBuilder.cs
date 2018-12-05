@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR.ServerlessAgent
             return this;
         }
 
-        public IHubContext<Hub> BuildAsync(string hubName)
+        public ServerlessAgent BuildAsync(string hubName)
         {
             _context.HubName = hubName;
 
@@ -64,21 +64,31 @@ namespace Microsoft.Azure.SignalR.ServerlessAgent
             var serviceDescriptor = serviceCollection.FirstOrDefault(descriptor => descriptor.ServiceType == typeof(HubLifetimeManager<>));
             serviceCollection.Remove(serviceDescriptor);
 
-            switch(_context.Backend)
+            switch (_context.Backend)
             {
                 case Backend.RestApi:
-                    serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), new RestHubLifetimeManager<Hub>(_context));
-                    break;
+                    {
+                        var restHubLifetimeManager = new RestHubLifetimeManager(_context);
+                        serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), restHubLifetimeManager);
+                        var services = serviceCollection.BuildServiceProvider();
+                        var hubContext = services.GetService<IHubContext<Hub>>();
+                        var agent = new ServerlessAgent(hubContext, restHubLifetimeManager);
+                        return agent;
+                    }
                 case Backend.Websocket:
-                    serviceCollection.AddSingleton(new WebsocketHubLifetimeManager<Hub>());
-                    break;
+                    {
+                        var websocketHubLifetimeManager = new WebsocketHubLifetimeManager(_context);
+                        serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), websocketHubLifetimeManager);
+                        var services = serviceCollection.BuildServiceProvider();
+                        var hubContext = services.GetService<IHubContext<Hub>>();
+                        var agent = new ServerlessAgent(hubContext, websocketHubLifetimeManager);
+                        return agent;
+                    }
+                default:
+                    throw new Exception("Not supported backend");
             }
 
-            var services = serviceCollection.BuildServiceProvider();
-
-            var hubContext = services.GetService<IHubContext<Hub>>();
-
-            return hubContext;
+            
         }
     }
 }

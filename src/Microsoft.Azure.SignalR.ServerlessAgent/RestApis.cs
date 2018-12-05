@@ -19,9 +19,19 @@ namespace Microsoft.Azure.SignalR.ServerlessAgent
             _version = version;
         }
 
+        public string UserGroupManagement(string userId, string groupName)
+        {
+            return UrlPrefix() + AddHubName() + AddGroupName(groupName) + AddUserId(userId);
+        }
+
         public string SendToUser(string userId)
         {
             return UrlPrefix() + AddHubName() + AddUserId(userId);
+        }
+
+        public string SendToGroup(string groupName)
+        {
+            return UrlPrefix() + AddHubName() + AddGroupName(groupName);
         }
 
         public string Broadcast()
@@ -32,6 +42,17 @@ namespace Microsoft.Azure.SignalR.ServerlessAgent
         private string UrlPrefix()
         {
             return _endPoint + AddVersion();
+        }
+
+        private string AddGroupName(string groupName)
+        {
+            switch (_version)
+            {
+                case RestApiVersions.V1:
+                    return "/groups/" + groupName;
+                default:
+                    return "/groups/" + groupName;
+            }
         }
 
         private string AddVersion()

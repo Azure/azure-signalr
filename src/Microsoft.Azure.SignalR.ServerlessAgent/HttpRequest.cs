@@ -13,9 +13,9 @@ namespace Microsoft.Azure.SignalR.ServerlessAgent
         private static readonly HttpClient _client = new HttpClient();
         HttpRequestMessage _request;
 
-        public HttpRequest(string url, PayloadMessage payload, AccessToken accessToken)
+        public HttpRequest(string url, PayloadMessage payload, AccessToken accessToken, HttpMethod httpMethod)
         {
-            _request = new HttpRequestMessage(HttpMethod.Post, url);
+            _request = new HttpRequestMessage(httpMethod, url);
             _request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Token.RawData);
             _request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _request.Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");

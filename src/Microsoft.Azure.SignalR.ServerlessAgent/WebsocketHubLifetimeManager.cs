@@ -7,8 +7,14 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.ServerlessAgent
 {
-    public class WebsocketHubLifetimeManager<THub> : HubLifetimeManager<THub> where THub : Hub
+    public class WebsocketHubLifetimeManager : HubLifetimeManagerBase<Hub>, IHubLifetimeManagerExtension
     {
+        public WebsocketHubLifetimeManager(AgentContext agentContext)
+        {
+            _context = agentContext;
+            _apis = new RestApis(_context.GetEndpoint(), _context.HubName, _context.RestApiVersion);
+        }
+
         public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
@@ -70,6 +76,16 @@ namespace Microsoft.Azure.SignalR.ServerlessAgent
         }
 
         public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
