@@ -11,7 +11,9 @@ namespace Microsoft.Azure.SignalR.AspNet
     interface IServiceTransport : ITransport
     {
         void OnReceived(string value);
+
         void OnDisconnected();
-        Channel<ServiceMessage> Channel { get; set; }
+
+        Channel<ServiceMessage> MessageChannel { get; set; }
     }
 }

@@ -30,10 +30,10 @@ namespace Microsoft.Azure.SignalR.AspNet
             _serviceProtocol = resolver.Resolve<IServiceProtocol>();
         }
 
-        public AzureTransport(string connectionId, Channel<ServiceMessage> channel)
+        public AzureTransport(string connectionId)
         {
             ConnectionId = connectionId;
-            Channel = channel;
+            MessageChannel = Channel.CreateUnbounded<ServiceMessage>();
         }
 
         public Func<string, Task> Received { get; set; }
@@ -46,8 +46,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public string ConnectionId { get; set; }
 
-        public Channel<ServiceMessage> Channel {get;set;}
-        public Task ApplicationTask { get; set; }
+        public Channel<ServiceMessage> MessageChannel { get;set; }
 
         public Task<string> GetGroupsToken()
         {

@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             public Func<Task> Reconnected { get; set; }
             public Func<bool, Task> Disconnected { get; set; }
             public string ConnectionId { get; set; }
-            public Channel<ServiceMessage> Channel { get; set; }
+            public Channel<ServiceMessage> MessageChannel { get; set; }
 
             public Task<string> GetGroupsToken()
             {

@@ -7,7 +7,6 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
@@ -67,13 +66,12 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         protected override async Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage)
         {
-            // Create channel per client to async process message
+            // Create empty transport with only channel for async processing messages
             var connectionId = openConnectionMessage.ConnectionId;
-            var channel = Channel.CreateUnbounded<ServiceMessage>();
+            var transport = new AzureTransport(connectionId);
             try
             {
-                await channel.Writer.WriteAsync(openConnectionMessage);
-                var transport = new AzureTransport(connectionId, channel);
+                await transport.MessageChannel.Writer.WriteAsync(openConnectionMessage);
                 _clientConnections.TryAdd(connectionId, transport);
 
                 // Writing from the application to the service
@@ -84,7 +82,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 // Fail to write initial open connection message to channel
                 Log.ConnectedStartingFailed(_logger, connectionId, e);
                 // Close channel and notify client to close connection
-                channel.Writer.TryComplete(e);
+                transport.MessageChannel.Writer.TryComplete(e);
                 await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
             }
         }
@@ -96,7 +94,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 try
                 {
-                    await transport.Channel.Writer.WriteAsync(closeConnectionMessage);
+                    await transport.MessageChannel.Writer.WriteAsync(closeConnectionMessage);
                 }
                 catch (Exception e)
                 {
@@ -112,7 +110,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 try
                 {
-                    await transport.Channel.Writer.WriteAsync(connectionDataMessage);
+                    await transport.MessageChannel.Writer.WriteAsync(connectionDataMessage);
                 }
                 catch (Exception e)
                 {
@@ -128,8 +126,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                 try
                 {
                     // Mark channel complete and wait for reader
-                    transport.Channel.Writer.TryComplete();
-                    await transport.Channel.Reader.Completion;
+                    transport.MessageChannel.Writer.TryComplete();
+                    await transport.MessageChannel.Reader.Completion;
                 }
                 catch (Exception e)
                 {
@@ -153,7 +151,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 {
                     var clientTransport = _clientConnectionManager.CreateConnection(message, this);
                     // Transfer channel and update client connection dictionary with real transport
-                    clientTransport.Channel = transport.Channel;
+                    clientTransport.MessageChannel = transport.MessageChannel;
                     _clientConnections.TryUpdate(connectionId, clientTransport, transport);
                     Log.ConnectedStarting(_logger, connectionId);
                 }
@@ -205,9 +203,9 @@ namespace Microsoft.Azure.SignalR.AspNet
                 try
                 {
                     // Check if channel is closed.
-                    while (await transport.Channel.Reader.WaitToReadAsync())
+                    while (await transport.MessageChannel.Reader.WaitToReadAsync())
                     {
-                        while (transport.Channel.Reader.TryRead(out var serviceMessage))
+                        while (transport.MessageChannel.Reader.TryRead(out var serviceMessage))
                         {
                             switch (serviceMessage)
                             {
