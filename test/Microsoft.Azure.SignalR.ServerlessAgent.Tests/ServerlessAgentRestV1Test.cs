@@ -40,7 +40,8 @@ namespace Microsoft.Azure.SignalR.ServerlessAgent.Tests
             await agent.Clients.All.SendAsync(_methodName, _test, _msgBroadcast + _msgCreateAgentWithToken);            
         }
 
-        [Fact]
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
         public async Task BuildServerlessAgentWithConnectionString()
         {
             var connectionString = TestConfiguration.Instance.ConnectionString;
@@ -49,7 +50,8 @@ namespace Microsoft.Azure.SignalR.ServerlessAgent.Tests
             await agent.Clients.All.SendAsync(_methodName, _test, _msgBroadcast + _msgCreateAgentWithConnectionString);
         }
 
-        [Fact]
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
         public async Task SendToUserScenario()
         {
             var connectionString = TestConfiguration.Instance.ConnectionString;
@@ -58,7 +60,8 @@ namespace Microsoft.Azure.SignalR.ServerlessAgent.Tests
             await agent.Clients.User(_userId).SendAsync(_methodName, _test, _msgSendToUser);
         }
 
-        [Fact]
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
         public async Task GroupScenario()
         {
             var connectionString = TestConfiguration.Instance.ConnectionString;
