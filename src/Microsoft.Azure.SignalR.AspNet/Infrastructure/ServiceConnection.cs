@@ -70,7 +70,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             // Create empty transport with only channel for async processing messages
             var connectionId = openConnectionMessage.ConnectionId;
-            var clientContext = new ClientContext(connectionId);
+            var clientContext = new ClientContext();
             try
             {
                 await clientContext.Output.WriteAsync(openConnectionMessage);
@@ -238,17 +238,14 @@ namespace Microsoft.Azure.SignalR.AspNet
         
         private sealed class ClientContext
         {
-            public ClientContext(string connectionId)
+            public ClientContext()
             {
-                ConnectionId = connectionId;
                 CancellationToken = new CancellationTokenSource();
 
                 var channel = Channel.CreateUnbounded<ServiceMessage>();
                 Input = channel.Reader;
                 Output = channel.Writer;
             }
-
-            public string ConnectionId { get; set; }
 
             public IServiceTransport Transport { get; set; }
 
