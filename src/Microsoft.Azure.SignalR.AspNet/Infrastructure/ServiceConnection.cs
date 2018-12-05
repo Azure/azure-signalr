@@ -57,7 +57,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 foreach (var connection in _clientConnections)
                 {
-                    await PerformDisconnectCore(connection.Key, false);
+                    await PerformDisconnectCore(connection.Value, connection.Key, false);
                 }
             }
             catch (Exception ex)
@@ -121,22 +121,19 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-        private async Task PerformDisconnectCore(string connectionId, bool safeDisconnect = true)
+        private async Task PerformDisconnectCore(ClientContext clientContext, string connectionId, bool safeDisconnect = true)
         {
-            if (_clientConnections.TryRemove(connectionId, out var clientContext))
+            try
             {
-                try
-                {
-                    await clientContext.Close(safeDisconnect);
-                }
-                catch (Exception e)
-                {
-                    Log.ApplicaitonTaskFailed(_logger, e);
-                }
-                finally
-                {
-                    clientContext.Transport.OnDisconnected();
-                }
+                await clientContext.Close(safeDisconnect);
+            }
+            catch (Exception e)
+            {
+                Log.ApplicaitonTaskFailed(_logger, e);
+            }
+            finally
+            {
+                clientContext.Transport.OnDisconnected();
             }
 
             Log.ConnectedEnding(_logger, connectionId);
@@ -153,7 +150,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             catch (Exception e)
             {
                 Log.ConnectedStartingFailed(_logger, connectionId, e);
-                await PerformDisconnectCore(connectionId);
+                await PerformDisconnectCore(clientContext, connectionId);
                 await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
             }
         }
@@ -199,7 +196,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                                     await OnConnectedAsyncCore(clientContext, openConnectionMessage);
                                     break;
                                 case CloseConnectionMessage closeConnectionMessage:
-                                    await PerformDisconnectCore(closeConnectionMessage.ConnectionId);
+                                    await PerformDisconnectCore(clientContext, closeConnectionMessage.ConnectionId);
                                     break;
                                 case ConnectionDataMessage connectionDataMessage:
                                     ProcessOutgoingMessages(clientContext, connectionDataMessage);
@@ -219,7 +216,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                     // Internal exception is already catched and here only for channel exception.
                     // Notify client to disconnect.
                     Log.SendLoopStopped(_logger, connectionId, e);
-                    await PerformDisconnectCore(connectionId, false);
+                    await PerformDisconnectCore(clientContext, connectionId, false);
                     await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
                 }
             }
