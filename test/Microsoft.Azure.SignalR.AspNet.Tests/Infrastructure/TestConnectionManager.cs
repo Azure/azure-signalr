@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
@@ -32,7 +31,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             public Func<Task> Reconnected { get; set; }
             public Func<bool, Task> Disconnected { get; set; }
             public string ConnectionId { get; set; }
-            public Channel<ServiceMessage> MessageChannel { get; set; }
 
             public Task<string> GetGroupsToken()
             {
