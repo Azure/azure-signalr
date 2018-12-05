@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR.ServerlessAgent.Tests
         {
             _configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
-                .AddUserSecrets<ServerlessAgentTest>(optional: true)
+                .AddUserSecrets<ServerlessAgentRestV1Test>(optional: true)
                 .Build();
 
             Init();

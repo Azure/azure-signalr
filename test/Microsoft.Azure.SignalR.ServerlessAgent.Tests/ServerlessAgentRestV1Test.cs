@@ -8,14 +8,21 @@ using Microsoft.AspNetCore.Testing.xunit;
 
 namespace Microsoft.Azure.SignalR.ServerlessAgent.Tests
 {
-    public class ServerlessAgentTest
+    public class ServerlessAgentRestV1Test
     {
         private string _hubName = "signalrbench";
         private string _methodName = "SendMessage";
         private string _groupName = "groupName";
         private string _userId = "wanl1";
+        private string _test = "[TEST]";
 
-        public ServerlessAgentTest()
+        private string _msgBroadcast = "Boadcast.";
+        private string _msgSendToGroup = "Send to group.";
+        private string _msgSendToUser = "Send to User.";
+        private string _msgCreateAgentWithToken = "Create agent with access token.";
+        private string _msgCreateAgentWithConnectionString = "Create agent with connection string.";
+
+        public ServerlessAgentRestV1Test()
         {
             var configuration = TestConfiguration.Instance;
         }
@@ -30,7 +37,7 @@ namespace Microsoft.Azure.SignalR.ServerlessAgent.Tests
             
             var builder = new ServerlessAgentBuilder().WithEndpoint(endpoint).WithAccessToken(accessToken).UseRestV1();
             var agent = builder.BuildAsync(_hubName);
-            await agent.Clients.All.SendAsync(_methodName, "server", "message");            
+            await agent.Clients.All.SendAsync(_methodName, _test, _msgBroadcast + _msgCreateAgentWithToken);            
         }
 
         [Fact]
@@ -39,7 +46,7 @@ namespace Microsoft.Azure.SignalR.ServerlessAgent.Tests
             var connectionString = TestConfiguration.Instance.ConnectionString;
             var builder = new ServerlessAgentBuilder().WithConnectionString(connectionString).UseRestV1();
             var agent = builder.BuildAsync(_hubName);
-            await agent.Clients.All.SendAsync(_methodName, "server", "message");
+            await agent.Clients.All.SendAsync(_methodName, _test, _msgBroadcast + _msgCreateAgentWithConnectionString);
         }
 
         [Fact]
@@ -48,7 +55,7 @@ namespace Microsoft.Azure.SignalR.ServerlessAgent.Tests
             var connectionString = TestConfiguration.Instance.ConnectionString;
             var builder = new ServerlessAgentBuilder().WithConnectionString(connectionString).UseRestV1();
             var agent = builder.BuildAsync(_hubName);
-            await agent.Clients.User(_userId).SendAsync(_methodName, "server", "message sent from serverless agent");
+            await agent.Clients.User(_userId).SendAsync(_methodName, _test, _msgSendToUser);
         }
 
         [Fact]
@@ -59,9 +66,9 @@ namespace Microsoft.Azure.SignalR.ServerlessAgent.Tests
             var agent = builder.BuildAsync(_hubName);
 
             await agent.UserGroups.AddToGroupAsync(_userId, _groupName);
-            await agent.Clients.Group(_groupName).SendAsync(_methodName, "server", "message sent from serverless agent");
+            await agent.Clients.Group(_groupName).SendAsync(_methodName, _test, _msgSendToGroup + " Should be in group.");
             await agent.UserGroups.RemoveFromGroupAsync(_userId, _groupName);
-            await agent.Clients.Group(_groupName).SendAsync(_methodName, "server", "message sent from serverless agent");
+            await agent.Clients.Group(_groupName).SendAsync(_methodName, _test, _msgSendToGroup);
         }
 
         private string ParseEndpoint(string connectionString)
