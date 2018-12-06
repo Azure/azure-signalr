@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -55,10 +56,12 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             try
             {
+                var tasks = new List<Task>(_clientConnections.Count);
                 foreach (var connection in _clientConnections)
                 {
-                    await PerformDisconnectCore(connection.Key, false);
+                    tasks.Add(PerformDisconnectCore(connection.Key, false));
                 }
+                await Task.WhenAll(tasks);
             }
             catch (Exception ex)
             {

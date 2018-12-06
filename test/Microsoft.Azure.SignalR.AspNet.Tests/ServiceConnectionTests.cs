@@ -50,19 +50,19 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     await proxy.WriteMessageAsync(new OpenConnectionMessage(clientConnection, new Claim[0]));
                     await proxy.WaitForClientConnectAsync(clientConnection).OrTimeout();
                     
-                    while(count < 1000)
+                    while (count < 1000)
                     {
                         await proxy.WriteMessageAsync(new ConnectionDataMessage(clientConnection, GetPayload("Hello World")));
                         await proxy.WaitForApplicationMessageAsync(clientConnection).OrTimeout();
                         count++;
                     }
-                    // Wait 1 second for async channel processing messages.
-                    await Task.Delay(TimeSpan.FromMilliseconds(1000));
-                    _clientConnectionManager.CurrentTransports.TryGetValue(clientConnection, out var transport);
-                    Assert.Equal(transport.MessageCount, count);
 
                     await proxy.WriteMessageAsync(new CloseConnectionMessage(clientConnection));
                     await proxy.WaitForClientDisconnectAsync(clientConnection).OrTimeout();
+
+                    // Validate in transport for 1000 data messages.
+                    _clientConnectionManager.CurrentTransports.TryGetValue(clientConnection, out var transport);
+                    Assert.Equal(transport.MessageCount, count);
                 }
             }
         }
