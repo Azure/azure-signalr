@@ -265,11 +265,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 try
                 {
-                    Output.Complete();
+                    Output.TryComplete();
                     if (closeGracefully)
                     {
                         // Normally disconnect is the last message to process
-                        // Mark channel complete and wait for application task to finish
+                        // Wait for application task to finish
                         var task = ApplicationTask ?? Task.CompletedTask;
                         await task;
                     }
