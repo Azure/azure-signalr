@@ -84,7 +84,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 // Fail to write initial open connection message to channel
                 Log.ConnectedStartingFailed(_logger, connectionId, e);
                 // Close channel and notify client to close connection
-                clientContext.Output.TryComplete(e);
+                await clientContext.DisposeAsync();
                 await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
             }
         }
@@ -121,11 +121,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-        private async Task PerformDisconnectCore(ClientContext clientContext, string connectionId, bool safeDisconnect = true)
+        private async Task PerformDisconnectCore(ClientContext clientContext, string connectionId, bool closeGracefully = true)
         {
             try
             {
-                await clientContext.Close(safeDisconnect);
+                await clientContext.DisposeAsync(closeGracefully);
             }
             catch (Exception e)
             {
@@ -252,22 +252,31 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             public Task ApplicationTask { get; set; }
 
-            public CancellationTokenSource CancellationToken { get; }
+            public CancellationTokenSource CancellationToken { get; set; }
 
-            public async Task Close(bool safeDisconnect = true)
+            public async Task DisposeAsync(bool closeGracefully = true)
             {
-                if (safeDisconnect)
+                try
                 {
-                    // Normally disconnect is the last message to process
-                    // Safe wait for application task to complete
-                    Output.TryComplete();
-                    await ApplicationTask;
+                    Output.Complete();
+                    if (closeGracefully)
+                    {
+                        // Normally disconnect is the last message to process
+                        // Mark channel complete and wait for application task to finish
+                        var task = ApplicationTask ?? Task.CompletedTask;
+                        await task;
+                    }
+                    else
+                    {
+                        // When disconnect is called for channel exception or cleanup connection
+                        // No need to process rest messages, just cancel read to avoid hang in the task.
+                        CancellationToken?.Cancel();
+                    }
                 }
-                else
+                finally
                 {
-                    // When disconnect is called for channel exception or cleanup connection
-                    // No need to process rest messages, just cancel read to avoid hang in the task.
-                    CancellationToken.Cancel();
+                    CancellationToken?.Dispose();
+                    CancellationToken = null;
                 }
             }
         }
