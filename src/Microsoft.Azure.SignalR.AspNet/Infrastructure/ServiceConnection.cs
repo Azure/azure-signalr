@@ -74,7 +74,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             try
             {
                 await clientContext.Output.WriteAsync(openConnectionMessage);
-                _clientConnections.TryAdd(connectionId, clientContext);
+                if(!_clientConnections.TryAdd(connectionId, clientContext))
+                {
+                    Log.DuplicateConnectionId(_logger, connectionId, null);
+                    throw new ArgumentException("ConnectionId already exists.");
+                }
 
                 // Writing from the application to the service
                 clientContext.ApplicationTask = ProcessMessageAsync(connectionId, clientContext.CancellationToken.Token);
