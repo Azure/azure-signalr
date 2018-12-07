@@ -1,12 +1,14 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.AspNet.SignalR.Transports;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
-    internal interface IClientConnectionManager
+    internal interface IServiceTransport : ITransport
     {
-        IServiceTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection);
+        void OnReceived(string value);
+
+        void OnDisconnected();
     }
 }

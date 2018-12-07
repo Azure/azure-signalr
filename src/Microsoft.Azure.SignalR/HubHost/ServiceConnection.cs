@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
@@ -57,12 +58,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     return;
                 }
-                var tasks = new List<Task>(_connectionIds.Count);
-                foreach (var connection in _connectionIds)
-                {
-                    tasks.Add(PerformDisconnectAsyncCore(connection.Key));
-                }
-                await Task.WhenAll(tasks);
+                await Task.WhenAll(_connectionIds.Select(s => PerformDisconnectAsyncCore(s.Key)));
             }
             catch (Exception ex)
             {
