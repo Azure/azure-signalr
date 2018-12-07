@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
-    internal class AzureTransport : ITransport
+    internal class AzureTransport : IServiceTransport
     {
         private readonly TaskCompletionSource<object> _lifetimeTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly HostContext _context;

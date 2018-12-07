@@ -47,6 +47,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             private static readonly Action<ILogger, string, Exception> _connectedStartingFailed =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(11, "ConnectedStartingFailed"), "Connection {TransportConnectionId} failed to start.");
 
+            private static readonly Action<ILogger, string, Exception> _duplicateConnectionId =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(11, "DuplicateConnectionId"), "Failed to create connection due to duplicate connection Id {TransportConnectionId}.");
+
             private static readonly Action<ILogger, string, Exception> _connectedEnding =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(12, "ConnectedEnding"), "Connection {TransportConnectionId} ended.");
 
@@ -150,6 +153,10 @@ namespace Microsoft.Azure.SignalR.AspNet
             public static void ConnectedStartingFailed(ILogger logger, string connectionId, Exception e)
             {
                 _connectedStartingFailed(logger, connectionId, e);
+            }
+            public static void DuplicateConnectionId(ILogger logger, string connectionId, Exception e)
+            {
+                _duplicateConnectionId(logger, connectionId, e);
             }
 
             public static void ConnectedEnding(ILogger logger, string connectionId)
