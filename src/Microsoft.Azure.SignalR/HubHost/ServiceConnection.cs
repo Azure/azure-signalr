@@ -58,7 +58,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     return;
                 }
-                await Task.WhenAll(_connectionIds.Select(s => PerformDisconnectAsyncCore(s.Key)));
+                await Task.WhenAll(_connectionIds.Select(s => PerformDisconnectAsyncCore(s.Key, false)));
             }
             catch (Exception ex)
             {
@@ -95,21 +95,17 @@ namespace Microsoft.Azure.SignalR
 
                     connection.Application.Input.AdvanceTo(buffer.End);
                 }
+                connection.Application.Input.Complete();
             }
             catch (Exception ex)
             {
                 // The exception means applicaion fail to process input anymore
-                // Turn down application output to avoid new messages and notify client to disconnect
+                // Cancel any pending flush so that we can quit and perform disconnect
+                // Here is abort close and WaitOnApplicationTask will send close message to notify client to disconnect
                 Log.SendLoopStopped(_logger, connection.ConnectionId, ex);
                 connection.Application.Output.CancelPendingFlush();
-                connection.Application.Output.Complete();
-                await WriteAsync(new CloseConnectionMessage(connection.ConnectionId, ex.Message));
-            }
-            finally
-            {
-                // Complete Input to let WaitOnApplicationTask() clean transport.
                 connection.Application.Input.Complete();
-                RemoveClientConnection(connection.ConnectionId);
+                await PerformDisconnectAsyncCore(connection.ConnectionId, true);
             }
         }
 
@@ -176,15 +172,15 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             var connectionId = closeConnectionMessage.ConnectionId;
-            return PerformDisconnectAsyncCore(connectionId);
+            return PerformDisconnectAsyncCore(connectionId, false);
         }
 
-        private async Task PerformDisconnectAsyncCore(string connectionId)
+        private async Task PerformDisconnectAsyncCore(string connectionId, bool abortOnClose)
         {
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var connection))
             {
-                // Service already knows the client is closed, no need to be informed.
-                connection.AbortOnClose = false;
+                // In normal close, service already knows the client is closed, no need to be informed.
+                connection.AbortOnClose = abortOnClose;
 
                 // We're done writing to the application output
                 connection.Application.Output.Complete();
