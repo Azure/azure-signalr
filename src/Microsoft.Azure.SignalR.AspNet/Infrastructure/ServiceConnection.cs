@@ -56,12 +56,11 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             try
             {
-                var tasks = new List<Task>(_clientConnections.Count);
-                foreach (var connection in _clientConnections)
+                if(_clientConnections.Count == 0)
                 {
-                    tasks.Add(PerformDisconnectCore(connection.Key, false));
+                    return;
                 }
-                await Task.WhenAll(tasks);
+                await Task.WhenAll(_clientConnections.Select(s => PerformDisconnectCore(s.Key, false)));
             }
             catch (Exception ex)
             {
