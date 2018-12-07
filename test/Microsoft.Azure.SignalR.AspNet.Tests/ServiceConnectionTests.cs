@@ -62,6 +62,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     // Validate in transport for 1000 data messages.
                     _clientConnectionManager.CurrentTransports.TryGetValue(clientConnection, out var transport);
+                    Assert.NotNull(transport);
                     Assert.Equal(transport.MessageCount, count);
                 }
             }
