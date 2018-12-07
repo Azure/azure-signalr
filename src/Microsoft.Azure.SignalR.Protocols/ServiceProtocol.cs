@@ -457,11 +457,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             if (arrayLength >= 2)
             {
-                var length = ReadMapLength(input, ref offset, "Messages");
+                var length = ReadMapLength(input, ref offset, "messages");
                 var dict = new Dictionary<string, string>((int)length);
                 for (int i = 0; i < length; i++)
                 {
-                    dict[ReadString(input, ref offset, "Messages.key")] = ReadString(input, ref offset, "Messages.value");
+                    dict[ReadString(input, ref offset, $"messages[{i}].key")] = ReadString(input, ref offset, $"messages[{i}].value");
                 }
 
                 return new PingMessage { Messages = dict };
