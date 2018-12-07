@@ -102,11 +102,18 @@ namespace Microsoft.Azure.SignalR
             }
             catch (Exception ex)
             {
+                // The exception means applicaion fail to process input anymore
+                // Turn down application output to avoid new messages and notify client to disconnect
                 Log.SendLoopStopped(_logger, connection.ConnectionId, ex);
+                connection.Application.Output.CancelPendingFlush();
+                connection.Application.Output.Complete();
+                await WriteAsync(new CloseConnectionMessage(connection.ConnectionId, ex.Message));
             }
             finally
             {
+                // Complete Input to let WaitOnApplicationTask() clean transport.
                 connection.Application.Input.Complete();
+                RemoveClientConnection(connection.ConnectionId);
             }
         }
 
