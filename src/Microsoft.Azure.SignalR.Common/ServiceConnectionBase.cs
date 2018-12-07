@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
@@ -34,7 +35,7 @@ namespace Microsoft.Azure.SignalR
         private readonly HandshakeRequestMessage _handshakeRequest;
 
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
-        private readonly IServiceProtocol _serviceProtocol;
+        protected IServiceProtocol ServiceProtocol { get; }
 
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
 
@@ -54,12 +55,12 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId)
         {
-            _serviceProtocol = serviceProtocol;
+            ServiceProtocol = serviceProtocol;
             _logger = logger;
             _connectionId = connectionId;
 
-            _cachedPingBytes = _serviceProtocol.GetMessageBytes(PingMessage.Instance);
-            _handshakeRequest = new HandshakeRequestMessage(_serviceProtocol.Version);
+            _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
+            _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version);
         }
 
         public async Task StartAsync()
@@ -131,7 +132,7 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 // Write the service protocol message
-                _serviceProtocol.WriteMessage(serviceMessage, _connection.Transport.Output);
+                ServiceProtocol.WriteMessage(serviceMessage, _connection.Transport.Output);
                 await _connection.Transport.Output.FlushAsync();
             }
             catch (Exception ex)
@@ -242,7 +243,7 @@ namespace Microsoft.Azure.SignalR
         {
             Log.SendingHandshakeRequest(_logger);
 
-            _serviceProtocol.WriteMessage(_handshakeRequest, output);
+            ServiceProtocol.WriteMessage(_handshakeRequest, output);
             var sendHandshakeResult = await output.FlushAsync();
             if (sendHandshakeResult.IsCompleted)
             {
@@ -269,7 +270,7 @@ namespace Microsoft.Azure.SignalR
 
                     if (!buffer.IsEmpty)
                     {
-                        if (_serviceProtocol.TryParseMessage(ref buffer, out var message))
+                        if (ServiceProtocol.TryParseMessage(ref buffer, out var message))
                         {
                             consumed = buffer.Start;
                             examined = consumed;
@@ -331,7 +332,7 @@ namespace Microsoft.Azure.SignalR
                             // No matter what kind of message come in, trigger send ping check
                             _ = TrySendPingAsync();
 
-                            while (_serviceProtocol.TryParseMessage(ref buffer, out var message))
+                            while (ServiceProtocol.TryParseMessage(ref buffer, out var message))
                             {
                                 _ = DispatchMessageAsync(message);
                             }
@@ -451,7 +452,7 @@ namespace Microsoft.Azure.SignalR
                 // Check if last send time is longer than default keep-alive ticks and then send ping
                 if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendTimestamp) > DefaultKeepAliveTicks)
                 {
-                    await _connection.Transport.Output.WriteAsync(_cachedPingBytes);
+                    await _connection.Transport.Output.WriteAsync(GetPingMessage());
                     Interlocked.Exchange(ref _lastSendTimestamp, Stopwatch.GetTimestamp());
                     Log.SentPing(_logger);
                 }
@@ -465,6 +466,8 @@ namespace Microsoft.Azure.SignalR
                 _serviceConnectionLock.Release();
             }
         }
+
+        protected virtual ReadOnlyMemory<byte> GetPingMessage() => _cachedPingBytes;
 
         private void AbortConnection()
         {

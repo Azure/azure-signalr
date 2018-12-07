@@ -14,6 +14,9 @@ namespace Microsoft.Azure.SignalR
 {
     internal partial class ServiceConnection : ServiceConnectionBase
     {
+        private const string ClientConnectionCountInHub = "#clientInHub";
+        private const string ClientConnectionCountInServiceConnection = "#client";
+
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly IClientConnectionManager _clientConnectionManager;
@@ -64,6 +67,19 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.FailedToCleanupConnections(_logger, ex);
             }
+        }
+
+        protected override ReadOnlyMemory<byte> GetPingMessage()
+        {
+            return ServiceProtocol.GetMessageBytes(
+                new PingMessage
+                {
+                    Messages = new Dictionary<string, string>
+                    {
+                        [ClientConnectionCountInHub] = _clientConnectionManager.ClientConnections.Count.ToString(),
+                        [ClientConnectionCountInServiceConnection] = _connectionIds.Count.ToString(),
+                    }
+                });
         }
 
         private async Task ProcessOutgoingMessagesAsync(ServiceConnectionContext connection)

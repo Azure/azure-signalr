@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
+
 namespace Microsoft.Azure.SignalR.Protocol
 {
     /// <summary>
@@ -66,6 +68,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// A static ping message.
         /// </summary>
         public static PingMessage Instance = new PingMessage();
+
+        public Dictionary<string, string> Messages { get; set; }
     }
 
     /// <summary>

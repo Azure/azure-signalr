@@ -66,7 +66,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ServiceProtocolConstants.HandshakeResponseType:
                     return CreateHandshakeResponseMessage(input, ref startOffset);
                 case ServiceProtocolConstants.PingMessageType:
-                    return PingMessage.Instance;
+                    return CreatePingMessage(input, ref startOffset, arrayLength);
                 case ServiceProtocolConstants.OpenConnectionMessageType:
                     return CreateOpenConnectionMessage(arrayLength, input, ref startOffset);
                 case ServiceProtocolConstants.CloseConnectionMessageType:
@@ -216,8 +216,22 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WritePingMessage(PingMessage message, Stream packer)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 1);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.PingMessageType);
+            if (message.Messages?.Count > 0)
+            {
+                MessagePackBinary.WriteArrayHeader(packer, 2);
+                MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.PingMessageType);
+                MessagePackBinary.WriteMapHeader(packer, message.Messages.Count);
+                foreach (var item in message.Messages)
+                {
+                    MessagePackBinary.WriteString(packer, item.Key);
+                    MessagePackBinary.WriteString(packer, item.Value);
+                }
+            }
+            else
+            {
+                MessagePackBinary.WriteArrayHeader(packer, 1);
+                MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.PingMessageType);
+            }
         }
 
         private static void WriteOpenConnectionMessage(OpenConnectionMessage message, Stream packer)
@@ -437,6 +451,22 @@ namespace Microsoft.Azure.SignalR.Protocol
             var errorMessage = ReadString(input, ref offset, "errorMessage");
 
             return new HandshakeResponseMessage(errorMessage);
+        }
+
+        private static PingMessage CreatePingMessage(byte[] input, ref int offset, int arrayLength)
+        {
+            if (arrayLength >= 2)
+            {
+                var length = ReadMapLength(input, ref offset, "messages");
+                var dict = new Dictionary<string, string>((int)length);
+                for (int i = 0; i < length; i++)
+                {
+                    dict[ReadString(input, ref offset, $"messages[{i}].key")] = ReadString(input, ref offset, $"messages[{i}].value");
+                }
+
+                return new PingMessage { Messages = dict };
+            }
+            return PingMessage.Instance;
         }
 
         private static OpenConnectionMessage CreateOpenConnectionMessage(int arrayLength, byte[] input, ref int offset)
