@@ -220,15 +220,16 @@ namespace Microsoft.Azure.SignalR.Tests
             _ = proxy.StartAsync();
             await serverTask.OrTimeout();
 
-            // Wait 5 sec and receive ping
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            // TODO: make KeepAliveInterval configurable
+            // Wait 6 sec and receive ping
+            await Task.Delay(TimeSpan.FromSeconds(6));
             await proxy.WriteMessageAsync(new PingMessage());
 
             // Check server PingMessage will send after reveive service PingMessage
             await ReadServiceMessageAsync<PingMessage>(proxy.ConnectionContext.Application.Input);
 
-            // Wait another 5 sec and recived connection message will also trigger ping
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            // Wait another 6 sec and recived connection message will also trigger ping
+            await Task.Delay(TimeSpan.FromSeconds(6));
             await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
 
             // Check server PingMessage will send after reveive service PingMessage
