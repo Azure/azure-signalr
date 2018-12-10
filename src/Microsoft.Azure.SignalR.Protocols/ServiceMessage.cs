@@ -24,6 +24,23 @@ namespace Microsoft.Azure.SignalR.Protocol
         public int Version { get; set; }
 
         /// <summary>
+        /// Gets or sets the type of service connection.
+        /// </summary>
+        /// <value>
+        /// <list type="bullet">
+        /// <item>0, default, it can carry clients, service runtime should always accept this kind of connection.</item>
+        /// <item>1, extra, it can carry clients, but it can be rejected by service runtime.</item>
+        /// <item>2, weak, it can not carry clients, but it can send message.</item>
+        /// </list>
+        /// </value>
+        public int ConnectionType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the target of service connection, only work for extra connections.
+        /// </summary>
+        public string Target { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="HandshakeRequestMessage"/> class.
         /// </summary>
         /// <param name="version"></param>

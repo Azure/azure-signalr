@@ -33,6 +33,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new HandshakeRequestMessage(1),
                 binary: "kgEB"),
             new ProtocolTestData(
+                name: "HandshakeRequestWithProperty",
+                message: new HandshakeRequestMessage(1) { ConnectionType = 1, Target = "abc" },
+                binary: "lAEBAaNhYmM="),
+            new ProtocolTestData(
                 name: "HandshakeResponse",
                 message: new HandshakeResponseMessage(),
                 binary: "kgKg"),
