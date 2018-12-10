@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public static PingMessage Instance = new PingMessage();
 
-        public Dictionary<string, string> Messages { get; set; }
+        public string[] Messages { get; set; }
     }
 
     /// <summary>

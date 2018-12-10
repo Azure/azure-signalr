@@ -216,15 +216,13 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WritePingMessage(PingMessage message, Stream packer)
         {
-            if (message.Messages?.Count > 0)
+            if (message.Messages?.Length > 0)
             {
-                MessagePackBinary.WriteArrayHeader(packer, 2);
+                MessagePackBinary.WriteArrayHeader(packer, message.Messages.Length + 1);
                 MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.PingMessageType);
-                MessagePackBinary.WriteMapHeader(packer, message.Messages.Count);
                 foreach (var item in message.Messages)
                 {
-                    MessagePackBinary.WriteString(packer, item.Key);
-                    MessagePackBinary.WriteString(packer, item.Value);
+                    MessagePackBinary.WriteString(packer, item);
                 }
             }
             else
@@ -455,16 +453,16 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static PingMessage CreatePingMessage(byte[] input, ref int offset, int arrayLength)
         {
-            if (arrayLength >= 2)
+            if (arrayLength > 1)
             {
-                var length = ReadMapLength(input, ref offset, "messages");
-                var dict = new Dictionary<string, string>((int)length);
+                var length = arrayLength - 1;
+                var values = new string[length];
                 for (int i = 0; i < length; i++)
                 {
-                    dict[ReadString(input, ref offset, $"messages[{i}].key")] = ReadString(input, ref offset, $"messages[{i}].value");
+                    values[i] = ReadString(input, ref offset, $"messages[{i}]");
                 }
 
-                return new PingMessage { Messages = dict };
+                return new PingMessage { Messages = values };
             }
             return PingMessage.Instance;
         }

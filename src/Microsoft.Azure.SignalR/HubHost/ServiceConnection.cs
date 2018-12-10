@@ -74,10 +74,12 @@ namespace Microsoft.Azure.SignalR
             return ServiceProtocol.GetMessageBytes(
                 new PingMessage
                 {
-                    Messages = new Dictionary<string, string>
+                    Messages = new string[]
                     {
-                        [ClientConnectionCountInHub] = _clientConnectionManager.ClientConnections.Count.ToString(),
-                        [ClientConnectionCountInServiceConnection] = _connectionIds.Count.ToString(),
+                        ClientConnectionCountInHub,
+                        _clientConnectionManager.ClientConnections.Count.ToString(),
+                        ClientConnectionCountInServiceConnection,
+                        _connectionIds.Count.ToString(),
                     }
                 });
         }
