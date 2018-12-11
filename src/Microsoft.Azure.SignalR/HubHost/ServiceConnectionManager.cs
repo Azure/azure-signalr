@@ -27,13 +27,21 @@ namespace Microsoft.Azure.SignalR
 
         public async Task WriteAsync(ServiceMessage serviceMessage)
         {
+            if (_serviceConnections.Count == 0)
+            {
+                throw new InvalidOperationException("Azure SignalR Service is not connected yet, please try again later.");
+            }
+
             var index = StaticRandom.Next(_serviceConnections.Count);
             await _serviceConnections[index].WriteAsync(serviceMessage);
         }
 
         public async Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
         {
-            if (_serviceConnections.Count == 0) return;
+            if (_serviceConnections.Count == 0)
+            {
+                throw new InvalidOperationException("Azure SignalR Service is not connected yet, please try again later.");
+            }
 
             // If we hit this check, it is a code bug.
             if (string.IsNullOrEmpty(partitionKey))
