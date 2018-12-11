@@ -46,8 +46,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "kQM="),
             new ProtocolTestData(
                 name: "Ping+",
-                message: new PingMessage { Messages = new Dictionary<string, string> { ["a"] = "b" } },
-                binary: "kgOBoWGhYg=="),
+                message: new PingMessage { Messages = new string[] { "a", "b" } },
+                binary: "kwOhYaFi"),
             new ProtocolTestData(
                 name: "OpenConnection",
                 message: new OpenConnectionMessage("conn1", null),

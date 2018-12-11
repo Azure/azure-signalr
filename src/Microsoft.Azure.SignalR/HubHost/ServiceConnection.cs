@@ -23,6 +23,8 @@ namespace Microsoft.Azure.SignalR
 
         private readonly ConcurrentDictionary<string, string> _connectionIds =
             new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+        private readonly string[] _pingMessages =
+            new string[4] { ClientConnectionCountInHub, null, ClientConnectionCountInServiceConnection, null };
 
         private readonly ConnectionDelegate _connectionDelegate;
 
@@ -71,14 +73,13 @@ namespace Microsoft.Azure.SignalR
 
         protected override ReadOnlyMemory<byte> GetPingMessage()
         {
+            _pingMessages[1] = _clientConnectionManager.ClientConnections.Count.ToString();
+            _pingMessages[3] = _connectionIds.Count.ToString();
+
             return ServiceProtocol.GetMessageBytes(
                 new PingMessage
                 {
-                    Messages = new Dictionary<string, string>
-                    {
-                        [ClientConnectionCountInHub] = _clientConnectionManager.ClientConnections.Count.ToString(),
-                        [ClientConnectionCountInServiceConnection] = _connectionIds.Count.ToString(),
-                    }
+                    Messages = _pingMessages
                 });
         }
 
