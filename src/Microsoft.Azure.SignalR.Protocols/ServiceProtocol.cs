@@ -216,19 +216,11 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WritePingMessage(PingMessage message, Stream packer)
         {
-            if (message.Messages?.Length > 0)
+            MessagePackBinary.WriteArrayHeader(packer, message.Messages.Length + 1);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.PingMessageType);
+            foreach (var item in message.Messages)
             {
-                MessagePackBinary.WriteArrayHeader(packer, message.Messages.Length + 1);
-                MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.PingMessageType);
-                foreach (var item in message.Messages)
-                {
-                    MessagePackBinary.WriteString(packer, item);
-                }
-            }
-            else
-            {
-                MessagePackBinary.WriteArrayHeader(packer, 1);
-                MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.PingMessageType);
+                MessagePackBinary.WriteString(packer, item);
             }
         }
 
@@ -376,7 +368,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteServiceErrorMessage(ServiceErrorMessage message, Stream packer)
         {
-            MessagePackBinary.WriteArrayHeader(packer,2);
+            MessagePackBinary.WriteArrayHeader(packer, 2);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ServiceErrorMessageType);
             MessagePackBinary.WriteString(packer, message.ErrorMessage);
         }
@@ -440,7 +432,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         private static HandshakeRequestMessage CreateHandshakeRequestMessage(byte[] input, ref int offset)
         {
             var version = ReadInt32(input, ref offset, "version");
-
             return new HandshakeRequestMessage(version);
         }
 
