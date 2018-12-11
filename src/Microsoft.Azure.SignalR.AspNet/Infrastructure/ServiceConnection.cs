@@ -52,20 +52,20 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _connectionFactory.DisposeAsync(connection);
         }
 
-        protected override async Task CleanupConnections()
+        protected override Task CleanupConnections()
         {
             try
             {
-                if(_clientConnections.Count == 0)
+                foreach(var connection in _clientConnections)
                 {
-                    return;
+                    PerformDisconnectCore(connection.Key);
                 }
-                await Task.WhenAll(_clientConnections.Select(s => PerformDisconnectCore(s.Key, false)));
             }
             catch (Exception ex)
             {
                 Log.FailedToCleanupConnections(_logger, ex);
             }
+            return Task.CompletedTask;
         }
 
         protected override async Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage)
@@ -83,14 +83,14 @@ namespace Microsoft.Azure.SignalR.AspNet
                 }
 
                 // Writing from the application to the service
-                clientContext.ApplicationTask = ProcessMessageAsync(connectionId, clientContext.CancellationToken.Token);
+                _ = ProcessMessageAsync(connectionId);
             }
             catch (Exception e)
             {
                 // Fail to write initial open connection message to channel
                 Log.ConnectedStartingFailed(_logger, connectionId, e);
                 // Close channel and notify client to close connection
-                await clientContext.DisposeAsync();
+                clientContext.Output.TryComplete();
                 await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
             }
         }
@@ -127,22 +127,12 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-        private async Task PerformDisconnectCore(string connectionId, bool closeGracefully = true)
+        private void PerformDisconnectCore(string connectionId)
         {
             if (_clientConnections.TryRemove(connectionId, out var clientContext))
             {
-                try
-                {
-                    await clientContext.DisposeAsync(closeGracefully);
-                }
-                catch (Exception e)
-                {
-                    Log.ApplicaitonTaskFailed(_logger, e);
-                }
-                finally
-                {
-                    clientContext.Transport.OnDisconnected();
-                }
+                clientContext.Output.TryComplete();
+                clientContext.Transport.OnDisconnected();
             }
 
             Log.ConnectedEnding(_logger, connectionId);
@@ -159,7 +149,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             catch (Exception e)
             {
                 Log.ConnectedStartingFailed(_logger, connectionId, e);
-                await PerformDisconnectCore(connectionId);
+                PerformDisconnectCore(connectionId);
                 await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
             }
         }
@@ -187,7 +177,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-        private async Task ProcessMessageAsync(string connectionId, CancellationToken token = default)
+        private async Task ProcessMessageAsync(string connectionId)
         {
             // Check if channel is created.
             if (_clientConnections.TryGetValue(connectionId, out var clientContext))
@@ -195,7 +185,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 try
                 {
                     // Check if channel is closed.
-                    while (await clientContext.Input.WaitToReadAsync(token))
+                    while (await clientContext.Input.WaitToReadAsync())
                     {
                         while (clientContext.Input.TryRead(out var serviceMessage))
                         {
@@ -205,8 +195,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                                     await OnConnectedAsyncCore(clientContext, openConnectionMessage);
                                     break;
                                 case CloseConnectionMessage closeConnectionMessage:
-                                    await PerformDisconnectCore(closeConnectionMessage.ConnectionId);
-                                    break;
+                                    PerformDisconnectCore(closeConnectionMessage.ConnectionId);
+                                    return;
                                 case ConnectionDataMessage connectionDataMessage:
                                     ProcessOutgoingMessages(clientContext, connectionDataMessage);
                                     break;
@@ -216,16 +206,12 @@ namespace Microsoft.Azure.SignalR.AspNet
                         }
                     }
                 }
-                catch (TaskCanceledException)
-                {
-                    // Current task is canceled in PerformDisconnectCore() and just igonore
-                }
                 catch (Exception e)
                 {
                     // Internal exception is already catched and here only for channel exception.
                     // Notify client to disconnect.
                     Log.SendLoopStopped(_logger, connectionId, e);
-                    await PerformDisconnectCore(connectionId, false);
+                    PerformDisconnectCore(connectionId);
                     await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
                 }
             }
@@ -246,8 +232,6 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             public ClientContext()
             {
-                CancellationToken = new CancellationTokenSource();
-
                 var channel = Channel.CreateUnbounded<ServiceMessage>();
                 Input = channel.Reader;
                 Output = channel.Writer;
@@ -258,36 +242,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             public ChannelReader<ServiceMessage> Input { get; }
             
             public ChannelWriter<ServiceMessage> Output { get; }
-
-            public Task ApplicationTask { get; set; }
-
-            public CancellationTokenSource CancellationToken { get; set; }
-
-            public async Task DisposeAsync(bool closeGracefully = true)
-            {
-                try
-                {
-                    Output.TryComplete();
-                    if (closeGracefully)
-                    {
-                        // Normally disconnect is the last message to process
-                        // Wait for application task to finish
-                        var task = ApplicationTask ?? Task.CompletedTask;
-                        await task;
-                    }
-                    else
-                    {
-                        // When disconnect is called for channel exception or cleanup connection
-                        // No need to process rest messages, just cancel read to avoid hang in the task.
-                        CancellationToken?.Cancel();
-                    }
-                }
-                finally
-                {
-                    CancellationToken?.Dispose();
-                    CancellationToken = null;
-                }
-            }
         }
     }
 }
