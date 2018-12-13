@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR.Protocol
 {
@@ -28,15 +27,15 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         /// <value>
         /// <list type="bullet">
-        /// <item>0, default, it can carry clients, service runtime should always accept this kind of connection.</item>
-        /// <item>1, extra, it can carry clients, but it can be rejected by service runtime.</item>
-        /// <item>2, weak, it can not carry clients, but it can send message.</item>
+        /// <item>0, Default, it can carry clients, service runtime should always accept this kind of connection.</item>
+        /// <item>1, OnDemand, it can carry clients, but it can be rejected by service runtime.</item>
+        /// <item>2, Weak, it can not carry clients, but it can send message.</item>
         /// </list>
         /// </value>
         public int ConnectionType { get; set; }
 
         /// <summary>
-        /// Gets or sets the target of service connection, only work for extra connections.
+        /// Gets or sets the target of service connection, only work for OnDemand connections.
         /// </summary>
         public string Target { get; set; }
 
