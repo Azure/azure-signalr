@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <value>
         /// <list type="bullet">
         /// <item>0, Default, it can carry clients, service runtime should always accept this kind of connection.</item>
-        /// <item>1, OnDemand, it can carry clients, but it can be rejected by service runtime.</item>
+        /// <item>1, OnDemand, creating when service requested more connections, it can carry clients, but it may be rejected by service runtime.</item>
         /// <item>2, Weak, it can not carry clients, but it can send message.</item>
         /// </list>
         /// </value>
