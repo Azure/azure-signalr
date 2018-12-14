@@ -62,7 +62,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             switch (messageType)
             {
                 case ServiceProtocolConstants.HandshakeRequestType:
-                    return CreateHandshakeRequestMessage(input, ref startOffset);
+                    return CreateHandshakeRequestMessage(input, ref startOffset, arrayLength);
                 case ServiceProtocolConstants.HandshakeResponseType:
                     return CreateHandshakeResponseMessage(input, ref startOffset);
                 case ServiceProtocolConstants.PingMessageType:
@@ -202,9 +202,20 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteHandshakeRequestMessage(HandshakeRequestMessage message, Stream packer)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 2);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeRequestType);
-            MessagePackBinary.WriteInt32(packer, message.Version);
+            if (message.ConnectionType == 0)
+            {
+                MessagePackBinary.WriteArrayHeader(packer, 2);
+                MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeRequestType);
+                MessagePackBinary.WriteInt32(packer, message.Version);
+            }
+            else
+            {
+                MessagePackBinary.WriteArrayHeader(packer, 4);
+                MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeRequestType);
+                MessagePackBinary.WriteInt32(packer, message.Version);
+                MessagePackBinary.WriteInt32(packer, message.ConnectionType);
+                MessagePackBinary.WriteString(packer, message.Target ?? string.Empty);
+            }
         }
 
         private static void WriteHandshakeResponseMessage(HandshakeResponseMessage message, Stream packer)
@@ -429,10 +440,16 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
-        private static HandshakeRequestMessage CreateHandshakeRequestMessage(byte[] input, ref int offset)
+        private static HandshakeRequestMessage CreateHandshakeRequestMessage(byte[] input, ref int offset, int arrayLength)
         {
             var version = ReadInt32(input, ref offset, "version");
-            return new HandshakeRequestMessage(version);
+            var result = new HandshakeRequestMessage(version);
+            if (arrayLength >= 4)
+            {
+                result.ConnectionType = ReadInt32(input, ref offset, "connectionType");
+                result.Target = ReadString(input, ref offset, "target");
+            }
+            return result;
         }
 
         private static HandshakeResponseMessage CreateHandshakeResponseMessage(byte[] input, ref int offset)
