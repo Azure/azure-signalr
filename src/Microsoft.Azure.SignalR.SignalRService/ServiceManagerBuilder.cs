@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -25,11 +25,6 @@ namespace Microsoft.Azure.SignalR.SignalRService
         }
 
         public ServiceManagerBuilder WithOptions(Action<ServiceUtilityOptions> options)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ServiceHubContext CreateHubContextAsync(string hubName)
         {
             throw new NotImplementedException();
         }
