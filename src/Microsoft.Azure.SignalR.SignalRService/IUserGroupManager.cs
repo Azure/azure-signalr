@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalR.SignalRService
 {
     public interface IUserGroupManager
     {
-        Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default);
-        Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default);
+        Task AddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default);
+        Task RemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default);
     }
 }
