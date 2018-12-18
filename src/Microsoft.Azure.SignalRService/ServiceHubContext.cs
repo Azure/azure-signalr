@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -7,11 +7,13 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalRService
 {
-    public class ServiceHubContext : IDisposable
+    internal class ServiceHubContext : IServiceHubContext
     {
-        public IHubClients Clients;
-        public IGroupManager Groups;
-        public IUserGroupManager UserGroups;
+        public IUserGroupManager UserGroups => throw new NotImplementedException();
+
+        public IHubClients Clients => throw new NotImplementedException();
+
+        public IGroupManager Groups => throw new NotImplementedException();
 
         public void Dispose()
         {
