@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalR.SignalRService
 {
     public class ServiceManager
     {
-        public ServiceHubContext CreateHubContextAsync(string hubName)
+        public Task<ServiceHubContext> CreateHubContextAsync(string hubName)
         {
             throw new NotImplementedException();
         }
