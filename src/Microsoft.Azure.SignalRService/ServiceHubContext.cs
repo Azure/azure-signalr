@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Threading.Tasks;
 
-namespace Microsoft.Azure.SignalR.SignalRService
+namespace Microsoft.Azure.SignalRService
 {
     public class ServiceHubContext : IDisposable
     {

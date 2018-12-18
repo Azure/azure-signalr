@@ -4,7 +4,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.Azure.SignalR.SignalRService
+namespace Microsoft.Azure.SignalRService
 {
     public interface IUserGroupManager
     {
