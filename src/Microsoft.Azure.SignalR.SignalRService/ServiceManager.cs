@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.SignalRService
             throw new NotImplementedException();
         }
 
-        public string GenerateAccessToken(string audience, TimeSpan? lifeTime = null)
+        public string GenerateAccessToken(Scope scope, string hubName, string connectionId = null, string userId = null, string groupName = null, TimeSpan? lifeTime = null)
         {
             throw new NotImplementedException();
         }
