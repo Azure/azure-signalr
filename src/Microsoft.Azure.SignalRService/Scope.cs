@@ -5,10 +5,10 @@ namespace Microsoft.Azure.SignalRService
 {
     public enum Scope
     {
-        Client, // scope for  client to connect to a hub
-        Server, // scope for all server side operations
+        Client, /// scope for  client to connect to a hub
+        Server, /// scope for all server side operations
 
-        // compatible with current runtime's scope
+        /// compatible with current runtime's scope
         Broadcast,
         SendToUser,
         SendToClient,
