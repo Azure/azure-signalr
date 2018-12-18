@@ -3,7 +3,7 @@
 
 namespace Microsoft.Azure.SignalR.SignalRService
 {
-    public enum SeriveHubContextBackend
+    public enum ServiceHubContextBackend
     {
         RestV1,
         Websocket
