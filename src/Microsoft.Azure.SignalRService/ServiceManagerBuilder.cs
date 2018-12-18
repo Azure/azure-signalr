@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalRService
 {
     public class ServiceManagerBuilder
     {
-        public ServiceManagerBuilder WithCredentials(string conenctionString)
+        public ServiceManagerBuilder WithCredentials(string connectionString)
         {
             throw new NotImplementedException();
         }
