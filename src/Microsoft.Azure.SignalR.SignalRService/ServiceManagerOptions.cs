@@ -3,8 +3,8 @@
 
 namespace Microsoft.Azure.SignalR.SignalRService
 {
-    public class ServiceUtilityOptions
+    public class ServiceManagerOptions
     {
-        public SeriveHubContextBackend SeriveHubContextBackend { get; set; }
+        public ServiceHubContextBackend SeriveHubContextBackend { get; set; }
     }
 }
