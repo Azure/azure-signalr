@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         private Claim[] GenerateClaims(int count)
         {
             var claims = new List<Claim>();
-            while(count > 0)
+            while (count > 0)
             {
                 var claimType = $"ClaimSubject{count}";
                 var claimValue = $"ClaimValue{count}";
