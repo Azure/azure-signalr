@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalRService
 {
-    public class ServiceManagerBuilder
+    public class ServiceManagerBuilder : IServiceManagerBuilder
     {
         public ServiceManagerBuilder WithCredentials(string connectionString)
         {
@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalRService
             throw new NotImplementedException();
         }
 
-        public ServiceManager Build()
+        public IServiceManager Build()
         {
             throw new NotImplementedException();
         }

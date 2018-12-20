@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalRService
 {
-    public class ServiceManager
+    public class ServiceManager : IServiceManager
     {
         public Task<IServiceHubContext> CreateHubContextAsync(string hubName)
         {
