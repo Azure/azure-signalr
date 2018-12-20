@@ -13,16 +13,6 @@ namespace Microsoft.Azure.SignalRService
             throw new NotImplementedException();
         }
 
-        public ServiceManagerBuilder WithCredentials(string endpoint, string accessToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ServiceManagerBuilder WithCredentials(string endpoint, IList<string> accessTokens)
-        {
-            throw new NotImplementedException();
-        }
-
         public ServiceManagerBuilder WithOptions(Action<ServiceManagerOptions> options)
         {
             throw new NotImplementedException();
