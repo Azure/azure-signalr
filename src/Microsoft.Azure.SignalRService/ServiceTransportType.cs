@@ -3,9 +3,9 @@
 
 namespace Microsoft.Azure.SignalRService
 {
-    public enum ServiceHubContextBackend
+    public enum ServiceTransportType
     {
-        RestV1,
-        Websocket
+        Transient,
+        Persistent
     }
 }

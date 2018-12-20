@@ -5,6 +5,6 @@ namespace Microsoft.Azure.SignalRService
 {
     public class ServiceManagerOptions
     {
-        public ServiceHubContextBackend SeriveHubContextBackend { get; set; }
+        public ServiceTransportType ServiceTransportType { get; set; }
     }
 }
