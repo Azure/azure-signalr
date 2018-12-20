@@ -14,6 +14,9 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class AuthenticationHelper
     {
+        // Current limitaion is in Nigix for 4K
+        private const int MaxTokenLength = 4096;
+
         private static readonly JwtSecurityTokenHandler JwtTokenHandler = new JwtSecurityTokenHandler();
 
         public static string GenerateJwtBearer(
@@ -34,13 +37,20 @@ namespace Microsoft.Azure.SignalR
         {
             var expire = DateTime.UtcNow.Add(lifetime);
 
-            return GenerateJwtBearer(
+            var jwtToken = GenerateJwtBearer(
                 audience: audience,
                 claims: claims,
                 expires: expire,
                 signingKey: signingKey,
                 requestId: requestId
             );
+
+            if (jwtToken.Length > MaxTokenLength)
+            {
+                throw new ArgumentException("AccessToken must not be longer than 4K");
+            }
+
+            return jwtToken;
         }
 
         private static string GenerateRequestId()
