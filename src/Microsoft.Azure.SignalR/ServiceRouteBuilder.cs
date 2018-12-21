@@ -74,6 +74,10 @@ namespace Microsoft.Azure.SignalR
             var writer = new MemoryBufferWriter();
             try
             {
+                if(string.IsNullOrEmpty(negotiateResponse.AccessToken))
+                {
+                    context.Response.StatusCode = 413;
+                }
                 context.Response.ContentType = "application/json";
                 NegotiateProtocol.WriteResponse(negotiateResponse, writer);
                 // Write it out to the response with the right content length

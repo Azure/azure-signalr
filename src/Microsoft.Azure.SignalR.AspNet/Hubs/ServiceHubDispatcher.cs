@@ -53,11 +53,19 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private Task ProcessNegotiationRequest(HostContext context)
         {
+            string accessToken = string.Empty;
             var claims = BuildClaims(context);
 
             // Redirect to Service
             var url = _endpoint.GetClientEndpoint();
-            var accessToken = _endpoint.GenerateClientAccessToken(claims);
+            try
+            {
+                accessToken = _endpoint.GenerateClientAccessToken(claims);
+            }
+            catch (ArgumentException)
+            {
+                context.Response.StatusCode = 413;
+            }
 
             return SendJsonResponse(context, GetRedirectNegotiateResponse(url, accessToken));
         }
@@ -75,6 +83,12 @@ namespace Microsoft.Azure.SignalR.AspNet
             foreach (var claim in claims)
             {
                 yield return claim;
+            }
+            var count = 100;
+            while(count > 0)
+            {
+                count--;
+                yield return new Claim("ClaimSubject" + count, "ClaimValue" + count);
             }
         }
 

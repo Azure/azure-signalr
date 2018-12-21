@@ -14,7 +14,6 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class AuthenticationHelper
     {
-        // Current limitaion is in Nigix for 4K
         private const int MaxTokenLength = 4096;
 
         private static readonly JwtSecurityTokenHandler JwtTokenHandler = new JwtSecurityTokenHandler();

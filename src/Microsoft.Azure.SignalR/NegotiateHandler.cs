@@ -30,11 +30,21 @@ namespace Microsoft.Azure.SignalR
             var claims = BuildClaims(context);
             var request = context.Request;
             var originalPath = GetOriginalPath(request.Path);
+
+            string accessToken = null;
+            try
+            {
+                accessToken = _endpointProvider.GenerateClientAccessToken(hubName, claims);
+            }
+            catch (ArgumentException)
+            {
+            }
+
             return new NegotiationResponse
             {
                 Url = _endpointProvider.GetClientEndpoint(hubName, originalPath,
                     request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : string.Empty),
-                AccessToken = _endpointProvider.GenerateClientAccessToken(hubName, claims),
+                AccessToken = accessToken,
                 // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
                 AvailableTransports = new List<AvailableTransport>()
             };
@@ -62,6 +72,19 @@ namespace Microsoft.Azure.SignalR
             return path.EndsWith(Constants.Path.Negotiate)
                 ? path.Substring(0, path.Length - Constants.Path.Negotiate.Length)
                 : string.Empty;
+        }
+
+        private Claim[] GenerateClaims(int count)
+        {
+            var claims = new List<Claim>();
+            while (count > 0)
+            {
+                var claimType = $"ClaimSubject{count}";
+                var claimValue = $"ClaimValue{count}";
+                claims.Add(new Claim(claimType, claimValue));
+                count--;
+            }
+            return claims.ToArray();
         }
     }
 }
