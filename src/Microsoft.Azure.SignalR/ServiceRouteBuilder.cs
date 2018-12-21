@@ -74,7 +74,7 @@ namespace Microsoft.Azure.SignalR
             var writer = new MemoryBufferWriter();
             try
             {
-                if(string.IsNullOrEmpty(negotiateResponse.AccessToken))
+                if (string.IsNullOrEmpty(negotiateResponse.AccessToken))
                 {
                     context.Response.StatusCode = 413;
                 }
