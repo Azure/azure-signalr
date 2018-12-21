@@ -11,7 +11,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -21,6 +23,7 @@ namespace Microsoft.Azure.SignalR
     public class ServiceRouteBuilder
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger _logger;
         private readonly RouteBuilder _routes;
         private readonly NegotiateHandler _negotiateHandler;
 
@@ -33,6 +36,9 @@ namespace Microsoft.Azure.SignalR
             _routes = routes;
             _serviceProvider = _routes.ServiceProvider;
             _negotiateHandler = _serviceProvider.GetRequiredService<NegotiateHandler>();
+
+            var loggerFactory = _serviceProvider.GetService<ILoggerFactory>();
+            _logger = loggerFactory.CreateLogger<ServiceRouteBuilder>();
         }
 
         /// <summary>
@@ -69,15 +75,22 @@ namespace Microsoft.Azure.SignalR
                 return;
             }
 
-            var negotiateResponse = _negotiateHandler.Process(context, hubName);
+            NegotiationResponse negotiateResponse = null;
+            try
+            {
+                negotiateResponse = _negotiateHandler.Process(context, hubName);
+            }
+            catch (AccessTokenTooLongException ex)
+            {
+                Log.NegotiateFailed(_logger, ex.Message);
+                context.Response.StatusCode = 413;
+                await HttpResponseWritingExtensions.WriteAsync(context.Response, ex.Message);
+                return;
+            }
 
             var writer = new MemoryBufferWriter();
             try
             {
-                if (string.IsNullOrEmpty(negotiateResponse.AccessToken))
-                {
-                    context.Response.StatusCode = 413;
-                }
                 context.Response.ContentType = "application/json";
                 NegotiateProtocol.WriteResponse(negotiateResponse, writer);
                 // Write it out to the response with the right content length
@@ -98,6 +111,17 @@ namespace Microsoft.Azure.SignalR
 
             var dispatcher = _serviceProvider.GetRequiredService<ServiceHubDispatcher<THub>>();
             dispatcher.Start(app);
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, string, Exception> _negotiateFailed =
+                LoggerMessage.Define<string>(LogLevel.Critical, new EventId(1, "NegotiateFailed"), "Client Negotiate Failed: {Error}");
+
+            public static void NegotiateFailed(ILogger logger, string error)
+            {
+                _negotiateFailed(logger, error, null);
+            }
         }
     }
 }

@@ -19,9 +19,9 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         public void TestAccessTokenTooLongThrowsException()
         {
             var claims = GenerateClaims(100);
-            var exception = Assert.Throws<ArgumentException>(() => AuthenticationHelper.GenerateAccessToken(SigningKey, Audience, claims, DefaultLifetime, string.Empty));
+            var exception = Assert.Throws<AccessTokenTooLongException>(() => AuthenticationHelper.GenerateAccessToken(SigningKey, Audience, claims, DefaultLifetime, string.Empty));
 
-            Assert.Equal("AccessToken must not be longer than 4K", exception.Message);
+            Assert.Equal("AccessToken must not be longer than 4K.", exception.Message);
         }
 
         private Claim[] GenerateClaims(int count)

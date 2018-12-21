@@ -14,6 +14,8 @@ using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Json;
+using Microsoft.Azure.SignalR.Common;
+using Microsoft.Extensions.Logging;
 using Microsoft.Owin;
 using Newtonsoft.Json;
 
@@ -25,13 +27,17 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private readonly string _appName;
         private readonly Func<IOwinContext, IEnumerable<Claim>> _claimsProvider;
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly ILogger _logger;
 
         private IServiceEndpointProvider _endpoint;
 
-        public ServiceHubDispatcher(HubConfiguration configuration, string appName, ServiceOptions options) : base(configuration)
+        public ServiceHubDispatcher(HubConfiguration configuration, string appName, ServiceOptions options, ILoggerFactory loggerFactory) : base(configuration)
         {
             _appName = appName ?? throw new ArgumentException(nameof(appName));
             _claimsProvider = options?.ClaimsProvider;
+            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _logger = loggerFactory.CreateLogger<ServiceHubDispatcher>();
         }
 
         public override void Initialize(IDependencyResolver resolver)
@@ -62,9 +68,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 accessToken = _endpoint.GenerateClientAccessToken(claims);
             }
-            catch (ArgumentException)
+            catch (AccessTokenTooLongException ex)
             {
+                Log.NegotiateFailed(_logger, ex.Message);
                 context.Response.StatusCode = 413;
+                return context.Response.End(ex.Message);
             }
 
             return SendJsonResponse(context, GetRedirectNegotiateResponse(url, accessToken));
@@ -132,6 +140,17 @@ namespace Microsoft.Azure.SignalR.AspNet
             // JSONP response is no longer supported.
             context.Response.StatusCode = 400;
             return context.Response.End("JSONP is no longer supported.");
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, string, Exception> _negotiateFailed =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(1, "NegotiateFailed"), "Client Negotiate Failed: {Error}");
+
+            public static void NegotiateFailed(ILogger logger, string error)
+            {
+                _negotiateFailed(logger, error, null);
+            }
         }
     }
 }

@@ -8,6 +8,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
@@ -36,9 +37,9 @@ namespace Microsoft.Azure.SignalR
             {
                 accessToken = _endpointProvider.GenerateClientAccessToken(hubName, claims);
             }
-            catch (ArgumentException)
+            catch (AccessTokenTooLongException)
             {
-                // Set response code by checking NegotiationResponse.AccessToken
+                throw;
             }
 
             return new NegotiationResponse

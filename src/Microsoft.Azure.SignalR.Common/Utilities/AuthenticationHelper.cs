@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Azure.SignalR
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.SignalR
 
             if (jwtToken.Length > MaxTokenLength)
             {
-                throw new ArgumentException("AccessToken must not be longer than 4K");
+                throw new AccessTokenTooLongException();
             }
 
             return jwtToken;
