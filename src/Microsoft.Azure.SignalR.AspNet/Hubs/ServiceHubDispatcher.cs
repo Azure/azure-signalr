@@ -84,12 +84,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 yield return claim;
             }
-            var count = 100;
-            while(count > 0)
-            {
-                count--;
-                yield return new Claim("ClaimSubject" + count, "ClaimValue" + count);
-            }
         }
 
         private Func<IEnumerable<Claim>> GetClaimsProvider(IOwinContext context)

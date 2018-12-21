@@ -74,18 +74,5 @@ namespace Microsoft.Azure.SignalR
                 ? path.Substring(0, path.Length - Constants.Path.Negotiate.Length)
                 : string.Empty;
         }
-
-        private Claim[] GenerateClaims(int count)
-        {
-            var claims = new List<Claim>();
-            while (count > 0)
-            {
-                var claimType = $"ClaimSubject{count}";
-                var claimValue = $"ClaimValue{count}";
-                claims.Add(new Claim(claimType, claimValue));
-                count--;
-            }
-            return claims.ToArray();
-        }
     }
 }
