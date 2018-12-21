@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private Task ProcessNegotiationRequest(HostContext context)
         {
-            string accessToken = string.Empty;
+            string accessToken = null;
             var claims = BuildClaims(context);
 
             // Redirect to Service

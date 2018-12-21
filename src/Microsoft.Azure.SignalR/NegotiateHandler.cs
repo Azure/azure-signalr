@@ -38,6 +38,7 @@ namespace Microsoft.Azure.SignalR
             }
             catch (ArgumentException)
             {
+                // Set response code in NegotiationResponse by checking accessToken
             }
 
             return new NegotiationResponse
