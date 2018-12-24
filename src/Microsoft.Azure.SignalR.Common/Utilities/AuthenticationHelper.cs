@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR
 
             if (jwtToken.Length > MaxTokenLength)
             {
-                throw new AccessTokenTooLongException();
+                throw new AzureSignalRAccessTokenTooLongException();
             }
 
             return jwtToken;

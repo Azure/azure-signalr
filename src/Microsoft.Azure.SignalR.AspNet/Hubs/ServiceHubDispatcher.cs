@@ -27,7 +27,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private readonly string _appName;
         private readonly Func<IOwinContext, IEnumerable<Claim>> _claimsProvider;
-        private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
 
         private IServiceEndpointProvider _endpoint;
@@ -36,7 +35,6 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             _appName = appName ?? throw new ArgumentException(nameof(appName));
             _claimsProvider = options?.ClaimsProvider;
-            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<ServiceHubDispatcher>();
         }
 
@@ -68,7 +66,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 accessToken = _endpoint.GenerateClientAccessToken(claims);
             }
-            catch (AccessTokenTooLongException ex)
+            catch (AzureSignalRAccessTokenTooLongException ex)
             {
                 Log.NegotiateFailed(_logger, ex.Message);
                 context.Response.StatusCode = 413;
@@ -145,7 +143,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private static class Log
         {
             private static readonly Action<ILogger, string, Exception> _negotiateFailed =
-                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(1, "NegotiateFailed"), "Client Negotiate Failed: {Error}");
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(1, "NegotiateFailed"), "Client negotiate failed: {Error}");
 
             public static void NegotiateFailed(ILogger logger, string error)
             {

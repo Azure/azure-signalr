@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -37,8 +38,8 @@ namespace Microsoft.Azure.SignalR
             _serviceProvider = _routes.ServiceProvider;
             _negotiateHandler = _serviceProvider.GetRequiredService<NegotiateHandler>();
 
-            var loggerFactory = _serviceProvider.GetService<ILoggerFactory>();
-            _logger = loggerFactory.CreateLogger<ServiceRouteBuilder>();
+            var loggerFactory = _serviceProvider.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance;
+            _logger = loggerFactory.CreateLogger<ServiceRouteBuilder>(); 
         }
 
         /// <summary>
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.SignalR
             {
                 negotiateResponse = _negotiateHandler.Process(context, hubName);
             }
-            catch (AccessTokenTooLongException ex)
+            catch (AzureSignalRAccessTokenTooLongException ex)
             {
                 Log.NegotiateFailed(_logger, ex.Message);
                 context.Response.StatusCode = 413;
@@ -116,7 +117,7 @@ namespace Microsoft.Azure.SignalR
         private static class Log
         {
             private static readonly Action<ILogger, string, Exception> _negotiateFailed =
-                LoggerMessage.Define<string>(LogLevel.Critical, new EventId(1, "NegotiateFailed"), "Client Negotiate Failed: {Error}");
+                LoggerMessage.Define<string>(LogLevel.Critical, new EventId(1, "NegotiateFailed"), "Client negotiate failed: {Error}");
 
             public static void NegotiateFailed(ILogger logger, string error)
             {

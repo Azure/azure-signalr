@@ -32,21 +32,11 @@ namespace Microsoft.Azure.SignalR
             var request = context.Request;
             var originalPath = GetOriginalPath(request.Path);
 
-            string accessToken = null;
-            try
-            {
-                accessToken = _endpointProvider.GenerateClientAccessToken(hubName, claims);
-            }
-            catch (AccessTokenTooLongException)
-            {
-                throw;
-            }
-
             return new NegotiationResponse
             {
                 Url = _endpointProvider.GetClientEndpoint(hubName, originalPath,
                     request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : string.Empty),
-                AccessToken = accessToken,
+                AccessToken = _endpointProvider.GenerateClientAccessToken(hubName, claims),
                 // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
                 AvailableTransports = new List<AvailableTransport>()
             };
