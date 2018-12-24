@@ -33,6 +33,8 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IServiceEndpointProvider _endpoint;
         private readonly string _name;
         private readonly string _userId;
+        // Align the header key with ASP.Net core.
+        private static Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "Asrs-User-Agent", ProductInfo.GetProductInfo() } };
 
         public ConnectionFactory(IReadOnlyList<string> hubNames, HubConfiguration hubConfig, ILoggerFactory loggerFactory)
         {
@@ -58,7 +60,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                 Url = GetServiceUrl(connectionId, hubName),
                 AccessTokenProvider = () => Task.FromResult(_endpoint.GenerateServerAccessToken(hubName, _userId)),
                 Transports = HttpTransportType.WebSockets,
-                SkipNegotiation = true
+                SkipNegotiation = true,
+                Headers = CustomHeader
             };
             var httpConnection = new HttpConnection(httpConnectionOptions, _loggerFactory);
             try
