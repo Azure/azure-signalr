@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 
         private Claim[] GenerateClaims(int count)
         {
-            return Enumerable.Range(0, count).Select(s => new Claim($"ClaimSubject{count}", $"ClaimValue{count}")).ToArray();
+            return Enumerable.Range(0, count).Select(s => new Claim($"ClaimSubject{s}", $"ClaimValue{s}")).ToArray();
         }
     }
 }
