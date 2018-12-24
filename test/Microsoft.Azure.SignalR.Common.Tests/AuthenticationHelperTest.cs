@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using Xunit;
 
@@ -26,15 +27,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 
         private Claim[] GenerateClaims(int count)
         {
-            var claims = new List<Claim>();
-            while (count > 0)
-            {
-                var claimType = $"ClaimSubject{count}";
-                var claimValue = $"ClaimValue{count}";
-                claims.Add(new Claim(claimType, claimValue));
-                count--;
-            }
-            return claims.ToArray();
+            return Enumerable.Range(0, count).Select(s => new Claim($"ClaimSubject{count}", $"ClaimValue{count}")).ToArray();
         }
     }
 }

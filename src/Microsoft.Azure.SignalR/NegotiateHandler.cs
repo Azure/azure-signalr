@@ -8,7 +8,6 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
@@ -31,7 +30,6 @@ namespace Microsoft.Azure.SignalR
             var claims = BuildClaims(context);
             var request = context.Request;
             var originalPath = GetOriginalPath(request.Path);
-
             return new NegotiationResponse
             {
                 Url = _endpointProvider.GetClientEndpoint(hubName, originalPath,
