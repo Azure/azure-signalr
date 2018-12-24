@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnectionFactory
     {
-        private static readonly IServiceProtocol ServiceProtocol = new ServiceProtocol();
+        private static readonly IServiceProtocol SharedServiceProtocol = new ServiceProtocol();
         private readonly PipeOptions _clientPipeOptions;
 
         public TestConnectionFactory ConnectionFactory { get; }
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR.Tests
             _clientPipeOptions = clientPipeOptions;
 
             ServiceConnection = new ServiceConnection(
-                ServiceProtocol,
+                SharedServiceProtocol,
                 this,
                 ConnectionFactory,
                 NullLoggerFactory.Instance,
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                         if (!buffer.IsEmpty)
                         {
-                            if (ServiceProtocol.TryParseMessage(ref buffer, out var message))
+                            if (SharedServiceProtocol.TryParseMessage(ref buffer, out var message))
                             {
                                 consumed = buffer.Start;
                                 examined = consumed;
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public async Task WriteMessageAsync(ServiceMessage message)
         {
-            ServiceProtocol.WriteMessage(message, ConnectionContext.Application.Output);
+            SharedServiceProtocol.WriteMessage(message, ConnectionContext.Application.Output);
             await ConnectionContext.Application.Output.FlushAsync();
         }
 

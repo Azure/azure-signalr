@@ -9,6 +9,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
     public class TestTransport : IServiceTransport
     {
+        private readonly TaskCompletionSource<object> _lifetimeTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
         public long MessageCount = 0;
         public Func<string, Task> Received { get; set; }
         public Func<Task> Connected { get; set; }
@@ -21,9 +23,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             return Task.FromResult<string>(null);
         }
 
-        public void OnDisconnected()
-        {
-        }
+        public void OnDisconnected() => _lifetimeTcs.TrySetResult(null);
 
         public void OnReceived(string value)
         {
@@ -39,6 +39,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public Task Send(object value)
         {
             return Task.CompletedTask;
+        }
+
+        public Task WaitOnDisconnected()
+        {
+            return _lifetimeTcs.Task;
         }
     }
 }

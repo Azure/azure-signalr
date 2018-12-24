@@ -14,12 +14,17 @@ namespace Microsoft.Azure.SignalR
 {
     internal partial class ServiceConnection : ServiceConnectionBase
     {
+        private const string ClientConnectionCountInHub = "#clientInHub";
+        private const string ClientConnectionCountInServiceConnection = "#client";
+
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly IClientConnectionManager _clientConnectionManager;
 
         private readonly ConcurrentDictionary<string, string> _connectionIds =
             new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+        private readonly string[] _pingMessages =
+            new string[4] { ClientConnectionCountInHub, null, ClientConnectionCountInServiceConnection, null };
 
         private readonly ConnectionDelegate _connectionDelegate;
 
@@ -58,12 +63,24 @@ namespace Microsoft.Azure.SignalR
                 {
                     return;
                 }
-                await Task.WhenAll(_connectionIds.Select(s => PerformDisconnectAsyncCore(s.Key)));
+                await Task.WhenAll(_connectionIds.Select(s => PerformDisconnectAsyncCore(s.Key, false)));
             }
             catch (Exception ex)
             {
                 Log.FailedToCleanupConnections(_logger, ex);
             }
+        }
+
+        protected override ReadOnlyMemory<byte> GetPingMessage()
+        {
+            _pingMessages[1] = _clientConnectionManager.ClientConnections.Count.ToString();
+            _pingMessages[3] = _connectionIds.Count.ToString();
+
+            return ServiceProtocol.GetMessageBytes(
+                new PingMessage
+                {
+                    Messages = _pingMessages
+                });
         }
 
         private async Task ProcessOutgoingMessagesAsync(ServiceConnectionContext connection)
@@ -95,14 +112,17 @@ namespace Microsoft.Azure.SignalR
 
                     connection.Application.Input.AdvanceTo(buffer.End);
                 }
+                connection.Application.Input.Complete();
             }
             catch (Exception ex)
             {
+                // The exception means applicaion fail to process input anymore
+                // Cancel any pending flush so that we can quit and perform disconnect
+                // Here is abort close and WaitOnApplicationTask will send close message to notify client to disconnect
                 Log.SendLoopStopped(_logger, connection.ConnectionId, ex);
-            }
-            finally
-            {
+                connection.Application.Output.CancelPendingFlush();
                 connection.Application.Input.Complete();
+                await PerformDisconnectAsyncCore(connection.ConnectionId, true);
             }
         }
 
@@ -169,15 +189,15 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             var connectionId = closeConnectionMessage.ConnectionId;
-            return PerformDisconnectAsyncCore(connectionId);
+            return PerformDisconnectAsyncCore(connectionId, false);
         }
 
-        private async Task PerformDisconnectAsyncCore(string connectionId)
+        private async Task PerformDisconnectAsyncCore(string connectionId, bool abortOnClose)
         {
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var connection))
             {
-                // Service already knows the client is closed, no need to be informed.
-                connection.AbortOnClose = false;
+                // In normal close, service already knows the client is closed, no need to be informed.
+                connection.AbortOnClose = abortOnClose;
 
                 // We're done writing to the application output
                 connection.Application.Output.Complete();
