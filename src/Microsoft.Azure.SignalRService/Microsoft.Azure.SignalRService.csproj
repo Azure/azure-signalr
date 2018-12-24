@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-
+    // will remove this line when the package is ready
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
