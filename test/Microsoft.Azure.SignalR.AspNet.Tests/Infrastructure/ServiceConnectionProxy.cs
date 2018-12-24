@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
     internal class ServiceConnectionProxy : ServiceConnection, IDisposable
     {
-        private static readonly ServiceProtocol ServiceProtocol = new ServiceProtocol();
+        private static readonly ServiceProtocol SharedServiceProtocol = new ServiceProtocol();
 
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             base(
                 Guid.NewGuid().ToString("N"),
                 Guid.NewGuid().ToString("N"),
-                ServiceProtocol,
+                SharedServiceProtocol,
                 new TestConnectionFactory(),
                 clientConnectionManager,
                 loggerFactory.CreateLogger<ServiceConnectionProxy>())

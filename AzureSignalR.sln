@@ -48,6 +48,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AspNet.ChatSample.SelfHostS
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AspNet.ChatSample.CSharpClient", "samples\AspNet.ChatSample\AspNet.ChatSample.CSharpClient\AspNet.ChatSample.CSharpClient.csproj", "{38522915-6EA5-4F1D-B6EC-7FE4B178F579}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspNet.ChatSample.JavaScriptClient", "samples\AspNet.ChatSample\AspNet.ChatSample.JavaScriptClient\AspNet.ChatSample.JavaScriptClient.csproj", "{5C5D6C13-61BA-48B8-803A-E6A03D31499E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -98,6 +100,10 @@ Global
 		{38522915-6EA5-4F1D-B6EC-7FE4B178F579}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{38522915-6EA5-4F1D-B6EC-7FE4B178F579}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{38522915-6EA5-4F1D-B6EC-7FE4B178F579}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C5D6C13-61BA-48B8-803A-E6A03D31499E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C5D6C13-61BA-48B8-803A-E6A03D31499E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C5D6C13-61BA-48B8-803A-E6A03D31499E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C5D6C13-61BA-48B8-803A-E6A03D31499E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -115,6 +121,7 @@ Global
 		{6E50C30D-3ECB-4C66-A579-2528C56924BB} = {C4BC9889-B49F-41B6-806B-F84941B2549B}
 		{CA7F8B59-F1DA-400C-A114-467664C715ED} = {6E50C30D-3ECB-4C66-A579-2528C56924BB}
 		{38522915-6EA5-4F1D-B6EC-7FE4B178F579} = {6E50C30D-3ECB-4C66-A579-2528C56924BB}
+		{5C5D6C13-61BA-48B8-803A-E6A03D31499E} = {6E50C30D-3ECB-4C66-A579-2528C56924BB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7945A4E4-ACDB-4F6E-95CA-6AC6E7C2CD59}

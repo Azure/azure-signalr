@@ -33,6 +33,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new HandshakeRequestMessage(1),
                 binary: "kgEB"),
             new ProtocolTestData(
+                name: "HandshakeRequestWithProperty",
+                message: new HandshakeRequestMessage(1) { ConnectionType = 1, Target = "abc" },
+                binary: "lAEBAaNhYmM="),
+            new ProtocolTestData(
                 name: "HandshakeResponse",
                 message: new HandshakeResponseMessage(),
                 binary: "kgKg"),
@@ -44,6 +48,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "Ping",
                 message: PingMessage.Instance,
                 binary: "kQM="),
+            new ProtocolTestData(
+                name: "Ping+",
+                message: new PingMessage { Messages = new string[] { "a", "b" } },
+                binary: "kwOhYaFi"),
             new ProtocolTestData(
                 name: "OpenConnection",
                 message: new OpenConnectionMessage("conn1", null),

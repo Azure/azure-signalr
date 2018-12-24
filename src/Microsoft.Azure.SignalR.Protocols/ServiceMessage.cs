@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+
 namespace Microsoft.Azure.SignalR.Protocol
 {
     /// <summary>
@@ -19,6 +21,23 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the requested protocol version.
         /// </summary>
         public int Version { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type of service connection.
+        /// </summary>
+        /// <value>
+        /// <list type="bullet">
+        /// <item>0, Default, it can carry clients, service runtime should always accept this kind of connection.</item>
+        /// <item>1, OnDemand, creating when service requested more connections, it can carry clients, but it may be rejected by service runtime.</item>
+        /// <item>2, Weak, it can not carry clients, but it can send message.</item>
+        /// </list>
+        /// </value>
+        public int ConnectionType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the target of service connection, only work for OnDemand connections.
+        /// </summary>
+        public string Target { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HandshakeRequestMessage"/> class.
@@ -66,6 +85,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// A static ping message.
         /// </summary>
         public static PingMessage Instance = new PingMessage();
+
+        public string[] Messages { get; set; } = Array.Empty<string>();
     }
 
     /// <summary>

@@ -2,11 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Security.Claims;
 using System.Web;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
@@ -30,7 +27,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _logger = loggerFactory.CreateLogger<ClientConnectionManager>();
         }
 
-        public AzureTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
+        public IServiceTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
         {
             var dispatcher = new HubDispatcher(_configuration);
             dispatcher.Initialize(_configuration.Resolver);
