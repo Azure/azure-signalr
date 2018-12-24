@@ -10,7 +10,7 @@ namespace Microsoft.Azure.SignalR
     {
         public static string GetProductInfo()
         {
-            var assembly = typeof(ProductInfo).GetTypeInfo().Assembly;
+            var assembly = Assembly.GetCallingAssembly();
             var packageId = assembly.GetName().Name;
             var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
             var runtime = RuntimeInformation.FrameworkDescription?.Trim();
