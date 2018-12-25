@@ -31,6 +31,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IServiceEndpointProvider _endpoint;
         private readonly string _name;
         private readonly string _userId;
+        
         // Align the header key with ASP.Net core.
         private static Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "Asrs-User-Agent", ProductInfo.GetProductInfo() } };
 
