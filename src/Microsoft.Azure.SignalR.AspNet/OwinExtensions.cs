@@ -194,14 +194,6 @@ namespace Owin
 
             var hubs = GetAvailableHubNames(configuration);
 
-            // TODO: Update to use Middleware when SignalR SDK is ready
-            // Replace default HubDispatcher with a custom one, which has its own negotiation logic
-            // https://github.com/SignalR/SignalR/blob/dev/src/Microsoft.AspNet.SignalR.Core/Hosting/PersistentConnectionFactory.cs#L42
-            configuration.Resolver.Register(typeof(PersistentConnection), () => new ServiceHubDispatcher(configuration, applicationName, options));
-            builder.RunSignalR(typeof(PersistentConnection), configuration);
-
-            RegisterServiceObjects(configuration, options, applicationName, hubs);
-
             ILoggerFactory logger;
             var traceManager = configuration.Resolver.Resolve<ITraceManager>();
             if (traceManager != null)
@@ -212,6 +204,14 @@ namespace Owin
             {
                 logger = NullLoggerFactory.Instance;
             }
+
+            // TODO: Update to use Middleware when SignalR SDK is ready
+            // Replace default HubDispatcher with a custom one, which has its own negotiation logic
+            // https://github.com/SignalR/SignalR/blob/dev/src/Microsoft.AspNet.SignalR.Core/Hosting/PersistentConnectionFactory.cs#L42
+            configuration.Resolver.Register(typeof(PersistentConnection), () => new ServiceHubDispatcher(configuration, applicationName, options, logger));
+            builder.RunSignalR(typeof(PersistentConnection), configuration);
+
+            RegisterServiceObjects(configuration, options, applicationName, hubs);
 
             if (hubs?.Count > 0)
             {
