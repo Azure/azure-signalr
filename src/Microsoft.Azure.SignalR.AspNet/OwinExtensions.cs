@@ -25,7 +25,7 @@ namespace Owin
         /// Maps Azure SignalR hubs to the app builder pipeline at "/signalr".
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
-        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="applicationName">The name of your app, it is case-insensitive.</param>
         /// <returns>The app builder</returns>
         /// <remarks>
         /// The connection string is read from the ConnectionString section of application config (web.config or app.config), with name "Azure:SignalR:ConnectionString"
@@ -39,7 +39,7 @@ namespace Owin
         /// Maps Azure SignalR hubs to the app builder pipeline at "/signalr".
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
-        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="applicationName">The name of your app, it is case-insensitive.</param>
         /// <param name="connectionString">The connection string of an Azure SignalR Service instance.</param>
         /// <returns>The app builder</returns>
         public static IAppBuilder MapAzureSignalR(this IAppBuilder builder, string applicationName, string connectionString)
@@ -51,7 +51,7 @@ namespace Owin
         /// Maps Azure SignalR hubs to the app builder pipeline at "/signalr".
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
-        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="applicationName">The name of your app, it is case-insensitive.</param>
         /// <param name="optionsConfigure">A callback to configure the <see cref="ServiceOptions"/>.</param>
         /// <returns>The app builder</returns>
         public static IAppBuilder MapAzureSignalR(this IAppBuilder builder, string applicationName, Action<ServiceOptions> optionsConfigure)
@@ -63,7 +63,7 @@ namespace Owin
         /// Maps Azure SignalR hubs to the app builder pipeline at "/signalr".
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
-        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="applicationName">The name of your app, it is case-insensitive.</param>
         /// <param name="configuration">The hub configuration <see cref="HubConfiguration"/>.</param>
         /// <returns>The app builder</returns>
         public static IAppBuilder MapAzureSignalR(this IAppBuilder builder, string applicationName, HubConfiguration configuration)
@@ -75,7 +75,7 @@ namespace Owin
         /// Maps Azure SignalR hubs to the app builder pipeline at "/signalr".
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
-        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="applicationName">The name of your app, it is case-insensitive.</param>
         /// <param name="configuration">The hub configuration <see cref="HubConfiguration"/>.</param>
         /// <param name="optionsConfigure">A callback to configure the <see cref="ServiceOptions"/>.</param>
         /// <returns>The app builder</returns>
@@ -89,7 +89,7 @@ namespace Owin
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
         /// <param name="path">The path to map signalr hubs.</param>
-        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="applicationName">The name of your app, it is case-insensitive.</param>
         /// <param name="configuration">The hub configuration <see cref="HubConfiguration"/>.</param>
         /// <returns>The app builder</returns>
         public static IAppBuilder MapAzureSignalR(this IAppBuilder builder, string path, string applicationName, HubConfiguration configuration)
@@ -102,7 +102,7 @@ namespace Owin
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
         /// <param name="path">The path to map signalr hubs.</param>
-        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="applicationName">The name of your app, it is case-insensitive.</param>
         /// <param name="configuration">The hub configuration <see cref="HubConfiguration"/>.</param>
         /// <param name="optionsConfigure">A callback to configure the <see cref="ServiceOptions"/>.</param>
         /// <returns>The app builder</returns>
@@ -115,7 +115,7 @@ namespace Owin
         /// Adds Azure SignalR hubs to the app builder pipeline at "/signalr".
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
-        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="applicationName">The name of your app, it is case-insensitive.</param>
         /// <remarks>
         /// The connection string is read from the ConnectionString section of application config (web.config or app.config), with name "Azure:SignalR:ConnectionString"
         /// </remarks>
@@ -128,7 +128,7 @@ namespace Owin
         /// Adds Azure SignalR hubs to the app builder pipeline at "/signalr".
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
-        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="applicationName">The name of your app, it is case-insensitive.</param>
         /// <param name="connectionString">The connection string of an Azure SignalR Service instance.</param>
         public static void RunAzureSignalR(this IAppBuilder builder, string applicationName, string connectionString)
         {
@@ -139,7 +139,7 @@ namespace Owin
         /// Adds Azure SignalR hubs to the app builder pipeline at "/signalr" using the connection string specified in web.config 
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
-        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="applicationName">The name of your app, it is case-insensitive.</param>
         /// <param name="configuration">The hub configuration <see cref="HubConfiguration"/>.</param>
         public static void RunAzureSignalR(this IAppBuilder builder, string applicationName, HubConfiguration configuration)
         {
@@ -150,7 +150,7 @@ namespace Owin
         /// Adds Azure SignalR hubs to the app builder pipeline at "/signalr".
         /// </summary>
         /// <param name="builder">The app builder <see cref="IAppBuilder"/>.</param>
-        /// <param name="applicationName">The name of your app, it is case-incensitive.</param>
+        /// <param name="applicationName">The name of your app, it is case-insensitive.</param>
         /// <param name="connectionString">The connection string of an Azure SignalR Service instance.</param>
         /// <param name="configuration">The hub configuration <see cref="HubConfiguration"/>.</param>
         public static void RunAzureSignalR(this IAppBuilder builder, string applicationName, string connectionString, HubConfiguration configuration)
@@ -163,7 +163,7 @@ namespace Owin
         /// Adds Azure SignalR hubs to the app builder pipeline at "/signalr".
         /// </summary>
         /// <param name="builder">The app builder</param>
-        /// <param name="applicationName">The name of your app, it is case-incensitive</param>
+        /// <param name="applicationName">The name of your app, it is case-insensitive</param>
         /// <param name="optionsConfigure">A callback to configure the <see cref="ServiceOptions"/>.</param>
         public static void RunAzureSignalR(this IAppBuilder builder, string applicationName, Action<ServiceOptions> optionsConfigure)
         {
@@ -174,7 +174,7 @@ namespace Owin
         /// Adds Azure SignalR hubs to the app builder pipeline at "/signalr".
         /// </summary>
         /// <param name="builder">The app builder</param>
-        /// <param name="applicationName">The name of your app, it is case-incensitive</param>
+        /// <param name="applicationName">The name of your app, it is case-insensitive</param>
         /// <param name="configuration">The hub configuration</param>
         /// <param name="optionsConfigure">A callback to configure the <see cref="ServiceOptions"/>.</param>
         public static void RunAzureSignalR(this IAppBuilder builder, string applicationName, HubConfiguration configuration, Action<ServiceOptions> optionsConfigure)
