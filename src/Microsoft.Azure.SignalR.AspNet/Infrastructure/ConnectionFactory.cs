@@ -41,7 +41,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             _hubNames = hubNames;
             _name = $"{nameof(ConnectionFactory)}[{string.Join(",", hubNames)}]";
             _userId = GenerateServerName();
-
             _loggerFactory = loggerFactory;
             _protocol = hubConfig.Resolver.Resolve<IServiceProtocol>();
             _serviceConnectionManager = hubConfig.Resolver.Resolve<IServiceConnectionManager>();
