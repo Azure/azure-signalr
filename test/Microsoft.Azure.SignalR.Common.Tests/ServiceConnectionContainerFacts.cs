@@ -114,22 +114,6 @@ namespace Microsoft.Azure.SignalR.Tests
             await container.WriteAsync("1", new HandshakeResponseMessage());
         }
 
-        [Fact]
-        public async Task TestServiceConnectionContainerWriteRandomWithSomeThrowsCanPass()
-        {
-            var container = new ServiceConnectionContainer(new List<IServiceConnection> {
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(ServiceConnectionStatus.Connecting),
-            });
-
-            await container.WriteAsync(new HandshakeResponseMessage());
-        }
-
         private sealed class TestServiceConnection : IServiceConnection
         {
             public ServiceConnectionStatus Status { get; }
