@@ -10,23 +10,23 @@ namespace Microsoft.Azure.SignalR.Common
     /// The exception thrown when AccessToken is too long.
     /// </summary>
     [Serializable]
-    public class AzureSignalRAccessTokenTooLongException : Exception
+    public class ServiceConnectionNotActiveException : AzureSignalRException
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="AzureSignalRAccessTokenTooLongException"/> class.
+        /// Initializes a new instance of the <see cref="ServiceConnectionNotActiveException"/> class.
         /// </summary>
-        public AzureSignalRAccessTokenTooLongException() : base($"AccessToken must not be longer than 4K.")
+        public ServiceConnectionNotActiveException() : base("The connection is not active, data cannot be sent to the service.")
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AzureSignalRAccessTokenTooLongException"/> class.
+        /// Initializes a new instance of the <see cref="AzureSignalRException"/> class.
         /// </summary>
         /// <param name="info">The <see cref="SerializationInfo"/> that holds the serialized object data about the exception being thrown.</param>
         /// <param name="context">The <see cref="StreamingContext"/> that contains contextual information about the source or destination.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="info"/> parameter is <c>null</c>.</exception>
         /// <exception cref="SerializationException">The class name is <c>null</c> or <see cref="Exception.HResult"/> is zero (0).</exception>
-        protected AzureSignalRAccessTokenTooLongException(SerializationInfo info, StreamingContext context)
+        protected ServiceConnectionNotActiveException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
         }

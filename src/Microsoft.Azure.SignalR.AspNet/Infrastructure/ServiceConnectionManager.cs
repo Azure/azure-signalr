@@ -20,6 +20,8 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private IServiceConnectionContainer _appConnection;
 
+        public ServiceConnectionStatus Status => throw new NotSupportedException();
+
         public ServiceConnectionManager(string appName, IReadOnlyList<string> hubs)
         {
             _hubs = hubs;

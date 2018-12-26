@@ -234,6 +234,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             public string HubName { get; }
 
+            public ServiceConnectionStatus Status => ServiceConnectionStatus.Connected;
+
             public TestServiceConnection(string name, Action<(ServiceMessage, IServiceConnectionContainer)> validator)
             {
                 _validator = validator;
