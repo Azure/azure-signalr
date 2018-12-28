@@ -75,24 +75,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Fact]
-        public void TestRunAzureSignalRWithConfig()
-        {
-            // Prepare the configuration
-            using (new AppSettingsConfigScope(ConnectionString))
-            using (new ConnectionStringConfigScope(ConnectionString2))
-            {
-                var hubConfig = new HubConfiguration();
-                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig)))
-                {
-                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
-
-                    // The one in ConnectionString wins
-                    Assert.Equal(ConnectionString2, options.Value.ConnectionString);
-                }
-            }
-        }
-
-        [Fact]
         public void TestRunAzureSignalRWithAppSettings()
         {
             // Prepare the configuration
@@ -104,24 +86,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
 
                     Assert.Equal(ConnectionString, options.Value.ConnectionString);
-                }
-            }
-        }
-
-        [Fact]
-        public void TestRunAzureSignalRWithOptionsContainDefaultValue()
-        {
-            using (new ConnectionStringConfigScope(ConnectionString2))
-            {
-                var hubConfig = new HubConfiguration();
-                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, o =>
-                {
-                    o.ConnectionCount = -1;
-                })))
-                {
-                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
-                    Assert.Equal(ConnectionString2, options.Value.ConnectionString);
-                    Assert.Equal(-1, options.Value.ConnectionCount);
                 }
             }
         }
@@ -211,44 +175,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             public void Dispose()
             {
                 ConfigurationManager.AppSettings[ServiceOptions.ConnectionStringDefaultKey] = _originalSetting;
-            }
-        }
-
-        private sealed class ConnectionStringConfigScope : IDisposable
-        {
-            private readonly string _originalConnectionString;
-
-            public ConnectionStringConfigScope(string connectionString)
-            {
-                _originalConnectionString = ConfigurationManager.ConnectionStrings[ServiceOptions.ConnectionStringDefaultKey]?.ConnectionString;
-                SetConnectionStringConfig(connectionString);
-            }
-
-            public void Dispose()
-            {
-                SetConnectionStringConfig(_originalConnectionString);
-            }
-
-            private void SetConnectionStringConfig(string connectionString)
-            {
-                var settings = ConfigurationManager.ConnectionStrings;
-
-                var element = typeof(ConfigurationElement).GetField("_bReadOnly", BindingFlags.Instance | BindingFlags.NonPublic);
-                var collection = typeof(ConfigurationElementCollection).GetField("bReadOnly", BindingFlags.Instance | BindingFlags.NonPublic);
-
-                element.SetValue(settings, false);
-                collection.SetValue(settings, false);
-                if (connectionString == null)
-                {
-                    settings.Remove(ServiceOptions.ConnectionStringDefaultKey);
-                }
-                else
-                {
-                    settings.Add(new ConnectionStringSettings(ServiceOptions.ConnectionStringDefaultKey, connectionString));
-                }
-
-                collection.SetValue(settings, true);
-                element.SetValue(settings, true);
             }
         }
 
