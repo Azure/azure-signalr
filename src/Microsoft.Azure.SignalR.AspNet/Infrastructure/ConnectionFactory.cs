@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
@@ -12,7 +11,6 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.AspNet
@@ -33,6 +31,9 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IServiceEndpointProvider _endpoint;
         private readonly string _name;
         private readonly string _userId;
+        
+        // Align the header key with ASP.Net core.
+        private static Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "Asrs-User-Agent", ProductInfo.GetProductInfo() } };
 
         public ConnectionFactory(IReadOnlyList<string> hubNames, HubConfiguration hubConfig, ILoggerFactory loggerFactory)
         {
@@ -40,7 +41,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             _hubNames = hubNames;
             _name = $"{nameof(ConnectionFactory)}[{string.Join(",", hubNames)}]";
             _userId = GenerateServerName();
-
             _loggerFactory = loggerFactory;
             _protocol = hubConfig.Resolver.Resolve<IServiceProtocol>();
             _serviceConnectionManager = hubConfig.Resolver.Resolve<IServiceConnectionManager>();
@@ -58,7 +58,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                 Url = GetServiceUrl(connectionId, hubName),
                 AccessTokenProvider = () => Task.FromResult(_endpoint.GenerateServerAccessToken(hubName, _userId)),
                 Transports = HttpTransportType.WebSockets,
-                SkipNegotiation = true
+                SkipNegotiation = true,
+                Headers = CustomHeader
             };
             var httpConnection = new HttpConnection(httpConnectionOptions, _loggerFactory);
             try
