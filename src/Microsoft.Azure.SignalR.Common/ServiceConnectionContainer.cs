@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR
                 _serviceConnections.Add(generator());
             }
 
-            _count = _serviceConnections.Count;
+            _count = count;
         }
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();
