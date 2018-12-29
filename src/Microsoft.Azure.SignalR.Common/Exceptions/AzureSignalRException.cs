@@ -6,9 +6,6 @@ using System.Runtime.Serialization;
 
 namespace Microsoft.Azure.SignalR.Common
 {
-    /// <summary>
-    /// The exception thrown when AccessToken is too long.
-    /// </summary>
     [Serializable]
     public class AzureSignalRException : Exception
     {
