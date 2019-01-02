@@ -85,7 +85,7 @@ namespace Microsoft.Azure.SignalR
         {
             var retry = 0;
             var index = (initial & int.MaxValue) % _count;
-            var direction = initial > 0 ? 1 : -1;
+            var direction = initial > 0 ? 1 : _count - 1;
             var maxRetry = _count;
             while (retry < maxRetry)
             {
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.SignalR
                 }
 
                 retry++;
-                index = (index + direction + _count) % _count;
+                index = (index + direction) % _count;
             }
 
             throw new ServiceConnectionNotActiveException();
