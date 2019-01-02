@@ -73,8 +73,7 @@ namespace Microsoft.Azure.SignalR
 
         private Task WriteToPartitionedConnection(string partitionKey, ServiceMessage serviceMessage)
         {
-            var code = partitionKey.GetHashCode();
-            return WriteWithRetry(serviceMessage, code);
+            return WriteWithRetry(serviceMessage, partitionKey.GetHashCode());
         }
 
         private Task WriteToRandomAvailableConnection(ServiceMessage sm)
