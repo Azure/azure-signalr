@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR.Tests
         internal void GetPreviewServerEndpoint(IServiceEndpointProvider provider)
         {
             var expected = $"{Endpoint}:5002/server/?hub={HubName}";
-            var actual = provider.GetServerEndpoint<TestHub>();
+            var actual = provider.GetServerEndpoint(nameof(TestHub));
             Assert.Equal(expected, actual);
         }
 
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR.Tests
             for (int i = 0; i < count; i++)
             {
                 tokens.Add(sep.GenerateClientAccessToken(nameof(TestHub)));
-                tokens.Add(sep.GenerateServerAccessToken<TestHub>(userId));
+                tokens.Add(sep.GenerateServerAccessToken(nameof(TestHub), userId));
             }
 
             var distinct = tokens.Distinct();
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.SignalR.Tests
         internal void GeneratePreviewServerAccessToken(IServiceEndpointProvider provider)
         {
             const string userId = "UserA";
-            var tokenString = provider.GenerateServerAccessToken<TestHub>(userId, requestId: string.Empty);
+            var tokenString = provider.GenerateServerAccessToken(nameof(TestHub), userId, requestId: string.Empty);
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = GenerateJwtBearer($"{Endpoint}:5002/server/?hub={HubName}",
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void GetV1ServerEndpoint()
         {
             var expected = $"{Endpoint}/server/?hub={HubName}";
-            var actual = V1EndpointProvider.GetServerEndpoint<TestHub>();
+            var actual = V1EndpointProvider.GetServerEndpoint(nameof(TestHub));
             Assert.Equal(expected, actual);
         }
 
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void GenerateV1ServerAccessToken()
         {
             const string userId = "UserA";
-            var tokenString = V1EndpointProvider.GenerateServerAccessToken<TestHub>(userId, requestId: string.Empty);
+            var tokenString = V1EndpointProvider.GenerateServerAccessToken(nameof(TestHub), userId, requestId: string.Empty);
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = GenerateJwtBearer($"{Endpoint}/server/?hub={HubName}",

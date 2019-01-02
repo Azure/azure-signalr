@@ -58,13 +58,15 @@ namespace Microsoft.Azure.SignalR.AspNet
         private Task ProcessNegotiationRequest(HostContext context)
         {
             string accessToken = null;
-            var claims = BuildClaims(context);
+            var owinContext = new OwinContext(context.Environment);
+            var claims = BuildClaims(owinContext, context.Request);
 
             // Redirect to Service
-            var url = _endpoint.GetClientEndpoint();
+            // TODO: add OriginalPaht and QueryString when the clients support it
+            var url = _endpoint.GetClientEndpoint(null, null, null);
             try
             {
-                accessToken = _endpoint.GenerateClientAccessToken(claims);
+                accessToken = _endpoint.GenerateClientAccessToken(null, claims);
             }
             catch (AzureSignalRAccessTokenTooLongException ex)
             {
@@ -76,13 +78,12 @@ namespace Microsoft.Azure.SignalR.AspNet
             return SendJsonResponse(context, GetRedirectNegotiateResponse(url, accessToken));
         }
 
-        private IEnumerable<Claim> BuildClaims(HostContext context)
+        private IEnumerable<Claim> BuildClaims(OwinContext owinContext, IRequest request)
         {
             // Pass appname through jwt token to client, so that when client establishes connection with service, it will also create a corresponding AppName-connection
             yield return new Claim(Constants.ClaimType.AppName, _appName);
-            var owinContext = new OwinContext(context.Environment);
             var user = owinContext.Authentication?.User;
-            var userId = UserIdProvider?.GetUserId(context.Request);
+            var userId = UserIdProvider?.GetUserId(request);
 
             var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext));
 
