@@ -17,5 +17,13 @@ namespace Microsoft.Azure.SignalR
                 return RandomInterval.Next(maxValue);
             }
         }
+
+        public static int Next(int minValue, int maxValue)
+        {
+            lock (RandomLock)
+            {
+                return RandomInterval.Next(minValue, maxValue);
+            }
+        }
     }
 }

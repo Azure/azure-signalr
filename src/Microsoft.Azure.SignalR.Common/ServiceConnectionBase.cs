@@ -2,13 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
@@ -50,6 +50,8 @@ namespace Microsoft.Azure.SignalR
         private volatile bool _isConnected;
         protected ConnectionContext _connection;
         protected string ErrorMessage;
+
+        public ServiceConnectionStatus Status { get; private set; }
 
         public Task WaitForConnectionStart => _serviceConnectionStartTcs.Task;
 
@@ -126,7 +128,7 @@ namespace Microsoft.Azure.SignalR
             if (_connection == null)
             {
                 _serviceConnectionLock.Release();
-                throw new InvalidOperationException("The connection is not active, data cannot be sent to the service.");
+                throw new ServiceConnectionNotActiveException();
             }
 
             try
@@ -179,18 +181,21 @@ namespace Microsoft.Azure.SignalR
 
             try
             {
+                Status = ServiceConnectionStatus.Connecting;
                 _connection = await CreateConnection();
                 ErrorMessage = null;
 
                 if (await HandshakeAsync())
                 {
                     Log.ServiceConnectionConnected(_logger, _connectionId);
+                    Status = ServiceConnectionStatus.Connected;
                     return true;
                 }
                 else
                 {
                     // False means we got a HandshakeResponseMessage with error. Will take below actions:
                     // - Dispose the connection
+                    Status = ServiceConnectionStatus.Disconnected;
                     await DisposeConnection();
 
                     return false;
@@ -200,6 +205,7 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.FailedToConnect(_logger, ex);
 
+                Status = ServiceConnectionStatus.Disconnected;
                 await DisposeConnection();
 
                 return false;
@@ -371,6 +377,7 @@ namespace Microsoft.Azure.SignalR
                 await _serviceConnectionLock.WaitAsync();
                 try
                 {
+                    Status = ServiceConnectionStatus.Disconnected;
                     await DisposeConnection();
                 }
                 finally

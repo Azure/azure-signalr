@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -22,6 +23,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public TestConnection ConnectionContext => ConnectionFactory.CurrentConnectionContext;
 
+        public IServiceConnectionContainer ServiceConnectionContainer { get; }
+
         public ServiceConnection ServiceConnection { get; }
 
         public ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
@@ -36,15 +39,19 @@ namespace Microsoft.Azure.SignalR.Tests
             ConnectionFactory = connectionFactory ?? new TestConnectionFactory();
             ClientConnectionManager = new ClientConnectionManager();
             _clientPipeOptions = clientPipeOptions;
-
             ServiceConnection = new ServiceConnection(
-                SharedServiceProtocol,
-                this,
-                ConnectionFactory,
-                NullLoggerFactory.Instance,
-                callback ?? OnConnectionAsync,
-                this,
-                Guid.NewGuid().ToString("N"));
+                    SharedServiceProtocol,
+                    this,
+                    ConnectionFactory,
+                    NullLoggerFactory.Instance,
+                    callback ?? OnConnectionAsync,
+                    this,
+                    Guid.NewGuid().ToString("N"));
+            ServiceConnectionContainer = new ServiceConnectionContainer(
+                new List<IServiceConnection>()
+                {
+                    ServiceConnection
+                });
         }
 
         public Task StartAsync()
@@ -52,7 +59,7 @@ namespace Microsoft.Azure.SignalR.Tests
             return ServiceConnection.StartAsync();
         }
 
-        public bool IsConnected => ServiceConnection.IsConnected;
+        public bool IsConnected => ServiceConnection.IsConnected ;
 
         public async Task ProcessApplicationMessagesAsync()
         {

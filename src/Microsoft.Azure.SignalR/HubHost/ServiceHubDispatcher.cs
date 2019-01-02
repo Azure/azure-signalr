@@ -61,13 +61,18 @@ namespace Microsoft.Azure.SignalR
         public void Start(ConnectionDelegate connectionDelegate)
         {
             // Simply create a couple of connections which connect to Azure SignalR
-            for (var i = 0; i < _options.ConnectionCount; i++)
-            {
-                var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, this, _loggerFactory, connectionDelegate, _clientConnectionFactory, Guid.NewGuid().ToString());
-                _serviceConnectionManager.AddServiceConnection(serviceConnection);
-            }
+            var serviceConnection = new ServiceConnectionContainer(() => GetServiceConnection(connectionDelegate), _options.ConnectionCount);
+            _serviceConnectionManager.SetServiceConnection(serviceConnection);
+
             Log.StartingConnection(_logger, Name, _options.ConnectionCount);
             _ = _serviceConnectionManager.StartAsync();
+        }
+
+        private ServiceConnection GetServiceConnection(ConnectionDelegate connectionDelegate)
+        {
+            return new ServiceConnection(_serviceProtocol, _clientConnectionManager, this,
+                _loggerFactory, connectionDelegate, _clientConnectionFactory,
+                Guid.NewGuid().ToString());
         }
 
         private Uri GetServiceUrl(string connectionId)

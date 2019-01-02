@@ -13,5 +13,7 @@ namespace Microsoft.Azure.SignalR
         Task WriteAsync(ServiceMessage serviceMessage);
 
         Task StopAsync();
+
+        ServiceConnectionStatus Status { get; }
     }
 }
