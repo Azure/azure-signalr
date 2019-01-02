@@ -73,20 +73,25 @@ namespace Microsoft.Azure.SignalR
 
         private Task WriteToPartitionedConnection(string partitionKey, ServiceMessage serviceMessage)
         {
-            return WriteWithRetry(serviceMessage, i => Math.Abs((partitionKey.GetHashCode() + i) % _count), _count);
+            return WriteWithRetry(serviceMessage, partitionKey.GetHashCode());
         }
 
         private Task WriteToRandomAvailableConnection(ServiceMessage sm)
         {
-            return WriteWithRetry(sm, i => StaticRandom.Next(_count), RetryCount);
+            return WriteWithRetry(sm, StaticRandom.Next(_count));
         }
 
-        private async Task WriteWithRetry(ServiceMessage sm, Func<int, int> nextSelector, int maxRetry)
+        private async Task WriteWithRetry(ServiceMessage sm, int initial)
         {
             var retry = 0;
+            var index = (initial & int.MaxValue) % _count;
+
+            // Get a random direction for the retries
+            var direction = StaticRandom.Next(2) == 0 ? -1 : 1;
+
+            var maxRetry = _count;
             while (retry < maxRetry)
             {
-                var index = nextSelector(retry);
                 var connection = _serviceConnections[index];
                 if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
                 {
@@ -98,10 +103,15 @@ namespace Microsoft.Azure.SignalR
                     }
                     catch (ServiceConnectionNotActiveException)
                     {
+                        if (retry == maxRetry - 1)
+                        {
+                            throw;
+                        }
                     }
                 }
 
                 retry++;
+                index = (index + direction + _count) % _count;
             }
 
             throw new ServiceConnectionNotActiveException();

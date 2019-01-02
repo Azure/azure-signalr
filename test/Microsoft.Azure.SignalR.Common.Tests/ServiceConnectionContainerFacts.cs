@@ -95,6 +95,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(),
             });
 
+            await container.WriteAsync(new HandshakeResponseMessage());
             await container.WriteAsync("1", new HandshakeResponseMessage());
         }
 
@@ -111,6 +112,24 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(throws: true),
             });
 
+            await container.WriteAsync(new HandshakeResponseMessage());
+            await container.WriteAsync("1", new HandshakeResponseMessage());
+        }
+
+        [Fact]
+        public async Task TestServiceConnectionContainerWithSomeThrows3WriteWithPartitionCanPass()
+        {
+            var container = new ServiceConnectionContainer(new List<IServiceConnection> {
+                new TestServiceConnection(throws: true),
+                new TestServiceConnection(throws: true),
+                new TestServiceConnection(),
+                new TestServiceConnection(throws: true),
+                new TestServiceConnection(throws: true),
+                new TestServiceConnection(throws: true),
+                new TestServiceConnection(throws: true),
+            });
+
+            await container.WriteAsync(new HandshakeResponseMessage());
             await container.WriteAsync("1", new HandshakeResponseMessage());
         }
 
