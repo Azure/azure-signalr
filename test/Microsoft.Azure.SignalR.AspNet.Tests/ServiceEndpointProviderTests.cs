@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 ConnectionString = connectionString
             });
 
-            var clientToken = provider.GenerateClientAccessToken(new Claim[]
+            var clientToken = provider.GenerateClientAccessToken(null, new Claim[]
             {
                 new Claim("type1", "value1")
             });
@@ -49,17 +49,18 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Theory]
-        [InlineData("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost:8080/aspnetclient")]
-        [InlineData("Endpoint=http://localhost/;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost:8080/aspnetclient")]
-        [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetclient")]
-        public void TestGenerateClientEndpoint(string connectionString, string expectedEndpoint)
+        [InlineData("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", null, null, "http://localhost:8080/aspnetclient")]
+        [InlineData("Endpoint=http://localhost/;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "", "", "http://localhost:8080/aspnetclient")]
+        [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "", "?a=b&c=d", "https://localhost/aspnetclient?a=b&c=d")]
+        [InlineData("Endpoint=https://abc.com;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "orig<inal.com", "?abc=%21dcf", "https://abc.com/aspnetclient?abc=%21dcf&asrs.op=orig%3Cinal.com")]
+        public void TestGenerateClientEndpoint(string connectionString, string originalPath, string queryString, string expectedEndpoint)
         {
             var provider = new ServiceEndpointProvider(new ServiceOptions
             {
                 ConnectionString = connectionString
             });
 
-            var clientEndpoint = provider.GetClientEndpoint();
+            var clientEndpoint = provider.GetClientEndpoint(null, originalPath, queryString);
 
             Assert.Equal(expectedEndpoint, clientEndpoint);
         }

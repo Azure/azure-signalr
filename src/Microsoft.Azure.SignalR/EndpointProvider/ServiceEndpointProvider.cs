@@ -59,9 +59,14 @@ namespace Microsoft.Azure.SignalR
             return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
         }
 
-        public string GenerateServerAccessToken<THub>(string userId, TimeSpan? lifetime = null, string requestId = null) where THub : Hub
+        public string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null, string requestId = null)
         {
-            var audience = _generator.GetServerAudience(typeof(THub).Name);
+            if (string.IsNullOrEmpty(hubName))
+            {
+                throw new ArgumentNullException(nameof(hubName));
+            }
+
+            var audience = _generator.GetServerAudience(hubName);
             var claims = userId != null ? new[] {new Claim(ClaimTypes.NameIdentifier, userId)} : null;
 
             return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
@@ -77,9 +82,14 @@ namespace Microsoft.Azure.SignalR
             return _generator.GetClientEndpoint(hubName, originalPath, queryString);
         }
 
-        public string GetServerEndpoint<THub>() where THub : Hub
+        public string GetServerEndpoint(string hubName)
         {
-            return _generator.GetServerEndpoint(typeof(THub).Name);
+            if (string.IsNullOrEmpty(hubName))
+            {
+                throw new ArgumentNullException(nameof(hubName));
+            }
+
+            return _generator.GetServerEndpoint(hubName);
         }
     }
 }

@@ -26,6 +26,8 @@ namespace Microsoft.Azure.SignalR
         private readonly IServiceProtocol _serviceProtocol;
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly string _userId;
+        private readonly string _hubName;
+
         private static readonly string Name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
         // Fix issue: https://github.com/Azure/azure-signalr/issues/198
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
@@ -49,6 +51,7 @@ namespace Microsoft.Azure.SignalR
             _logger = loggerFactory.CreateLogger<ServiceHubDispatcher<THub>>();
             _clientConnectionFactory = clientConnectionFactory;
             _userId = GenerateServerName();
+            _hubName = typeof(THub).Name;
         }
 
         private static string GenerateServerName()
@@ -77,7 +80,7 @@ namespace Microsoft.Azure.SignalR
 
         private Uri GetServiceUrl(string connectionId)
         {
-            var baseUri = new UriBuilder(_serviceEndpointProvider.GetServerEndpoint<THub>());
+            var baseUri = new UriBuilder(_serviceEndpointProvider.GetServerEndpoint(_hubName));
             var query = "cid=" + connectionId;
             if (baseUri.Query != null && baseUri.Query.Length > 1)
             {
@@ -95,7 +98,7 @@ namespace Microsoft.Azure.SignalR
             var httpConnectionOptions = new HttpConnectionOptions
             {
                 Url = GetServiceUrl(connectionId),
-                AccessTokenProvider = () => Task.FromResult(_serviceEndpointProvider.GenerateServerAccessToken<THub>(_userId)),
+                AccessTokenProvider = () => Task.FromResult(_serviceEndpointProvider.GenerateServerAccessToken(_hubName, _userId)),
                 Transports = HttpTransportType.WebSockets,
                 SkipNegotiation = true,
                 Headers = CustomHeader
