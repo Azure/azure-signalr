@@ -73,21 +73,20 @@ namespace Microsoft.Azure.SignalR
 
         private Task WriteToPartitionedConnection(string partitionKey, ServiceMessage serviceMessage)
         {
-            return WriteWithRetry(serviceMessage, partitionKey.GetHashCode());
+            var code = partitionKey.GetHashCode();
+            var direction = code > 0 ? 1 : -1;
+            return WriteWithRetry(serviceMessage, code, direction);
         }
 
         private Task WriteToRandomAvailableConnection(ServiceMessage sm)
         {
-            return WriteWithRetry(sm, StaticRandom.Next(_count));
+            return WriteWithRetry(sm, StaticRandom.Next(_count), StaticRandom.Next(2) == 0 ? -1 : 1);
         }
 
-        private async Task WriteWithRetry(ServiceMessage sm, int initial)
+        private async Task WriteWithRetry(ServiceMessage sm, int initial, int direction)
         {
             var retry = 0;
             var index = (initial & int.MaxValue) % _count;
-
-            // Get a random direction for the retries
-            var direction = StaticRandom.Next(2) == 0 ? -1 : 1;
 
             var maxRetry = _count;
             while (retry < maxRetry)
