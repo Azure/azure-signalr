@@ -45,7 +45,7 @@ The following documents describe more details about Azure SignalR Service.
 - [REST API in Azure SignalR Service](./docs/rest-api.md)
 - [Internals of the Azure SignalR Service](./docs/internal.md)
 - [FAQ](./docs/faq.md)
-
+- [Troubleshooting Guide](./docs/tsg.md)
 Contributions are highly welcome. Keep reading if you want to contribute to our repository.
 
 ### Building from source
