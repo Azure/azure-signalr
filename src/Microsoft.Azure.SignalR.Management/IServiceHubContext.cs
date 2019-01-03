@@ -4,7 +4,7 @@
 using System;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Microsoft.Azure.SignalRService
+namespace Microsoft.Azure.SignalR.Management
 {
     public interface IServiceHubContext: IDisposable, IHubContext<Hub>
     {
