@@ -93,6 +93,55 @@ namespace Microsoft.Azure.SignalR.Tests
                 routes.MapHub<TestHub>("/chat");
             }));
         }
+
+        [Fact]
+        public void UseAzureSignalRWithInvalidConnectionString()
+        {
+            var services = new ServiceCollection();
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    {"Azure:SignalR:ConnectionString", "A=b;c=d"}
+                })
+                .Build();
+            var serviceProvider = services.AddLogging()
+                .AddSignalR()
+                .AddAzureSignalR()
+                .AddMessagePackProtocol()
+                .Services
+                .AddSingleton<IApplicationLifetime>(new EmptyApplicationLifetime())
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var app = new ApplicationBuilder(serviceProvider);
+            var exception = Assert.Throws<ArgumentException>(() => app.UseAzureSignalR(routes =>
+            {
+                routes.MapHub<TestHub>("/chat");
+            }));
+            Assert.StartsWith("Connection string missing required properties endpoint and accesskey.", exception.Message);
+        }
+
+        [Fact]
+        public void UseAzureSignalRWithConnectionStringNotSpecified()
+        {
+            var services = new ServiceCollection();
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = services.AddLogging()
+                .AddSignalR()
+                .AddAzureSignalR()
+                .AddMessagePackProtocol()
+                .Services
+                .AddSingleton<IApplicationLifetime>(new EmptyApplicationLifetime())
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var app = new ApplicationBuilder(serviceProvider);
+            var exception = Assert.Throws<ArgumentException>(() => app.UseAzureSignalR(routes =>
+            {
+                routes.MapHub<TestHub>("/chat");
+            }));
+            Assert.StartsWith("No connection string was specified.", exception.Message);
+        }
     }
 
     public class EmptyApplicationLifetime : IApplicationLifetime

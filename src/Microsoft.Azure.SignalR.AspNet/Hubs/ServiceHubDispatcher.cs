@@ -31,17 +31,17 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private IServiceEndpointProvider _endpoint;
 
-        public ServiceHubDispatcher(HubConfiguration configuration, string appName, ServiceOptions options, ILoggerFactory loggerFactory) : base(configuration)
+        public ServiceHubDispatcher(HubConfiguration configuration, string appName, IServiceEndpointManager endpoint, ServiceOptions options, ILoggerFactory loggerFactory) : base(configuration)
         {
-            _appName = appName ?? throw new ArgumentException(nameof(appName));
-            _claimsProvider = options?.ClaimsProvider;
-            _logger = loggerFactory.CreateLogger<ServiceHubDispatcher>();
-        }
+            if (endpoint == null)
+            {
+                throw new ArgumentNullException(nameof(endpoint));
+            }
 
-        public override void Initialize(IDependencyResolver resolver)
-        {
-            _endpoint = resolver.Resolve<IServiceEndpointProvider>();
-            base.Initialize(resolver);
+            _appName = appName ?? throw new ArgumentNullException(nameof(appName));
+            _claimsProvider = options?.ClaimsProvider;
+            _endpoint = endpoint?.GetEndpointProvider() ?? throw new ArgumentNullException(nameof(endpoint));
+            _logger = loggerFactory.CreateLogger<ServiceHubDispatcher>();
         }
 
         public override Task ProcessRequest(HostContext context)

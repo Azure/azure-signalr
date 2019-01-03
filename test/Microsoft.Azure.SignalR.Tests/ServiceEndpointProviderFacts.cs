@@ -29,14 +29,12 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private static readonly ServiceEndpointProvider[] PreviewEndpointProviderArray =
         {
-            new ServiceEndpointProvider(
-                Options.Create(new ServiceOptions {ConnectionString = PreviewConnectionStringWithoutVersion})),
-            new ServiceEndpointProvider(
-                Options.Create(new ServiceOptions {ConnectionString = PreviewConnectionStringWithVersion}))
+            new ServiceEndpointProvider(new ServiceEndpoint(PreviewConnectionStringWithoutVersion)),
+            new ServiceEndpointProvider(new ServiceEndpoint(PreviewConnectionStringWithVersion))
         };
 
         private static readonly IServiceEndpointProvider V1EndpointProvider =
-            new ServiceEndpointProvider(Options.Create(new ServiceOptions { ConnectionString = V1ConnectionString }));
+            new ServiceEndpointProvider(new ServiceEndpoint(V1ConnectionString));
 
         private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
 
@@ -82,7 +80,7 @@ namespace Microsoft.Azure.SignalR.Tests
         internal void GenerateMutlipleAccessTokenShouldBeUnique()
         {
             var count = 1000;
-            var sep = new ServiceEndpointProvider(Options.Create(new ServiceOptions { ConnectionString = PreviewConnectionStringWithVersion }));
+            var sep = new ServiceEndpointProvider(new ServiceEndpoint(PreviewConnectionStringWithVersion));
             var userId = Guid.NewGuid().ToString();
             var tokens = new List<string>();
             for (int i = 0; i < count; i++)

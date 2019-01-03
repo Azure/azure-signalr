@@ -35,19 +35,21 @@ namespace Microsoft.Azure.SignalR.AspNet
         // Align the header key with ASP.Net core.
         private static Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "Asrs-User-Agent", ProductInfo.GetProductInfo() } };
 
-        public ConnectionFactory(IReadOnlyList<string> hubNames, HubConfiguration hubConfig, ILoggerFactory loggerFactory)
+        public ConnectionFactory(IReadOnlyList<string> hubNames, HubConfiguration hubConfig, IServiceProtocol protocol,
+            IServiceConnectionManager serviceConnectionManager, IClientConnectionManager clientConnectionManager,
+            IServiceEndpointManager serviceEndpointManager,
+            IOptions<ServiceOptions> options, ILoggerFactory loggerFactory)
         {
             _config = hubConfig;
             _hubNames = hubNames;
             _name = $"{nameof(ConnectionFactory)}[{string.Join(",", hubNames)}]";
             _userId = GenerateServerName();
             _loggerFactory = loggerFactory;
-            _protocol = hubConfig.Resolver.Resolve<IServiceProtocol>();
-            _serviceConnectionManager = hubConfig.Resolver.Resolve<IServiceConnectionManager>();
-            _clientConnectionManager = hubConfig.Resolver.Resolve<IClientConnectionManager>();
-            _endpoint = hubConfig.Resolver.Resolve<IServiceEndpointProvider>();
-            _options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>().Value;
-
+            _protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
+            _serviceConnectionManager = serviceConnectionManager ?? throw new ArgumentNullException(nameof(serviceConnectionManager));
+            _clientConnectionManager = clientConnectionManager ?? throw new ArgumentNullException(nameof(clientConnectionManager));
+            _options = options?.Value;
+            _endpoint = serviceEndpointManager?.GetEndpointProvider() ?? throw new ArgumentNullException(nameof(serviceEndpointManager));
             _logger = _loggerFactory.CreateLogger<ConnectionFactory>();
         }
 

@@ -205,26 +205,23 @@ namespace Owin
                 logger = NullLoggerFactory.Instance;
             }
 
+            var endpoint = new ServiceEndpointManager(options);
+
             // TODO: Update to use Middleware when SignalR SDK is ready
             // Replace default HubDispatcher with a custom one, which has its own negotiation logic
             // https://github.com/SignalR/SignalR/blob/dev/src/Microsoft.AspNet.SignalR.Core/Hosting/PersistentConnectionFactory.cs#L42
-            configuration.Resolver.Register(typeof(PersistentConnection), () => new ServiceHubDispatcher(configuration, applicationName, options, logger));
+            configuration.Resolver.Register(typeof(PersistentConnection), () => new ServiceHubDispatcher(configuration, applicationName, endpoint, options, logger));
             builder.RunSignalR(typeof(PersistentConnection), configuration);
 
-            RegisterServiceObjects(configuration, options, applicationName, hubs);
-
-            if (hubs?.Count > 0)
+            var connectionFactory = RegisterServiceObjects(configuration, options, endpoint, applicationName, hubs, logger);
+            if (connectionFactory != null)
             {
                 // Start the server->service connection asynchronously 
-                _ = new ConnectionFactory(hubs, configuration, logger).StartAsync();
-            }
-            else
-            {
-                logger.CreateLogger<IAppBuilder>().Log(LogLevel.Warning, "No hubs found.");
+                _ = connectionFactory.StartAsync();
             }
         }
 
-        private static void RegisterServiceObjects(HubConfiguration configuration, ServiceOptions options, string applicationName, IReadOnlyList<string> hubs)
+        private static ConnectionFactory RegisterServiceObjects(HubConfiguration configuration, ServiceOptions options, IServiceEndpointManager endpoint, string applicationName, IReadOnlyList<string> hubs, ILoggerFactory loggerFactory)
         {
             // TODO: Using IOptions looks wierd, thinking of a way removing it
             // share the same object all through
@@ -241,9 +238,6 @@ namespace Owin
             var provider = new EmptyProtectedData();
             configuration.Resolver.Register(typeof(IProtectedData), () => provider);
 
-            var endpoint = new ServiceEndpointProvider(serviceOptions.Value);
-            configuration.Resolver.Register(typeof(IServiceEndpointProvider), () => endpoint);
-
             var scm = new ServiceConnectionManager(applicationName, hubs);
             configuration.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
 
@@ -258,6 +252,16 @@ namespace Owin
 
             var smb = new ServiceMessageBus(configuration.Resolver);
             configuration.Resolver.Register(typeof(IMessageBus), () => smb);
+
+            if (hubs?.Count > 0)
+            {
+                return new ConnectionFactory(hubs, configuration, serviceProtocol, scm, ccm, endpoint, serviceOptions, loggerFactory);
+            }
+            else
+            {
+                loggerFactory.CreateLogger<IAppBuilder>().Log(LogLevel.Warning, "No hubs found.");
+                return null;
+            }
         }
 
         private static IReadOnlyList<string> GetAvailableHubNames(HubConfiguration configuration)
