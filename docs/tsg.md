@@ -33,21 +33,41 @@ services.AddSignalR()
             });
 ```
 
-## Server side connection drop
+## ⌛️[TODO]Client side connection drop
 
-### Possible errors:
+### ⏱Possible errors:
+1. Client side error log: "The remote party closed the WebSocket connection without completing the close handshake"
+2. Client side error log: "Service timeout. 30.00ms elapsed without receiving a message from service."
 
-1. Connection closed without complete handshake
-2. Websocket connection closed
+### 🧾Root cause:
+Possibility 1. App server restarts
+Possibility 2. **ASRS**(**A**zure **S**ignal**R** **S**ervice) internal error
 
-### Root cause:
+### 🧷Troubleshooting Guide
+1. Open app server side log to see if anything abnormal took place
+2. Check app server side event log to see if the app server restarted
+3. Create an issue to us providing time frame, and email the resource name to us
 
-### Troubleshooting Guide
-1. Open server side log
-2. create dump
+## ⌛️[TODO]Server side connection drop
 
-### Solution:
-Client side retry
-Server side 
+### ⏱Possible errors:
+1. Server side error log: "[Error]Connection "..." to the service was dropped"
+2. Server side error: "The remote party closed the WebSocket connection without completing the close handshake"
 
+### 🧾Root cause:
+Server-service connection is closed by **ASRS**(**A**zure **S**ignal**R** **S**ervice).
 
+### 🧷Troubleshooting Guide
+1. Open app server side log to see if anything abnormal took place
+2. Check app server side event log to see if the app server restarted
+3. Create an issue to us providing time frame, and email the resource name to us
+
+## ⌛️[TODO]Heartbeat failed
+
+### ⏱Possible errors:
+1. Server side log: "Service timeout. 30.00ms elapsed without receiving a message from service."
+2. Client side error log: "Service timeout. 30.00ms elapsed without receiving a message from service."
+
+### 🧷Troubleshooting Guide
+1. Open app server side log to see if anything abnormal took place
+2. Create server side dump file to see if the app server is thread starving
