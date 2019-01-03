@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    public interface IServiceHubContext: IDisposable, IHubContext<Hub>
+    public interface IServiceHubContext : IDisposable, IHubContext<Hub>
     {
         IUserGroupManager UserGroups { get; }
     }

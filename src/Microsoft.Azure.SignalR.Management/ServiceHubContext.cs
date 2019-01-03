@@ -9,11 +9,13 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class ServiceHubContext : IServiceHubContext
     {
-        public IUserGroupManager UserGroups => throw new NotImplementedException();
+        private IHubContext<Hub> _hubContext;
 
-        public IHubClients Clients => throw new NotImplementedException();
+        public IHubClients Clients => _hubContext.Clients;
 
-        public IGroupManager Groups => throw new NotImplementedException();
+        public IGroupManager Groups => _hubContext.Groups;
+
+        public IUserGroupManager UserGroups { get; }
 
         public void Dispose()
         {
@@ -23,6 +25,12 @@ namespace Microsoft.Azure.SignalR.Management
         public Task DisposeAsync()
         {
             throw new NotImplementedException();
+        }
+
+        public ServiceHubContext(IHubContext<Hub> hubContext, IHubLifetimeManagerForUserGroup lifetimeManager)
+        {
+            _hubContext = hubContext;
+            UserGroups = new UserGroupsManager(lifetimeManager);
         }
     }
 }
