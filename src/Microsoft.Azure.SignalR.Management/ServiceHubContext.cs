@@ -5,7 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Microsoft.Azure.SignalRService
+namespace Microsoft.Azure.SignalR.Management
 {
     internal class ServiceHubContext : IServiceHubContext
     {
