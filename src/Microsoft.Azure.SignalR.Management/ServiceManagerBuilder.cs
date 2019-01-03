@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Microsoft.Azure.SignalRService
+namespace Microsoft.Azure.SignalR.Management
 {
     public class ServiceManagerBuilder : IServiceManagerBuilder
     {

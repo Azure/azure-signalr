@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace Microsoft.Azure.SignalRService
+namespace Microsoft.Azure.SignalR.Management
 {
     public interface IServiceManager
     {
