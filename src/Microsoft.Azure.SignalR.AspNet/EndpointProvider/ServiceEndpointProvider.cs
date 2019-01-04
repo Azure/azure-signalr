@@ -24,18 +24,20 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly int? _port;
         private readonly TimeSpan _accessTokenLifetime;
 
-        public ServiceEndpointProvider(ServiceOptions options)
+        public ServiceEndpointProvider(ServiceEndpoint endpoint)
         {
-            var connectionString = options.ConnectionString;
+            var connectionString = endpoint.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
             {
                 throw new ArgumentException(ConnectionStringNotFound);
             }
 
-            _accessTokenLifetime = options.AccessTokenLifetime;
+            _accessTokenLifetime = endpoint.AccessTokenLifetime;
 
             // Version is ignored for aspnet signalr case
-            (_endpoint, _accessKey, _, _port) = ConnectionStringParser.Parse(connectionString);
+            _endpoint = endpoint.Endpoint;
+            _accessKey = endpoint.AccessKey;
+            _port = endpoint.Port;
         }
 
         public string GenerateClientAccessToken(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, string requestId = null)

@@ -18,9 +18,9 @@ namespace Microsoft.Azure.SignalR
         private readonly IUserIdProvider _userIdProvider;
         private readonly Func<HttpContext, IEnumerable<Claim>> _claimsProvider;
 
-        public NegotiateHandler(IServiceEndpointProvider endpointProvider, IUserIdProvider userIdProvider, IOptions<ServiceOptions> options)
+        public NegotiateHandler(IServiceEndpointManager endpointManager, IUserIdProvider userIdProvider, IOptions<ServiceOptions> options)
         {
-            _endpointProvider = endpointProvider ?? throw new ArgumentNullException(nameof(endpointProvider));
+            _endpointProvider = endpointManager?.GetEndpointProvider() ?? throw new ArgumentNullException(nameof(endpointManager));
             _userIdProvider = userIdProvider ?? throw new ArgumentNullException(nameof(userIdProvider));
             _claimsProvider = options?.Value?.ClaimsProvider;
         }
