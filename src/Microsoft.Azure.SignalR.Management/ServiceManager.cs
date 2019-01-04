@@ -8,6 +8,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -51,9 +52,16 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
-        public string GenerateClientAccessToken(IList<Claim> claims, TimeSpan? lifeTime = null)
+        public string GenerateClientAccessToken(string hubName, IList<Claim> claims, TimeSpan? lifeTime = null)
         {
-            throw new NotImplementedException();
+            var options = new ServiceOptions
+            {
+                ConnectionString = _serviceManagerOptions.ConnectionString,
+                AccessTokenLifetime = lifeTime ?? ServiceOptions.DefaultAccessTokenLifetime
+            };
+            var optionsWrapper = new OptionsWrapper<ServiceOptions>(options);
+            var endpointProvider = new ServiceEndpointManager(optionsWrapper).GetEndpointProvider();
+            return endpointProvider.GenerateClientAccessToken(hubName, claims, lifeTime);
         }
     }
 }
