@@ -4,18 +4,14 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
     internal class ServiceEndpointProvider : IServiceEndpointProvider
     {
-        private const string PreviewVersion = "1.0-preview";
-
         private static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
-            $"Please specify a configuration entry for {ServiceOptions.ConnectionStringDefaultKey}, " +
+            $"Please specify a configuration entry for {Constants.ConnectionStringDefaultKey}, " +
             "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
         private readonly string _endpoint;

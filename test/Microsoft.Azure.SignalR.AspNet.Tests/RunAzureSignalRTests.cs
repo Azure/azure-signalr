@@ -180,13 +180,13 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             public  AppSettingsConfigScope(string setting)
             {
-                _originalSetting = ConfigurationManager.AppSettings[ServiceOptions.ConnectionStringDefaultKey];
-                ConfigurationManager.AppSettings[ServiceOptions.ConnectionStringDefaultKey] = setting;
+                _originalSetting = ConfigurationManager.AppSettings[Constants.ConnectionStringDefaultKey];
+                ConfigurationManager.AppSettings[Constants.ConnectionStringDefaultKey] = setting;
             }
 
             public void Dispose()
             {
-                ConfigurationManager.AppSettings[ServiceOptions.ConnectionStringDefaultKey] = _originalSetting;
+                ConfigurationManager.AppSettings[Constants.ConnectionStringDefaultKey] = _originalSetting;
             }
         }
 

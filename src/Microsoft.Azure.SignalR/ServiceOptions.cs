@@ -14,14 +14,6 @@ namespace Microsoft.Azure.SignalR
     public class ServiceOptions
     {
         /// <summary>
-        /// The key which will be used to read connection string from environment variables.
-        /// </summary>
-        public static readonly string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
-
-        // Default access token lifetime
-        internal static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
-
-        /// <summary>
         /// Gets or sets the connection string of Azure SignalR Service instance.
         /// </summary>
         public string ConnectionString { get; set; } = null;
@@ -41,6 +33,6 @@ namespace Microsoft.Azure.SignalR
         /// Gets or sets the lifetime of auto-generated access token, which will be used to authenticate with Azure SignalR Service.
         /// Default value is one hour.
         /// </summary>
-        public TimeSpan AccessTokenLifetime { get; set; } = DefaultAccessTokenLifetime;
+        public TimeSpan AccessTokenLifetime { get; set; } = Constants.DefaultAccessTokenLifetime;
     }
 }
