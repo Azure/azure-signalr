@@ -117,7 +117,8 @@ namespace Microsoft.Azure.SignalR.Tests
         [MemberData(nameof(DefaultEndpointProviders))]
         internal void GenerateClientAccessToken(IServiceEndpointProvider provider)
         {
-            var tokenString = provider.GenerateClientAccessToken(HubName, requestId: string.Empty);
+            var requestId = Guid.NewGuid().ToString();
+            var tokenString = provider.GenerateClientAccessToken(HubName, requestId: requestId);
             var token = JwtSecurityTokenHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = GenerateJwtBearer($"{Endpoint}/client/?hub={HubName}",
@@ -126,7 +127,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 token.ValidFrom,
                 token.ValidFrom,
                 AccessKey,
-                string.Empty);
+                requestId);
 
             Assert.Equal(expectedTokenString, tokenString);
         }
