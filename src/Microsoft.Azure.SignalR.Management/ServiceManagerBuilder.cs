@@ -2,25 +2,23 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     public class ServiceManagerBuilder : IServiceManagerBuilder
     {
-        public ServiceManagerBuilder WithCredentials(string connectionString)
-        {
-            throw new NotImplementedException();
-        }
+        private readonly ServiceManagerOptions _options = new ServiceManagerOptions();
 
-        public ServiceManagerBuilder WithOptions(Action<ServiceManagerOptions> options)
+        public ServiceManagerBuilder WithOptions(Action<ServiceManagerOptions> configure)
         {
-            throw new NotImplementedException();
+            configure?.Invoke(_options);
+            return this;
         }
 
         public IServiceManager Build()
         {
-            throw new NotImplementedException();
+            _options.ValidateOptions();
+            return new ServiceManager(_options);
         }
     }
 }
