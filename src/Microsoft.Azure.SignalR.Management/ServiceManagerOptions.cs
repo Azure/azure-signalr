@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Management
         private void ValidateConnectionString()
         {
             // if the connection string is invalid, exceptions will be thrown.
-            (string endpoint, string accessKey, string version, int? port) = ConnectionStringParser.Parse(ConnectionString);
+            ConnectionStringParser.Parse(ConnectionString);
         }
 
         private void ValidateServiceTransportType()
