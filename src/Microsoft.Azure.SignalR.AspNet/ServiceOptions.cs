@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Security.Claims;
-using System.Web;
 using Microsoft.Owin;
 
 namespace Microsoft.Azure.SignalR.AspNet
@@ -15,14 +14,6 @@ namespace Microsoft.Azure.SignalR.AspNet
     /// </summary>
     public class ServiceOptions
     {
-        /// <summary>
-        /// The key which will be used to read connection string from environment variables.
-        /// </summary>
-        public static readonly string ConnectionStringDefaultKey = Constants.Config.ConnectionStringKey;
-
-        // Default access token lifetime
-        internal static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
-
         /// <summary>
         /// Gets or sets the connection string of Azure SignalR Service instance.
         /// </summary>
@@ -43,12 +34,12 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// Gets or sets the lifetime of auto-generated access token, which will be used to authenticate with Azure SignalR Service.
         /// Default value is one hour.
         /// </summary>
-        public TimeSpan AccessTokenLifetime { get; set; } = DefaultAccessTokenLifetime;
+        public TimeSpan AccessTokenLifetime { get; set; } = Constants.DefaultAccessTokenLifetime;
 
         private static string GetDefaultConnectionString()
         {
-            return ConfigurationManager.ConnectionStrings[ConnectionStringDefaultKey]?.ConnectionString
-                ?? ConfigurationManager.AppSettings[ConnectionStringDefaultKey];
+            return ConfigurationManager.ConnectionStrings[Constants.ConnectionStringDefaultKey]?.ConnectionString
+                ?? ConfigurationManager.AppSettings[Constants.ConnectionStringDefaultKey];
         }
     }
 }

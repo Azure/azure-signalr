@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
-            $"Please specify a configuration entry for {ServiceOptions.ConnectionStringDefaultKey}, " +
+            $"Please specify a configuration entry for {Constants.ConnectionStringDefaultKey}, " +
             "or explicitly pass one using IAppBuilder.RunAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
         private readonly string _endpoint;

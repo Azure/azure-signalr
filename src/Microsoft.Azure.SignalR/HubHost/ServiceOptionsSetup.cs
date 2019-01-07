@@ -9,13 +9,13 @@ namespace Microsoft.Azure.SignalR
     internal class ServiceOptionsSetup : IConfigureOptions<ServiceOptions>
     {
         private static readonly string ConnectionStringSecondaryKey =
-            $"ConnectionStrings:{ServiceOptions.ConnectionStringDefaultKey}";
+            $"ConnectionStrings:{Constants.ConnectionStringDefaultKey}";
 
         private readonly string _connectionString;
 
         public ServiceOptionsSetup(IConfiguration configuration)
         {
-            var connectionString = configuration.GetSection(ServiceOptions.ConnectionStringDefaultKey).Value;
+            var connectionString = configuration.GetSection(Constants.ConnectionStringDefaultKey).Value;
 
             // Load connection string from "ConnectionStrings" section when default key doesn't exist or holds an empty value.
             if (string.IsNullOrEmpty(connectionString))

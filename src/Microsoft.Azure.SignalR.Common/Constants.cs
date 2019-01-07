@@ -1,10 +1,18 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+
 namespace Microsoft.Azure.SignalR
 {
     internal static class Constants
     {
+        public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
+        public static readonly string ConnectionStringKeyPrefix = $"{ConnectionStringDefaultKey}:";
+
+        // Default access token lifetime
+        public static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
+
         public static class ClaimType
         {
             public const string AzureSignalRSysPrefix = "asrs.s.";
