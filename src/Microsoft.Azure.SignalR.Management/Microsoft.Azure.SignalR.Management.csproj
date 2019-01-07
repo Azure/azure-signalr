@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!--todo: use msbuild version-->
+    <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionHttpVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="$(MicrosoftAspNetCoreSignalRPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsDependencyInjectionPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="$(MicrosoftConfigurationFileExtensionVersion)" />
