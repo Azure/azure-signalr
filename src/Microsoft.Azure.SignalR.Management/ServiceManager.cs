@@ -57,8 +57,9 @@ namespace Microsoft.Azure.SignalR.Management
             var options = new ServiceOptions
             {
                 ConnectionString = _serviceManagerOptions.ConnectionString,
-                AccessTokenLifetime = lifeTime ?? ServiceOptions.DefaultAccessTokenLifetime
+                AccessTokenLifetime = lifeTime?? Constants.DefaultAccessTokenLifetime
             };
+
             var optionsWrapper = new OptionsWrapper<ServiceOptions>(options);
             var endpointProvider = new ServiceEndpointManager(optionsWrapper).GetEndpointProvider();
             return endpointProvider.GenerateClientAccessToken(hubName, claims, lifeTime);
