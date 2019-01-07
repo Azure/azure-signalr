@@ -14,13 +14,15 @@ namespace Microsoft.Azure.SignalR
 {
     internal class NegotiateHandler
     {
-        private readonly IServiceEndpointProvider _endpointProvider;
         private readonly IUserIdProvider _userIdProvider;
         private readonly Func<HttpContext, IEnumerable<Claim>> _claimsProvider;
+        private readonly IServiceEndpointManager _endpointManager;
+        private readonly IEndpointRouter _router;
 
-        public NegotiateHandler(IServiceEndpointManager endpointManager, IUserIdProvider userIdProvider, IOptions<ServiceOptions> options)
+        public NegotiateHandler(IServiceEndpointManager endpointManager, IEndpointRouter router, IUserIdProvider userIdProvider, IOptions<ServiceOptions> options)
         {
-            _endpointProvider = endpointManager?.GetEndpointProvider() ?? throw new ArgumentNullException(nameof(endpointManager));
+            _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
+            _router = router ?? throw new ArgumentNullException(nameof(router));
             _userIdProvider = userIdProvider ?? throw new ArgumentNullException(nameof(userIdProvider));
             _claimsProvider = options?.Value?.ClaimsProvider;
         }
@@ -30,11 +32,18 @@ namespace Microsoft.Azure.SignalR
             var claims = BuildClaims(context);
             var request = context.Request;
             var originalPath = GetOriginalPath(request.Path);
+            var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(_endpointManager.GetPrimaryEndpoints()));
+
+            if (provider == null)
+            {
+                throw new InvalidOperationException("No endpoint available.");
+            }
+
             return new NegotiationResponse
             {
-                Url = _endpointProvider.GetClientEndpoint(hubName, originalPath,
+                Url = provider.GetClientEndpoint(hubName, originalPath,
                     request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : string.Empty),
-                AccessToken = _endpointProvider.GenerateClientAccessToken(hubName, claims),
+                AccessToken = provider.GenerateClientAccessToken(hubName, claims),
                 // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
                 AvailableTransports = new List<AvailableTransport>()
             };

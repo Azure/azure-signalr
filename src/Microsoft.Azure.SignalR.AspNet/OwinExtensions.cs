@@ -207,10 +207,13 @@ namespace Owin
 
             var endpoint = new ServiceEndpointManager(options);
 
+            // Get the one from DI or new a default one
+            var router = configuration.Resolver.Resolve<IEndpointRouter>() ?? new DefaultRouter();
+
             // TODO: Update to use Middleware when SignalR SDK is ready
             // Replace default HubDispatcher with a custom one, which has its own negotiation logic
             // https://github.com/SignalR/SignalR/blob/dev/src/Microsoft.AspNet.SignalR.Core/Hosting/PersistentConnectionFactory.cs#L42
-            configuration.Resolver.Register(typeof(PersistentConnection), () => new ServiceHubDispatcher(configuration, applicationName, endpoint, options, logger));
+            configuration.Resolver.Register(typeof(PersistentConnection), () => new ServiceHubDispatcher(configuration, applicationName, endpoint, router, options, logger));
             builder.RunSignalR(typeof(PersistentConnection), configuration);
 
             var connectionFactory = RegisterServiceObjects(configuration, options, endpoint, applicationName, hubs, logger);
