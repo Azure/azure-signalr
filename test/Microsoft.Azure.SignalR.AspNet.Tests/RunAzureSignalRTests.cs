@@ -154,6 +154,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 {
                     new Claim("user", "hello"),
                 };
+                options.AccessTokenLifetime = TimeSpan.FromDays(1);
             })))
             {
                 var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
@@ -171,6 +172,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 Assert.Equal("hello", user);
                 var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
                 Assert.NotNull(requestId);
+                Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
             }
         }
 

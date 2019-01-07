@@ -8,6 +8,7 @@ namespace Microsoft.Azure.SignalR
     internal static class Constants
     {
         public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
+
         public static readonly string ConnectionStringKeyPrefix = $"{ConnectionStringDefaultKey}:";
 
         // Default access token lifetime

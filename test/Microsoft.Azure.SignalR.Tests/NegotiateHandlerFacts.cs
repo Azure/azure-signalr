@@ -32,7 +32,12 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var config = new ConfigurationBuilder().Build();
             var serviceProvider = new ServiceCollection().AddSignalR()
-                .AddAzureSignalR(o => o.ConnectionString = DefaultConnectionString)
+                .AddAzureSignalR(
+                o =>
+                {
+                    o.ConnectionString = DefaultConnectionString;
+                    o.AccessTokenLifetime = TimeSpan.FromDays(1);
+                })
                 .Services
                 .AddSingleton<IConfiguration>(config)
                 .AddSingleton(typeof(IUserIdProvider), type)
@@ -60,6 +65,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var token = JwtSecurityTokenHandler.ReadJwtToken(negotiateResponse.AccessToken);
             Assert.Equal(expectedUserId, token.Claims.FirstOrDefault(x => x.Type == Constants.ClaimType.UserId)?.Value);
             Assert.Equal("custom", token.Claims.FirstOrDefault(x => x.Type == "custom")?.Value);
+            Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
         }
 
         [Theory]

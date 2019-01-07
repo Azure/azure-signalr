@@ -14,6 +14,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private const string ClientPath = "aspnetclient";
         private const string ServerPath = "aspnetserver";
 
+
         private static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
             $"Please specify a configuration entry for {Constants.ConnectionStringDefaultKey}, " +
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly int? _port;
         private readonly TimeSpan _accessTokenLifetime;
 
-        public ServiceEndpointProvider(ServiceEndpoint endpoint)
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, TimeSpan? ttl = null)
         {
             var connectionString = endpoint.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 throw new ArgumentException(ConnectionStringNotFound);
             }
 
-            _accessTokenLifetime = endpoint.AccessTokenLifetime;
+            _accessTokenLifetime = ttl ?? Constants.DefaultAccessTokenLifetime;
 
             // Version is ignored for aspnet signalr case
             _endpoint = endpoint.Endpoint;
