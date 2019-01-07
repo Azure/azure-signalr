@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR
         public ServiceEndpointManager(IOptions<ServiceOptions> options)
         {
             var endpoint = new ServiceEndpoint(options.Value.ConnectionString);
-            _provider = new ServiceEndpointProvider(endpoint);
+            _provider = new ServiceEndpointProvider(endpoint, options.Value.AccessTokenLifetime);
         }
 
         public IServiceEndpointProvider GetEndpointProvider()

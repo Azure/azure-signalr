@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR
         private readonly TimeSpan _accessTokenLifetime;
         private readonly IServiceEndpointGenerator _generator;
 
-        public ServiceEndpointProvider(ServiceEndpoint endpoint)
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, TimeSpan? ttl = null)
         {
             var connectionString = endpoint.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(ConnectionStringNotFound);
             }
 
-            _accessTokenLifetime = endpoint.AccessTokenLifetime;
+            _accessTokenLifetime = ttl ?? Constants.DefaultAccessTokenLifetime;
 
             _endpoint = endpoint.Endpoint;
             _accessKey = endpoint.AccessKey;
