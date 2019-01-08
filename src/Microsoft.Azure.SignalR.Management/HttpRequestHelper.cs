@@ -10,11 +10,11 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal static class RestApiRequest
+    internal static class HttpRequestHelper
     {
         private static readonly IHttpClientFactory _clientFactory;
 
-        static RestApiRequest()
+        static HttpRequestHelper()
         {
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddHttpClient();
