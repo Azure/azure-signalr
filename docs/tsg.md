@@ -33,6 +33,32 @@ services.AddSignalR()
             });
 ```
 
+## 🚄Tls1.2 required
+
+### ⏱Possible errors:
+
+1. ASP.Net "No server available" error #279
+2. ASP.Net "The connection is not active, data cannot be sent to the service." error #324
+
+### 🧾Root cause:
+Azure Service only support TLS1.2 for security concerns. The server connection to ASRS was not successfully established.
+
+### 🧷Troubleshooting Guide
+1. Add following code to your `Startup.cs` to enable detailed trace:
+```cs
+GlobalHost.TraceManager.Switch.Level = SourceLevels.Information;
+```
+2. Enable local debugging exception throw
+![](https://user-images.githubusercontent.com/668244/49123286-fe76b500-f2f2-11e8-908b-4b7bcb0508c3.png)
+![](https://user-images.githubusercontent.com/668244/49123306-13534880-f2f3-11e8-80b6-576a3c10bfc8.png)
+
+### 🔨Solution:
+
+Add following code to your Startup:
+```cs
+ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+```
+
 ## ⌛️[TODO]Client side connection drop
 
 ### ⏱Possible errors:
