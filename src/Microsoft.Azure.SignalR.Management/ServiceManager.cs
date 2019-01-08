@@ -14,11 +14,13 @@ namespace Microsoft.Azure.SignalR.Management
 {
     public class ServiceManager : IServiceManager
     {
-        private ServiceManagerOptions _serviceManagerOptions;
+        private readonly ServiceManagerOptions _serviceManagerOptions;
+        private readonly ServiceEndpointProvider _endpoint;
 
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions)
         {
             _serviceManagerOptions = serviceManagerOptions;
+            _endpoint = new ServiceEndpointProvider(new ServiceEndpoint(_serviceManagerOptions.ConnectionString));
         }
 
         public Task<IServiceHubContext> CreateHubContextAsync(string hubName)
@@ -54,15 +56,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public string GenerateClientAccessToken(string hubName, IList<Claim> claims, TimeSpan? lifeTime = null)
         {
-            var options = new ServiceOptions
-            {
-                ConnectionString = _serviceManagerOptions.ConnectionString,
-                AccessTokenLifetime = lifeTime?? Constants.DefaultAccessTokenLifetime
-            };
-
-            var optionsWrapper = new OptionsWrapper<ServiceOptions>(options);
-            var endpointProvider = new ServiceEndpointManager(optionsWrapper).GetEndpointProvider();
-            return endpointProvider.GenerateClientAccessToken(hubName, claims, lifeTime);
+            return _endpoint.GenerateClientAccessToken(hubName, claims, lifeTime);
         }
     }
 }

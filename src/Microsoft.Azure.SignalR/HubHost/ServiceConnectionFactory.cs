@@ -24,9 +24,9 @@ namespace Microsoft.Azure.SignalR
         private readonly string _userId;
         private readonly string _hubName;
 
-        public ServiceConnectionFactory(string hubName, IServiceEndpointManager endpointManager, ServiceOptions options, ILoggerFactory loggerFactory)
+        public ServiceConnectionFactory(string hubName, IServiceEndpointProvider provider, ServiceOptions options, ILoggerFactory loggerFactory)
         {
-            _provider = endpointManager?.GetEndpointProvider() ?? throw new ArgumentNullException(nameof(endpointManager));
+            _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _loggerFactory = loggerFactory;
             _userId = GenerateServerName();
             _hubName = hubName;

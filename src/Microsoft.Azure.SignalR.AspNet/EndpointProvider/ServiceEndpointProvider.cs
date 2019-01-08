@@ -14,8 +14,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private const string ClientPath = "aspnetclient";
         private const string ServerPath = "aspnetserver";
 
-
-        private static readonly string ConnectionStringNotFound =
+        internal static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
             $"Please specify a configuration entry for {Constants.ConnectionStringDefaultKey}, " +
             "or explicitly pass one using IAppBuilder.RunAzureSignalR(connectionString) in Startup.ConfigureServices.";
