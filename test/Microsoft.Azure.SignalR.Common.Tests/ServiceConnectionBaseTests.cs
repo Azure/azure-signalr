@@ -22,8 +22,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var c = count;
             var span = ServiceConnectionBase.GetRetryDelay(ref c);
             Assert.Equal(exitCount, c);
-            Assert.True(TimeSpan.FromSeconds(minSeconds) < span);
-            Assert.True(TimeSpan.FromSeconds(maxSeconds) > span);
+            Assert.True(TimeSpan.FromSeconds(minSeconds) <= span);
+            Assert.True(TimeSpan.FromSeconds(maxSeconds) >= span);
         }
     }
 }
