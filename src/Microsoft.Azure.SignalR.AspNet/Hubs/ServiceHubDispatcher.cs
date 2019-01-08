@@ -29,18 +29,15 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly Func<IOwinContext, IEnumerable<Claim>> _claimsProvider;
         private readonly ILogger _logger;
 
-        private IServiceEndpointProvider _endpoint;
+        private readonly IServiceEndpointManager _endpointManager;
+        private readonly IEndpointRouter _router;
 
-        public ServiceHubDispatcher(HubConfiguration configuration, string appName, IServiceEndpointManager endpoint, ServiceOptions options, ILoggerFactory loggerFactory) : base(configuration)
+        public ServiceHubDispatcher(HubConfiguration configuration, string appName, IServiceEndpointManager endpointManager, IEndpointRouter router, ServiceOptions options, ILoggerFactory loggerFactory) : base(configuration)
         {
-            if (endpoint == null)
-            {
-                throw new ArgumentNullException(nameof(endpoint));
-            }
-
             _appName = appName ?? throw new ArgumentNullException(nameof(appName));
             _claimsProvider = options?.ClaimsProvider;
-            _endpoint = endpoint?.GetEndpointProvider() ?? throw new ArgumentNullException(nameof(endpoint));
+            _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
+            _router = router ?? throw new ArgumentNullException(nameof(router));
             _logger = loggerFactory.CreateLogger<ServiceHubDispatcher>();
         }
 
@@ -61,12 +58,14 @@ namespace Microsoft.Azure.SignalR.AspNet
             var owinContext = new OwinContext(context.Environment);
             var claims = BuildClaims(owinContext, context.Request);
 
+            var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(_endpointManager.GetPrimaryEndpoints()));
+
             // Redirect to Service
             // TODO: add OriginalPaht and QueryString when the clients support it
-            var url = _endpoint.GetClientEndpoint(null, null, null);
+            var url = provider.GetClientEndpoint(null, null, null);
             try
             {
-                accessToken = _endpoint.GenerateClientAccessToken(null, claims);
+                accessToken = provider.GenerateClientAccessToken(null, claims);
             }
             catch (AzureSignalRAccessTokenTooLongException ex)
             {

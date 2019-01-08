@@ -14,6 +14,8 @@ namespace Microsoft.Azure.SignalR
 
         public string Key { get; }
 
+        public EndpointType EndpointType { get; }
+
         internal string Endpoint { get; }
 
         internal string Version { get; }
