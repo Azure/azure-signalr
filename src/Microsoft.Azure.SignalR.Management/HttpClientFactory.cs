@@ -10,11 +10,11 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal static class HttpRequestHelper
+    internal static class HttpClientFactory
     {
         private static readonly IHttpClientFactory _clientFactory;
 
-        static HttpRequestHelper()
+        static HttpClientFactory()
         {
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddHttpClient();
@@ -23,13 +23,10 @@ namespace Microsoft.Azure.SignalR.Management
             _clientFactory = services.GetRequiredService<IHttpClientFactory>();
         }
 
-        public static Task<HttpResponseMessage> SendAsync(string url, PayloadMessage payload, string tokenString, HttpMethod httpMethod)
+        public static HttpClient CreateClient()
         {
-            var request = new HttpRequestMessage(httpMethod, url);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            request.Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
-            return _clientFactory.CreateClient().SendAsync(request);
+            return _clientFactory.CreateClient();
         }
+
     }
 }
