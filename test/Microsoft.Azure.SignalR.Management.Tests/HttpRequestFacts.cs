@@ -13,8 +13,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [Fact]
         public async Task RequestAndResponse()
         {
-            var httpRequest = new HttpRequest();
-            var result = await httpRequest.SendAsync("http://baidu.com", null, null, HttpMethod.Get);
+            var result = await RestApiRequest.SendAsync("http://baidu.com", null, null, HttpMethod.Get);
 
             Assert.Equal($"{HttpStatusCode.OK}", $"{result.StatusCode}");
         }

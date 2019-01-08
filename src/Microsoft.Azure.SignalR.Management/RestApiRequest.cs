@@ -10,23 +10,20 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class HttpRequest
+    internal static class RestApiRequest
     {
-        private static readonly IHttpClientFactory _clientFactory = null;
+        private static readonly IHttpClientFactory _clientFactory;
 
-        static HttpRequest()
+        static RestApiRequest()
         {
-            if (_clientFactory == null)
-            {
-                var serviceCollection = new ServiceCollection();
-                serviceCollection.AddHttpClient();
-                var services = serviceCollection.BuildServiceProvider();
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddHttpClient();
+            var services = serviceCollection.BuildServiceProvider();
 
-                _clientFactory = services.GetRequiredService<IHttpClientFactory>();
-            }
+            _clientFactory = services.GetRequiredService<IHttpClientFactory>();
         }
 
-        public Task<HttpResponseMessage> SendAsync(string url, PayloadMessage payload, string tokenString, HttpMethod httpMethod)
+        public static Task<HttpResponseMessage> SendAsync(string url, PayloadMessage payload, string tokenString, HttpMethod httpMethod)
         {
             var request = new HttpRequestMessage(httpMethod, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
