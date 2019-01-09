@@ -34,8 +34,9 @@ namespace Microsoft.Azure.SignalR
                                  ILoggerFactory loggerFactory,
                                  ConnectionDelegate connectionDelegate,
                                  IClientConnectionFactory clientConnectionFactory,
-                                 string connectionId) :
-            base(serviceProtocol, loggerFactory.CreateLogger<ServiceConnection>(), connectionId)
+                                 string connectionId,
+                                 ServerConnectionType connectionType = ServerConnectionType.Default) :
+            base(serviceProtocol, loggerFactory.CreateLogger<ServiceConnection>(), connectionId, connectionType)
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
@@ -45,13 +46,13 @@ namespace Microsoft.Azure.SignalR
 
         protected override Task<ConnectionContext> CreateConnection()
         {
-            return _connectionFactory.ConnectAsync(TransferFormat.Binary, _connectionId);
+            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId);
         }
 
         protected override Task DisposeConnection()
         {
-            var connection = _connection;
-            _connection = null;
+            var connection = ConnectionContext;
+            ConnectionContext = null;
             return _connectionFactory.DisposeAsync(connection);
         }
 
@@ -67,7 +68,7 @@ namespace Microsoft.Azure.SignalR
             }
             catch (Exception ex)
             {
-                Log.FailedToCleanupConnections(_logger, ex);
+                Log.FailedToCleanupConnections(Logger, ex);
             }
         }
 
@@ -100,7 +101,7 @@ namespace Microsoft.Azure.SignalR
                         }
                         catch (Exception ex)
                         {
-                            Log.ErrorSendingMessage(_logger, ex);
+                            Log.ErrorSendingMessage(Logger, ex);
                         }
                     }
 
@@ -119,7 +120,7 @@ namespace Microsoft.Azure.SignalR
                 // The exception means applicaion fail to process input anymore
                 // Cancel any pending flush so that we can quit and perform disconnect
                 // Here is abort close and WaitOnApplicationTask will send close message to notify client to disconnect
-                Log.SendLoopStopped(_logger, connection.ConnectionId, ex);
+                Log.SendLoopStopped(Logger, connection.ConnectionId, ex);
                 connection.Application.Output.CancelPendingFlush();
                 connection.Application.Input.Complete();
                 await PerformDisconnectAsyncCore(connection.ConnectionId, true);
@@ -142,7 +143,7 @@ namespace Microsoft.Azure.SignalR
         {
             var connection = _clientConnectionFactory.CreateConnection(message);
             AddClientConnection(connection);
-            Log.ConnectedStarting(_logger, connection.ConnectionId);
+            Log.ConnectedStarting(Logger, connection.ConnectionId);
 
             // Execute the application code
             connection.ApplicationTask = _connectionDelegate(connection);
@@ -182,7 +183,7 @@ namespace Microsoft.Azure.SignalR
                 // Inform the Service that we will remove the client because SignalR told us it is disconnected.
                 var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, errorMessage: "");
                 await WriteAsync(serviceMessage);
-                Log.CloseConnection(_logger, connection.ConnectionId);
+                Log.CloseConnection(Logger, connection.ConnectionId);
             }
         }
 
@@ -209,13 +210,13 @@ namespace Microsoft.Azure.SignalR
                 }
                 catch (Exception ex)
                 {
-                    Log.ApplicaitonTaskFailed(_logger, ex);
+                    Log.ApplicaitonTaskFailed(Logger, ex);
                 }
             }
             // Close this connection gracefully then remove it from the list,
             // this will trigger the hub shutdown logic appropriately
             RemoveClientConnection(connectionId);
-            Log.ConnectedEnding(_logger, connectionId);
+            Log.ConnectedEnding(Logger, connectionId);
         }
 
         protected override async Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)
@@ -225,7 +226,7 @@ namespace Microsoft.Azure.SignalR
                 try
                 {
                     var payload = connectionDataMessage.Payload;
-                    Log.WriteMessageToApplication(_logger, payload.Length, connectionDataMessage.ConnectionId);
+                    Log.WriteMessageToApplication(Logger, payload.Length, connectionDataMessage.ConnectionId);
 
                     if (payload.IsSingleSegment)
                     {
@@ -243,13 +244,13 @@ namespace Microsoft.Azure.SignalR
                 }
                 catch (Exception ex)
                 {
-                    Log.FailToWriteMessageToApplication(_logger, connectionDataMessage.ConnectionId, ex);
+                    Log.FailToWriteMessageToApplication(Logger, connectionDataMessage.ConnectionId, ex);
                 }
             }
             else
             {
                 // Unexpected error
-                Log.ReceivedMessageForNonExistentConnection(_logger, connectionDataMessage.ConnectionId);
+                Log.ReceivedMessageForNonExistentConnection(Logger, connectionDataMessage.ConnectionId);
             }
         }
     }
