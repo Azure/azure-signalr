@@ -78,28 +78,6 @@ namespace Microsoft.Azure.SignalR.AspNet
                 _logger, target, onDemandGenerator, type);
         }
 
-        private Uri GetServiceUrl(string connectionId, string hubName, IServiceEndpointProvider provider)
-        {
-            var baseUri = new UriBuilder(provider.GetServerEndpoint(hubName));
-            var query = "cid=" + connectionId;
-            if (baseUri.Query != null && baseUri.Query.Length > 1)
-            {
-                baseUri.Query = baseUri.Query.Substring(1) + "&" + query;
-            }
-            else
-            {
-                baseUri.Query = query;
-            }
-            return baseUri.Uri;
-        }
-
-        private static string GenerateServerName()
-        {
-            // Use the machine name for convenient diagnostics, but add a guid to make it unique.
-            // Example: MyServerName_02db60e5fab243b890a847fa5c4dcb29
-            return $"{Environment.MachineName}_{Guid.NewGuid():N}";
-        }
-
         private static class Log
         {
             private static readonly Action<ILogger, string, int, int, Exception> _startingConnection =
