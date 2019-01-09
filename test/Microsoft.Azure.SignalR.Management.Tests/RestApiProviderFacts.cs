@@ -2,9 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
+using Microsoft.Azure.SignalR.TestUtility;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
@@ -26,7 +24,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(GetTestData))]
         public void RestApiTest(string audience, string tokenString, string expectedAudience)
         {
-            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
+            var token = JwtTokenUtility.JwtHandler.ReadJwtToken(tokenString);
             string expectedTokenString = JwtTokenHelper.GenerateExpectedAccessToken(token, expectedAudience, _accessKey);
 
             Assert.Equal(expectedAudience, audience);
