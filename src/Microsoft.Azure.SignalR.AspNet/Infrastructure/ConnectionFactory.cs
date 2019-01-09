@@ -12,13 +12,9 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
-    /// <summary>
-    /// TODO: This factory class is responsible for creating, disposing and starting the server-service connections
-    /// </summary>
     internal class ConnectionFactory
     {
         private readonly ServiceOptions _options;
-        private readonly HubConfiguration _config;
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<ConnectionFactory> _logger;
         private readonly IReadOnlyList<string> _hubNames;
@@ -27,16 +23,12 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IServiceProtocol _protocol;
         private readonly IServiceEndpointManager _serviceEndpointManager;
         private readonly string _name;
-        
-        // Align the header key with ASP.Net core.
-        private static Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "Asrs-User-Agent", ProductInfo.GetProductInfo() } };
 
-        public ConnectionFactory(IReadOnlyList<string> hubNames, HubConfiguration hubConfig, IServiceProtocol protocol,
+        public ConnectionFactory(IReadOnlyList<string> hubNames, IServiceProtocol protocol,
             IServiceConnectionManager serviceConnectionManager, IClientConnectionManager clientConnectionManager,
             IServiceEndpointManager serviceEndpointManager,
             IOptions<ServiceOptions> options, ILoggerFactory loggerFactory)
         {
-            _config = hubConfig;
             _hubNames = hubNames;
             _name = $"{nameof(ConnectionFactory)}[{string.Join(",", hubNames)}]";
             _loggerFactory = loggerFactory;
