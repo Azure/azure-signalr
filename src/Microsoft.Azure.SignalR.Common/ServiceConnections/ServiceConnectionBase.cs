@@ -40,17 +40,16 @@ namespace Microsoft.Azure.SignalR
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
         private readonly ServerConnectionType _connectionType;
 
-        protected readonly ILogger _logger;
-        protected readonly string _connectionId;
-        protected readonly string Target;
-        protected readonly Func<string, Task> OnDemandGenerator;
-
         private bool _isStopped;
         // Check service timeout
         private long _lastReceiveTimestamp;
         // Keep-alive tick
         private long _lastSendTimestamp;
         private volatile bool _isConnected;
+
+        protected readonly string Target;
+
+        protected readonly Func<string, Task> OnDemandGenerator;
 
         protected ILogger Logger { get; }
 
@@ -66,7 +65,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task WaitForConnectionStart => _serviceConnectionStartTcs.Task;
 
-        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId, ServerConnectionType connectionType)
+        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId, ServerConnectionType connectionType, string target, Func<string, Task> onDemandGenerator)
         {
             ServiceProtocol = serviceProtocol;
             Logger = logger;
@@ -76,8 +75,6 @@ namespace Microsoft.Azure.SignalR
 
             _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
             _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
-            _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version);
-            _connectionType = type;
             Target = target;
             OnDemandGenerator = onDemandGenerator;
         }
@@ -191,7 +188,7 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        protected virtual Task OnPingMessageAsync(PingMessage pingMessage)
+        protected Task OnPingMessageAsync(PingMessage pingMessage)
         {
             if (pingMessage.Messages.Length == 0)
             {

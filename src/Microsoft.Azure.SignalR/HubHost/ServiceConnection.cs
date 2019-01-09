@@ -35,8 +35,10 @@ namespace Microsoft.Azure.SignalR
                                  ConnectionDelegate connectionDelegate,
                                  IClientConnectionFactory clientConnectionFactory,
                                  string connectionId,
+                                 string target,
+                                 Func<string, Task> onDemandGenerator,
                                  ServerConnectionType connectionType = ServerConnectionType.Default) :
-            base(serviceProtocol, loggerFactory.CreateLogger<ServiceConnection>(), connectionId, connectionType)
+            base(serviceProtocol, loggerFactory.CreateLogger<ServiceConnection>(), connectionId, connectionType, target, onDemandGenerator)
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;

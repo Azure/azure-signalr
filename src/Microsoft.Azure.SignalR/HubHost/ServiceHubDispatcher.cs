@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR
 
             var connectionFactory = new ServiceConnectionFactory(_hubName, provider, _options, _loggerFactory);
             // Simply create a couple of connections which connect to Azure SignalR
-            var serviceConnection = new ServiceConnectionContainer(container => GetServiceConnection(connectionDelegate, connectionFactory, 0, String.Empty, target => OnDemandGenerator(container, connectionDelegate, connectionFactory, target)), _options.ConnectionCount);
+            var serviceConnection = new ServiceConnectionContainer(container => GetServiceConnection(connectionDelegate, connectionFactory, ServerConnectionType.Default, String.Empty, target => OnDemandGenerator(container, connectionDelegate, connectionFactory, target)), _options.ConnectionCount);
             _serviceConnectionManager.SetServiceConnection(serviceConnection);
 
             Log.StartingConnection(_logger, Name, _options.ConnectionCount);
@@ -68,17 +68,17 @@ namespace Microsoft.Azure.SignalR
 
         private Task OnDemandGenerator(IServiceConnectionContainer container, ConnectionDelegate connectionDelegate, IConnectionFactory factory, string target)
         {
-            var onDemandConnection = GetServiceConnection(connectionDelegate, factory, 1, target,
+            var onDemandConnection = GetServiceConnection(connectionDelegate, factory, ServerConnectionType.OnDemand, target,
                 innerTarget => OnDemandGenerator(container, connectionDelegate, factory, innerTarget));
             container.AddServiceConnection(onDemandConnection);
             return onDemandConnection.StartAsync();
         }
 
-        private ServiceConnection GetServiceConnection(ConnectionDelegate connectionDelegate, IConnectionFactory factory, int type, string target, Func<string, Task> onDemandGenerator)
+        private ServiceConnection GetServiceConnection(ConnectionDelegate connectionDelegate, IConnectionFactory factory, ServerConnectionType type, string target, Func<string, Task> onDemandGenerator)
         {
             return new ServiceConnection(_serviceProtocol, _clientConnectionManager, factory,
                 _loggerFactory, connectionDelegate, _clientConnectionFactory,
-                Guid.NewGuid().ToString(), type, target, onDemandGenerator);
+                Guid.NewGuid().ToString(), target, onDemandGenerator, type);
         }
 
         private static class Log

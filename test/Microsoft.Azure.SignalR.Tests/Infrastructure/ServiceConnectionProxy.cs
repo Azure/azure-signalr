@@ -47,7 +47,6 @@ namespace Microsoft.Azure.SignalR.Tests
                     callback ?? OnConnectionAsync,
                     this,
                     Guid.NewGuid().ToString("N"),
-                    0,
                     String.Empty,
                     target => Task.CompletedTask);
             ServiceConnectionContainer = new ServiceConnectionContainer(

@@ -33,8 +33,10 @@ namespace Microsoft.Azure.SignalR.AspNet
             IConnectionFactory connectionFactory,
             IClientConnectionManager clientConnectionManager,
             ILogger logger,
+            string target,
+            Func<string, Task> onDemandGenerator,
             ServerConnectionType connectionType = ServerConnectionType.Default)
-            : base(serviceProtocol, logger, connectionId, connectionType)
+            : base(serviceProtocol, logger, connectionId, connectionType, target, onDemandGenerator)
         {
             HubName = hubName;
             _connectionFactory = connectionFactory;
@@ -43,7 +45,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         protected override Task<ConnectionContext> CreateConnection()
         {
-            return _connectionFactory.ConnectAsync(TransferFormat.Binary, _connectionId, HubName);
+            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId, HubName);
         }
 
         protected override Task DisposeConnection()
