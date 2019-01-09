@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _appName = appName;
         }
 
-        public void Initialize(Func<string, IServiceConnection> connectionGenerator, int connectionCount)
+        public void Initialize(Func<string, IServiceConnectionContainer, IServiceConnection> connectionGenerator, int connectionCount)
         {
             if (connectionGenerator == null)
             {
@@ -56,18 +56,45 @@ namespace Microsoft.Azure.SignalR.AspNet
                 var connections = new Dictionary<string, IServiceConnectionContainer>();
 
                 _appConnection = new ServiceConnectionContainer(
-                        () => connectionGenerator(_appName),
+                        container => connectionGenerator(_appName, container),
                         connectionCount);
 
                 foreach (var hub in _hubs)
                 {
                     var connection = new ServiceConnectionContainer(
-                            () => connectionGenerator(hub),
+                            container => connectionGenerator(hub, container),
                             connectionCount);
                     connections.Add(hub, connection);
                 }
 
                 _serviceConnections = connections;
+            }
+        }
+
+        private void AddServiceConnection(ServiceConnection serviceConnection)
+        {
+            lock (_lock)
+            {
+                string hubName = serviceConnection.HubName;
+                if (hubName == _appName)
+                {
+                    _appConnection.AddServiceConnection(serviceConnection);
+                }
+                else
+                {
+                    if (_serviceConnections.TryGetValue(hubName, out var container))
+                    {
+                        container.AddServiceConnection(serviceConnection);
+                    }
+                }
+            }
+        }
+
+        public void AddServiceConnection(IServiceConnection serviceConnection)
+        {
+            if (serviceConnection is ServiceConnection connection)
+            {
+                AddServiceConnection(connection);
             }
         }
 

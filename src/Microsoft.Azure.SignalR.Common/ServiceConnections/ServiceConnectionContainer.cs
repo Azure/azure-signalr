@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
@@ -13,8 +14,8 @@ namespace Microsoft.Azure.SignalR
     internal class ServiceConnectionContainer : IServiceConnectionContainer
     {
         private const int RetryCount = 10;
-        private readonly List<IServiceConnection> _serviceConnections;
-        private readonly int _count;
+        private volatile List<IServiceConnection> _serviceConnections;
+        private volatile int _count;
 
         public ServiceConnectionContainer(List<IServiceConnection> serviceConnections)
         {
@@ -22,7 +23,7 @@ namespace Microsoft.Azure.SignalR
             _count = _serviceConnections.Count;
         }
 
-        public ServiceConnectionContainer(Func<IServiceConnection> generator, int count)
+        public ServiceConnectionContainer(Func<IServiceConnectionContainer, IServiceConnection> generator, int count)
         {
             if (generator == null)
             {
@@ -37,22 +38,39 @@ namespace Microsoft.Azure.SignalR
             _serviceConnections = new List<IServiceConnection>(count);
             for (int i = 0; i < count; i++)
             {
-                _serviceConnections.Add(generator());
+                _serviceConnections.Add(generator(this));
             }
 
             _count = count;
+        }
+
+        public void AddServiceConnection(IServiceConnection serviceConnection)
+        {
+            if (serviceConnection == null)
+            {
+                throw new ArgumentNullException(nameof(serviceConnection));
+            }
+
+            // Since it's not a hot function, use a heavy way to avoid add lock to other functions
+            var serverConnections = _serviceConnections.Select(connection => connection).ToList();
+            serverConnections.Add(serviceConnection);
+
+            Interlocked.Exchange(ref _serviceConnections, serverConnections);
+            Interlocked.Increment(ref _count);
         }
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();
 
         public Task StartAsync()
         {
-            return Task.WhenAll(_serviceConnections.Select(c => c.StartAsync()));
+            var serviceConnections = _serviceConnections;
+            return Task.WhenAll(serviceConnections.Select(c => c.StartAsync()));
         }
 
         public Task StopAsync()
         {
-            return Task.WhenAll(_serviceConnections.Select(c => c.StopAsync()));
+            var serviceConnections = _serviceConnections;
+            return Task.WhenAll(serviceConnections.Select(c => c.StopAsync()));
         }
 
         public Task WriteAsync(ServiceMessage serviceMessage)
@@ -83,13 +101,14 @@ namespace Microsoft.Azure.SignalR
 
         private async Task WriteWithRetry(ServiceMessage sm, int initial)
         {
+            var serviceConnections = _serviceConnections;
             var retry = 0;
             var index = (initial & int.MaxValue) % _count;
             var direction = initial > 0 ? 1 : _count - 1;
             var maxRetry = _count;
             while (retry < maxRetry)
             {
-                var connection = _serviceConnections[index];
+                var connection = serviceConnections[index];
                 if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
                 {
                     try

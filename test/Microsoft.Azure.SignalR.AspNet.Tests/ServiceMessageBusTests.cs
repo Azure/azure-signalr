@@ -206,7 +206,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         private static void PrepareConnection(IServiceConnectionManager scm, out SortedList<string, ServiceMessage> output)
         {
             var result = new SortedList<string, ServiceMessage>();
-            scm.Initialize(hub => new TestServiceConnection(hub,
+            scm.Initialize((hub, _) => new TestServiceConnection(hub,
                     m =>
                     {
                         lock (result)
@@ -240,6 +240,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             {
                 _validator = validator;
                 HubName = name;
+            }
+
+            public void AddServiceConnection(IServiceConnection serviceConnection)
+            {
             }
 
             public Task StartAsync()

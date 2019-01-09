@@ -99,12 +99,25 @@ namespace Microsoft.Azure.SignalR.AspNet
         public Task StartAsync()
         {
             _serviceConnectionManager.Initialize(
-                hub => new ServiceConnection(hub, Guid.NewGuid().ToString(), _protocol, this, _clientConnectionManager, _logger),
+                (hub, container) => GetServiceConnection(hub, 0, String.Empty, target => OnDemandGenerator(container, hub, target)),
                 _options.ConnectionCount);
 
             Log.StartingConnection(_logger, _name, _options.ConnectionCount, _hubNames.Count);
 
             return _serviceConnectionManager.StartAsync();
+        }
+
+        private Task OnDemandGenerator(IServiceConnectionContainer container, string hub, string target)
+        {
+            var connection = GetServiceConnection(hub, 1, target, innerTarget => OnDemandGenerator(container, hub, target));
+            container.AddServiceConnection(connection);
+            return connection.StartAsync();
+        }
+
+        private ServiceConnection GetServiceConnection(string hub, int type, string target, Func<string, Task> onDemandGenerator)
+        {
+            return new ServiceConnection(hub, Guid.NewGuid().ToString(), _protocol, this, _clientConnectionManager,
+                _logger, type, target, onDemandGenerator);
         }
 
         private Uri GetServiceUrl(string connectionId, string hubName, IServiceEndpointProvider provider)

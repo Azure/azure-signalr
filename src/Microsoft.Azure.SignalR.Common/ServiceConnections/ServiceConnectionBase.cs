@@ -26,6 +26,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
         private static readonly long DefaultKeepAliveTicks = DefaultKeepAliveInterval.Seconds * Stopwatch.Frequency;
         private static readonly int MaxReconnectBackoffInternalInMilliseconds = 1000;
+        private const string PingTargetKey = "target";
 
         // Start reconnect after a random interval less than 1 second
         private static TimeSpan ReconnectInterval =>
@@ -38,9 +39,13 @@ namespace Microsoft.Azure.SignalR
         protected IServiceProtocol ServiceProtocol { get; }
 
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+        // TODO: Change to enum depended on another PR
+        private readonly int _connectionType;
 
         protected readonly ILogger _logger;
         protected readonly string _connectionId;
+        protected readonly string Target;
+        protected readonly Func<string, Task> OnDemandGenerator;
 
         private bool _isStopped;
         // Check service timeout
@@ -55,7 +60,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task WaitForConnectionStart => _serviceConnectionStartTcs.Task;
 
-        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId)
+        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId, int type, string target, Func<string, Task> onDemandGenerator)
         {
             ServiceProtocol = serviceProtocol;
             _logger = logger;
@@ -63,6 +68,9 @@ namespace Microsoft.Azure.SignalR
 
             _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
             _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version);
+            _connectionType = type;
+            Target = target;
+            OnDemandGenerator = onDemandGenerator;
         }
 
         public async Task StartAsync()
@@ -169,6 +177,26 @@ namespace Microsoft.Azure.SignalR
                 // throw exception here.
                 ErrorMessage = serviceErrorMessage.ErrorMessage;
                 Log.ReceivedServiceErrorMessage(_logger, _connectionId, serviceErrorMessage.ErrorMessage);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        protected virtual Task OnPingMessageAsync(PingMessage pingMessage)
+        {
+            if (pingMessage.Messages.Length == 0)
+            {
+                return Task.CompletedTask;
+            }
+
+            if (OnDemandGenerator == null)
+            {
+                return Task.CompletedTask;
+            }
+
+            if (pingMessage.Messages[0] == PingTargetKey && !string.IsNullOrEmpty(pingMessage.Messages[1]))
+            {
+                return OnDemandGenerator(pingMessage.Messages[1]);
             }
 
             return Task.CompletedTask;
@@ -404,9 +432,8 @@ namespace Microsoft.Azure.SignalR
                     return OnMessageAsync(connectionDataMessage);
                 case ServiceErrorMessage serviceErrorMessage:
                     return OnServiceErrorAsync(serviceErrorMessage);
-                case PingMessage _:
-                    // ignore ping
-                    break;
+                case PingMessage pingMessage:
+                    return OnPingMessageAsync(pingMessage);
             }
             return Task.CompletedTask;
         }

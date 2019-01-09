@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private const string ReconnectMessage = "asrs:reconnect";
         private readonly ConcurrentDictionary<string, ClientContext> _clientConnections = new ConcurrentDictionary<string, ClientContext>(StringComparer.Ordinal);
 
-        private readonly string _hubName;
+        public string HubName { get; }
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionManager _clientConnectionManager;
 
@@ -32,17 +32,20 @@ namespace Microsoft.Azure.SignalR.AspNet
             IServiceProtocol serviceProtocol,
             IConnectionFactory connectionFactory,
             IClientConnectionManager clientConnectionManager,
-            ILogger logger)
-            : base(serviceProtocol, logger, connectionId)
+            ILogger logger,
+            int type,
+            string target,
+            Func<string, Task> onDemandGenerator)
+            : base(serviceProtocol, logger, connectionId, type, target, onDemandGenerator)
         {
-            _hubName = hubName;
+            HubName = hubName;
             _connectionFactory = connectionFactory;
             _clientConnectionManager = clientConnectionManager;
         }
 
         protected override Task<ConnectionContext> CreateConnection()
         {
-            return _connectionFactory.ConnectAsync(TransferFormat.Binary, _connectionId, _hubName);
+            return _connectionFactory.ConnectAsync(TransferFormat.Binary, _connectionId, HubName);
         }
 
         protected override Task DisposeConnection()
