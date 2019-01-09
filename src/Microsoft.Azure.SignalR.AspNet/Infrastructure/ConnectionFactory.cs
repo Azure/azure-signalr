@@ -52,10 +52,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             var provider = _serviceEndpointManager.GetEndpointProvider(endpoints[0]);
 
             _serviceConnectionManager.Initialize(
-                hub =>
+                (hub, container) =>
                 {
                     var connectionFactory = new ServiceConnectionFactory(hub, provider, _loggerFactory);
-                    return new ServiceConnection(hub, Guid.NewGuid().ToString(), _protocol, connectionFactory, _clientConnectionManager, _logger);
+                    return GetServiceConnection(hub, connectionFactory, ServerConnectionType.Default, string.Empty,
+                        target => OnDemandGenerator(hub, container, connectionFactory, target));
                 },
                 _options.ConnectionCount);
 
@@ -64,16 +65,16 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _serviceConnectionManager.StartAsync();
         }
 
-        private Task OnDemandGenerator(IServiceConnectionContainer container, string hub, string target)
+        private Task OnDemandGenerator(string hub, IServiceConnectionContainer container, ServiceConnectionFactory factory, string target)
         {
-            var connection = GetServiceConnection(hub, ServerConnectionType.OnDemand, target, innerTarget => OnDemandGenerator(container, hub, target));
+            var connection = GetServiceConnection(hub, factory, ServerConnectionType.OnDemand, target, innerTarget => OnDemandGenerator(hub, container, factory, innerTarget));
             container.AddServiceConnection(connection);
             return connection.StartAsync();
         }
 
-        private ServiceConnection GetServiceConnection(string hub, ServerConnectionType type, string target, Func<string, Task> onDemandGenerator)
+        private ServiceConnection GetServiceConnection(string hub, ServiceConnectionFactory factory, ServerConnectionType type, string target, Func<string, Task> onDemandGenerator)
         {
-            return new ServiceConnection(hub, Guid.NewGuid().ToString(), _protocol, this, _clientConnectionManager,
+            return new ServiceConnection(hub, Guid.NewGuid().ToString(), _protocol, factory, _clientConnectionManager,
                 _logger, target, onDemandGenerator, type);
         }
 

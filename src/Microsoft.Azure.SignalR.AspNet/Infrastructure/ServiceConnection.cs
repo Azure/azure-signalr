@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         protected override Task<ConnectionContext> CreateConnection()
         {
-            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId, HubName);
+            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId);
         }
 
         protected override Task DisposeConnection()
