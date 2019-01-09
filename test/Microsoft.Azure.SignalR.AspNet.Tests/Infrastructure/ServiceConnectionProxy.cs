@@ -131,7 +131,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 return _waitForServerConnection.Task;
             }
 
-            public Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, string hubName, CancellationToken cancellationToken = default)
+            public Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
             {
                 var connection = new TestConnectionContext();
                 _connectCallback?.Invoke(connection);

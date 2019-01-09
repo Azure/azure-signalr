@@ -57,7 +57,7 @@ namespace Microsoft.Azure.SignalR
             // TODO: support multiple endpoints
             var provider = _serviceEndpointManager.GetEndpointProvider(endpoints[0]);
 
-            var connectionFactory = new ServiceConnectionFactory(_hubName, provider, _options, _loggerFactory);
+            var connectionFactory = new ServiceConnectionFactory(_hubName, provider, _loggerFactory);
             // Simply create a couple of connections which connect to Azure SignalR
             var serviceConnection = new ServiceConnectionContainer(container => GetServiceConnection(connectionDelegate, connectionFactory, ServerConnectionType.Default, String.Empty, target => OnDemandGenerator(container, connectionDelegate, connectionFactory, target)), _options.ConnectionCount);
             _serviceConnectionManager.SetServiceConnection(serviceConnection);
