@@ -213,7 +213,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                         {
                             result.Add(hub, m.Item1);
                         }
-                    }), 5);
+                    }));
             output = result;
         }
 

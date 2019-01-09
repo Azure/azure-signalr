@@ -16,5 +16,17 @@ namespace Microsoft.Azure.SignalR
         /// <param name="primaryEndpoints"></param>
         /// <returns></returns>
         ServiceEndpoint GetNegotiateEndpoint(IReadOnlyList<ServiceEndpoint> primaryEndpoints);
+
+        IReadOnlyList<ServiceEndpoint> GetEndpointsForBroadcast(IReadOnlyList<ServiceEndpoint> availableEnpoints);
+
+        IReadOnlyList<ServiceEndpoint> GetEndpointsForUser(string userId, IReadOnlyList<ServiceEndpoint> availableEnpoints);
+
+        IReadOnlyList<ServiceEndpoint> GetEndpointsForUsers(IReadOnlyList<string> userList, IReadOnlyList<ServiceEndpoint> availableEnpoints);
+
+        IReadOnlyList<ServiceEndpoint> GetEndpointsForGroup(string groupName, IReadOnlyList<ServiceEndpoint> availableEnpoints);
+
+        IReadOnlyList<ServiceEndpoint> GetEndpointsForGroups(IReadOnlyList<string> groupList, IReadOnlyList<ServiceEndpoint> availableEnpoints);
+
+        IReadOnlyList<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IReadOnlyList<ServiceEndpoint> availableEnpoints);
     }
 }

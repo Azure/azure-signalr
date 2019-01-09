@@ -23,6 +23,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly IServiceProtocol _serviceProtocol;
         private readonly IClientConnectionFactory _clientConnectionFactory;
+        private readonly IEndpointRouter _router;
         private readonly string _hubName;
 
         public ServiceHubDispatcher(IServiceProtocol serviceProtocol,
@@ -31,6 +32,7 @@ namespace Microsoft.Azure.SignalR
             IServiceEndpointManager serviceEndpointManager,
             IOptions<ServiceOptions> options,
             ILoggerFactory loggerFactory,
+            IEndpointRouter router,
             IClientConnectionFactory clientConnectionFactory)
         {
             _serviceProtocol = serviceProtocol;
@@ -39,6 +41,7 @@ namespace Microsoft.Azure.SignalR
             _serviceEndpointManager = serviceEndpointManager;
             _options = options != null ? options.Value : throw new ArgumentNullException(nameof(options));
 
+            _router = router ?? throw new ArgumentNullException(nameof(router));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<ServiceHubDispatcher<THub>>();
             _clientConnectionFactory = clientConnectionFactory;
@@ -47,29 +50,34 @@ namespace Microsoft.Azure.SignalR
 
         public void Start(ConnectionDelegate connectionDelegate)
         {
-            var endpoints = _serviceEndpointManager.GetAvailableEndpoints();
-            if (endpoints.Count == 0)
-            {
-                throw new AzureSignalRException("No available endpoints.");
-            }
-
-            // TODO: support multiple endpoints
-            var provider = _serviceEndpointManager.GetEndpointProvider(endpoints[0]);
-
-            var connectionFactory = new ServiceConnectionFactory(_hubName, provider, _loggerFactory);
             // Simply create a couple of connections which connect to Azure SignalR
-            var serviceConnection = new ServiceConnectionContainer(() => GetServiceConnection(connectionDelegate, connectionFactory), _options.ConnectionCount);
+            var serviceConnection =
+               new MultiEndpointServiceConnectionContainer(
+                   endpoint =>
+                   {
+                       var provider = _serviceEndpointManager.GetEndpointProvider(endpoint);
+                       var connectionFactory = new ServiceConnectionFactory(_hubName, provider, _loggerFactory);
+                       return new ServiceConnectionContainer(
+                           () => GetServiceConnection(connectionDelegate, connectionFactory, endpoint.EndpointType),
+                           _options.ConnectionCount);
+                   },
+                   _serviceEndpointManager,
+                   _router,
+                   _logger
+                   );
+
             _serviceConnectionManager.SetServiceConnection(serviceConnection);
 
             Log.StartingConnection(_logger, Name, _options.ConnectionCount);
             _ = _serviceConnectionManager.StartAsync();
         }
 
-        private ServiceConnection GetServiceConnection(ConnectionDelegate connectionDelegate, IConnectionFactory factory)
+        private ServiceConnection GetServiceConnection(ConnectionDelegate connectionDelegate, IConnectionFactory factory, EndpointType type)
         {
+            var serverConnectionType = type == EndpointType.Primary ? ServerConnectionType.Default : ServerConnectionType.Weak;
             return new ServiceConnection(_serviceProtocol, _clientConnectionManager, factory,
                 _loggerFactory, connectionDelegate, _clientConnectionFactory,
-                Guid.NewGuid().ToString());
+                Guid.NewGuid().ToString(), serverConnectionType);
         }
 
         private static class Log

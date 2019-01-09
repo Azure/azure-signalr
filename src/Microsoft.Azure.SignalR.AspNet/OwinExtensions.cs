@@ -216,7 +216,7 @@ namespace Owin
             configuration.Resolver.Register(typeof(PersistentConnection), () => new ServiceHubDispatcher(configuration, applicationName, endpoint, router, options, logger));
             builder.RunSignalR(typeof(PersistentConnection), configuration);
 
-            var connectionFactory = RegisterServiceObjects(configuration, options, endpoint, applicationName, hubs, logger);
+            var connectionFactory = RegisterServiceObjects(configuration, options, endpoint, router, applicationName, hubs, logger);
             if (connectionFactory != null)
             {
                 // Start the server->service connection asynchronously 
@@ -224,7 +224,7 @@ namespace Owin
             }
         }
 
-        private static ConnectionFactory RegisterServiceObjects(HubConfiguration configuration, ServiceOptions options, IServiceEndpointManager endpoint, string applicationName, IReadOnlyList<string> hubs, ILoggerFactory loggerFactory)
+        private static ConnectionFactory RegisterServiceObjects(HubConfiguration configuration, ServiceOptions options, IServiceEndpointManager endpoint, IEndpointRouter router, string applicationName, IReadOnlyList<string> hubs, ILoggerFactory loggerFactory)
         {
             // TODO: Using IOptions looks wierd, thinking of a way removing it
             // share the same object all through
@@ -258,7 +258,7 @@ namespace Owin
 
             if (hubs?.Count > 0)
             {
-                return new ConnectionFactory(hubs, serviceProtocol, scm, ccm, endpoint, serviceOptions, loggerFactory);
+                return new ConnectionFactory(hubs, serviceProtocol, scm, ccm, endpoint, router, serviceOptions, loggerFactory);
             }
             else
             {
