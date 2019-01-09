@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO.Pipelines;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,119 +19,303 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class MultiEndpointServiceConnectionContainerTests
     {
-        private static readonly ServiceProtocol Protocol = new ServiceProtocol();
+        private const string ValidConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+
+        private static readonly JoinGroupMessage DefaultGroupMessage = new JoinGroupMessage("a", "a");
 
         [Fact]
-        public async Task TestServiceConnectionContainerWithAllConnectedSucceeeds()
+        public void TestContainerWithNoEndpointThrows()
         {
-            var container = new ServiceConnectionContainer(new List<IServiceConnection> {
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-            });
-
-            await container.WriteAsync(new HandshakeResponseMessage());
-
-            await container.WriteAsync("1", new HandshakeResponseMessage());
+            var hub = "hub1";
+            var count = 1;
+            var sem = new TestServiceEndpointManager();
+            var router = new TestEndpointRouter(false);
+            Assert.Throws<AzureSignalRNoEndpointAvailableException>(() => new MultiEndpointServiceConnectionContainer(CreateServiceConnection, hub, count, sem, router, null));
         }
 
         [Fact]
-        public async Task TestServiceConnectionContainerWithAllDisconnectedThrows()
+        public async Task TestContainerWithOneEndpointWithAllConnectedSucceeeds()
         {
-            var container = new ServiceConnectionContainer(new List<IServiceConnection> {
-                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+            var inner = new ServiceConnectionContainer(new List<IServiceConnection> {
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
             });
 
-            await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
-                () => container.WriteAsync(new HandshakeResponseMessage())
-                );
+            var sem = new TestServiceEndpointManager(new ServiceEndpoint(ValidConnectionString));
+            var router = new TestEndpointRouter(true);
+            var container = new MultiEndpointServiceConnectionContainer(e => inner, sem, router, null);
+            await container.WriteAsync(DefaultGroupMessage);
 
-            await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
-                () => container.WriteAsync("1", new HandshakeResponseMessage())
-                );
+            await container.WriteAsync("1", DefaultGroupMessage);
         }
 
         [Fact]
-        public async Task TestServiceConnectionContainerWithAllThrowsThrows()
+        public async Task TestContainerWithOneEndpointWithAllDisconnectedThrows()
         {
-            var container = new ServiceConnectionContainer(new List<IServiceConnection> {
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
+            var inner = new ServiceConnectionContainer(new List<IServiceConnection> {
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
             });
 
+            var sem = new TestServiceEndpointManager(new ServiceEndpoint(ValidConnectionString));
+            var router = new TestEndpointRouter(true);
+            var container = new MultiEndpointServiceConnectionContainer(e => inner, sem, router, null);
+
             await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
-                () => container.WriteAsync(new HandshakeResponseMessage())
+                () => container.WriteAsync(DefaultGroupMessage)
                 );
 
             await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
-                () => container.WriteAsync("1", new HandshakeResponseMessage())
+                () => container.WriteAsync("1", DefaultGroupMessage)
                 );
         }
 
         [Fact]
-        public async Task TestServiceConnectionContainerWithSomeThrows1WriteWithPartitionCanPass()
+        public async Task TestContainerWithTwoEndpointWithAllConnectedFailsWithBadRouter()
         {
-            var container = new ServiceConnectionContainer(new List<IServiceConnection> {
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
+            var inner = new ServiceConnectionContainer(new List<IServiceConnection> {
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
                 new TestServiceConnection(),
             });
 
-            await container.WriteAsync(new HandshakeResponseMessage());
-            await container.WriteAsync("1", new HandshakeResponseMessage());
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ValidConnectionString), 
+                new ServiceEndpoint(Constants.ConnectionStringKeyPrefix + "2", ValidConnectionString));
+
+            var router = new TestEndpointRouter(true);
+            var container = new MultiEndpointServiceConnectionContainer(e => inner, sem, router, null);
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => container.WriteAsync(DefaultGroupMessage)
+                );
+
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => container.WriteAsync("1", DefaultGroupMessage)
+                );
         }
 
         [Fact]
-        public async Task TestServiceConnectionContainerWithSomeThrows2WriteWithPartitionCanPass()
+        public async Task TestContainerWithTwoEndpointWithAllConnectedSucceedsWithGoodRouter()
         {
-            var container = new ServiceConnectionContainer(new List<IServiceConnection> {
+            var inner = new ServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
             });
 
-            await container.WriteAsync(new HandshakeResponseMessage());
-            await container.WriteAsync("1", new HandshakeResponseMessage());
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ValidConnectionString),
+                new ServiceEndpoint(Constants.ConnectionStringKeyPrefix + "2", ValidConnectionString));
+
+            var router = new TestEndpointRouter(false);
+            var container = new MultiEndpointServiceConnectionContainer(e => inner, sem, router, null);
+            await container.WriteAsync(DefaultGroupMessage);
+
+            await container.WriteAsync("1", DefaultGroupMessage);
         }
 
         [Fact]
-        public async Task TestServiceConnectionContainerWithSomeThrows3WriteWithPartitionCanPass()
+        public async Task TestContainerWithTwoEndpointWithAllDisconnectedThrows()
         {
-            var container = new ServiceConnectionContainer(new List<IServiceConnection> {
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
-                new TestServiceConnection(throws: true),
+            var inner = new ServiceConnectionContainer(new List<IServiceConnection> {
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
             });
 
-            await container.WriteAsync(new HandshakeResponseMessage());
-            await container.WriteAsync("1", new HandshakeResponseMessage());
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ValidConnectionString),
+                new ServiceEndpoint(Constants.ConnectionStringKeyPrefix + "2", ValidConnectionString));
+
+            var router = new TestEndpointRouter(false);
+            var container = new MultiEndpointServiceConnectionContainer(e => inner, sem, router, null);
+
+            await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
+                () => container.WriteAsync(DefaultGroupMessage)
+                );
+
+            await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
+                () => container.WriteAsync("1", DefaultGroupMessage)
+                );
+        }
+
+        [Fact]
+        public async Task TestContainerWithTwoEndpointWithOneAllDisconnectedThrows()
+        {
+            var inner1 = new ServiceConnectionContainer(new List<IServiceConnection> {
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+            });
+
+            var inner2 = new ServiceConnectionContainer(new List<IServiceConnection> {
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+            });
+
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ValidConnectionString),
+                new ServiceEndpoint(Constants.ConnectionStringKeyPrefix + "2", ValidConnectionString));
+
+            var router = new TestEndpointRouter(false);
+            var container = new MultiEndpointServiceConnectionContainer(e =>
+            {
+                if (e.Key == Constants.ConnectionStringDefaultKey)
+                {
+                    return inner1;
+                }
+
+                return inner2;
+            }, sem, router, null);
+
+            // TODO: when online & offline is enabled, should not throw then
+            await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
+                () => container.WriteAsync(DefaultGroupMessage)
+                );
+
+            await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
+                () => container.WriteAsync("1", DefaultGroupMessage)
+                );
+        }
+
+        private IServiceConnection CreateServiceConnection(ServerConnectionType type, IConnectionFactory factory)
+        {
+            return new TestServiceConnection();
+        }
+
+        private class TestServiceEndpointManager : IServiceEndpointManager
+        {
+            private readonly ServiceEndpoint[] _endpoints;
+            public TestServiceEndpointManager(params ServiceEndpoint[] endpoints)
+            {
+                _endpoints = endpoints;
+            }
+
+            public IReadOnlyList<ServiceEndpoint> GetAvailableEndpoints()
+            {
+                return _endpoints;
+            }
+
+            public IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
+            {
+                return null;
+            }
+
+            public IReadOnlyList<ServiceEndpoint> GetPrimaryEndpoints()
+            {
+                return _endpoints.Where(s => s.EndpointType == EndpointType.Primary).ToArray();
+            }
+        }
+
+        private class TestEndpointRouter : IEndpointRouter
+        {
+            private readonly IEndpointRouter _inner = new DefaultRouter();
+
+            private readonly bool _broken;
+            public TestEndpointRouter(bool broken)
+            {
+                _broken = broken;
+            }
+            public IReadOnlyList<ServiceEndpoint> GetEndpointsForBroadcast(IReadOnlyList<ServiceEndpoint> availableEnpoints)
+            {
+                if (_broken)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                return _inner.GetEndpointsForBroadcast(availableEnpoints);
+            }
+
+            public IReadOnlyList<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IReadOnlyList<ServiceEndpoint> availableEnpoints)
+            {
+                if (_broken)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                return _inner.GetEndpointsForConnection(connectionId, availableEnpoints);
+            }
+
+            public IReadOnlyList<ServiceEndpoint> GetEndpointsForGroup(string groupName, IReadOnlyList<ServiceEndpoint> availableEnpoints)
+            {
+                if (_broken)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                return _inner.GetEndpointsForGroup(groupName, availableEnpoints);
+            }
+
+            public IReadOnlyList<ServiceEndpoint> GetEndpointsForGroups(IReadOnlyList<string> groupList, IReadOnlyList<ServiceEndpoint> availableEnpoints)
+            {
+                if (_broken)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                return _inner.GetEndpointsForGroups(groupList, availableEnpoints);
+            }
+
+            public IReadOnlyList<ServiceEndpoint> GetEndpointsForUser(string userId, IReadOnlyList<ServiceEndpoint> availableEnpoints)
+            {
+                if (_broken)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                return _inner.GetEndpointsForUser(userId, availableEnpoints);
+            }
+
+            public IReadOnlyList<ServiceEndpoint> GetEndpointsForUsers(IReadOnlyList<string> userList, IReadOnlyList<ServiceEndpoint> availableEnpoints)
+            {
+                if (_broken)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                return _inner.GetEndpointsForUsers(userList, availableEnpoints);
+            }
+
+            public ServiceEndpoint GetNegotiateEndpoint(IReadOnlyList<ServiceEndpoint> primaryEndpoints)
+            {
+                if (_broken)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                return _inner.GetNegotiateEndpoint(primaryEndpoints);
+            }
         }
 
         private sealed class TestServiceConnection : IServiceConnection

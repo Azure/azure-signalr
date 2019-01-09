@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR
 
         public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
 
-        public MultiEndpointServiceConnectionContainer(Func<ServerConnectionType, IConnectionFactory, IServiceConnection> generator, string hub, int count, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
+        public MultiEndpointServiceConnectionContainer(Func<ServiceEndpoint, IServiceConnectionContainer> generator, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
         {
             if (generator == null)
             {
@@ -29,28 +29,36 @@ namespace Microsoft.Azure.SignalR
             }
 
             _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
-            _router = router ?? throw new ArgumentNullException(nameof(router));
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? NullLogger<MultiEndpointServiceConnectionContainer>.Instance;
 
             var endpoints = endpointManager.GetAvailableEndpoints();
             if (endpoints.Count == 0)
             {
-                throw new ArgumentException("No endpoint available.");
+                throw new AzureSignalRNoEndpointAvailableException();
             }
 
             if (endpoints.Count == 1)
             {
-                _inner = CreateContainer(generator, endpoints[0], hub, count, loggerFactory);
+                _inner = generator(endpoints[0]);
             }
             else
             {
-                Connections = endpointManager.GetAvailableEndpoints().ToDictionary(s => s, s => CreateContainer(generator, s, hub, count, loggerFactory));
+                // router is required when endpoints > 1
+                _router = router ?? throw new ArgumentNullException(nameof(router));
+                Connections = endpoints.ToDictionary(s => s, s => generator(s));
             }
         }
 
-        private IServiceConnectionContainer CreateContainer(Func<ServerConnectionType, IConnectionFactory, IServiceConnection> generator, ServiceEndpoint endpoint, string hub, int count, ILoggerFactory loggerFactory)
+        public MultiEndpointServiceConnectionContainer(Func<ServerConnectionType, IConnectionFactory, IServiceConnection> generator, string hub, int count, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
+            : this(
+                  endpoint => CreateContainer(generator, endpoint, hub, count, endpointManager, loggerFactory),
+                  endpointManager, router, loggerFactory)
         {
-            var provider = _endpointManager.GetEndpointProvider(endpoint);
+        }
+
+        private static IServiceConnectionContainer CreateContainer(Func<ServerConnectionType, IConnectionFactory, IServiceConnection> generator, ServiceEndpoint endpoint, string hub, int count, IServiceEndpointManager endpointManager, ILoggerFactory loggerFactory)
+        {
+            var provider = endpointManager.GetEndpointProvider(endpoint);
             var connectionFactory = new ServiceConnectionFactory(hub, provider, loggerFactory);
             var serverConnectionType = endpoint.EndpointType == EndpointType.Primary ? ServerConnectionType.Default : ServerConnectionType.Weak;
             return new ServiceConnectionContainer(() => generator(serverConnectionType, connectionFactory), count);
@@ -93,6 +101,7 @@ namespace Microsoft.Azure.SignalR
                 return _inner.WriteAsync(partitionKey, serviceMessage);
             }
 
+            // re-evaluate availbale endpoints as they might be offline, however it can not guarantee that all endpoints are online
             var routed = GetRoutedEndpoints(serviceMessage, _endpointManager.GetAvailableEndpoints());
 
             if (routed.Count == 0)
