@@ -53,7 +53,7 @@ GlobalHost.TraceManager.Switch.Level = SourceLevels.Information;
 ![](https://user-images.githubusercontent.com/668244/49123286-fe76b500-f2f2-11e8-908b-4b7bcb0508c3.png)
 ![](https://user-images.githubusercontent.com/668244/49123306-13534880-f2f3-11e8-80b6-576a3c10bfc8.png)
 
-### 🔨Solution:
+### Solution:
 
 Add following code to your Startup:
 ```cs
