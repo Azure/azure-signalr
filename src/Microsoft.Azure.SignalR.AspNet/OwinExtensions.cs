@@ -258,7 +258,7 @@ namespace Owin
 
             if (hubs?.Count > 0)
             {
-                return new ConnectionFactory(hubs, configuration, serviceProtocol, scm, ccm, endpoint, serviceOptions, loggerFactory);
+                return new ConnectionFactory(hubs, serviceProtocol, scm, ccm, endpoint, serviceOptions, loggerFactory);
             }
             else
             {

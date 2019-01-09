@@ -4,11 +4,9 @@
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -43,7 +41,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         protected override Task<ConnectionContext> CreateConnection()
         {
-            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId, _hubName);
+            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId);
         }
 
         protected override Task DisposeConnection()

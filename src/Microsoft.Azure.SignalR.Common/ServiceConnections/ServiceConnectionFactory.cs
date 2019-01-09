@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -24,7 +23,7 @@ namespace Microsoft.Azure.SignalR
         private readonly string _userId;
         private readonly string _hubName;
 
-        public ServiceConnectionFactory(string hubName, IServiceEndpointProvider provider, ServiceOptions options, ILoggerFactory loggerFactory)
+        public ServiceConnectionFactory(string hubName, IServiceEndpointProvider provider, ILoggerFactory loggerFactory)
         {
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _loggerFactory = loggerFactory;
