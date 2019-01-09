@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.SignalR
 
         public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
 
-        public MultiEndpointServiceConnectionContainer(Func<ServiceEndpoint, IServiceConnectionContainer> generator, IServiceEndpointManager endpointManager, IEndpointRouter router, ILogger logger)
+        public MultiEndpointServiceConnectionContainer(Func<ServerConnectionType, IConnectionFactory, IServiceConnection> generator, string hub, int count, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
         {
             if (generator == null)
             {
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.SignalR
 
             _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
             _router = router ?? throw new ArgumentNullException(nameof(router));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? NullLogger<MultiEndpointServiceConnectionContainer>.Instance;
 
             var endpoints = endpointManager.GetAvailableEndpoints();
             if (endpoints.Count == 0)
@@ -39,12 +40,20 @@ namespace Microsoft.Azure.SignalR
 
             if (endpoints.Count == 1)
             {
-                _inner = generator(endpoints[0]);
+                _inner = CreateContainer(generator, endpoints[0], hub, count, loggerFactory);
             }
             else
             {
-                Connections = endpointManager.GetAvailableEndpoints().ToDictionary(s => s, s => generator(s));
+                Connections = endpointManager.GetAvailableEndpoints().ToDictionary(s => s, s => CreateContainer(generator, s, hub, count, loggerFactory));
             }
+        }
+
+        private IServiceConnectionContainer CreateContainer(Func<ServerConnectionType, IConnectionFactory, IServiceConnection> generator, ServiceEndpoint endpoint, string hub, int count, ILoggerFactory loggerFactory)
+        {
+            var provider = _endpointManager.GetEndpointProvider(endpoint);
+            var connectionFactory = new ServiceConnectionFactory(hub, provider, loggerFactory);
+            var serverConnectionType = endpoint.EndpointType == EndpointType.Primary ? ServerConnectionType.Default : ServerConnectionType.Weak;
+            return new ServiceConnectionContainer(() => generator(serverConnectionType, connectionFactory), count);
         }
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();

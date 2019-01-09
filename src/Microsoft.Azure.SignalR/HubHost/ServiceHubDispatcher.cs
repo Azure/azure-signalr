@@ -51,20 +51,7 @@ namespace Microsoft.Azure.SignalR
         public void Start(ConnectionDelegate connectionDelegate)
         {
             // Simply create a couple of connections which connect to Azure SignalR
-            var serviceConnection =
-               new MultiEndpointServiceConnectionContainer(
-                   endpoint =>
-                   {
-                       var provider = _serviceEndpointManager.GetEndpointProvider(endpoint);
-                       var connectionFactory = new ServiceConnectionFactory(_hubName, provider, _loggerFactory);
-                       return new ServiceConnectionContainer(
-                           () => GetServiceConnection(connectionDelegate, connectionFactory, endpoint.EndpointType),
-                           _options.ConnectionCount);
-                   },
-                   _serviceEndpointManager,
-                   _router,
-                   _logger
-                   );
+            var serviceConnection = GetMultiEndpointServiceConnectionContainer(_hubName, connectionDelegate);
 
             _serviceConnectionManager.SetServiceConnection(serviceConnection);
 
@@ -72,12 +59,19 @@ namespace Microsoft.Azure.SignalR
             _ = _serviceConnectionManager.StartAsync();
         }
 
-        private ServiceConnection GetServiceConnection(ConnectionDelegate connectionDelegate, IConnectionFactory factory, EndpointType type)
+        private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate)
         {
-            var serverConnectionType = type == EndpointType.Primary ? ServerConnectionType.Default : ServerConnectionType.Weak;
+            return new MultiEndpointServiceConnectionContainer(
+                (t, f) => GetServiceConnection(connectionDelegate, t, f),
+                hub, _options.ConnectionCount,
+                _serviceEndpointManager, _router, _loggerFactory);
+        }
+
+        private ServiceConnection GetServiceConnection(ConnectionDelegate connectionDelegate, ServerConnectionType type, IConnectionFactory factory)
+        {
             return new ServiceConnection(_serviceProtocol, _clientConnectionManager, factory,
                 _loggerFactory, connectionDelegate, _clientConnectionFactory,
-                Guid.NewGuid().ToString(), serverConnectionType);
+                Guid.NewGuid().ToString(), type);
         }
 
         private static class Log

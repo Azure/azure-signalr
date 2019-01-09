@@ -43,30 +43,24 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public Task StartAsync()
         {
-            _serviceConnectionManager.Initialize(
-                hub =>
-                new MultiEndpointServiceConnectionContainer(
-                    endpoint =>
-                    {
-                        var provider = _serviceEndpointManager.GetEndpointProvider(endpoint);
-                        var connectionFactory = new ServiceConnectionFactory(hub, provider, _loggerFactory);
-                        return new ServiceConnectionContainer(
-                            () => GetServiceConnection(hub, endpoint.EndpointType, connectionFactory),
-                            _options.ConnectionCount);
-                    },
-                    _serviceEndpointManager,
-                    _router,
-                    _logger));
+            _serviceConnectionManager.Initialize(hub => GetMultiEndpointServiceConnectionContainer(hub));
 
             Log.StartingConnection(_logger, _name, _options.ConnectionCount, _hubNames.Count);
 
             return _serviceConnectionManager.StartAsync();
         }
 
-        private ServiceConnection GetServiceConnection(string hub, EndpointType type, IConnectionFactory factory)
+        private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub)
         {
-            var serverConnectionType = type == EndpointType.Primary ? ServerConnectionType.Default : ServerConnectionType.Weak;
-            return new ServiceConnection(hub, Guid.NewGuid().ToString(), _protocol, factory, _clientConnectionManager, _logger, serverConnectionType);
+            return new MultiEndpointServiceConnectionContainer(
+                (t, f) => GetServiceConnection(t, f),
+                hub, _options.ConnectionCount,
+                _serviceEndpointManager, _router, _loggerFactory);
+        }
+
+        private ServiceConnection GetServiceConnection(ServerConnectionType type, IConnectionFactory factory)
+        {
+            return new ServiceConnection(Guid.NewGuid().ToString(), _protocol, factory, _clientConnectionManager, _logger, type);
         }
 
         private static class Log
