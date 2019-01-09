@@ -42,10 +42,21 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="HandshakeRequestMessage"/> class.
         /// </summary>
-        /// <param name="version"></param>
+        /// <param name="version">version</param>
         public HandshakeRequestMessage(int version)
         {
             Version = version;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HandshakeRequestMessage"/> class.
+        /// </summary>
+        /// <param name="version">version</param>
+        /// <param name="connectionType">connection type</param>
+        public HandshakeRequestMessage(int version, int connectionType)
+        {
+            Version = version;
+            ConnectionType = connectionType;
         }
     }
 

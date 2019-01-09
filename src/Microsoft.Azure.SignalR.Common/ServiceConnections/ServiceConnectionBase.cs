@@ -36,11 +36,9 @@ namespace Microsoft.Azure.SignalR
         private readonly HandshakeRequestMessage _handshakeRequest;
 
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
-        protected IServiceProtocol ServiceProtocol { get; }
 
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
-        // TODO: Change to enum depended on another PR
-        private readonly int _connectionType;
+        private readonly ServerConnectionType _connectionType;
 
         protected readonly ILogger _logger;
         protected readonly string _connectionId;
@@ -53,20 +51,31 @@ namespace Microsoft.Azure.SignalR
         // Keep-alive tick
         private long _lastSendTimestamp;
         private volatile bool _isConnected;
-        protected ConnectionContext _connection;
-        protected string ErrorMessage;
+
+        protected ILogger Logger { get; }
+
+        protected string ConnectionId { get; }
+
+        protected IServiceProtocol ServiceProtocol { get; }
+
+        protected ConnectionContext ConnectionContext { get; set; }
+
+        protected string ErrorMessage { get; private set; }
 
         public ServiceConnectionStatus Status { get; private set; }
 
         public Task WaitForConnectionStart => _serviceConnectionStartTcs.Task;
 
-        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId, int type, string target, Func<string, Task> onDemandGenerator)
+        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId, ServerConnectionType connectionType)
         {
             ServiceProtocol = serviceProtocol;
-            _logger = logger;
-            _connectionId = connectionId;
+            Logger = logger;
+            ConnectionId = connectionId;
+
+            _connectionType = connectionType;
 
             _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
+            _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
             _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version);
             _connectionType = type;
             Target = target;
@@ -113,7 +122,7 @@ namespace Microsoft.Azure.SignalR
         public Task StopAsync()
         {
             _isStopped = true;
-            _connection?.Transport.Input.CancelPendingRead();
+            ConnectionContext?.Transport.Input.CancelPendingRead();
             return Task.CompletedTask;
         }
 
@@ -133,7 +142,7 @@ namespace Microsoft.Azure.SignalR
                 throw new InvalidOperationException(errorMessage);
             }
 
-            if (_connection == null)
+            if (ConnectionContext == null)
             {
                 _serviceConnectionLock.Release();
                 throw new ServiceConnectionNotActiveException();
@@ -142,12 +151,12 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 // Write the service protocol message
-                ServiceProtocol.WriteMessage(serviceMessage, _connection.Transport.Output);
-                await _connection.Transport.Output.FlushAsync();
+                ServiceProtocol.WriteMessage(serviceMessage, ConnectionContext.Transport.Output);
+                await ConnectionContext.Transport.Output.FlushAsync();
             }
             catch (Exception ex)
             {
-                Log.FailedToWrite(_logger, ex);
+                Log.FailedToWrite(Logger, ex);
             }
             finally
             {
@@ -176,7 +185,7 @@ namespace Microsoft.Azure.SignalR
                 // But messages in the pipe from service -> server should be processed as usual. Just log without
                 // throw exception here.
                 ErrorMessage = serviceErrorMessage.ErrorMessage;
-                Log.ReceivedServiceErrorMessage(_logger, _connectionId, serviceErrorMessage.ErrorMessage);
+                Log.ReceivedServiceErrorMessage(Logger, ConnectionId, serviceErrorMessage.ErrorMessage);
             }
 
             return Task.CompletedTask;
@@ -210,12 +219,12 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 Status = ServiceConnectionStatus.Connecting;
-                _connection = await CreateConnection();
+                ConnectionContext = await CreateConnection();
                 ErrorMessage = null;
 
                 if (await HandshakeAsync())
                 {
-                    Log.ServiceConnectionConnected(_logger, _connectionId);
+                    Log.ServiceConnectionConnected(Logger, ConnectionId);
                     Status = ServiceConnectionStatus.Connected;
                     return true;
                 }
@@ -231,7 +240,7 @@ namespace Microsoft.Azure.SignalR
             }
             catch (Exception ex)
             {
-                Log.FailedToConnect(_logger, ex);
+                Log.FailedToConnect(Logger, ex);
 
                 Status = ServiceConnectionStatus.Disconnected;
                 await DisposeConnection();
@@ -246,7 +255,7 @@ namespace Microsoft.Azure.SignalR
 
         private async Task<bool> HandshakeAsync()
         {
-            await SendHandshakeRequestAsync(_connection.Transport.Output);
+            await SendHandshakeRequestAsync(ConnectionContext.Transport.Output);
 
             try
             {
@@ -257,9 +266,9 @@ namespace Microsoft.Azure.SignalR
                         cts.CancelAfter(DefaultHandshakeTimeout);
                     }
 
-                    if (await ReceiveHandshakeResponseAsync(_connection.Transport.Input, cts.Token))
+                    if (await ReceiveHandshakeResponseAsync(ConnectionContext.Transport.Input, cts.Token))
                     {
-                        Log.HandshakeComplete(_logger);
+                        Log.HandshakeComplete(Logger);
                         return true;
                     }
 
@@ -268,14 +277,14 @@ namespace Microsoft.Azure.SignalR
             }
             catch (Exception ex)
             {
-                Log.ErrorReceivingHandshakeResponse(_logger, ex);
+                Log.ErrorReceivingHandshakeResponse(Logger, ex);
                 throw;
             }
         }
 
         private async Task SendHandshakeRequestAsync(PipeWriter output)
         {
-            Log.SendingHandshakeRequest(_logger);
+            Log.SendingHandshakeRequest(Logger);
 
             ServiceProtocol.WriteMessage(_handshakeRequest, output);
             var sendHandshakeResult = await output.FlushAsync();
@@ -321,7 +330,7 @@ namespace Microsoft.Azure.SignalR
                             }
 
                             // Handshake error. Will stop reconnect.
-                            Log.HandshakeError(_logger, handshakeResponse.ErrorMessage);
+                            Log.HandshakeError(Logger, handshakeResponse.ErrorMessage);
                             return false;
                         }
                     }
@@ -346,20 +355,20 @@ namespace Microsoft.Azure.SignalR
             {
                 while (true)
                 {
-                    var result = await _connection.Transport.Input.ReadAsync();
+                    var result = await ConnectionContext.Transport.Input.ReadAsync();
                     var buffer = result.Buffer;
 
                     try
                     {
                         if (result.IsCanceled)
                         {
-                            Log.ReadingCancelled(_logger, _connectionId);
+                            Log.ReadingCancelled(Logger, ConnectionId);
                             break;
                         }
 
                         if (!buffer.IsEmpty)
                         {
-                            Log.ReceivedMessage(_logger, buffer.Length, _connectionId);
+                            Log.ReceivedMessage(Logger, buffer.Length, ConnectionId);
 
                             UpdateReceiveTimestamp();
 
@@ -375,7 +384,7 @@ namespace Microsoft.Azure.SignalR
                         if (result.IsCompleted)
                         {
                             // The connection is closed (reconnect)
-                            Log.ServiceConnectionClosed(_logger, _connectionId);
+                            Log.ServiceConnectionClosed(Logger, ConnectionId);
                             break;
                         }
                     }
@@ -383,11 +392,11 @@ namespace Microsoft.Azure.SignalR
                     {
                         // Error occurs in handling the message, but the connection between SDK and service still works.
                         // So, just log error instead of breaking the connection
-                        Log.ErrorProcessingMessages(_logger, ex);
+                        Log.ErrorProcessingMessages(Logger, ex);
                     }
                     finally
                     {
-                        _connection.Transport.Input.AdvanceTo(buffer.Start, buffer.End);
+                        ConnectionContext.Transport.Input.AdvanceTo(buffer.Start, buffer.End);
                     }
                 }
             }
@@ -396,7 +405,7 @@ namespace Microsoft.Azure.SignalR
                 // Fatal error: There is something wrong for the connection between SDK and service.
                 // Abort all the client connections, close the httpConnection.
                 // Only reconnect can recover.
-                Log.ConnectionDropped(_logger, _connectionId, ex);
+                Log.ConnectionDropped(Logger, ConnectionId, ex);
             }
             finally
             {
@@ -440,7 +449,7 @@ namespace Microsoft.Azure.SignalR
 
         private TimerAwaitable StartKeepAliveTimer()
         {
-            Log.StartingKeepAliveTimer(_logger, DefaultKeepAliveInterval);
+            Log.StartingKeepAliveTimer(Logger, DefaultKeepAliveInterval);
 
             _lastReceiveTimestamp = Stopwatch.GetTimestamp();
             _lastSendTimestamp = _lastReceiveTimestamp;
@@ -486,14 +495,14 @@ namespace Microsoft.Azure.SignalR
                 // Check if last send time is longer than default keep-alive ticks and then send ping
                 if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendTimestamp) > DefaultKeepAliveTicks)
                 {
-                    await _connection.Transport.Output.WriteAsync(GetPingMessage());
+                    await ConnectionContext.Transport.Output.WriteAsync(GetPingMessage());
                     Interlocked.Exchange(ref _lastSendTimestamp, Stopwatch.GetTimestamp());
-                    Log.SentPing(_logger);
+                    Log.SentPing(Logger);
                 }
             }
             catch (Exception ex)
             {
-                Log.FailedSendingPing(_logger, ex);
+                Log.FailedSendingPing(Logger, ex);
             }
             finally
             {
@@ -514,10 +523,10 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 // Stop the reading from connection
-                if (_connection != null)
+                if (ConnectionContext != null)
                 {
-                    _connection.Transport.Input.CancelPendingRead();
-                    Log.ServiceTimeout(_logger, DefaultServiceTimeout);
+                    ConnectionContext.Transport.Input.CancelPendingRead();
+                    Log.ServiceTimeout(Logger, DefaultServiceTimeout);
                 }
             }
             finally
