@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Security.Claims;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -12,16 +11,15 @@ namespace Microsoft.Azure.SignalR.Management
         private static string _accessKey;
         private static string _userId;
 
-        public RestApiAccessTokenGenerator(string connectionString)
+        public RestApiAccessTokenGenerator(string accessKey)
         {
-            (_, _accessKey, _, _) = ConnectionStringParser.Parse(connectionString);
+            _accessKey = accessKey;
             _userId = GenerateServerName();
         }
 
         public string Generate(string audience, TimeSpan? lifetime = null)
         {
-
-            IEnumerable<Claim> claims = new[]
+            var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, _userId)
             };

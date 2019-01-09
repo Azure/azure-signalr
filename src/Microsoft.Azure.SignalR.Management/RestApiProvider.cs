@@ -2,44 +2,49 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Text;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestApiProvider
     {
-        private const string _version = "/api/v1";
+        private const string Version = "/api/v1";
+        private const string HubCollection = "/hubs/";
+        private const string UserCollection = "/users/";
+        private const string GroupCollection = "/groups/";
         private readonly RestApiAccessTokenGenerator _restApiAccessTokenGenerator;
         private readonly string _baseEndpoint;
         private readonly string _hubName;
 
         public RestApiProvider(string connectionString, string hubName)
         {
-            (_baseEndpoint, _, _, _) = ConnectionStringParser.Parse(connectionString);
+            string accessKey;
+            (_baseEndpoint, accessKey, _, _) = ConnectionStringParser.Parse(connectionString);
             _hubName = hubName;
-            _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(connectionString);
+            _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(accessKey);
         }
 
-        public RestApiEndpoint Broadcast(TimeSpan? lifetime = null)
+        public RestApiEndpoint GetBroadcastEndpoint(TimeSpan? lifetime = null)
         {
-            var api = UrlPrefix() + AddHubName();
+            var api = GetCommonPrefix().ToString();
             return GenerateRestApiEndpoint(api, lifetime);
         }
 
-        public RestApiEndpoint UserGroupManagement(string userId, string groupName, TimeSpan? lifetime = null)
+        public RestApiEndpoint GetUserGroupManagementEndpoint(string userId, string groupName, TimeSpan? lifetime = null)
         {
-            var api = UrlPrefix() + AddHubName() + AddGroupName(groupName) + AddUserId(userId);
+            var api = GetCommonPrefix().Append(GroupCollection).Append(groupName).Append(UserCollection).Append(userId).ToString();
             return GenerateRestApiEndpoint(api, lifetime);
         }
 
-        public RestApiEndpoint SendToUser(string userId, TimeSpan? lifetime = null)
+        public RestApiEndpoint GetSendToUserEndpoint(string userId, TimeSpan? lifetime = null)
         {
-            var api = UrlPrefix() + AddHubName() + AddUserId(userId);
+            var api = GetCommonPrefix().Append(UserCollection).Append(userId).ToString();
             return GenerateRestApiEndpoint(api, lifetime);
         }
 
-        public RestApiEndpoint SendToGroup(string groupName, TimeSpan? lifetime = null)
+        public RestApiEndpoint GetSendToGroupEndpoint(string groupName, TimeSpan? lifetime = null)
         {
-            var api = UrlPrefix() + AddHubName() + AddGroupName(groupName);
+            var api = GetCommonPrefix().Append(GroupCollection).Append(groupName).ToString();
             return GenerateRestApiEndpoint(api, lifetime);
         }
 
@@ -49,24 +54,9 @@ namespace Microsoft.Azure.SignalR.Management
             return new RestApiEndpoint(api, token);
         }
 
-        private static string AddUserId(string userId)
+        private StringBuilder GetCommonPrefix()
         {
-            return "/users/" + userId;
-        }
-
-        private static string AddGroupName(string groupName)
-        {
-            return "/groups/" + groupName;
-        }
-
-        private string UrlPrefix()
-        {
-            return _baseEndpoint + _version;
-        }
-
-        private string AddHubName()
-        {
-            return "/hubs/" + _hubName;
+            return new StringBuilder().Append(_baseEndpoint).Append(Version).Append(HubCollection).Append(_hubName);
         }
     }
 }

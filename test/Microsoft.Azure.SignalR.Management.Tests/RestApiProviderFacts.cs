@@ -35,10 +35,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         public static IEnumerable<object[]> GetTestData()
         {
-            var broadcastApi = _restApiProvider.Broadcast();
-            var sendToUserApi = _restApiProvider.SendToUser(_userId);
-            var sendToGroupApi = _restApiProvider.SendToGroup(_groupName);
-            var groupManagementApi = _restApiProvider.UserGroupManagement(_userId, _groupName);
+            var broadcastApi = _restApiProvider.GetBroadcastEndpoint();
+            var sendToUserApi = _restApiProvider.GetSendToUserEndpoint(_userId);
+            var sendToGroupApi = _restApiProvider.GetSendToGroupEndpoint(_groupName);
+            var groupManagementApi = _restApiProvider.GetUserGroupManagementEndpoint(_userId, _groupName);
 
             yield return new object[] { broadcastApi.Audience, broadcastApi.Token, _commonEndpoint };
             yield return new object[] { sendToUserApi.Audience, sendToUserApi.Token, _commonEndpoint + $"/users/{_userId}"};
