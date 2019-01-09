@@ -9,6 +9,9 @@ namespace Microsoft.Azure.SignalR
     internal interface IServiceConnectionContainer : IServiceConnection
     {
         void AddServiceConnection(IServiceConnection serviceConnection);
+
+        void RemoveServiceConnection(IServiceConnection serviceConnection);
+
         Task WriteAsync(string partitionKey, ServiceMessage serviceMessage);
     }
 }

@@ -246,6 +246,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             {
             }
 
+            public void RemoveServiceConnection(IServiceConnection serviceConnection)
+            {
+            }
+
             public Task StartAsync()
             {
                 return Task.CompletedTask;

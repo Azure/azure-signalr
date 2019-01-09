@@ -71,30 +71,47 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-        private void AddServiceConnection(ServiceConnection serviceConnection)
+        public void AddServiceConnection(IServiceConnection serviceConnection)
         {
-            lock (_lock)
+            if (serviceConnection is ServiceConnection connection)
             {
-                string hubName = serviceConnection.HubName;
-                if (hubName == _appName)
+                lock (_lock)
                 {
-                    _appConnection.AddServiceConnection(serviceConnection);
-                }
-                else
-                {
-                    if (_serviceConnections.TryGetValue(hubName, out var container))
+                    string hubName = connection.HubName;
+                    if (hubName == _appName)
                     {
-                        container.AddServiceConnection(serviceConnection);
+                        _appConnection.AddServiceConnection(connection);
+                    }
+                    else
+                    {
+                        if (_serviceConnections.TryGetValue(hubName, out var container))
+                        {
+                            container.AddServiceConnection(connection);
+                        }
                     }
                 }
             }
         }
 
-        public void AddServiceConnection(IServiceConnection serviceConnection)
+        public void RemoveServiceConnection(IServiceConnection serviceConnection)
         {
             if (serviceConnection is ServiceConnection connection)
             {
-                AddServiceConnection(connection);
+                lock (_lock)
+                {
+                    string hubName = connection.HubName;
+                    if (hubName == _appName)
+                    {
+                        _appConnection.RemoveServiceConnection(connection);
+                    }
+                    else
+                    {
+                        if (_serviceConnections.TryGetValue(hubName, out var container))
+                        {
+                            container.RemoveServiceConnection(connection);
+                        }
+                    }
+                }
             }
         }
 
