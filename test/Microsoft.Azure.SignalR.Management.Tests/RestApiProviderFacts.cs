@@ -9,16 +9,16 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 {
     public class RestApiProviderFacts
     {
-        private static string _endpoint = "https://abc";
-        private static string _accessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
+        private const string _endpoint = "https://abc";
+        private const string _accessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
 
-        private static string _connectionString = $"Endpoint={_endpoint};AccessKey={_accessKey};Version=1.0;";
-        private static string _hubName = "signalrbench";
-        private static string _userId = "UserA";
-        private static string _groupName = "GroupA";
-        private static string _commonEndpoint = $"{_endpoint}/api/v1/hubs/{_hubName}";
+        private static readonly string _connectionString = $"Endpoint={_endpoint};AccessKey={_accessKey};Version=1.0;";
+        private const string _hubName = "signalrbench";
+        private const string _userId = "UserA";
+        private const string _groupName = "GroupA";
+        private static readonly string _commonEndpoint = $"{_endpoint}/api/v1/hubs/{_hubName}";
 
-        private static RestApiProvider _restApiProvider = new RestApiProvider(_connectionString, _hubName);
+        private static readonly RestApiProvider _restApiProvider = new RestApiProvider(_connectionString, _hubName);
 
         [Theory]
         [MemberData(nameof(GetTestData))]
@@ -39,9 +39,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var groupManagementApi = _restApiProvider.GetUserGroupManagementEndpoint(_userId, _groupName);
 
             yield return new object[] { broadcastApi.Audience, broadcastApi.Token, _commonEndpoint };
-            yield return new object[] { sendToUserApi.Audience, sendToUserApi.Token, _commonEndpoint + $"/users/{_userId}"};
-            yield return new object[] { sendToGroupApi.Audience, sendToGroupApi.Token, _commonEndpoint + $"/groups/{_groupName}"};
-            yield return new object[] { groupManagementApi.Audience, groupManagementApi.Token, _commonEndpoint + $"/groups/{_groupName}/users/{_userId}"};
+            yield return new object[] { sendToUserApi.Audience, sendToUserApi.Token,  $"{_commonEndpoint}/users/{_userId}"};
+            yield return new object[] { sendToGroupApi.Audience, sendToGroupApi.Token, $"{_commonEndpoint}/groups/{_groupName}"};
+            yield return new object[] { groupManagementApi.Audience, groupManagementApi.Token, $"{_commonEndpoint}/groups/{_groupName}/users/{_userId}"};
         }
     }
 }

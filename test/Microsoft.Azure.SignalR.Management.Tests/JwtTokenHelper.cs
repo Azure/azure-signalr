@@ -11,19 +11,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 {
     internal static class JwtTokenHelper
     {
-        public static string FindFirstOrDefaultClaimValue(JwtSecurityToken token, string type)
-        {
-            return (from claim in token.Claims
-                    where claim.Type == type
-                    select claim.Value).FirstOrDefault();
-        }
-
         public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string accessKey, IEnumerable<Claim> customClaims = null)
         {
-            var requestId = FindFirstOrDefaultClaimValue(token, Constants.ClaimType.Id);
+            var requestId = token.Claims.FirstOrDefault(claim => claim.Type == Constants.ClaimType.Id)?.Value;
 
             var userClaimType = JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap[ClaimTypes.NameIdentifier];
-            var userId = FindFirstOrDefaultClaimValue(token, userClaimType);
+            var userId = token.Claims.FirstOrDefault(claim => claim.Type == userClaimType)?.Value;
 
             var claims = new Claim[] { new Claim(ClaimTypes.NameIdentifier, userId) };
             if(customClaims != null) claims = claims.Concat(customClaims).ToArray();

@@ -8,25 +8,24 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestApiAccessTokenGenerator
     {
-        private static string _accessKey;
-        private static string _userId;
+        private string _accessKey;
+        private Claim[] _claims;
 
         public RestApiAccessTokenGenerator(string accessKey)
         {
             _accessKey = accessKey;
-            _userId = GenerateServerName();
+            _claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, GenerateServerName())
+            }; ;
         }
 
         public string Generate(string audience, TimeSpan? lifetime = null)
         {
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, _userId)
-            };
-            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? Constants.DefaultAccessTokenLifetime);
+            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, _claims, lifetime ?? Constants.DefaultAccessTokenLifetime);
         }
 
-        private static string GenerateServerName()
+        private string GenerateServerName()
         {
             return $"{Environment.MachineName}_{Guid.NewGuid():N}";
         }
