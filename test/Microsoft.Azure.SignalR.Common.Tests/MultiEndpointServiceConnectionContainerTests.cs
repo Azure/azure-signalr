@@ -19,18 +19,46 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class MultiEndpointServiceConnectionContainerTests
     {
-        private const string ValidConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
-
+        private const string ConnectionStringFormatter = "Endpoint={0};AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+        private const string Url1 = "http://url1";
+        private const string Url2 = "https://url2";
+        private readonly string ConnectionString1 = string.Format(ConnectionStringFormatter, Url1);
+        private readonly string ConnectionString2 = string.Format(ConnectionStringFormatter, Url2);
         private static readonly JoinGroupMessage DefaultGroupMessage = new JoinGroupMessage("a", "a");
+
+        [Fact]
+        public void TestEndpointManagerWithDuplicateEndpoints()
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString1, EndpointType.Secondary, "2"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
+                );
+            var endpoints = sem.GetAvailableEndpoints();
+            Assert.Equal(2, endpoints.Count);
+            Assert.Equal("1", endpoints[0].Name);
+            Assert.Equal("11", endpoints[1].Name);
+
+            var primaryEndpoints = sem.GetPrimaryEndpoints();
+            Assert.Equal(1, primaryEndpoints.Count);
+            Assert.Equal("1", primaryEndpoints[0].Name);
+
+            var inner = new ServiceConnectionContainer(new List<IServiceConnection> {
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+            });
+            var router = new TestEndpointRouter(false);
+            var container = new MultiEndpointServiceConnectionContainer(e => inner, sem, router, null);
+
+            Assert.Equal(2, container.Connections.Count);
+        }
+
 
         [Fact]
         public void TestContainerWithNoEndpointThrows()
         {
-            var hub = "hub1";
-            var count = 1;
-            var sem = new TestServiceEndpointManager();
-            var router = new TestEndpointRouter(false);
-            Assert.Throws<AzureSignalRNoEndpointAvailableException>(() => new MultiEndpointServiceConnectionContainer(CreateServiceConnection, hub, count, sem, router, null));
+            Assert.Throws<AzureSignalRNoEndpointAvailableException>(() => new TestServiceEndpointManager());
         }
 
         [Fact]
@@ -46,7 +74,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(),
             });
 
-            var sem = new TestServiceEndpointManager(new ServiceEndpoint(ValidConnectionString));
+            var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
             var router = new TestEndpointRouter(true);
             var container = new MultiEndpointServiceConnectionContainer(e => inner, sem, router, null);
             await container.WriteAsync(DefaultGroupMessage);
@@ -67,7 +95,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
             });
 
-            var sem = new TestServiceEndpointManager(new ServiceEndpoint(ValidConnectionString));
+            var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
             var router = new TestEndpointRouter(true);
             var container = new MultiEndpointServiceConnectionContainer(e => inner, sem, router, null);
 
@@ -94,8 +122,8 @@ namespace Microsoft.Azure.SignalR.Tests
             });
 
             var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ValidConnectionString), 
-                new ServiceEndpoint(Constants.ConnectionStringKeyPrefix + "2", ValidConnectionString));
+                new ServiceEndpoint(ConnectionString1), 
+                new ServiceEndpoint(ConnectionString2));
 
             var router = new TestEndpointRouter(true);
             var container = new MultiEndpointServiceConnectionContainer(e => inner, sem, router, null);
@@ -122,8 +150,8 @@ namespace Microsoft.Azure.SignalR.Tests
             });
 
             var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ValidConnectionString),
-                new ServiceEndpoint(Constants.ConnectionStringKeyPrefix + "2", ValidConnectionString));
+                new ServiceEndpoint(ConnectionString1),
+                new ServiceEndpoint(ConnectionString2));
 
             var router = new TestEndpointRouter(false);
             var container = new MultiEndpointServiceConnectionContainer(e => inner, sem, router, null);
@@ -146,8 +174,8 @@ namespace Microsoft.Azure.SignalR.Tests
             });
 
             var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ValidConnectionString),
-                new ServiceEndpoint(Constants.ConnectionStringKeyPrefix + "2", ValidConnectionString));
+                new ServiceEndpoint(ConnectionString1),
+                new ServiceEndpoint(ConnectionString2));
 
             var router = new TestEndpointRouter(false);
             var container = new MultiEndpointServiceConnectionContainer(e => inner, sem, router, null);
@@ -185,13 +213,13 @@ namespace Microsoft.Azure.SignalR.Tests
             });
 
             var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ValidConnectionString),
-                new ServiceEndpoint(Constants.ConnectionStringKeyPrefix + "2", ValidConnectionString));
+                new ServiceEndpoint(ConnectionString1),
+                new ServiceEndpoint(ConnectionString2));
 
             var router = new TestEndpointRouter(false);
             var container = new MultiEndpointServiceConnectionContainer(e =>
             {
-                if (e.Key == Constants.ConnectionStringDefaultKey)
+                if (string.IsNullOrEmpty(e.Name))
                 {
                     return inner1;
                 }
@@ -214,27 +242,18 @@ namespace Microsoft.Azure.SignalR.Tests
             return new TestServiceConnection();
         }
 
-        private class TestServiceEndpointManager : IServiceEndpointManager
+        private class TestServiceEndpointManager : ServiceEndpointManagerBase
         {
             private readonly ServiceEndpoint[] _endpoints;
-            public TestServiceEndpointManager(params ServiceEndpoint[] endpoints)
+
+            public TestServiceEndpointManager(params ServiceEndpoint[] endpoints) : base(endpoints, null)
             {
                 _endpoints = endpoints;
             }
 
-            public IReadOnlyList<ServiceEndpoint> GetAvailableEndpoints()
-            {
-                return _endpoints;
-            }
-
-            public IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
+            public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
             {
                 return null;
-            }
-
-            public IReadOnlyList<ServiceEndpoint> GetPrimaryEndpoints()
-            {
-                return _endpoints.Where(s => s.EndpointType == EndpointType.Primary).ToArray();
             }
         }
 
