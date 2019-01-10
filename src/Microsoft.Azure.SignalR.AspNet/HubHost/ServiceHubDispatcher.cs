@@ -10,11 +10,11 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
-    internal class ConnectionFactory
+    internal class ServiceHubDispatcher
     {
         private readonly ServiceOptions _options;
         private readonly ILoggerFactory _loggerFactory;
-        private readonly ILogger<ConnectionFactory> _logger;
+        private readonly ILogger<ServiceHubDispatcher> _logger;
         private readonly IReadOnlyList<string> _hubNames;
         private readonly IServiceConnectionManager _serviceConnectionManager;
         private readonly IClientConnectionManager _clientConnectionManager;
@@ -23,14 +23,14 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IEndpointRouter _router;
         private readonly string _name;
 
-        public ConnectionFactory(IReadOnlyList<string> hubNames, IServiceProtocol protocol,
+        public ServiceHubDispatcher(IReadOnlyList<string> hubNames, IServiceProtocol protocol,
             IServiceConnectionManager serviceConnectionManager, IClientConnectionManager clientConnectionManager,
             IServiceEndpointManager serviceEndpointManager,
             IEndpointRouter router,
             IOptions<ServiceOptions> options, ILoggerFactory loggerFactory)
         {
             _hubNames = hubNames;
-            _name = $"{nameof(ConnectionFactory)}[{string.Join(",", hubNames)}]";
+            _name = $"{nameof(ServiceHubDispatcher)}[{string.Join(",", hubNames)}]";
             _loggerFactory = loggerFactory;
             _protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
             _router = router ?? throw new ArgumentNullException(nameof(router));
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _clientConnectionManager = clientConnectionManager ?? throw new ArgumentNullException(nameof(clientConnectionManager));
             _options = options?.Value;
             _serviceEndpointManager = serviceEndpointManager ?? throw new ArgumentNullException(nameof(serviceEndpointManager));
-            _logger = _loggerFactory.CreateLogger<ConnectionFactory>();
+            _logger = _loggerFactory.CreateLogger<ServiceHubDispatcher>();
         }
 
         public Task StartAsync()
