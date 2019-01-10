@@ -4,8 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.AspNet.SignalR;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -22,17 +20,20 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly IServiceProtocol _protocol;
         private readonly IServiceEndpointManager _serviceEndpointManager;
+        private readonly IEndpointRouter _router;
         private readonly string _name;
 
         public ConnectionFactory(IReadOnlyList<string> hubNames, IServiceProtocol protocol,
             IServiceConnectionManager serviceConnectionManager, IClientConnectionManager clientConnectionManager,
             IServiceEndpointManager serviceEndpointManager,
+            IEndpointRouter router,
             IOptions<ServiceOptions> options, ILoggerFactory loggerFactory)
         {
             _hubNames = hubNames;
             _name = $"{nameof(ConnectionFactory)}[{string.Join(",", hubNames)}]";
             _loggerFactory = loggerFactory;
             _protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
+            _router = router ?? throw new ArgumentNullException(nameof(router));
             _serviceConnectionManager = serviceConnectionManager ?? throw new ArgumentNullException(nameof(serviceConnectionManager));
             _clientConnectionManager = clientConnectionManager ?? throw new ArgumentNullException(nameof(clientConnectionManager));
             _options = options?.Value;
@@ -42,26 +43,24 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public Task StartAsync()
         {
-            var endpoints = _serviceEndpointManager.GetAvailableEndpoints();
-            if (endpoints.Count == 0)
-            {
-                throw new AzureSignalRException("No available endpoints.");
-            }
-
-            // TODO: support multiple endpoints
-            var provider = _serviceEndpointManager.GetEndpointProvider(endpoints[0]);
-
-            _serviceConnectionManager.Initialize(
-                hub =>
-                {
-                    var connectionFactory = new ServiceConnectionFactory(hub, provider, _loggerFactory);
-                    return new ServiceConnection(hub, Guid.NewGuid().ToString(), _protocol, connectionFactory, _clientConnectionManager, _logger);
-                },
-                _options.ConnectionCount);
+            _serviceConnectionManager.Initialize(hub => GetMultiEndpointServiceConnectionContainer(hub));
 
             Log.StartingConnection(_logger, _name, _options.ConnectionCount, _hubNames.Count);
 
             return _serviceConnectionManager.StartAsync();
+        }
+
+        private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub)
+        {
+            return new MultiEndpointServiceConnectionContainer(
+                (t, f) => GetServiceConnection(t, f),
+                hub, _options.ConnectionCount,
+                _serviceEndpointManager, _router, _loggerFactory);
+        }
+
+        private ServiceConnection GetServiceConnection(ServerConnectionType type, IConnectionFactory factory)
+        {
+            return new ServiceConnection(Guid.NewGuid().ToString(), _protocol, factory, _clientConnectionManager, _logger, type);
         }
 
         private static class Log

@@ -24,20 +24,20 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public ServiceConnectionManager(string appName, IReadOnlyList<string> hubs)
         {
+            if (hubs.Contains(appName))
+            {
+                throw new ArgumentException("App name should not be the same as hub name.");
+            }
+
             _hubs = hubs;
             _appName = appName;
         }
 
-        public void Initialize(Func<string, IServiceConnection> connectionGenerator, int connectionCount)
+        public void Initialize(Func<string, IServiceConnectionContainer> connectionGenerator)
         {
             if (connectionGenerator == null)
             {
                 throw new ArgumentNullException(nameof(connectionGenerator));
-            }
-
-            if (connectionCount <= 0)
-            {
-                throw new ArgumentException($"{nameof(connectionCount)} must be larger than 0.");
             }
 
             if (_serviceConnections != null)
@@ -55,15 +55,11 @@ namespace Microsoft.Azure.SignalR.AspNet
 
                 var connections = new Dictionary<string, IServiceConnectionContainer>();
 
-                _appConnection = new ServiceConnectionContainer(
-                        () => connectionGenerator(_appName),
-                        connectionCount);
+                _appConnection = connectionGenerator(_appName);
 
                 foreach (var hub in _hubs)
                 {
-                    var connection = new ServiceConnectionContainer(
-                            () => connectionGenerator(hub),
-                            connectionCount);
+                    var connection = connectionGenerator(hub);
                     connections.Add(hub, connection);
                 }
 

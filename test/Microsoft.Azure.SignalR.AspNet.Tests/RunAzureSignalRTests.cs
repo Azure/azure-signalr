@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -11,7 +12,9 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
+using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
+using Microsoft.AspNet.SignalR.Json;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
@@ -47,6 +50,18 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 Assert.IsType<AzureTransportManager>(resolver.Resolve<ITransportManager>());
                 Assert.IsType<ServiceProtocol>(resolver.Resolve<IServiceProtocol>());
             }
+        }
+
+        [Fact]
+        public void TestRunAzureSignalRWithAppNameEqualToHubNameThrows()
+        {
+            var hubConfig = new HubConfiguration();
+            var hubName = "hub";
+            var testHub = new TestHubManager(hubName);
+            hubConfig.Resolver.Register(typeof(IHubManager), () => testHub);
+            var ex = Assert.Throws<ArgumentException>(() => WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(hubName, ConnectionString, hubConfig)));
+
+            Assert.Equal("App name should not be the same as hub name.", ex.Message);
         }
 
         [Fact]
@@ -173,6 +188,45 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
                 Assert.NotNull(requestId);
                 Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
+            }
+        }
+
+        private sealed class TestHubManager : IHubManager
+        {
+            private readonly string[] _hubs;
+            public TestHubManager(params string[] hubs)
+            {
+                _hubs = hubs;
+            }
+
+            public HubDescriptor GetHub(string hubName)
+            {
+                throw new NotImplementedException();
+            }
+
+            public MethodDescriptor GetHubMethod(string hubName, string method, IList<IJsonValue> parameters)
+            {
+                throw new NotImplementedException();
+            }
+
+            public IEnumerable<MethodDescriptor> GetHubMethods(string hubName, Func<MethodDescriptor, bool> predicate)
+            {
+                throw new NotImplementedException();
+            }
+
+            public IEnumerable<HubDescriptor> GetHubs(Func<HubDescriptor, bool> predicate)
+            {
+                return _hubs.Select(s => new HubDescriptor() { Name = s });
+            }
+
+            public IHub ResolveHub(string hubName)
+            {
+                throw new NotImplementedException();
+            }
+
+            public IEnumerable<IHub> ResolveHubs()
+            {
+                throw new NotImplementedException();
             }
         }
 

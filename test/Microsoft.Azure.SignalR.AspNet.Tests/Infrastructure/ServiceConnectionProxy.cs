@@ -27,7 +27,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public ServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null) :
             base(
                 Guid.NewGuid().ToString("N"),
-                Guid.NewGuid().ToString("N"),
                 SharedServiceProtocol,
                 new TestConnectionFactory(),
                 clientConnectionManager,
