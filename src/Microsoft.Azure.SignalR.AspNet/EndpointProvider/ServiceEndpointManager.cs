@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.AspNet
@@ -12,8 +11,6 @@ namespace Microsoft.Azure.SignalR.AspNet
     internal class ServiceEndpointManager : ServiceEndpointManagerBase
     {
         private readonly TimeSpan? _ttl;
-        private readonly ServiceEndpoint[] _endpoints;
-        private readonly ServiceEndpoint[] _primaryEndpoints;
 
         public ServiceEndpointManager(ServiceOptions options, ILoggerFactory loggerFactory) : 
             base(GetEndpoints(options).ToArray(),

@@ -13,8 +13,6 @@ namespace Microsoft.Azure.SignalR
     internal class ServiceEndpointManager : ServiceEndpointManagerBase
     {
         private readonly TimeSpan? _ttl;
-        private readonly ServiceEndpoint[] _endpoints;
-        private readonly ServiceEndpoint[] _primaryEndpoints;
 
         public ServiceEndpointManager(IOptions<ServiceOptions> options, ILoggerFactory loggerFactory) :
             base(GetEndpoints(options?.Value).ToArray(),

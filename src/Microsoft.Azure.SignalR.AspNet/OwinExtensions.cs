@@ -205,7 +205,7 @@ namespace Owin
                 logger = NullLoggerFactory.Instance;
             }
 
-            var endpoint = new ServiceEndpointManager(options);
+            var endpoint = new ServiceEndpointManager(options, logger);
 
             // Get the one from DI or new a default one
             var router = configuration.Resolver.Resolve<IEndpointRouter>() ?? new DefaultRouter();
