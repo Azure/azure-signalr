@@ -213,18 +213,18 @@ namespace Owin
             // TODO: Update to use Middleware when SignalR SDK is ready
             // Replace default HubDispatcher with a custom one, which has its own negotiation logic
             // https://github.com/SignalR/SignalR/blob/dev/src/Microsoft.AspNet.SignalR.Core/Hosting/PersistentConnectionFactory.cs#L42
-            configuration.Resolver.Register(typeof(PersistentConnection), () => new ServiceHubDispatcher(configuration, applicationName, endpoint, router, options, logger));
+            configuration.Resolver.Register(typeof(PersistentConnection), () => new NegotiateHandler(configuration, applicationName, endpoint, router, options, logger));
             builder.RunSignalR(typeof(PersistentConnection), configuration);
 
-            var connectionFactory = RegisterServiceObjects(configuration, options, endpoint, router, applicationName, hubs, logger);
-            if (connectionFactory != null)
+            var dispatcher = PrepareAndGetDispatcher(configuration, options, endpoint, router, applicationName, hubs, logger);
+            if (dispatcher != null)
             {
                 // Start the server->service connection asynchronously 
-                _ = connectionFactory.StartAsync();
+                _ = dispatcher.StartAsync();
             }
         }
 
-        private static ConnectionFactory RegisterServiceObjects(HubConfiguration configuration, ServiceOptions options, IServiceEndpointManager endpoint, IEndpointRouter router, string applicationName, IReadOnlyList<string> hubs, ILoggerFactory loggerFactory)
+        private static ServiceHubDispatcher PrepareAndGetDispatcher(HubConfiguration configuration, ServiceOptions options, IServiceEndpointManager endpoint, IEndpointRouter router, string applicationName, IReadOnlyList<string> hubs, ILoggerFactory loggerFactory)
         {
             // TODO: Using IOptions looks wierd, thinking of a way removing it
             // share the same object all through
@@ -258,7 +258,7 @@ namespace Owin
 
             if (hubs?.Count > 0)
             {
-                return new ConnectionFactory(hubs, serviceProtocol, scm, ccm, endpoint, router, serviceOptions, loggerFactory);
+                return new ServiceHubDispatcher(hubs, serviceProtocol, scm, ccm, endpoint, router, serviceOptions, loggerFactory);
             }
             else
             {

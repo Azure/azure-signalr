@@ -21,7 +21,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
-    internal class ServiceHubDispatcher : HubDispatcher
+    internal class NegotiateHandler : HubDispatcher
     {
         private static readonly ProtocolResolver ProtocolResolver = new ProtocolResolver();
 
@@ -32,13 +32,13 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IServiceEndpointManager _endpointManager;
         private readonly IEndpointRouter _router;
 
-        public ServiceHubDispatcher(HubConfiguration configuration, string appName, IServiceEndpointManager endpointManager, IEndpointRouter router, ServiceOptions options, ILoggerFactory loggerFactory) : base(configuration)
+        public NegotiateHandler(HubConfiguration configuration, string appName, IServiceEndpointManager endpointManager, IEndpointRouter router, ServiceOptions options, ILoggerFactory loggerFactory) : base(configuration)
         {
             _appName = appName ?? throw new ArgumentNullException(nameof(appName));
             _claimsProvider = options?.ClaimsProvider;
             _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
             _router = router ?? throw new ArgumentNullException(nameof(router));
-            _logger = loggerFactory.CreateLogger<ServiceHubDispatcher>();
+            _logger = loggerFactory.CreateLogger<NegotiateHandler>();
         }
 
         public override Task ProcessRequest(HostContext context)
