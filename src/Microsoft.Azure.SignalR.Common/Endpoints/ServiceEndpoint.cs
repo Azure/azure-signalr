@@ -12,9 +12,9 @@ namespace Microsoft.Azure.SignalR
     {
         public string ConnectionString { get; }
 
-        public string Key { get; }
-
         public EndpointType EndpointType { get; }
+
+        public string Name { get; }
 
         internal string Endpoint { get; }
 
@@ -24,11 +24,15 @@ namespace Microsoft.Azure.SignalR
 
         internal int? Port { get; }
 
-        public ServiceEndpoint(string connectionString) : this(Constants.Config.ConnectionStringKey, connectionString)
+        public ServiceEndpoint(string key, string connectionString) : this(connectionString)
         {
+            if (!string.IsNullOrEmpty(key))
+            {
+                (Name, EndpointType) = ParseKey(key);
+            }
         }
 
-        public ServiceEndpoint(string key, string connectionString)
+        public ServiceEndpoint(string connectionString, EndpointType type = EndpointType.Primary, string name = "")
         {
             // The provider is responsible to check if the connection string is empty and throw correct error message
             if (!string.IsNullOrEmpty(connectionString))
@@ -36,14 +40,59 @@ namespace Microsoft.Azure.SignalR
                 (Endpoint, AccessKey, Version, Port) = ConnectionStringParser.Parse(connectionString);
             }
 
-            Key = key;
+            EndpointType = type;
             ConnectionString = connectionString;
+            Name = name;
+        }
+
+        public override string ToString()
+        {
+            if (string.IsNullOrEmpty(Name))
+            {
+                return Endpoint;
+            }
+            else
+            {
+                return $"[{Name}]{Endpoint}";
+            }
         }
 
         public override int GetHashCode()
         {
-            // cares only about key
-            return Key.GetHashCode();
+            // We consider ServiceEndpoint with the same Endpoint (https://{signalr.endpoint}) as the unique identity
+            return Endpoint?.GetHashCode() ?? 0;
+        }
+
+        internal static (string, EndpointType) ParseKey(string key)
+        {
+            if (key == Constants.ConnectionStringDefaultKey)
+            {
+                return (string.Empty, EndpointType.Primary);
+            }
+
+            if (key.StartsWith(Constants.ConnectionStringKeyPrefix))
+            {
+                // Azure:SignalR:ConnectionString:<name>:<type>
+                var status = key.Substring(Constants.ConnectionStringKeyPrefix.Length);
+                var parts = status.Split(':');
+                if (parts.Length == 1)
+                {
+                    return (parts[0], EndpointType.Primary);
+                }
+                else
+                {
+                    if (Enum.TryParse<EndpointType>(parts[1], true, out var endpointStatus))
+                    {
+                        return (parts[0], endpointStatus);
+                    }
+                    else
+                    {
+                        return (status, EndpointType.Primary);
+                    }
+                }
+            }
+
+            throw new ArgumentException($"Invalid format: {key}", nameof(key));
         }
     }
 }
