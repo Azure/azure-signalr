@@ -15,12 +15,14 @@ namespace Microsoft.Azure.SignalR.AspNet
     {
         private readonly IMessageParser _parser;
         private readonly IServiceConnectionManager _serviceConnectionManager;
+        private readonly IClientConnectionManager _clientConnectionManager;
         private readonly IAckHandler _ackHandler;
 
         public ServiceMessageBus(IDependencyResolver resolver) : base(resolver)
         {
             // TODO: find a more decent way instead of DI, it can be easily overriden
             _serviceConnectionManager = resolver.Resolve<IServiceConnectionManager>() ?? throw new ArgumentNullException(nameof(IServiceConnectionManager));
+            _clientConnectionManager = resolver.Resolve<IClientConnectionManager>() ?? throw new ArgumentNullException(nameof(IClientConnectionManager));
             _parser = resolver.Resolve<IMessageParser>() ?? throw new ArgumentNullException(nameof(IMessageParser));
             _ackHandler = resolver.Resolve<IAckHandler>() ?? throw new ArgumentNullException(nameof(IAckHandler));
         }
@@ -72,6 +74,17 @@ namespace Microsoft.Azure.SignalR.AspNet
                     break;
                 case GroupBroadcastDataMessage groupBroadcastMessage:
                     await connection.WriteAsync(groupBroadcastMessage.GroupName, groupBroadcastMessage);
+                    break;
+                case ConnectionDataMessage connectionDataMessage:
+                    if (_clientConnectionManager.TryGetServiceConnection(connectionDataMessage.ConnectionId, out var serviceConnection))
+                    {
+                        // If the client connection is connected to local server connection, send back directly from the established server connection
+                        await serviceConnection.WriteAsync(message);
+                    }
+                    else
+                    {
+                        await connection.WriteAsync(message);
+                    }
                     break;
                 default:
                     await connection.WriteAsync(message);
