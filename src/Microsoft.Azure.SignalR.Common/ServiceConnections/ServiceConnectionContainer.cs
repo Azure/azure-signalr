@@ -12,7 +12,6 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceConnectionContainer : IServiceConnectionContainer
     {
-        private const int DelayMilliseconds = 100;
         private readonly List<IServiceConnection> _serviceConnections;
         private readonly int _count;
 
@@ -83,8 +82,8 @@ namespace Microsoft.Azure.SignalR
 
         private async Task WriteWithRetry(ServiceMessage sm, int initial, int count)
         {
-            // go through all the connections twice
-            var maxRetry = count << 1;
+            // go through all the connections, it can be useful when one of the remote service instances is down
+            var maxRetry = count;
             var retry = 0;
             var index = (initial & int.MaxValue) % count;
             var direction = initial > 0 ? 1 : count - 1;
@@ -108,8 +107,6 @@ namespace Microsoft.Azure.SignalR
                     }
                 }
 
-                // delay 100 ms before next retry
-                await Task.Delay(DelayMilliseconds);
                 retry++;
                 index = (index + direction) % count;
             }
