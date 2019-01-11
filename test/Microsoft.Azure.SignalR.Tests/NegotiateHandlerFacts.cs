@@ -39,6 +39,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     o.AccessTokenLifetime = TimeSpan.FromDays(1);
                 })
                 .Services
+                .AddLogging()
                 .AddSingleton<IConfiguration>(config)
                 .AddSingleton(typeof(IUserIdProvider), type)
                 .BuildServiceProvider();
@@ -79,6 +80,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var serviceProvider = new ServiceCollection().AddSignalR()
                 .AddAzureSignalR(o => o.ConnectionString = DefaultConnectionString)
                 .Services
+                .AddLogging()
                 .AddSingleton<IConfiguration>(config)
                 .BuildServiceProvider();
 
@@ -109,6 +111,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var serviceProvider = new ServiceCollection().AddSignalR()
                 .AddAzureSignalR(o => o.ConnectionString = DefaultConnectionString)
                 .Services
+                .AddLogging()
                 .AddSingleton<IConfiguration>(config)
                 .AddSingleton(typeof(IUserIdProvider), type)
                 .BuildServiceProvider();
