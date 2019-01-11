@@ -26,4 +26,8 @@
     <LangVersion>latest</LangVersion>
     <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <None Include="LICENSE" Pack="true" PackagePath=""/>
+  </ItemGroup>
 </Project>
