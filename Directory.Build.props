@@ -28,6 +28,6 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <None Include="LICENSE" Pack="true" PackagePath=""/>
+    <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath=""/>
   </ItemGroup>
 </Project>
