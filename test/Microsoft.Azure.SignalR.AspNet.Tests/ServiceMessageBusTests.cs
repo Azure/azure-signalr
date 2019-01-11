@@ -139,7 +139,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                         }
                     });
 
-            var ccm = new TestClientConnectionManager(anotherSCM);
+            var ccm = new TestClientConnectionManager(anotherSCM, true);
             dr.Register(typeof(IClientConnectionManager), () => ccm);
 
             using (var bus = new ServiceMessageBus(dr))
@@ -261,6 +261,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             var resolver = new DefaultDependencyResolver();
             resolver.Register(typeof(IServiceProtocol), () => new ServiceProtocol());
+            var ccm = new TestConnectionManager();
+            resolver.Register(typeof(IClientConnectionManager), () => ccm);
             var connectionManager = new ServiceConnectionManager(AppName, hubs);
             resolver.Register(typeof(IServiceConnectionManager), () => connectionManager);
             resolver.Register(typeof(IMessageParser), () => new SignalRMessageParser(hubs, resolver));
@@ -272,9 +274,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             private readonly IServiceConnection _serverConnection;
 
-            public TestClientConnectionManager(IServiceConnection serverConnection)
+            private readonly bool _contains;
+
+            public TestClientConnectionManager(IServiceConnection serverConnection, bool contains)
             {
                 _serverConnection = serverConnection;
+                _contains = contains;
             }
 
             public IServiceTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
@@ -285,7 +290,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             public bool TryGetServiceConnection(string key, out IServiceConnection serviceConnection)
             {
                 serviceConnection = _serverConnection;
-                return true;
+                return _contains;
             }
         }
 
