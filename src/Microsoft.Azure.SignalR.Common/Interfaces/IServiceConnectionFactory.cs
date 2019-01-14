@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Microsoft.Azure.SignalR.Common.Interfaces
+namespace Microsoft.Azure.SignalR
 {
     interface IServiceConnectionFactory
     {
-        Task CreateAsync(ServerConnectionType type);
+        IServiceConnection Create(ServerConnectionType type);
 
-        Task DisposeAsync();
+        bool Dispose();
     }
 }

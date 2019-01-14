@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
@@ -15,6 +16,10 @@ namespace Microsoft.Azure.SignalR
         private const int RetryCount = 10;
         private readonly List<IServiceConnection> _serviceConnections;
         private readonly int _count;
+        private readonly IServiceConnectionFactory _connectionFactory;
+        private readonly int _defaultConnectionCount;
+        private readonly object _lock = new object();
+
 
         public ServiceConnectionContainer(List<IServiceConnection> serviceConnections)
         {
@@ -41,6 +46,80 @@ namespace Microsoft.Azure.SignalR
             }
 
             _count = count;
+        }
+
+        public IEnumerable<IServiceConnection> CreateServiceConnectionAsync(int count = 1)
+        {
+            if (count <= 0)
+            {
+                throw new ArgumentException($"{nameof(count)} must be greater than 0.");
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                yield return CreateServiceConnectionCore();
+            }
+        }
+
+        private IServiceConnection CreateServiceConnectionCore()
+        {
+            IServiceConnection newConnection;
+            lock (_lock)
+            {
+                ServerConnectionType type;
+                var count = _serviceConnections.Count;
+                if (count < _defaultConnectionCount)
+                {
+                    type = ServerConnectionType.Default;
+                }
+                else
+                {
+                    type = ServerConnectionType.OnDemand;
+                }
+
+                newConnection = _connectionFactory.Create(type);
+                _serviceConnections.Add(newConnection);
+            }
+
+            return newConnection;
+        }
+
+        public void DisposeServiceConnectionAsync(IServiceConnection connection)
+        {
+            if (connection == null)
+            {
+                throw new ArgumentNullException(nameof(connection));
+            }
+
+            lock (_lock)
+            {
+                int index = _serviceConnections.IndexOf(connection);
+                if (index == -1)
+                {
+                    return;
+                }
+
+                if (index >= _defaultConnectionCount)
+                {
+                    _serviceConnections.RemoveAt(index);
+                }
+                else if (_serviceConnections.Count > _defaultConnectionCount)
+                {
+                    _serviceConnections[index] = _serviceConnections[_defaultConnectionCount];
+                    _serviceConnections.RemoveAt(_defaultConnectionCount);
+                }
+                else
+                {
+                    _serviceConnections[index] = null;
+                }
+            }
+
+            _ = KeepDefaultConnectionsAsync();
+        }
+
+        private async Task KeepDefaultConnectionsAsync()
+        {
+
         }
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();
@@ -78,18 +157,45 @@ namespace Microsoft.Azure.SignalR
 
         private Task WriteToRandomAvailableConnection(ServiceMessage sm)
         {
-            return WriteWithRetry(sm, StaticRandom.Next(-_count, _count));
+            return WriteWithRetry(sm, StaticRandom.Next(-_defaultConnectionCount, _defaultConnectionCount));
         }
 
         private async Task WriteWithRetry(ServiceMessage sm, int initial)
         {
+            //var retry = 0;
+            //var index = (initial & int.MaxValue) % _defaultConnectionCount;
+            //var direction = initial > 0 ? 1 : _defaultConnectionCount - 1;
+            //var maxRetry = _defaultConnectionCount;
+            //while (retry < maxRetry)
+            //{
+            //    var connection = _serviceConnections[index];
+            //    if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
+            //    {
+            //        try
+            //        {
+            //            // still possible the connection is not valid
+            //            await connection.WriteAsync(sm);
+            //            return;
+            //        }
+            //        catch (ServiceConnectionNotActiveException)
+            //        {
+            //            if (retry == maxRetry - 1)
+            //            {
+            //                throw;
+            //            }
+            //        }
+            //    }
+
+            //    retry++;
+            //    index = (index + direction) % _defaultConnectionCount;
+            //}
+
+            //throw new ServiceConnectionNotActiveException();
+            var maxRetry = _defaultConnectionCount;
             var retry = 0;
-            var index = (initial & int.MaxValue) % _count;
-            var direction = initial > 0 ? 1 : _count - 1;
-            var maxRetry = _count;
             while (retry < maxRetry)
             {
-                var connection = _serviceConnections[index];
+                var connection = SelectConnection();
                 if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
                 {
                     try
@@ -106,12 +212,14 @@ namespace Microsoft.Azure.SignalR
                         }
                     }
                 }
-
                 retry++;
-                index = (index + direction) % _count;
             }
-
             throw new ServiceConnectionNotActiveException();
+        }
+
+        private IServiceConnection SelectConnection()
+        {
+
         }
     }
 }
