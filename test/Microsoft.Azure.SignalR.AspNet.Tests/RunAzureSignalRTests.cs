@@ -30,8 +30,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
     public class RunAzureSignalRTests
     {
         private const string ServiceUrl = "http://localhost:8086";
-        private const string ConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
-        private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+        private const string ConnectionString = "Endpoint=http://localhost;AccessKey=1;";
+        private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=2;";
+        private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=3;";
+        private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=3;";
         private const string AppName = "AzureSignalRTest";
 
         [Fact]
@@ -113,6 +115,64 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
 
                     Assert.Equal(ConnectionString, options.Value.ConnectionString);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestRunAzureSignalRWithMultipleAppSettings()
+        {
+            // Prepare the configuration
+            using (new AppSettingsConfigScope(ConnectionString, ConnectionString2, ConnectionString3, ConnectionString4))
+            {
+                var hubConfig = new HubConfiguration();
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig)))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+
+                    Assert.Equal(ConnectionString, options.Value.ConnectionString);
+
+                    Assert.Equal(4, options.Value.Endpoints.Length);
+
+                    var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
+                    var endpoints = manager.GetAvailableEndpoints();
+                    Assert.Equal(4, endpoints.Count);
+
+                    endpoints = manager.GetPrimaryEndpoints();
+                    Assert.Equal(4, endpoints.Count);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestRunAzureSignalRWithMultipleAppSettingsAndCustomSettings()
+        {
+            // Prepare the configuration
+            using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
+            {
+                var hubConfig = new HubConfiguration();
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options=>
+                {
+                    options.Endpoints = new ServiceEndpoint[]
+                    {
+                        new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
+                        new ServiceEndpoint(ConnectionString3),
+                        new ServiceEndpoint(ConnectionString4)
+                    };
+                })))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+
+                    Assert.Equal(ConnectionString, options.Value.ConnectionString);
+
+                    Assert.Equal(3, options.Value.Endpoints.Length);
+
+                    var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
+                    var endpoints = manager.GetAvailableEndpoints();
+                    Assert.Equal(4, endpoints.Count);
+
+                    endpoints = manager.GetPrimaryEndpoints();
+                    Assert.Equal(3, endpoints.Count);
                 }
             }
         }
@@ -234,15 +294,38 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             private readonly string _originalSetting;
 
-            public  AppSettingsConfigScope(string setting)
+            private readonly List<KeyValuePair<string, string>> _originalAdditonalSettings;
+
+            public AppSettingsConfigScope(string setting, params string[] additionalSettings)
             {
                 _originalSetting = ConfigurationManager.AppSettings[Constants.ConnectionStringDefaultKey];
                 ConfigurationManager.AppSettings[Constants.ConnectionStringDefaultKey] = setting;
+
+                var newSettings = additionalSettings.Select(
+                    s =>
+                    new KeyValuePair<string, string>(
+                        Constants.ConnectionStringKeyPrefix + Guid.NewGuid().ToString("N")
+                        , s))
+                    .ToList();
+                _originalAdditonalSettings = newSettings.Select(s =>
+                {
+                    ConfigurationManager.AppSettings[s.Key] = s.Value;
+                    return new KeyValuePair<string, string>(
+                      s.Key,
+                      ConfigurationManager.AppSettings[s.Key]
+                      );
+
+                }).ToList();
+
             }
 
             public void Dispose()
             {
                 ConfigurationManager.AppSettings[Constants.ConnectionStringDefaultKey] = _originalSetting;
+                foreach (var pair in _originalAdditonalSettings)
+                {
+                    ConfigurationManager.AppSettings[pair.Key] = pair.Value;
+                }
             }
         }
 

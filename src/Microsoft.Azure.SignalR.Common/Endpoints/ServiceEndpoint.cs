@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR
 
         internal static (string, EndpointType) ParseKey(string key)
         {
-            if (key == Constants.ConnectionStringDefaultKey)
+            if (key == Constants.ConnectionStringDefaultKey || key == Constants.ConnectionStringSecondaryKey)
             {
                 return (string.Empty, EndpointType.Primary);
             }
@@ -73,26 +73,36 @@ namespace Microsoft.Azure.SignalR
             if (key.StartsWith(Constants.ConnectionStringKeyPrefix))
             {
                 // Azure:SignalR:ConnectionString:<name>:<type>
-                var status = key.Substring(Constants.ConnectionStringKeyPrefix.Length);
-                var parts = status.Split(':');
-                if (parts.Length == 1)
-                {
-                    return (parts[0], EndpointType.Primary);
-                }
-                else
-                {
-                    if (Enum.TryParse<EndpointType>(parts[1], true, out var endpointStatus))
-                    {
-                        return (parts[0], endpointStatus);
-                    }
-                    else
-                    {
-                        return (status, EndpointType.Primary);
-                    }
-                }
+                return ParseKeyWithPrefix(key, Constants.ConnectionStringKeyPrefix);
+            }
+
+            if (key.StartsWith(Constants.ConnectionStringSecondaryKey))
+            {
+                return ParseKeyWithPrefix(key, Constants.ConnectionStringSecondaryKey);
             }
 
             throw new ArgumentException($"Invalid format: {key}", nameof(key));
+        }
+
+        private static (string, EndpointType) ParseKeyWithPrefix(string key, string prefix)
+        {
+            var status = key.Substring(prefix.Length);
+            var parts = status.Split(':');
+            if (parts.Length == 1)
+            {
+                return (parts[0], EndpointType.Primary);
+            }
+            else
+            {
+                if (Enum.TryParse<EndpointType>(parts[1], true, out var endpointStatus))
+                {
+                    return (parts[0], endpointStatus);
+                }
+                else
+                {
+                    return (status, EndpointType.Primary);
+                }
+            }
         }
     }
 }

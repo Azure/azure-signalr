@@ -11,12 +11,12 @@ namespace Microsoft.Azure.SignalR
     /// <summary>
     /// Configurable options when using Azure SignalR Service.
     /// </summary>
-    public class ServiceOptions
+    public class ServiceOptions : IServiceEndpointOptions
     {
         /// <summary>
         /// Gets or sets the connection string of Azure SignalR Service instance.
         /// </summary>
-        public string ConnectionString { get; set; } = null;
+        public string ConnectionString { get; set; }
 
         /// <summary>
         /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 5.
@@ -34,5 +34,13 @@ namespace Microsoft.Azure.SignalR
         /// Default value is one hour.
         /// </summary>
         public TimeSpan AccessTokenLifetime { get; set; } = Constants.DefaultAccessTokenLifetime;
+
+        /// <summary>
+        /// TODO: expose to customer
+        /// Gets or sets list of endpoints
+        /// </summary>
+        internal ServiceEndpoint[] Endpoints { get; set; }
+
+        ServiceEndpoint[] IServiceEndpointOptions.Endpoints => Endpoints;
     }
 }
