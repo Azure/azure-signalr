@@ -9,11 +9,30 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Microsoft.Azure.SignalR.TestUtility
+namespace Microsoft.Azure.SignalR.Tests
 {
-    internal static class JwtTokenUtility
+    internal static class JwtTokenHelper
     {
         public static JwtSecurityTokenHandler JwtHandler { get; } = new JwtSecurityTokenHandler();
+
+        public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string accessKey, IEnumerable<Claim> customClaims = null)
+        {
+            var requestId = token.Claims.FirstOrDefault(claim => claim.Type == Constants.ClaimType.Id)?.Value;
+
+            var userClaimType = JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap[ClaimTypes.NameIdentifier];
+            var userId = token.Claims.FirstOrDefault(claim => claim.Type == userClaimType)?.Value;
+
+            var claims = new Claim[] { new Claim(ClaimTypes.NameIdentifier, userId) };
+            if(customClaims != null) claims = claims.Concat(customClaims).ToArray();
+
+            var tokenString = GenerateJwtBearer(audience, claims, token.ValidTo,
+                token.ValidFrom,
+                token.ValidFrom,
+                accessKey,
+                requestId);
+
+            return tokenString;
+        }
 
         public static string GenerateJwtBearer(string audience,
             IEnumerable<Claim> subject,
