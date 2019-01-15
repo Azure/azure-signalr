@@ -11,8 +11,8 @@ namespace Microsoft.Azure.SignalR
     {
         Task WriteAsync(string partitionKey, ServiceMessage serviceMessage);
 
-        IEnumerable<IServiceConnection> CreateServiceConnectionAsync(int count);
+        IEnumerable<IServiceConnection> CreateServiceConnection(int count);
 
-        void DisposeServiceConnectionAsync(IServiceConnection connection);
+        void DisposeServiceConnection(IServiceConnection connection);
     }
 }

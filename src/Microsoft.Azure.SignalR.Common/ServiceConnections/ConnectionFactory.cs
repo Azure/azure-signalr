@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceConnectionFactory : IConnectionFactory
+    internal class ConnectionFactory : IConnectionFactory
     {
         // Fix issue: https://github.com/Azure/azure-signalr/issues/198
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR
         private readonly string _userId;
         private readonly string _hubName;
 
-        public ServiceConnectionFactory(string hubName, IServiceEndpointProvider provider, ILoggerFactory loggerFactory)
+        public ConnectionFactory(string hubName, IServiceEndpointProvider provider, ILoggerFactory loggerFactory)
         {
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _loggerFactory = loggerFactory;

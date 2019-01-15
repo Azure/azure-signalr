@@ -8,7 +8,5 @@ namespace Microsoft.Azure.SignalR
     interface IServiceConnectionFactory
     {
         IServiceConnection Create(ServerConnectionType type);
-
-        bool Dispose();
     }
 }

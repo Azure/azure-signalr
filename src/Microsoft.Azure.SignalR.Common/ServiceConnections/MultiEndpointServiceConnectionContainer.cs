@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -56,12 +57,31 @@ namespace Microsoft.Azure.SignalR
         {
         }
 
+        public MultiEndpointServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, string hub,
+            int count, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
+        :this(endpoint => CreateContainer(serviceConnectionFactory, ))
+        {
+
+        }
+
         private static IServiceConnectionContainer CreateContainer(Func<ServerConnectionType, IConnectionFactory, IServiceConnection> generator, ServiceEndpoint endpoint, string hub, int count, IServiceEndpointManager endpointManager, ILoggerFactory loggerFactory)
         {
             var provider = endpointManager.GetEndpointProvider(endpoint);
-            var connectionFactory = new ServiceConnectionFactory(hub, provider, loggerFactory);
+            var connectionFactory = new ConnectionFactory(hub, provider, loggerFactory);
             var serverConnectionType = endpoint.EndpointType == EndpointType.Primary ? ServerConnectionType.Default : ServerConnectionType.Weak;
-            return new ServiceConnectionContainer(() => generator(serverConnectionType, connectionFactory), count);
+            return new StrongServiceConnectionContainer(() => generator(serverConnectionType, connectionFactory), count);
+        }
+
+        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, ServiceEndpoint endpoint, int count)
+        {
+            if (endpoint.EndpointType == EndpointType.Primary)
+            {
+                return new StrongServiceConnectionContainer(serviceConnectionFactory, count);
+            }
+            else
+            {
+                return new WeakServiceConnectionContainer(serviceConnectionFactory, count);
+            }
         }
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();

@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     callback ?? OnConnectionAsync,
                     this,
                     Guid.NewGuid().ToString("N"));
-            ServiceConnectionContainer = new ServiceConnectionContainer(
+            ServiceConnectionContainer = new StrongServiceConnectionContainer(
                 new List<IServiceConnection>()
                 {
                     ServiceConnection
