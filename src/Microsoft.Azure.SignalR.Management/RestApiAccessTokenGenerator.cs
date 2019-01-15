@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR.Management
             return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, _claims, lifetime ?? Constants.DefaultAccessTokenLifetime);
         }
 
-        private string GenerateServerName()
+        private static string GenerateServerName()
         {
             return $"{Environment.MachineName}_{Guid.NewGuid():N}";
         }

@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
-using Microsoft.Azure.SignalR.TestUtility;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
@@ -30,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             };
             var serviceManager = new ServiceManager(serviceManagerOptions);
             var tokenString = serviceManager.GenerateClientAccessToken(hubName, claims, lifeTime);
-            var token = JwtTokenUtility.JwtHandler.ReadJwtToken(tokenString);
+            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
             var customClaims = new Claim[] { new Claim("type1", "val1") };
 
             string expectedToken = JwtTokenHelper.GenerateExpectedAccessToken(token, expectedAudience, accessKey, customClaims);

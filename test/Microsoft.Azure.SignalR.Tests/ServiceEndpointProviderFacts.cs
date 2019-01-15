@@ -3,10 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
-using Microsoft.Azure.SignalR.TestUtility;
+using Microsoft.Azure.SignalR.Management.Tests;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -93,9 +92,9 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             const string userId = "UserA";
             var tokenString = provider.GenerateServerAccessToken(nameof(TestHub), userId, requestId: string.Empty);
-            var token = JwtTokenUtility.JwtHandler.ReadJwtToken(tokenString);
+            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-            var expectedTokenString = JwtTokenUtility.GenerateJwtBearer($"{Endpoint}/server/?hub={HubName}",
+            var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/server/?hub={HubName}",
                 new[]
                 {
                     new Claim(ClaimTypes.NameIdentifier, userId)
@@ -115,9 +114,9 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var requestId = Guid.NewGuid().ToString();
             var tokenString = provider.GenerateClientAccessToken(HubName, requestId: requestId);
-            var token = JwtTokenUtility.JwtHandler.ReadJwtToken(tokenString);
+            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-            var expectedTokenString = JwtTokenUtility.GenerateJwtBearer($"{Endpoint}/client/?hub={HubName}",
+            var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/client/?hub={HubName}",
                 null,
                 token.ValidTo,
                 token.ValidFrom,
