@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -47,20 +48,13 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             Log.StartingConnection(_logger, _name, _options.ConnectionCount, _hubNames.Count);
 
-            return _serviceConnectionManager.StartAsync();
+            return _serviceConnectionManager.Initialize();
         }
 
         private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub)
         {
-            return new MultiEndpointServiceConnectionContainer(
-                (t, f) => GetServiceConnection(t, f),
-                hub, _options.ConnectionCount,
-                _serviceEndpointManager, _router, _loggerFactory);
-        }
-
-        private ServiceConnection GetServiceConnection(ServerConnectionType type, IConnectionFactory factory)
-        {
-            return new ServiceConnection(Guid.NewGuid().ToString(), _protocol, factory, _clientConnectionManager, _logger, type);
+            var serviceConnectionFactory = new ServiceConnectionFactory(_protocol, _clientConnectionManager, _logger);
+            return new MultiEndpointServiceConnectionContainer(serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _loggerFactory);
         }
 
         private static class Log

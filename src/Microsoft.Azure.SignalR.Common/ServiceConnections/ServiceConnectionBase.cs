@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task WaitForConnectionStart => _serviceConnectionStartTcs.Task;
 
-        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId, ServerConnectionType connectionType, IServiceConnectionContainer serviceConnectionContainer)
+        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId, IServiceConnectionContainer serviceConnectionContainer, ServerConnectionType connectionType)
         {
             ServiceProtocol = serviceProtocol;
             Logger = logger;
@@ -198,7 +199,8 @@ namespace Microsoft.Azure.SignalR
                 if (pingMessage.Messages[index] == PingTargetKey &&
                     !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
                 {
-
+                    var connection = _serviceConnectionContainer.CreateServiceConnection(1);
+                    return connection.First().StartAsync();
                 }
 
                 index += 2;

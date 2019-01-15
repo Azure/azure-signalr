@@ -17,46 +17,28 @@ namespace Microsoft.Azure.SignalR
         private static TimeSpan ReconnectInterval =>
             TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackoffInternalInMilliseconds));
 
-        private const int RetryCount = 10;
         private readonly List<IServiceConnection> _serviceConnections;
-        private readonly int _count;
         private readonly IServiceConnectionFactory _serviceConnectionFactory;
+        private readonly IConnectionFactory _connectionFactory;
         private readonly int _defaultConnectionCount;
         private readonly object _lock = new object();
         private volatile int _defaultConnectionRetry;
         private DateTime _defaultConnectionReconnectionTime = DateTime.UtcNow;
 
-        public StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, int defaultConnectionCount)
+        public StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
+            IConnectionFactory connectionFactory,
+            int defaultConnectionCount)
         {
             _defaultConnectionCount = defaultConnectionCount;
             _serviceConnectionFactory = serviceConnectionFactory;
+            _serviceConnections = new List<IServiceConnection>();
+            _connectionFactory = connectionFactory;
         }
 
-        public StrongServiceConnectionContainer(List<IServiceConnection> serviceConnections)
+        public Task Initialize()
         {
-            _serviceConnections = serviceConnections;
-            _count = _serviceConnections.Count;
-        }
-
-        public StrongServiceConnectionContainer(Func<IServiceConnection> generator, int count)
-        {
-            if (generator == null)
-            {
-                throw new ArgumentNullException(nameof(generator));
-            }
-
-            if (count <= 0)
-            {
-                throw new ArgumentException($"{nameof(count)} must be greater than 0.");
-            }
-
-            _serviceConnections = new List<IServiceConnection>(count);
-            for (int i = 0; i < count; i++)
-            {
-                _serviceConnections.Add(generator());
-            }
-
-            _count = count;
+            var connections = CreateServiceConnection(_defaultConnectionCount);
+            return Task.WhenAll(connections.Select(c => c.StartAsync()));
         }
 
         public IEnumerable<IServiceConnection> CreateServiceConnection(int count = 1)
@@ -100,7 +82,7 @@ namespace Microsoft.Azure.SignalR
                     }
                 }
 
-                newConnection = _serviceConnectionFactory.Create(type);
+                newConnection = _serviceConnectionFactory.Create(_connectionFactory, this, type);
                 if (index != null)
                 {
                     _serviceConnections[index.Value] = newConnection;
@@ -184,16 +166,6 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();
 
-        public Task StartAsync()
-        {
-            return Task.WhenAll(_serviceConnections.Select(c => c.StartAsync()));
-        }
-
-        public Task StopAsync()
-        {
-            return Task.WhenAll(_serviceConnections.Select(c => c.StopAsync()));
-        }
-
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
             return WriteToRandomAvailableConnection(serviceMessage);
@@ -267,23 +239,6 @@ namespace Microsoft.Azure.SignalR
 
                 return null;
             }
-        }
-
-        class DefaultPoolLifetimeManager
-        {
-            private static readonly int MaxReconnectBackoffInternalInMilliseconds = 1000;
-            private static TimeSpan ReconnectInterval =>
-                TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackoffInternalInMilliseconds));
-
-            private volatile int retry = 0;
-            private readonly int _poolSize;
-
-            public DefaultPoolLifetimeManager(int size)
-            {
-                _poolSize = size;
-            }
-
-
         }
     }
 }

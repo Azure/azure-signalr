@@ -7,12 +7,18 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal interface IServiceConnectionContainer : IServiceConnection
+    internal interface IServiceConnectionContainer
     {
-        Task WriteAsync(string partitionKey, ServiceMessage serviceMessage);
-
         IEnumerable<IServiceConnection> CreateServiceConnection(int count);
 
         void DisposeServiceConnection(IServiceConnection connection);
+
+        Task Initialize();
+
+        Task WriteAsync(ServiceMessage serviceMessage);
+
+        Task WriteAsync(string partitionKey, ServiceMessage serviceMessage);
+
+        ServiceConnectionStatus Status { get; }
     }
 }

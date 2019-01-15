@@ -50,68 +50,69 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public MultiEndpointServiceConnectionContainer(Func<ServerConnectionType, IConnectionFactory, IServiceConnection> generator, string hub, int count, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
-            : this(
-                  endpoint => CreateContainer(generator, endpoint, hub, count, endpointManager, loggerFactory),
-                  endpointManager, router, loggerFactory)
-        {
-        }
-
         public MultiEndpointServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, string hub,
             int count, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
-        :this(endpoint => CreateContainer(serviceConnectionFactory, ))
+        :this(endpoint => CreateContainer(serviceConnectionFactory, endpoint, hub, count, endpointManager, loggerFactory),
+            endpointManager, router, loggerFactory)
         {
-
         }
 
-        private static IServiceConnectionContainer CreateContainer(Func<ServerConnectionType, IConnectionFactory, IServiceConnection> generator, ServiceEndpoint endpoint, string hub, int count, IServiceEndpointManager endpointManager, ILoggerFactory loggerFactory)
+        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, ServiceEndpoint endpoint, string hub, int count, IServiceEndpointManager endpointManager, ILoggerFactory loggerFactory)
         {
             var provider = endpointManager.GetEndpointProvider(endpoint);
             var connectionFactory = new ConnectionFactory(hub, provider, loggerFactory);
-            var serverConnectionType = endpoint.EndpointType == EndpointType.Primary ? ServerConnectionType.Default : ServerConnectionType.Weak;
-            return new StrongServiceConnectionContainer(() => generator(serverConnectionType, connectionFactory), count);
-        }
-
-        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, ServiceEndpoint endpoint, int count)
-        {
             if (endpoint.EndpointType == EndpointType.Primary)
             {
-                return new StrongServiceConnectionContainer(serviceConnectionFactory, count);
+                return new StrongServiceConnectionContainer(serviceConnectionFactory, connectionFactory, count);
             }
             else
             {
-                return new WeakServiceConnectionContainer(serviceConnectionFactory, count);
+                return new WeakServiceConnectionContainer(serviceConnectionFactory, connectionFactory, count);
             }
         }
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();
 
-        public Task StartAsync()
+        public Task Initialize()
         {
             if (_inner != null)
             {
-                return _inner.StartAsync();
+                return _inner.Initialize();
             }
 
-            return Task.WhenAll(Connections.Select(s =>
-            {
-                Log.StartingConnection(_logger, s.Key.Key);
-                return s.Value.StartAsync();
-            }));
+            return Task.WhenAll(GetContainers().Select(c => c.Initialize()));
         }
 
-        public Task StopAsync()
+        private IEnumerable<IServiceConnectionContainer> GetContainers()
+        {
+            if (_inner == null)
+            {
+                foreach (var container in Connections)
+                {
+                    yield return container.Value;
+                }
+            }
+        }
+
+        public IEnumerable<IServiceConnection> CreateServiceConnection(int count)
         {
             if (_inner != null)
             {
-                return _inner.StopAsync();
+                return _inner.CreateServiceConnection(count);
             }
 
-            return Task.WhenAll(Connections.Select(s =>
+            List<IServiceConnection> connections = new List<IServiceConnection>();
+            foreach (var connection in Connections)
             {
-                Log.StoppingConnection(_logger, s.Key.Key);
-                return s.Value.StopAsync();
-            }));
+                connections.AddRange(connection.Value.CreateServiceConnection(count));
+            }
+
+            return connections;
+        }
+
+        public void DisposeServiceConnection(IServiceConnection connection)
+        {
+            throw new NotSupportedException();
         }
 
         public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)

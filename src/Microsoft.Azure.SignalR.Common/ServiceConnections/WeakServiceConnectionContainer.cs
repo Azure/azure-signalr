@@ -10,14 +10,24 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
     class WeakServiceConnectionContainer : IServiceConnectionContainer
     {
         private readonly IServiceConnectionFactory _serviceConnectionFactory;
+        private readonly IConnectionFactory _connectionFactory;
         private readonly List<IServiceConnection> _serviceConnections;
         private readonly int _count;
 
-        public WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, int count)
+        public WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, 
+            IConnectionFactory connectionFactory, 
+            int count)
         {
             _serviceConnectionFactory = serviceConnectionFactory ?? throw new ArgumentNullException(nameof(serviceConnectionFactory));
+            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _serviceConnections = new List<IServiceConnection>(count);
             _count = count;
+        }
+
+        public Task Initialize()
+        {
+            var connections = CreateServiceConnection(_count);
+            return Task.WhenAll(connections.Select(c => c.StartAsync()));
         }
 
         public IEnumerable<IServiceConnection> CreateServiceConnection(int count)
@@ -29,7 +39,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 
             for (int i = 0; i < count; i++)
             {
-                var connection = _serviceConnectionFactory.Create(ServerConnectionType.Weak);
+                var connection = _serviceConnectionFactory.Create(_connectionFactory, this, ServerConnectionType.Weak);
                 _serviceConnections.Add(connection);
                 yield return connection;
             }
@@ -48,21 +58,11 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
                 return;
             }
 
-            _serviceConnections[index] = _serviceConnectionFactory.Create(ServerConnectionType.Weak);
+            _serviceConnections[index] = _serviceConnectionFactory.Create(_connectionFactory, this, ServerConnectionType.Weak);
             _ = _serviceConnections[index].StartAsync();
         }
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();
-
-        public Task StartAsync()
-        {
-            return Task.WhenAll(_serviceConnections.Select(c => c.StartAsync()));
-        }
-
-        public Task StopAsync()
-        {
-            return Task.WhenAll(_serviceConnections.Select(c => c.StopAsync()));
-        }
 
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
