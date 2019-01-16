@@ -14,6 +14,13 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
         {
         }
 
+        // For test purpose only
+        public WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
+            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections) : base(
+            serviceConnectionFactory, connectionFactory, initialConnections)
+        {
+        }
+
         protected override IServiceConnection GetSingleServiceConnection()
         {
             return GetSingleServiceConnection(ServerConnectionType.Weak);

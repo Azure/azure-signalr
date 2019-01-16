@@ -25,6 +25,14 @@ namespace Microsoft.Azure.SignalR
             _onDemandServiceConnections = new List<IServiceConnection>();
         }
 
+        // For test purpose only
+        public StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
+            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections) : base(
+            serviceConnectionFactory, connectionFactory, initialConnections)
+        {
+            _onDemandServiceConnections = new List<IServiceConnection>();
+        }
+
         protected override IServiceConnection GetSingleServiceConnection()
         {
             return GetSingleServiceConnection(ServerConnectionType.Default);

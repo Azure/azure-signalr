@@ -69,14 +69,14 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();
 
-        public Task InitializeAsync()
+        public Task StartAsync()
         {
             if (_inner != null)
             {
-                return _inner.InitializeAsync();
+                return _inner.StartAsync();
             }
 
-            return Task.WhenAll(GetContainers().Select(c => c.InitializeAsync()));
+            return Task.WhenAll(GetContainers().Select(c => c.StartAsync()));
         }
 
         private IEnumerable<IServiceConnectionContainer> GetContainers()

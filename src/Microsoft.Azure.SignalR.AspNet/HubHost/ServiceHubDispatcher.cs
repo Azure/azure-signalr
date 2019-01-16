@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             Log.StartingConnection(_logger, _name, _options.ConnectionCount, _hubNames.Count);
 
-            return _serviceConnectionManager.InitializeAsync();
+            return _serviceConnectionManager.StartAsync();
         }
 
         private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub)

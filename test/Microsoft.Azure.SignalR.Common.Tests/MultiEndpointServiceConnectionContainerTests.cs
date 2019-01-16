@@ -44,9 +44,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(1, primaryEndpoints.Count);
             Assert.Equal("1", primaryEndpoints[0].Name);
 
-            var inner = new StrongServiceConnectionContainer(null, null, 2);
-
-            inner.Initialize(new List<IServiceConnection> {
+            var inner = new StrongServiceConnectionContainer(null, null, new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
             });
@@ -67,9 +65,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestContainerWithOneEndpointWithAllConnectedSucceeeds()
         {
-            var inner = new StrongServiceConnectionContainer(null, null, 7);
-
-            inner.Initialize(new List<IServiceConnection> {
+            var inner = new StrongServiceConnectionContainer(null, null, new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -90,9 +86,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestContainerWithOneEndpointWithAllDisconnectedThrows()
         {
-            var inner = new StrongServiceConnectionContainer(null, null, 7);
-
-            inner.Initialize(new List<IServiceConnection> {
+            var inner = new StrongServiceConnectionContainer(null, null, new List<IServiceConnection> {
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -118,9 +112,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestContainerWithTwoEndpointWithAllConnectedFailsWithBadRouter()
         {
-            var inner = new StrongServiceConnectionContainer(null, null, 7);
-
-            inner.Initialize(new List<IServiceConnection> {
+            var inner = new StrongServiceConnectionContainer(null, null, new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -148,9 +140,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestContainerWithTwoEndpointWithAllConnectedSucceedsWithGoodRouter()
         {
-            var inner = new StrongServiceConnectionContainer(null, null, 7);
-
-            inner.Initialize(new List<IServiceConnection> {
+            var inner = new StrongServiceConnectionContainer(null, null, new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -174,9 +164,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestContainerWithTwoEndpointWithAllDisconnectedThrows()
         {
-            var inner = new StrongServiceConnectionContainer(null, null, 7);
-
-            inner.Initialize(new List<IServiceConnection> {
+            var inner = new StrongServiceConnectionContainer(null, null, new List<IServiceConnection> {
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -205,9 +193,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestContainerWithTwoEndpointWithOneAllDisconnectedThrows()
         {
-            var inner1 = new StrongServiceConnectionContainer(null, null, 7);
-
-            inner1.Initialize(new List<IServiceConnection> {
+            var inner1 = new StrongServiceConnectionContainer(null, null, new List<IServiceConnection> {
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -217,9 +203,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
             });
 
-            var inner2 = new StrongServiceConnectionContainer(null, null, 7);
-
-            inner2.Initialize(new List<IServiceConnection> {
+            var inner2 = new StrongServiceConnectionContainer(null, null, new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
                 new TestServiceConnection(),

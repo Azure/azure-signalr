@@ -28,23 +28,22 @@ namespace Microsoft.Azure.SignalR
         {
             ServiceConnectionFactory = serviceConnectionFactory;
             ConnectionFactory = connectionFactory;
-            ServiceConnections = new List<IServiceConnection>(count);
+            ServiceConnections = CreateFixedServiceConnection(count);
             Count = count;
         }
 
-        public virtual Task InitializeAsync()
+        protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
+            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections)
         {
-            var connections = CreateFixedServiceConnection(Count);
-            return Task.WhenAll(connections.Select(c => c.StartAsync()));
+            ServiceConnectionFactory = serviceConnectionFactory;
+            ConnectionFactory = connectionFactory;
+            ServiceConnections = initialConnections;
+            Count = initialConnections.Count;
         }
 
-        // For test purpose only
-        internal virtual void Initialize(List<IServiceConnection> connections)
+        public virtual Task StartAsync()
         {
-            for (int i = 0; i < Count && i < connections.Count; i++)
-            {
-                ServiceConnections.Add(connections[i]);
-            }
+            return Task.WhenAll(ServiceConnections.Select(c => c.StartAsync()));
         }
 
         /// <summary>
@@ -143,7 +142,7 @@ namespace Microsoft.Azure.SignalR
             throw new ServiceConnectionNotActiveException();
         }
 
-        protected virtual async Task ReconnectWithDelayAsync(int index)
+        protected async Task ReconnectWithDelayAsync(int index)
         {
             if (index < 0 || index >= Count)
             {
@@ -178,14 +177,16 @@ namespace Microsoft.Azure.SignalR
             return TimeSpan.FromSeconds(1 << retryCount) + ReconnectInterval;
         }
 
-        private IEnumerable<IServiceConnection> CreateFixedServiceConnection(int count)
+        private List<IServiceConnection> CreateFixedServiceConnection(int count)
         {
+            var connections = new List<IServiceConnection>();
             for (int i = 0; i < count; i++)
             {
                 var connection = GetSingleServiceConnection();
-                ServiceConnections.Add(connection);
-                yield return connection;
+                connections.Add(connection);
             }
+
+            return connections;
         }
     }
 }

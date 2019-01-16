@@ -48,8 +48,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     this,
                     Guid.NewGuid().ToString("N"),
                     serviceConnectionManager);
-            ServiceConnectionContainer = new StrongServiceConnectionContainer(null, connectionFactory, 1);
-            ((StrongServiceConnectionContainer) ServiceConnectionContainer).Initialize(new List<IServiceConnection>()
+            ServiceConnectionContainer = new StrongServiceConnectionContainer(null, connectionFactory, new List<IServiceConnection>()
             {
                 ServiceConnection
             });

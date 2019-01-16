@@ -308,11 +308,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 HubName = name;
             }
 
-            public Task InitializeAsync()
-            {
-                return Task.CompletedTask;
-            }
-
             public Task StartAsync()
             {
                 return Task.CompletedTask;

@@ -67,14 +67,14 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-        public Task InitializeAsync()
+        public Task StartAsync()
         {
             var tasks = new List<Task>();
 
-            tasks.Add(_appConnection.InitializeAsync());
+            tasks.Add(_appConnection.StartAsync());
             foreach (var container in _serviceConnections)
             {
-                tasks.Add(container.Value.InitializeAsync());
+                tasks.Add(container.Value.StartAsync());
             }
 
             return Task.WhenAll(tasks);
