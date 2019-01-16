@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task StartAsync()
         {
-            return _serviceConnection.Initialize();
+            return _serviceConnection.InitializeAsync();
         }
 
         public Task WriteAsync(ServiceMessage serviceMessage)

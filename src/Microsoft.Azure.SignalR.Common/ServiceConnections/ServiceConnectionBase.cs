@@ -193,17 +193,20 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            int index = 0;
-            while (index < pingMessage.Messages.Length)
+            if (_serviceConnectionContainer is StrongServiceConnectionContainer strongServiceConnectionContainer)
             {
-                if (pingMessage.Messages[index] == PingTargetKey &&
-                    !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
+                int index = 0;
+                while (index < pingMessage.Messages.Length)
                 {
-                    var connection = _serviceConnectionContainer.CreateServiceConnection(1);
-                    return connection.First().StartAsync();
-                }
+                    if (pingMessage.Messages[index] == PingTargetKey &&
+                        !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
+                    {
+                        var connection = strongServiceConnectionContainer.CreateServiceConnection();
+                        return connection.First().StartAsync();
+                    }
 
-                index += 2;
+                    index += 2;
+                }
             }
 
             return Task.CompletedTask;

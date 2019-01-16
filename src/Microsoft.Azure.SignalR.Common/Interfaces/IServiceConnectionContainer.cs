@@ -9,11 +9,9 @@ namespace Microsoft.Azure.SignalR
 {
     internal interface IServiceConnectionContainer
     {
-        IEnumerable<IServiceConnection> CreateServiceConnection(int count);
+        Task InitializeAsync();
 
         void DisposeServiceConnection(IServiceConnection connection);
-
-        Task Initialize();
 
         Task WriteAsync(ServiceMessage serviceMessage);
 

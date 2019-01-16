@@ -73,14 +73,14 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();
 
-        public Task Initialize()
+        public Task InitializeAsync()
         {
             if (_inner != null)
             {
-                return _inner.Initialize();
+                return _inner.InitializeAsync();
             }
 
-            return Task.WhenAll(GetContainers().Select(c => c.Initialize()));
+            return Task.WhenAll(GetContainers().Select(c => c.InitializeAsync()));
         }
 
         private IEnumerable<IServiceConnectionContainer> GetContainers()
@@ -92,22 +92,6 @@ namespace Microsoft.Azure.SignalR
                     yield return container.Value;
                 }
             }
-        }
-
-        public IEnumerable<IServiceConnection> CreateServiceConnection(int count)
-        {
-            if (_inner != null)
-            {
-                return _inner.CreateServiceConnection(count);
-            }
-
-            List<IServiceConnection> connections = new List<IServiceConnection>();
-            foreach (var connection in Connections)
-            {
-                connections.AddRange(connection.Value.CreateServiceConnection(count));
-            }
-
-            return connections;
         }
 
         public void DisposeServiceConnection(IServiceConnection connection)

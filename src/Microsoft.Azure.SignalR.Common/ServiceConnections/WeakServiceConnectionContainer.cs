@@ -24,23 +24,18 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             _count = count;
         }
 
-        public Task Initialize()
+        public Task InitializeAsync()
         {
             var connections = CreateServiceConnection(_count);
             return Task.WhenAll(connections.Select(c => c.StartAsync()));
         }
 
-        public IEnumerable<IServiceConnection> CreateServiceConnection(int count)
+        private IEnumerable<IServiceConnection> CreateServiceConnection(int count)
         {
-            if (count > _count || count <= 0)
-            {
-                throw new ArgumentException($"{nameof(count)} must be between 1 and {nameof(_count)}.");
-            }
-
             for (int i = 0; i < count; i++)
             {
                 var connection = _serviceConnectionFactory.Create(_connectionFactory, this, ServerConnectionType.Weak);
-                _serviceConnections.Add(connection);
+                _serviceConnections[i] = connection;
                 yield return connection;
             }
         }

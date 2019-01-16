@@ -18,12 +18,17 @@ namespace Microsoft.Azure.SignalR
             TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackoffInternalInMilliseconds));
 
         private readonly List<IServiceConnection> _serviceConnections;
+        private readonly List<IServiceConnection> _onDemandServiceConnections;
+
+        private readonly int _defaultConnectionCount;
+
         private readonly IServiceConnectionFactory _serviceConnectionFactory;
         private readonly IConnectionFactory _connectionFactory;
-        private readonly int _defaultConnectionCount;
+
+        // The lock is only used to lock the dynamic part (index from _defaultConnectionCount)
         private readonly object _lock = new object();
+
         private volatile int _defaultConnectionRetry;
-        private DateTime _defaultConnectionReconnectionTime = DateTime.UtcNow;
 
         public StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory,
@@ -31,14 +36,19 @@ namespace Microsoft.Azure.SignalR
         {
             _defaultConnectionCount = defaultConnectionCount;
             _serviceConnectionFactory = serviceConnectionFactory;
-            _serviceConnections = new List<IServiceConnection>();
+            _serviceConnections = new List<IServiceConnection>(_defaultConnectionCount);
+            _onDemandServiceConnections = new List<IServiceConnection>();
             _connectionFactory = connectionFactory;
         }
 
-        public Task Initialize()
+        public Task InitializeAsync()
         {
-            var connections = CreateServiceConnection(_defaultConnectionCount);
-            return Task.WhenAll(connections.Select(c => c.StartAsync()));
+            for (int i = 0; i < _defaultConnectionCount; i++)
+            {
+                _serviceConnections[i] = _serviceConnectionFactory.Create(_connectionFactory, this, ServerConnectionType.Default);
+            }
+
+            return Task.WhenAll(_serviceConnections.Select(c => c.StartAsync()));
         }
 
         public IEnumerable<IServiceConnection> CreateServiceConnection(int count = 1)
@@ -57,40 +67,11 @@ namespace Microsoft.Azure.SignalR
         private IServiceConnection CreateServiceConnectionCore()
         {
             IServiceConnection newConnection;
+
             lock (_lock)
             {
-                ServerConnectionType type;
-                int? index = null;
-
-                var count = _serviceConnections.Count;
-                if (count < _defaultConnectionCount)
-                {
-                    type = ServerConnectionType.Default;
-                }
-                else
-                {
-                    type = ServerConnectionType.OnDemand;
-
-                    for (int i = 0; i < _defaultConnectionCount; i++)
-                    {
-                        if (_serviceConnections[i] == null)
-                        {
-                            type = ServerConnectionType.Default;
-                            index = i;
-                            break;
-                        }
-                    }
-                }
-
-                newConnection = _serviceConnectionFactory.Create(_connectionFactory, this, type);
-                if (index != null)
-                {
-                    _serviceConnections[index.Value] = newConnection;
-                }
-                else
-                {
-                    _serviceConnections.Add(newConnection);
-                }
+                newConnection = _serviceConnectionFactory.Create(_connectionFactory, this, ServerConnectionType.OnDemand);
+                _onDemandServiceConnections.Add(newConnection);
             }
 
             return newConnection;
@@ -103,53 +84,52 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(connection));
             }
 
+            int index = _serviceConnections.IndexOf(connection);
+            if (index != -1)
+            {
+                lock (_lock)
+                {
+                    if (_onDemandServiceConnections.Count != 0)
+                    {
+                        _serviceConnections[index] = _onDemandServiceConnections[0];
+                        _onDemandServiceConnections.RemoveAt(0);
+                        return;
+                    }
+                }
+
+                _serviceConnections[index] = null;
+                _ = ReconnectWithDelayAsync(index);
+                return;
+            }
+
             lock (_lock)
             {
-                int index = _serviceConnections.IndexOf(connection);
+                index = _onDemandServiceConnections.IndexOf(connection);
                 if (index == -1)
                 {
                     return;
                 }
-
-                if (index >= _defaultConnectionCount)
-                {
-                    _serviceConnections.RemoveAt(index);
-                }
-                else if (_serviceConnections.Count > _defaultConnectionCount)
-                {
-                    _serviceConnections[index] = _serviceConnections[_defaultConnectionCount];
-                    _serviceConnections.RemoveAt(_defaultConnectionCount);
-                }
-                else
-                {
-                    _serviceConnections[index] = null;
-                    _ = KeepDefaultConnectionsAsync();
-                }
+                _onDemandServiceConnections.RemoveAt(index);
             }
         }
 
-        private async Task KeepDefaultConnectionsAsync()
+        private async Task ReconnectWithDelayAsync(int index)
         {
-            IEnumerable<IServiceConnection> connections = null;
-            lock (_lock)
+            if (index < 0 || index >= _defaultConnectionCount)
             {
-                if (_defaultConnectionReconnectionTime.Add(GetRetryDelay(_defaultConnectionRetry)).Ticks >
-                    DateTime.UtcNow.Ticks)
-                {
-                    _defaultConnectionRetry++;
-                    _defaultConnectionReconnectionTime = DateTime.UtcNow;
-                    connections = CreateServiceConnection();
-                }
+                throw new ArgumentException($"{nameof(index)} must in default connection part");
             }
 
-            if (connections != null)
+            await Task.Delay(GetRetryDelay(_defaultConnectionRetry));
+            Interlocked.Increment(ref _defaultConnectionRetry);
+
+            var connection = _serviceConnectionFactory.Create(_connectionFactory, this, ServerConnectionType.Default);
+            _serviceConnections[index] = connection;
+
+            await connection.StartAsync();
+            if (connection.Status == ServiceConnectionStatus.Connected)
             {
-                var connection = connections.First();
-                await connection.StartAsync();
-                if (connection.Status == ServiceConnectionStatus.Connected)
-                {
-                    Interlocked.Exchange(ref _defaultConnectionRetry, 0);
-                }
+                Interlocked.Exchange(ref _defaultConnectionRetry, 0);
             }
         }
 
@@ -184,23 +164,66 @@ namespace Microsoft.Azure.SignalR
 
         private Task WriteToPartitionedConnection(string partitionKey, ServiceMessage serviceMessage)
         {
-            return WriteWithRetry(serviceMessage, partitionKey.GetHashCode(), _defaultConnectionCount);
+            return WriteDefaultConnectionWithRetry(serviceMessage, partitionKey.GetHashCode(), _defaultConnectionCount);
         }
 
         private Task WriteToRandomAvailableConnection(ServiceMessage sm)
         {
-            int count = 0;
-            Interlocked.Exchange(ref count, _serviceConnections.Count);
-            return WriteWithRetry(sm, StaticRandom.Next(count, count), count);
+            int count = _onDemandServiceConnections.Count;
+
+            var randomIndex = StaticRandom.Next(count + _defaultConnectionCount);
+            if (randomIndex < _defaultConnectionCount)
+            {
+                return WriteDefaultConnectionWithRetry(sm, StaticRandom.Next(-_defaultConnectionCount, _defaultConnectionCount), _defaultConnectionCount);
+            }
+            else
+            {
+                return WriteOnDemandConnectionWithRetry(sm, StaticRandom.Next(-count, count), count);
+            }
         }
 
-        private async Task WriteWithRetry(ServiceMessage sm, int initial, int maxRetry)
+        private async Task WriteDefaultConnectionWithRetry(ServiceMessage sm, int initial, int count)
         {
+            // go through all the connections, it can be useful when one of the remote service instances is down
+            var maxRetry = count;
+            var retry = 0;
+            var index = (initial & int.MaxValue) % count;
+            var direction = initial > 0 ? 1 : count - 1;
+            while (retry < maxRetry)
+            {
+                var connection = _serviceConnections[index];
+                if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
+                {
+                    try
+                    {
+                        // still possible the connection is not valid
+                        await connection.WriteAsync(sm);
+                        return;
+                    }
+                    catch (ServiceConnectionNotActiveException)
+                    {
+                        if (retry == maxRetry - 1)
+                        {
+                            throw;
+                        }
+                    }
+                }
+
+                retry++;
+                index = (index + direction) % count;
+            }
+
+            throw new ServiceConnectionNotActiveException();
+        }
+
+        private async Task WriteOnDemandConnectionWithRetry(ServiceMessage sm, int initial, int count)
+        {
+            var maxRetry = count;
             var retry = 0;
             var direction = initial > 0 ? 1 : - 1;
             while (retry < maxRetry)
             {
-                var connection = SelectConnection(_defaultConnectionCount, initial, direction * retry);
+                var connection = SelectConnection(count, initial, direction * retry);
                 if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
                 {
                     try
@@ -224,17 +247,12 @@ namespace Microsoft.Azure.SignalR
 
         private IServiceConnection SelectConnection(int range, int initial, int step)
         {
-            if (range < 0)
-            {
-                return null;
-            }
-
             int index = (initial & int.MaxValue + step) % range;
             lock (_lock)
             {
-                if (index < _serviceConnections.Count)
+                if (index < _onDemandServiceConnections.Count)
                 {
-                    return _serviceConnections[index];
+                    return _onDemandServiceConnections[index];
                 }
 
                 return null;

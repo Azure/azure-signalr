@@ -67,31 +67,17 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-        public Task Initialize()
+        public Task InitializeAsync()
         {
             var tasks = new List<Task>();
 
-            tasks.Add(_appConnection.Initialize());
+            tasks.Add(_appConnection.InitializeAsync());
             foreach (var container in _serviceConnections)
             {
-                tasks.Add(container.Value.Initialize());
+                tasks.Add(container.Value.InitializeAsync());
             }
 
             return Task.WhenAll(tasks);
-        }
-
-        public IEnumerable<IServiceConnection> CreateServiceConnection(int count)
-        {
-            var connections = new List<IServiceConnection>();
-
-            connections.AddRange(_appConnection.CreateServiceConnection(count));
-
-            foreach (var connection in _serviceConnections)
-            {
-                connections.AddRange(connection.Value.CreateServiceConnection(count));
-            }
-
-            return connections;
         }
 
         public void DisposeServiceConnection(IServiceConnection connection)
