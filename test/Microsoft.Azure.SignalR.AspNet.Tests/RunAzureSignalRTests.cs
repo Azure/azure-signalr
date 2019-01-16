@@ -30,10 +30,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
     public class RunAzureSignalRTests
     {
         private const string ServiceUrl = "http://localhost:8086";
-        private const string ConnectionString = "Endpoint=http://localhost;AccessKey=1;";
-        private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=2;";
-        private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=3;";
-        private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=3;";
+        private const string ConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+        private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+        private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+        private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string AppName = "AzureSignalRTest";
 
         [Fact]
@@ -309,12 +309,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     .ToList();
                 _originalAdditonalSettings = newSettings.Select(s =>
                 {
+                    var original = ConfigurationManager.AppSettings[s.Key];
                     ConfigurationManager.AppSettings[s.Key] = s.Value;
-                    return new KeyValuePair<string, string>(
-                      s.Key,
-                      ConfigurationManager.AppSettings[s.Key]
-                      );
-
+                    return new KeyValuePair<string, string>(s.Key, original);
                 }).ToList();
 
             }
