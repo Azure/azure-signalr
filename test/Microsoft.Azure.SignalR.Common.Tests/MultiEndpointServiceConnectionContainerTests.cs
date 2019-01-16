@@ -56,9 +56,20 @@ namespace Microsoft.Azure.SignalR.Tests
 
 
         [Fact]
-        public void TestContainerWithNoEndpointThrows()
+        public void TestContainerWithNoEndpointDontThrowFromBaseClass()
         {
-            Assert.Throws<AzureSignalRNoEndpointAvailableException>(() => new TestServiceEndpointManager());
+            var manager = new TestServiceEndpointManager();
+            var endpoints = manager.GetAvailableEndpoints();
+            Assert.Empty(endpoints);
+        }
+
+        [Fact]
+        public void TestContainerWithNoPrimaryEndpointDefinedThrows()
+        {
+            Assert.Throws<AzureSignalRNoPrimaryEndpointException>(() => new TestServiceEndpointManager(new ServiceEndpoint[]
+            {
+                new ServiceEndpoint(ConnectionString1, EndpointType.Secondary)
+            }));
         }
 
         [Fact]
