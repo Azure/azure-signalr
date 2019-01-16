@@ -242,7 +242,7 @@ namespace Owin
             configuration.Resolver.Register(typeof(IProtectedData), () => provider);
 
             var scm = new ServiceConnectionManager(applicationName, hubs);
-            configuration.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
+            configuration.Resolver.Register(typeof(Microsoft.Azure.SignalR.AspNet.IServiceConnectionManager), () => scm);
 
             var ccm = new ClientConnectionManager(configuration);
             configuration.Resolver.Register(typeof(IClientConnectionManager), () => ccm);

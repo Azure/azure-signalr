@@ -94,11 +94,6 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public void DisposeServiceConnection(IServiceConnection connection)
-        {
-            throw new NotSupportedException();
-        }
-
         public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
         {
             if (_inner != null)

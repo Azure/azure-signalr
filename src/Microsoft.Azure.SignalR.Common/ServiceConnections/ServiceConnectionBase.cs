@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
         private readonly ServerConnectionType _connectionType;
 
-        private readonly IServiceConnectionContainer _serviceConnectionContainer;
+        private readonly IServiceConnectionManager _serviceConnectionManager;
 
         private bool _isStopped;
         // Check service timeout
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task WaitForConnectionStart => _serviceConnectionStartTcs.Task;
 
-        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId, IServiceConnectionContainer serviceConnectionContainer, ServerConnectionType connectionType)
+        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId, IServiceConnectionManager serviceConnectionManager, ServerConnectionType connectionType)
         {
             ServiceProtocol = serviceProtocol;
             Logger = logger;
@@ -74,16 +74,16 @@ namespace Microsoft.Azure.SignalR
 
             _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
             _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
-            _serviceConnectionContainer = serviceConnectionContainer;
+            _serviceConnectionManager = serviceConnectionManager;
         }
 
-        public async Task StartAsync()
+        public async Task StartAsync(string target = null)
         {
             int retryCount = 0;
             while (!_isStopped)
             {
                 // If we are not able to start, we will quit this connection.
-                if (!await StartAsyncCore())
+                if (!await StartAsyncCore(target))
                 {
                     _serviceConnectionStartTcs.TrySetResult(false);
 
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        protected abstract Task<ConnectionContext> CreateConnection();
+        protected abstract Task<ConnectionContext> CreateConnection(string target = null);
 
         protected abstract Task DisposeConnection();
 
@@ -193,25 +193,22 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            if (_serviceConnectionContainer is StrongServiceConnectionContainer strongServiceConnectionContainer)
+            int index = 0;
+            while (index < pingMessage.Messages.Length)
             {
-                int index = 0;
-                while (index < pingMessage.Messages.Length)
+                if (pingMessage.Messages[index] == PingTargetKey &&
+                    !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
                 {
-                    if (pingMessage.Messages[index] == PingTargetKey &&
-                        !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
-                    {
-                        var connection = strongServiceConnectionContainer.CreateServiceConnection();
-                        return connection.First().StartAsync();
-                    }
-
-                    index += 2;
+                    var connection = _serviceConnectionManager.CreateServiceConnection();
+                    return connection.First().StartAsync();
                 }
+
+                index += 2;
             }
 
             return Task.CompletedTask;
         }
-        private async Task<bool> StartAsyncCore()
+        private async Task<bool> StartAsyncCore(string target)
         {
             // Lock here in case somebody tries to send before the connection is assigned
             await _serviceConnectionLock.WaitAsync();
@@ -219,7 +216,7 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 Status = ServiceConnectionStatus.Connecting;
-                ConnectionContext = await CreateConnection();
+                ConnectionContext = await CreateConnection(target);
                 ErrorMessage = null;
 
                 if (await HandshakeAsync())

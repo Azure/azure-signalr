@@ -9,7 +9,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal interface IConnectionFactory
     {
-        Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default);
+        Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken = default);
 
         // Current plan for IAsyncDisposable is that DisposeAsync will NOT take a CancellationToken
         // https://github.com/dotnet/csharplang/blob/195efa07806284d7b57550e7447dc8bd39c156bf/proposals/async-streams.md#iasyncdisposable

@@ -31,11 +31,11 @@ namespace Microsoft.Azure.SignalR
             _hubName = hubName;
         }
 
-        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
+        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken = default)
         {
             var httpConnectionOptions = new HttpConnectionOptions
             {
-                Url = GetServiceUrl(connectionId),
+                Url = GetServiceUrl(connectionId, target),
                 AccessTokenProvider = () => Task.FromResult(_provider.GenerateServerAccessToken(_hubName, _userId)),
                 Transports = HttpTransportType.WebSockets,
                 SkipNegotiation = true,
@@ -54,10 +54,14 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private Uri GetServiceUrl(string connectionId)
+        private Uri GetServiceUrl(string connectionId, string target)
         {
             var baseUri = new UriBuilder(_provider.GetServerEndpoint(_hubName));
             var query = "cid=" + connectionId;
+            if (target != null)
+            {
+                query = query + $"&target={target}";
+            }
             if (baseUri.Query != null && baseUri.Query.Length > 1)
             {
                 baseUri.Query = baseUri.Query.Substring(1) + "&" + query;
