@@ -23,7 +23,9 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestServiceConnectionContainerWithAllConnectedSucceeeds()
         {
-            var container = new StrongServiceConnectionContainer(new List<IServiceConnection> {
+            var container = new StrongServiceConnectionContainer(null, null, 7);
+
+            container.Initialize(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -41,7 +43,9 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestServiceConnectionContainerWithAllDisconnectedThrows()
         {
-            var container = new StrongServiceConnectionContainer(new List<IServiceConnection> {
+            var container = new StrongServiceConnectionContainer(null, null, 7);
+
+            container.Initialize(new List<IServiceConnection> {
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -63,7 +67,9 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestServiceConnectionContainerWithAllThrowsThrows()
         {
-            var container = new StrongServiceConnectionContainer(new List<IServiceConnection> {
+            var container = new StrongServiceConnectionContainer(null, null, 7);
+
+            container.Initialize(new List<IServiceConnection> {
                 new TestServiceConnection(throws: true),
                 new TestServiceConnection(throws: true),
                 new TestServiceConnection(throws: true),
@@ -85,7 +91,9 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestServiceConnectionContainerWithSomeThrows1WriteWithPartitionCanPass()
         {
-            var container = new StrongServiceConnectionContainer(new List<IServiceConnection> {
+            var container = new StrongServiceConnectionContainer(null, null, 7);
+
+            container.Initialize(new List<IServiceConnection> {
                 new TestServiceConnection(throws: true),
                 new TestServiceConnection(throws: true),
                 new TestServiceConnection(throws: true),
@@ -102,7 +110,9 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestServiceConnectionContainerWithSomeThrows2WriteWithPartitionCanPass()
         {
-            var container = new StrongServiceConnectionContainer(new List<IServiceConnection> {
+            var container = new StrongServiceConnectionContainer(null, null, 7);
+
+            container.Initialize(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(throws: true),
                 new TestServiceConnection(throws: true),
@@ -119,7 +129,9 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestServiceConnectionContainerWithSomeThrows3WriteWithPartitionCanPass()
         {
-            var container = new StrongServiceConnectionContainer(new List<IServiceConnection> {
+            var container = new StrongServiceConnectionContainer(null, null, 7);
+
+            container.Initialize(new List<IServiceConnection> {
                 new TestServiceConnection(throws: true),
                 new TestServiceConnection(throws: true),
                 new TestServiceConnection(),
@@ -144,7 +156,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 _throws = throws;
             }
 
-            public Task StartAsync()
+            public Task StartAsync(string target = null)
             {
                 return Task.CompletedTask;
             }

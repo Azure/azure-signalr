@@ -26,8 +26,8 @@ namespace Microsoft.Azure.SignalR
             IConnectionFactory connectionFactory,
             int count)
         {
-            _serviceConnectionFactory = serviceConnectionFactory ?? throw new ArgumentNullException(nameof(serviceConnectionFactory));
-            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+            _serviceConnectionFactory = serviceConnectionFactory;
+            _connectionFactory = connectionFactory;
             _serviceConnections = new List<IServiceConnection>(count);
             _count = count;
         }
@@ -36,6 +36,15 @@ namespace Microsoft.Azure.SignalR
         {
             var connections = CreateFixedServiceConnection(_count);
             return Task.WhenAll(connections.Select(c => c.StartAsync()));
+        }
+
+        // Only for test perpose
+        internal virtual void Initialize(List<IServiceConnection> connections)
+        {
+            for (int i = 0; i < _count && i < connections.Count; i++)
+            {
+                _serviceConnections[i] = connections[i];
+            }
         }
 
         protected abstract IServiceConnection GetSingleServiceConnection();
