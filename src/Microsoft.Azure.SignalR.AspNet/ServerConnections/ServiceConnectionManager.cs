@@ -69,20 +69,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public Task StartAsync()
         {
-            var tasks = new List<Task>();
-
-            tasks.Add(_appConnection.StartAsync());
-            foreach (var container in _serviceConnections)
-            {
-                tasks.Add(container.Value.StartAsync());
-            }
-
-            return Task.WhenAll(tasks);
-        }
-
-        public void DisposeServiceConnection(IServiceConnection connection)
-        {
-            throw new NotSupportedException();
+            return Task.WhenAll(GetConnections().Select(s => s.StartAsync()));
         }
 
         public IServiceConnectionContainer WithHub(string hubName)

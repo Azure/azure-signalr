@@ -76,18 +76,11 @@ namespace Microsoft.Azure.SignalR
                 return _inner.StartAsync();
             }
 
-            return Task.WhenAll(GetContainers().Select(c => c.StartAsync()));
-        }
-
-        private IEnumerable<IServiceConnectionContainer> GetContainers()
-        {
-            if (_inner == null)
+            return Task.WhenAll(Connections.Select(s =>
             {
-                foreach (var container in Connections)
-                {
-                    yield return container.Value;
-                }
-            }
+                Log.StartingConnection(_logger, s.Key.Endpoint);
+                return s.Value.StartAsync();
+            }));
         }
 
         public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
