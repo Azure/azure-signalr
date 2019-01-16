@@ -294,7 +294,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             }
         }
 
-        private sealed class TestServiceConnection : IServiceConnectionContainer
+        private sealed class TestServiceConnection : IServiceConnectionContainer, IServiceConnection
         {
             private readonly Action<(ServiceMessage, IServiceConnectionContainer)> _validator;
 
@@ -308,7 +308,17 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 HubName = name;
             }
 
+            public Task InitializeAsync()
+            {
+                return Task.CompletedTask;
+            }
+
             public Task StartAsync()
+            {
+                return Task.CompletedTask;
+            }
+
+            public Task StartAsync(string target)
             {
                 return Task.CompletedTask;
             }

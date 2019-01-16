@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(connection));
             }
 
-            int index = _serviceConnections.IndexOf(connection);
+            int index = ServiceConnections.IndexOf(connection);
             if (index != -1)
             {
                 lock (_lock)
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR
                     {
                         if (serviceConnection.Status == ServiceConnectionStatus.Connected)
                         {
-                            _serviceConnections[index] = serviceConnection;
+                            ServiceConnections[index] = serviceConnection;
                             _onDemandServiceConnections.Remove(serviceConnection);
                             return;
                         }
@@ -83,20 +83,21 @@ namespace Microsoft.Azure.SignalR
 
         protected override Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
         {
-            int count = _onDemandServiceConnections.Count;
+            // The count can't be accurate, but it's enough.
+            int onDemandConnectionCount = _onDemandServiceConnections.Count;
 
-            var randomIndex = StaticRandom.Next(count + _count);
-            if (randomIndex < _count)
+            var randomIndex = StaticRandom.Next(onDemandConnectionCount + Count);
+            if (randomIndex < Count)
             {
-                return WriteWithRetry(serviceMessage, StaticRandom.Next(-_count, _count), _count);
+                return WriteWithRetry(serviceMessage, StaticRandom.Next(-Count, Count), Count);
             }
             else
             {
-                return WriteOnDemandConnectionWithRetry(serviceMessage, StaticRandom.Next(-count, count), count);
+                return WriteOnDemandConnectionWithRetry(serviceMessage, StaticRandom.Next(-onDemandConnectionCount, onDemandConnectionCount), onDemandConnectionCount);
             }
         }
 
-        private async Task WriteOnDemandConnectionWithRetry(ServiceMessage sm, int initial, int count)
+        private async Task WriteOnDemandConnectionWithRetry(ServiceMessage serviceMessage, int initial, int count)
         {
             var maxRetry = count;
             var retry = 0;
@@ -109,7 +110,7 @@ namespace Microsoft.Azure.SignalR
                     try
                     {
                         // still possible the connection is not valid
-                        await connection.WriteAsync(sm);
+                        await connection.WriteAsync(serviceMessage);
                         return;
                     }
                     catch (ServiceConnectionNotActiveException)
@@ -127,6 +128,9 @@ namespace Microsoft.Azure.SignalR
 
         private IServiceConnection SelectConnection(int range, int initial, int step)
         {
+            // Loop in the range of on-demand connection count got before.
+            // The actual count can be changed between loops.
+            // Just return null for those have removed.
             int index = (initial & int.MaxValue + step) % range;
             lock (_lock)
             {

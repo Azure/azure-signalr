@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
                 throw new ArgumentNullException(nameof(connection));
             }
 
-            int index = _serviceConnections.IndexOf(connection);
+            int index = ServiceConnections.IndexOf(connection);
             if (index == -1)
             {
                 return;
