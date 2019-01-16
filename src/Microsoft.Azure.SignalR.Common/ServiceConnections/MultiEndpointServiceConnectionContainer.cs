@@ -33,10 +33,6 @@ namespace Microsoft.Azure.SignalR
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? NullLogger<MultiEndpointServiceConnectionContainer>.Instance;
 
             var endpoints = endpointManager.GetAvailableEndpoints();
-            if (endpoints.Count == 0)
-            {
-                throw new AzureSignalRNoEndpointAvailableException();
-            }
 
             if (endpoints.Count == 1)
             {
@@ -162,6 +158,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _stoppingConnection =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(2, "StoppingConnection"), "Stopping connections for endpoint {endpoint}");
 
+            private static readonly Action<ILogger, int, string, string, Exception> _duplicateEndpointFound =
+                LoggerMessage.Define<int, string, string>(LogLevel.Warning, new EventId(3, "DuplicateEndpointFound"), "{count} endpoint to {endpoint} found, use the one {name}");
+
             public static void StartingConnection(ILogger logger, string endpoint)
             {
                 _startingConnection(logger, endpoint, null);
@@ -170,6 +169,11 @@ namespace Microsoft.Azure.SignalR
             public static void StoppingConnection(ILogger logger, string endpoint)
             {
                 _stoppingConnection(logger, endpoint, null);
+            }
+
+            public static void DuplicateEndpointFound(ILogger logger, int count, string endpoint, string name)
+            {
+                _duplicateEndpointFound(logger, count, endpoint, name, null);
             }
         }
     }

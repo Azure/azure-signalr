@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Web;
@@ -19,6 +20,8 @@ namespace Microsoft.Azure.SignalR.AspNet
     {
         private readonly HubConfiguration _configuration;
         private readonly ILogger _logger;
+
+        private readonly ConcurrentDictionary<string, IServiceConnection> _clientConnections = new ConcurrentDictionary<string, IServiceConnection>();
 
         public ClientConnectionManager(HubConfiguration configuration)
         {
@@ -49,12 +52,18 @@ namespace Microsoft.Azure.SignalR.AspNet
                     throw new InvalidOperationException(errorResponse);
                 }
 
+                _clientConnections.TryAdd(message.ConnectionId, serviceConnection);
                 return (AzureTransport)hostContext.Environment[AspNetConstants.Context.AzureSignalRTransportKey];
             }
 
             // This happens when hub is not found
             Debug.Fail("Unauthorized");
             throw new InvalidOperationException("Unable to authorize request");
+        }
+
+        public bool TryGetServiceConnection(string key, out IServiceConnection serviceConnection)
+        {
+            return _clientConnections.TryGetValue(key, out serviceConnection);
         }
 
         internal HostContext GetHostContext(OpenConnectionMessage message, Stream responseStream, IServiceConnection serviceConnection)

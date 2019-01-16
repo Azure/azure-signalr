@@ -8,5 +8,7 @@ namespace Microsoft.Azure.SignalR.AspNet
     internal interface IClientConnectionManager
     {
         IServiceTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection);
+
+        bool TryGetServiceConnection(string key, out IServiceConnection serviceConnection);
     }
 }

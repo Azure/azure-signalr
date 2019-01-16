@@ -19,5 +19,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             CurrentTransports.TryAdd(message.ConnectionId, transport);
             return transport;
         }
+
+        public bool TryGetServiceConnection(string key, out IServiceConnection serviceConnection)
+        {
+            serviceConnection = null;
+            return false;
+        }
     }
 }
