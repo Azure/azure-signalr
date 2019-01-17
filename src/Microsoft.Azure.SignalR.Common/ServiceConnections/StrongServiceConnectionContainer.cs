@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR
 
         public StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory,
-            int count) : base(serviceConnectionFactory, connectionFactory, count)
+            int fixedConnectionCount) : base(serviceConnectionFactory, connectionFactory, fixedConnectionCount)
         {
             _onDemandServiceConnections = new List<IServiceConnection>();
         }
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR
             return GetSingleServiceConnection(ServerConnectionType.Default);
         }
 
-        protected override IServiceConnection CreateServiceConnectionCore()
+        public override IServiceConnection CreateServiceConnection()
         {
             IServiceConnection newConnection;
 
@@ -61,10 +61,10 @@ namespace Microsoft.Azure.SignalR
             // The count can't be accurate, but it's enough.
             int onDemandConnectionCount = _onDemandServiceConnections.Count;
 
-            var randomIndex = StaticRandom.Next(onDemandConnectionCount + Count);
-            if (randomIndex < Count)
+            var randomIndex = StaticRandom.Next(onDemandConnectionCount + FixedConnectionCount);
+            if (randomIndex < FixedConnectionCount)
             {
-                return WriteWithRetry(serviceMessage, StaticRandom.Next(-Count, Count), Count);
+                return WriteWithRetry(serviceMessage, StaticRandom.Next(-FixedConnectionCount, FixedConnectionCount), FixedConnectionCount);
             }
             else
             {

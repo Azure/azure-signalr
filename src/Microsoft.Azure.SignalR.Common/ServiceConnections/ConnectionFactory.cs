@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -60,7 +61,7 @@ namespace Microsoft.Azure.SignalR
             var query = "cid=" + connectionId;
             if (target != null)
             {
-                query = query + $"&target={target}";
+                query = query + $"&target={WebUtility.UrlEncode(target)}";
             }
             if (baseUri.Query != null && baseUri.Query.Length > 1)
             {

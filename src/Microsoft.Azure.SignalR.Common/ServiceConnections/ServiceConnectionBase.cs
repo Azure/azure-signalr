@@ -194,13 +194,13 @@ namespace Microsoft.Azure.SignalR
             }
 
             int index = 0;
-            while (index < pingMessage.Messages.Length)
+            while (index < pingMessage.Messages.Length - 1)
             {
                 if (pingMessage.Messages[index] == PingTargetKey &&
                     !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
                 {
                     var connection = _serviceConnectionManager.CreateServiceConnection();
-                    return connection.First().StartAsync();
+                    return connection.StartAsync(pingMessage.Messages[index + 1]);
                 }
 
                 index += 2;
@@ -208,6 +208,7 @@ namespace Microsoft.Azure.SignalR
 
             return Task.CompletedTask;
         }
+
         private async Task<bool> StartAsyncCore(string target)
         {
             // Lock here in case somebody tries to send before the connection is assigned

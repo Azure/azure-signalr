@@ -10,7 +10,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
     {
         public WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, 
             IConnectionFactory connectionFactory, 
-            int count) : base(serviceConnectionFactory, connectionFactory, count)
+            int fixedConnectionCount) : base(serviceConnectionFactory, connectionFactory, fixedConnectionCount)
         {
         }
 
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             return GetSingleServiceConnection(ServerConnectionType.Weak);
         }
 
-        protected override IServiceConnection CreateServiceConnectionCore()
+        public override IServiceConnection CreateServiceConnection()
         {
             throw new NotSupportedException();
         }

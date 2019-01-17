@@ -6,7 +6,7 @@ namespace Microsoft.Azure.SignalR
 {
     interface IServiceConnectionManager
     {
-        IEnumerable<IServiceConnection> CreateServiceConnection(int count = 1);
+        IServiceConnection CreateServiceConnection();
 
         void DisposeServiceConnection(IServiceConnection connection);
     }

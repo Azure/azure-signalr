@@ -11,23 +11,19 @@ namespace Microsoft.Azure.SignalR
 {
     abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceConnectionManager
     {
-        private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
-        private static TimeSpan ReconnectInterval =>
-            TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackOffInternalInMilliseconds));
-
         protected readonly IServiceConnectionFactory ServiceConnectionFactory;
         protected readonly IConnectionFactory ConnectionFactory;
-        protected readonly List<IServiceConnection> ServiceConnections;
-        protected readonly int Count;
+        protected readonly List<IServiceConnection> FixedServiceConnections;
+        protected readonly int FixedConnectionCount;
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory,
-            int count)
+            int fixedConnectionCount)
         {
             ServiceConnectionFactory = serviceConnectionFactory;
             ConnectionFactory = connectionFactory;
-            ServiceConnections = CreateFixedServiceConnection(count);
-            Count = count;
+            FixedServiceConnections = CreateFixedServiceConnection(fixedConnectionCount);
+            FixedConnectionCount = fixedConnectionCount;
         }
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
@@ -35,13 +31,13 @@ namespace Microsoft.Azure.SignalR
         {
             ServiceConnectionFactory = serviceConnectionFactory;
             ConnectionFactory = connectionFactory;
-            ServiceConnections = initialConnections;
-            Count = initialConnections.Count;
+            FixedServiceConnections = initialConnections;
+            FixedConnectionCount = initialConnections.Count;
         }
 
         public virtual Task StartAsync()
         {
-            return Task.WhenAll(ServiceConnections.Select(c => c.StartAsync()));
+            return Task.WhenAll(FixedServiceConnections.Select(c => c.StartAsync()));
         }
 
         /// <summary>
@@ -57,24 +53,7 @@ namespace Microsoft.Azure.SignalR
             return ServiceConnectionFactory.Create(ConnectionFactory, this, type);
         }
 
-        public IEnumerable<IServiceConnection> CreateServiceConnection(int count = 1)
-        {
-            if (count <= 0)
-            {
-                throw new ArgumentException($"{nameof(count)} must be greater than 0.");
-            }
-
-            for (int i = 0; i < count; i++)
-            {
-                yield return CreateServiceConnectionCore();
-            }
-        }
-
-        /// <summary>
-        /// Create an on-demand connection.
-        /// </summary>
-        /// <returns>An on-demand connection</returns>
-        protected abstract IServiceConnection CreateServiceConnectionCore();
+        public abstract IServiceConnection CreateServiceConnection();
 
         public abstract void DisposeServiceConnection(IServiceConnection connection);
 
@@ -98,12 +77,12 @@ namespace Microsoft.Azure.SignalR
 
         protected virtual Task WriteToPartitionedConnection(string partitionKey, ServiceMessage serviceMessage)
         {
-            return WriteWithRetry(serviceMessage, partitionKey.GetHashCode(), Count);
+            return WriteWithRetry(serviceMessage, partitionKey.GetHashCode(), FixedConnectionCount);
         }
 
         protected virtual Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
         {
-            return WriteWithRetry(serviceMessage, StaticRandom.Next(-Count, Count), Count);
+            return WriteWithRetry(serviceMessage, StaticRandom.Next(-FixedConnectionCount, FixedConnectionCount), FixedConnectionCount);
         }
 
         protected virtual async Task WriteWithRetry(ServiceMessage serviceMessage, int initial, int count)
@@ -115,7 +94,7 @@ namespace Microsoft.Azure.SignalR
             var direction = initial > 0 ? 1 : count - 1;
             while (retry < maxRetry)
             {
-                var connection = ServiceConnections[index];
+                var connection = FixedServiceConnections[index];
                 if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
                 {
                     try
@@ -138,17 +117,6 @@ namespace Microsoft.Azure.SignalR
             }
 
             throw new ServiceConnectionNotActiveException();
-        }
-
-        private TimeSpan GetRetryDelay(int retryCount)
-        {
-            // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
-            // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
-            if (retryCount > 5)
-            {
-                return TimeSpan.FromMinutes(1) + ReconnectInterval;
-            }
-            return TimeSpan.FromSeconds(1 << retryCount) + ReconnectInterval;
         }
 
         private List<IServiceConnection> CreateFixedServiceConnection(int count)
