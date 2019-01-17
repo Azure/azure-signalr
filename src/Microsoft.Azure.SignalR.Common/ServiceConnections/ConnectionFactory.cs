@@ -61,7 +61,7 @@ namespace Microsoft.Azure.SignalR
             var query = "cid=" + connectionId;
             if (target != null)
             {
-                query = query + $"&target={WebUtility.UrlEncode(target)}";
+                query = $"{query}&target={WebUtility.UrlEncode(target)}";
             }
             if (baseUri.Query != null && baseUri.Query.Length > 1)
             {
