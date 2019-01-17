@@ -35,8 +35,9 @@ namespace Microsoft.Azure.SignalR
                                  ConnectionDelegate connectionDelegate,
                                  IClientConnectionFactory clientConnectionFactory,
                                  string connectionId,
+                                 IServiceConnectionManager manager,
                                  ServerConnectionType connectionType = ServerConnectionType.Default) :
-            base(serviceProtocol, loggerFactory.CreateLogger<ServiceConnection>(), connectionId, connectionType)
+            base(serviceProtocol, loggerFactory.CreateLogger<ServiceConnection>(), connectionId, manager, connectionType)
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
@@ -44,9 +45,9 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionFactory = clientConnectionFactory;
         }
 
-        protected override Task<ConnectionContext> CreateConnection()
+        protected override Task<ConnectionContext> CreateConnection(string target = null)
         {
-            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId);
+            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId, target);
         }
 
         protected override Task DisposeConnection()

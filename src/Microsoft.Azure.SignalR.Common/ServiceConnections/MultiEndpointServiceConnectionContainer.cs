@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -45,19 +46,25 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public MultiEndpointServiceConnectionContainer(Func<ServerConnectionType, IConnectionFactory, IServiceConnection> generator, string hub, int count, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
-            : this(
-                  endpoint => CreateContainer(generator, endpoint, hub, count, endpointManager, loggerFactory),
-                  endpointManager, router, loggerFactory)
+        public MultiEndpointServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, string hub,
+            int count, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
+        :this(endpoint => CreateContainer(serviceConnectionFactory, endpoint, hub, count, endpointManager, loggerFactory),
+            endpointManager, router, loggerFactory)
         {
         }
 
-        private static IServiceConnectionContainer CreateContainer(Func<ServerConnectionType, IConnectionFactory, IServiceConnection> generator, ServiceEndpoint endpoint, string hub, int count, IServiceEndpointManager endpointManager, ILoggerFactory loggerFactory)
+        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, ServiceEndpoint endpoint, string hub, int count, IServiceEndpointManager endpointManager, ILoggerFactory loggerFactory)
         {
             var provider = endpointManager.GetEndpointProvider(endpoint);
-            var connectionFactory = new ServiceConnectionFactory(hub, provider, loggerFactory);
-            var serverConnectionType = endpoint.EndpointType == EndpointType.Primary ? ServerConnectionType.Default : ServerConnectionType.Weak;
-            return new ServiceConnectionContainer(() => generator(serverConnectionType, connectionFactory), count);
+            var connectionFactory = new ConnectionFactory(hub, provider, loggerFactory);
+            if (endpoint.EndpointType == EndpointType.Primary)
+            {
+                return new StrongServiceConnectionContainer(serviceConnectionFactory, connectionFactory, count);
+            }
+            else
+            {
+                return new WeakServiceConnectionContainer(serviceConnectionFactory, connectionFactory, count);
+            }
         }
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();
@@ -73,20 +80,6 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.StartingConnection(_logger, s.Key.Endpoint);
                 return s.Value.StartAsync();
-            }));
-        }
-
-        public Task StopAsync()
-        {
-            if (_inner != null)
-            {
-                return _inner.StopAsync();
-            }
-
-            return Task.WhenAll(Connections.Select(s =>
-            {
-                Log.StoppingConnection(_logger, s.Key.Endpoint);
-                return s.Value.StopAsync();
             }));
         }
 

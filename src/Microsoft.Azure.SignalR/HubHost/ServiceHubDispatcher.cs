@@ -61,17 +61,8 @@ namespace Microsoft.Azure.SignalR
 
         private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate)
         {
-            return new MultiEndpointServiceConnectionContainer(
-                (t, f) => GetServiceConnection(connectionDelegate, t, f),
-                hub, _options.ConnectionCount,
-                _serviceEndpointManager, _router, _loggerFactory);
-        }
-
-        private ServiceConnection GetServiceConnection(ConnectionDelegate connectionDelegate, ServerConnectionType type, IConnectionFactory factory)
-        {
-            return new ServiceConnection(_serviceProtocol, _clientConnectionManager, factory,
-                _loggerFactory, connectionDelegate, _clientConnectionFactory,
-                Guid.NewGuid().ToString(), type);
+            var serviceConnectionFactory = new ServiceConnectionFactory(_serviceProtocol, _clientConnectionManager, _loggerFactory, connectionDelegate,_clientConnectionFactory);
+            return new MultiEndpointServiceConnectionContainer(serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _loggerFactory);
         }
 
         private static class Log

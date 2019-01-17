@@ -29,16 +29,17 @@ namespace Microsoft.Azure.SignalR.AspNet
             IConnectionFactory connectionFactory,
             IClientConnectionManager clientConnectionManager,
             ILogger logger,
+            SignalR.IServiceConnectionManager manager,
             ServerConnectionType connectionType = ServerConnectionType.Default)
-            : base(serviceProtocol, logger, connectionId, connectionType)
+            : base(serviceProtocol, logger, connectionId, manager, connectionType)
         {
             _connectionFactory = connectionFactory;
             _clientConnectionManager = clientConnectionManager;
         }
 
-        protected override Task<ConnectionContext> CreateConnection()
+        protected override Task<ConnectionContext> CreateConnection(string target = null)
         {
-            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId);
+            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId, target);
         }
 
         protected override Task DisposeConnection()

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -12,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceConnectionFactory : IConnectionFactory
+    internal class ConnectionFactory : IConnectionFactory
     {
         // Fix issue: https://github.com/Azure/azure-signalr/issues/198
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.SignalR
         private readonly string _userId;
         private readonly string _hubName;
 
-        public ServiceConnectionFactory(string hubName, IServiceEndpointProvider provider, ILoggerFactory loggerFactory)
+        public ConnectionFactory(string hubName, IServiceEndpointProvider provider, ILoggerFactory loggerFactory)
         {
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _loggerFactory = loggerFactory;
@@ -31,11 +32,11 @@ namespace Microsoft.Azure.SignalR
             _hubName = hubName;
         }
 
-        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
+        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken = default)
         {
             var httpConnectionOptions = new HttpConnectionOptions
             {
-                Url = GetServiceUrl(connectionId),
+                Url = GetServiceUrl(connectionId, target),
                 AccessTokenProvider = () => Task.FromResult(_provider.GenerateServerAccessToken(_hubName, _userId)),
                 Transports = HttpTransportType.WebSockets,
                 SkipNegotiation = true,
@@ -54,10 +55,14 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private Uri GetServiceUrl(string connectionId)
+        private Uri GetServiceUrl(string connectionId, string target)
         {
             var baseUri = new UriBuilder(_provider.GetServerEndpoint(_hubName));
             var query = "cid=" + connectionId;
+            if (target != null)
+            {
+                query = $"{query}&target={WebUtility.UrlEncode(target)}";
+            }
             if (baseUri.Query != null && baseUri.Query.Length > 1)
             {
                 baseUri.Query = baseUri.Query.Substring(1) + "&" + query;

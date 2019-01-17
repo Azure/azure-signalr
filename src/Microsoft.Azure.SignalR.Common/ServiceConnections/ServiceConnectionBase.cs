@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
         private static readonly long DefaultKeepAliveTicks = DefaultKeepAliveInterval.Seconds * Stopwatch.Frequency;
         private static readonly int MaxReconnectBackoffInternalInMilliseconds = 1000;
+        private const string PingTargetKey = "target";
 
         // Start reconnect after a random interval less than 1 second
         private static TimeSpan ReconnectInterval =>
@@ -38,6 +40,8 @@ namespace Microsoft.Azure.SignalR
 
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
         private readonly ServerConnectionType _connectionType;
+
+        private readonly IServiceConnectionManager _serviceConnectionManager;
 
         private bool _isStopped;
         // Check service timeout
@@ -60,7 +64,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task WaitForConnectionStart => _serviceConnectionStartTcs.Task;
 
-        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId, ServerConnectionType connectionType)
+        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId, IServiceConnectionManager serviceConnectionManager, ServerConnectionType connectionType)
         {
             ServiceProtocol = serviceProtocol;
             Logger = logger;
@@ -70,15 +74,16 @@ namespace Microsoft.Azure.SignalR
 
             _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
             _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
+            _serviceConnectionManager = serviceConnectionManager;
         }
 
-        public async Task StartAsync()
+        public async Task StartAsync(string target = null)
         {
             int retryCount = 0;
             while (!_isStopped)
             {
                 // If we are not able to start, we will quit this connection.
-                if (!await StartAsyncCore())
+                if (!await StartAsyncCore(target))
                 {
                     _serviceConnectionStartTcs.TrySetResult(false);
 
@@ -154,7 +159,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        protected abstract Task<ConnectionContext> CreateConnection();
+        protected abstract Task<ConnectionContext> CreateConnection(string target = null);
 
         protected abstract Task DisposeConnection();
 
@@ -181,7 +186,30 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        private async Task<bool> StartAsyncCore()
+        protected Task OnPingMessageAsync(PingMessage pingMessage)
+        {
+            if (pingMessage.Messages.Length == 0)
+            {
+                return Task.CompletedTask;
+            }
+
+            int index = 0;
+            while (index < pingMessage.Messages.Length - 1)
+            {
+                if (pingMessage.Messages[index] == PingTargetKey &&
+                    !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
+                {
+                    var connection = _serviceConnectionManager.CreateServiceConnection();
+                    return connection.StartAsync(pingMessage.Messages[index + 1]);
+                }
+
+                index += 2;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private async Task<bool> StartAsyncCore(string target)
         {
             // Lock here in case somebody tries to send before the connection is assigned
             await _serviceConnectionLock.WaitAsync();
@@ -189,7 +217,7 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 Status = ServiceConnectionStatus.Connecting;
-                ConnectionContext = await CreateConnection();
+                ConnectionContext = await CreateConnection(target);
                 ErrorMessage = null;
 
                 if (await HandshakeAsync())
@@ -411,9 +439,8 @@ namespace Microsoft.Azure.SignalR
                     return OnMessageAsync(connectionDataMessage);
                 case ServiceErrorMessage serviceErrorMessage:
                     return OnServiceErrorAsync(serviceErrorMessage);
-                case PingMessage _:
-                    // ignore ping
-                    break;
+                case PingMessage pingMessage:
+                    return OnPingMessageAsync(pingMessage);
             }
             return Task.CompletedTask;
         }

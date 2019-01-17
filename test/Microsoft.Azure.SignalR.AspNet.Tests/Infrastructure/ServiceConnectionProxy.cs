@@ -24,13 +24,14 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         private TestConnectionContext _connectionContext;
 
-        public ServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null) :
+        public ServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null, SignalR.IServiceConnectionManager serviceConnectionManager = null) :
             base(
                 Guid.NewGuid().ToString("N"),
                 SharedServiceProtocol,
                 new TestConnectionFactory(),
                 clientConnectionManager,
-                loggerFactory.CreateLogger<ServiceConnectionProxy>())
+                loggerFactory.CreateLogger<ServiceConnectionProxy>(),
+                serviceConnectionManager)
         {
         }
 
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             await WaitForConnectionStart;
         }
 
-        protected override async Task<ConnectionContext> CreateConnection()
+        protected override async Task<ConnectionContext> CreateConnection(string target = null)
         {
             _connectionContext = await base.CreateConnection() as TestConnectionContext;
 
@@ -127,7 +128,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 return _waitForServerConnection.Task;
             }
 
-            public Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
+            public Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken = default)
             {
                 var connection = new TestConnectionContext();
                 _connectCallback?.Invoke(connection);

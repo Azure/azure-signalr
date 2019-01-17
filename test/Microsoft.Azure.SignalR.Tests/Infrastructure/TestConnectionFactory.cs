@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Tests
             _connectCallback = connectCallback;
         }
         
-        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId,
+        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, string target,
             CancellationToken cancellationToken = default)
         {
             Times.Add(DateTime.Now);
