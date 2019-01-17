@@ -53,15 +53,15 @@ namespace Microsoft.Azure.SignalR.AspNet
             for (int i = 0; i < count; i++)
             {
                 var setting = ConfigurationManager.ConnectionStrings[i];
-                var se = GetEndpoint(setting.Name, () => setting.ConnectionString);
-                if (se.endpoint != null)
+                var (isDefault, endpoint) = GetEndpoint(setting.Name, () => setting.ConnectionString);
+                if (endpoint != null)
                 {
-                    if (se.isDefault)
+                    if (isDefault)
                     {
-                        connectionString = se.endpoint.ConnectionString;
+                        connectionString = endpoint.ConnectionString;
                     }
 
-                    endpoints.Add(se.endpoint);
+                    endpoints.Add(endpoint);
                 }
             }
 
@@ -70,15 +70,15 @@ namespace Microsoft.Azure.SignalR.AspNet
                 // Fallback to use AppSettings
                 foreach(var key in ConfigurationManager.AppSettings.AllKeys)
                 {
-                    var se = GetEndpoint(key, () => ConfigurationManager.AppSettings[key]);
-                    if (se.endpoint != null)
+                    var (isDefault, endpoint) = GetEndpoint(key, () => ConfigurationManager.AppSettings[key]);
+                    if (endpoint != null)
                     {
-                        if (se.isDefault)
+                        if (isDefault)
                         {
-                            connectionString = se.endpoint.ConnectionString;
+                            connectionString = endpoint.ConnectionString;
                         }
 
-                        endpoints.Add(se.endpoint);
+                        endpoints.Add(endpoint);
                     }
                 }
             }
