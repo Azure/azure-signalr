@@ -12,40 +12,47 @@ namespace Microsoft.Azure.SignalR
 {
     internal abstract class ServiceEndpointManagerBase : IServiceEndpointManager
     {
-        private readonly ServiceEndpoint[] _endpoints;
         private readonly ServiceEndpoint[] _primaryEndpoints;
         private readonly ILogger _logger;
 
-        public ServiceEndpointManagerBase(IReadOnlyCollection<ServiceEndpoint> endpoints, ILogger logger)
+        protected ServiceEndpoint[] Endpoints { get; }
+
+        public ServiceEndpointManagerBase(IServiceEndpointOptions options, ILogger logger) 
+            : this(GetEndpoints(options).ToArray(), logger)
         {
-            if (endpoints.Count == 0)
-            {
-                throw new AzureSignalRNoEndpointAvailableException();
-            }
+        }
+
+        // for test purpose
+        internal ServiceEndpointManagerBase(ServiceEndpoint[] endpoints, ILogger logger)
+        {
+            Endpoints = endpoints;
 
             _logger = logger ?? NullLogger.Instance;
 
-            var groupedEndpoints = endpoints.GroupBy(s => s.Endpoint).Select(s =>
+            if (Endpoints.Length != 0)
             {
-                var items = s.ToList();
-                if (items.Count > 1)
+                var groupedEndpoints = Endpoints.GroupBy(s => s.Endpoint).Select(s =>
                 {
-                    // By default pick up the primary endpoint, otherwise the first one
-                    var item = items.FirstOrDefault(i => i.EndpointType == EndpointType.Primary) ?? items.FirstOrDefault();
-                    Log.DuplicateEndpointFound(_logger, items.Count, item.Endpoint, item.ToString());
-                    return item;
+                    var items = s.ToList();
+                    if (items.Count > 1)
+                    {
+                        // By default pick up the primary endpoint, otherwise the first one
+                        var item = items.FirstOrDefault(i => i.EndpointType == EndpointType.Primary) ?? items.FirstOrDefault();
+                        Log.DuplicateEndpointFound(_logger, items.Count, item.Endpoint, item.ToString());
+                        return item;
+                    }
+
+                    return items[0];
+                });
+
+                Endpoints = groupedEndpoints.ToArray();
+
+                _primaryEndpoints = Endpoints.Where(s => s.EndpointType == EndpointType.Primary).ToArray();
+
+                if (_primaryEndpoints.Length == 0)
+                {
+                    throw new AzureSignalRNoPrimaryEndpointException();
                 }
-
-                return items[0];
-            });
-
-            _endpoints = groupedEndpoints.ToArray();
-
-            _primaryEndpoints = _endpoints.Where(s => s.EndpointType == EndpointType.Primary).ToArray();
-
-            if (_primaryEndpoints.Length == 0)
-            {
-                throw new AzureSignalRNoPrimaryEndpointException();
             }
         }
 
@@ -53,7 +60,7 @@ namespace Microsoft.Azure.SignalR
 
         public IReadOnlyList<ServiceEndpoint> GetAvailableEndpoints()
         {
-            return _endpoints;
+            return Endpoints;
         }
 
         /// <summary>
@@ -63,6 +70,33 @@ namespace Microsoft.Azure.SignalR
         public IReadOnlyList<ServiceEndpoint> GetPrimaryEndpoints()
         {
             return _primaryEndpoints;
+        }
+
+        private static IEnumerable<ServiceEndpoint> GetEndpoints(IServiceEndpointOptions options)
+        {
+            if (options == null)
+            {
+                yield break;
+            }
+
+            var endpoints = options.Endpoints;
+            var connectionString = options.ConnectionString;
+
+            // ConnectionString can be set by custom Csonfigure
+            // Return both the one from ConnectionString and from Endpoints
+            // TODO: Better way if Endpoints already contains ConnectionString one?
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                yield return new ServiceEndpoint(options.ConnectionString);
+            }
+
+            if (endpoints != null)
+            {
+                foreach (var endpoint in endpoints)
+                {
+                    yield return endpoint;
+                }
+            }
         }
 
         private static class Log
