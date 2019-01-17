@@ -20,8 +20,6 @@ namespace Microsoft.Azure.SignalR
         protected readonly List<IServiceConnection> ServiceConnections;
         protected readonly int Count;
 
-        private volatile int _defaultConnectionRetry;
-
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory,
             int count)
@@ -140,30 +138,6 @@ namespace Microsoft.Azure.SignalR
             }
 
             throw new ServiceConnectionNotActiveException();
-        }
-
-        protected async Task ReconnectWithDelayAsync(int index)
-        {
-            if (index < 0 || index >= Count)
-            {
-                throw new ArgumentException($"{nameof(index)} must between 0 and {Count}");
-            }
-
-            await Task.Delay(GetRetryDelay(_defaultConnectionRetry));
-
-            // Increase retry count after delay, then if a group of connections get disconnected simultaneously,
-            // all of them will delay a similar range of time and reconnect. But if they get disconnected again (when SignalR service down), 
-            // they will all delay for a much longer time.
-            Interlocked.Increment(ref _defaultConnectionRetry);
-
-            var connection = GetSingleServiceConnection();
-            ServiceConnections[index] = connection;
-
-            await connection.StartAsync();
-            if (connection.Status == ServiceConnectionStatus.Connected)
-            {
-                Interlocked.Exchange(ref _defaultConnectionRetry, 0);
-            }
         }
 
         private TimeSpan GetRetryDelay(int retryCount)

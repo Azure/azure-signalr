@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
         }
 
         // For test purpose only
-        public WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
+        internal WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections) : base(
             serviceConnectionFactory, connectionFactory, initialConnections)
         {
@@ -33,18 +33,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 
         public override void DisposeServiceConnection(IServiceConnection connection)
         {
-            if (connection == null)
-            {
-                throw new ArgumentNullException(nameof(connection));
-            }
-
-            int index = ServiceConnections.IndexOf(connection);
-            if (index == -1)
-            {
-                return;
-            }
-
-            _ = ReconnectWithDelayAsync(index);
+            throw new NotImplementedException();
         }
     }
 }

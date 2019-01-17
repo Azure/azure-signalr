@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         // For test purpose only
-        public StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
+        internal StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections) : base(
             serviceConnectionFactory, connectionFactory, initialConnections)
         {
@@ -53,40 +53,7 @@ namespace Microsoft.Azure.SignalR
 
         public override void DisposeServiceConnection(IServiceConnection connection)
         {
-            if (connection == null)
-            {
-                throw new ArgumentNullException(nameof(connection));
-            }
-
-            int index = ServiceConnections.IndexOf(connection);
-            if (index != -1)
-            {
-                lock (_lock)
-                {
-                    foreach (var serviceConnection in _onDemandServiceConnections)
-                    {
-                        if (serviceConnection.Status == ServiceConnectionStatus.Connected)
-                        {
-                            ServiceConnections[index] = serviceConnection;
-                            _onDemandServiceConnections.Remove(serviceConnection);
-                            return;
-                        }
-                    }
-                }
-
-                _ = ReconnectWithDelayAsync(index);
-                return;
-            }
-
-            lock (_lock)
-            {
-                index = _onDemandServiceConnections.IndexOf(connection);
-                if (index == -1)
-                {
-                    return;
-                }
-                _onDemandServiceConnections.RemoveAt(index);
-            }
+            throw new NotImplementedException();
         }
 
         protected override Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
