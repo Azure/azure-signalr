@@ -11,10 +11,16 @@ namespace Microsoft.Azure.SignalR
 {
     abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceConnectionManager
     {
+        private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
+        private static TimeSpan ReconnectInterval =>
+            TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackOffInternalInMilliseconds));
+
         protected readonly IServiceConnectionFactory ServiceConnectionFactory;
         protected readonly IConnectionFactory ConnectionFactory;
         protected readonly List<IServiceConnection> FixedServiceConnections;
         protected readonly int FixedConnectionCount;
+
+        private volatile int _defaultConnectionRetry;
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory,
@@ -56,6 +62,52 @@ namespace Microsoft.Azure.SignalR
         public abstract IServiceConnection CreateServiceConnection();
 
         public abstract void DisposeServiceConnection(IServiceConnection connection);
+
+        public virtual async Task RestartServiceConnectionAsync(IServiceConnection serviceConnection)
+        {
+            if (serviceConnection == null)
+            {
+                throw new ArgumentNullException(nameof(serviceConnection));
+            }
+
+            int index = FixedServiceConnections.IndexOf(serviceConnection);
+            if (index == -1)
+            {
+                return;
+            }
+
+            await RestartServiceConnectionCoreAsync(index);
+        }
+
+        protected async Task RestartServiceConnectionCoreAsync(int index)
+        {
+            await Task.Delay(GetRetryDelay(_defaultConnectionRetry));
+
+            // Increase retry count after delay, then if a group of connections get disconnected simultaneously,
+            // all of them will delay a similar range of time and reconnect. But if they get disconnected again (when SignalR service down), 
+            // they will all delay for a much longer time.
+            Interlocked.Increment(ref _defaultConnectionRetry);
+
+            var connection = CreateServiceConnectionCore();
+            FixedServiceConnections[index] = connection;
+
+            await connection.StartAsync();
+            if (connection.Status == ServiceConnectionStatus.Connected)
+            {
+                Interlocked.Exchange(ref _defaultConnectionRetry, 0);
+            }
+        }
+
+        private TimeSpan GetRetryDelay(int retryCount)
+        {
+            // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
+            // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
+            if (retryCount > 5)
+            {
+                return TimeSpan.FromMinutes(1) + ReconnectInterval;
+            }
+            return TimeSpan.FromSeconds(1 << retryCount) + ReconnectInterval;
+        }
 
         public virtual ServiceConnectionStatus Status => throw new NotSupportedException();
 

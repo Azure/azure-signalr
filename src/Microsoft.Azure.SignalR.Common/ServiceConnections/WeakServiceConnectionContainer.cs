@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 
         public override void DisposeServiceConnection(IServiceConnection connection)
         {
-            throw new NotImplementedException();
+            _ = RestartServiceConnectionAsync(connection);
         }
     }
 }

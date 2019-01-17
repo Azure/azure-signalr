@@ -53,7 +53,39 @@ namespace Microsoft.Azure.SignalR
 
         public override void DisposeServiceConnection(IServiceConnection connection)
         {
-            throw new NotImplementedException();
+            if (connection == null)
+            {
+                throw new ArgumentNullException(nameof(connection));
+            }
+
+            int index = FixedServiceConnections.IndexOf(connection);
+            if (index != -1)
+            {
+                lock (_lock)
+                {
+                    foreach (var serviceConnection in _onDemandServiceConnections)
+                    {
+                        if (serviceConnection.Status == ServiceConnectionStatus.Connected)
+                        {
+                            FixedServiceConnections[index] = serviceConnection;
+                            _onDemandServiceConnections.Remove(serviceConnection);
+                            return;
+                        }
+                    }
+                }
+
+                _ = RestartServiceConnectionCoreAsync(index);
+                return;
+            }
+
+            lock (_lock)
+            {
+                index = _onDemandServiceConnections.IndexOf(connection);
+                if (index != -1)
+                {
+                    _onDemandServiceConnections.RemoveAt(index);
+                }
+            }
         }
     }
 }

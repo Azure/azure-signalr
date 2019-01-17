@@ -43,7 +43,6 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IServiceConnectionManager _serviceConnectionManager;
 
-        private bool _isStopped;
         // Check service timeout
         private long _lastReceiveTimestamp;
         // Keep-alive tick
@@ -79,24 +78,16 @@ namespace Microsoft.Azure.SignalR
 
         public async Task StartAsync(string target = null)
         {
-            int retryCount = 0;
-            while (!_isStopped)
+            if (await StartAsyncCore(target))
             {
-                // If we are not able to start, we will quit this connection.
-                if (!await StartAsyncCore(target))
-                {
-                    _serviceConnectionStartTcs.TrySetResult(false);
-
-                    await Task.Delay(GetRetryDelay(ref retryCount));
-                    continue;
-                }
-
                 _serviceConnectionStartTcs.TrySetResult(true);
-                retryCount = 0;
                 _isConnected = true;
                 await ProcessIncomingAsync();
                 _isConnected = false;
             }
+
+            _serviceConnectionStartTcs.TrySetResult(false);
+            await StopAsync();
         }
 
         /// <summary>
@@ -113,11 +104,10 @@ namespace Microsoft.Azure.SignalR
             return TimeSpan.FromSeconds(1 << retryCount++) + ReconnectInterval;
         }
 
-        // For test purpose only
         public Task StopAsync()
         {
-            _isStopped = true;
             ConnectionContext?.Transport.Input.CancelPendingRead();
+            _serviceConnectionManager.DisposeServiceConnection(this);
             return Task.CompletedTask;
         }
 
