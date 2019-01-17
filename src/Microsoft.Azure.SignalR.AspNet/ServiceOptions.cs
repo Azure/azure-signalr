@@ -54,14 +54,14 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 var setting = ConfigurationManager.ConnectionStrings[i];
                 var se = GetEndpoint(setting.Name, () => setting.ConnectionString);
-                if (se.Item2 != null)
+                if (se.endpoint != null)
                 {
-                    if (se.Item1)
+                    if (se.isDefault)
                     {
-                        connectionString = se.Item2.ConnectionString;
+                        connectionString = se.endpoint.ConnectionString;
                     }
 
-                    endpoints.Add(se.Item2);
+                    endpoints.Add(se.endpoint);
                 }
             }
 
