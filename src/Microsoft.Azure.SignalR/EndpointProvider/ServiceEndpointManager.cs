@@ -2,9 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -15,27 +12,20 @@ namespace Microsoft.Azure.SignalR
         private readonly TimeSpan? _ttl;
 
         public ServiceEndpointManager(IOptions<ServiceOptions> options, ILoggerFactory loggerFactory) :
-            base(GetEndpoints(options?.Value).ToArray(),
-                loggerFactory?.CreateLogger<ServiceEndpointManager>())
+            base(options.Value,
+                loggerFactory.CreateLogger<ServiceEndpointManager>())
         {
+            if (Endpoints.Length == 0)
+            {
+                throw new ArgumentException(ServiceEndpointProvider.ConnectionStringNotFound);
+            }
+
             _ttl = options.Value?.AccessTokenLifetime;
         }
 
         public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
         {
             return new ServiceEndpointProvider(endpoint, _ttl);
-        }
-
-        private static IEnumerable<ServiceEndpoint> GetEndpoints(ServiceOptions options)
-        {
-            // TODO: support multiple endpoints
-            var connectionString = options?.ConnectionString;
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                throw new ArgumentException(ServiceEndpointProvider.ConnectionStringNotFound);
-            }
-
-            yield return new ServiceEndpoint(connectionString);
         }
     }
 }
