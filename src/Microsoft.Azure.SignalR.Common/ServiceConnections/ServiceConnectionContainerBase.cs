@@ -11,6 +11,8 @@ namespace Microsoft.Azure.SignalR
 {
     abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceConnectionManager
     {
+        private readonly ServiceEndpoint _endpoint;
+
         protected readonly IServiceConnectionFactory ServiceConnectionFactory;
         protected readonly IConnectionFactory ConnectionFactory;
         protected readonly List<IServiceConnection> FixedServiceConnections;
@@ -18,26 +20,37 @@ namespace Microsoft.Azure.SignalR
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory,
-            int fixedConnectionCount)
+            int fixedConnectionCount, ServiceEndpoint endpoint)
         {
             ServiceConnectionFactory = serviceConnectionFactory;
             ConnectionFactory = connectionFactory;
             FixedServiceConnections = CreateFixedServiceConnection(fixedConnectionCount);
             FixedConnectionCount = fixedConnectionCount;
+            _endpoint = endpoint;
         }
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections)
+            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections, ServiceEndpoint endpoint)
         {
             ServiceConnectionFactory = serviceConnectionFactory;
             ConnectionFactory = connectionFactory;
             FixedServiceConnections = initialConnections;
             FixedConnectionCount = initialConnections.Count;
+            _endpoint = endpoint;
         }
 
-        public virtual Task StartAsync()
+        public async Task StartAsync()
         {
-            return Task.WhenAll(FixedServiceConnections.Select(c => c.StartAsync()));
+            var tasks = FixedServiceConnections.Select(c => c.StartAsync());
+            await Task.WhenAny(FixedServiceConnections.Select(s => s.ConnectionInitializedTask));
+
+            // Set the endpoint connection after one connection is initialized
+            if (_endpoint != null)
+            {
+                _endpoint.Connection = this;
+            }
+
+            await Task.WhenAll(tasks);
         }
 
         /// <summary>
@@ -57,7 +70,7 @@ namespace Microsoft.Azure.SignalR
 
         public abstract void DisposeServiceConnection(IServiceConnection connection);
 
-        public virtual ServiceConnectionStatus Status => throw new NotSupportedException();
+        public ServiceConnectionStatus Status => GetStatus();
 
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
@@ -73,6 +86,13 @@ namespace Microsoft.Azure.SignalR
             }
 
             return WriteToPartitionedConnection(partitionKey, serviceMessage);
+        }
+
+        protected virtual ServiceConnectionStatus GetStatus()
+        {
+            return FixedServiceConnections.Any(s => s.Status == ServiceConnectionStatus.Connected)
+                ? ServiceConnectionStatus.Connected
+                : ServiceConnectionStatus.Disconnected;
         }
 
         private Task WriteToPartitionedConnection(string partitionKey, ServiceMessage serviceMessage)

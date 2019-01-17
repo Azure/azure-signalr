@@ -12,5 +12,7 @@ namespace Microsoft.Azure.SignalR
         IReadOnlyList<ServiceEndpoint> GetAvailableEndpoints();
 
         IReadOnlyList<ServiceEndpoint> GetPrimaryEndpoints();
+
+        ServiceEndpoint[] Endpoints { get; }
     }
 }

@@ -4,10 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Common;
-using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -20,17 +16,36 @@ namespace Microsoft.Azure.SignalR
 
         public StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory,
-            int fixedConnectionCount) : base(serviceConnectionFactory, connectionFactory, fixedConnectionCount)
+            int fixedConnectionCount, ServiceEndpoint endpoint) : base(serviceConnectionFactory, connectionFactory, fixedConnectionCount, endpoint)
         {
             _onDemandServiceConnections = new List<IServiceConnection>();
         }
 
         // For test purpose only
         internal StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections) : base(
-            serviceConnectionFactory, connectionFactory, initialConnections)
+            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections, ServiceEndpoint endpoint) : base(
+            serviceConnectionFactory, connectionFactory, initialConnections, endpoint)
         {
             _onDemandServiceConnections = new List<IServiceConnection>();
+        }
+
+        protected override ServiceConnectionStatus GetStatus()
+        {
+            var status = base.GetStatus();
+            if (status == ServiceConnectionStatus.Connected)
+            {
+                return status;
+            }
+
+            lock (_lock)
+            {
+                if (_onDemandServiceConnections.Any(s => s.Status == ServiceConnectionStatus.Connected))
+                {
+                    return ServiceConnectionStatus.Connected;
+                }
+            }
+
+            return ServiceConnectionStatus.Disconnected;
         }
 
         protected override IServiceConnection CreateServiceConnectionCore()

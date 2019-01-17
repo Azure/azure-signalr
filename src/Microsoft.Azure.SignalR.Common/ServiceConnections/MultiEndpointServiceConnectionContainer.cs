@@ -32,9 +32,9 @@ namespace Microsoft.Azure.SignalR
             _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? NullLogger<MultiEndpointServiceConnectionContainer>.Instance;
 
-            var endpoints = endpointManager.GetAvailableEndpoints();
+            var endpoints = endpointManager.Endpoints;
 
-            if (endpoints.Count == 1)
+            if (endpoints.Length == 1)
             {
                 _inner = generator(endpoints[0]);
             }
@@ -59,11 +59,11 @@ namespace Microsoft.Azure.SignalR
             var connectionFactory = new ConnectionFactory(hub, provider, loggerFactory);
             if (endpoint.EndpointType == EndpointType.Primary)
             {
-                return new StrongServiceConnectionContainer(serviceConnectionFactory, connectionFactory, count);
+                return new StrongServiceConnectionContainer(serviceConnectionFactory, connectionFactory, count, endpoint);
             }
             else
             {
-                return new WeakServiceConnectionContainer(serviceConnectionFactory, connectionFactory, count);
+                return new WeakServiceConnectionContainer(serviceConnectionFactory, connectionFactory, count, endpoint);
             }
         }
 
