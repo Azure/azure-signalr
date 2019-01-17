@@ -43,12 +43,12 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Get a connection in initialization and reconnection
         /// </summary>
-        protected abstract IServiceConnection GetSingleServiceConnection();
+        protected abstract IServiceConnection CreateServiceConnectionCore();
 
         /// <summary>
         /// Get a connection for a specific service connection type
         /// </summary>
-        protected virtual IServiceConnection GetSingleServiceConnection(ServerConnectionType type)
+        protected virtual IServiceConnection CreateServiceConnectionCore(ServerConnectionType type)
         {
             return ServiceConnectionFactory.Create(ConnectionFactory, this, type);
         }
@@ -75,17 +75,17 @@ namespace Microsoft.Azure.SignalR
             return WriteToPartitionedConnection(partitionKey, serviceMessage);
         }
 
-        protected virtual Task WriteToPartitionedConnection(string partitionKey, ServiceMessage serviceMessage)
+        private Task WriteToPartitionedConnection(string partitionKey, ServiceMessage serviceMessage)
         {
             return WriteWithRetry(serviceMessage, partitionKey.GetHashCode(), FixedConnectionCount);
         }
 
-        protected virtual Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
+        private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
         {
             return WriteWithRetry(serviceMessage, StaticRandom.Next(-FixedConnectionCount, FixedConnectionCount), FixedConnectionCount);
         }
 
-        protected virtual async Task WriteWithRetry(ServiceMessage serviceMessage, int initial, int count)
+        private async Task WriteWithRetry(ServiceMessage serviceMessage, int initial, int count)
         {
             // go through all the connections, it can be useful when one of the remote service instances is down
             var maxRetry = count;
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.SignalR
             var connections = new List<IServiceConnection>();
             for (int i = 0; i < count; i++)
             {
-                var connection = GetSingleServiceConnection();
+                var connection = CreateServiceConnectionCore();
                 connections.Add(connection);
             }
 

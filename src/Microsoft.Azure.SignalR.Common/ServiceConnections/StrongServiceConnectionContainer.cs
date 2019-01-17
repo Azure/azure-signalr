@@ -33,9 +33,9 @@ namespace Microsoft.Azure.SignalR
             _onDemandServiceConnections = new List<IServiceConnection>();
         }
 
-        protected override IServiceConnection GetSingleServiceConnection()
+        protected override IServiceConnection CreateServiceConnectionCore()
         {
-            return GetSingleServiceConnection(ServerConnectionType.Default);
+            return CreateServiceConnectionCore(ServerConnectionType.Default);
         }
 
         public override IServiceConnection CreateServiceConnection()
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.SignalR
 
             lock (_lock)
             {
-                newConnection = GetSingleServiceConnection(ServerConnectionType.OnDemand);
+                newConnection = CreateServiceConnectionCore(ServerConnectionType.OnDemand);
                 _onDemandServiceConnections.Add(newConnection);
             }
 
@@ -54,68 +54,6 @@ namespace Microsoft.Azure.SignalR
         public override void DisposeServiceConnection(IServiceConnection connection)
         {
             throw new NotImplementedException();
-        }
-
-        protected override Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
-        {
-            // The count can't be accurate, but it's enough.
-            int onDemandConnectionCount = _onDemandServiceConnections.Count;
-
-            var randomIndex = StaticRandom.Next(onDemandConnectionCount + FixedConnectionCount);
-            if (randomIndex < FixedConnectionCount)
-            {
-                return WriteWithRetry(serviceMessage, StaticRandom.Next(-FixedConnectionCount, FixedConnectionCount), FixedConnectionCount);
-            }
-            else
-            {
-                return WriteOnDemandConnectionWithRetry(serviceMessage, StaticRandom.Next(-onDemandConnectionCount, onDemandConnectionCount), onDemandConnectionCount);
-            }
-        }
-
-        private async Task WriteOnDemandConnectionWithRetry(ServiceMessage serviceMessage, int initial, int count)
-        {
-            var maxRetry = count;
-            var retry = 0;
-            var direction = initial > 0 ? 1 : - 1;
-            while (retry < maxRetry)
-            {
-                var connection = SelectConnection(count, initial, direction * retry);
-                if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
-                {
-                    try
-                    {
-                        // still possible the connection is not valid
-                        await connection.WriteAsync(serviceMessage);
-                        return;
-                    }
-                    catch (ServiceConnectionNotActiveException)
-                    {
-                        if (retry == maxRetry - 1)
-                        {
-                            throw;
-                        }
-                    }
-                }
-                retry++;
-            }
-            throw new ServiceConnectionNotActiveException();
-        }
-
-        private IServiceConnection SelectConnection(int range, int initial, int step)
-        {
-            // Loop in the range of on-demand connection count got before.
-            // The actual count can be changed between loops.
-            // Just return null for those have removed.
-            int index = (initial & int.MaxValue + step) % range;
-            lock (_lock)
-            {
-                if (index < _onDemandServiceConnections.Count)
-                {
-                    return _onDemandServiceConnections[index];
-                }
-
-                return null;
-            }
         }
     }
 }

@@ -21,9 +21,9 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
         {
         }
 
-        protected override IServiceConnection GetSingleServiceConnection()
+        protected override IServiceConnection CreateServiceConnectionCore()
         {
-            return GetSingleServiceConnection(ServerConnectionType.Weak);
+            return CreateServiceConnectionCore(ServerConnectionType.Weak);
         }
 
         public override IServiceConnection CreateServiceConnection()
