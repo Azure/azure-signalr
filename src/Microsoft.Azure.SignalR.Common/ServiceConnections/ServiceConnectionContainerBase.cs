@@ -63,7 +63,7 @@ namespace Microsoft.Azure.SignalR
 
         public abstract void DisposeServiceConnection(IServiceConnection connection);
 
-        public virtual async Task RestartServiceConnectionAsync(IServiceConnection serviceConnection)
+        protected virtual async Task RestartServiceConnectionAsync(IServiceConnection serviceConnection)
         {
             if (serviceConnection == null)
             {

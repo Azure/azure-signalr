@@ -10,7 +10,5 @@ namespace Microsoft.Azure.SignalR
         IServiceConnection CreateServiceConnection();
 
         void DisposeServiceConnection(IServiceConnection connection);
-
-        Task RestartServiceConnectionAsync(IServiceConnection connection);
     }
 }
