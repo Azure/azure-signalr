@@ -2,28 +2,22 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
-using System.IO.Pipelines;
-using System.Net;
-using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Extensions.Primitives;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    public class ServiceConnectionContainerFacts
+    public partial class ServiceConnectionContainerFacts
     {
         private static readonly ServiceProtocol Protocol = new ServiceProtocol();
 
         [Fact]
         public async Task TestServiceConnectionContainerWithAllConnectedSucceeeds()
         {
-            var container = new StrongServiceConnectionContainer(null, null, new List<IServiceConnection> {
+            var container = new TestServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -41,7 +35,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestServiceConnectionContainerWithAllDisconnectedThrows()
         {
-            var container = new StrongServiceConnectionContainer(null, null, new List<IServiceConnection> {
+            var container = new TestServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -63,7 +57,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestServiceConnectionContainerWithAllThrowsThrows()
         {
-            var container = new StrongServiceConnectionContainer(null, null, new List<IServiceConnection> {
+            var container = new TestServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(throws: true),
                 new TestServiceConnection(throws: true),
                 new TestServiceConnection(throws: true),
@@ -85,7 +79,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestServiceConnectionContainerWithSomeThrows1WriteWithPartitionCanPass()
         {
-            var container = new StrongServiceConnectionContainer(null, null, new List<IServiceConnection> {
+            var container = new TestServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(throws: true),
                 new TestServiceConnection(throws: true),
                 new TestServiceConnection(throws: true),
@@ -102,7 +96,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestServiceConnectionContainerWithSomeThrows2WriteWithPartitionCanPass()
         {
-            var container = new StrongServiceConnectionContainer(null, null, new List<IServiceConnection> {
+            var container = new TestServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(throws: true),
                 new TestServiceConnection(throws: true),
@@ -119,7 +113,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestServiceConnectionContainerWithSomeThrows3WriteWithPartitionCanPass()
         {
-            var container = new StrongServiceConnectionContainer(null, null, new List<IServiceConnection> {
+            var container = new TestServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(throws: true),
                 new TestServiceConnection(throws: true),
                 new TestServiceConnection(),
@@ -136,6 +130,8 @@ namespace Microsoft.Azure.SignalR.Tests
         private sealed class TestServiceConnection : IServiceConnection
         {
             public ServiceConnectionStatus Status { get; }
+
+            public Task ConnectionInitializedTask => Task.CompletedTask;
 
             private readonly bool _throws;
             public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false)

@@ -39,7 +39,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             _ = StartAsync();
 
-            await WaitForConnectionStart;
+            await ConnectionInitializedTask;
         }
 
         protected override async Task<ConnectionContext> CreateConnection(string target = null)

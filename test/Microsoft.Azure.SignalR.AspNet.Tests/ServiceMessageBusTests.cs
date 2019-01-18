@@ -302,6 +302,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             public ServiceConnectionStatus Status => ServiceConnectionStatus.Connected;
 
+            public Task ConnectionInitializedTask => Task.CompletedTask;
+
             public TestServiceConnection(string name, Action<(ServiceMessage, IServiceConnectionContainer)> validator)
             {
                 _validator = validator;

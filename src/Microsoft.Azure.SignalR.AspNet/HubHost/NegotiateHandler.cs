@@ -58,7 +58,17 @@ namespace Microsoft.Azure.SignalR.AspNet
             var owinContext = new OwinContext(context.Environment);
             var claims = BuildClaims(owinContext, context.Request);
 
-            var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(_endpointManager.GetPrimaryEndpoints()));
+            IServiceEndpointProvider provider;
+            try
+            {
+                provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(_endpointManager.GetPrimaryEndpoints()));
+            }
+            catch (AzureSignalRNotConnectedException e)
+            {
+                Log.NegotiateFailed(_logger, e.Message);
+                context.Response.StatusCode = 500;
+                return context.Response.End(e.Message);
+            }
 
             // Redirect to Service
             // TODO: add OriginalPaht and QueryString when the clients support it

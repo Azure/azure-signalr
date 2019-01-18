@@ -62,7 +62,7 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceConnectionStatus Status { get; private set; }
 
-        public Task WaitForConnectionStart => _serviceConnectionStartTcs.Task;
+        public Task ConnectionInitializedTask => _serviceConnectionStartTcs.Task;
 
         public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILogger logger, string connectionId, IServiceConnectionManager serviceConnectionManager, ServerConnectionType connectionType)
         {

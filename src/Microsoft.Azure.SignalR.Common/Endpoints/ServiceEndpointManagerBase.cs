@@ -12,10 +12,9 @@ namespace Microsoft.Azure.SignalR
 {
     internal abstract class ServiceEndpointManagerBase : IServiceEndpointManager
     {
-        private readonly ServiceEndpoint[] _primaryEndpoints;
         private readonly ILogger _logger;
 
-        protected ServiceEndpoint[] Endpoints { get; }
+        public ServiceEndpoint[] Endpoints { get; }
 
         public ServiceEndpointManagerBase(IServiceEndpointOptions options, ILogger logger) 
             : this(GetEndpoints(options).ToArray(), logger)
@@ -47,9 +46,7 @@ namespace Microsoft.Azure.SignalR
 
                 Endpoints = groupedEndpoints.ToArray();
 
-                _primaryEndpoints = Endpoints.Where(s => s.EndpointType == EndpointType.Primary).ToArray();
-
-                if (_primaryEndpoints.Length == 0)
+                if (!Endpoints.Any(s => s.EndpointType == EndpointType.Primary))
                 {
                     throw new AzureSignalRNoPrimaryEndpointException();
                 }
@@ -58,18 +55,41 @@ namespace Microsoft.Azure.SignalR
 
         public abstract IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
 
-        public IReadOnlyList<ServiceEndpoint> GetAvailableEndpoints()
+        public IEnumerable<ServiceEndpoint> GetAvailableEndpoints()
         {
-            return Endpoints;
+            return Endpoints.Where(s => s.Online);
         }
 
         /// <summary>
         /// Only primary endpoints will be returned by client /negotiate
+        /// If no primary endpoint is available, promote one secondary endpoint
         /// </summary>
-        /// <returns></returns>
-        public IReadOnlyList<ServiceEndpoint> GetPrimaryEndpoints()
+        /// <returns>The availbale endpoints</returns>
+        public IEnumerable<ServiceEndpoint> GetPrimaryEndpoints()
         {
-            return _primaryEndpoints;
+            var online = false;
+            foreach (var endpoint in GetAvailableEndpoints().Where(s => s.EndpointType == EndpointType.Primary))
+            {
+                online = true;
+                yield return endpoint;
+            }
+
+            if (!online)
+            {
+                // All primary endpoints are offline, fallback to the first online secondary endpoint
+                var endpoint = GetAvailableEndpoints().FirstOrDefault(s => s.EndpointType == EndpointType.Secondary);
+                if (endpoint != null)
+                {
+                    // Return this secondary endpoint for negotiate, so that negotiate returns this endpoint to the client
+                    // Client will then connect to that secondary endpoint, and if that secondary endpoint has primary connections connected to it, it succeeds
+                    Log.SecondaryEndpointPromoted(_logger, endpoint.Endpoint);
+                    yield return endpoint;
+                }
+                else
+                {
+                    throw new AzureSignalRNotConnectedException();
+                }
+            }
         }
 
         private static IEnumerable<ServiceEndpoint> GetEndpoints(IServiceEndpointOptions options)
@@ -104,9 +124,17 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, int, string, string, Exception> _duplicateEndpointFound =
                 LoggerMessage.Define<int, string, string>(LogLevel.Warning, new EventId(1, "DuplicateEndpointFound"), "{count} endpoint to {endpoint} found, use the one {name}");
 
+            private static readonly Action<ILogger, string, Exception> _secondaryEndpointPromoted =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(2, "SecondaryEndpointPromoted"), "All primary endpoints are offline. Promote secondary endpoint: {endpoint}");
+
             public static void DuplicateEndpointFound(ILogger logger, int count, string endpoint, string name)
             {
                 _duplicateEndpointFound(logger, count, endpoint, name, null);
+            }
+
+            public static void SecondaryEndpointPromoted(ILogger logger, string endpoint)
+            {
+                _secondaryEndpointPromoted(logger, endpoint, null);
             }
         }
     }
