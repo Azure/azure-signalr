@@ -55,9 +55,9 @@ namespace Microsoft.Azure.SignalR
 
         public abstract IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
 
-        public virtual IReadOnlyList<ServiceEndpoint> GetAvailableEndpoints()
+        public IEnumerable<ServiceEndpoint> GetAvailableEndpoints()
         {
-            return Endpoints.Where(s => s.Online).ToArray();
+            return Endpoints.Where(s => s.Online);
         }
 
         /// <summary>
@@ -65,26 +65,31 @@ namespace Microsoft.Azure.SignalR
         /// If no primary endpoint is available, promote one secondary endpoint
         /// </summary>
         /// <returns>The availbale endpoints</returns>
-        public virtual IReadOnlyList<ServiceEndpoint> GetPrimaryEndpoints()
+        public IEnumerable<ServiceEndpoint> GetPrimaryEndpoints()
         {
-            var endpoints = GetAvailableEndpoints().Where(s => s.EndpointType == EndpointType.Primary).ToArray();
-            if (endpoints.Length == 0)
+            var online = false;
+            foreach (var endpoint in GetAvailableEndpoints().Where(s => s.EndpointType == EndpointType.Primary))
             {
+                online = true;
+                yield return endpoint;
+            }
+
+            if (!online)
+            {
+                // All primary endpoints are offline, fallback to the first online secondary endpoint
                 var endpoint = GetAvailableEndpoints().FirstOrDefault(s => s.EndpointType == EndpointType.Secondary);
                 if (endpoint != null)
                 {
                     // Return this secondary endpoint for negotiate, so that negotiate returns this endpoint to the client
                     // Client will then connect to that secondary endpoint, and if that secondary endpoint has primary connections connected to it, it succeeds
                     Log.SecondaryEndpointPromoted(_logger, endpoint.Endpoint);
-                    return new ServiceEndpoint[] { endpoint };
+                    yield return endpoint;
                 }
                 else
                 {
                     throw new AzureSignalRNotConnectedException();
                 }
             }
-
-            return endpoints;
         }
 
         private static IEnumerable<ServiceEndpoint> GetEndpoints(IServiceEndpointOptions options)

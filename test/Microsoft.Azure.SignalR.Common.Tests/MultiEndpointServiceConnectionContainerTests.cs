@@ -35,13 +35,13 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
                 );
-            var endpoints = sem.GetAvailableEndpoints();
-            Assert.Equal(2, endpoints.Count);
+            var endpoints = sem.GetAvailableEndpoints().ToArray();
+            Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
 
-            var primaryEndpoints = sem.GetPrimaryEndpoints();
-            Assert.Equal(1, primaryEndpoints.Count);
+            var primaryEndpoints = sem.GetPrimaryEndpoints().ToArray();
+            Assert.Single(primaryEndpoints);
             Assert.Equal("1", primaryEndpoints[0].Name);
 
             var router = new TestEndpointRouter(false);
@@ -63,13 +63,13 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
                 );
-            var endpoints = sem.GetAvailableEndpoints();
-            Assert.Equal(2, endpoints.Count);
+            var endpoints = sem.GetAvailableEndpoints().ToArray();
+            Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
 
-            var primaryEndpoints = sem.GetPrimaryEndpoints();
-            Assert.Equal(1, primaryEndpoints.Count);
+            var primaryEndpoints = sem.GetPrimaryEndpoints().ToArray();
+            Assert.Single(primaryEndpoints);
             Assert.Equal("1", primaryEndpoints[0].Name);
 
             var router = new TestEndpointRouter(false);
@@ -82,13 +82,13 @@ namespace Microsoft.Azure.SignalR.Tests
             // All the connections started
             _ = container.StartAsync();
 
-            endpoints = sem.GetAvailableEndpoints();
-            Assert.Equal(2, endpoints.Count);
+            endpoints = sem.GetAvailableEndpoints().ToArray();
+            Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
 
-            primaryEndpoints = sem.GetPrimaryEndpoints();
-            Assert.Equal(1, primaryEndpoints.Count);
+            primaryEndpoints = sem.GetPrimaryEndpoints().ToArray();
+            Assert.Single(primaryEndpoints);
             Assert.Equal("1", primaryEndpoints[0].Name);
             Assert.Equal(2, container.Connections.Count);
         }
@@ -392,7 +392,7 @@ namespace Microsoft.Azure.SignalR.Tests
             endpoints = sem.GetPrimaryEndpoints();
             Assert.Single(endpoints);
 
-            Assert.Equal("online", endpoints[0].Name);
+            Assert.Equal("online", endpoints.First().Name);
         }
 
         private IServiceConnection CreateServiceConnection(ServerConnectionType type, IConnectionFactory factory)
@@ -424,7 +424,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 _broken = broken;
             }
-            public IReadOnlyList<ServiceEndpoint> GetEndpointsForBroadcast(IReadOnlyList<ServiceEndpoint> availableEnpoints)
+            public IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> availableEnpoints)
             {
                 if (_broken)
                 {
@@ -434,7 +434,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 return _inner.GetEndpointsForBroadcast(availableEnpoints);
             }
 
-            public IReadOnlyList<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IReadOnlyList<ServiceEndpoint> availableEnpoints)
+            public IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> availableEnpoints)
             {
                 if (_broken)
                 {
@@ -444,7 +444,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 return _inner.GetEndpointsForConnection(connectionId, availableEnpoints);
             }
 
-            public IReadOnlyList<ServiceEndpoint> GetEndpointsForGroup(string groupName, IReadOnlyList<ServiceEndpoint> availableEnpoints)
+            public IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> availableEnpoints)
             {
                 if (_broken)
                 {
@@ -454,7 +454,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 return _inner.GetEndpointsForGroup(groupName, availableEnpoints);
             }
 
-            public IReadOnlyList<ServiceEndpoint> GetEndpointsForGroups(IReadOnlyList<string> groupList, IReadOnlyList<ServiceEndpoint> availableEnpoints)
+            public IEnumerable<ServiceEndpoint> GetEndpointsForGroups(IReadOnlyList<string> groupList, IEnumerable<ServiceEndpoint> availableEnpoints)
             {
                 if (_broken)
                 {
@@ -464,7 +464,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 return _inner.GetEndpointsForGroups(groupList, availableEnpoints);
             }
 
-            public IReadOnlyList<ServiceEndpoint> GetEndpointsForUser(string userId, IReadOnlyList<ServiceEndpoint> availableEnpoints)
+            public IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> availableEnpoints)
             {
                 if (_broken)
                 {
@@ -474,7 +474,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 return _inner.GetEndpointsForUser(userId, availableEnpoints);
             }
 
-            public IReadOnlyList<ServiceEndpoint> GetEndpointsForUsers(IReadOnlyList<string> userList, IReadOnlyList<ServiceEndpoint> availableEnpoints)
+            public IEnumerable<ServiceEndpoint> GetEndpointsForUsers(IReadOnlyList<string> userList, IEnumerable<ServiceEndpoint> availableEnpoints)
             {
                 if (_broken)
                 {
@@ -484,7 +484,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 return _inner.GetEndpointsForUsers(userList, availableEnpoints);
             }
 
-            public ServiceEndpoint GetNegotiateEndpoint(IReadOnlyList<ServiceEndpoint> primaryEndpoints)
+            public ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> primaryEndpoints)
             {
                 if (_broken)
                 {

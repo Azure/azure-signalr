@@ -9,9 +9,9 @@ namespace Microsoft.Azure.SignalR
     {
         IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
 
-        IReadOnlyList<ServiceEndpoint> GetAvailableEndpoints();
+        IEnumerable<ServiceEndpoint> GetAvailableEndpoints();
 
-        IReadOnlyList<ServiceEndpoint> GetPrimaryEndpoints();
+        IEnumerable<ServiceEndpoint> GetPrimaryEndpoints();
 
         ServiceEndpoint[] Endpoints { get; }
     }

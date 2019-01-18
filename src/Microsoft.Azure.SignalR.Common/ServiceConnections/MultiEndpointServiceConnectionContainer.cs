@@ -91,9 +91,9 @@ namespace Microsoft.Azure.SignalR
             }
 
             // re-evaluate availbale endpoints as they might be offline, however it can not guarantee that all endpoints are online
-            var routed = GetRoutedEndpoints(serviceMessage, _endpointManager.GetAvailableEndpoints());
+            var routed = GetRoutedEndpoints(serviceMessage, _endpointManager.GetAvailableEndpoints()).ToArray();
 
-            if (routed.Count == 0)
+            if (routed.Length == 0)
             {
                 throw new AzureSignalRNotConnectedException();
             }
@@ -108,9 +108,9 @@ namespace Microsoft.Azure.SignalR
                 return _inner.WriteAsync(serviceMessage);
             }
 
-            var routed = GetRoutedEndpoints(serviceMessage, _endpointManager.GetAvailableEndpoints());
+            var routed = GetRoutedEndpoints(serviceMessage, _endpointManager.GetAvailableEndpoints()).ToArray();
 
-            if (routed.Count == 0)
+            if (routed.Length == 0)
             {
                 throw new AzureSignalRNotConnectedException();
             }
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.SignalR
             return Task.WhenAll(routed.Select(s => Connections[s]).Select(s => s.WriteAsync(serviceMessage)));
         }
 
-        private IReadOnlyList<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message, IReadOnlyList<ServiceEndpoint> availableEndpoints)
+        private IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message, IEnumerable<ServiceEndpoint> availableEndpoints)
         {
             switch (message)
             {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -189,8 +190,8 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(SecondaryValue, options.Endpoints[2].ConnectionString);
 
             var endpointManager = serviceProvider.GetRequiredService<IServiceEndpointManager>();
-            var endpoints = endpointManager.GetAvailableEndpoints();
-            Assert.Equal(3, options.Endpoints.Length);
+            var endpoints = endpointManager.GetAvailableEndpoints().ToArray();
+            Assert.Equal(3, endpoints.Length);
             Assert.Equal(EndpointType.Primary, endpoints[0].EndpointType);
             Assert.Equal(DefaultValue, endpoints[0].ConnectionString);
             Assert.Equal(EndpointType.Primary, endpoints[1].EndpointType);
