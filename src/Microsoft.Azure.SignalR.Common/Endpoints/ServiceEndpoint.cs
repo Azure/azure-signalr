@@ -5,10 +5,7 @@ using System;
 
 namespace Microsoft.Azure.SignalR
 {
-    /// <summary>
-    /// TODO: expose it to the customer
-    /// </summary>
-    internal class ServiceEndpoint
+    public class ServiceEndpoint
     {
         public string ConnectionString { get; }
 

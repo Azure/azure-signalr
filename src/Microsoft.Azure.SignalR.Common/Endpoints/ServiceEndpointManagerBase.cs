@@ -122,7 +122,7 @@ namespace Microsoft.Azure.SignalR
         private static class Log
         {
             private static readonly Action<ILogger, int, string, string, Exception> _duplicateEndpointFound =
-                LoggerMessage.Define<int, string, string>(LogLevel.Warning, new EventId(1, "DuplicateEndpointFound"), "{count} endpoint to {endpoint} found, use the one {name}");
+                LoggerMessage.Define<int, string, string>(LogLevel.Warning, new EventId(1, "DuplicateEndpointFound"), "{count} endpoints to {endpoint} found, use the one {name}");
 
             private static readonly Action<ILogger, string, Exception> _secondaryEndpointPromoted =
                 LoggerMessage.Define<string>(LogLevel.Warning, new EventId(2, "SecondaryEndpointPromoted"), "All primary endpoints are offline. Promote secondary endpoint: {endpoint}");

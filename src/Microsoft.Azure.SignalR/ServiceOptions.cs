@@ -39,8 +39,6 @@ namespace Microsoft.Azure.SignalR
         /// TODO: expose to customer
         /// Gets or sets list of endpoints
         /// </summary>
-        internal ServiceEndpoint[] Endpoints { get; set; }
-
-        ServiceEndpoint[] IServiceEndpointOptions.Endpoints => Endpoints;
+        public ServiceEndpoint[] Endpoints { get; set; }
     }
 }
