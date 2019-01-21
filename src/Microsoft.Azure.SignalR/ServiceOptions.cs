@@ -36,7 +36,6 @@ namespace Microsoft.Azure.SignalR
         public TimeSpan AccessTokenLifetime { get; set; } = Constants.DefaultAccessTokenLifetime;
 
         /// <summary>
-        /// TODO: expose to customer
         /// Gets or sets list of endpoints
         /// </summary>
         public ServiceEndpoint[] Endpoints { get; set; }
