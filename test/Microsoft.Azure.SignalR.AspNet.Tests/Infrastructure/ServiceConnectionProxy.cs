@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new TestConnectionFactory(),
                 clientConnectionManager,
                 loggerFactory.CreateLogger<ServiceConnectionProxy>(),
-                serviceConnectionManager)
+                serviceConnectionManager ?? new TestServiceConnectionManager())
         {
         }
 

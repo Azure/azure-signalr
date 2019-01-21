@@ -122,7 +122,6 @@ namespace Microsoft.Azure.SignalR
             return TimeSpan.FromSeconds(1 << retryCount) + ReconnectInterval;
         }
 
-        public virtual ServiceConnectionStatus Status => throw new NotSupportedException();
         public ServiceConnectionStatus Status => GetStatus();
 
         public Task WriteAsync(ServiceMessage serviceMessage)
