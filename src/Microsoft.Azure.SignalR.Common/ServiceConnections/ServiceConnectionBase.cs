@@ -440,7 +440,8 @@ namespace Microsoft.Azure.SignalR
                 case ServiceErrorMessage serviceErrorMessage:
                     return OnServiceErrorAsync(serviceErrorMessage);
                 case PingMessage pingMessage:
-                    return OnPingMessageAsync(pingMessage);
+                    // TODO: Call OnPingMessageAsync when the full pipeline is completed.
+                    break;
             }
             return Task.CompletedTask;
         }
