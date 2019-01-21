@@ -1,23 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 {
-    class WeakServiceConnectionContainer : ServiceConnectionContainerBase
+    internal class WeakServiceConnectionContainer : ServiceConnectionContainerBase
     {
-        public WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, 
-            IConnectionFactory connectionFactory, 
-            int fixedConnectionCount) : base(serviceConnectionFactory, connectionFactory, fixedConnectionCount)
+        public WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
+            IConnectionFactory connectionFactory, int fixedConnectionCount, ServiceEndpoint endpoint)
+            : base(serviceConnectionFactory, connectionFactory, fixedConnectionCount, endpoint)
         {
         }
 
         // For test purpose only
         internal WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections) : base(
-            serviceConnectionFactory, connectionFactory, initialConnections)
+            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections, ServiceEndpoint endpoint)
+            : base(serviceConnectionFactory, connectionFactory, initialConnections, endpoint)
         {
         }
 

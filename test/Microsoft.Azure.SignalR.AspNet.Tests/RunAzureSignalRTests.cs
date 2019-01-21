@@ -135,11 +135,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(4, options.Value.Endpoints.Length);
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
-                    var endpoints = manager.GetAvailableEndpoints();
-                    Assert.Equal(4, endpoints.Count);
+                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    Assert.Equal(4, endpoints.Length);
 
-                    endpoints = manager.GetPrimaryEndpoints();
-                    Assert.Equal(4, endpoints.Count);
+                    endpoints = manager.GetPrimaryEndpoints().ToArray();
+                    Assert.Equal(4, endpoints.Length);
                 }
             }
         }
@@ -168,11 +168,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(3, options.Value.Endpoints.Length);
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
-                    var endpoints = manager.GetAvailableEndpoints();
-                    Assert.Equal(4, endpoints.Count);
+                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    Assert.Equal(4, endpoints.Length);
 
-                    endpoints = manager.GetPrimaryEndpoints();
-                    Assert.Equal(3, endpoints.Count);
+                    endpoints = manager.GetPrimaryEndpoints().ToArray();
+                    Assert.Equal(3, endpoints.Length);
                 }
             }
         }

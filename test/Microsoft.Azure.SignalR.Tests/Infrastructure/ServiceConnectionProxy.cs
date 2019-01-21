@@ -51,7 +51,7 @@ namespace Microsoft.Azure.SignalR.Tests
             ServiceConnectionContainer = new StrongServiceConnectionContainer(null, connectionFactory, new List<IServiceConnection>()
             {
                 ServiceConnection
-            });
+            }, new ServiceEndpoint("", ""));
         }
 
         public Task StartAsync()

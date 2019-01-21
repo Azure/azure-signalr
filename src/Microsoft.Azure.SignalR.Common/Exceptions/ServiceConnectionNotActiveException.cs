@@ -9,11 +9,18 @@ namespace Microsoft.Azure.SignalR.Common
     [Serializable]
     public class ServiceConnectionNotActiveException : AzureSignalRException
     {
+        public string Endpoint { get; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceConnectionNotActiveException"/> class.
         /// </summary>
         public ServiceConnectionNotActiveException() : base("The connection is not active, data cannot be sent to the service.")
         {
+        }
+
+        public ServiceConnectionNotActiveException(string endpoint) : base($"The connection is not active, data cannot be sent to the service: {endpoint}.")
+        {
+            Endpoint = endpoint;
         }
 
         /// <summary>
@@ -26,6 +33,13 @@ namespace Microsoft.Azure.SignalR.Common
         protected ServiceConnectionNotActiveException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            Endpoint = info.GetString("Endpoint");
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("Endpoint", Endpoint);
+            base.GetObjectData(info, context);
         }
     }
 }
