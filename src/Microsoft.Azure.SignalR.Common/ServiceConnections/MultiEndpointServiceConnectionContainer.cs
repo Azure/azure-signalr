@@ -148,25 +148,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _startingConnection =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Staring connections for endpoint {endpoint}");
 
-            private static readonly Action<ILogger, string, Exception> _stoppingConnection =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(2, "StoppingConnection"), "Stopping connections for endpoint {endpoint}");
-
-            private static readonly Action<ILogger, int, string, string, Exception> _duplicateEndpointFound =
-                LoggerMessage.Define<int, string, string>(LogLevel.Warning, new EventId(3, "DuplicateEndpointFound"), "{count} endpoint to {endpoint} found, use the one {name}");
-
             public static void StartingConnection(ILogger logger, string endpoint)
             {
                 _startingConnection(logger, endpoint, null);
-            }
-
-            public static void StoppingConnection(ILogger logger, string endpoint)
-            {
-                _stoppingConnection(logger, endpoint, null);
-            }
-
-            public static void DuplicateEndpointFound(ILogger logger, int count, string endpoint, string name)
-            {
-                _duplicateEndpointFound(logger, count, endpoint, name, null);
             }
         }
     }

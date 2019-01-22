@@ -4,10 +4,7 @@
 
 namespace Microsoft.Azure.SignalR
 {
-    /// <summary>
-    /// TODO: make it public so that user can set/update endpoint type
-    /// </summary>
-    internal enum EndpointType
+    public enum EndpointType
     {
         Primary,
         Secondary

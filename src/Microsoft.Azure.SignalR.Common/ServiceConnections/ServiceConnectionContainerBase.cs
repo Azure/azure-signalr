@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task StartAsync()
         {
-            var tasks = FixedServiceConnections.Select(c => c.StartAsync());
+            var task = Task.WhenAll(FixedServiceConnections.Select(c => c.StartAsync()));
             await Task.WhenAny(FixedServiceConnections.Select(s => s.ConnectionInitializedTask));
 
             // Set the endpoint connection after one connection is initialized
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.SignalR
                 _endpoint.Connection = this;
             }
 
-            await Task.WhenAll(tasks);
+            await task;
         }
 
         /// <summary>
