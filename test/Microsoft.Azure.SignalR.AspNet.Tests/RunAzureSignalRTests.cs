@@ -186,6 +186,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
             {
                 var hubConfig = new HubConfiguration();
+                hubConfig.Resolver = new DefaultDependencyResolver();
                 var router = new TestCustomRouter(ConnectionString3);
                 hubConfig.Resolver.Register(typeof(IEndpointRouter), () => router);
                 using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
