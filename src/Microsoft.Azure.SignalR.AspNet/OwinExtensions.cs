@@ -255,9 +255,6 @@ namespace Owin
             var serviceProtocol = new ServiceProtocol();
             configuration.Resolver.Register(typeof(IServiceProtocol), () => serviceProtocol);
 
-            var provider = new EmptyProtectedData();
-            configuration.Resolver.Register(typeof(IProtectedData), () => provider);
-
             var scm = new ServiceConnectionManager(applicationName, hubs);
             configuration.Resolver.Register(typeof(Microsoft.Azure.SignalR.AspNet.IServiceConnectionManager), () => scm);
 

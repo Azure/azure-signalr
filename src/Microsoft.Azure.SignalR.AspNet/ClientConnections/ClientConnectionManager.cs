@@ -5,7 +5,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
-using System.Web;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -32,7 +31,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public IServiceTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
         {
-            var dispatcher = new HubDispatcher(_configuration);
+            var dispatcher = new ClientConnectionHubDispatcher(_configuration, message.ConnectionId);
             dispatcher.Initialize(_configuration.Resolver);
 
             var responseStream = new MemoryStream();
@@ -47,7 +46,6 @@ namespace Microsoft.Azure.SignalR.AspNet
                 if (hostContext.Response.StatusCode != 200)
                 {
                     Log.ProcessRequestError(_logger, message.ConnectionId, hostContext.Request.QueryString.ToString());
-                    Debug.Fail("Response StatusCode is " + hostContext.Response.StatusCode);
                     var errorResponse = GetContentAndDispose(responseStream);
                     throw new InvalidOperationException(errorResponse);
                 }
@@ -79,13 +77,17 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             request.Path = new PathString("/");
 
-            var userToken = string.IsNullOrEmpty(user.Identity.Name) ? string.Empty : ":" + user.Identity.Name;
+            string queryString = message.QueryString;
+            if (queryString.Length > 0)
+            {
+                // The one from Azure SignalR always contains a leading '?' character however the Owin one does not
+                if (queryString[0] == '?')
+                {
+                    queryString = queryString.Substring(1);
+                }
 
-            // TODO: when https://github.com/SignalR/SignalR/issues/4175 is resolved, we can get rid of paring query string
-            var queryCollection = HttpUtility.ParseQueryString(message.QueryString ?? string.Empty);
-            queryCollection[AspNetConstants.QueryString.ConnectionToken] = $"{connectionId}{userToken}";
-
-            request.QueryString = new QueryString(queryCollection.ToString());
+                request.QueryString = new QueryString(queryString);
+            }
 
             if (message.Headers != null)
             {
@@ -105,6 +107,24 @@ namespace Microsoft.Azure.SignalR.AspNet
             using (var reader = new StreamReader(stream))
             {
                 return reader.ReadToEnd();
+            }
+        }
+
+        private sealed class ClientConnectionHubDispatcher : HubDispatcher
+        {
+            private readonly string _connectionId;
+
+            public ClientConnectionHubDispatcher(HubConfiguration config, string connectionId) : base(config)
+            {
+                _connectionId = connectionId;
+            }
+
+            protected override bool TryGetConnectionId(HostContext context, string connectionToken, out string connectionId, out string message, out int statusCode)
+            {
+                connectionId = _connectionId;
+                message = null;
+                statusCode = 200;
+                return true;
             }
         }
 

@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using Microsoft.AspNet.SignalR;
-using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
@@ -22,28 +21,39 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public ClientConnectionManagerTests()
         {
             var hubConfig = new HubConfiguration();
-            var protectedData = new EmptyProtectedData();
             var transport = new AzureTransportManager(hubConfig.Resolver);
-            hubConfig.Resolver.Register(typeof(IProtectedData), () => protectedData);
             hubConfig.Resolver.Register(typeof(ITransportManager), () => transport);
 
             _clientConnectionManager = new ClientConnectionManager(hubConfig);
         }
 
         [Theory]
-        [InlineData("?transport=webSockets")]
-        [InlineData("?connectionToken=invalidOne")]
-        public void TestCreateConnectionWithCustomQueryStringSucceeds(string queryString)
+        [InlineData("?connectionToken=invalidOne", "a")]
+        [InlineData("?connectionToken=conn2:user1%32c", "conn1")]
+        [InlineData("connectionToken=conn2:user1%32c", "conn3")]
+        public void TestCreateConnectionAlwaysUsesConnectionIdInOpenConnectionMessage(string queryString, string expectedConnectionId)
         {
-            var message = new OpenConnectionMessage(Guid.NewGuid().ToString("N"), new Claim[0], null, queryString);
+            var message = new OpenConnectionMessage(expectedConnectionId, new Claim[0], null, queryString);
             var connection = _clientConnectionManager.CreateConnection(message, null);
+            Assert.Equal(expectedConnectionId, connection.ConnectionId);
         }
 
         [Theory]
-        [InlineData("?connectionToken=anotherone")]
-        [InlineData("")]
+        [InlineData("?transport=webSockets")]
         [InlineData("transport=webSockets")]
-        public void TestGetHostContext(string queryString)
+        [InlineData("connectionToken=")]
+        public void TestCreateConnectionWithInvalidQueryStringThrows(string queryString)
+        {
+            var message = new OpenConnectionMessage(Guid.NewGuid().ToString("N"), new Claim[0], null, queryString);
+            Assert.Throws<InvalidOperationException>(() => _clientConnectionManager.CreateConnection(message, null));
+        }
+
+        [Theory]
+        [InlineData("?connectionToken=anotherone", "anotherone")]
+        [InlineData("connectionToken=anotherone", "anotherone")]
+        [InlineData("", null)]
+        [InlineData("transport=webSockets", null)]
+        public void TestGetHostContext(string queryString, string expectedToken)
         {
             var message = new OpenConnectionMessage(Guid.NewGuid().ToString("N"),
                 new Claim[] {
@@ -59,7 +69,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             Assert.Equal(200, context.Response.StatusCode);
             Assert.Equal("", ClientConnectionManager.GetContentAndDispose(response));
             Assert.Equal("value1", context.Request.Headers["custom1"]);
-            Assert.Equal($"{message.ConnectionId}:user1", context.Request.QueryString["connectionToken"]);
+            Assert.Equal(expectedToken, context.Request.QueryString["connectionToken"]);
         }
 
         [Theory]
