@@ -111,7 +111,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private TimeSpan GetRetryDelay(int retryCount)
+        internal static TimeSpan GetRetryDelay(int retryCount)
         {
             // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
             // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
