@@ -125,7 +125,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(CustomValue, null, null, CustomValue, 0)]
         [InlineData(CustomValue, DefaultValue, SecondaryValue, CustomValue, 2)]
         [InlineData(null, DefaultValue, SecondaryValue, DefaultValue, 2)]
-        [InlineData(null, null, SecondaryValue, SecondaryValue, 1)]
+        [InlineData(null, null, SecondaryValue, null, 1)]
         public void AddAzureSignalRReadServiceEndpointsFromConfig(string customValue, string defaultValue,
             string secondaryValue, string expected, int expectedCount)
         {

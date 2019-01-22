@@ -13,11 +13,11 @@ namespace Microsoft.Azure.SignalR.AspNet
     {
         private readonly IServiceProtocol _serviceProtocol;
         private readonly IClientConnectionManager _clientConnectionManager;
-        private readonly ILogger _logger;
+        private readonly ILoggerFactory _logger;
 
         public ServiceConnectionFactory(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
-            ILogger logger)
+            ILoggerFactory logger)
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;

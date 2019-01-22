@@ -77,12 +77,6 @@ namespace Microsoft.Azure.SignalR.AspNet
                 }
             }
 
-            // Load connection string from "Azure:SignalR:ConnectionString" section or key starts with "Azure:SignalR:ConnectionString:" when default key doesn't exist or holds an empty value.
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                connectionString = endpoints.FirstOrDefault()?.ConnectionString;
-            }
-
             ConnectionString = connectionString;
             Endpoints = endpoints.ToArray();
         }
