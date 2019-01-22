@@ -28,22 +28,24 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Theory]
-        [InlineData("?transport=webSockets", "a", true)]
-        [InlineData("?connectionToken=invalidOne", "a", false)]
-        [InlineData("?connectionToken=conn2:user1%32c", "conn1", false)]
-        [InlineData("connectionToken=conn2:user1%32c", "conn3", false)]
-        public void TestCreateConnectionAlwaysUsesConnectionIdInOpenConnectionMessage(string queryString, string expectedConnectionId, bool throws)
+        [InlineData("?connectionToken=invalidOne", "a")]
+        [InlineData("?connectionToken=conn2:user1%32c", "conn1")]
+        [InlineData("connectionToken=conn2:user1%32c", "conn3")]
+        public void TestCreateConnectionAlwaysUsesConnectionIdInOpenConnectionMessage(string queryString, string expectedConnectionId)
         {
             var message = new OpenConnectionMessage(expectedConnectionId, new Claim[0], null, queryString);
-            if (throws)
-            {
-                Assert.Throws<InvalidOperationException>(() => _clientConnectionManager.CreateConnection(message, null));
-            }
-            else
-            {
-                var connection = _clientConnectionManager.CreateConnection(message, null);
-                Assert.Equal(expectedConnectionId, connection.ConnectionId);
-            }
+            var connection = _clientConnectionManager.CreateConnection(message, null);
+            Assert.Equal(expectedConnectionId, connection.ConnectionId);
+        }
+
+        [Theory]
+        [InlineData("?transport=webSockets")]
+        [InlineData("transport=webSockets")]
+        [InlineData("connectionToken=")]
+        public void TestCreateConnectionWithInvalidQueryStringThrows(string queryString)
+        {
+            var message = new OpenConnectionMessage(Guid.NewGuid().ToString("N"), new Claim[0], null, queryString);
+            Assert.Throws<InvalidOperationException>(() => _clientConnectionManager.CreateConnection(message, null));
         }
 
         [Theory]
