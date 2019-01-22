@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -20,6 +21,9 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string CustomUserId = "customUserId";
         private const string DefaultUserId = "nameId";
         private const string DefaultConnectionString = "Endpoint=https://localhost;AccessKey=nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=;";
+        private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+        private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+        private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string UserPath = "/user/path";
 
         private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
@@ -124,6 +128,86 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var exception = Assert.Throws<InvalidOperationException>(() => handler.Process(httpContext, "hub"));
             Assert.Equal(errorMessage, exception.Message);
+        }
+
+        [Fact]
+        public void TestNegotiateHandlerWithMultipleEndpointsAndCustomRouter()
+        {
+            var config = new ConfigurationBuilder().Build();
+            var router = new TestCustomRouter(ConnectionString3);
+            var serviceProvider = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR(
+                o => o.Endpoints = new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint(ConnectionString2),
+                    new ServiceEndpoint(ConnectionString3),
+                    new ServiceEndpoint(ConnectionString4),
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IEndpointRouter>(router)
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var requestFeature = new HttpRequestFeature
+            {
+                Path = "/user/path/negotiate/",
+            };
+
+            var features = new FeatureCollection();
+            features.Set<IHttpRequestFeature>(requestFeature);
+            var httpContext = new DefaultHttpContext(features);
+
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            var negotiateResponse = handler.Process(httpContext, "chat");
+
+            Assert.NotNull(negotiateResponse);
+            Assert.Equal($"http://localhost3/client/?hub=chat&asrs.op=%2Fuser%2Fpath", negotiateResponse.Url);
+        }
+
+        private class TestCustomRouter : IEndpointRouter
+        {
+            private readonly string _negotiateEndpoint;
+
+            public TestCustomRouter(string negotiateEndpoint)
+            {
+                _negotiateEndpoint = negotiateEndpoint;
+            }
+
+            public IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> availableEnpoints)
+            {
+                return availableEnpoints;
+            }
+
+            public IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> availableEnpoints)
+            {
+                return availableEnpoints;
+            }
+
+            public IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> availableEnpoints)
+            {
+                return availableEnpoints;
+            }
+
+            public IEnumerable<ServiceEndpoint> GetEndpointsForGroups(IReadOnlyList<string> groupList, IEnumerable<ServiceEndpoint> availableEnpoints)
+            {
+                return availableEnpoints;
+            }
+
+            public IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> availableEnpoints)
+            {
+                return availableEnpoints;
+            }
+
+            public IEnumerable<ServiceEndpoint> GetEndpointsForUsers(IReadOnlyList<string> userList, IEnumerable<ServiceEndpoint> availableEnpoints)
+            {
+                return availableEnpoints;
+            }
+
+            public ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> primaryEndpoints)
+            {
+                return primaryEndpoints.First(e => e.ConnectionString == _negotiateEndpoint);
+            }
         }
 
         private class CustomUserIdProvider : IUserIdProvider

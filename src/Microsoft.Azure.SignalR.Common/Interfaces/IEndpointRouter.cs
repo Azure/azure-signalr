@@ -5,10 +5,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR
 {
-    /// <summary>
-    /// TODO: expose
-    /// </summary>
-    internal interface IEndpointRouter
+    public interface IEndpointRouter
     {
         /// <summary>
         /// TODO: add HttpContext for Core and HostContext for AspNet one?
