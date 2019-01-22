@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var resolver = hubConfig.Resolver;
                 var options = resolver.Resolve<IOptions<ServiceOptions>>();
                 Assert.Equal(ConnectionString, options.Value.ConnectionString);
-                Assert.IsType<NegotiateHandler>(resolver.Resolve<PersistentConnection>());
+                Assert.IsType<NegotiateMiddleware>(resolver.Resolve<PersistentConnection>());
                 Assert.IsType<ServiceConnectionManager>(resolver.Resolve<IServiceConnectionManager>());
                 Assert.IsType<EmptyProtectedData>(resolver.Resolve<IProtectedData>());
                 Assert.IsType<ServiceMessageBus>(resolver.Resolve<IMessageBus>());
