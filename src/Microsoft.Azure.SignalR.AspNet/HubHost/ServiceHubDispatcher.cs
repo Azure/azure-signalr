@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub)
         {
-            var serviceConnectionFactory = new ServiceConnectionFactory(_protocol, _clientConnectionManager, _logger);
+            var serviceConnectionFactory = new ServiceConnectionFactory(_protocol, _clientConnectionManager, _loggerFactory);
             return new MultiEndpointServiceConnectionContainer(serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _loggerFactory);
         }
 
