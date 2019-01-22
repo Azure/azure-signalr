@@ -238,7 +238,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Theory]
         [InlineData(typeof(NullUserIdProvider), null)]
         [InlineData(typeof(CustomUserIdProvider), "hello")]
-        public async Task TestRequestsWithRunAzureSignalR(Type providerType, string expectedUser)
+        public async Task TestNegotiateWithRunAzureSignalR(Type providerType, string expectedUser)
         {
             var hubConfiguration = new HubConfiguration();
             hubConfiguration.Resolver.Register(typeof(IUserIdProvider), () => Activator.CreateInstance(providerType));
@@ -257,16 +257,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 Assert.Equal(AppName, token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.AppName).Value);
                 var user = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.UserId)?.Value;
                 Assert.Equal(expectedUser, user);
-
-                // 1. test client proxy file can return
-                response = await client.GetAsync("/signalr/hubs");
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                message = await response.Content.ReadAsStringAsync();
-                Assert.StartsWith("/*!\r\n * ASP.NET SignalR JavaScript ", message);
-
-                // 2. test other requests should not be handled
-                response = await client.GetAsync("/not-exists");
-                Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             }
         }
 
