@@ -8,12 +8,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Reflection;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
-using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Json;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.AspNet.SignalR.Transports;
@@ -21,7 +19,6 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Options;
 using Microsoft.Owin.Hosting;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Owin;
 using Xunit;
 
@@ -45,9 +42,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var resolver = hubConfig.Resolver;
                 var options = resolver.Resolve<IOptions<ServiceOptions>>();
                 Assert.Equal(ConnectionString, options.Value.ConnectionString);
-                Assert.IsType<NegotiateHandler>(resolver.Resolve<PersistentConnection>());
                 Assert.IsType<ServiceConnectionManager>(resolver.Resolve<IServiceConnectionManager>());
-                Assert.IsType<EmptyProtectedData>(resolver.Resolve<IProtectedData>());
                 Assert.IsType<ServiceMessageBus>(resolver.Resolve<IMessageBus>());
                 Assert.IsType<AzureTransportManager>(resolver.Resolve<ITransportManager>());
                 Assert.IsType<ServiceProtocol>(resolver.Resolve<IServiceProtocol>());
@@ -153,7 +148,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
             {
                 var hubConfig = new HubConfiguration();
-                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options=>
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
                 {
                     options.Endpoints = new ServiceEndpoint[]
                     {
