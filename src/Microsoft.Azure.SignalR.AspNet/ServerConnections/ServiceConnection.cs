@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
@@ -22,19 +23,21 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionManager _clientConnectionManager;
+        private readonly ILogger _logger;
 
         public ServiceConnection(
             string connectionId,
             IServiceProtocol serviceProtocol,
             IConnectionFactory connectionFactory,
             IClientConnectionManager clientConnectionManager,
-            ILogger logger,
+            ILoggerFactory loggerFactory,
             SignalR.IServiceConnectionManager manager,
             ServerConnectionType connectionType = ServerConnectionType.Default)
-            : base(serviceProtocol, logger, connectionId, manager, connectionType)
+            : base(serviceProtocol, loggerFactory, connectionId, manager, connectionType)
         {
             _connectionFactory = connectionFactory;
             _clientConnectionManager = clientConnectionManager;
+            _logger = loggerFactory?.CreateLogger<ServiceConnection>() ?? NullLogger<ServiceConnection>.Instance;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -60,7 +63,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
             catch (Exception ex)
             {
-                Log.FailedToCleanupConnections(Logger, ex);
+                Log.FailedToCleanupConnections(_logger, ex);
             }
             return Task.CompletedTask;
         }
@@ -75,7 +78,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 await clientContext.Output.WriteAsync(openConnectionMessage);
                 if(!_clientConnections.TryAdd(connectionId, clientContext))
                 {
-                    Log.DuplicateConnectionId(Logger, connectionId, null);
+                    Log.DuplicateConnectionId(_logger, connectionId, null);
                     throw new ArgumentException("ConnectionId already exists.");
                 }
 
@@ -85,7 +88,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             catch (Exception e)
             {
                 // Fail to write initial open connection message to channel
-                Log.ConnectedStartingFailed(Logger, connectionId, e);
+                Log.ConnectedStartingFailed(_logger, connectionId, e);
                 // Close channel and notify client to close connection
                 clientContext.Output.TryComplete();
                 await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
@@ -103,7 +106,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 }
                 catch (Exception e)
                 {
-                    Log.FailToWriteMessageToApplication(Logger, connectionId, e);
+                    Log.FailToWriteMessageToApplication(_logger, connectionId, e);
                 }
             }
         }
@@ -119,7 +122,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 }
                 catch (Exception e)
                 {
-                    Log.FailToWriteMessageToApplication(Logger, connectionId, e);
+                    Log.FailToWriteMessageToApplication(_logger, connectionId, e);
                 }
             }
         }
@@ -132,7 +135,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 clientContext.Transport.OnDisconnected();
             }
 
-            Log.ConnectedEnding(Logger, connectionId);
+            Log.ConnectedEnding(_logger, connectionId);
         }
 
         private async Task OnConnectedAsyncCore(ClientContext clientContext, OpenConnectionMessage message)
@@ -141,11 +144,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             try
             {
                 clientContext.Transport = _clientConnectionManager.CreateConnection(message, this);
-                Log.ConnectedStarting(Logger, connectionId);
+                Log.ConnectedStarting(_logger, connectionId);
             }
             catch (Exception e)
             {
-                Log.ConnectedStartingFailed(Logger, connectionId, e);
+                Log.ConnectedStartingFailed(_logger, connectionId, e);
                 PerformDisconnectCore(connectionId);
                 await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
             }
@@ -157,7 +160,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             try
             {
                 var payload = connectionDataMessage.Payload;
-                Log.WriteMessageToApplication(Logger, payload.Length, connectionId);
+                Log.WriteMessageToApplication(_logger, payload.Length, connectionId);
                 var message = GetString(payload);
                 if (message == ReconnectMessage)
                 {
@@ -170,7 +173,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
             catch (Exception e)
             {
-                Log.FailToWriteMessageToApplication(Logger, connectionDataMessage.ConnectionId, e);
+                Log.FailToWriteMessageToApplication(_logger, connectionDataMessage.ConnectionId, e);
             }
         }
 
@@ -207,7 +210,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 {
                     // Internal exception is already catched and here only for channel exception.
                     // Notify client to disconnect.
-                    Log.SendLoopStopped(Logger, connectionId, e);
+                    Log.SendLoopStopped(_logger, connectionId, e);
                     PerformDisconnectCore(connectionId);
                     await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
                 }
