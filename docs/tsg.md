@@ -36,7 +36,8 @@ services.AddSignalR()
 ```
 
 ### Tips:
-* How to view the outgoing request from client? <a href="#view_request"></a>
+<a name="view_request"></a>
+* How to view the outgoing request from client? 
     1. From browser:
 
         Take chrome for example, **F12** to open the consile window, and switch to **Netork** tab. You might need to refresh the page using **F5** to capture the network from the very beginning.
@@ -45,7 +46,7 @@ services.AddSignalR()
     2. From C# client:
 
         You can view local web traffics using [Fiddler](https://www.telerik.com/fiddler). WebSocket traffics are supported since Fiddler 4.5.
-        ![Fiddler View Network](./images/fiddler_network.png)
+        ![Fiddler View Network](./images/fiddler_view_network.png)
 
 ## TLS 1.2 required
 
@@ -65,7 +66,7 @@ Azure Service only support TLS1.2 for security concerns. With .NET framework, it
     * Throw CLR exceptions
     ![Throw CLR exceptions](./images/throw_clr_exceptions.png)
     * See the exceptions throw when debugging the app server side code:
-    ![Exception throws](./images/tls_throw.PNG)
+    ![Exception throws](./images/tls_throws.png)
 
 2. For ASP.NET ones, you can also add following code to your `Startup.cs` to enable detailed trace and see the errors from the log.
 ```cs
