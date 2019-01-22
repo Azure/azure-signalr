@@ -27,12 +27,7 @@ namespace Microsoft.Azure.SignalR
         // App server ping is triggered by incoming requests and send by checking last send timestamp.
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
         private static readonly long DefaultKeepAliveTicks = DefaultKeepAliveInterval.Seconds * Stopwatch.Frequency;
-        private static readonly int MaxReconnectBackoffInternalInMilliseconds = 1000;
         private const string PingTargetKey = "target";
-
-        // Start reconnect after a random interval less than 1 second
-        private static TimeSpan ReconnectInterval =>
-            TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackoffInternalInMilliseconds));
 
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
         private readonly HandshakeRequestMessage _handshakeRequest;
@@ -89,20 +84,6 @@ namespace Microsoft.Azure.SignalR
 
             _serviceConnectionStartTcs.TrySetResult(false);
             await StopAsync();
-        }
-
-        /// <summary>
-        /// exponential back off with max 1 minute.
-        /// </summary>
-        public static TimeSpan GetRetryDelay(ref int retryCount)
-        {
-            // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
-            // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
-            if (retryCount > 5)
-            {
-                return TimeSpan.FromMinutes(1) + ReconnectInterval;
-            }
-            return TimeSpan.FromSeconds(1 << retryCount++) + ReconnectInterval;
         }
 
         public Task StopAsync()
@@ -431,8 +412,7 @@ namespace Microsoft.Azure.SignalR
                 case ServiceErrorMessage serviceErrorMessage:
                     return OnServiceErrorAsync(serviceErrorMessage);
                 case PingMessage pingMessage:
-                    // TODO: Call OnPingMessageAsync when the full pipeline is completed.
-                    break;
+                    return OnPingMessageAsync(pingMessage);
             }
             return Task.CompletedTask;
         }
