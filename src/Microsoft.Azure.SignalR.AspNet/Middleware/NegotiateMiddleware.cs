@@ -4,14 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
-using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Json;
 using Microsoft.Azure.SignalR.Common;
@@ -21,7 +18,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
-    internal class NegotiateHandler : HubDispatcher
+    internal class NegotiateMiddleware : OwinMiddleware
     {
         private static readonly ProtocolResolver ProtocolResolver = new ProtocolResolver();
 
@@ -31,31 +28,39 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private readonly IServiceEndpointManager _endpointManager;
         private readonly IEndpointRouter _router;
+        private readonly IUserIdProvider _provider;
 
-        public NegotiateHandler(HubConfiguration configuration, string appName, IServiceEndpointManager endpointManager, IEndpointRouter router, ServiceOptions options, ILoggerFactory loggerFactory) : base(configuration)
+        public NegotiateMiddleware(OwinMiddleware next, HubConfiguration configuration, string appName, IServiceEndpointManager endpointManager, IEndpointRouter router, ServiceOptions options, ILoggerFactory loggerFactory)
+            : base(next)
         {
+            _provider = configuration.Resolver.Resolve<IUserIdProvider>();
             _appName = appName ?? throw new ArgumentNullException(nameof(appName));
             _claimsProvider = options?.ClaimsProvider;
             _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
             _router = router ?? throw new ArgumentNullException(nameof(router));
-            _logger = loggerFactory.CreateLogger<NegotiateHandler>();
+            _logger = loggerFactory?.CreateLogger<NegotiateMiddleware>() ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
-        public override Task ProcessRequest(HostContext context)
+        public override Task Invoke(IOwinContext owinContext)
         {
-            // Redirect negotiation to service
-            if (IsNegotiationRequest(context.Request))
+            if (owinContext == null)
             {
-                return ProcessNegotiationRequest(context);
+                throw new ArgumentNullException(nameof(owinContext));
             }
 
-            return base.ProcessRequest(context);
+            var context = new HostContext(owinContext.Environment);
+
+            if (IsNegotiationRequest(context.Request))
+            {
+                return ProcessNegotiationRequest(owinContext, context);
+            }
+
+            return Next.Invoke(owinContext);
         }
 
-        private Task ProcessNegotiationRequest(HostContext context)
+        private Task ProcessNegotiationRequest(IOwinContext owinContext, HostContext context)
         {
             string accessToken = null;
-            var owinContext = new OwinContext(context.Environment);
             var claims = BuildClaims(owinContext, context.Request);
 
             IServiceEndpointProvider provider;
@@ -87,12 +92,12 @@ namespace Microsoft.Azure.SignalR.AspNet
             return SendJsonResponse(context, GetRedirectNegotiateResponse(url, accessToken));
         }
 
-        private IEnumerable<Claim> BuildClaims(OwinContext owinContext, IRequest request)
+        private IEnumerable<Claim> BuildClaims(IOwinContext owinContext, IRequest request)
         {
             // Pass appname through jwt token to client, so that when client establishes connection with service, it will also create a corresponding AppName-connection
             yield return new Claim(Constants.ClaimType.AppName, _appName);
             var user = owinContext.Authentication?.User;
-            var userId = UserIdProvider?.GetUserId(request);
+            var userId = _provider?.GetUserId(request);
 
             var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext));
 
