@@ -6,6 +6,7 @@
 - [If one of my application servers is down, will SignalR Service know about it? Will clients be notified too?](#server-down)
 - [Why is exception thrown from my custom `IUserIdProvider` when switching from ASP.NET Core SignalR to Azure SignalR Service SDK?](#limited-context)
 - [Can I configure available transports at server side in Azure SignalR Service like ASP.NET Core SignalR?](#configure-transports)
+- [What is the meaning of metrics like message count or connection count showed in Azure portal? Which kind of aggregation type should I choose?](#metrics-meaning)
 
 <a name="production-use"></a>
 ## Is Azure SignalR Service ready for production use?
@@ -73,3 +74,11 @@ Azure SignalR Service provides all 3 transports by default and you can't configu
 As a matter of fact, you don't have to worry about transports because clients are all connected to Azure SignalR Service and service will handle connection management.
 
 But you can still configure allowed transports at client side as documented [here](https://docs.microsoft.com/en-us/aspnet/core/signalr/configuration?view=aspnetcore-2.1#configure-allowed-transports).
+
+<a name="metrics-meaning"></a>
+## What is the meaning of metrics like message count or connection count showed in Azure portal? Which kind of aggregation type should I choose?
+
+You can find the details about how do we calculate these metrics [here](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-messages).
+
+In the overview blade of Azure SignalR Service resources, we have already chosen the approperate aggregation type for you. And if you go to the Metrics blade, you can
+take the aggregation type [here](https://docs.microsoft.com/en-us/azure/azure-monitor/platform/metrics-supported#microsoftsignalrservicesignalr) as a reference.
