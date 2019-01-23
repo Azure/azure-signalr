@@ -121,6 +121,46 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(ConnectionDataTestMessages))]
+        public async Task PublishConnectionDataMessagesWithLocalServiceConnectionTest(string messageKey, string messageValue, string[] availableHubs, string[] expectedHubs, string[] expectedConnectionIds)
+        {
+            var dr = GetDefaultResolver(availableHubs, out var scm);
+
+            PrepareConnection(scm, out var result);
+
+            var anotherResult = new List<ServiceMessage>();
+            var anotherSCM = new TestServiceConnection(null,
+                    m =>
+                    {
+                        lock (anotherResult)
+                        {
+                            anotherResult.Add(m.Item1);
+                        }
+                    });
+
+            var ccm = new TestClientConnectionManager(anotherSCM, true);
+            dr.Register(typeof(IClientConnectionManager), () => ccm);
+
+            using (var bus = new ServiceMessageBus(dr))
+            {
+                await bus.Publish(SignalRMessageUtility.CreateMessage(messageKey, messageValue));
+            }
+
+            Assert.Empty(result);
+            Assert.Equal(expectedHubs.Length, anotherResult.Count);
+            Assert.Equal(expectedConnectionIds.Length, anotherResult.Count);
+
+            for (var i = 0; i < expectedHubs.Length; i++)
+            {
+                var message = anotherResult[i] as ConnectionDataMessage;
+                Assert.NotNull(message);
+
+                Assert.Equal(expectedConnectionIds[i], message.ConnectionId);
+                Assert.Equal(messageValue, message.Payload.First.GetSingleFramePayload());
+            }
+        }
+
         public static IEnumerable<object[]> GroupBroadcastTestMessages => new object[][]
             {
                 // app connection gets this connection message
@@ -213,7 +253,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                         {
                             result.Add(hub, m.Item1);
                         }
-                    }), 5);
+                    }));
             output = result;
         }
 
@@ -221,6 +261,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             var resolver = new DefaultDependencyResolver();
             resolver.Register(typeof(IServiceProtocol), () => new ServiceProtocol());
+            var ccm = new TestConnectionManager();
+            resolver.Register(typeof(IClientConnectionManager), () => ccm);
             var connectionManager = new ServiceConnectionManager(AppName, hubs);
             resolver.Register(typeof(IServiceConnectionManager), () => connectionManager);
             resolver.Register(typeof(IMessageParser), () => new SignalRMessageParser(hubs, resolver));
@@ -228,11 +270,39 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             return resolver;
         }
 
-        private sealed class TestServiceConnection : IServiceConnectionContainer
+        private sealed class TestClientConnectionManager : IClientConnectionManager
+        {
+            private readonly IServiceConnection _serverConnection;
+
+            private readonly bool _contains;
+
+            public TestClientConnectionManager(IServiceConnection serverConnection, bool contains)
+            {
+                _serverConnection = serverConnection;
+                _contains = contains;
+            }
+
+            public IServiceTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool TryGetServiceConnection(string key, out IServiceConnection serviceConnection)
+            {
+                serviceConnection = _serverConnection;
+                return _contains;
+            }
+        }
+
+        private sealed class TestServiceConnection : IServiceConnectionContainer, IServiceConnection
         {
             private readonly Action<(ServiceMessage, IServiceConnectionContainer)> _validator;
 
             public string HubName { get; }
+
+            public ServiceConnectionStatus Status => ServiceConnectionStatus.Connected;
+
+            public Task ConnectionInitializedTask => Task.CompletedTask;
 
             public TestServiceConnection(string name, Action<(ServiceMessage, IServiceConnectionContainer)> validator)
             {
@@ -245,9 +315,14 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 return Task.CompletedTask;
             }
 
+            public Task StartAsync(string target)
+            {
+                return Task.CompletedTask;
+            }
+
             public Task WriteAsync(ServiceMessage serviceMessage)
             {
-                _validator((serviceMessage, this));
+                _validator?.Invoke((serviceMessage, this));
                 return Task.CompletedTask;
             }
 

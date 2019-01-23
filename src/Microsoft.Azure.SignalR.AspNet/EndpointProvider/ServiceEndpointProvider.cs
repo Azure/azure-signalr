@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Security.Claims;
+using System.Text;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
@@ -12,9 +14,9 @@ namespace Microsoft.Azure.SignalR.AspNet
         private const string ClientPath = "aspnetclient";
         private const string ServerPath = "aspnetserver";
 
-        private static readonly string ConnectionStringNotFound =
+        internal static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
-            $"Please specify a configuration entry for {ServiceOptions.ConnectionStringDefaultKey}, " +
+            $"Please specify a configuration entry for {Constants.ConnectionStringDefaultKey}, " +
             "or explicitly pass one using IAppBuilder.RunAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
         private readonly string _endpoint;
@@ -22,21 +24,23 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly int? _port;
         private readonly TimeSpan _accessTokenLifetime;
 
-        public ServiceEndpointProvider(ServiceOptions options)
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, TimeSpan? ttl = null)
         {
-            var connectionString = options.ConnectionString;
+            var connectionString = endpoint.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
             {
                 throw new ArgumentException(ConnectionStringNotFound);
             }
 
-            _accessTokenLifetime = options.AccessTokenLifetime;
+            _accessTokenLifetime = ttl ?? Constants.DefaultAccessTokenLifetime;
 
             // Version is ignored for aspnet signalr case
-            (_endpoint, _accessKey, _, _port) = ConnectionStringParser.Parse(connectionString);
+            _endpoint = endpoint.Endpoint;
+            _accessKey = endpoint.AccessKey;
+            _port = endpoint.Port;
         }
 
-        public string GenerateClientAccessToken(IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, string requestId = null)
+        public string GenerateClientAccessToken(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, string requestId = null)
         {
             var audience = $"{_endpoint}/{ClientPath}";
             return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
@@ -58,11 +62,35 @@ namespace Microsoft.Azure.SignalR.AspNet
             return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
         }
 
-        public string GetClientEndpoint()
+        public string GetClientEndpoint(string hubName = null, string originalPath = null, string queryString = null)
         {
+            var queryBuilder = new StringBuilder();
+
+            if (!string.IsNullOrEmpty(queryString))
+            {
+                queryBuilder.Append(queryString);
+            }
+
+            if (!string.IsNullOrEmpty(originalPath))
+            {
+                if (queryBuilder.Length == 0)
+                {
+                    queryBuilder.Append("?");
+                }
+                else
+                {
+                    queryBuilder.Append("&");
+                }
+
+                queryBuilder
+                    .Append(Constants.QueryParameter.OriginalPath)
+                    .Append("=")
+                    .Append(WebUtility.UrlEncode(originalPath));
+            }
+
             return _port.HasValue ?
-                $"{_endpoint}:{_port}/{ClientPath}" :
-                $"{_endpoint}/{ClientPath}";
+                $"{_endpoint}:{_port}/{ClientPath}{queryBuilder}" :
+                $"{_endpoint}/{ClientPath}{queryBuilder}";
         }
 
         public string GetServerEndpoint(string hubName)

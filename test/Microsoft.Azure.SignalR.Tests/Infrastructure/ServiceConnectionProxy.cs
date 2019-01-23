@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -22,6 +23,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public TestConnection ConnectionContext => ConnectionFactory.CurrentConnectionContext;
 
+        public IServiceConnectionContainer ServiceConnectionContainer { get; }
+
         public ServiceConnection ServiceConnection { get; }
 
         public ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
@@ -31,20 +34,24 @@ namespace Microsoft.Azure.SignalR.Tests
         private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
 
         public ServiceConnectionProxy(ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null,
-            TestConnectionFactory connectionFactory = null)
+            TestConnectionFactory connectionFactory = null, IServiceConnectionManager serviceConnectionManager = null)
         {
             ConnectionFactory = connectionFactory ?? new TestConnectionFactory();
             ClientConnectionManager = new ClientConnectionManager();
             _clientPipeOptions = clientPipeOptions;
-
             ServiceConnection = new ServiceConnection(
-                SharedServiceProtocol,
-                this,
-                ConnectionFactory,
-                NullLoggerFactory.Instance,
-                callback ?? OnConnectionAsync,
-                this,
-                Guid.NewGuid().ToString("N"));
+                    SharedServiceProtocol,
+                    this,
+                    ConnectionFactory,
+                    NullLoggerFactory.Instance,
+                    callback ?? OnConnectionAsync,
+                    this,
+                    Guid.NewGuid().ToString("N"),
+                    serviceConnectionManager);
+            ServiceConnectionContainer = new StrongServiceConnectionContainer(null, connectionFactory, new List<IServiceConnection>()
+            {
+                ServiceConnection
+            }, new ServiceEndpoint("", ""));
         }
 
         public Task StartAsync()
@@ -52,7 +59,7 @@ namespace Microsoft.Azure.SignalR.Tests
             return ServiceConnection.StartAsync();
         }
 
-        public bool IsConnected => ServiceConnection.IsConnected;
+        public bool IsConnected => ServiceConnection.IsConnected ;
 
         public async Task ProcessApplicationMessagesAsync()
         {

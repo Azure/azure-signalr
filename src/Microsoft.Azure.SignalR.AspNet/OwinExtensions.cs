@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Configuration;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -11,11 +11,13 @@ using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.AspNet.SignalR.Tracing;
 using Microsoft.AspNet.SignalR.Transports;
+using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.AspNet;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.Owin.Infrastructure;
 
 namespace Owin
 {
@@ -192,39 +194,54 @@ namespace Owin
                 throw new ArgumentException(nameof(applicationName), "Empty application name is not allowed.");
             }
 
+            if (configuration == null)
+            {
+                // Keep the same as SignalR's exception
+                throw new ArgumentException("A configuration object must be specified.");
+            }
+
+            var resolver = configuration.Resolver ?? throw new ArgumentException("A dependency resolver must be specified.");
+
+            // Ensure we have the conversions for MS.Owin so that
+            // the app builder respects the OwinMiddleware base class
+            SignatureConversions.AddConversions(builder);
+
+            // ServiceEndpointManager needs the logger
+            ILoggerFactory loggerFactory;
+            var traceOutput = builder.Properties.GetTraceOutput();
+            if (traceOutput != null)
+            {
+                var hostTraceListener = new TextWriterTraceListener(traceOutput);
+                var traceManager = new TraceManager(hostTraceListener);
+                loggerFactory = new LoggerFactory(new ILoggerProvider[] { new TraceManagerLoggerProvider(traceManager) });
+                resolver.Register(typeof(ILoggerFactory), () => loggerFactory);
+            }
+            else
+            {
+                loggerFactory = NullLoggerFactory.Instance;
+            }
+
             var hubs = GetAvailableHubNames(configuration);
 
-            // TODO: Update to use Middleware when SignalR SDK is ready
-            // Replace default HubDispatcher with a custom one, which has its own negotiation logic
-            // https://github.com/SignalR/SignalR/blob/dev/src/Microsoft.AspNet.SignalR.Core/Hosting/PersistentConnectionFactory.cs#L42
-            configuration.Resolver.Register(typeof(PersistentConnection), () => new ServiceHubDispatcher(configuration, applicationName, options));
-            builder.RunSignalR(typeof(PersistentConnection), configuration);
+            var endpoint = new ServiceEndpointManager(options, loggerFactory);
+            configuration.Resolver.Register(typeof(IServiceEndpointManager), () => endpoint);
 
-            RegisterServiceObjects(configuration, options, applicationName, hubs);
+            // Get the one from DI or new a default one
+            var router = configuration.Resolver.Resolve<IEndpointRouter>() ?? new DefaultRouter();
 
-            ILoggerFactory logger;
-            var traceManager = configuration.Resolver.Resolve<ITraceManager>();
-            if (traceManager != null)
-            {
-                logger = new LoggerFactory(new ILoggerProvider[] { new TraceManagerLoggerProvider(traceManager) });
-            }
-            else
-            {
-                logger = NullLoggerFactory.Instance;
-            }
+            builder.Use<NegotiateMiddleware>(configuration, applicationName, endpoint, router, options, loggerFactory);
 
-            if (hubs?.Count > 0)
+            builder.RunSignalR(configuration);
+
+            var dispatcher = PrepareAndGetDispatcher(configuration, options, endpoint, router, applicationName, hubs, loggerFactory);
+            if (dispatcher != null)
             {
                 // Start the server->service connection asynchronously 
-                _ = new ConnectionFactory(hubs, configuration, logger).StartAsync();
-            }
-            else
-            {
-                logger.CreateLogger<IAppBuilder>().Log(LogLevel.Warning, "No hubs found.");
+                _ = dispatcher.StartAsync();
             }
         }
 
-        private static void RegisterServiceObjects(HubConfiguration configuration, ServiceOptions options, string applicationName, IReadOnlyList<string> hubs)
+        private static ServiceHubDispatcher PrepareAndGetDispatcher(HubConfiguration configuration, ServiceOptions options, IServiceEndpointManager endpoint, IEndpointRouter router, string applicationName, IReadOnlyList<string> hubs, ILoggerFactory loggerFactory)
         {
             // TODO: Using IOptions looks wierd, thinking of a way removing it
             // share the same object all through
@@ -238,14 +255,8 @@ namespace Owin
             var serviceProtocol = new ServiceProtocol();
             configuration.Resolver.Register(typeof(IServiceProtocol), () => serviceProtocol);
 
-            var provider = new EmptyProtectedData();
-            configuration.Resolver.Register(typeof(IProtectedData), () => provider);
-
-            var endpoint = new ServiceEndpointProvider(serviceOptions.Value);
-            configuration.Resolver.Register(typeof(IServiceEndpointProvider), () => endpoint);
-
             var scm = new ServiceConnectionManager(applicationName, hubs);
-            configuration.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
+            configuration.Resolver.Register(typeof(Microsoft.Azure.SignalR.AspNet.IServiceConnectionManager), () => scm);
 
             var ccm = new ClientConnectionManager(configuration);
             configuration.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
@@ -258,6 +269,16 @@ namespace Owin
 
             var smb = new ServiceMessageBus(configuration.Resolver);
             configuration.Resolver.Register(typeof(IMessageBus), () => smb);
+
+            if (hubs?.Count > 0)
+            {
+                return new ServiceHubDispatcher(hubs, serviceProtocol, scm, ccm, endpoint, router, serviceOptions, loggerFactory);
+            }
+            else
+            {
+                loggerFactory.CreateLogger<IAppBuilder>().Log(LogLevel.Warning, "No hubs found.");
+                return null;
+            }
         }
 
         private static IReadOnlyList<string> GetAvailableHubNames(HubConfiguration configuration)

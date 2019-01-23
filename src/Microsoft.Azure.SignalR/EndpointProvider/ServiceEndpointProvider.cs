@@ -4,18 +4,14 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
     internal class ServiceEndpointProvider : IServiceEndpointProvider
     {
-        private const string PreviewVersion = "1.0-preview";
-
-        private static readonly string ConnectionStringNotFound =
+        internal static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
-            $"Please specify a configuration entry for {ServiceOptions.ConnectionStringDefaultKey}, " +
+            $"Please specify a configuration entry for {Constants.ConnectionStringDefaultKey}, " +
             "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
         private readonly string _endpoint;
@@ -23,28 +19,23 @@ namespace Microsoft.Azure.SignalR
         private readonly TimeSpan _accessTokenLifetime;
         private readonly IServiceEndpointGenerator _generator;
 
-        public ServiceEndpointProvider(IOptions<ServiceOptions> options)
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, TimeSpan? ttl = null)
         {
-            var connectionString = options.Value.ConnectionString;
+            var connectionString = endpoint.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
             {
                 throw new ArgumentException(ConnectionStringNotFound);
             }
 
-            _accessTokenLifetime = options.Value.AccessTokenLifetime;
+            _accessTokenLifetime = ttl ?? Constants.DefaultAccessTokenLifetime;
 
-            string version;
-            int? port;
-            (_endpoint, _accessKey, version, port) = ConnectionStringParser.Parse(connectionString);
+            _endpoint = endpoint.Endpoint;
+            _accessKey = endpoint.AccessKey;
 
-            if (version == null || version == PreviewVersion)
-            {
-                _generator = new PreviewServiceEndpointGenerator(_endpoint, _accessKey);
-            }
-            else
-            {
-                _generator = new DefaultServiceEndpointGenerator(_endpoint, _accessKey, version, port);
-            }
+            var port = endpoint.Port;
+            var version = endpoint.Version;
+
+            _generator = new DefaultServiceEndpointGenerator(_endpoint, _accessKey, version, port);
         }
 
         public string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, string requestId = null)
@@ -59,9 +50,14 @@ namespace Microsoft.Azure.SignalR
             return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
         }
 
-        public string GenerateServerAccessToken<THub>(string userId, TimeSpan? lifetime = null, string requestId = null) where THub : Hub
+        public string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null, string requestId = null)
         {
-            var audience = _generator.GetServerAudience(typeof(THub).Name);
+            if (string.IsNullOrEmpty(hubName))
+            {
+                throw new ArgumentNullException(nameof(hubName));
+            }
+
+            var audience = _generator.GetServerAudience(hubName);
             var claims = userId != null ? new[] {new Claim(ClaimTypes.NameIdentifier, userId)} : null;
 
             return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
@@ -77,9 +73,14 @@ namespace Microsoft.Azure.SignalR
             return _generator.GetClientEndpoint(hubName, originalPath, queryString);
         }
 
-        public string GetServerEndpoint<THub>() where THub : Hub
+        public string GetServerEndpoint(string hubName)
         {
-            return _generator.GetServerEndpoint(typeof(THub).Name);
+            if (string.IsNullOrEmpty(hubName))
+            {
+                throw new ArgumentNullException(nameof(hubName));
+            }
+
+            return _generator.GetServerEndpoint(hubName);
         }
     }
 }

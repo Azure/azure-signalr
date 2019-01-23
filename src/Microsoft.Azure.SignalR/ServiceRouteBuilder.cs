@@ -11,7 +11,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -21,6 +24,7 @@ namespace Microsoft.Azure.SignalR
     public class ServiceRouteBuilder
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger _logger;
         private readonly RouteBuilder _routes;
         private readonly NegotiateHandler _negotiateHandler;
 
@@ -33,6 +37,9 @@ namespace Microsoft.Azure.SignalR
             _routes = routes;
             _serviceProvider = _routes.ServiceProvider;
             _negotiateHandler = _serviceProvider.GetRequiredService<NegotiateHandler>();
+
+            var loggerFactory = _serviceProvider.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance;
+            _logger = loggerFactory.CreateLogger<ServiceRouteBuilder>(); 
         }
 
         /// <summary>
@@ -69,7 +76,18 @@ namespace Microsoft.Azure.SignalR
                 return;
             }
 
-            var negotiateResponse = _negotiateHandler.Process(context, hubName);
+            NegotiationResponse negotiateResponse = null;
+            try
+            {
+                negotiateResponse = _negotiateHandler.Process(context, hubName);
+            }
+            catch (AzureSignalRAccessTokenTooLongException ex)
+            {
+                Log.NegotiateFailed(_logger, ex.Message);
+                context.Response.StatusCode = 413;
+                await HttpResponseWritingExtensions.WriteAsync(context.Response, ex.Message);
+                return;
+            }
 
             var writer = new MemoryBufferWriter();
             try
@@ -94,6 +112,17 @@ namespace Microsoft.Azure.SignalR
 
             var dispatcher = _serviceProvider.GetRequiredService<ServiceHubDispatcher<THub>>();
             dispatcher.Start(app);
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, string, Exception> _negotiateFailed =
+                LoggerMessage.Define<string>(LogLevel.Critical, new EventId(1, "NegotiateFailed"), "Client negotiate failed: {Error}");
+
+            public static void NegotiateFailed(ILogger logger, string error)
+            {
+                _negotiateFailed(logger, error, null);
+            }
         }
     }
 }

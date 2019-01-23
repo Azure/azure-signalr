@@ -2,120 +2,67 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http.Connections;
-using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceHubDispatcher<THub> : IConnectionFactory where THub : Hub
+    internal class ServiceHubDispatcher<THub> where THub : Hub
     {
+        private static readonly string Name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
+
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<ServiceHubDispatcher<THub>> _logger;
         private readonly ServiceOptions _options;
-        private readonly IServiceEndpointProvider _serviceEndpointProvider;
+        private readonly IServiceEndpointManager _serviceEndpointManager;
         private readonly IServiceConnectionManager<THub> _serviceConnectionManager;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly IServiceProtocol _serviceProtocol;
         private readonly IClientConnectionFactory _clientConnectionFactory;
-        private readonly string _userId;
-        private static readonly string Name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
-        // Fix issue: https://github.com/Azure/azure-signalr/issues/198
-        // .NET Framework has restriction about reserved string as the header name like "User-Agent"
-        private static Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "Asrs-User-Agent", ProductInfo.GetProductInfo() } };
+        private readonly IEndpointRouter _router;
+        private readonly string _hubName;
 
         public ServiceHubDispatcher(IServiceProtocol serviceProtocol,
             IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
-            IServiceEndpointProvider serviceEndpointProvider,
+            IServiceEndpointManager serviceEndpointManager,
             IOptions<ServiceOptions> options,
             ILoggerFactory loggerFactory,
+            IEndpointRouter router,
             IClientConnectionFactory clientConnectionFactory)
         {
             _serviceProtocol = serviceProtocol;
             _serviceConnectionManager = serviceConnectionManager;
             _clientConnectionManager = clientConnectionManager;
-            _serviceEndpointProvider = serviceEndpointProvider;
+            _serviceEndpointManager = serviceEndpointManager;
             _options = options != null ? options.Value : throw new ArgumentNullException(nameof(options));
 
+            _router = router ?? throw new ArgumentNullException(nameof(router));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<ServiceHubDispatcher<THub>>();
             _clientConnectionFactory = clientConnectionFactory;
-            _userId = GenerateServerName();
-        }
-
-        private static string GenerateServerName()
-        {
-            // Use the machine name for convenient diagnostics, but add a guid to make it unique.
-            // Example: MyServerName_02db60e5fab243b890a847fa5c4dcb29
-            return $"{Environment.MachineName}_{Guid.NewGuid():N}";
+            _hubName = typeof(THub).Name;
         }
 
         public void Start(ConnectionDelegate connectionDelegate)
         {
             // Simply create a couple of connections which connect to Azure SignalR
-            for (var i = 0; i < _options.ConnectionCount; i++)
-            {
-                var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, this, _loggerFactory, connectionDelegate, _clientConnectionFactory, Guid.NewGuid().ToString());
-                _serviceConnectionManager.AddServiceConnection(serviceConnection);
-            }
+            var serviceConnection = GetMultiEndpointServiceConnectionContainer(_hubName, connectionDelegate);
+
+            _serviceConnectionManager.SetServiceConnection(serviceConnection);
+
             Log.StartingConnection(_logger, Name, _options.ConnectionCount);
             _ = _serviceConnectionManager.StartAsync();
         }
 
-        private Uri GetServiceUrl(string connectionId)
+        private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate)
         {
-            var baseUri = new UriBuilder(_serviceEndpointProvider.GetServerEndpoint<THub>());
-            var query = "cid=" + connectionId;
-            if (baseUri.Query != null && baseUri.Query.Length > 1)
-            {
-                baseUri.Query = baseUri.Query.Substring(1) + "&" + query;
-            }
-            else
-            {
-                baseUri.Query = query;
-            }
-            return baseUri.Uri;
-        }
-
-        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, CancellationToken cancellationToken = default)
-        {
-            var httpConnectionOptions = new HttpConnectionOptions
-            {
-                Url = GetServiceUrl(connectionId),
-                AccessTokenProvider = () => Task.FromResult(_serviceEndpointProvider.GenerateServerAccessToken<THub>(_userId)),
-                Transports = HttpTransportType.WebSockets,
-                SkipNegotiation = true,
-                Headers = CustomHeader
-            };
-            var httpConnection = new HttpConnection(httpConnectionOptions, _loggerFactory);
-            try
-            {
-                await httpConnection.StartAsync(transferFormat);
-                return httpConnection;
-            }
-            catch
-            {
-                await httpConnection.DisposeAsync();
-                throw;
-            }
-        }
-
-        public Task DisposeAsync(ConnectionContext connection)
-        {
-            if (connection == null)
-            {
-                return Task.CompletedTask;
-            }
-            
-            return ((HttpConnection)connection).DisposeAsync();
+            var serviceConnectionFactory = new ServiceConnectionFactory(_serviceProtocol, _clientConnectionManager, _loggerFactory, connectionDelegate,_clientConnectionFactory);
+            return new MultiEndpointServiceConnectionContainer(serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _loggerFactory);
         }
 
         private static class Log
