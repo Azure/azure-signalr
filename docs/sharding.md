@@ -1,8 +1,24 @@
 # Multiple SignalR service endpoint support
-In latest SDK, we add support for configuring multiple SignalR service instances. This feature can be used to increase the scale of concurrent connections, and also cross-region scenarios.
+In latest SDK, we add support for configuring multiple SignalR service instances. This feature can be used to increase the scale of concurrent connections, and can also be used in cross-region scenarios.
+
+* [For ASP.NET Core SignalR](#aspnetcore)
+    * [How to add multiple endpoints from config](#aspnetcore-config)
+    * [How to add multiple endpoints from code](#aspnetcore-code)
+    * [How to customize endpoint router](#customize-router)
+
+* [For ASP.NET SignalR](#aspnet)
+    * [How to add multiple endpoints from config](#aspnet-config)
+    * [How to add multiple endpoints from code](#aspnet-code)
+    * [How to customize endpoint router](#aspnet-customize-router)
+* [Configuration in cross-geo scenarios](#cross-geo)
+* [Failover](#failover)
 
 ## For ASP.NET Core
+<a name="aspnetcore"></a>
+
 ### How to add multiple endpoints from config
+<a name="aspnetcore-config"></a>
+
 Config with key `Azure:SignalR:ConnectionString` or starting with `Azure:SignalR:ConnectionString:` is considered as an SignalR Service connection string.
 
 If the key starts with `Azure:SignalR:ConnectionString:`, it is in format `Azure:SignalR:ConnectionString:{Name}:{EndpointType}`, `Name` and `EndpointType` are properties of the `ServiceEndpoint` object, and is accessible from code.
@@ -16,6 +32,8 @@ dotnet user-secrets set Azure:SignalR:ConnectionString:3 <ConnectionString3>
 ```
 
 ### How to add multiple endpoints from code
+<a name="aspnetcore-code"></a>
+
 A `ServicEndpoint` class is introduced in to describe the properties of an Azure SignalR Service endpoint.
 You can configure multiple instance endpoints when using Azure SignalR Service SDK through:
 ```cs
@@ -33,8 +51,9 @@ services.AddSignalR()
         });
 ```
 
-### How to customize router
+### How to customize endpoint router
 <a name="customize-router"></a>
+
 By default, the SDK uses the [DefaultEndpointRouter](https://github.com/Azure/azure-signalr/blob/dev/src/Microsoft.Azure.SignalR.Common/Endpoints/DefaultEndpointRouter.cs) to pick up endpoints.
 
 #### Default behavior 
@@ -47,7 +66,7 @@ By default, the SDK uses the [DefaultEndpointRouter](https://github.com/Azure/az
     When it is *sending message to some **connection***, and the target connection is routed to current server, the message goes back directly to that connected endpoint;
 for other cases, the messages are broadcasted to every Azure SignalR endpoint.
 
-### Customize route algorithm
+#### Customize route algorithm
 You can create your own router when you have special knowledge to identify which endpoints the messages should go to. 
 
 Below defines a custom router when groups starting with `east-` always go to the endpoint named `east`:
@@ -71,7 +90,11 @@ private sealed class CustomRouter : IEndpointRouter
 ```
 
 ## For ASP.NET
+<a name="aspnet"></a>
+
 ### How to add multiple endpoints from config
+<a name="aspnet-config"></a>
+
 Config with key `Azure:SignalR:ConnectionString` or starting with `Azure:SignalR:ConnectionString:` is considered as an SignalR Service connection string.
 
 If the key starts with `Azure:SignalR:ConnectionString:`, it is in format `Azure:SignalR:ConnectionString:{Name}:{EndpointType}`, `Name` and `EndpointType` are properties of the `ServiceEndpoint` object, and is accessible from code.
@@ -92,8 +115,11 @@ You can add multiple instance connection strings to `web.config`:
 ```
 
 ### How to add multiple endpoints from code
+<a name="aspnet-code"></a>
+
 A `ServicEndpoint` class is introduced in to describe the properties of an Azure SignalR Service endpoint.
 You can configure multiple instance endpoints when using Azure SignalR Service SDK through:
+
 ```cs
 app.MapAzureSignalR(
     this.GetType().FullName, 
@@ -111,6 +137,8 @@ app.MapAzureSignalR(
 ```
 
 ### How to customize router
+<a name="aspnet-customize-router"></a>
+
 Please refer to [How to customize router](#customize-router) for detailed information about creating a custom router.
 
 And don't forget to register the router to DI container using:
@@ -130,6 +158,8 @@ app.MapAzureSignalR(GetType().FullName, hub,  => {
 ```
 
 ## Configuration in cross-geo scenarios
+<a name="cross-geo"></a>
+
 A `ServiceEndpoint` object has an `EndpointType` property with value `primary` or `secondary`, which can be helpful in cross-geo cases.
 
 In general, `primary` endpoints are considered to have more reliable network connections and are taking client traffics in; `secondary` endpoints are considered to have less reliable network connections and are not taking client traffic in, but only taking server to client side traffic, for example, broadcast messages.
@@ -139,6 +169,8 @@ In cross-geo cases, cross-geo network can be comparatively unstable. For one app
 ![Cross-Geo Infra](./images/cross_geo_infra.png)
 
 ## Failover
+<a name="failover"></a>
+
 When all `primary` endpoints are offline, client `/negotiate` returns one online `secondary` endpoint if any exists. In this way, the client is routed to an available `secondary` endpoint. This failover  mechanism relies on the settings that all the endpoints should be `primary` endpoints to some app server.
 
 ![Failover](./images/failover.png)
