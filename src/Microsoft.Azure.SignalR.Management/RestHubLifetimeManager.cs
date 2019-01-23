@@ -49,9 +49,13 @@ namespace Microsoft.Azure.SignalR.Management
 
             var response = await CallRestApi(api, HttpMethod.Post, methodName, args, cancellationToken);
 
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                ThrowException(response.StatusCode, response.ReasonPhrase);
+                response.EnsureSuccessStatusCode();
+            }
+            catch (Exception ex)
+            {
+                ThrowException(ex, response.StatusCode, api.Audience);
             }
         }
 
@@ -76,9 +80,13 @@ namespace Microsoft.Azure.SignalR.Management
 
             var response = await CallRestApi(api, HttpMethod.Post, methodName, args, cancellationToken);
 
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                ThrowException(response.StatusCode, response.ReasonPhrase);
+                response.EnsureSuccessStatusCode();
+            }
+            catch (Exception ex)
+            {
+                ThrowException(ex, response.StatusCode, api.Audience);
             }
         }
 
@@ -98,9 +106,13 @@ namespace Microsoft.Azure.SignalR.Management
 
             var response = await CallRestApi(api, HttpMethod.Post, methodName, args, cancellationToken);
 
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                ThrowException(response.StatusCode, response.ReasonPhrase);
+                response.EnsureSuccessStatusCode();
+            }
+            catch (Exception ex)
+            {
+                ThrowException(ex, response.StatusCode, api.Audience);
             }
         }
 
@@ -115,22 +127,30 @@ namespace Microsoft.Azure.SignalR.Management
 
             var response = await CallRestApi(api, HttpMethod.Put, null, null, cancellationToken);
 
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                ThrowException(response.StatusCode, response.ReasonPhrase);
+                response.EnsureSuccessStatusCode();
+            }
+            catch (Exception ex)
+            {
+                ThrowException(ex, response.StatusCode, api.Audience);
             }
         }
 
         public async Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
             var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
-
             var response = await CallRestApi(api, HttpMethod.Delete, null, null, cancellationToken);
 
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                ThrowException(response.StatusCode, response.ReasonPhrase);
+                response.EnsureSuccessStatusCode();
             }
+            catch(Exception ex)
+            {
+                ThrowException(ex, response.StatusCode, api.Audience);
+            }
+                
         }
 
         private static HttpRequestMessage GenerateHttpRequest(string url, PayloadMessage payload, string tokenString, HttpMethod httpMethod)
@@ -142,14 +162,14 @@ namespace Microsoft.Azure.SignalR.Management
             return request;
         }
 
-        private static void ThrowException(HttpStatusCode statusCode, string reasonPhrase)
+        private static void ThrowException(Exception ex, HttpStatusCode statusCode, string requestUri)
         {
             switch(statusCode)
             {
-                case HttpStatusCode.BadRequest: throw new BadRequestException();
-                case HttpStatusCode.Unauthorized: throw new UnauthorizedException();
-                case HttpStatusCode.NotFound: throw new NotFoundException();
-                default: throw new OtherException(statusCode, reasonPhrase);
+                case HttpStatusCode.BadRequest: throw new AzureSignalRBadRequestException(ex, requestUri);
+                case HttpStatusCode.Unauthorized: throw new AzureSignalRUnauthorizationException(ex, requestUri);
+                case HttpStatusCode.NotFound: throw new AzureSignalRIncorrectEndpointException(ex, requestUri);
+                default: throw new AzureSignalRRuntimeException(ex, requestUri);
             }
         }
 
