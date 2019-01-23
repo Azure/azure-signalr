@@ -227,7 +227,7 @@ namespace Owin
             configuration.Resolver.Register(typeof(IServiceEndpointManager), () => endpoint);
 
             // Get the one from DI or new a default one
-            var router = configuration.Resolver.Resolve<IEndpointRouter>() ?? new DefaultRouter();
+            var router = configuration.Resolver.Resolve<IEndpointRouter>() ?? new DefaultEndpointRouter();
 
             builder.Use<NegotiateMiddleware>(configuration, applicationName, endpoint, router, options, loggerFactory);
 
