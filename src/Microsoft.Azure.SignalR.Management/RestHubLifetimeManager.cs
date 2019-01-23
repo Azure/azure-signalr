@@ -173,7 +173,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
-        private Task<HttpResponseMessage> CallRestApi(RestApiEndpoint endpoint, HttpMethod httpMethod, string methodName = null, object[] args = null, CancellationToken cancellationToken = default)
+        private static Task<HttpResponseMessage> CallRestApi(RestApiEndpoint endpoint, HttpMethod httpMethod, string methodName = null, object[] args = null, CancellationToken cancellationToken = default)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
             var httpClient = HttpClientFactory.CreateClient();
