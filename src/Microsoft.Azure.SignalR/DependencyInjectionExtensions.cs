@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton<NegotiateHandler>();
 
             // If a custom router is added, do not add the default router
-            builder.Services.TryAddSingleton(typeof(IEndpointRouter), typeof(DefaultRouter));
+            builder.Services.TryAddSingleton(typeof(IEndpointRouter), typeof(DefaultEndpointRouter));
             return builder;
         }
     }

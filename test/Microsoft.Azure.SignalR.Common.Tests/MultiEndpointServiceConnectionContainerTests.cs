@@ -417,7 +417,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private class TestEndpointRouter : IEndpointRouter
         {
-            private readonly IEndpointRouter _inner = new DefaultRouter();
+            private readonly IEndpointRouter _inner = new DefaultEndpointRouter();
 
             private readonly bool _broken;
             public TestEndpointRouter(bool broken)
