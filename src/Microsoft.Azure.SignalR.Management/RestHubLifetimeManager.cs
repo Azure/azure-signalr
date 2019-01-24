@@ -56,14 +56,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (Exception ex)
             {
-                if (api != null && response != null)
-                {
-                    ThrowException(ex, response.StatusCode, api.Audience);
-                }
-                else
-                {
-                    throw;
-                }
+                ThrowException(ex, response?.StatusCode, api?.Audience);
             }
         }
 
@@ -95,14 +88,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (Exception ex)
             {
-                if (api != null && response != null)
-                {
-                    ThrowException(ex, response.StatusCode, api.Audience);
-                }
-                else
-                {
-                    throw;
-                }
+                ThrowException(ex, response?.StatusCode, api?.Audience);
             }
         }
 
@@ -129,14 +115,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (Exception ex)
             {
-                if (api != null && response != null)
-                {
-                    ThrowException(ex, response.StatusCode, api.Audience);
-                }
-                else
-                {
-                    throw;
-                }
+                ThrowException(ex, response?.StatusCode, api?.Audience);
             }
         }
 
@@ -158,14 +137,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (Exception ex)
             {
-                if (api != null && response != null)
-                {
-                    ThrowException(ex, response.StatusCode, api.Audience);
-                }
-                else
-                {
-                    throw;
-                }
+                ThrowException(ex, response?.StatusCode, api?.Audience);
             }
         }
 
@@ -182,16 +154,8 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch(Exception ex)
             {
-                if (api != null && response != null)
-                {
-                    ThrowException(ex, response.StatusCode, api.Audience);
-                }
-                else
-                {
-                    throw;
-                }
+                ThrowException(ex, response?.StatusCode, api?.Audience);
             }
-                
         }
 
         private static HttpRequestMessage GenerateHttpRequest(string url, PayloadMessage payload, string tokenString, HttpMethod httpMethod)
@@ -203,7 +167,7 @@ namespace Microsoft.Azure.SignalR.Management
             return request;
         }
 
-        private static void ThrowException(Exception ex, HttpStatusCode statusCode, string requestUri)
+        private static void ThrowException(Exception ex, HttpStatusCode? statusCode, string requestUri)
         {
             switch(statusCode)
             {

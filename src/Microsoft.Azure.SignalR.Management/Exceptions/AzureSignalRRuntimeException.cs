@@ -11,7 +11,9 @@ namespace Microsoft.Azure.SignalR.Management
     [Serializable]
     public class AzureSignalRRuntimeException : AzureSignalRException
     {
-        public AzureSignalRRuntimeException(Exception ex, string requestUri) : base($"Azure SignalR service runtime error. Request Uri: {requestUri}", ex)
+        public const string _message = "Azure SignalR service runtime error.";
+
+        public AzureSignalRRuntimeException(Exception ex, string requestUri) : base(String.IsNullOrEmpty(requestUri) ? $"{_message} Request Uri: {requestUri}" : _message, ex)
         {
         }
 
