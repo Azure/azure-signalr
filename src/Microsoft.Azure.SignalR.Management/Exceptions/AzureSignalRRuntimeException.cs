@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Management
     {
         public const string _message = "Azure SignalR service runtime error.";
 
-        public AzureSignalRRuntimeException(string requestUri, Exception ex) : base(String.IsNullOrEmpty(requestUri) ? _message : $"{_message} Request Uri: {requestUri}", ex)
+        public AzureSignalRRuntimeException(string requestUri, Exception innerException) : base(String.IsNullOrEmpty(requestUri) ? _message : $"{_message} Request Uri: {requestUri}", innerException)
         {
         }
 

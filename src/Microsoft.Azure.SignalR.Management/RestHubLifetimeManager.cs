@@ -167,14 +167,14 @@ namespace Microsoft.Azure.SignalR.Management
             return request;
         }
 
-        private static void ThrowException(Exception ex, HttpStatusCode? statusCode, string requestUri)
+        private static void ThrowException(Exception innerException, HttpStatusCode? statusCode, string requestUri)
         {
             switch(statusCode)
             {
-                case HttpStatusCode.BadRequest: throw new AzureSignalRBadRequestException(requestUri, ex);
-                case HttpStatusCode.Unauthorized: throw new AzureSignalRUnauthorizationException(requestUri, ex);
-                case HttpStatusCode.NotFound: throw new AzureSignalRIncorrectEndpointException(requestUri, ex);
-                default: throw new AzureSignalRRuntimeException(requestUri, ex);
+                case HttpStatusCode.BadRequest: throw new AzureSignalRBadRequestException(requestUri, innerException);
+                case HttpStatusCode.Unauthorized: throw new AzureSignalRUnauthorizationException(requestUri, innerException);
+                case HttpStatusCode.NotFound: throw new AzureSignalRIncorrectEndpointException(requestUri, innerException);
+                default: throw new AzureSignalRRuntimeException(requestUri, innerException);
             }
         }
 
