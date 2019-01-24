@@ -207,19 +207,7 @@ namespace Owin
             SignatureConversions.AddConversions(builder);
 
             // ServiceEndpointManager needs the logger
-            ILoggerFactory loggerFactory;
-            var traceOutput = builder.Properties.GetTraceOutput();
-            if (traceOutput != null)
-            {
-                var hostTraceListener = new TextWriterTraceListener(traceOutput);
-                var traceManager = new TraceManager(hostTraceListener);
-                loggerFactory = new LoggerFactory(new ILoggerProvider[] { new TraceManagerLoggerProvider(traceManager) });
-                resolver.Register(typeof(ILoggerFactory), () => loggerFactory);
-            }
-            else
-            {
-                loggerFactory = NullLoggerFactory.Instance;
-            }
+            var loggerFactory = new LoggerFactory();
 
             var hubs = GetAvailableHubNames(configuration);
 
@@ -232,6 +220,13 @@ namespace Owin
             builder.Use<NegotiateMiddleware>(configuration, applicationName, endpoint, router, options, loggerFactory);
 
             builder.RunSignalR(configuration);
+
+            // Fetch the trace manager from DI and add logger provider
+            var traceManager = configuration.Resolver.Resolve<ITraceManager>();
+            if (traceManager != null)
+            {
+                loggerFactory.AddProvider(new TraceManagerLoggerProvider(traceManager));
+            }
 
             var dispatcher = PrepareAndGetDispatcher(configuration, options, endpoint, router, applicationName, hubs, loggerFactory);
             if (dispatcher != null)
