@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
@@ -53,6 +54,8 @@ namespace Microsoft.Azure.SignalR
 
         private readonly ILogger _logger;
 
+        private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _ackTaskCompletionSources;
+
         protected string ConnectionId { get; }
 
         protected IServiceProtocol ServiceProtocol { get; }
@@ -76,6 +79,7 @@ namespace Microsoft.Azure.SignalR
             _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
             _logger = loggerFactory?.CreateLogger<ServiceConnectionBase>() ?? NullLogger<ServiceConnectionBase>.Instance;
             _serviceConnectionManager = serviceConnectionManager;
+            _ackTaskCompletionSources = new ConcurrentDictionary<string, TaskCompletionSource<bool>>();
         }
 
         public async Task StartAsync(string target = null)
@@ -124,6 +128,12 @@ namespace Microsoft.Azure.SignalR
 
         // For test purpose only
         public bool IsConnected => _isConnected;
+
+        public virtual Task WriteWithAckAsync(ServiceMessage serviceMessage, string guid, TaskCompletionSource<bool> tcs)
+        {
+            _ackTaskCompletionSources.TryAdd(guid, tcs);
+            return WriteAsync(serviceMessage);
+        }
 
         public async virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
@@ -205,6 +215,19 @@ namespace Microsoft.Azure.SignalR
                 }
 
                 index += 2;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        protected Task OnGroupAckAsync(GroupAckMessage groupAckMessage)
+        {
+            if (!string.IsNullOrEmpty(groupAckMessage.AckGuid))
+            {
+                if (_ackTaskCompletionSources.TryGetValue(groupAckMessage.AckGuid, out var tcs))
+                {
+                    tcs.SetResult(true);
+                }
             }
 
             return Task.CompletedTask;
@@ -440,6 +463,8 @@ namespace Microsoft.Azure.SignalR
                     return OnMessageAsync(connectionDataMessage);
                 case ServiceErrorMessage serviceErrorMessage:
                     return OnServiceErrorAsync(serviceErrorMessage);
+                case GroupAckMessage groupAckMessage:
+                    return OnGroupAckAsync(groupAckMessage);
                 case PingMessage pingMessage:
                     // TODO: Call OnPingMessageAsync when the full pipeline is completed.
                     break;

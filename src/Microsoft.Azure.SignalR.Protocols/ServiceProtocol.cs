@@ -91,6 +91,12 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateMultiGroupBroadcastDataMessage(input, ref startOffset);
                 case ServiceProtocolConstants.ServiceErrorMessageType:
                     return CreateServiceErrorMessage(input, ref startOffset);
+                case ServiceProtocolConstants.JoinGroupWithAckMessageType:
+                    return CreateJoinGroupWithAckMessage(input, ref startOffset);
+                case ServiceProtocolConstants.LeaveGroupWithAckMessageType:
+                    return CreateLeaveGroupWithAckMessage(input, ref startOffset);
+                case ServiceProtocolConstants.GroupAckMessageType:
+                    return CreateGroupAckMessage(input, ref startOffset);
                 default:
                     // Future protocol changes can add message types, old clients can ignore them
                     return null;
@@ -194,6 +200,15 @@ namespace Microsoft.Azure.SignalR.Protocol
                     break;
                 case ServiceErrorMessage serviceErrorMessage:
                     WriteServiceErrorMessage(serviceErrorMessage, packer);
+                    break;
+                case JoinGroupWithAckMessage joinGroupWithAckMessage:
+                    WriteJoinGroupWithAckMessage(joinGroupWithAckMessage, packer);
+                    break;
+                case LeaveGroupWithAckMessage leaveGroupWithAckMessage:
+                    WriteLeaveGroupWithAckMessage(leaveGroupWithAckMessage, packer);
+                    break;
+                case GroupAckMessage groupAckMessage:
+                    WriteGroupAckMessage(groupAckMessage, packer);
                     break;
                 default:
                     throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
@@ -358,6 +373,31 @@ namespace Microsoft.Azure.SignalR.Protocol
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.LeaveGroupMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
             MessagePackBinary.WriteString(packer, message.GroupName);
+        }
+
+        private static void WriteJoinGroupWithAckMessage(JoinGroupWithAckMessage message, Stream packer)
+        {
+            MessagePackBinary.WriteArrayHeader(packer, 4);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.JoinGroupWithAckMessageType);
+            MessagePackBinary.WriteString(packer, message.ConnectionId);
+            MessagePackBinary.WriteString(packer, message.GroupName);
+            MessagePackBinary.WriteString(packer, message.AckGuid);
+        }
+
+        private static void WriteLeaveGroupWithAckMessage(LeaveGroupWithAckMessage message, Stream packer)
+        {
+            MessagePackBinary.WriteArrayHeader(packer, 4);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.LeaveGroupWithAckMessageType);
+            MessagePackBinary.WriteString(packer, message.ConnectionId);
+            MessagePackBinary.WriteString(packer, message.GroupName);
+            MessagePackBinary.WriteString(packer, message.AckGuid);
+        }
+
+        private static void WriteGroupAckMessage(GroupAckMessage message, Stream packer)
+        {
+            MessagePackBinary.WriteArrayHeader(packer, 2);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.GroupAckMessageType);
+            MessagePackBinary.WriteString(packer, message.AckGuid);
         }
 
         private static void WriteGroupBroadcastDataMessage(GroupBroadcastDataMessage message, Stream packer)
@@ -556,6 +596,31 @@ namespace Microsoft.Azure.SignalR.Protocol
             var groupName = ReadString(input, ref offset, "groupName");
 
             return new LeaveGroupMessage(connectionId, groupName);
+        }
+
+        private static JoinGroupWithAckMessage CreateJoinGroupWithAckMessage(byte[] input, ref int offset)
+        {
+            var connectionId = ReadString(input, ref offset, "connectionId");
+            var groupName = ReadString(input, ref offset, "groupName");
+            var ackGuid = ReadString(input, ref offset, "ackGuid");
+
+            return new JoinGroupWithAckMessage(connectionId, groupName, ackGuid);
+        }
+
+        private static LeaveGroupWithAckMessage CreateLeaveGroupWithAckMessage(byte[] input, ref int offset)
+        {
+            var connectionId = ReadString(input, ref offset, "connectionId");
+            var groupName = ReadString(input, ref offset, "groupName");
+            var ackGuid = ReadString(input, ref offset, "ackGuid");
+
+            return new LeaveGroupWithAckMessage(connectionId, groupName, ackGuid);
+        }
+
+        private static GroupAckMessage CreateGroupAckMessage(byte[] input, ref int offset)
+        {
+            var ackGuid = ReadString(input, ref offset, "ackGuid");
+
+            return new GroupAckMessage(ackGuid);
         }
 
         private static GroupBroadcastDataMessage CreateGroupBroadcastDataMessage(byte[] input, ref int offset)

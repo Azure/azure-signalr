@@ -88,6 +88,11 @@ namespace Microsoft.Azure.SignalR
             return WriteToPartitionedConnection(partitionKey, serviceMessage);
         }
 
+        public Task WriteWithAckAsync(ServiceMessage serviceMessage, string guid, TaskCompletionSource<bool> tcs)
+        {
+            return FixedServiceConnections[0].WriteWithAckAsync(serviceMessage, guid, tcs);
+        }
+
         protected virtual ServiceConnectionStatus GetStatus()
         {
             return FixedServiceConnections.Any(s => s.Status == ServiceConnectionStatus.Connected)

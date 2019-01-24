@@ -20,5 +20,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         public const int GroupBroadcastDataMessageType = 13;
         public const int MultiGroupBroadcastDataMessageType = 14;
         public const int ServiceErrorMessageType = 15;
+        public const int JoinGroupWithAckMessageType = 16;
+        public const int LeaveGroupWithAckMessageType = 17;
+        public const int GroupAckMessageType = 18;
     }
 }

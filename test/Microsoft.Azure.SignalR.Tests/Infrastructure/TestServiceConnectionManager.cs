@@ -39,6 +39,11 @@ namespace Microsoft.Azure.SignalR.Tests
             return Task.CompletedTask;
         }
 
+        public Task WriteWithAckAsync(ServiceMessage serviceMessage, string guid, TaskCompletionSource<bool> tcs)
+        {
+            throw new NotImplementedException();
+        }
+
         public int GetCallCount(Type type)
         {
             return _writeAsyncCallCount.TryGetValue(type, out var count) ? count : 0;

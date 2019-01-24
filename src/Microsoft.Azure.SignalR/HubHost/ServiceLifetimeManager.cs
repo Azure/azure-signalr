@@ -166,16 +166,19 @@ namespace Microsoft.Azure.SignalR
                 new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)));
         }
 
-        public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
+        public override async Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
             if (IsInvalidArgument(connectionId) || IsInvalidArgument(groupName))
             {
-                return Task.CompletedTask;
+                return;
             }
 
-            var message = new JoinGroupMessage(connectionId, groupName);
+            var guid = Guid.NewGuid().ToString();
+            var tcs = new TaskCompletionSource<bool>();
+            var message = new JoinGroupWithAckMessage(connectionId, groupName, guid);
             // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionManager.WriteAsync(groupName, message);
+            await _serviceConnectionManager.WriteWithAckAsync(message, guid, tcs);
+            await tcs.Task;
         }
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -185,9 +188,11 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            var message = new LeaveGroupMessage(connectionId, groupName);
+            var guid = Guid.NewGuid().ToString();
+            var tcs = new TaskCompletionSource<bool>();
+            var message = new LeaveGroupWithAckMessage(connectionId, groupName, guid);
             // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionManager.WriteAsync(groupName, message);
+            return _serviceConnectionManager.WriteWithAckAsync(message, guid, tcs);
         }
 
         private static bool IsInvalidArgument(string value)

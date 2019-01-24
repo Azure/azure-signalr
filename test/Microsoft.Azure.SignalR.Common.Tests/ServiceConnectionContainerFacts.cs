@@ -159,6 +159,16 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 return Task.CompletedTask;
             }
+
+            public Task WriteWithAckAsync(ServiceMessage serviceMessage, string guid, TaskCompletionSource<bool> tcs)
+            {
+                if (_throws)
+                {
+                    throw new ServiceConnectionNotActiveException();
+                }
+
+                return Task.CompletedTask;
+            }
         }
     }
 }

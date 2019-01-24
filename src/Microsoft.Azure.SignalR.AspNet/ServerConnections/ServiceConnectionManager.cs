@@ -102,6 +102,16 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _appConnection.WriteAsync(partitionKey, serviceMessage);
         }
 
+        public Task WriteWithAckAsync(ServiceMessage serviceMessage, string guid, TaskCompletionSource<bool> tcs)
+        {
+            if (_appConnection == null)
+            {
+                throw new InvalidOperationException("App connection is not yet initialized.");
+            }
+
+            return _appConnection.WriteWithAckAsync(serviceMessage, guid, tcs);
+        }
+
         private IEnumerable<IServiceConnectionContainer> GetConnections()
         {
             if (_appConnection != null)

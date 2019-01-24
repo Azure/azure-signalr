@@ -118,6 +118,11 @@ namespace Microsoft.Azure.SignalR
             return Task.WhenAll(routed.Select(s => Connections[s]).Select(s => s.WriteAsync(serviceMessage)));
         }
 
+        public Task WriteWithAckAsync(ServiceMessage serviceMessage, string guid, TaskCompletionSource<bool> tcs)
+        {
+            throw new NotSupportedException();
+        }
+
         private IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message, IEnumerable<ServiceEndpoint> availableEndpoints)
         {
             switch (message)
