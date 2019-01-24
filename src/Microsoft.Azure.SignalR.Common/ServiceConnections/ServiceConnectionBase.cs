@@ -224,7 +224,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (!string.IsNullOrEmpty(groupAckMessage.AckGuid))
             {
-                if (_ackTaskCompletionSources.TryGetValue(groupAckMessage.AckGuid, out var tcs))
+                if (_ackTaskCompletionSources.TryRemove(groupAckMessage.AckGuid, out var tcs))
                 {
                     tcs.SetResult(true);
                 }

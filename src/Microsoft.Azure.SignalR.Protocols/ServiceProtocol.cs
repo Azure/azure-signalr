@@ -95,6 +95,10 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateJoinGroupWithAckMessage(input, ref startOffset);
                 case ServiceProtocolConstants.LeaveGroupWithAckMessageType:
                     return CreateLeaveGroupWithAckMessage(input, ref startOffset);
+                case ServiceProtocolConstants.GroupBroadcastDataWithAckMessageType:
+                    return CreateGroupBroadcastDataWithAckMessage(input, ref startOffset);
+                case ServiceProtocolConstants.MultiGroupBroadcastDataWithAckMessageType:
+                    return CreateMultiGroupBroadcastDataWithAckMessage(input, ref startOffset);
                 case ServiceProtocolConstants.GroupAckMessageType:
                     return CreateGroupAckMessage(input, ref startOffset);
                 default:
@@ -197,6 +201,12 @@ namespace Microsoft.Azure.SignalR.Protocol
                     break;
                 case MultiGroupBroadcastDataMessage multiGroupBroadcastDataMessage:
                     WriteMultiGroupBroadcastDataMessage(multiGroupBroadcastDataMessage, packer);
+                    break;
+                case GroupBroadcastDataWithAckMessage groupBroadcastDataWithAckMessage:
+                    WriteGroupBroadcastDataWithAckMessage(groupBroadcastDataWithAckMessage, packer);
+                    break;
+                case MultiGroupBroadcastDataWithAckMessage multiGroupBroadcastDataWithAckMessage:
+                    WriteMultiGroupBroadcastDataWithAckMessage(multiGroupBroadcastDataWithAckMessage, packer);
                     break;
                 case ServiceErrorMessage serviceErrorMessage:
                     WriteServiceErrorMessage(serviceErrorMessage, packer);
@@ -414,6 +424,25 @@ namespace Microsoft.Azure.SignalR.Protocol
             MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.MultiGroupBroadcastDataMessageType);
             WriteStringArray(message.GroupList, packer);
+            WritePayloads(message.Payloads, packer);
+        }
+
+        private static void WriteGroupBroadcastDataWithAckMessage(GroupBroadcastDataWithAckMessage message, Stream packer)
+        {
+            MessagePackBinary.WriteArrayHeader(packer, 5);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.GroupBroadcastDataWithAckMessageType);
+            MessagePackBinary.WriteString(packer, message.GroupName);
+            WriteStringArray(message.ExcludedList, packer);
+            MessagePackBinary.WriteString(packer, message.AckGuid);
+            WritePayloads(message.Payloads, packer);
+        }
+
+        private static void WriteMultiGroupBroadcastDataWithAckMessage(MultiGroupBroadcastDataWithAckMessage message, Stream packer)
+        {
+            MessagePackBinary.WriteArrayHeader(packer, 4);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.MultiGroupBroadcastDataWithAckMessageType);
+            WriteStringArray(message.GroupList, packer);
+            MessagePackBinary.WriteString(packer, message.AckGuid);
             WritePayloads(message.Payloads, packer);
         }
 
@@ -638,6 +667,25 @@ namespace Microsoft.Azure.SignalR.Protocol
             var payloads = ReadPayloads(input, ref offset);
 
             return new MultiGroupBroadcastDataMessage(groupList, payloads);
+        }
+
+        private static GroupBroadcastDataWithAckMessage CreateGroupBroadcastDataWithAckMessage(byte[] input, ref int offset)
+        {
+            var groupName = ReadString(input, ref offset, "groupName");
+            var excludedList = ReadStringArray(input, ref offset, "excludedList");
+            var ackGuid = ReadString(input, ref offset, "ackGuid");
+            var payloads = ReadPayloads(input, ref offset);
+
+            return new GroupBroadcastDataWithAckMessage(groupName, excludedList, payloads, ackGuid);
+        }
+
+        private static MultiGroupBroadcastDataWithAckMessage CreateMultiGroupBroadcastDataWithAckMessage(byte[] input, ref int offset)
+        {
+            var groupList = ReadStringArray(input, ref offset, "groupList");
+            var ackGuid = ReadString(input, ref offset, "ackGuid");
+            var payloads = ReadPayloads(input, ref offset);
+
+            return new MultiGroupBroadcastDataWithAckMessage(groupList, payloads, ackGuid);
         }
 
         private static ServiceErrorMessage CreateServiceErrorMessage(byte[] input, ref int offset)
