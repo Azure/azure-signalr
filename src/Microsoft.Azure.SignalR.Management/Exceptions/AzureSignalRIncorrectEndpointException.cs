@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private const string _message = "Endpoint incorrect or DNS error.";
 
-        public AzureSignalRIncorrectEndpointException(Exception ex, string requestUri) : base(String.IsNullOrEmpty(requestUri) ? $"{_message} Request Uri: {requestUri}" : _message, ex)
+        public AzureSignalRIncorrectEndpointException(Exception ex, string requestUri) : base(String.IsNullOrEmpty(requestUri) ? _message : $"{_message} Request Uri: {requestUri}", ex)
         {
         }
 

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private const string _message = "Bad Request. Caused by one or more of the following reasons: Invalid hub name, invalid group name, null or empty method name, and invalid message.";
 
-        public AzureSignalRBadRequestException(Exception ex, string requestUri) : base(String.IsNullOrEmpty(requestUri) ? $"{_message} Request Uri: {requestUri}" : _message, ex)
+        public AzureSignalRBadRequestException(Exception ex, string requestUri) : base(String.IsNullOrEmpty(requestUri) ? _message : $"{_message} Request Uri: {requestUri}", ex)
         {
         }
 
