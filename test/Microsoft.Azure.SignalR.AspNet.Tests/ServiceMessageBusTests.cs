@@ -326,6 +326,18 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 return Task.CompletedTask;
             }
 
+            Task IServiceConnection.WriteWithAckAsync(ServiceMessage serviceMessage, string guid,
+                TaskCompletionSource<bool> tcs)
+            {
+                throw new NotImplementedException();
+            }
+
+            Task IServiceConnectionContainer.WriteWithAckAsync(ServiceMessage serviceMessage, string guid,
+                TaskCompletionSource<bool> tcs)
+            {
+                throw new NotImplementedException();
+            }
+
             public Task StopAsync()
             {
                 return Task.CompletedTask;
