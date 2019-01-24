@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
@@ -121,17 +122,19 @@ namespace Microsoft.Azure.SignalR
             await tcs.Task;
         }
 
-        public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
+        public override async Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (IsInvalidArgument(groupNames))
             {
-                return Task.CompletedTask;
+                return;
             }
+
+            await Task.WhenAll(groupNames.Select(g => SendGroupAsync(g, methodName, args, cancellationToken)));
 
             // Send this message from a random service connection because this message involves of multiple groups.
             // Unless we send message for each group one by one, we can not guarantee the message order for all groups.
-            return _serviceConnectionManager.WriteAsync(
-                new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)));
+            //return _serviceConnectionManager.WriteAsync(
+            //    new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)));
         }
 
         public override async Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
