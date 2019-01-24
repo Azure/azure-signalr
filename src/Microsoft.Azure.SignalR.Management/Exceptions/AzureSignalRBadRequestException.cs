@@ -10,7 +10,7 @@ namespace Microsoft.Azure.SignalR.Management
     [Serializable]
     public class AzureSignalRBadRequestException : AzureSignalRException
     {
-        public AzureSignalRBadRequestException(Exception ex, string requestUri) : base($"Bad Request. Caused by one or more of the following reasons: Invalid hub name, invalid group name, null or empty method name, and invalid message. Request Uri: {requestUri}")
+        public AzureSignalRBadRequestException(Exception ex, string requestUri) : base($"Bad Request. Caused by one or more of the following reasons: Invalid hub name, invalid group name, null or empty method name, and invalid message. Request Uri: {requestUri}", ex)
         {
         }
 

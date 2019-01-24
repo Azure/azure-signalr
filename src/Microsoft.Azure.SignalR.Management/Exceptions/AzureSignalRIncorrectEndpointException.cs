@@ -10,7 +10,7 @@ namespace Microsoft.Azure.SignalR.Management
     [Serializable]
     public class AzureSignalRIncorrectEndpointException : AzureSignalRException
     {
-        public AzureSignalRIncorrectEndpointException(Exception ex, string requestUri) : base($"Endpoint incorrect or DNS error. Request Uri: {requestUri}")
+        public AzureSignalRIncorrectEndpointException(Exception ex, string requestUri) : base($"Endpoint incorrect or DNS error. Request Uri: {requestUri}", ex)
         {
         }
 
