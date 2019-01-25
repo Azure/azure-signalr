@@ -131,6 +131,8 @@ namespace Microsoft.Azure.SignalR
 
         public virtual Task WriteWithAckAsync(ServiceMessage serviceMessage, string guid, TaskCompletionSource<bool> tcs)
         {
+            var cts = new CancellationTokenSource(3000);
+            cts.Token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
             _ackTaskCompletionSources.TryAdd(guid, tcs);
             return WriteAsync(serviceMessage);
         }
@@ -226,7 +228,7 @@ namespace Microsoft.Azure.SignalR
             {
                 if (_ackTaskCompletionSources.TryRemove(groupAckMessage.AckGuid, out var tcs))
                 {
-                    tcs.SetResult(true);
+                    tcs.TrySetResult(true);
                 }
             }
 

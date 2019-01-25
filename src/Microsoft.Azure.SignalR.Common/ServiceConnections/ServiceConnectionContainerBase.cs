@@ -90,7 +90,48 @@ namespace Microsoft.Azure.SignalR
 
         public Task WriteWithAckAsync(ServiceMessage serviceMessage, string guid, TaskCompletionSource<bool> tcs)
         {
-            return FixedServiceConnections[0].WriteWithAckAsync(serviceMessage, guid, tcs);
+            return WriteToRandomAvailableConnection(serviceMessage, guid, tcs);
+        }
+
+        private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage, string guid,
+            TaskCompletionSource<bool> tcs)
+        {
+            return WriteWithRetry(serviceMessage, StaticRandom.Next(-FixedConnectionCount, FixedConnectionCount), FixedConnectionCount, guid, tcs);
+        }
+
+        private async Task WriteWithRetry(ServiceMessage serviceMessage, int initial, int count, string guid,
+            TaskCompletionSource<bool> tcs)
+        {
+            // go through all the connections, it can be useful when one of the remote service instances is down
+            var maxRetry = count;
+            var retry = 0;
+            var index = (initial & int.MaxValue) % count;
+            var direction = initial > 0 ? 1 : count - 1;
+            while (retry < maxRetry)
+            {
+                var connection = FixedServiceConnections[index];
+                if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
+                {
+                    try
+                    {
+                        // still possible the connection is not valid
+                        await connection.WriteWithAckAsync(serviceMessage, guid, tcs);
+                        return;
+                    }
+                    catch (ServiceConnectionNotActiveException)
+                    {
+                        if (retry == maxRetry - 1)
+                        {
+                            throw;
+                        }
+                    }
+                }
+
+                retry++;
+                index = (index + direction) % count;
+            }
+
+            throw new ServiceConnectionNotActiveException();
         }
 
         protected virtual ServiceConnectionStatus GetStatus()

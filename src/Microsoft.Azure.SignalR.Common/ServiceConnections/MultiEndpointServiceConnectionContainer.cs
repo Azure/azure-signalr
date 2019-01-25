@@ -120,7 +120,19 @@ namespace Microsoft.Azure.SignalR
 
         public Task WriteWithAckAsync(ServiceMessage serviceMessage, string guid, TaskCompletionSource<bool> tcs)
         {
-            throw new NotSupportedException();
+            if (_inner != null)
+            {
+                return _inner.WriteWithAckAsync(serviceMessage, guid, tcs);
+            }
+
+            var routed = GetRoutedEndpoints(serviceMessage, _endpointManager.GetAvailableEndpoints()).ToArray();
+
+            if (routed.Length == 0)
+            {
+                throw new AzureSignalRNotConnectedException();
+            }
+
+            return Task.WhenAll(routed.Select(s => Connections[s]).Select(s => s.WriteWithAckAsync(serviceMessage, guid, tcs)));
         }
 
         private IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message, IEnumerable<ServiceEndpoint> availableEndpoints)
