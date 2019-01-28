@@ -10,7 +10,7 @@ namespace Microsoft.Azure.SignalR.Common
     [Serializable]
     public class AzureSignalRUnableToAccessException : AzureSignalRException
     {
-        private const string ErrorMessage = "Unable to access SignalR service. May Caused by one or more of the following reasons: Incorrect endpoint or DNS error.";
+        private const string ErrorMessage = "Unable to access SignalR service. May caused by one or more of the following reasons: Incorrect endpoint or DNS error.";
 
         public AzureSignalRUnableToAccessException(string requestUri, Exception innerException) : base(String.IsNullOrEmpty(requestUri) ? ErrorMessage : $"{ErrorMessage} Request Uri: {requestUri}", innerException)
         {

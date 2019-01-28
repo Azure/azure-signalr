@@ -46,9 +46,14 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override async Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
         {
+            if (methodName == null)
+            {
+                throw new ArgumentNullException(nameof(methodName));
+            }
+
             var api = _restApiProvider.GetBroadcastEndpoint();
             var request = BuildRequest(api, HttpMethod.Post, methodName, args, cancellationToken);
-            await CallRestApiAsync(request, api?.Audience);
+            await CallRestApiAsync(request);
         }
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
@@ -68,9 +73,19 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override async Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
+            if (methodName == null)
+            {
+                throw new ArgumentNullException(nameof(methodName));
+            }
+
+            if (groupName == null)
+            {
+                throw new ArgumentNullException(nameof(groupName));
+            }
+
             var api = _restApiProvider.GetSendToGroupEndpoint(groupName);
             var request = BuildRequest(api, HttpMethod.Post, methodName, args, cancellationToken);
-            await CallRestApiAsync(request, api?.Audience);
+            await CallRestApiAsync(request);
         }
 
         public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
@@ -85,9 +100,19 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override async Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
+            if (methodName == null)
+            {
+                throw new ArgumentNullException(nameof(methodName));
+            }
+
+            if (userId == null)
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
             var api = _restApiProvider.GetSendToUserEndpoint(userId);
             var request = BuildRequest(api, HttpMethod.Post, methodName, args, cancellationToken);
-            await CallRestApiAsync(request, api?.Audience);
+            await CallRestApiAsync(request);
         }
 
         public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -97,16 +122,36 @@ namespace Microsoft.Azure.SignalR.Management
 
         public async Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
+            if (userId == null)
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            if (groupName == null)
+            {
+                throw new ArgumentNullException(nameof(groupName));
+            }
+
             var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
             var request = BuildRequest(api, HttpMethod.Put, null, null, cancellationToken);
-            await CallRestApiAsync(request, api?.Audience);
+            await CallRestApiAsync(request);
         }
 
         public async Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
+            if (userId == null)
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            if (groupName == null)
+            {
+                throw new ArgumentNullException(nameof(groupName));
+            }
+
             var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
             var request = BuildRequest(api, HttpMethod.Delete, null, null, cancellationToken);
-            await CallRestApiAsync(request, api?.Audience);
+            await CallRestApiAsync(request);
         }
 
         private static HttpRequestMessage GenerateHttpRequest(string url, PayloadMessage payload, string tokenString, HttpMethod httpMethod)
@@ -144,11 +189,10 @@ namespace Microsoft.Azure.SignalR.Management
         private static HttpRequestMessage BuildRequest(RestApiEndpoint endpoint, HttpMethod httpMethod, string methodName = null, object[] args = null, CancellationToken cancellationToken = default)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
-            var request = GenerateHttpRequest(endpoint.Audience, payload, endpoint.Token, HttpMethod.Post);
-            return request;
+            return GenerateHttpRequest(endpoint.Audience, payload, endpoint.Token, HttpMethod.Post);
         }
 
-        private static async Task CallRestApiAsync(HttpRequestMessage request, string audience)
+        private static async Task CallRestApiAsync(HttpRequestMessage request)
         {
             var httpClient = HttpClientFactory.CreateClient();
             HttpResponseMessage response = null;
@@ -159,17 +203,18 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (HttpRequestException ex)
             {
-                ThrowException(ex, HttpStatusCode.NotFound, audience);
+                ThrowException(ex, HttpStatusCode.NotFound, request.RequestUri.ToString());
             }
 
+            string detail = null;
             try
             {
+                detail = await response.Content.ReadAsStringAsync();
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
             {
-                var detail = await response.Content.ReadAsStringAsync();
-                ThrowException(ex, response?.StatusCode, audience, detail);
+                ThrowException(ex, response?.StatusCode, request.RequestUri.ToString(), detail);
             }
         }
     }
