@@ -180,7 +180,9 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// </summary>
     public class GroupBroadcastDataWithAckMessage : GroupBroadcastDataMessage, IAckableMessage
     {
-
+        /// <summary>
+        /// Gets or sets the ack id.
+        /// </summary>
         public string AckId { get; set; }
 
         /// <summary>
@@ -201,7 +203,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="groupName">The group name.</param>
         /// <param name="excludedList">The list of excluded connection Ids.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
-        /// <param name="ackId"></param>
+        /// <param name="ackId">The ack Id</param>
         public GroupBroadcastDataWithAckMessage(string groupName, IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads, string ackId = null)
             : base(groupName, excludedList, payloads)
         {

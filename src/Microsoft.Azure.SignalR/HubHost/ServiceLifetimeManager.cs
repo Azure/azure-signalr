@@ -137,7 +137,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new GroupBroadcastDataWithAckMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args));
             // Send this message from a fixed service connection, so that message order can be reserved.
-            return  _serviceConnectionManager.WriteAndWaitForAckAsync(message);
+            return _serviceConnectionManager.WriteAndWaitForAckAsync(message);
         }
 
         public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)

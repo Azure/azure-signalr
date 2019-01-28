@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="groupName">The group name, to which the connection will join.</param>
-        /// <param name="ackId"></param>
+        /// <param name="ackId">The ack Id</param>
         public JoinGroupWithAckMessage(string connectionId, string groupName, string ackId = null) : base(connectionId, groupName)
         {
             AckId = ackId;
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="groupName">The group name, from which the connection will leave.</param>
-        /// <param name="ackId"></param>
+        /// <param name="ackId">The ack Id</param>
         public LeaveGroupWithAckMessage(string connectionId, string groupName, string ackId = null) : base(connectionId, groupName)
         {
             AckId = ackId;
@@ -101,14 +101,14 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class GroupAckMessage : ServiceMessage, IAckableMessage
     {
         /// <summary>
-        /// Gets or sets the ack guid.
+        /// Gets or sets the ack id.
         /// </summary>
         public string AckId { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinGroupWithAckMessage"/> class.
         /// </summary>
-        /// <param name="ackId"></param>
+        /// <param name="ackId">The ack Id</param>
         public GroupAckMessage(string ackId)
         {
             AckId = ackId;
