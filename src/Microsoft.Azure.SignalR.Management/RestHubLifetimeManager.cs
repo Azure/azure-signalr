@@ -206,10 +206,18 @@ namespace Microsoft.Azure.SignalR.Management
                 ThrowException(ex, HttpStatusCode.NotFound, request.RequestUri.ToString());
             }
 
-            string detail = null;
+            string detail = "";
+
             try
             {
-                detail = await response.Content.ReadAsStringAsync();
+                try
+                {
+                    detail = await response.Content.ReadAsStringAsync();
+                }
+                catch
+                {
+                }
+
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
