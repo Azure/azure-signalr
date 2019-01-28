@@ -193,7 +193,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 case HttpRequestException hrex:
                     {
-                        throw new AzureSignalRUnableToAccessException(requestUri, innerException); // no known host
+                        throw new AzureSignalRUnableToAccessException(requestUri, innerException); // not known host
                     }
                 default:
                     {
@@ -220,7 +220,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (Exception ex)
             {
-                ThrowException(ex, request.RequestUri.ToString());
+                ThrowException(ex, request.RequestUri.ToString()); // not known host
             }
 
             try
