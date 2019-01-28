@@ -104,7 +104,9 @@ namespace Microsoft.Azure.SignalR
             var connection = CreateServiceConnectionCore();
             FixedServiceConnections[index] = connection;
 
-            await connection.StartAsync();
+            _ = connection.StartAsync();
+            await connection.ConnectionInitializedTask;
+
             if (connection.Status == ServiceConnectionStatus.Connected)
             {
                 Interlocked.Exchange(ref _defaultConnectionRetry, 0);
