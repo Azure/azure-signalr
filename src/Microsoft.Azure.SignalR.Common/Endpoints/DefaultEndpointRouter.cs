@@ -9,82 +9,78 @@ namespace Microsoft.Azure.SignalR
     public class DefaultEndpointRouter : IEndpointRouter
     {
         /// <summary>
-        /// Round robin from the available endpoints
+        /// Randomly select from the available endpoints
         /// </summary>
-        /// <param name="primaryEndpoints"></param>
+        /// <param name="endpoints"></param>
         /// <returns></returns>
-        public ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> primaryEndpoints)
+        public virtual ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> endpoints)
         {
             // get primary endpoints snapshot
-            var endpoints = primaryEndpoints.ToArray();
-            return endpoints[StaticRandom.Next(endpoints.Length)];
+            var availbaleEndpoints = GetPrimaryEndpoints(endpoints);
+            return availbaleEndpoints[StaticRandom.Next(availbaleEndpoints.Length)];
         }
 
         /// <summary>
         /// Broadcast to all available endpoints
         /// </summary>
-        /// <param name="availableEndpoints"></param>
+        /// <param name="endpoints"></param>
         /// <returns></returns>
-        public IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> availableEndpoints)
+        public virtual IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> endpoints)
         {
             // broadcast to all the endpoints
-            return availableEndpoints;
+            return endpoints;
         }
 
         /// <summary>
         /// Broadcast to all available endpoints
         /// </summary>
         /// <param name="userId"></param>
-        /// <param name="availableEndpoints"></param>
+        /// <param name="endpoints"></param>
         /// <returns></returns>
-        public IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> availableEndpoints)
+        public virtual IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> endpoints)
         {
-            return availableEndpoints;
-        }
-
-        /// <summary>
-        /// Broadcast to all available endpoints
-        /// </summary>
-        /// <param name="userList"></param>
-        /// <param name="availableEndpoints"></param>
-        /// <returns></returns>
-        public IEnumerable<ServiceEndpoint> GetEndpointsForUsers(IReadOnlyList<string> userList, IEnumerable<ServiceEndpoint> availableEndpoints)
-        {
-            return availableEndpoints;
+            return endpoints;
         }
 
         /// <summary>
         /// Broadcast to all available endpoints
         /// </summary>
         /// <param name="groupName"></param>
-        /// <param name="availableEndpoints"></param>
+        /// <param name="endpoints"></param>
         /// <returns></returns>
-        public IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> availableEndpoints)
+        public virtual IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> endpoints)
         {
-            return availableEndpoints;
-        }
-
-        /// <summary>
-        /// Broadcast to all available endpoints
-        /// </summary>
-        /// <param name="groupList"></param>
-        /// <param name="availableEndpoints"></param>
-        /// <returns></returns>
-        public IEnumerable<ServiceEndpoint> GetEndpointsForGroups(IReadOnlyList<string> groupList, IEnumerable<ServiceEndpoint> availableEndpoints)
-        {
-            return availableEndpoints;
+            return endpoints;
         }
 
         /// <summary>
         /// Broadcast to all available endpoints
         /// </summary>
         /// <param name="connectionId"></param>
-        /// <param name="availableEndpoints"></param>
+        /// <param name="endpoints"></param>
         /// <returns></returns>
-        public IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> availableEndpoints)
+        public virtual IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints)
         {
             // broadcast to all the endpoints and service side to do the filter
-            return availableEndpoints;
+            return endpoints;
+        }
+
+
+        /// <summary>
+        /// Only primary endpoints will be returned by client /negotiate
+        /// If no primary endpoint is available, promote one secondary endpoint
+        /// </summary>
+        /// <returns>The availbale endpoints</returns>
+        private ServiceEndpoint[] GetPrimaryEndpoints(IEnumerable<ServiceEndpoint> endpoints)
+        {
+            var primary = endpoints.Where(s => s.Online && s.EndpointType == EndpointType.Primary).ToArray();
+            if (primary.Length > 0)
+            {
+                return primary;
+            }
+
+            // All primary endpoints are offline, fallback to the first online secondary endpoint
+            return endpoints.Where(s => s.Online && s.EndpointType == EndpointType.Secondary).ToArray();
         }
     }
 }

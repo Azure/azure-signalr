@@ -27,6 +27,35 @@ namespace Microsoft.Azure.SignalR.Tests
         private static readonly JoinGroupMessage DefaultGroupMessage = new JoinGroupMessage("a", "a");
 
         [Fact]
+        public void TestGetRoutedEndpointsReturnDistinctResultForMultiMessages()
+        {
+            var endpoints = new[]
+            {
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "2"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
+            };
+
+            var sem = new TestServiceEndpointManager(endpoints);
+
+            var router = new TestEndpointRouter(false);
+            var container = new MultiEndpointServiceConnectionContainer(
+                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+            }, e), sem, router, null);
+
+            var result = container.GetRoutedEndpoints(new MultiGroupBroadcastDataMessage(new[] { "group1", "group2" }, null), endpoints).ToList();
+
+            Assert.Equal(2, result.Count);
+
+            result = container.GetRoutedEndpoints(new MultiUserDataMessage(new[] { "user1", "user2" }, null), endpoints).ToList();
+
+            Assert.Equal(2, result.Count);
+        }
+
+        [Fact]
         public void TestEndpointManagerWithDuplicateEndpoints()
         {
             var sem = new TestServiceEndpointManager(
@@ -39,10 +68,6 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
-
-            var primaryEndpoints = sem.GetPrimaryEndpoints().ToArray();
-            Assert.Single(primaryEndpoints);
-            Assert.Equal("1", primaryEndpoints[0].Name);
 
             var router = new TestEndpointRouter(false);
             var container = new MultiEndpointServiceConnectionContainer(
@@ -68,10 +93,6 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
 
-            var primaryEndpoints = sem.GetPrimaryEndpoints().ToArray();
-            Assert.Single(primaryEndpoints);
-            Assert.Equal("1", primaryEndpoints[0].Name);
-
             var router = new TestEndpointRouter(false);
             var container = new MultiEndpointServiceConnectionContainer(
                 e => new TestServiceConnectionContainer(new List<IServiceConnection> {
@@ -86,10 +107,6 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
-
-            primaryEndpoints = sem.GetPrimaryEndpoints().ToArray();
-            Assert.Single(primaryEndpoints);
-            Assert.Equal("1", primaryEndpoints[0].Name);
             Assert.Equal(2, container.Connections.Count);
         }
 
@@ -389,9 +406,6 @@ namespace Microsoft.Azure.SignalR.Tests
             var endpoints = sem.GetAvailableEndpoints();
             Assert.Single(endpoints);
 
-            endpoints = sem.GetPrimaryEndpoints();
-            Assert.Single(endpoints);
-
             Assert.Equal("online", endpoints.First().Name);
         }
 
@@ -415,83 +429,62 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private class TestEndpointRouter : IEndpointRouter
+        private class TestEndpointRouter : DefaultEndpointRouter
         {
-            private readonly IEndpointRouter _inner = new DefaultEndpointRouter();
-
             private readonly bool _broken;
             public TestEndpointRouter(bool broken)
             {
                 _broken = broken;
             }
-            public IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> availableEnpoints)
+
+            public override IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> endpoints)
             {
                 if (_broken)
                 {
                     throw new InvalidOperationException();
                 }
 
-                return _inner.GetEndpointsForBroadcast(availableEnpoints);
+                return base.GetEndpointsForBroadcast(endpoints);
             }
 
-            public IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> availableEnpoints)
+            public override IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints)
             {
                 if (_broken)
                 {
                     throw new InvalidOperationException();
                 }
 
-                return _inner.GetEndpointsForConnection(connectionId, availableEnpoints);
+                return base.GetEndpointsForConnection(connectionId, endpoints);
             }
 
-            public IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> availableEnpoints)
+            public override IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> endpoints)
             {
                 if (_broken)
                 {
                     throw new InvalidOperationException();
                 }
 
-                return _inner.GetEndpointsForGroup(groupName, availableEnpoints);
+                return base.GetEndpointsForGroup(groupName, endpoints);
             }
 
-            public IEnumerable<ServiceEndpoint> GetEndpointsForGroups(IReadOnlyList<string> groupList, IEnumerable<ServiceEndpoint> availableEnpoints)
+            public override IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> endpoints)
             {
                 if (_broken)
                 {
                     throw new InvalidOperationException();
                 }
 
-                return _inner.GetEndpointsForGroups(groupList, availableEnpoints);
+                return base.GetEndpointsForUser(userId, endpoints);
             }
 
-            public IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> availableEnpoints)
+            public override ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> endpoints)
             {
                 if (_broken)
                 {
                     throw new InvalidOperationException();
                 }
 
-                return _inner.GetEndpointsForUser(userId, availableEnpoints);
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForUsers(IReadOnlyList<string> userList, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                if (_broken)
-                {
-                    throw new InvalidOperationException();
-                }
-
-                return _inner.GetEndpointsForUsers(userList, availableEnpoints);
-            }
-
-            public ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> primaryEndpoints)
-            {
-                if (_broken)
-                {
-                    throw new InvalidOperationException();
-                }
-
-                return _inner.GetNegotiateEndpoint(primaryEndpoints);
+                return base.GetNegotiateEndpoint(endpoints);
             }
         }
 

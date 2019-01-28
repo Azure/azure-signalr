@@ -134,9 +134,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
                     var endpoints = manager.GetAvailableEndpoints().ToArray();
                     Assert.Equal(4, endpoints.Length);
-
-                    endpoints = manager.GetPrimaryEndpoints().ToArray();
-                    Assert.Equal(4, endpoints.Length);
                 }
             }
         }
@@ -167,9 +164,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
                     var endpoints = manager.GetAvailableEndpoints().ToArray();
                     Assert.Equal(4, endpoints.Length);
-
-                    endpoints = manager.GetPrimaryEndpoints().ToArray();
-                    Assert.Equal(3, endpoints.Length);
                 }
             }
         }
@@ -205,8 +199,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(4, endpoints.Length);
 
                     var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
-                    endpoints = manager.GetPrimaryEndpoints().ToArray();
-                    Assert.Equal(3, endpoints.Length); var response = await client.GetAsync("/negotiate");
+                    var response = await client.GetAsync("/negotiate");
 
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     var message = await response.Content.ReadAsStringAsync();
@@ -216,6 +209,43 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     // with custome router, always goes to connection string 3 as passed into the router
                     Assert.Equal("http://localhost3/aspnetclient", responseObject.RedirectUrl);
                 }
+            }
+        }
+
+        [Fact]
+        public async Task TestRunAzureSignalRWithDefaultRouterNegotiateWithFallback()
+        {
+            // Prepare the configuration
+            var hubConfig = new HubConfiguration();
+            hubConfig.Resolver = new DefaultDependencyResolver();
+            var router = new DefaultEndpointRouter();
+            hubConfig.Resolver.Register(typeof(IEndpointRouter), () => router);
+            using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
+            {
+                options.Endpoints = new ServiceEndpoint[]
+                {
+                        new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
+                        new ServiceEndpoint(ConnectionString3)
+                        {
+                            Connection = new TestContainer(ServiceConnectionStatus.Disconnected)
+                        },
+                        new ServiceEndpoint(ConnectionString4)
+                        {
+                            Connection = new TestContainer(ServiceConnectionStatus.Disconnected)
+                        },
+                };
+            })))
+            {
+                var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
+                var response = await client.GetAsync("/negotiate");
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                var message = await response.Content.ReadAsStringAsync();
+                var responseObject = JsonConvert.DeserializeObject<ResponseMessage>(message);
+                Assert.Equal("2.0", responseObject.ProtocolVersion);
+
+                // The default router fallbacks to the secondary
+                Assert.Equal("http://localhost2/aspnetclient", responseObject.RedirectUrl);
             }
         }
 
@@ -300,6 +330,30 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
                 Assert.NotNull(requestId);
                 Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
+            }
+        }
+
+        private class TestContainer : IServiceConnectionContainer
+        {
+            public ServiceConnectionStatus Status { get; }
+
+            public TestContainer(ServiceConnectionStatus status)
+            {
+                Status = status;
+            }
+            public Task StartAsync()
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task WriteAsync(ServiceMessage serviceMessage)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+            {
+                throw new NotImplementedException();
             }
         }
 

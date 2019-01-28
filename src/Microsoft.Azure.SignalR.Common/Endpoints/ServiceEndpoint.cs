@@ -69,6 +69,26 @@ namespace Microsoft.Azure.SignalR
             return Endpoint?.GetHashCode() ?? 0;
         }
 
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            if (!(obj is ServiceEndpoint that))
+            {
+                return false;
+            }
+
+            return Endpoint == that.Endpoint;
+        }
+
         internal static (string, EndpointType) ParseKey(string key)
         {
             if (key == Constants.ConnectionStringDefaultKey || key == Constants.ConnectionStringSecondaryKey)
