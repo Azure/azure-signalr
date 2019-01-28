@@ -18,6 +18,7 @@ namespace Microsoft.Azure.SignalR.Management
     internal class RestHubLifetimeManager : HubLifetimeManager<Hub>, IHubLifetimeManagerForUserGroup
     {
         private readonly RestApiProvider _restApiProvider;
+        private const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
 
         public RestHubLifetimeManager(ServiceManagerOptions serviceManagerOptions, string hubName)
         {
@@ -46,9 +47,9 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override async Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            if (methodName == null)
+            if (String.IsNullOrEmpty(methodName))
             {
-                throw new ArgumentNullException(nameof(methodName));
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
             var api = _restApiProvider.GetBroadcastEndpoint();
@@ -73,14 +74,14 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override async Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            if (methodName == null)
+            if (String.IsNullOrEmpty(methodName))
             {
-                throw new ArgumentNullException(nameof(methodName));
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            if (groupName == null)
+            if (String.IsNullOrEmpty(groupName))
             {
-                throw new ArgumentNullException(nameof(groupName));
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
             var api = _restApiProvider.GetSendToGroupEndpoint(groupName);
@@ -100,14 +101,14 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override async Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            if (methodName == null)
+            if (String.IsNullOrEmpty(methodName))
             {
-                throw new ArgumentNullException(nameof(methodName));
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            if (userId == null)
+            if (String.IsNullOrEmpty(userId))
             {
-                throw new ArgumentNullException(nameof(userId));
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
             }
 
             var api = _restApiProvider.GetSendToUserEndpoint(userId);
@@ -122,14 +123,14 @@ namespace Microsoft.Azure.SignalR.Management
 
         public async Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
-            if (userId == null)
+            if (String.IsNullOrEmpty(userId))
             {
-                throw new ArgumentNullException(nameof(userId));
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
             }
 
-            if (groupName == null)
+            if (String.IsNullOrEmpty(groupName))
             {
-                throw new ArgumentNullException(nameof(groupName));
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
             var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
@@ -139,14 +140,14 @@ namespace Microsoft.Azure.SignalR.Management
 
         public async Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
-            if (userId == null)
+            if (String.IsNullOrEmpty(userId))
             {
-                throw new ArgumentNullException(nameof(userId));
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
             }
 
-            if (groupName == null)
+            if (String.IsNullOrEmpty(groupName))
             {
-                throw new ArgumentNullException(nameof(groupName));
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
             var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
@@ -165,7 +166,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         private static void ThrowException(Exception innerException, HttpStatusCode? statusCode, string requestUri, string detail = null)
         {
-            switch(statusCode)
+            switch (statusCode)
             {
                 case HttpStatusCode.BadRequest:
                     {
@@ -186,6 +187,21 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
+        private static void ThrowException(Exception innerException, string requestUri, string detail = null)
+        {
+            switch (innerException)
+            {
+                case HttpRequestException hrex:
+                    {
+                        throw new AzureSignalRUnableToAccessException(requestUri, innerException); // no known host
+                    }
+                default:
+                    {
+                        throw new AzureSignalRRuntimeException(requestUri, innerException);
+                    }
+            }
+        }
+
         private static HttpRequestMessage BuildRequest(RestApiEndpoint endpoint, HttpMethod httpMethod, string methodName = null, object[] args = null, CancellationToken cancellationToken = default)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
@@ -196,20 +212,11 @@ namespace Microsoft.Azure.SignalR.Management
         {
             var httpClient = HttpClientFactory.CreateClient();
             HttpResponseMessage response = null;
-
-            try
-            {
-                response = await httpClient.SendAsync(request);
-            }
-            catch (HttpRequestException ex)
-            {
-                ThrowException(ex, HttpStatusCode.NotFound, request.RequestUri.ToString());
-            }
-
             string detail = "";
 
             try
             {
+                response = await httpClient.SendAsync(request);
                 detail = await response.Content.ReadAsStringAsync();
                 response.EnsureSuccessStatusCode();
             }
@@ -219,7 +226,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (Exception ex)
             {
-                ThrowException(ex, null, request.RequestUri.ToString(), null);
+                ThrowException(ex, request.RequestUri.ToString(), null);
             }
         }
     }
