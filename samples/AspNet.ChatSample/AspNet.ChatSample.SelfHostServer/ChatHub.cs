@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
@@ -22,6 +23,19 @@ namespace AspNet.ChatSample.SelfHostServer
         public override Task OnReconnected()
         {
             return base.OnReconnected();
+        }
+
+        public Task Subscribe(string groupName)
+        {
+            Trace.TraceInformation($"Subscribe: {groupName} from {Context.ConnectionId}");
+            return Groups.Add(Context.ConnectionId, groupName);
+        }
+
+        public Task Publish(string groupName, string content, int messageIndex)
+        {
+            Trace.TraceInformation($"Publish: {groupName}:{messageIndex}");
+            Clients.Group(groupName).OnMessage(groupName, content, messageIndex);
+            return Task.CompletedTask;
         }
 
         public void BroadcastMessage(string name, string message)
