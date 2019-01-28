@@ -3,9 +3,8 @@
 
 using System;
 using System.Runtime.Serialization;
-using Microsoft.Azure.SignalR.Common;
 
-namespace Microsoft.Azure.SignalR.Management
+namespace Microsoft.Azure.SignalR.Common
 {
     [Serializable]
     public class AzureSignalRUnauthorizationException : AzureSignalRException

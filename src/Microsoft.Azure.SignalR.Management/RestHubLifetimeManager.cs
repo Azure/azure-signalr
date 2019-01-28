@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -131,7 +132,7 @@ namespace Microsoft.Azure.SignalR.Management
                     }
                 case HttpStatusCode.NotFound:
                     {
-                        throw new AzureSignalRIncorrectEndpointException(requestUri, innerException);
+                        throw new AzureSignalRUnableToAccessException(requestUri, innerException);
                     }
                 default:
                     {
@@ -156,7 +157,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 response = await httpClient.SendAsync(request);
             }
-            catch (Exception ex)
+            catch (HttpRequestException ex)
             {
                 ThrowException(ex, HttpStatusCode.NotFound, audience);
             }

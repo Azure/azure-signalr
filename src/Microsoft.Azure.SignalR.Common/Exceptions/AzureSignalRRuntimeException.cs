@@ -2,11 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Net;
 using System.Runtime.Serialization;
-using Microsoft.Azure.SignalR.Common;
 
-namespace Microsoft.Azure.SignalR.Management
+namespace Microsoft.Azure.SignalR.Common
 {
     [Serializable]
     public class AzureSignalRRuntimeException : AzureSignalRException
