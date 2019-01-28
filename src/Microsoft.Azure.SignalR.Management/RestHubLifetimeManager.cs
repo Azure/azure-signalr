@@ -210,19 +210,16 @@ namespace Microsoft.Azure.SignalR.Management
 
             try
             {
-                try
-                {
-                    detail = await response.Content.ReadAsStringAsync();
-                }
-                catch
-                {
-                }
-
+                detail = await response.Content.ReadAsStringAsync();
                 response.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException ex)
+            {
+                ThrowException(ex, response?.StatusCode, request.RequestUri.ToString(), detail);
             }
             catch (Exception ex)
             {
-                ThrowException(ex, response?.StatusCode, request.RequestUri.ToString(), detail);
+                ThrowException(ex, null, request.RequestUri.ToString(), null);
             }
         }
     }
