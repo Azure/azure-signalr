@@ -18,6 +18,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             throw new NotImplementedException();
         }
 
+        public void HandleConnectionAck(string ackId)
+        {
+            throw new NotImplementedException();
+        }
+
         public void DisposeServiceConnection(IServiceConnection connection)
         {
         }

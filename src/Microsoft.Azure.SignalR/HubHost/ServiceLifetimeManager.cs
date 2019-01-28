@@ -107,49 +107,37 @@ namespace Microsoft.Azure.SignalR
                 new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)));
         }
 
-        public override async Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
+        public override Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (IsInvalidArgument(groupName) || IsInvalidArgument(methodName))
             {
-                return;
+                return Task.CompletedTask;
             }
 
-            var guid = Guid.NewGuid().ToString();
-            var tcs = new TaskCompletionSource<bool>();
-            var message = new GroupBroadcastDataWithAckMessage(groupName, null, SerializeAllProtocols(methodName, args), guid);
-            // Send this message from a fixed service connection, so that message order can be reserved.
-            await _serviceConnectionManager.WriteWithAckAsync(message, guid, tcs);
-            await tcs.Task;
+            var message = new GroupBroadcastDataWithAckMessage(groupName, null, SerializeAllProtocols(methodName, args));
+            return _serviceConnectionManager.WriteAndWaitForAckAsync(message);
         }
 
-        public override async Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
+        public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (IsInvalidArgument(groupNames))
             {
-                return;
+                return Task.CompletedTask;
             }
 
-            await Task.WhenAll(groupNames.Select(g => SendGroupAsync(g, methodName, args, cancellationToken)));
-
-            // Send this message from a random service connection because this message involves of multiple groups.
-            // Unless we send message for each group one by one, we can not guarantee the message order for all groups.
-            //return _serviceConnectionManager.WriteAsync(
-            //    new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)));
+            return Task.WhenAll(groupNames.Select(g => SendGroupAsync(g, methodName, args, cancellationToken)));
         }
 
-        public override async Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
+        public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
         {
             if (IsInvalidArgument(groupName) || IsInvalidArgument(methodName))
             {
-                return;
+                return Task.CompletedTask;
             }
 
-            var guid = Guid.NewGuid().ToString();
-            var tcs = new TaskCompletionSource<bool>();
-            var message = new GroupBroadcastDataWithAckMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args), guid);
+            var message = new GroupBroadcastDataWithAckMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args));
             // Send this message from a fixed service connection, so that message order can be reserved.
-            await _serviceConnectionManager.WriteWithAckAsync(message, guid, tcs);
-            await tcs.Task;
+            return  _serviceConnectionManager.WriteAndWaitForAckAsync(message);
         }
 
         public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -175,34 +163,27 @@ namespace Microsoft.Azure.SignalR
                 new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)));
         }
 
-        public override async Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
+        public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
             if (IsInvalidArgument(connectionId) || IsInvalidArgument(groupName))
             {
-                return;
+                return Task.CompletedTask;
             }
 
-            var guid = Guid.NewGuid().ToString();
-            var tcs = new TaskCompletionSource<bool>();
-            var message = new JoinGroupWithAckMessage(connectionId, groupName, guid);
-            // Send this message from a fixed service connection, so that message order can be reserved.
-            await _serviceConnectionManager.WriteWithAckAsync(message, guid, tcs);
-            await tcs.Task;
+            var message = new JoinGroupWithAckMessage(connectionId, groupName);
+            return _serviceConnectionManager.WriteAndWaitForAckAsync(message);
         }
 
-        public override async Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
+        public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
             if (IsInvalidArgument(connectionId) || IsInvalidArgument(groupName))
             {
-                return;
+                return Task.CompletedTask;
             }
 
-            var guid = Guid.NewGuid().ToString();
-            var tcs = new TaskCompletionSource<bool>();
-            var message = new LeaveGroupWithAckMessage(connectionId, groupName, guid);
+            var message = new LeaveGroupWithAckMessage(connectionId, groupName);
             // Send this message from a fixed service connection, so that message order can be reserved.
-            await _serviceConnectionManager.WriteWithAckAsync(message, guid, tcs);
-            await tcs.Task;
+            return _serviceConnectionManager.WriteAndWaitForAckAsync(message);
         }
 
         private static bool IsInvalidArgument(string value)

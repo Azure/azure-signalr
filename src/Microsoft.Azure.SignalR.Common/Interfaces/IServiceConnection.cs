@@ -12,8 +12,6 @@ namespace Microsoft.Azure.SignalR
 
         Task WriteAsync(ServiceMessage serviceMessage);
 
-        Task WriteWithAckAsync(ServiceMessage serviceMessage, string guid, TaskCompletionSource<bool> tcs);
-
         Task StopAsync();
 
         ServiceConnectionStatus Status { get; }

@@ -51,14 +51,14 @@ namespace Microsoft.Azure.SignalR
             return _serviceConnection.WriteAsync(partitionKey, serviceMessage);
         }
 
-        public Task WriteWithAckAsync(ServiceMessage serviceMessage, string guid, TaskCompletionSource<bool> tcs)
+        public Task WriteAndWaitForAckAsync(ServiceMessage serviceMessage)
         {
             if (_serviceConnection == null)
             {
                 throw new AzureSignalRNotConnectedException();
             }
 
-            return _serviceConnection.WriteWithAckAsync(serviceMessage, guid, tcs);
+            return _serviceConnection.WriteAndWaitForAckAsync(serviceMessage);
         }
     }
 }

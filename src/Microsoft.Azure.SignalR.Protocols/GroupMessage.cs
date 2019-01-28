@@ -57,85 +57,61 @@ namespace Microsoft.Azure.SignalR.Protocol
         }
     }
 
-    public class JoinGroupWithAckMessage : ServiceMessage
+    public class JoinGroupWithAckMessage : JoinGroupMessage, IAckableMessage
     {
         /// <summary>
-        /// Gets or sets the connection Id.
+        /// Gets or sets the ack id.
         /// </summary>
-        public string ConnectionId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the group name.
-        /// </summary>
-        public string GroupName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the ack guid.
-        /// </summary>
-        public string AckGuid { get; set; }
+        public string AckId { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinGroupWithAckMessage"/> class.
         /// </summary>
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="groupName">The group name, to which the connection will join.</param>
-        /// <param name="ackGuid"></param>
-        public JoinGroupWithAckMessage(string connectionId, string groupName, string ackGuid)
+        /// <param name="ackId"></param>
+        public JoinGroupWithAckMessage(string connectionId, string groupName, string ackId = null) : base(connectionId, groupName)
         {
-            ConnectionId = connectionId;
-            GroupName = groupName;
-            AckGuid = ackGuid;
+            AckId = ackId;
         }
     }
 
     /// <summary>
     /// A leave-group message.
     /// </summary>
-    public class LeaveGroupWithAckMessage : ServiceMessage
+    public class LeaveGroupWithAckMessage : LeaveGroupMessage, IAckableMessage
     {
         /// <summary>
-        /// Gets or sets the connection Id.
+        /// Gets or sets the ack id.
         /// </summary>
-        public string ConnectionId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the group name.
-        /// </summary>
-        public string GroupName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the ack guid.
-        /// </summary>
-        public string AckGuid { get; set; }
+        public string AckId { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LeaveGroupWithAckMessage"/> class.
         /// </summary>
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="groupName">The group name, from which the connection will leave.</param>
-        /// <param name="ackGuid"></param>
-        public LeaveGroupWithAckMessage(string connectionId, string groupName, string ackGuid)
+        /// <param name="ackId"></param>
+        public LeaveGroupWithAckMessage(string connectionId, string groupName, string ackId = null) : base(connectionId, groupName)
         {
-            ConnectionId = connectionId;
-            GroupName = groupName;
-            AckGuid = ackGuid;
+            AckId = ackId;
         }
     }
 
-    public class GroupAckMessage : ServiceMessage
+    public class GroupAckMessage : ServiceMessage, IAckableMessage
     {
         /// <summary>
         /// Gets or sets the ack guid.
         /// </summary>
-        public string AckGuid { get; set; }
+        public string AckId { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinGroupWithAckMessage"/> class.
         /// </summary>
-        /// <param name="ackGuid"></param>
-        public GroupAckMessage(string ackGuid)
+        /// <param name="ackId"></param>
+        public GroupAckMessage(string ackId)
         {
-            AckGuid = ackGuid;
+            AckId = ackId;
         }
     }
 }

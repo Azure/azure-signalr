@@ -178,69 +178,34 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A data message which will be broadcasted within a group.
     /// </summary>
-    public class GroupBroadcastDataWithAckMessage : MulticastDataMessage
+    public class GroupBroadcastDataWithAckMessage : GroupBroadcastDataMessage, IAckableMessage
     {
-        /// <summary>
-        /// Gets or sets the group name.
-        /// </summary>
-        public string GroupName { get; set; }
+
+        public string AckId { get; set; }
 
         /// <summary>
-        /// Gets or sets the list of excluded connection Ids.
-        /// </summary>
-        public IReadOnlyList<string> ExcludedList { get; set; }
-
-        public string AckGuid { get; set; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Microsoft.Azure.SignalR.Protocol.GroupBroadcastDataMessage"/> class.
+        /// Initializes a new instance of the <see cref="Microsoft.Azure.SignalR.Protocol.GroupBroadcastDataWithAckMessage"/> class.
         /// </summary>
         /// <param name="groupName">The group name.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
-        /// <param name="ackGuid"></param>
-        public GroupBroadcastDataWithAckMessage(string groupName, IDictionary<string, ReadOnlyMemory<byte>> payloads, string ackGuid)
-            : this(groupName, null, payloads, ackGuid)
+        /// <param name="ackId"></param>
+        public GroupBroadcastDataWithAckMessage(string groupName, IDictionary<string, ReadOnlyMemory<byte>> payloads, string ackId = null)
+            : base(groupName, payloads)
         {
+            AckId = ackId;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Microsoft.Azure.SignalR.Protocol.GroupBroadcastDataMessage"/> class.
+        /// Initializes a new instance of the <see cref="Microsoft.Azure.SignalR.Protocol.GroupBroadcastDataWithAckMessage"/> class.
         /// </summary>
         /// <param name="groupName">The group name.</param>
         /// <param name="excludedList">The list of excluded connection Ids.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
-        /// <param name="ackGuid"></param>
-        public GroupBroadcastDataWithAckMessage(string groupName, IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads, string ackGuid)
-            : base(payloads)
+        /// <param name="ackId"></param>
+        public GroupBroadcastDataWithAckMessage(string groupName, IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads, string ackId = null)
+            : base(groupName, excludedList, payloads)
         {
-            GroupName = groupName;
-            ExcludedList = excludedList;
-            AckGuid = ackGuid;
-        }
-    }
-
-    /// <summary>
-    /// A data message which will be broadcasted within multiple groups.
-    /// </summary>
-    public class MultiGroupBroadcastDataWithAckMessage : MulticastDataMessage
-    {
-        /// <summary>
-        /// Gets or sets the list of group names.
-        /// </summary>
-        public IReadOnlyList<string> GroupList { get; set; }
-
-        public string AckGuid { get; set; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Microsoft.Azure.SignalR.Protocol.MultiGroupBroadcastDataMessage"/> class.
-        /// </summary>
-        /// <param name="groupList">The list of group names.</param>
-        /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
-        /// <param name="ackGuid"></param>
-        public MultiGroupBroadcastDataWithAckMessage(IReadOnlyList<string> groupList, IDictionary<string, ReadOnlyMemory<byte>> payloads, string ackGuid) : base(payloads)
-        {
-            GroupList = groupList;
-            AckGuid = ackGuid;
+            AckId = ackId;
         }
     }
 }

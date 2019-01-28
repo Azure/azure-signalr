@@ -17,6 +17,6 @@ namespace Microsoft.Azure.SignalR
 
         Task WriteAsync(string partitionKey, ServiceMessage serviceMessage);
 
-        Task WriteWithAckAsync(ServiceMessage serviceMessage, string guid, TaskCompletionSource<bool> tcs);
+        Task WriteAndWaitForAckAsync(ServiceMessage serviceMessage);
     }
 }

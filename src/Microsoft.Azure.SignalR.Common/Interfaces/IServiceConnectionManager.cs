@@ -8,6 +8,8 @@ namespace Microsoft.Azure.SignalR
     {
         IServiceConnection CreateServiceConnection();
 
+        void HandleConnectionAck(string ackId);
+
         void DisposeServiceConnection(IServiceConnection connection);
     }
 }

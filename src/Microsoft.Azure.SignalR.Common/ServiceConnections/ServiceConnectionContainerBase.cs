@@ -16,6 +16,7 @@ namespace Microsoft.Azure.SignalR
             TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackOffInternalInMilliseconds));
 
         private readonly ServiceEndpoint _endpoint;
+        private readonly AckHandler _ackHandler;
 
         protected readonly IServiceConnectionFactory ServiceConnectionFactory;
         protected readonly IConnectionFactory ConnectionFactory;
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.SignalR
             FixedServiceConnections = CreateFixedServiceConnection(fixedConnectionCount);
             FixedConnectionCount = fixedConnectionCount;
             _endpoint = endpoint;
+            _ackHandler = new AckHandler();
         }
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
@@ -43,6 +45,7 @@ namespace Microsoft.Azure.SignalR
             FixedServiceConnections = initialConnections;
             FixedConnectionCount = initialConnections.Count;
             _endpoint = endpoint;
+            _ackHandler = new AckHandler();
         }
 
         public async Task StartAsync()
@@ -142,50 +145,25 @@ namespace Microsoft.Azure.SignalR
             return WriteToPartitionedConnection(partitionKey, serviceMessage);
         }
 
-        public Task WriteWithAckAsync(ServiceMessage serviceMessage, string guid, TaskCompletionSource<bool> tcs)
+        public async Task WriteAndWaitForAckAsync(ServiceMessage serviceMessage)
         {
-            return WriteToRandomAvailableConnection(serviceMessage, guid, tcs);
-        }
-
-        private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage, string guid,
-            TaskCompletionSource<bool> tcs)
-        {
-            return WriteWithRetry(serviceMessage, StaticRandom.Next(-FixedConnectionCount, FixedConnectionCount), FixedConnectionCount, guid, tcs);
-        }
-
-        private async Task WriteWithRetry(ServiceMessage serviceMessage, int initial, int count, string guid,
-            TaskCompletionSource<bool> tcs)
-        {
-            // go through all the connections, it can be useful when one of the remote service instances is down
-            var maxRetry = count;
-            var retry = 0;
-            var index = (initial & int.MaxValue) % count;
-            var direction = initial > 0 ? 1 : count - 1;
-            while (retry < maxRetry)
+            if (!(serviceMessage is IAckableMessage))
             {
-                var connection = FixedServiceConnections[index];
-                if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
-                {
-                    try
-                    {
-                        // still possible the connection is not valid
-                        await connection.WriteWithAckAsync(serviceMessage, guid, tcs);
-                        return;
-                    }
-                    catch (ServiceConnectionNotActiveException)
-                    {
-                        if (retry == maxRetry - 1)
-                        {
-                            throw;
-                        }
-                    }
-                }
-
-                retry++;
-                index = (index + direction) % count;
+                throw new ArgumentException($"{nameof(serviceMessage)} is not {nameof(IAckableMessage)}");
             }
 
-            throw new ServiceConnectionNotActiveException();
+            var ackId = Guid.NewGuid().ToString();
+            var token = _ackHandler.CreateAck(ackId);
+            ((IAckableMessage) serviceMessage).AckId = ackId;
+
+            await WriteToRandomAvailableConnection(serviceMessage);
+
+            await token;
+        }
+
+        public void HandleConnectionAck(string ackId)
+        {
+            _ackHandler.TriggerAck(ackId);
         }
 
         protected virtual ServiceConnectionStatus GetStatus()

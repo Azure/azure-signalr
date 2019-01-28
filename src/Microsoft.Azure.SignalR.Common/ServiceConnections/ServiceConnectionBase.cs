@@ -48,8 +48,6 @@ namespace Microsoft.Azure.SignalR
 
         private readonly ILogger _logger;
 
-        private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _ackTaskCompletionSources;
-
         protected string ConnectionId { get; }
 
         protected IServiceProtocol ServiceProtocol { get; }
@@ -73,7 +71,6 @@ namespace Microsoft.Azure.SignalR
             _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
             _logger = loggerFactory?.CreateLogger<ServiceConnectionBase>() ?? NullLogger<ServiceConnectionBase>.Instance;
             _serviceConnectionManager = serviceConnectionManager;
-            _ackTaskCompletionSources = new ConcurrentDictionary<string, TaskCompletionSource<bool>>();
         }
 
         public async Task StartAsync(string target = null)
@@ -99,14 +96,6 @@ namespace Microsoft.Azure.SignalR
 
         // For test purpose only
         public bool IsConnected => _isConnected;
-
-        public virtual Task WriteWithAckAsync(ServiceMessage serviceMessage, string guid, TaskCompletionSource<bool> tcs)
-        {
-            var cts = new CancellationTokenSource(3000);
-            cts.Token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
-            _ackTaskCompletionSources.TryAdd(guid, tcs);
-            return WriteAsync(serviceMessage);
-        }
 
         public async virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
@@ -195,12 +184,9 @@ namespace Microsoft.Azure.SignalR
 
         protected Task OnGroupAckAsync(GroupAckMessage groupAckMessage)
         {
-            if (!string.IsNullOrEmpty(groupAckMessage.AckGuid))
+            if (!string.IsNullOrEmpty(groupAckMessage.AckId))
             {
-                if (_ackTaskCompletionSources.TryRemove(groupAckMessage.AckGuid, out var tcs))
-                {
-                    tcs.TrySetResult(true);
-                }
+                _serviceConnectionManager.HandleConnectionAck(groupAckMessage.AckId);
             }
 
             return Task.CompletedTask;
