@@ -28,12 +28,7 @@ namespace Microsoft.Azure.SignalR
         // App server ping is triggered by incoming requests and send by checking last send timestamp.
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
         private static readonly long DefaultKeepAliveTicks = DefaultKeepAliveInterval.Seconds * Stopwatch.Frequency;
-        private static readonly int MaxReconnectBackoffInternalInMilliseconds = 1000;
         private const string PingTargetKey = "target";
-
-        // Start reconnect after a random interval less than 1 second
-        private static TimeSpan ReconnectInterval =>
-            TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackoffInternalInMilliseconds));
 
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
         private readonly HandshakeRequestMessage _handshakeRequest;
@@ -45,7 +40,6 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IServiceConnectionManager _serviceConnectionManager;
 
-        private bool _isStopped;
         // Check service timeout
         private long _lastReceiveTimestamp;
         // Keep-alive tick
@@ -84,45 +78,22 @@ namespace Microsoft.Azure.SignalR
 
         public async Task StartAsync(string target = null)
         {
-            int retryCount = 0;
-            while (!_isStopped)
+            if (await StartAsyncCore(target))
             {
-                // If we are not able to start, we will quit this connection.
-                if (!await StartAsyncCore(target))
-                {
-                    _serviceConnectionStartTcs.TrySetResult(false);
-
-                    await Task.Delay(GetRetryDelay(ref retryCount));
-                    continue;
-                }
-
                 _serviceConnectionStartTcs.TrySetResult(true);
-                retryCount = 0;
                 _isConnected = true;
                 await ProcessIncomingAsync();
                 _isConnected = false;
             }
+
+            _serviceConnectionStartTcs.TrySetResult(false);
+            await StopAsync();
         }
 
-        /// <summary>
-        /// exponential back off with max 1 minute.
-        /// </summary>
-        public static TimeSpan GetRetryDelay(ref int retryCount)
-        {
-            // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
-            // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
-            if (retryCount > 5)
-            {
-                return TimeSpan.FromMinutes(1) + ReconnectInterval;
-            }
-            return TimeSpan.FromSeconds(1 << retryCount++) + ReconnectInterval;
-        }
-
-        // For test purpose only
         public Task StopAsync()
         {
-            _isStopped = true;
             ConnectionContext?.Transport.Input.CancelPendingRead();
+            _serviceConnectionManager.DisposeServiceConnection(this);
             return Task.CompletedTask;
         }
 
@@ -468,8 +439,7 @@ namespace Microsoft.Azure.SignalR
                 case GroupAckMessage groupAckMessage:
                     return OnGroupAckAsync(groupAckMessage);
                 case PingMessage pingMessage:
-                    // TODO: Call OnPingMessageAsync when the full pipeline is completed.
-                    break;
+                    return OnPingMessageAsync(pingMessage);
             }
             return Task.CompletedTask;
         }
