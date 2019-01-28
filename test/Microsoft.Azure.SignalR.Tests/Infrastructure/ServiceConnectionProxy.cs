@@ -39,6 +39,10 @@ namespace Microsoft.Azure.SignalR.Tests
             ConnectionFactory = connectionFactory ?? new TestConnectionFactory();
             ClientConnectionManager = new ClientConnectionManager();
             _clientPipeOptions = clientPipeOptions;
+
+            // We need a placeholder to fullfill the count
+            var initialConnections = new List<IServiceConnection>{ null };
+            var connectionContainer = new StrongServiceConnectionContainer(new TestServiceConnectionFactory(() => ServiceConnection), connectionFactory, initialConnections, new ServiceEndpoint("", ""));
             ServiceConnection = new ServiceConnection(
                     SharedServiceProtocol,
                     this,
@@ -47,11 +51,9 @@ namespace Microsoft.Azure.SignalR.Tests
                     callback ?? OnConnectionAsync,
                     this,
                     Guid.NewGuid().ToString("N"),
-                    serviceConnectionManager);
-            ServiceConnectionContainer = new StrongServiceConnectionContainer(null, connectionFactory, new List<IServiceConnection>()
-            {
-                ServiceConnection
-            }, new ServiceEndpoint("", ""));
+                    serviceConnectionManager ?? connectionContainer);
+            ServiceConnectionContainer = connectionContainer;
+            initialConnections[0] = ServiceConnection;
         }
 
         public Task StartAsync()
@@ -59,7 +61,7 @@ namespace Microsoft.Azure.SignalR.Tests
             return ServiceConnection.StartAsync();
         }
 
-        public bool IsConnected => ServiceConnection.IsConnected ;
+        public bool IsConnected => ServiceConnection.IsConnected;
 
         public async Task ProcessApplicationMessagesAsync()
         {
