@@ -178,8 +178,18 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A data message which will be broadcasted within a group.
     /// </summary>
-    public class GroupBroadcastDataWithAckMessage : GroupBroadcastDataMessage, IAckableMessage
+    public class GroupBroadcastDataWithAckMessage : MulticastDataMessage, IAckableMessage
     {
+        /// <summary>
+        /// Gets or sets the group name.
+        /// </summary>
+        public string GroupName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the list of excluded connection Ids.
+        /// </summary>
+        public IReadOnlyList<string> ExcludedList { get; set; }
+
         /// <summary>
         /// Gets or sets the ack id.
         /// </summary>
@@ -192,9 +202,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
         /// <param name="ackId"></param>
         public GroupBroadcastDataWithAckMessage(string groupName, IDictionary<string, ReadOnlyMemory<byte>> payloads, string ackId = null)
-            : base(groupName, payloads)
+            : this(groupName, null, payloads, ackId)
         {
-            AckId = ackId;
         }
 
         /// <summary>
@@ -205,8 +214,10 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
         /// <param name="ackId">The ack Id</param>
         public GroupBroadcastDataWithAckMessage(string groupName, IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads, string ackId = null)
-            : base(groupName, excludedList, payloads)
+            : base(payloads)
         {
+            GroupName = groupName;
+            ExcludedList = excludedList;
             AckId = ackId;
         }
     }

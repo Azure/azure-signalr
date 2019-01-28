@@ -57,8 +57,18 @@ namespace Microsoft.Azure.SignalR.Protocol
         }
     }
 
-    public class JoinGroupWithAckMessage : JoinGroupMessage, IAckableMessage
+    public class JoinGroupWithAckMessage : ServiceMessage, IAckableMessage
     {
+        /// <summary>
+        /// Gets or sets the connection Id.
+        /// </summary>
+        public string ConnectionId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the group name.
+        /// </summary>
+        public string GroupName { get; set; }
+
         /// <summary>
         /// Gets or sets the ack id.
         /// </summary>
@@ -70,8 +80,10 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="groupName">The group name, to which the connection will join.</param>
         /// <param name="ackId">The ack Id</param>
-        public JoinGroupWithAckMessage(string connectionId, string groupName, string ackId = null) : base(connectionId, groupName)
+        public JoinGroupWithAckMessage(string connectionId, string groupName, string ackId = null)
         {
+            ConnectionId = connectionId;
+            GroupName = groupName;
             AckId = ackId;
         }
     }
@@ -79,8 +91,18 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A leave-group message.
     /// </summary>
-    public class LeaveGroupWithAckMessage : LeaveGroupMessage, IAckableMessage
+    public class LeaveGroupWithAckMessage : ServiceMessage, IAckableMessage
     {
+        /// <summary>
+        /// Gets or sets the connection Id.
+        /// </summary>
+        public string ConnectionId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the group name.
+        /// </summary>
+        public string GroupName { get; set; }
+
         /// <summary>
         /// Gets or sets the ack id.
         /// </summary>
@@ -92,8 +114,10 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="groupName">The group name, from which the connection will leave.</param>
         /// <param name="ackId">The ack Id</param>
-        public LeaveGroupWithAckMessage(string connectionId, string groupName, string ackId = null) : base(connectionId, groupName)
+        public LeaveGroupWithAckMessage(string connectionId, string groupName, string ackId = null)
         {
+            ConnectionId = connectionId;
+            GroupName = groupName;
             AckId = ackId;
         }
     }
