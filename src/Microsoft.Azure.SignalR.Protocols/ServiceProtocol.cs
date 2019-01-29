@@ -85,6 +85,10 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateJoinGroupMessage(input, ref startOffset);
                 case ServiceProtocolConstants.LeaveGroupMessageType:
                     return CreateLeaveGroupMessage(input, ref startOffset);
+                case ServiceProtocolConstants.UserJoinGroupMessageType:
+                    return CreateUserJoinGroupMessage(input, ref startOffset);
+                case ServiceProtocolConstants.UserLeaveGroupMessageType:
+                    return CreateUserLeaveGroupMessage(input, ref startOffset);
                 case ServiceProtocolConstants.GroupBroadcastDataMessageType:
                     return CreateGroupBroadcastDataMessage(input, ref startOffset);
                 case ServiceProtocolConstants.MultiGroupBroadcastDataMessageType:
