@@ -29,7 +29,17 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 case ServiceTransportType.Persistent:
                     {
-                        throw new NotImplementedException();
+                        var serviceCollection = new ServiceCollection();
+                        serviceCollection.AddSignalR();
+                        serviceCollection.AddAzureSignalR(_serviceManagerOptions.ConnectionString);
+                        var services = serviceCollection.BuildServiceProvider();
+
+                        var hubContext = services.GetService<IHubContext<Hub>>();
+                        var websocketsHubLifetimeManager = services.GetRequiredService<HubLifetimeManager<Hub>>();
+
+                        var serviceHubContext = new ServiceHubContext(hubContext, websocketsHubLifetimeManager as ServiceLifetimeManager<Hub>);
+                        services.StartServiceDispatcher(hubName);
+                        return Task.FromResult<IServiceHubContext>(serviceHubContext);
                     }
                 case ServiceTransportType.Transient:
                     {

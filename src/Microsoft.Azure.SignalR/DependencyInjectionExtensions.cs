@@ -77,5 +77,15 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.TryAddSingleton(typeof(IEndpointRouter), typeof(DefaultEndpointRouter));
             return builder;
         }
+
+        internal static IServiceCollection AddAzureSignalR(this IServiceCollection serviceCollection, string connectionString)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static void StartServiceDispatcher(this IServiceProvider services, string hubName)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

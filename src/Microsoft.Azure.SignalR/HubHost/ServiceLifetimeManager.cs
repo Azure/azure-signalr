@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceLifetimeManager<THub> : HubLifetimeManager<THub> where THub : Hub
+    internal class ServiceLifetimeManager<THub> : HubLifetimeManager<THub>, IHubLifetimeManagerForUserGroup where THub : Hub
     {
         private const string MarkerNotConfiguredError =
             "'AddAzureSignalR(...)' was called without a matching call to 'IApplicationBuilder.UseAzureSignalR(...)'.";
@@ -209,6 +209,16 @@ namespace Microsoft.Azure.SignalR
                 payloads.Add(hubProtocol.Name, hubProtocol.GetMessageBytes(message));
             }
             return payloads;
+        }
+
+        public Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
         }
     }
 }

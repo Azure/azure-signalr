@@ -4,7 +4,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.Azure.SignalR.Management
+namespace Microsoft.Azure.SignalR
 {
     interface IHubLifetimeManagerForUserGroup
     {
