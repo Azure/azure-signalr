@@ -9,7 +9,7 @@ namespace Microsoft.Azure.SignalR.Common
     [Serializable]
     public class AzureSignalRUnauthorizationException : AzureSignalRException
     {
-        public const string ErrorMessage = "Authorization failed. Make sure you provide the correct connection string and have access to the resource.";
+        private const string ErrorMessage = "Authorization failed. Make sure you provide the correct connection string and have access to the resource.";
 
         public AzureSignalRUnauthorizationException(string requestUri, Exception innerException) : base(String.IsNullOrEmpty(requestUri) ? ErrorMessage : $"{ErrorMessage} Request Uri: {requestUri}", innerException)
         {
