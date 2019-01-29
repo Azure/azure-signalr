@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.SignalR
         public virtual ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> endpoints)
         {
             // get primary endpoints snapshot
-            var availbaleEndpoints = GetPrimaryEndpoints(endpoints);
+            var availbaleEndpoints = GetNegotiateEndpoints(endpoints);
             return availbaleEndpoints[StaticRandom.Next(availbaleEndpoints.Length)];
         }
 
@@ -65,13 +66,12 @@ namespace Microsoft.Azure.SignalR
             return endpoints;
         }
 
-
         /// <summary>
         /// Only primary endpoints will be returned by client /negotiate
         /// If no primary endpoint is available, promote one secondary endpoint
         /// </summary>
         /// <returns>The availbale endpoints</returns>
-        private ServiceEndpoint[] GetPrimaryEndpoints(IEnumerable<ServiceEndpoint> endpoints)
+        protected ServiceEndpoint[] GetNegotiateEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
             var primary = endpoints.Where(s => s.Online && s.EndpointType == EndpointType.Primary).ToArray();
             if (primary.Length > 0)
@@ -85,6 +85,8 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new AzureSignalRNotConnectedException();
             }
+
+            return secondary;
         }
     }
 }

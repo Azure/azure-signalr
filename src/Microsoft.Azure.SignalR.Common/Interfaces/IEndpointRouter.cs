@@ -10,16 +10,39 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Get the service endpoint for the client to connect to
         /// </summary>
-        /// <param name="endpoints"></param>
+        /// <param name="endpoints">All the available endpoints</param>
         /// <returns></returns>
         ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> endpoints);
 
+        /// <summary>
+        /// Get the service endpoints for broadcast message to send to
+        /// </summary>
+        /// <param name="endpoints">All the available endpoints</param>
+        /// <returns></returns>
         IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> endpoints);
 
+        /// <summary>
+        /// Get the service endpoints for the specified user to send to
+        /// </summary>
+        /// <param name="userId">The id of the user</param>
+        /// <param name="endpoints">All the available endpoints</param>
+        /// <returns></returns>
         IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> endpoints);
 
+        /// <summary>
+        /// Get the service endpoints for the specified group to send to
+        /// </summary>
+        /// <param name="groupName">The name of the group</param>
+        /// <param name="endpoints">All the available endpoints</param>
+        /// <returns></returns>
         IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> endpoints);
 
+        /// <summary>
+        /// Get the service endpoints for the specified connection to send to
+        /// </summary>
+        /// <param name="connectionId">The id of the connection</param>
+        /// <param name="endpoints">All the available endpoints</param>
+        /// <returns></returns>
         IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints);
     }
 }
