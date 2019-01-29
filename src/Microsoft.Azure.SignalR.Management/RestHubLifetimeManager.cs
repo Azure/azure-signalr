@@ -174,7 +174,7 @@ namespace Microsoft.Azure.SignalR.Management
                     }
                 case HttpStatusCode.Unauthorized:
                     {
-                        throw new AzureSignalRUnauthorizationException(requestUri, innerException);
+                        throw new AzureSignalRUnauthorizedException(requestUri, innerException);
                     }
                 case HttpStatusCode.NotFound:
                     {
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (HttpRequestException ex)
             {
-                ThrowException(ex, response?.StatusCode, request.RequestUri.ToString(), detail);
+                ThrowException(ex, response.StatusCode, request.RequestUri.ToString(), detail);
             }
             catch (Exception ex)
             {
