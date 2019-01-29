@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR
         /// When no connection is yet initialized, we consider the endpoint as Online for now, for compatable with current /negotiate behavior
         /// TODO: improve /negotiate behavior when the server-connection is being established
         /// </summary>
-        internal bool Online => Connection == null || Connection.Status == ServiceConnectionStatus.Connected;
+        public bool Online => Connection == null || Connection.Status == ServiceConnectionStatus.Connected;
 
         public ServiceEndpoint(string key, string connectionString) : this(connectionString)
         {
