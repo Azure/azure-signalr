@@ -7,14 +7,14 @@ using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class DefaultEndpointRouter : IEndpointRouter
+    internal class DefaultEndpointRouter : IEndpointRouter
     {
         /// <summary>
         /// Randomly select from the available endpoints
         /// </summary>
         /// <param name="endpoints"></param>
         /// <returns></returns>
-        public virtual ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> endpoints)
+        public ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> endpoints)
         {
             // get primary endpoints snapshot
             var availbaleEndpoints = GetNegotiateEndpoints(endpoints);
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         /// <param name="endpoints"></param>
         /// <returns></returns>
-        public virtual IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> endpoints)
+        public IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> endpoints)
         {
             // broadcast to all the endpoints
             return endpoints;
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR
         /// <param name="userId"></param>
         /// <param name="endpoints"></param>
         /// <returns></returns>
-        public virtual IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> endpoints)
+        public IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> endpoints)
         {
             return endpoints;
         }
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.SignalR
         /// <param name="groupName"></param>
         /// <param name="endpoints"></param>
         /// <returns></returns>
-        public virtual IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> endpoints)
+        public IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> endpoints)
         {
             return endpoints;
         }
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.SignalR
         /// <param name="connectionId"></param>
         /// <param name="endpoints"></param>
         /// <returns></returns>
-        public virtual IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints)
+        public IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints)
         {
             // broadcast to all the endpoints and service side to do the filter
             return endpoints;
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR
         /// If no primary endpoint is available, promote one secondary endpoint
         /// </summary>
         /// <returns>The availbale endpoints</returns>
-        protected ServiceEndpoint[] GetNegotiateEndpoints(IEnumerable<ServiceEndpoint> endpoints)
+        private ServiceEndpoint[] GetNegotiateEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
             var primary = endpoints.Where(s => s.Online && s.EndpointType == EndpointType.Primary).ToArray();
             if (primary.Length > 0)

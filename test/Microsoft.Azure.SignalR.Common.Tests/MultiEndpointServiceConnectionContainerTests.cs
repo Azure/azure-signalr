@@ -429,10 +429,11 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private class TestEndpointRouter : DefaultEndpointRouter
+        private class TestEndpointRouter : EndpointRouterDecorator
         {
             private readonly bool _broken;
-            public TestEndpointRouter(bool broken)
+
+            public TestEndpointRouter(bool broken) : base()
             {
                 _broken = broken;
             }
