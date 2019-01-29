@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly ConcurrentDictionary<string, AckInfo> _acks = new ConcurrentDictionary<string, AckInfo>();
         private readonly Timer _timer;
-        private readonly TimeSpan _ackThreshold = TimeSpan.FromSeconds(5);
+        private readonly TimeSpan _ackThreshold = TimeSpan.FromSeconds(10);
         private readonly TimeSpan _ackInterval = TimeSpan.FromSeconds(5);
 
         public AckHandler()
