@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR.Management
             throw new NotImplementedException();
         }
 
-        public override async Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
+        public override Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (String.IsNullOrEmpty(methodName))
             {
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.SignalR.Management
 
             var api = _restApiProvider.GetBroadcastEndpoint();
             var request = BuildRequest(api, HttpMethod.Post, methodName, args, cancellationToken);
-            await CallRestApiAsync(request);
+            return CallRestApiAsync(request);
         }
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.SignalR.Management
             throw new NotImplementedException();
         }
 
-        public override async Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
+        public override Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (String.IsNullOrEmpty(methodName))
             {
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.SignalR.Management
 
             var api = _restApiProvider.GetSendToGroupEndpoint(groupName);
             var request = BuildRequest(api, HttpMethod.Post, methodName, args, cancellationToken);
-            await CallRestApiAsync(request);
+            return CallRestApiAsync(request);
         }
 
         public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.SignalR.Management
             throw new NotImplementedException();
         }
 
-        public override async Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
+        public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (String.IsNullOrEmpty(methodName))
             {
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.SignalR.Management
 
             var api = _restApiProvider.GetSendToUserEndpoint(userId);
             var request = BuildRequest(api, HttpMethod.Post, methodName, args, cancellationToken);
-            await CallRestApiAsync(request);
+            return CallRestApiAsync(request);
         }
 
         public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.SignalR.Management
             throw new NotImplementedException();
         }
 
-        public async Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
+        public Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
             if (String.IsNullOrEmpty(userId))
             {
@@ -135,10 +135,10 @@ namespace Microsoft.Azure.SignalR.Management
 
             var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
             var request = BuildRequest(api, HttpMethod.Put, null, null, cancellationToken);
-            await CallRestApiAsync(request);
+            return CallRestApiAsync(request);
         }
 
-        public async Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
+        public Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
             if (String.IsNullOrEmpty(userId))
             {
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.SignalR.Management
 
             var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
             var request = BuildRequest(api, HttpMethod.Delete, null, null, cancellationToken);
-            await CallRestApiAsync(request);
+            return CallRestApiAsync(request);
         }
 
         private static HttpRequestMessage GenerateHttpRequest(string url, PayloadMessage payload, string tokenString, HttpMethod httpMethod)
