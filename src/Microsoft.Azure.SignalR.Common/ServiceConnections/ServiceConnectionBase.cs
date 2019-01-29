@@ -74,22 +74,51 @@ namespace Microsoft.Azure.SignalR
 
         public async Task StartAsync(string target = null)
         {
-            if (await StartAsyncCore(target))
+            // Codes in try block should catch and log exceptions separately.
+            // The catch here should be very rare to reach.
+            try
             {
-                _serviceConnectionStartTcs.TrySetResult(true);
-                _isConnected = true;
-                await ProcessIncomingAsync();
-                _isConnected = false;
-            }
+                if (await StartAsyncCore(target))
+                {
+                    _serviceConnectionStartTcs.TrySetResult(true);
+                    _isConnected = true;
+                    await ProcessIncomingAsync();
+                    _isConnected = false;
+                }
 
-            _serviceConnectionStartTcs.TrySetResult(false);
-            await StopAsync();
+                _serviceConnectionStartTcs.TrySetResult(false);
+            }
+            catch (Exception ex)
+            {
+                Status = ServiceConnectionStatus.Disconnected;
+                _serviceConnectionStartTcs.TrySetResult(false);
+                Log.UnexpectedExceptionInStart(_logger, ConnectionId, ex);
+            }
+            finally
+            {
+                await StopAsync();
+            }
         }
 
         public Task StopAsync()
         {
-            ConnectionContext?.Transport.Input.CancelPendingRead();
-            _serviceConnectionManager.DisposeServiceConnection(this);
+            try
+            {
+                try
+                {
+                    ConnectionContext?.Transport.Input.CancelPendingRead();
+                }
+                finally
+                {
+                    _serviceConnectionManager.DisposeServiceConnection(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Should be very rare to throw exceptions.
+                Log.UnexpectedExceptionInStop(_logger, ConnectionId, ex);
+            }
+            
             return Task.CompletedTask;
         }
 
@@ -589,6 +618,12 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, string, Exception> _receivedServiceErrorMessage =
                 LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(27, "ReceivedServiceErrorMessage"), "Connection {ServiceConnectionId} received error message from service: {Error}");
 
+            private static readonly Action<ILogger, string, Exception> _unexpectedExceptionInStart =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(28, "UnexpectedExceptionInStart"), "Connection {ServiceConnectionId} got unexpected exception in StarAsync.");
+
+            private static readonly Action<ILogger, string, Exception> _unexpectedExceptionInStop =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(29, "UnexpectedExceptionInStop"), "Connection {ServiceConnectionId} got unexpected exception in StopAsync.");
+
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
                 _failedToWrite(logger, exception);
@@ -729,6 +764,16 @@ namespace Microsoft.Azure.SignalR
             public static void ReceivedServiceErrorMessage(ILogger logger, string connectionId, string errorMessage)
             {
                 _receivedServiceErrorMessage(logger, connectionId, errorMessage, null);
+            }
+
+            public static void UnexpectedExceptionInStart(ILogger logger, string connectionId, Exception exception)
+            {
+                _unexpectedExceptionInStart(logger, connectionId, exception);
+            }
+
+            public static void UnexpectedExceptionInStop(ILogger logger, string connectionId, Exception exception)
+            {
+                _unexpectedExceptionInStop(logger, connectionId, exception);
             }
         }
     }

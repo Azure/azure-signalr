@@ -89,7 +89,12 @@ namespace Microsoft.Azure.SignalR
                     }
                 }
 
-                _ = RestartServiceConnectionCoreAsync(index);
+                var task = RestartServiceConnectionCoreAsync(index);
+                if (task.Exception != null)
+                {
+                    throw task.Exception;
+                }
+
                 return;
             }
 

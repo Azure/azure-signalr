@@ -94,15 +94,15 @@ namespace Microsoft.Azure.SignalR
 
         protected async Task RestartServiceConnectionCoreAsync(int index)
         {
+            var connection = CreateServiceConnectionCore();
+            FixedServiceConnections[index] = connection;
+
             await Task.Delay(GetRetryDelay(_defaultConnectionRetry));
 
             // Increase retry count after delay, then if a group of connections get disconnected simultaneously,
             // all of them will delay a similar range of time and reconnect. But if they get disconnected again (when SignalR service down), 
             // they will all delay for a much longer time.
             Interlocked.Increment(ref _defaultConnectionRetry);
-
-            var connection = CreateServiceConnectionCore();
-            FixedServiceConnections[index] = connection;
 
             _ = connection.StartAsync();
             await connection.ConnectionInitializedTask;

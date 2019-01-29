@@ -30,7 +30,14 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 
         public override void DisposeServiceConnection(IServiceConnection connection)
         {
-            _ = RestartServiceConnectionAsync(connection);
+            var task = RestartServiceConnectionAsync(connection);
+
+            // Catch the all the exceptions before asynchronized delay
+            // After delay, the new connection can catch exceptions.
+            if (task.Exception != null)
+            {
+                throw task.Exception;
+            }
         }
     }
 }
