@@ -141,6 +141,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new LeaveGroupMessage("conn11", "group2"),
                 binary: "kwymY29ubjExpmdyb3VwMg=="),
             new ProtocolTestData(
+                name: "UserJoinGroup",
+                message: new JoinGroupMessage("conn10", "group1"),
+                binary: "kwumY29ubjEwpmdyb3VwMQ=="),
+            new ProtocolTestData(
+                name: "UserLeaveGroup",
+                message: new LeaveGroupMessage("conn11", "group2"),
+                binary: "kwymY29ubjExpmdyb3VwMg=="),
+            new ProtocolTestData(
                 name: "GroupBroadcast",
                 message: new GroupBroadcastDataMessage("group3",
                     new Dictionary<string, ReadOnlyMemory<byte>>
