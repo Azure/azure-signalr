@@ -164,13 +164,13 @@ namespace Microsoft.Azure.SignalR.Management
             return request;
         }
 
-        private static void ThrowException(Exception innerException, HttpStatusCode? statusCode, string requestUri, string detail = null)
+        private static void ThrowExceptionOnResponseFailure(Exception innerException, HttpStatusCode? statusCode, string requestUri, string detail = null)
         {
             switch (statusCode)
             {
                 case HttpStatusCode.BadRequest:
                     {
-                        throw new AzureSignalRBadRequestException(requestUri, innerException, detail);
+                        throw new AzureSignalRInvalidArgumentException(requestUri, innerException, detail);
                     }
                 case HttpStatusCode.Unauthorized:
                     {
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.SignalR.Management
                     }
                 case HttpStatusCode.NotFound:
                     {
-                        throw new AzureSignalRUnableToAccessException(requestUri, innerException);
+                        throw new AzureSignalRInaccessibleEndpointException(requestUri, innerException);
                     }
                 default:
                     {
@@ -187,17 +187,17 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
-        private static void ThrowException(Exception innerException, string requestUri, string detail = null)
+        private static void ThrowExceptionOnNetworkConnectivityAndOtherIssues(Exception innerException, string requestUri, string detail = null)
         {
             switch (innerException)
             {
                 case HttpRequestException hrex:
                     {
-                        throw new AzureSignalRUnableToAccessException(requestUri, innerException); // not known host
+                        throw new AzureSignalRInaccessibleEndpointException(requestUri, innerException); // network connectivity issue
                     }
                 default:
                     {
-                        throw new AzureSignalRRuntimeException(requestUri, innerException);
+                        throw new AzureSignalRRuntimeException(requestUri, innerException); // other issues
                     }
             }
         }
@@ -218,9 +218,9 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 response = await httpClient.SendAsync(request);
             }
-            catch (Exception ex)
+            catch (HttpRequestException ex)
             {
-                ThrowException(ex, request.RequestUri.ToString()); // not known host
+                ThrowExceptionOnNetworkConnectivityAndOtherIssues(ex, request.RequestUri.ToString()); // not known host
             }
 
             try
@@ -230,11 +230,11 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (HttpRequestException ex)
             {
-                ThrowException(ex, response.StatusCode, request.RequestUri.ToString(), detail);
+                ThrowExceptionOnResponseFailure(ex, response.StatusCode, request.RequestUri.ToString(), detail);
             }
             catch (Exception ex)
             {
-                ThrowException(ex, request.RequestUri.ToString(), null);
+                ThrowExceptionOnNetworkConnectivityAndOtherIssues(ex, request.RequestUri.ToString(), null);
             }
         }
     }

@@ -3,20 +3,19 @@
 
 using System;
 using System.Runtime.Serialization;
-using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR.Common
 {
     [Serializable]
-    public class AzureSignalRUnableToAccessException : AzureSignalRException
+    public class AzureSignalRInaccessibleEndpointException : AzureSignalRException
     {
         private const string ErrorMessage = "Unable to access SignalR service. May caused by one or more of the following reasons: Incorrect endpoint or DNS error.";
 
-        public AzureSignalRUnableToAccessException(string requestUri, Exception innerException) : base(String.IsNullOrEmpty(requestUri) ? ErrorMessage : $"{ErrorMessage} Request Uri: {requestUri}", innerException)
+        public AzureSignalRInaccessibleEndpointException(string requestUri, Exception innerException) : base(String.IsNullOrEmpty(requestUri) ? ErrorMessage : $"{ErrorMessage} Request Uri: {requestUri}", innerException)
         {
         }
 
-        protected AzureSignalRUnableToAccessException(SerializationInfo info, StreamingContext context): base(info, context)
+        protected AzureSignalRInaccessibleEndpointException(SerializationInfo info, StreamingContext context): base(info, context)
         {
         }
     }
