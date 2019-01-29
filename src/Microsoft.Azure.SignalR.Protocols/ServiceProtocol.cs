@@ -186,6 +186,12 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case LeaveGroupMessage leaveGroupMessage:
                     WriteLeaveGroupMessage(leaveGroupMessage, packer);
                     break;
+                case UserJoinGroupMessage userJoinGroupMessage:
+                    WriteUserJoinGroupMessage(userJoinGroupMessage, packer);
+                    break;
+                case UserLeaveGroupMessage userLeaveGroupMessage:
+                    WriteUserLeaveGroupMessage(userLeaveGroupMessage, packer);
+                    break;
                 case GroupBroadcastDataMessage groupBroadcastDataMessage:
                     WriteGroupBroadcastDataMessage(groupBroadcastDataMessage, packer);
                     break;
@@ -357,6 +363,22 @@ namespace Microsoft.Azure.SignalR.Protocol
             MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.LeaveGroupMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
+            MessagePackBinary.WriteString(packer, message.GroupName);
+        }
+
+        private static void WriteUserJoinGroupMessage(UserJoinGroupMessage message, Stream packer)
+        {
+            MessagePackBinary.WriteArrayHeader(packer, 3);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.UserJoinGroupMessageType);
+            MessagePackBinary.WriteString(packer, message.UserId);
+            MessagePackBinary.WriteString(packer, message.GroupName);
+        }
+
+        private static void WriteUserLeaveGroupMessage(UserLeaveGroupMessage message, Stream packer)
+        {
+            MessagePackBinary.WriteArrayHeader(packer, 3);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.UserLeaveGroupMessageType);
+            MessagePackBinary.WriteString(packer, message.UserId);
             MessagePackBinary.WriteString(packer, message.GroupName);
         }
 
@@ -556,6 +578,22 @@ namespace Microsoft.Azure.SignalR.Protocol
             var groupName = ReadString(input, ref offset, "groupName");
 
             return new LeaveGroupMessage(connectionId, groupName);
+        }
+
+        private static UserJoinGroupMessage CreateUserJoinGroupMessage(byte[] input, ref int offset)
+        {
+            var userId = ReadString(input, ref offset, "userId");
+            var groupName = ReadString(input, ref offset, "groupName");
+
+            return new UserJoinGroupMessage(userId, groupName);
+        }
+
+        private static UserLeaveGroupMessage CreateUserLeaveGroupMessage(byte[] input, ref int offset)
+        {
+            var userId = ReadString(input, ref offset, "userId");
+            var groupName = ReadString(input, ref offset, "groupName");
+
+            return new UserLeaveGroupMessage(userId, groupName);
         }
 
         private static GroupBroadcastDataMessage CreateGroupBroadcastDataMessage(byte[] input, ref int offset)
