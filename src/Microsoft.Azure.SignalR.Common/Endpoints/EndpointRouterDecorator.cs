@@ -7,7 +7,12 @@ namespace Microsoft.Azure.SignalR
 {
     public class EndpointRouterDecorator : IEndpointRouter
     {
-        private readonly IEndpointRouter _inner = new DefaultEndpointRouter();
+        private readonly IEndpointRouter _inner;
+
+        public EndpointRouterDecorator(IEndpointRouter router = null)
+        {
+            _inner = router ?? new DefaultEndpointRouter();
+        }
 
         public virtual IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> endpoints)
         {
