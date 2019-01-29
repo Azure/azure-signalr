@@ -80,7 +80,11 @@ namespace Microsoft.Azure.SignalR
             }
 
             // All primary endpoints are offline, fallback to the first online secondary endpoint
-            return endpoints.Where(s => s.Online && s.EndpointType == EndpointType.Secondary).ToArray();
+            var secondary = endpoints.Where(s => s.Online && s.EndpointType == EndpointType.Secondary).ToArray();
+            if (secondary.Length == 0)
+            {
+                throw new AzureSignalRNotConnectedException();
+            }
         }
     }
 }
