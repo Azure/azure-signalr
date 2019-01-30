@@ -9,7 +9,7 @@ namespace Microsoft.Azure.SignalR.Common
     [Serializable]
     public class AzureSignalRInvalidArgumentException : AzureSignalRException
     {
-        private const string ErrorMessage = "Bad Request. Caused by one or more of the following reasons:";
+        private const string ErrorMessage = "Invalid argument. Caused by one or more of the following reasons:";
 
         public AzureSignalRInvalidArgumentException(string requestUri, Exception innerException, string detail) : base(String.IsNullOrEmpty(requestUri) ? $"{ErrorMessage} {detail}" : $"{ErrorMessage} {detail} Request Uri: {requestUri}", innerException)
         {
