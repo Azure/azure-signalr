@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,7 +16,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 
         // For test purpose only
         internal WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections, ServiceEndpoint endpoint)
+            IConnectionFactory connectionFactory, ConcurrentDictionary<int?, IServiceConnection> initialConnections, ServiceEndpoint endpoint)
             : base(serviceConnectionFactory, connectionFactory, initialConnections, endpoint)
         {
         }

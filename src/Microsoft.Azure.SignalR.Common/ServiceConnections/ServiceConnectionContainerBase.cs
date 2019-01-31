@@ -37,11 +37,11 @@ namespace Microsoft.Azure.SignalR
         }
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections, ServiceEndpoint endpoint)
+            IConnectionFactory connectionFactory, ConcurrentDictionary<int?, IServiceConnection> initialConnections, ServiceEndpoint endpoint)
         {
             ServiceConnectionFactory = serviceConnectionFactory;
             ConnectionFactory = connectionFactory;
-            FixedServiceConnections = new ConcurrentDictionary<int?, IServiceConnection>(initialConnections.Select((connection, i) => new {connection, i}).ToDictionary(x => (int?)x.i, x => x.connection));
+            FixedServiceConnections = initialConnections;
             FixedConnectionCount = initialConnections.Count;
             _endpoint = endpoint;
         }

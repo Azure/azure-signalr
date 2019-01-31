@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.SignalR
 
         // For test purpose only
         internal StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections, ServiceEndpoint endpoint) : base(
+            IConnectionFactory connectionFactory, ConcurrentDictionary<int?, IServiceConnection> initialConnections, ServiceEndpoint endpoint) : base(
             serviceConnectionFactory, connectionFactory, initialConnections, endpoint)
         {
             _onDemandServiceConnections = new List<IServiceConnection>();
@@ -58,19 +59,6 @@ namespace Microsoft.Azure.SignalR
         protected override IServiceConnection CreateServiceConnectionCore()
         {
             return CreateServiceConnectionCore(ServerConnectionType.Default);
-        }
-
-        private IServiceConnection CreateOnDemandServiceConnection()
-        {
-            IServiceConnection newConnection;
-
-            lock (_lock)
-            {
-                newConnection = CreateServiceConnectionCore(ServerConnectionType.OnDemand);
-                _onDemandServiceConnections.Add(newConnection);
-            }
-
-            return newConnection;
         }
 
         protected override async Task DisposeOrRestartServiceConnectionAsync(IServiceConnection connection)
@@ -112,6 +100,19 @@ namespace Microsoft.Azure.SignalR
                     _onDemandServiceConnections.RemoveAt(index);
                 }
             }
+        }
+
+        private IServiceConnection CreateOnDemandServiceConnection()
+        {
+            IServiceConnection newConnection;
+
+            lock (_lock)
+            {
+                newConnection = CreateServiceConnectionCore(ServerConnectionType.OnDemand);
+                _onDemandServiceConnections.Add(newConnection);
+            }
+
+            return newConnection;
         }
     }
 }
