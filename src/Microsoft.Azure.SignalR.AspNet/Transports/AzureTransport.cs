@@ -74,10 +74,16 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public void OnReceived(string value)
         {
+            _ = ReceivedTask(value);
+        }
+
+        public async Task ReceivedTask(string value)
+        {
             var received = Received;
             if (received != null)
             {
-                _ = received(value);
+                // TODO: Add log
+                await received(value);
             }
         }
 
