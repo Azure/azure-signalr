@@ -205,7 +205,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (HttpRequestException ex)
             {
-                ThrowExceptionOnResponseFailure(ex, HttpStatusCode.NotFound, request.RequestUri.ToString());
+                throw new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), ex);
             }
 
             try
