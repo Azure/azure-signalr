@@ -232,10 +232,6 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 ThrowExceptionOnResponseFailure(ex, response.StatusCode, request.RequestUri.ToString(), detail);
             }
-            catch (Exception ex)
-            {
-                ThrowExceptionOnNetworkConnectivityAndOtherIssues(ex, request.RequestUri.ToString(), null);
-            }
         }
     }
 }
