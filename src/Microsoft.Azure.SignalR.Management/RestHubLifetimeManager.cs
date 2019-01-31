@@ -187,21 +187,6 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
-        private static void ThrowExceptionOnNetworkConnectivityAndOtherIssues(Exception innerException, string requestUri, string detail = null)
-        {
-            switch (innerException)
-            {
-                case HttpRequestException hrex:
-                    {
-                        throw new AzureSignalRInaccessibleEndpointException(requestUri, innerException); // network connectivity issue
-                    }
-                default:
-                    {
-                        throw new AzureSignalRRuntimeException(requestUri, innerException); // other issues
-                    }
-            }
-        }
-
         private static HttpRequestMessage BuildRequest(RestApiEndpoint endpoint, HttpMethod httpMethod, string methodName = null, object[] args = null, CancellationToken cancellationToken = default)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
@@ -220,7 +205,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (HttpRequestException ex)
             {
-                ThrowExceptionOnNetworkConnectivityAndOtherIssues(ex, request.RequestUri.ToString()); // not known host
+                ThrowExceptionOnResponseFailure(ex, HttpStatusCode.NotFound, request.RequestUri.ToString());
             }
 
             try
