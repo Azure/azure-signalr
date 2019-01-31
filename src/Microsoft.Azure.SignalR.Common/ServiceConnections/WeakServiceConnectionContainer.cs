@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 {
@@ -23,21 +24,25 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             return CreateServiceConnectionCore(ServerConnectionType.Weak);
         }
 
-        public override IServiceConnection CreateServiceConnection()
+        public override Task HandlePingAsync(string target)
         {
             throw new NotSupportedException();
         }
 
-        public override void DisposeServiceConnection(IServiceConnection connection)
+        protected override async Task DisposeOrRestartServiceConnectionAsync(IServiceConnection serviceConnection)
         {
-            var task = RestartServiceConnectionAsync(connection);
-
-            // Catch the all the exceptions before asynchronized delay
-            // After delay, the new connection can catch exceptions.
-            if (task.Exception != null)
+            if (serviceConnection == null)
             {
-                throw task.Exception;
+                throw new ArgumentNullException(nameof(serviceConnection));
             }
+
+            int index = FixedServiceConnections.IndexOf(serviceConnection);
+            if (index == -1)
+            {
+                return;
+            }
+
+            await RestartServiceConnectionCoreAsync(index);
         }
     }
 }

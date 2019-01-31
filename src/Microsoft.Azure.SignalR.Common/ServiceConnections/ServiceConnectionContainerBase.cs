@@ -9,7 +9,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceConnectionManager
+    abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler
     {
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
         private static TimeSpan ReconnectInterval =>
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task StartAsync()
         {
-            var task = Task.WhenAll(FixedServiceConnections.Select(c => c.StartAsync()));
+            var task = Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
             await Task.WhenAny(FixedServiceConnections.Select(s => s.ConnectionInitializedTask));
 
             // Set the endpoint connection after one connection is initialized
@@ -60,43 +60,40 @@ namespace Microsoft.Azure.SignalR
         }
 
         /// <summary>
-        /// Get a connection in initialization and reconnection
+        /// Start and manage the whole connection lifetime
+        /// </summary>
+        /// <returns></returns>
+        protected async Task StartCoreAsync(IServiceConnection connection, string target = null)
+        {
+            try
+            {
+                await connection.StartAsync(target);
+            }
+            finally
+            {
+                await DisposeOrRestartServiceConnectionAsync(connection);
+            }
+        }
+
+        public abstract Task HandlePingAsync(string target);
+
+        /// <summary>
+        /// Create a connection in initialization and reconnection
         /// </summary>
         protected abstract IServiceConnection CreateServiceConnectionCore();
 
         /// <summary>
-        /// Get a connection for a specific service connection type
+        /// Create a connection for a specific service connection type
         /// </summary>
         protected virtual IServiceConnection CreateServiceConnectionCore(ServerConnectionType type)
         {
             return ServiceConnectionFactory.Create(ConnectionFactory, this, type);
         }
 
-        public abstract IServiceConnection CreateServiceConnection();
-
-        public abstract void DisposeServiceConnection(IServiceConnection connection);
-
-        protected virtual async Task RestartServiceConnectionAsync(IServiceConnection serviceConnection)
-        {
-            if (serviceConnection == null)
-            {
-                throw new ArgumentNullException(nameof(serviceConnection));
-            }
-
-            int index = FixedServiceConnections.IndexOf(serviceConnection);
-            if (index == -1)
-            {
-                return;
-            }
-
-            await RestartServiceConnectionCoreAsync(index);
-        }
+        protected abstract Task DisposeOrRestartServiceConnectionAsync(IServiceConnection connection);
 
         protected async Task RestartServiceConnectionCoreAsync(int index)
         {
-            var connection = CreateServiceConnectionCore();
-            FixedServiceConnections[index] = connection;
-
             await Task.Delay(GetRetryDelay(_defaultConnectionRetry));
 
             // Increase retry count after delay, then if a group of connections get disconnected simultaneously,
@@ -104,7 +101,10 @@ namespace Microsoft.Azure.SignalR
             // they will all delay for a much longer time.
             Interlocked.Increment(ref _defaultConnectionRetry);
 
-            _ = connection.StartAsync();
+            var connection = CreateServiceConnectionCore();
+            FixedServiceConnections[index] = connection;
+
+            _ = StartCoreAsync(connection);
             await connection.ConnectionInitializedTask;
 
             if (connection.Status == ServiceConnectionStatus.Connected)

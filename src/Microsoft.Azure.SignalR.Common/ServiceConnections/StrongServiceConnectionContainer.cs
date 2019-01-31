@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -27,6 +28,12 @@ namespace Microsoft.Azure.SignalR
             serviceConnectionFactory, connectionFactory, initialConnections, endpoint)
         {
             _onDemandServiceConnections = new List<IServiceConnection>();
+        }
+
+        public override async Task HandlePingAsync(string target)
+        {
+            var connection = CreateOnDemandServiceConnection();
+            await StartCoreAsync(connection, target);
         }
 
         protected override ServiceConnectionStatus GetStatus()
@@ -53,7 +60,7 @@ namespace Microsoft.Azure.SignalR
             return CreateServiceConnectionCore(ServerConnectionType.Default);
         }
 
-        public override IServiceConnection CreateServiceConnection()
+        private IServiceConnection CreateOnDemandServiceConnection()
         {
             IServiceConnection newConnection;
 
@@ -66,7 +73,7 @@ namespace Microsoft.Azure.SignalR
             return newConnection;
         }
 
-        public override void DisposeServiceConnection(IServiceConnection connection)
+        protected override async Task DisposeOrRestartServiceConnectionAsync(IServiceConnection connection)
         {
             if (connection == null)
             {
@@ -80,6 +87,8 @@ namespace Microsoft.Azure.SignalR
                 {
                     foreach (var serviceConnection in _onDemandServiceConnections)
                     {
+                        // We have a connected on-demand connection,
+                        // then promote it to default connection.
                         if (serviceConnection.Status == ServiceConnectionStatus.Connected)
                         {
                             FixedServiceConnections[index] = serviceConnection;
@@ -89,12 +98,8 @@ namespace Microsoft.Azure.SignalR
                     }
                 }
 
-                var task = RestartServiceConnectionCoreAsync(index);
-                if (task.Exception != null)
-                {
-                    throw task.Exception;
-                }
-
+                // Restart a default connection.
+                await RestartServiceConnectionCoreAsync(index);
                 return;
             }
 

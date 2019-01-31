@@ -31,9 +31,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             IConnectionFactory connectionFactory,
             IClientConnectionManager clientConnectionManager,
             ILoggerFactory loggerFactory,
-            SignalR.IServiceConnectionManager manager,
+            IServiceMessageHandler serviceMessageHandler,
             ServerConnectionType connectionType = ServerConnectionType.Default)
-            : base(serviceProtocol, loggerFactory, connectionId, manager, connectionType)
+            : base(serviceProtocol, loggerFactory, connectionId, serviceMessageHandler, connectionType)
         {
             _connectionFactory = connectionFactory;
             _clientConnectionManager = clientConnectionManager;

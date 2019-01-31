@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.Tests
             _factoryFunc = factoryFunc;
         }
 
-        public IServiceConnection Create(IConnectionFactory connectionFactory, IServiceConnectionManager manager,
+        public IServiceConnection Create(IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler,
             ServerConnectionType type)
         {
             return _factoryFunc();

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
@@ -12,12 +13,12 @@ namespace Microsoft.Azure.SignalR.Tests
         {
         }
 
-        public override IServiceConnection CreateServiceConnection()
+        public override Task HandlePingAsync(string target)
         {
             throw new NotImplementedException();
         }
 
-        public override void DisposeServiceConnection(IServiceConnection connection)
+        protected override Task DisposeOrRestartServiceConnectionAsync(IServiceConnection connection)
         {
             throw new NotImplementedException();
         }

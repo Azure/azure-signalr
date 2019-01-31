@@ -7,19 +7,15 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
-    internal sealed class TestServiceConnectionManager : SignalR.IServiceConnectionManager
+    internal sealed class TestServiceMessageHandler : IServiceMessageHandler
     {
-        public TestServiceConnectionManager()
+        public TestServiceMessageHandler()
         {
         }
 
-        public IServiceConnection CreateServiceConnection()
+        public Task HandlePingAsync(string target)
         {
             throw new NotImplementedException();
-        }
-
-        public void DisposeServiceConnection(IServiceConnection connection)
-        {
         }
     }
 }

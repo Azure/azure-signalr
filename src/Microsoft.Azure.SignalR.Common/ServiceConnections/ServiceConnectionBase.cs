@@ -37,7 +37,7 @@ namespace Microsoft.Azure.SignalR
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
         private readonly ServerConnectionType _connectionType;
 
-        private readonly IServiceConnectionManager _serviceConnectionManager;
+        private readonly IServiceMessageHandler _serviceMessageHandler;
 
         // Check service timeout
         private long _lastReceiveTimestamp;
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task ConnectionInitializedTask => _serviceConnectionStartTcs.Task;
 
-        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILoggerFactory loggerFactory, string connectionId, IServiceConnectionManager serviceConnectionManager, ServerConnectionType connectionType)
+        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILoggerFactory loggerFactory, string connectionId, IServiceMessageHandler serviceMessageHandler, ServerConnectionType connectionType)
         {
             ServiceProtocol = serviceProtocol;
             ConnectionId = connectionId;
@@ -69,9 +69,15 @@ namespace Microsoft.Azure.SignalR
             _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
             _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
             _logger = loggerFactory?.CreateLogger<ServiceConnectionBase>() ?? NullLogger<ServiceConnectionBase>.Instance;
-            _serviceConnectionManager = serviceConnectionManager;
+            _serviceMessageHandler = serviceMessageHandler;
         }
 
+        /// <summary>
+        /// Start a service connection without the lifetime management.
+        /// To get full lifetime management including dispose or restart, use <see cref="ServiceConnectionContainerBase"/>
+        /// </summary>
+        /// <param name="target">The target instance Id</param>
+        /// <returns>The task of StartAsync</returns>
         public async Task StartAsync(string target = null)
         {
             // Codes in try block should catch and log exceptions separately.
@@ -91,7 +97,7 @@ namespace Microsoft.Azure.SignalR
             catch (Exception ex)
             {
                 Status = ServiceConnectionStatus.Disconnected;
-                _serviceConnectionStartTcs.TrySetResult(false);
+                _serviceConnectionStartTcs.TrySetException(ex);
                 Log.UnexpectedExceptionInStart(_logger, ConnectionId, ex);
             }
             finally
@@ -104,18 +110,10 @@ namespace Microsoft.Azure.SignalR
         {
             try
             {
-                try
-                {
-                    ConnectionContext?.Transport.Input.CancelPendingRead();
-                }
-                finally
-                {
-                    _serviceConnectionManager.DisposeServiceConnection(this);
-                }
+                ConnectionContext?.Transport.Input.CancelPendingRead();
             }
             catch (Exception ex)
             {
-                // Should be very rare to throw exceptions.
                 Log.UnexpectedExceptionInStop(_logger, ConnectionId, ex);
             }
             
@@ -200,8 +198,7 @@ namespace Microsoft.Azure.SignalR
                 if (pingMessage.Messages[index] == PingTargetKey &&
                     !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
                 {
-                    var connection = _serviceConnectionManager.CreateServiceConnection();
-                    return connection.StartAsync(pingMessage.Messages[index + 1]);
+                    return _serviceMessageHandler.HandlePingAsync(pingMessage.Messages[index + 1]);
                 }
 
                 index += 2;

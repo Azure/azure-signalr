@@ -28,11 +28,11 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionFactory = clientConnectionFactory;
         }
 
-        public IServiceConnection Create(IConnectionFactory connectionFactory, IServiceConnectionManager manager, ServerConnectionType type)
+        public IServiceConnection Create(IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
         {
             return new ServiceConnection(_serviceProtocol, _clientConnectionManager, connectionFactory,
                 _loggerFactory, _connectionDelegate, _clientConnectionFactory,
-                Guid.NewGuid().ToString(), manager, type);
+                Guid.NewGuid().ToString(), serviceMessageHandler, type);
         }
     }
 }

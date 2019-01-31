@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
 
         public ServiceConnectionProxy(ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null,
-            TestConnectionFactory connectionFactory = null, IServiceConnectionManager serviceConnectionManager = null)
+            TestConnectionFactory connectionFactory = null, IServiceMessageHandler serviceMessageHandler = null)
         {
             ConnectionFactory = connectionFactory ?? new TestConnectionFactory();
             ClientConnectionManager = new ClientConnectionManager();
@@ -51,14 +51,14 @@ namespace Microsoft.Azure.SignalR.Tests
                     callback ?? OnConnectionAsync,
                     this,
                     Guid.NewGuid().ToString("N"),
-                    serviceConnectionManager ?? connectionContainer);
+                    serviceMessageHandler ?? connectionContainer);
             ServiceConnectionContainer = connectionContainer;
             initialConnections[0] = ServiceConnection;
         }
 
         public Task StartAsync()
         {
-            return ServiceConnection.StartAsync();
+            return ServiceConnectionContainer.StartAsync();
         }
 
         public bool IsConnected => ServiceConnection.IsConnected;
