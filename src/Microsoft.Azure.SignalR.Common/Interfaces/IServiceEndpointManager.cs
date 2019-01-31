@@ -11,8 +11,6 @@ namespace Microsoft.Azure.SignalR
 
         IEnumerable<ServiceEndpoint> GetAvailableEndpoints();
 
-        IEnumerable<ServiceEndpoint> GetPrimaryEndpoints();
-
         ServiceEndpoint[] Endpoints { get; }
     }
 }

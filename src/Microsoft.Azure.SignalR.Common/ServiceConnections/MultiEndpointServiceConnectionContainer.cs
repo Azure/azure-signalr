@@ -118,7 +118,7 @@ namespace Microsoft.Azure.SignalR
             return Task.WhenAll(routed.Select(s => Connections[s]).Select(s => s.WriteAsync(serviceMessage)));
         }
 
-        private IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message, IEnumerable<ServiceEndpoint> availableEndpoints)
+        internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message, IEnumerable<ServiceEndpoint> availableEndpoints)
         {
             switch (message)
             {
@@ -131,13 +131,13 @@ namespace Microsoft.Azure.SignalR
                 case LeaveGroupMessage lgm:
                     return _router.GetEndpointsForGroup(lgm.GroupName, availableEndpoints);
                 case MultiGroupBroadcastDataMessage mgbdm:
-                    return _router.GetEndpointsForGroups(mgbdm.GroupList, availableEndpoints);
+                    return mgbdm.GroupList.SelectMany(g => _router.GetEndpointsForGroup(g, availableEndpoints)).Distinct();
                 case ConnectionDataMessage cdm:
                     return _router.GetEndpointsForConnection(cdm.ConnectionId, availableEndpoints);
                 case UserDataMessage udm:
                     return _router.GetEndpointsForUser(udm.UserId, availableEndpoints);
                 case MultiUserDataMessage mudm:
-                    return _router.GetEndpointsForUsers(mudm.UserList, availableEndpoints);
+                    return mudm.UserList.SelectMany(g => _router.GetEndpointsForUser(g, availableEndpoints)).Distinct();
                 default:
                     throw new NotSupportedException(message.GetType().Name);
             }
