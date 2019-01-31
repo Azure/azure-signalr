@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,7 +20,7 @@ namespace Microsoft.Azure.SignalR
 
         protected readonly IServiceConnectionFactory ServiceConnectionFactory;
         protected readonly IConnectionFactory ConnectionFactory;
-        protected readonly List<IServiceConnection> FixedServiceConnections;
+        protected readonly ConcurrentDictionary<int?, IServiceConnection> FixedServiceConnections;
         protected readonly int FixedConnectionCount;
 
         private volatile int _defaultConnectionRetry;
@@ -40,15 +41,15 @@ namespace Microsoft.Azure.SignalR
         {
             ServiceConnectionFactory = serviceConnectionFactory;
             ConnectionFactory = connectionFactory;
-            FixedServiceConnections = initialConnections;
+            FixedServiceConnections = new ConcurrentDictionary<int?, IServiceConnection>(initialConnections.Select((connection, i) => new {connection, i}).ToDictionary(x => (int?)x.i, x => x.connection));
             FixedConnectionCount = initialConnections.Count;
             _endpoint = endpoint;
         }
 
         public async Task StartAsync()
         {
-            var task = Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
-            await Task.WhenAny(FixedServiceConnections.Select(s => s.ConnectionInitializedTask));
+            var task = Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c.Value)));
+            await Task.WhenAny(FixedServiceConnections.Select(s => s.Value.ConnectionInitializedTask));
 
             // Set the endpoint connection after one connection is initialized
             if (_endpoint != null)
@@ -102,7 +103,7 @@ namespace Microsoft.Azure.SignalR
             Interlocked.Increment(ref _defaultConnectionRetry);
 
             var connection = CreateServiceConnectionCore();
-            FixedServiceConnections[index] = connection;
+            FixedServiceConnections.AddOrUpdate(index, connection, (_, __) => connection);
 
             _ = StartCoreAsync(connection);
             await connection.ConnectionInitializedTask;
@@ -144,7 +145,7 @@ namespace Microsoft.Azure.SignalR
 
         protected virtual ServiceConnectionStatus GetStatus()
         {
-            return FixedServiceConnections.Any(s => s.Status == ServiceConnectionStatus.Connected)
+            return FixedServiceConnections.Any(s => s.Value.Status == ServiceConnectionStatus.Connected)
                 ? ServiceConnectionStatus.Connected
                 : ServiceConnectionStatus.Disconnected;
         }
@@ -168,7 +169,7 @@ namespace Microsoft.Azure.SignalR
             var direction = initial > 0 ? 1 : count - 1;
             while (retry < maxRetry)
             {
-                var connection = FixedServiceConnections[index];
+                FixedServiceConnections.TryGetValue(index, out var connection);
                 if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
                 {
                     try
@@ -193,13 +194,13 @@ namespace Microsoft.Azure.SignalR
             throw new ServiceConnectionNotActiveException();
         }
 
-        private List<IServiceConnection> CreateFixedServiceConnection(int count)
+        private ConcurrentDictionary<int?, IServiceConnection> CreateFixedServiceConnection(int count)
         {
-            var connections = new List<IServiceConnection>();
+            var connections = new ConcurrentDictionary<int?, IServiceConnection>();
             for (int i = 0; i < count; i++)
             {
                 var connection = CreateServiceConnectionCore();
-                connections.Add(connection);
+                connections.TryAdd(i, connection);
             }
 
             return connections;

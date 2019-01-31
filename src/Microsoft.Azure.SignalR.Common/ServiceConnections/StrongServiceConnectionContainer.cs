@@ -80,9 +80,10 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(connection));
             }
 
-            int index = FixedServiceConnections.IndexOf(connection);
-            if (index != -1)
+            var result = FixedServiceConnections.FirstOrDefault(x => x.Value == connection);
+            if (result.Key.HasValue)
             {
+                int index = result.Key.Value;
                 lock (_lock)
                 {
                     foreach (var serviceConnection in _onDemandServiceConnections)
@@ -91,7 +92,7 @@ namespace Microsoft.Azure.SignalR
                         // then promote it to default connection.
                         if (serviceConnection.Status == ServiceConnectionStatus.Connected)
                         {
-                            FixedServiceConnections[index] = serviceConnection;
+                            FixedServiceConnections.AddOrUpdate(index, serviceConnection, (_, __) => serviceConnection);
                             _onDemandServiceConnections.Remove(serviceConnection);
                             return;
                         }
@@ -105,7 +106,7 @@ namespace Microsoft.Azure.SignalR
 
             lock (_lock)
             {
-                index = _onDemandServiceConnections.IndexOf(connection);
+                int index = _onDemandServiceConnections.IndexOf(connection);
                 if (index != -1)
                 {
                     _onDemandServiceConnections.RemoveAt(index);

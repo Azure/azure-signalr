@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Common.ServiceConnections
@@ -36,13 +37,11 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
                 throw new ArgumentNullException(nameof(serviceConnection));
             }
 
-            int index = FixedServiceConnections.IndexOf(serviceConnection);
-            if (index == -1)
+            var result = FixedServiceConnections.FirstOrDefault(x => x.Value == serviceConnection);
+            if (result.Key.HasValue)
             {
-                return;
+                await RestartServiceConnectionCoreAsync(result.Key.Value);
             }
-
-            await RestartServiceConnectionCoreAsync(index);
         }
     }
 }
