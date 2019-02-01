@@ -240,3 +240,25 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - Payloads - A MessagePack Map containing payloads, with string keys and byte array values. The key is the protocol name of the value.
 
 #### Example: TODO
+
+### UserJoinGroup Message
+`UserJoinGroup` messages have the following structure.
+```
+[16, UserId, GroupName]
+```
+- 16 - Message Type, indicating this is a `UserJoinGroup` message.
+- UserId - A `String` encoding unique Id for the user.
+- GroupName - A `String` encoding group name, which the user will join.
+
+#### Example: TODO
+
+### UserLeaveGroup Message
+`UserLeaveGroup` messages have the following structure.
+```
+[17, UserId, GroupName]
+```
+- 17 - Message Type, indicating this is a `UserLeaveGroup` message.
+- UserId - A `String` encoding unique Id for the user.
+- GroupName - A `String` encoding group name, which the user will leave.
+
+#### Example: TODO
