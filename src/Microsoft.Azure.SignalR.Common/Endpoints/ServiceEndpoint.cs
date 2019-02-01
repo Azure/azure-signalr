@@ -13,7 +13,14 @@ namespace Microsoft.Azure.SignalR
 
         public string Name { get; }
 
-        internal string Endpoint { get; }
+        /// <summary>
+        /// Connection == null means no service connection to this endpoint is yet initialized
+        /// When no connection is yet initialized, we consider the endpoint as Online for now, for compatable with current /negotiate behavior
+        /// TODO: improve /negotiate behavior when the server-connection is being established
+        /// </summary>
+        public bool Online => Connection == null || Connection.Status == ServiceConnectionStatus.Connected;
+
+        public string Endpoint { get; }
 
         internal string Version { get; }
 
@@ -22,13 +29,6 @@ namespace Microsoft.Azure.SignalR
         internal int? Port { get; }
 
         internal IServiceConnectionContainer Connection { get; set; }
-
-        /// <summary>
-        /// Connection == null means no service connection to this endpoint is yet initialized
-        /// When no connection is yet initialized, we consider the endpoint as Online for now, for compatable with current /negotiate behavior
-        /// TODO: improve /negotiate behavior when the server-connection is being established
-        /// </summary>
-        internal bool Online => Connection == null || Connection.Status == ServiceConnectionStatus.Connected;
 
         public ServiceEndpoint(string key, string connectionString) : this(connectionString)
         {
@@ -67,6 +67,26 @@ namespace Microsoft.Azure.SignalR
         {
             // We consider ServiceEndpoint with the same Endpoint (https://{signalr.endpoint}) as the unique identity
             return Endpoint?.GetHashCode() ?? 0;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            if (!(obj is ServiceEndpoint that))
+            {
+                return false;
+            }
+
+            return Endpoint == that.Endpoint;
         }
 
         internal static (string, EndpointType) ParseKey(string key)
