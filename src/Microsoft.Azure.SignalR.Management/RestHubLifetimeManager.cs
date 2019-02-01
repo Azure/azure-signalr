@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            if (String.IsNullOrEmpty(methodName))
+            if (string.IsNullOrEmpty(methodName))
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
@@ -74,12 +74,12 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            if (String.IsNullOrEmpty(methodName))
+            if (string.IsNullOrEmpty(methodName))
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            if (String.IsNullOrEmpty(groupName))
+            if (string.IsNullOrEmpty(groupName))
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
@@ -101,12 +101,12 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            if (String.IsNullOrEmpty(methodName))
+            if (string.IsNullOrEmpty(methodName))
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            if (String.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(userId))
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
             }
@@ -123,12 +123,12 @@ namespace Microsoft.Azure.SignalR.Management
 
         public Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
-            if (String.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(userId))
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
             }
 
-            if (String.IsNullOrEmpty(groupName))
+            if (string.IsNullOrEmpty(groupName))
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
@@ -140,12 +140,12 @@ namespace Microsoft.Azure.SignalR.Management
 
         public Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
-            if (String.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(userId))
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
             }
 
-            if (String.IsNullOrEmpty(groupName))
+            if (string.IsNullOrEmpty(groupName))
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             var httpClient = HttpClientFactory.CreateClient();
             HttpResponseMessage response = null;
-            string detail = "";
+            var detail = "";
 
             try
             {

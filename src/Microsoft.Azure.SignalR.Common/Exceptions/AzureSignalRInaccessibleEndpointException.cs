@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Common
         private const string SuggestAction = "Please make sure the endpoint or DNS setting is correct.";
 
 
-        public AzureSignalRInaccessibleEndpointException(string requestUri, Exception innerException) : base(String.IsNullOrEmpty(requestUri) ? $"{ErrorPhenomenon} {innerException.Message} {SuggestAction}" : $"{ErrorPhenomenon} {innerException.Message} {SuggestAction} Request Uri: {requestUri}", innerException)
+        public AzureSignalRInaccessibleEndpointException(string requestUri, Exception innerException) : base(string.IsNullOrEmpty(requestUri) ? $"{ErrorPhenomenon} {innerException.Message} {SuggestAction}" : $"{ErrorPhenomenon} {innerException.Message} {SuggestAction} Request Uri: {requestUri}", innerException)
         {
         }
 

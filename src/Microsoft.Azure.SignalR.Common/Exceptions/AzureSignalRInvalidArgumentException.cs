@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.Common
     {
         private const string ErrorMessage = "Invalid argument. Caused by one or more of the following reasons:";
 
-        public AzureSignalRInvalidArgumentException(string requestUri, Exception innerException, string detail) : base(String.IsNullOrEmpty(requestUri) ? $"{ErrorMessage} {detail}" : $"{ErrorMessage} {detail} Request Uri: {requestUri}", innerException)
+        public AzureSignalRInvalidArgumentException(string requestUri, Exception innerException, string detail) : base(string.IsNullOrEmpty(requestUri) ? $"{ErrorMessage} {detail}" : $"{ErrorMessage} {detail} Request Uri: {requestUri}", innerException)
         {
         }
 
