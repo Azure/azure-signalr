@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Tests
     internal sealed class TestServiceConnectionContainer : ServiceConnectionContainerBase
     {
         public TestServiceConnectionContainer(List<IServiceConnection> serviceConnections, ServiceEndpoint endpoint = null)
-            : base(null, null, new ConcurrentDictionary<int, IServiceConnection>(serviceConnections.Select((c, i) => new { c, i }).ToDictionary(x => x.i, x => x.c)), endpoint)
+            : base(null, null, serviceConnections, endpoint)
         {
         }
 

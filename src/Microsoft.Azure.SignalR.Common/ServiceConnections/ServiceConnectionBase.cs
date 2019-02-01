@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR
         // App server ping is triggered by incoming requests and send by checking last send timestamp.
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
         private static readonly long DefaultKeepAliveTicks = DefaultKeepAliveInterval.Seconds * Stopwatch.Frequency;
-        
+
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
         private readonly HandshakeRequestMessage _handshakeRequest;
 

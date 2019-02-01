@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR
 
         // For test purpose only
         internal StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory, ConcurrentDictionary<int, IServiceConnection> initialConnections, ServiceEndpoint endpoint) : base(
+            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections, ServiceEndpoint endpoint) : base(
             serviceConnectionFactory, connectionFactory, initialConnections, endpoint)
         {
             _onDemandServiceConnections = new List<IServiceConnection>();
@@ -97,7 +97,8 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
-            if (TryGetConnectionIndex(FixedServiceConnections, connection, out index))
+            index = FixedServiceConnections.IndexOf(connection);
+            if (index != -1)
             {
                 lock (_lock)
                 {
@@ -107,7 +108,7 @@ namespace Microsoft.Azure.SignalR
                         // then promote it to default connection.
                         if (serviceConnection.Status == ServiceConnectionStatus.Connected)
                         {
-                            FixedServiceConnections.AddOrUpdate(index, serviceConnection, (_, __) => serviceConnection);
+                            ReplaceFixedConnections(index, serviceConnection);
                             _onDemandServiceConnections.Remove(serviceConnection);
                             return;
                         }
