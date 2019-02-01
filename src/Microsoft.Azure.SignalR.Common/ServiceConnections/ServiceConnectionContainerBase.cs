@@ -145,7 +145,7 @@ namespace Microsoft.Azure.SignalR
         {
             lock (_lock)
             {
-                var newImmutableConnections = FixedServiceConnections.Select(c => c).ToList();
+                var newImmutableConnections = FixedServiceConnections.ToList();
                 newImmutableConnections[index] = serviceConnection;
                 FixedServiceConnections = newImmutableConnections;
             }

@@ -33,13 +33,8 @@ namespace Microsoft.Azure.SignalR
             _onDemandServiceConnections = new List<IServiceConnection>();
         }
 
-        public override async Task HandlePingAsync(PingMessage pingMessage)
+        public override Task HandlePingAsync(PingMessage pingMessage)
         {
-            if (pingMessage.Messages.Length == 0)
-            {
-                return;
-            }
-
             int index = 0;
             while (index < pingMessage.Messages.Length - 1)
             {
@@ -47,12 +42,13 @@ namespace Microsoft.Azure.SignalR
                     !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
                 {
                     var connection = CreateOnDemandServiceConnection();
-                    await StartCoreAsync(connection, pingMessage.Messages[index + 1]);
-                    return;
+                    return StartCoreAsync(connection, pingMessage.Messages[index + 1]);
                 }
 
                 index += 2;
             }
+
+            return Task.CompletedTask;
         }
 
         protected override ServiceConnectionStatus GetStatus()
