@@ -75,6 +75,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
                 var hubConfig = new HubConfiguration();
+                hubConfig.Resolver = new DefaultDependencyResolver();
                 var scm = new TestServiceConnectionManager();
                 hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
 
