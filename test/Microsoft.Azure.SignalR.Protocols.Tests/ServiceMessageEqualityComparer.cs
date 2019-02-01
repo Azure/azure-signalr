@@ -48,6 +48,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return JoinGroupMessagesEqual(joinGroupMessage, (JoinGroupMessage)y);
                 case LeaveGroupMessage leaveGroupMessage:
                     return LeaveGroupMessagesEqual(leaveGroupMessage, (LeaveGroupMessage)y);
+                case UserJoinGroupMessage userJoinGroupMessage:
+                    return UserJoinGroupMessagesEqual(userJoinGroupMessage, (UserJoinGroupMessage)y);
+                case UserLeaveGroupMessage userLeaveGroupMessage:
+                    return UserLeaveGroupMessagesEqual(userLeaveGroupMessage, (UserLeaveGroupMessage)y);
                 case GroupBroadcastDataMessage groupBroadcastDataMessage:
                     return GroupBroadcastDataMessagesEqual(groupBroadcastDataMessage, (GroupBroadcastDataMessage)y);
                 case MultiGroupBroadcastDataMessage multiGroupBroadcastDataMessage:
@@ -124,6 +128,15 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.GroupName, y.GroupName);
         }
 
+        private bool UserJoinGroupMessagesEqual(UserJoinGroupMessage x, UserJoinGroupMessage y)
+        {
+            return StringEqual(x.UserId, y.UserId) && StringEqual(x.GroupName, y.GroupName);
+        }
+
+        private bool UserLeaveGroupMessagesEqual(UserLeaveGroupMessage x, UserLeaveGroupMessage y)
+        {
+            return StringEqual(x.UserId, y.UserId) && StringEqual(x.GroupName, y.GroupName);
+        }
         private bool GroupBroadcastDataMessagesEqual(GroupBroadcastDataMessage x, GroupBroadcastDataMessage y)
         {
             return StringEqual(x.GroupName, y.GroupName) &&

@@ -56,4 +56,58 @@ namespace Microsoft.Azure.SignalR.Protocol
             GroupName = groupName;
         }
     }
+
+    /// <summary>
+    /// A user-join-group message.
+    /// </summary>
+    public class UserJoinGroupMessage : ServiceMessage
+    {
+        /// <summary>
+        /// Gets or sets the user Id.
+        /// </summary>
+        public string UserId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the group name.
+        /// </summary>
+        public string GroupName { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserJoinGroupMessage"/> class.
+        /// </summary>
+        /// <param name="userId">The user Id.</param>
+        /// <param name="groupName">The group name, to which the user will join.</param>
+        public UserJoinGroupMessage(string userId, string groupName)
+        {
+            UserId = userId;
+            GroupName = groupName;
+        }
+    }
+
+    /// <summary>
+    /// A user-leave-group message.
+    /// </summary>
+    public class UserLeaveGroupMessage : ServiceMessage
+    {
+        /// <summary>
+        /// Gets or sets the user Id.
+        /// </summary>
+        public string UserId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the group name.
+        /// </summary>
+        public string GroupName { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserLeaveGroupMessage"/> class.
+        /// </summary>
+        /// <param name="userId">The user Id.</param>
+        /// <param name="groupName">The group name, from which the user will leave.</param>
+        public UserLeaveGroupMessage(string userId, string groupName)
+        {
+            UserId = userId;
+            GroupName = groupName;
+        }
+    }
 }
