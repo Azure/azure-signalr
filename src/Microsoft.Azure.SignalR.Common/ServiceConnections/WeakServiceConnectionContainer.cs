@@ -1,8 +1,12 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 {
@@ -16,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 
         // For test purpose only
         internal WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory, ConcurrentDictionary<int?, IServiceConnection> initialConnections, ServiceEndpoint endpoint)
+            IConnectionFactory connectionFactory, ConcurrentDictionary<int, IServiceConnection> initialConnections, ServiceEndpoint endpoint)
             : base(serviceConnectionFactory, connectionFactory, initialConnections, endpoint)
         {
         }
@@ -26,23 +30,9 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             return CreateServiceConnectionCore(ServerConnectionType.Weak);
         }
 
-        public override Task HandlePingAsync(string target)
+        public override Task HandlePingAsync(PingMessage pingMessage)
         {
             throw new NotSupportedException();
-        }
-
-        protected override async Task DisposeOrRestartServiceConnectionAsync(IServiceConnection serviceConnection)
-        {
-            if (serviceConnection == null)
-            {
-                throw new ArgumentNullException(nameof(serviceConnection));
-            }
-
-            var result = FixedServiceConnections.FirstOrDefault(x => x.Value == serviceConnection);
-            if (result.Key.HasValue)
-            {
-                await RestartServiceConnectionCoreAsync(result.Key.Value);
-            }
         }
     }
 }

@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +23,7 @@ namespace Microsoft.Azure.SignalR
 
         protected readonly IServiceConnectionFactory ServiceConnectionFactory;
         protected readonly IConnectionFactory ConnectionFactory;
-        protected readonly ConcurrentDictionary<int?, IServiceConnection> FixedServiceConnections;
+        protected readonly ConcurrentDictionary<int, IServiceConnection> FixedServiceConnections;
         protected readonly int FixedConnectionCount;
 
         private volatile int _defaultConnectionRetry;
@@ -37,7 +40,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory, ConcurrentDictionary<int?, IServiceConnection> initialConnections, ServiceEndpoint endpoint)
+            IConnectionFactory connectionFactory, ConcurrentDictionary<int, IServiceConnection> initialConnections, ServiceEndpoint endpoint)
         {
             ServiceConnectionFactory = serviceConnectionFactory;
             ConnectionFactory = connectionFactory;
@@ -72,11 +75,11 @@ namespace Microsoft.Azure.SignalR
             }
             finally
             {
-                await DisposeOrRestartServiceConnectionAsync(connection);
+                await OnConnectionComplete(connection);
             }
         }
 
-        public abstract Task HandlePingAsync(string target);
+        public abstract Task HandlePingAsync(PingMessage pingMessage);
 
         /// <summary>
         /// Create a connection in initialization and reconnection
@@ -86,14 +89,25 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Create a connection for a specific service connection type
         /// </summary>
-        protected virtual IServiceConnection CreateServiceConnectionCore(ServerConnectionType type)
+        protected IServiceConnection CreateServiceConnectionCore(ServerConnectionType type)
         {
             return ServiceConnectionFactory.Create(ConnectionFactory, this, type);
         }
 
-        protected abstract Task DisposeOrRestartServiceConnectionAsync(IServiceConnection connection);
+        protected virtual async Task OnConnectionComplete(IServiceConnection serviceConnection)
+        {
+            if (serviceConnection == null)
+            {
+                throw new ArgumentNullException(nameof(serviceConnection));
+            }
 
-        protected async Task RestartServiceConnectionCoreAsync(int index)
+            if (TryGetConnectionIndex(FixedServiceConnections, serviceConnection, out var index))
+            {
+                await RestartServiceConnectionCoreAsync(index);
+            }
+        }
+
+        private async Task RestartServiceConnectionCoreAsync(int index)
         {
             await Task.Delay(GetRetryDelay(_defaultConnectionRetry));
 
@@ -123,6 +137,22 @@ namespace Microsoft.Azure.SignalR
                 return TimeSpan.FromMinutes(1) + ReconnectInterval;
             }
             return TimeSpan.FromSeconds(1 << retryCount) + ReconnectInterval;
+        }
+
+        internal static bool TryGetConnectionIndex(ConcurrentDictionary<int, IServiceConnection> connections,
+            IServiceConnection connection, out int index)
+        {
+            var result = connections.FirstOrDefault(x => x.Value == connection);
+            if (result.Value == null)
+            {
+                index = 0;
+                return false;
+            }
+            else
+            {
+                index = result.Key;
+                return true;
+            }
         }
 
         public ServiceConnectionStatus Status => GetStatus();
@@ -194,9 +224,9 @@ namespace Microsoft.Azure.SignalR
             throw new ServiceConnectionNotActiveException();
         }
 
-        private ConcurrentDictionary<int?, IServiceConnection> CreateFixedServiceConnection(int count)
+        private ConcurrentDictionary<int, IServiceConnection> CreateFixedServiceConnection(int count)
         {
-            var connections = new ConcurrentDictionary<int?, IServiceConnection>();
+            var connections = new ConcurrentDictionary<int, IServiceConnection>();
             for (int i = 0; i < count; i++)
             {
                 var connection = CreateServiceConnectionCore();

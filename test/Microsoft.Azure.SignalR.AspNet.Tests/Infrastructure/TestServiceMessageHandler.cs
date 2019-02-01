@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
@@ -13,7 +14,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
         }
 
-        public Task HandlePingAsync(string target)
+        public Task HandlePingAsync(PingMessage pingMessage)
         {
             throw new NotImplementedException();
         }

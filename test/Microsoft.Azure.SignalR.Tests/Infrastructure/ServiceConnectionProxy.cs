@@ -42,7 +42,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // We need a placeholder to fulfill the count
             var initialConnections =
-                new ConcurrentDictionary<int?, IServiceConnection>(new List<KeyValuePair<int?, IServiceConnection>>{new KeyValuePair<int?, IServiceConnection>(0, null)});
+                new ConcurrentDictionary<int, IServiceConnection>(new List<KeyValuePair<int, IServiceConnection>>{new KeyValuePair<int, IServiceConnection>(0, null)});
             var connectionContainer = new StrongServiceConnectionContainer(new TestServiceConnectionFactory(() => ServiceConnection), connectionFactory, initialConnections, new ServiceEndpoint("", ""));
             ServiceConnection = new ServiceConnection(
                     SharedServiceProtocol,

@@ -6,11 +6,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
     internal class StrongServiceConnectionContainer : ServiceConnectionContainerBase
     {
+        private const string PingTargetKey = "target";
         private readonly List<IServiceConnection> _onDemandServiceConnections;
 
         // The lock is only used to lock the on-demand part
@@ -25,16 +27,32 @@ namespace Microsoft.Azure.SignalR
 
         // For test purpose only
         internal StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory, ConcurrentDictionary<int?, IServiceConnection> initialConnections, ServiceEndpoint endpoint) : base(
+            IConnectionFactory connectionFactory, ConcurrentDictionary<int, IServiceConnection> initialConnections, ServiceEndpoint endpoint) : base(
             serviceConnectionFactory, connectionFactory, initialConnections, endpoint)
         {
             _onDemandServiceConnections = new List<IServiceConnection>();
         }
 
-        public override async Task HandlePingAsync(string target)
+        public override async Task HandlePingAsync(PingMessage pingMessage)
         {
-            var connection = CreateOnDemandServiceConnection();
-            await StartCoreAsync(connection, target);
+            if (pingMessage.Messages.Length == 0)
+            {
+                return;
+            }
+
+            int index = 0;
+            while (index < pingMessage.Messages.Length - 1)
+            {
+                if (pingMessage.Messages[index] == PingTargetKey &&
+                    !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
+                {
+                    var connection = CreateOnDemandServiceConnection();
+                    await StartCoreAsync(connection, pingMessage.Messages[index + 1]);
+                    return;
+                }
+
+                index += 2;
+            }
         }
 
         protected override ServiceConnectionStatus GetStatus()
@@ -61,17 +79,26 @@ namespace Microsoft.Azure.SignalR
             return CreateServiceConnectionCore(ServerConnectionType.Default);
         }
 
-        protected override async Task DisposeOrRestartServiceConnectionAsync(IServiceConnection connection)
+        protected override async Task OnConnectionComplete(IServiceConnection connection)
         {
             if (connection == null)
             {
                 throw new ArgumentNullException(nameof(connection));
             }
 
-            var result = FixedServiceConnections.FirstOrDefault(x => x.Value == connection);
-            if (result.Key.HasValue)
+            int index;
+            lock (_lock)
             {
-                int index = result.Key.Value;
+                index = _onDemandServiceConnections.IndexOf(connection);
+                if (index != -1)
+                {
+                    _onDemandServiceConnections.RemoveAt(index);
+                    return;
+                }
+            }
+
+            if (TryGetConnectionIndex(FixedServiceConnections, connection, out index))
+            {
                 lock (_lock)
                 {
                     foreach (var serviceConnection in _onDemandServiceConnections)
@@ -88,17 +115,7 @@ namespace Microsoft.Azure.SignalR
                 }
 
                 // Restart a default connection.
-                await RestartServiceConnectionCoreAsync(index);
-                return;
-            }
-
-            lock (_lock)
-            {
-                int index = _onDemandServiceConnections.IndexOf(connection);
-                if (index != -1)
-                {
-                    _onDemandServiceConnections.RemoveAt(index);
-                }
+                await base.OnConnectionComplete(connection);
             }
         }
 
