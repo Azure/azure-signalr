@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceLifetimeManager<THub> : HubLifetimeManager<THub> where THub : Hub
+    internal class ServiceLifetimeManager<THub> : ServiceLifetimeManagerCore<THub> where THub : Hub
     {
         private const string MarkerNotConfiguredError =
             "'AddAzureSignalR(...)' was called without a matching call to 'IApplicationBuilder.UseAzureSignalR(...)'.";
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager, IHubProtocolResolver protocolResolver,
-            ILogger<ServiceLifetimeManager<THub>> logger, AzureSignalRMarkerService marker)
+            ILogger<ServiceLifetimeManager<THub>> logger, AzureSignalRMarkerService marker) : base()
         {
             if (!marker.IsConfigured)
             {
@@ -48,33 +48,6 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        public override Task OnDisconnectedAsync(HubConnectionContext connection)
-        {
-            return Task.CompletedTask;
-        }
-
-        public override Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
-        {
-            if (IsInvalidArgument(methodName))
-            {
-                return Task.CompletedTask;
-            }
-
-            return _serviceConnectionManager.WriteAsync(
-                new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)));
-        }
-
-        public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
-        {
-            if (IsInvalidArgument(methodName))
-            {
-                return Task.CompletedTask;
-            }
-
-            return _serviceConnectionManager.WriteAsync(
-                new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)));
-        }
-
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (IsInvalidArgument(connectionId) || IsInvalidArgument(methodName))
@@ -93,122 +66,6 @@ namespace Microsoft.Azure.SignalR
 
             // Write directly to this connection
             return serviceConnectionContext.HubConnectionContext.WriteAsync(message).AsTask();
-        }
-
-        public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args, CancellationToken cancellationToken = default)
-        {
-            if (IsInvalidArgument(connectionIds) || IsInvalidArgument(methodName))
-            {
-                return Task.CompletedTask;
-            }
-
-            return _serviceConnectionManager.WriteAsync(
-                new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)));
-        }
-
-        public override Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
-        {
-            if (IsInvalidArgument(groupName) || IsInvalidArgument(methodName))
-            {
-                return Task.CompletedTask;
-            }
-
-            var message = new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args));
-            // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionManager.WriteAsync(groupName, message);
-        }
-
-        public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
-        {
-            if (IsInvalidArgument(groupNames))
-            {
-                return Task.CompletedTask;
-            }
-
-            // Send this message from a random service connection because this message involves of multiple groups.
-            // Unless we send message for each group one by one, we can not guarantee the message order for all groups.
-            return _serviceConnectionManager.WriteAsync(
-                new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)));
-        }
-
-        public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
-        {
-            if (IsInvalidArgument(groupName) || IsInvalidArgument(methodName))
-            {
-                return Task.CompletedTask;
-            }
-
-            var message = new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args));
-            // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionManager.WriteAsync(groupName, message);
-        }
-
-        public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
-        {
-            if (IsInvalidArgument(userId) || IsInvalidArgument(methodName))
-            {
-                return Task.CompletedTask;
-            }
-
-            return _serviceConnectionManager.WriteAsync(
-                new UserDataMessage(userId, SerializeAllProtocols(methodName, args)));
-        }
-
-        public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args,
-            CancellationToken cancellationToken = default)
-        {
-            if (IsInvalidArgument(userIds) || IsInvalidArgument(methodName))
-            {
-                return Task.CompletedTask;
-            }
-
-            return _serviceConnectionManager.WriteAsync(
-                new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)));
-        }
-
-        public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
-        {
-            if (IsInvalidArgument(connectionId) || IsInvalidArgument(groupName))
-            {
-                return Task.CompletedTask;
-            }
-
-            var message = new JoinGroupMessage(connectionId, groupName);
-            // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionManager.WriteAsync(groupName, message);
-        }
-
-        public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
-        {
-            if (IsInvalidArgument(connectionId) || IsInvalidArgument(groupName))
-            {
-                return Task.CompletedTask;
-            }
-
-            var message = new LeaveGroupMessage(connectionId, groupName);
-            // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionManager.WriteAsync(groupName, message);
-        }
-
-        private static bool IsInvalidArgument(string value)
-        {
-            return string.IsNullOrEmpty(value);
-        }
-
-        private static bool IsInvalidArgument(IReadOnlyList<object> list)
-        {
-            return list == null || list.Count == 0;
-        }
-
-        private IDictionary<string, ReadOnlyMemory<byte>> SerializeAllProtocols(string method, object[] args)
-        {
-            var payloads = new Dictionary<string, ReadOnlyMemory<byte>>();
-            var message = new InvocationMessage(method, args);
-            foreach (var hubProtocol in _allProtocols)
-            {
-                payloads.Add(hubProtocol.Name, hubProtocol.GetMessageBytes(message));
-            }
-            return payloads;
         }
     }
 }
