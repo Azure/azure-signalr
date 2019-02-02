@@ -31,5 +31,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public override IDuplexPipe Transport { get; set; }
 
         public IDuplexPipe Application { get; set; }
+
+        public volatile string Target;
     }
 }

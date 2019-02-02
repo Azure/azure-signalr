@@ -7,9 +7,9 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     internal sealed class TestServiceConnectionFactory : IServiceConnectionFactory
     {
-        private readonly Func<IServiceConnection> _factoryFunc;
+        private readonly Func<ServerConnectionType, IServiceConnection> _factoryFunc;
 
-        public TestServiceConnectionFactory(Func<IServiceConnection> factoryFunc)
+        public TestServiceConnectionFactory(Func<ServerConnectionType, IServiceConnection> factoryFunc)
         {
             _factoryFunc = factoryFunc;
         }
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public IServiceConnection Create(IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler,
             ServerConnectionType type)
         {
-            return _factoryFunc();
+            return _factoryFunc(type);
         }
     }
 }

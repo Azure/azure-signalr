@@ -384,6 +384,75 @@ namespace Microsoft.Azure.SignalR.Tests
             await connectionTask.OrTimeout();
         }
 
+        /// <summary>
+        /// Service connection should handle specific ping message and create a on-demand connection.
+        /// On-demand connection won't reconnect after disconnection.
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task CreateOnDemandConnectionAfterPing()
+        {
+            var proxy = new ServiceConnectionProxy();
+
+            var serverTask1 = proxy.WaitForServerConnectionAsync(1);
+            _ = proxy.StartAsync();
+            await serverTask1.OrTimeout();
+
+            // Try to send a ping message to ask for a on-demand connection
+            var serverTask2 = proxy.WaitForServerConnectionAsync(2);
+
+            string target = "Target";
+            await proxy.WriteMessageAsync(new PingMessage()
+            {
+                Messages = new[] {"target", target}
+            });
+
+            var onDemandConnection = await serverTask2.OrTimeout();
+            Assert.Equal(target, ((TestConnection)onDemandConnection).Target);
+
+            // Dispose the on-demand connection. Assert it won't reconnection
+            var serverTask3 = proxy.WaitForServerConnectionAsync(3);
+            Assert.False(Task.WaitAll(new Task[] { serverTask3 }, TimeSpan.FromSeconds(1)));
+
+            onDemandConnection.Transport.Input.CancelPendingRead();
+            Assert.False(Task.WaitAll(new Task[] { serverTask3 }, TimeSpan.FromSeconds(1)));
+        }
+
+        /// <summary>
+        /// If there's on-demand connection, default connection won't restart but promote a on-demand
+        /// connection to default.
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task PromoteOnDemandConnection()
+        {
+            var proxy = new ServiceConnectionProxy();
+
+            var serverTask1 = proxy.WaitForServerConnectionAsync(1);
+            _ = proxy.StartAsync();
+            var defaultConnection = await serverTask1.OrTimeout();
+
+            // Try to send a ping message to ask for a on-demand connection
+            var serverTask2 = proxy.WaitForServerConnectionAsync(2);
+
+            string target = "Target";
+            await proxy.WriteMessageAsync(new PingMessage()
+            {
+                Messages = new[] { "target", target }
+            });
+
+            var onDemandConnection = await serverTask2.OrTimeout();
+            Assert.Equal(target, ((TestConnection)onDemandConnection).Target);
+
+            // Try to dispose default connection
+            var serverTask3 = proxy.WaitForServerConnectionAsync(3);
+            Assert.False(Task.WaitAll(new Task[] { serverTask3 }, TimeSpan.FromSeconds(1)));
+
+            defaultConnection.Transport.Input.CancelPendingRead();
+            Assert.False(Task.WaitAll(new Task[] { serverTask3 }, TimeSpan.FromSeconds(1)));
+
+        }
+
         private static async Task<T> ReadServiceMessageAsync<T>(PipeReader input, int timeout = 5000)
             where T : ServiceMessage
         {

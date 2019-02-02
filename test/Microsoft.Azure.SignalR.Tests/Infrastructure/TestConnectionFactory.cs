@@ -19,8 +19,6 @@ namespace Microsoft.Azure.SignalR.Tests
         private readonly ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>> _waitForConnection =
             new ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>>();
 
-        public virtual TestConnection CurrentConnectionContext { get; private set; }
-
         public List<DateTime> Times { get; } = new List<DateTime>();
 
         public TestConnectionFactory(Func<TestConnection, Task> connectCallback = null)
@@ -32,9 +30,9 @@ namespace Microsoft.Azure.SignalR.Tests
             CancellationToken cancellationToken = default)
         {
             Times.Add(DateTime.Now);
-            CurrentConnectionContext = null;
 
             var connection = new TestConnection();
+            connection.Target = target;
             // Start a task to process handshake request from the newly-created server connection.
             _ = HandshakeAsync(connection);
 
@@ -43,7 +41,6 @@ namespace Microsoft.Azure.SignalR.Tests
                 await _connectCallback(connection);
             }
 
-            CurrentConnectionContext = connection;
             return connection;
         }
 

@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR
 
         protected IServiceProtocol ServiceProtocol { get; }
 
-        protected ConnectionContext ConnectionContext { get; set; }
+        internal ConnectionContext ConnectionContext { get; set; }
 
         protected string ErrorMessage { get; private set; }
 
