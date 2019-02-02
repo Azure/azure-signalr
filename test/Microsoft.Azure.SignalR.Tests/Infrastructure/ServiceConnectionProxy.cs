@@ -34,14 +34,14 @@ namespace Microsoft.Azure.SignalR.Tests
         private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
 
         public ServiceConnectionProxy(ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null,
-            TestConnectionFactory connectionFactory = null, IServiceConnectionManager serviceConnectionManager = null)
+            TestConnectionFactory connectionFactory = null, IServiceMessageHandler serviceMessageHandler = null)
         {
             ConnectionFactory = connectionFactory ?? new TestConnectionFactory();
             ClientConnectionManager = new ClientConnectionManager();
             _clientPipeOptions = clientPipeOptions;
 
-            // We need a placeholder to fullfill the count
-            var initialConnections = new List<IServiceConnection>{ null };
+            // We need a placeholder to fulfill the count
+            var initialConnections = new List<IServiceConnection>(){ null };
             var connectionContainer = new StrongServiceConnectionContainer(new TestServiceConnectionFactory(() => ServiceConnection), connectionFactory, initialConnections, new ServiceEndpoint("", ""));
             ServiceConnection = new ServiceConnection(
                     SharedServiceProtocol,
@@ -51,14 +51,14 @@ namespace Microsoft.Azure.SignalR.Tests
                     callback ?? OnConnectionAsync,
                     this,
                     Guid.NewGuid().ToString("N"),
-                    serviceConnectionManager ?? connectionContainer);
+                    serviceMessageHandler ?? connectionContainer);
             ServiceConnectionContainer = connectionContainer;
             initialConnections[0] = ServiceConnection;
         }
 
         public Task StartAsync()
         {
-            return ServiceConnection.StartAsync();
+            return ServiceConnectionContainer.StartAsync();
         }
 
         public bool IsConnected => ServiceConnection.IsConnected;

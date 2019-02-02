@@ -2,13 +2,17 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
     internal class StrongServiceConnectionContainer : ServiceConnectionContainerBase
     {
+        private const string PingTargetKey = "target";
         private readonly List<IServiceConnection> _onDemandServiceConnections;
 
         // The lock is only used to lock the on-demand part
@@ -27,6 +31,24 @@ namespace Microsoft.Azure.SignalR
             serviceConnectionFactory, connectionFactory, initialConnections, endpoint)
         {
             _onDemandServiceConnections = new List<IServiceConnection>();
+        }
+
+        public override Task HandlePingAsync(PingMessage pingMessage)
+        {
+            int index = 0;
+            while (index < pingMessage.Messages.Length - 1)
+            {
+                if (pingMessage.Messages[index] == PingTargetKey &&
+                    !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
+                {
+                    var connection = CreateOnDemandServiceConnection();
+                    return StartCoreAsync(connection, pingMessage.Messages[index + 1]);
+                }
+
+                index += 2;
+            }
+
+            return Task.CompletedTask;
         }
 
         protected override ServiceConnectionStatus GetStatus()
@@ -53,7 +75,48 @@ namespace Microsoft.Azure.SignalR
             return CreateServiceConnectionCore(ServerConnectionType.Default);
         }
 
-        public override IServiceConnection CreateServiceConnection()
+        protected override async Task OnConnectionComplete(IServiceConnection connection)
+        {
+            if (connection == null)
+            {
+                throw new ArgumentNullException(nameof(connection));
+            }
+
+            int index;
+            lock (_lock)
+            {
+                index = _onDemandServiceConnections.IndexOf(connection);
+                if (index != -1)
+                {
+                    _onDemandServiceConnections.RemoveAt(index);
+                    return;
+                }
+            }
+
+            index = FixedServiceConnections.IndexOf(connection);
+            if (index != -1)
+            {
+                lock (_lock)
+                {
+                    foreach (var serviceConnection in _onDemandServiceConnections)
+                    {
+                        // We have a connected on-demand connection,
+                        // then promote it to default connection.
+                        if (serviceConnection.Status == ServiceConnectionStatus.Connected)
+                        {
+                            ReplaceFixedConnections(index, serviceConnection);
+                            _onDemandServiceConnections.Remove(serviceConnection);
+                            return;
+                        }
+                    }
+                }
+
+                // Restart a default connection.
+                await base.OnConnectionComplete(connection);
+            }
+        }
+
+        private IServiceConnection CreateOnDemandServiceConnection()
         {
             IServiceConnection newConnection;
 
@@ -64,43 +127,6 @@ namespace Microsoft.Azure.SignalR
             }
 
             return newConnection;
-        }
-
-        public override void DisposeServiceConnection(IServiceConnection connection)
-        {
-            if (connection == null)
-            {
-                throw new ArgumentNullException(nameof(connection));
-            }
-
-            int index = FixedServiceConnections.IndexOf(connection);
-            if (index != -1)
-            {
-                lock (_lock)
-                {
-                    foreach (var serviceConnection in _onDemandServiceConnections)
-                    {
-                        if (serviceConnection.Status == ServiceConnectionStatus.Connected)
-                        {
-                            FixedServiceConnections[index] = serviceConnection;
-                            _onDemandServiceConnections.Remove(serviceConnection);
-                            return;
-                        }
-                    }
-                }
-
-                _ = RestartServiceConnectionCoreAsync(index);
-                return;
-            }
-
-            lock (_lock)
-            {
-                index = _onDemandServiceConnections.IndexOf(connection);
-                if (index != -1)
-                {
-                    _onDemandServiceConnections.RemoveAt(index);
-                }
-            }
         }
     }
 }

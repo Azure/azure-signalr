@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +13,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceConnectionManager
+    abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler
     {
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
         private static TimeSpan ReconnectInterval =>
@@ -19,10 +23,11 @@ namespace Microsoft.Azure.SignalR
 
         protected readonly IServiceConnectionFactory ServiceConnectionFactory;
         protected readonly IConnectionFactory ConnectionFactory;
-        protected readonly List<IServiceConnection> FixedServiceConnections;
+        protected volatile List<IServiceConnection> FixedServiceConnections;
         protected readonly int FixedConnectionCount;
 
         private volatile int _defaultConnectionRetry;
+        private object _lock = new object();
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory,
@@ -47,7 +52,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task StartAsync()
         {
-            var task = Task.WhenAll(FixedServiceConnections.Select(c => c.StartAsync()));
+            var task = Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
             await Task.WhenAny(FixedServiceConnections.Select(s => s.ConnectionInitializedTask));
 
             // Set the endpoint connection after one connection is initialized
@@ -60,39 +65,51 @@ namespace Microsoft.Azure.SignalR
         }
 
         /// <summary>
-        /// Get a connection in initialization and reconnection
+        /// Start and manage the whole connection lifetime
+        /// </summary>
+        /// <returns></returns>
+        protected async Task StartCoreAsync(IServiceConnection connection, string target = null)
+        {
+            try
+            {
+                await connection.StartAsync(target);
+            }
+            finally
+            {
+                await OnConnectionComplete(connection);
+            }
+        }
+
+        public abstract Task HandlePingAsync(PingMessage pingMessage);
+
+        /// <summary>
+        /// Create a connection in initialization and reconnection
         /// </summary>
         protected abstract IServiceConnection CreateServiceConnectionCore();
 
         /// <summary>
-        /// Get a connection for a specific service connection type
+        /// Create a connection for a specific service connection type
         /// </summary>
-        protected virtual IServiceConnection CreateServiceConnectionCore(ServerConnectionType type)
+        protected IServiceConnection CreateServiceConnectionCore(ServerConnectionType type)
         {
             return ServiceConnectionFactory.Create(ConnectionFactory, this, type);
         }
 
-        public abstract IServiceConnection CreateServiceConnection();
-
-        public abstract void DisposeServiceConnection(IServiceConnection connection);
-
-        protected virtual async Task RestartServiceConnectionAsync(IServiceConnection serviceConnection)
+        protected virtual async Task OnConnectionComplete(IServiceConnection serviceConnection)
         {
             if (serviceConnection == null)
             {
                 throw new ArgumentNullException(nameof(serviceConnection));
             }
 
-            int index = FixedServiceConnections.IndexOf(serviceConnection);
-            if (index == -1)
+            var index = FixedServiceConnections.IndexOf(serviceConnection);
+            if (index != -1)
             {
-                return;
+                await RestartServiceConnectionCoreAsync(index);
             }
-
-            await RestartServiceConnectionCoreAsync(index);
         }
 
-        protected async Task RestartServiceConnectionCoreAsync(int index)
+        private async Task RestartServiceConnectionCoreAsync(int index)
         {
             await Task.Delay(GetRetryDelay(_defaultConnectionRetry));
 
@@ -102,9 +119,9 @@ namespace Microsoft.Azure.SignalR
             Interlocked.Increment(ref _defaultConnectionRetry);
 
             var connection = CreateServiceConnectionCore();
-            FixedServiceConnections[index] = connection;
+            ReplaceFixedConnections(index, connection);
 
-            _ = connection.StartAsync();
+            _ = StartCoreAsync(connection);
             await connection.ConnectionInitializedTask;
 
             if (connection.Status == ServiceConnectionStatus.Connected)
@@ -122,6 +139,16 @@ namespace Microsoft.Azure.SignalR
                 return TimeSpan.FromMinutes(1) + ReconnectInterval;
             }
             return TimeSpan.FromSeconds(1 << retryCount) + ReconnectInterval;
+        }
+
+        protected void ReplaceFixedConnections(int index, IServiceConnection serviceConnection)
+        {
+            lock (_lock)
+            {
+                var newImmutableConnections = FixedServiceConnections.ToList();
+                newImmutableConnections[index] = serviceConnection;
+                FixedServiceConnections = newImmutableConnections;
+            }
         }
 
         public ServiceConnectionStatus Status => GetStatus();

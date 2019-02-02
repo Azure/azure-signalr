@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
-using Microsoft.Azure.SignalR;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
@@ -24,9 +23,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             _logger = logger;
         }
 
-        public IServiceConnection Create(IConnectionFactory connectionFactory, SignalR.IServiceConnectionManager manager, ServerConnectionType type)
+        public IServiceConnection Create(IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
         {
-            return new ServiceConnection(Guid.NewGuid().ToString(), _serviceProtocol, connectionFactory, _clientConnectionManager, _logger, manager, type);
+            return new ServiceConnection(Guid.NewGuid().ToString(), _serviceProtocol, connectionFactory, _clientConnectionManager, _logger, serviceMessageHandler, type);
         }
     }
 }

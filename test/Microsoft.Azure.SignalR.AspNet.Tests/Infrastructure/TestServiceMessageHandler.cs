@@ -4,22 +4,19 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
-    internal sealed class TestServiceConnectionManager : SignalR.IServiceConnectionManager
+    internal sealed class TestServiceMessageHandler : IServiceMessageHandler
     {
-        public TestServiceConnectionManager()
+        public TestServiceMessageHandler()
         {
         }
 
-        public IServiceConnection CreateServiceConnection()
+        public Task HandlePingAsync(PingMessage pingMessage)
         {
             throw new NotImplementedException();
-        }
-
-        public void DisposeServiceConnection(IServiceConnection connection)
-        {
         }
     }
 }
