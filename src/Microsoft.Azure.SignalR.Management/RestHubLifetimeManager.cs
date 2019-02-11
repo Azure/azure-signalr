@@ -123,15 +123,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
-            }
-
-            if (string.IsNullOrEmpty(groupName))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
-            }
+            ValidateUserIdAndGroupName(userId, groupName);
 
             var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
             var request = BuildRequest(api, HttpMethod.Put, null, null, cancellationToken);
@@ -140,15 +132,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
-            }
-
-            if (string.IsNullOrEmpty(groupName))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
-            }
+            ValidateUserIdAndGroupName(userId, groupName);
 
             var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
             var request = BuildRequest(api, HttpMethod.Delete, null, null, cancellationToken);
@@ -216,6 +200,20 @@ namespace Microsoft.Azure.SignalR.Management
             catch (HttpRequestException ex)
             {
                 ThrowExceptionOnResponseFailure(ex, response.StatusCode, request.RequestUri.ToString(), detail);
+            }
+        }
+
+
+        private static void ValidateUserIdAndGroupName(string userId, string groupName)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
+            }
+
+            if (string.IsNullOrEmpty(groupName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
         }
     }
