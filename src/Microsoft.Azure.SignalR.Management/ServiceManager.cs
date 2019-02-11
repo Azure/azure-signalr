@@ -6,12 +6,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Internal;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -20,6 +24,7 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private readonly ServiceManagerOptions _serviceManagerOptions;
         private readonly ServiceEndpointProvider _endpoint;
+        private const int ServerConnectionCount = 1;
 
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions)
         {
@@ -38,26 +43,47 @@ namespace Microsoft.Azure.SignalR.Management
                         var serverOptions = new ServiceOptions
                         {
                             ConnectionString = _serviceManagerOptions.ConnectionString,
-                            ConnectionCount = 1,
+                            ConnectionCount = ServerConnectionCount,
                             Endpoints = new ServiceEndpoint[] { endpoint }
                         };
                         var options = Options.Create(serverOptions);
                         var endpointManager = new ServiceEndpointManager(options, loggerFactory);
                         var provider = endpointManager.GetEndpointProvider(endpoint);
                         var connectionFactory = new ConnectionFactory(hubName, provider, loggerFactory);
-                        var serviceConnectionFactory = new ServiceConnectionFactory(_serviceProtocol, _clientConnectionManager, loggerFactory, connectionDelegate, _clientConnectionFactory);
-                        var weakConnectionContainer = new WeakServiceConnectionContainer();
+                        var serviceProtocol = new ServiceProtocol();
+                        var clientConnectionManager = new ClientConnectionManager();
+                        var clientConnectionFactory = new ClientConnectionFactory();
+                        ConnectionDelegate connectionDelegate = connectionContext => Task.CompletedTask;
+                        var serviceConnectionFactory = new ServiceConnectionFactory(serviceProtocol, clientConnectionManager, loggerFactory, connectionDelegate, clientConnectionFactory);
+                        var weakConnectionContainer = new WeakServiceConnectionContainer(serviceConnectionFactory, connectionFactory, ServerConnectionCount, endpoint);
 
-                        var serviceConnection = new ServiceCollection();
-                        serviceConnection
+                        var HubProtocolResolver =
+                             new DefaultHubProtocolResolver(new IHubProtocol[]
+                                {
+                                    new JsonHubProtocol(),
+                                    new MessagePackHubProtocol()
+                                },
+                                NullLogger<DefaultHubProtocolResolver>.Instance);
+
+                        var serviceCollection = new ServiceCollection()
+                            .AddSingleton(typeof(ILogger<DefaultHubProtocolResolver>), NullLogger<DefaultHubProtocolResolver>.Instance)
+                            .AddSingleton(typeof(IHubProtocolResolver), typeof(DefaultHubProtocolResolver))
                             .AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManagerCore<>))
                             .AddSingleton(typeof(IServiceEndpointManager), typeof(ServiceEndpointManager))
                             .AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol))
                             .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
-                            .AddSingleton<IHostedService, HeartBeat>() // ???
+                            .AddSingleton<IHostedService, HeartBeat>()
                             .AddSingleton<NegotiateHandler>()
                             .AddSingleton(typeof(IServiceConnectionContainer), weakConnectionContainer);
+                        var services = serviceCollection.BuildServiceProvider();
 
+                        var serviceConnectionManager = services.GetRequiredService<IServiceConnectionManager<Hub>>();
+                        var protocolResolver = services.GetRequiredService<IHubProtocolResolver>();
+                        var websocketsHubLifetimeManager = new WebsocketsHubLifetimeManager(serviceConnectionManager, protocolResolver);
+
+                        var hubContext = services.GetRequiredService<IHubContext<Hub>>();
+                        var serviceHubContext = new ServiceHubContext(hubContext, websocketsHubLifetimeManager);
+                        return Task.FromResult<IServiceHubContext>(serviceHubContext);
                     }
                 case ServiceTransportType.Transient:
                     {
