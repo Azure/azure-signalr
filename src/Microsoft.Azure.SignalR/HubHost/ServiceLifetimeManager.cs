@@ -25,7 +25,8 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager, IHubProtocolResolver protocolResolver,
-            ILogger<ServiceLifetimeManager<THub>> logger, AzureSignalRMarkerService marker) : base()
+            ILogger<ServiceLifetimeManager<THub>> logger, AzureSignalRMarkerService marker)
+            : base(serviceConnectionManager, protocolResolver)
         {
             if (!marker.IsConfigured)
             {

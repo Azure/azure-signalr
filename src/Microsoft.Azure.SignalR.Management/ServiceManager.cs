@@ -7,7 +7,11 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
+using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -29,7 +33,31 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 case ServiceTransportType.Persistent:
                     {
-                        throw new NotImplementedException();
+                        var loggerFactory = new LoggerFactory();
+                        var endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString);
+                        var serverOptions = new ServiceOptions
+                        {
+                            ConnectionString = _serviceManagerOptions.ConnectionString,
+                            ConnectionCount = 1,
+                            Endpoints = new ServiceEndpoint[] { endpoint }
+                        };
+                        var options = Options.Create(serverOptions);
+                        var endpointManager = new ServiceEndpointManager(options, loggerFactory);
+                        var provider = endpointManager.GetEndpointProvider(endpoint);
+                        var connectionFactory = new ConnectionFactory(hubName, provider, loggerFactory);
+                        var serviceConnectionFactory = new ServiceConnectionFactory(_serviceProtocol, _clientConnectionManager, loggerFactory, connectionDelegate, _clientConnectionFactory);
+                        var weakConnectionContainer = new WeakServiceConnectionContainer();
+
+                        var serviceConnection = new ServiceCollection();
+                        serviceConnection
+                            .AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManagerCore<>))
+                            .AddSingleton(typeof(IServiceEndpointManager), typeof(ServiceEndpointManager))
+                            .AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol))
+                            .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
+                            .AddSingleton<IHostedService, HeartBeat>() // ???
+                            .AddSingleton<NegotiateHandler>()
+                            .AddSingleton(typeof(IServiceConnectionContainer), weakConnectionContainer);
+
                     }
                 case ServiceTransportType.Transient:
                     {

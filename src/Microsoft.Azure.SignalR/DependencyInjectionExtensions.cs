@@ -4,6 +4,7 @@
 using System;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;

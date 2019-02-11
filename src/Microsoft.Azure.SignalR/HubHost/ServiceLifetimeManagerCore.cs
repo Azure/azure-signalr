@@ -16,13 +16,11 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly IReadOnlyList<IHubProtocol> _allProtocols;
 
-        private readonly IServiceConnectionContainer _serviceConnectionContainer;
+        private readonly IServiceConnectionManager<THub> _serviceConnectionContainer;
 
-        public ServiceLifetimeManagerCore(IServiceConnectionContainer serviceConnectionContainer,
-            IClientConnectionManager clientConnectionManager, IHubProtocolResolver protocolResolver,
-            AzureSignalRMarkerService marker)
+        public ServiceLifetimeManagerCore(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver)
         {
-            _serviceConnectionContainer = serviceConnectionContainer;
+            _serviceConnectionContainer = serviceConnectionManager;
             _allProtocols = protocolResolver.AllProtocols;
         }
 
@@ -65,17 +63,8 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            if (!_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var serviceConnectionContext))
-            {
-                // Connection isn't on this server so serialize to all protocols and send it to the service
-                return _serviceConnectionContainer.WriteAsync(
-                    new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)));
-            }
-
-            var message = new InvocationMessage(methodName, args);
-
-            // Write directly to this connection
-            return serviceConnectionContext.HubConnectionContext.WriteAsync(message).AsTask();
+            return _serviceConnectionContainer.WriteAsync(
+                new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args, CancellationToken cancellationToken = default)
