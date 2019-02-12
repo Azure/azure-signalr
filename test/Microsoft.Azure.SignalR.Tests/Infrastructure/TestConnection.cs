@@ -12,19 +12,6 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class TestConnection : ConnectionContext
     {
-        public TestConnection()
-        {
-            Features = new FeatureCollection();
-            Items = new ConcurrentDictionary<object, object>();
-
-            var pipeOptions = new PipeOptions();
-            var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
-            Transport = pair.Transport;
-            Application = pair.Application;
-            tcs = new TaskCompletionSource<bool>();
-            ConnectionInitialized = tcs.Task;
-        }
-
         public override string ConnectionId { get; set; }
 
         public override IFeatureCollection Features { get; }
@@ -35,15 +22,28 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public IDuplexPipe Application { get; set; }
 
-        public void SetConnectionInitialized()
+        public string Target { get; set; }
+
+        public Task ConnectionInitialized { get; }
+
+        private readonly TaskCompletionSource<bool> _tcs;
+
+        public TestConnection()
         {
-            tcs.SetResult(true);
+            Features = new FeatureCollection();
+            Items = new ConcurrentDictionary<object, object>();
+
+            var pipeOptions = new PipeOptions();
+            var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+            Transport = pair.Transport;
+            Application = pair.Application;
+            _tcs = new TaskCompletionSource<bool>();
+            ConnectionInitialized = _tcs.Task;
         }
 
-        public volatile string Target;
-
-        public Task ConnectionInitialized;
-
-        private readonly TaskCompletionSource<bool> tcs;
+        public void SetConnectionInitialized()
+        {
+            _tcs.SetResult(true);
+        }
     }
 }
