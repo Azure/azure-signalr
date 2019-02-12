@@ -270,8 +270,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task ReconnectWhenHavingIntermittentConnectivityFailure()
         {
-            //var connectionFactory = new TestConnectionFactory(new IntermittentConnectivityFailure().ConnectCallback);
-            var proxy = new ServiceConnectionProxy(connectionFactoryCallback: new IntermittentConnectivityFailure().ConnectCallback);
+            var proxy = new ServiceConnectionProxy(connectionFactoryType: typeof(TestConnectionFactoryWithConnectivityFailure));
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
@@ -284,7 +283,6 @@ namespace Microsoft.Azure.SignalR.Tests
             await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, null));
             await connectionTask.OrTimeout();
 
-            //Assert.True(proxy.IsConnected);
             var list = proxy.ConnectionFactory.Times;
             Assert.True(TimeSpan.FromSeconds(0.9) < list[1] - list[0]);
             Assert.True(TimeSpan.FromSeconds(2.1) > list[1] - list[0]);
@@ -300,7 +298,6 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task ReconnectAfterReceivingHandshakeErrorMessage()
         {
-            //var connectionFactory = new TestConnectionFactoryWithHandshakeError();
             var proxy = new ServiceConnectionProxy(connectionFactoryType: typeof(TestConnectionFactoryWithHandshakeError));
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
@@ -316,7 +313,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.False(Task.WaitAll(new Task[] { connectionTask }, TimeSpan.FromSeconds(1)));
 
             await Task.Delay(10 * 1000);
-            Assert.False(proxy.IsConnected);
+
             var list = proxy.ConnectionFactory.Times;
             Assert.True(TimeSpan.FromSeconds(0.9) < list[1] - list[0]);
             Assert.True(TimeSpan.FromSeconds(2.1) > list[1] - list[0]);
@@ -332,8 +329,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task ReconnectWhenHandshakeThrowException()
         {
-            //var connectionFactory = new TestConnectionFactory(new IntermittentInvalidHandshakeResponseMessage().ConnectCallback);
-            var proxy = new ServiceConnectionProxy(connectionFactoryCallback: new IntermittentInvalidHandshakeResponseMessage().ConnectCallback);
+            var proxy = new ServiceConnectionProxy(connectionFactoryType: typeof(TestConnectionFactoryWithIntermittentInvalidHandshakeResponseMessage));
 
             // Throw exception for 3 times and will be success in the 4th retry
             var serverTask = proxy.WaitForServerConnectionAsync(4);
@@ -452,36 +448,12 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.False(Task.WaitAll(new Task[] { serverTask3 }, TimeSpan.FromSeconds(1)));
 
             defaultConnection.Transport.Input.CancelPendingRead();
+            // There won't be another connection to be created
             Assert.False(Task.WaitAll(new Task[] { serverTask3 }, TimeSpan.FromSeconds(1)));
 
-        }
-
-        private static async Task<T> ReadServiceMessageAsync<T>(PipeReader input, int timeout = 5000)
-            where T : ServiceMessage
-        {
-            var data = await input.ReadSingleAsync().OrTimeout(timeout);
-            var buffer = new ReadOnlySequence<byte>(data);
-            Assert.True(Protocol.TryParseMessage(ref buffer, out var message));
-            return Assert.IsType<T>(message);
-        }
-
-        private class IntermittentConnectivityFailure
-        {
-            private const int MaxErrorCount = 3;
-
-            private int _connectCount;
-
-            public Task ConnectCallback(TestConnection connection)
-            {
-                // Throw exception to test reconnect
-                if (_connectCount < MaxErrorCount)
-                {
-                    _connectCount++;
-                    throw new Exception("Connect error.");
-                }
-
-                return Task.CompletedTask;
-            }
+            // on-demand connection has been promoted. Try to dispose and another connection will be created
+            onDemandConnection.Transport.Input.CancelPendingRead();
+            await serverTask3.OrTimeout();
         }
 
         private class TestConnectionFactoryWithHandshakeError : TestConnectionFactory
@@ -498,13 +470,40 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private class IntermittentInvalidHandshakeResponseMessage
+        private class TestConnectionFactoryWithConnectivityFailure : TestConnectionFactory
         {
             private const int MaxErrorCount = 3;
 
             private int _connectCount;
 
-            public async Task ConnectCallback(TestConnection connection)
+            public TestConnectionFactoryWithConnectivityFailure(Func<TestConnection, Task> callback) : base(callback)
+            {
+            }
+
+            protected override Task AfterConnectedAsync(TestConnection connection)
+            {
+                // Throw exception to test reconnect
+                if (_connectCount < MaxErrorCount)
+                {
+                    _connectCount++;
+                    throw new Exception("Connect error.");
+                }
+
+                return Task.CompletedTask;
+            }
+        }
+
+        private class TestConnectionFactoryWithIntermittentInvalidHandshakeResponseMessage : TestConnectionFactory
+        {
+            private const int MaxErrorCount = 3;
+
+            private int _connectCount;
+
+            public TestConnectionFactoryWithIntermittentInvalidHandshakeResponseMessage(Func<TestConnection, Task> callback) : base(callback)
+            {
+            }
+
+            protected override async Task AfterConnectedAsync(TestConnection connection)
             {
                 // Throw exception to test reconnect
                 if (_connectCount < MaxErrorCount)

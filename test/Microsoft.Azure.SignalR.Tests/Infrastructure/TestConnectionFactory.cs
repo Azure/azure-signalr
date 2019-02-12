@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public List<DateTime> Times { get; } = new List<DateTime>();
 
-        public TestConnectionFactory(Func<TestConnection, Task> connectCallback = null)
+        public TestConnectionFactory(Func<TestConnection, Task> connectCallback)
         {
             _connectCallback = connectCallback;
         }
@@ -37,10 +37,10 @@ namespace Microsoft.Azure.SignalR.Tests
             // Start a task to process handshake request from the newly-created server connection.
             _ = HandshakeAsync(connection);
 
-            if (_connectCallback != null)
-            {
-                await _connectCallback(connection);
-            }
+            // Do something for test purpose
+            await AfterConnectedAsync(connection);
+
+            await _connectCallback(connection);
 
             return connection;
         }
@@ -64,6 +64,14 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             await HandshakeUtils.ReceiveHandshakeRequestAsync(connection.Application.Input);
             await HandshakeUtils.SendHandshakeResponseAsync(connection.Application.Output);
+        }
+
+        /// <summary>
+        /// Allow sub-class to override. Do something after connect being created.
+        /// </summary>
+        protected virtual Task AfterConnectedAsync(TestConnection connection)
+        {
+            return Task.CompletedTask;
         }
 
         public Task<ConnectionContext> WaitForConnectionAsync(int connectionCount)
