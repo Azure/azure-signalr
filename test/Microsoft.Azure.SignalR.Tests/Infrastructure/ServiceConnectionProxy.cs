@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
@@ -22,18 +23,18 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public IClientConnectionManager ClientConnectionManager { get; }
 
-        public ConcurrentDictionary<ServiceConnection, ConnectionContext> ConnectionContexts { get; } =
-            new ConcurrentDictionary<ServiceConnection, ConnectionContext>();
+        public ConcurrentDictionary<string, TestConnection> ConnectionContexts { get; } =
+            new ConcurrentDictionary<string, TestConnection>();
 
         public IServiceConnectionContainer ServiceConnectionContainer { get; }
 
-        public ServiceConnection ServiceConnection { get; }
-
-        public List<ServiceConnection> ServiceConnections { get; } = new List<ServiceConnection>();
+        public ConcurrentDictionary<string, ServiceConnection> ServiceConnections { get; } = new ConcurrentDictionary<string, ServiceConnection>();
 
         public IServiceMessageHandler ServiceMessageHandler { get; }
 
         public ConnectionDelegate ConnectionDelegateCallback { get; }
+
+        public Func<TestConnection, Task> ConnectionFactoryCallback { get; }
 
         public ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
 
@@ -41,34 +42,69 @@ namespace Microsoft.Azure.SignalR.Tests
         private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
         private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
 
+        //public ServiceConnectionProxy(ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null,
+        //    TestConnectionFactory connectionFactory = null, IServiceMessageHandler serviceMessageHandler = null, int connectionCount = 1)
+        //{
+        //    ConnectionFactory = connectionFactory ?? new TestConnectionFactory(ConnectionFactoryCallbackAsync);
+        //    ClientConnectionManager = new ClientConnectionManager();
+        //    _clientPipeOptions = clientPipeOptions;
+        //    ConnectionDelegateCallback = callback ?? OnConnectionAsync;
+
+        //    var connectionContainer = new StrongServiceConnectionContainer(new TestServiceConnectionFactory(CreateServiceConnection), ConnectionFactory, connectionCount, new ServiceEndpoint("", ""));
+        //    ServiceMessageHandler = serviceMessageHandler ?? connectionContainer;
+        //    ServiceConnectionContainer = connectionContainer;
+        //}
+
         public ServiceConnectionProxy(ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null,
-            TestConnectionFactory connectionFactory = null, IServiceMessageHandler serviceMessageHandler = null)
+            Type connectionFactoryType = null, Func<TestConnection, Task> connectionFactoryCallback = null, IServiceMessageHandler serviceMessageHandler = null, int connectionCount = 1)
         {
-            ConnectionFactory = connectionFactory ?? new TestConnectionFactory();
+            Type factoryType = connectionFactoryType ?? typeof(TestConnectionFactory);
+            ConnectionFactoryCallback = connectionFactoryCallback;
+            Func<TestConnection, Task> callbackParam = ConnectionFactoryCallbackAsync;
+
+            ConnectionFactory = (TestConnectionFactory) Activator.CreateInstance(factoryType, callbackParam);
+            //ConnectionFactory = connectionFactory ?? new TestConnectionFactory(ConnectionFactoryCallbackAsync);
             ClientConnectionManager = new ClientConnectionManager();
             _clientPipeOptions = clientPipeOptions;
             ConnectionDelegateCallback = callback ?? OnConnectionAsync;
 
-            var connectionContainer = new StrongServiceConnectionContainer(new TestServiceConnectionFactory(CreateServiceConnection), connectionFactory, 1, new ServiceEndpoint("", ""));
+            var connectionContainer = new StrongServiceConnectionContainer(new TestServiceConnectionFactory(CreateServiceConnection), ConnectionFactory, connectionCount, new ServiceEndpoint("", ""));
             ServiceMessageHandler = serviceMessageHandler ?? connectionContainer;
             ServiceConnectionContainer = connectionContainer;
         }
 
         private ServiceConnection CreateServiceConnection(ServerConnectionType type)
         {
-            var connection =  new ServiceConnection(
+            var connectionId = Guid.NewGuid().ToString("N");
+            var connection = new ServiceConnection(
                 SharedServiceProtocol,
                 this,
                 ConnectionFactory,
                 NullLoggerFactory.Instance,
                 ConnectionDelegateCallback,
                 this,
-                Guid.NewGuid().ToString("N"),
+                connectionId,
                 ServiceMessageHandler,
                 type);
-            ServiceConnections.Add(connection);
-            ConnectionContexts.TryAdd(connection, connection.ConnectionContext);
+            ServiceConnections.TryAdd(connectionId, connection);
             return connection;
+        }
+
+        private async Task ConnectionFactoryCallbackAsync(TestConnection connection)
+        {
+            if (ConnectionFactoryCallback != null)
+            {
+                await ConnectionFactoryCallback(connection);
+            }
+            ConnectionContexts.TryAdd(connection.ConnectionId, connection);
+            // Start a process for each server connection
+            _ = StartProcessApplicationMessagesAsync(connection);
+        }
+
+        private async Task StartProcessApplicationMessagesAsync(TestConnection connection)
+        {
+            await connection.ConnectionInitialized;
+            await ProcessApplicationMessagesAsync(connection.Application.Input);
         }
 
         public Task StartAsync()
@@ -83,20 +119,20 @@ namespace Microsoft.Azure.SignalR.Tests
                 bool isConnected = true;
                 foreach (var connection in ServiceConnections)
                 {
-                    isConnected = isConnected && connection.IsConnected;
+                    isConnected = isConnected && connection.Value.IsConnected;
                 }
 
                 return isConnected;
             }
         }
 
-        public async Task ProcessApplicationMessagesAsync()
+        public async Task ProcessApplicationMessagesAsync(PipeReader pipeReader)
         {
             try
             {
                 while (true)
                 {
-                    var result = await ConnectionContext.Application.Input.ReadAsync();
+                    var result = await pipeReader.ReadAsync();
                     var buffer = result.Buffer;
 
                     var consumed = buffer.Start;
@@ -127,7 +163,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     }
                     finally
                     {
-                        ConnectionContext.Application.Input.AdvanceTo(consumed, examined);
+                        pipeReader.AdvanceTo(consumed, examined);
                     }
                 }
             }
@@ -139,14 +175,27 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public void Stop()
         {
-            _ = Task.WhenAll(ServiceConnections.Select(c => c.StopAsync()));
+            _ = Task.WhenAll(ServiceConnections.Select(c => c.Value.StopAsync()));
             //_ = ServiceConnection.StopAsync();
         }
 
+        /// <summary>
+        /// Write a message to server connection.
+        /// </summary>
+        public async Task WriteMessageAsync(TestConnection context, ServiceMessage message)
+        {
+            SharedServiceProtocol.WriteMessage(message, context.Application.Output);
+            await context.Application.Output.FlushAsync();
+        }
+
+        /// <summary>
+        /// Write a message to the first server connection
+        /// </summary>
         public async Task WriteMessageAsync(ServiceMessage message)
         {
-            SharedServiceProtocol.WriteMessage(message, ConnectionContext.Application.Output);
-            await ConnectionContext.Application.Output.FlushAsync();
+            var context = ConnectionContexts.First().Value;
+            SharedServiceProtocol.WriteMessage(message, context.Application.Output);
+            await context.Application.Output.FlushAsync();
         }
 
         public Task<ConnectionContext> WaitForConnectionAsync(string connectionId)
@@ -210,7 +259,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private void AddApplicationMessage(Type type, ServiceMessage message)
         {
-            if (_waitForApplicationMessage.TryGetValue(type, out var tcs))
+            if (_waitForApplicationMessage.TryRemove(type, out var tcs))
             {
                 tcs.TrySetResult(message);
             }

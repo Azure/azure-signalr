@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO.Pipelines;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -129,12 +130,13 @@ namespace Microsoft.Azure.SignalR.Tests
             await serverTask.OrTimeout();
 
             var task = proxy.WaitForConnectionAsync("1");
+            var closeMessageTask = proxy.WaitForApplicationMessageAsync(typeof(CloseConnectionMessage));
 
             await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
 
             var connection = await task.OrTimeout();
-
-            var message = await ReadServiceMessageAsync<CloseConnectionMessage>(proxy.ConnectionContext.Application.Input);
+            CloseConnectionMessage message = (CloseConnectionMessage) await closeMessageTask.OrTimeout();
+            
             Assert.Equal(message.ConnectionId, connection.ConnectionId);
 
             proxy.Stop();
@@ -154,7 +156,7 @@ namespace Microsoft.Azure.SignalR.Tests
             await proxy.WriteMessageAsync(new ServiceErrorMessage(errorMessage));
             await Task.Delay(200);
 
-            var serviceConnection = proxy.ServiceConnection;
+            var serviceConnection = proxy.ServiceConnections.First().Value;
             var excption = await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 serviceConnection.WriteAsync(new ConnectionDataMessage("1", null)));
             Assert.Equal(errorMessage, excption.Message);
@@ -170,14 +172,13 @@ namespace Microsoft.Azure.SignalR.Tests
             await serverTask.OrTimeout();
 
             var task = proxy.WaitForConnectionAsync("1");
-
             await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
-
             var connection = await task.OrTimeout();
 
+            var dataMessageTask = proxy.WaitForApplicationMessageAsync(typeof(ConnectionDataMessage));
             await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("Hello World"));
-
-            var message = await ReadServiceMessageAsync<ConnectionDataMessage>(proxy.ConnectionContext.Application.Input);
+            ConnectionDataMessage message = (ConnectionDataMessage) await dataMessageTask.OrTimeout();
+            
             Assert.Equal(message.ConnectionId, connection.ConnectionId);
             Assert.Equal("Hello World", Encoding.ASCII.GetString(message.Payload.ToArray()));
 
@@ -196,15 +197,15 @@ namespace Microsoft.Azure.SignalR.Tests
             await serverTask.OrTimeout();
 
             var task = proxy.WaitForConnectionAsync("1");
-
             await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
-
             var connection = await task.OrTimeout();
+
             var outputMessage = "This message should be more than 10 bytes";
 
+            var dataMessageTask = proxy.WaitForApplicationMessageAsync(typeof(ConnectionDataMessage));
             await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes(outputMessage));
+            ConnectionDataMessage message = (ConnectionDataMessage) await dataMessageTask.OrTimeout();
 
-            var message = await ReadServiceMessageAsync<ConnectionDataMessage>(proxy.ConnectionContext.Application.Input);
             Assert.Equal(message.ConnectionId, connection.ConnectionId);
             Assert.Equal(outputMessage, Encoding.ASCII.GetString(message.Payload.ToArray()));
 
@@ -222,18 +223,20 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // TODO: make KeepAliveInterval configurable
             // Wait 6 sec and receive ping
+            var pingMessageTask = proxy.WaitForApplicationMessageAsync(typeof(PingMessage));
             await Task.Delay(TimeSpan.FromSeconds(6));
-            await proxy.WriteMessageAsync(new PingMessage());
 
+            await proxy.WriteMessageAsync(new PingMessage());
             // Check server PingMessage will send after reveive service PingMessage
-            await ReadServiceMessageAsync<PingMessage>(proxy.ConnectionContext.Application.Input);
+            await pingMessageTask.OrTimeout();
 
             // Wait another 6 sec and recived connection message will also trigger ping
+            pingMessageTask = proxy.WaitForApplicationMessageAsync(typeof(PingMessage));
             await Task.Delay(TimeSpan.FromSeconds(6));
             await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
 
             // Check server PingMessage will send after reveive service PingMessage
-            await ReadServiceMessageAsync<PingMessage>(proxy.ConnectionContext.Application.Input);
+            await pingMessageTask.OrTimeout();
             
             proxy.Stop();
         }
@@ -267,8 +270,8 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task ReconnectWhenHavingIntermittentConnectivityFailure()
         {
-            var connectionFactory = new TestConnectionFactory(new IntermittentConnectivityFailure().ConnectCallback);
-            var proxy = new ServiceConnectionProxy(connectionFactory: connectionFactory);
+            //var connectionFactory = new TestConnectionFactory(new IntermittentConnectivityFailure().ConnectCallback);
+            var proxy = new ServiceConnectionProxy(connectionFactoryCallback: new IntermittentConnectivityFailure().ConnectCallback);
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
@@ -281,8 +284,8 @@ namespace Microsoft.Azure.SignalR.Tests
             await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, null));
             await connectionTask.OrTimeout();
 
-            Assert.True(proxy.IsConnected);
-            var list = connectionFactory.Times;
+            //Assert.True(proxy.IsConnected);
+            var list = proxy.ConnectionFactory.Times;
             Assert.True(TimeSpan.FromSeconds(0.9) < list[1] - list[0]);
             Assert.True(TimeSpan.FromSeconds(2.1) > list[1] - list[0]);
             Assert.True(TimeSpan.FromSeconds(1.9) < list[2] - list[1]);
@@ -297,8 +300,8 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task ReconnectAfterReceivingHandshakeErrorMessage()
         {
-            var connectionFactory = new TestConnectionFactoryWithHandshakeError();
-            var proxy = new ServiceConnectionProxy(connectionFactory: connectionFactory);
+            //var connectionFactory = new TestConnectionFactoryWithHandshakeError();
+            var proxy = new ServiceConnectionProxy(connectionFactoryType: typeof(TestConnectionFactoryWithHandshakeError));
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
@@ -314,7 +317,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             await Task.Delay(10 * 1000);
             Assert.False(proxy.IsConnected);
-            var list = connectionFactory.Times;
+            var list = proxy.ConnectionFactory.Times;
             Assert.True(TimeSpan.FromSeconds(0.9) < list[1] - list[0]);
             Assert.True(TimeSpan.FromSeconds(2.1) > list[1] - list[0]);
             Assert.True(TimeSpan.FromSeconds(1.9) < list[2] - list[1]);
@@ -329,8 +332,8 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task ReconnectWhenHandshakeThrowException()
         {
-            var connectionFactory = new TestConnectionFactory(new IntermittentInvalidHandshakeResponseMessage().ConnectCallback);
-            var proxy = new ServiceConnectionProxy(connectionFactory: connectionFactory);
+            //var connectionFactory = new TestConnectionFactory(new IntermittentInvalidHandshakeResponseMessage().ConnectCallback);
+            var proxy = new ServiceConnectionProxy(connectionFactoryCallback: new IntermittentInvalidHandshakeResponseMessage().ConnectCallback);
 
             // Throw exception for 3 times and will be success in the 4th retry
             var serverTask = proxy.WaitForServerConnectionAsync(4);
@@ -344,8 +347,8 @@ namespace Microsoft.Azure.SignalR.Tests
             await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, null));
             await connectionTask.OrTimeout();
 
-            Assert.True(proxy.IsConnected);
-            var list = connectionFactory.Times;
+            //Assert.True(proxy.IsConnected);
+            var list = proxy.ConnectionFactory.Times;
             Assert.True(TimeSpan.FromSeconds(0.9) < list[1] - list[0]);
             Assert.True(TimeSpan.FromSeconds(2.1) > list[1] - list[0]);
             Assert.True(TimeSpan.FromSeconds(1.9) < list[2] - list[1]);
@@ -483,6 +486,10 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private class TestConnectionFactoryWithHandshakeError : TestConnectionFactory
         {
+            public TestConnectionFactoryWithHandshakeError(Func<TestConnection, Task> callback) : base(callback)
+            {
+            }
+
             protected override async Task DoHandshakeAsync(TestConnection connection)
             {
                 await HandshakeUtils.ReceiveHandshakeRequestAsync(connection.Application.Input);

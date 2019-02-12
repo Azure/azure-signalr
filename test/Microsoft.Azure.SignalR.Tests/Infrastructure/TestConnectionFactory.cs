@@ -32,6 +32,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Times.Add(DateTime.Now);
 
             var connection = new TestConnection();
+            connection.ConnectionId = connectionId;
             connection.Target = target;
             // Start a task to process handshake request from the newly-created server connection.
             _ = HandshakeAsync(connection);
@@ -53,6 +54,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             await DoHandshakeAsync(connection);
             AddConnection(connection);
+            connection.SetConnectionInitialized();
         }
 
         /// <summary>
