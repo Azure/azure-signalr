@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var hubName = "signalrbench";
             var expectedAudience = $"{endpoint}/client/?hub={hubName.ToLower()}";
             var lifeTime = TimeSpan.FromSeconds(99);
-            var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, userId), new Claim("type1", "val1") };
+            var claims = new List<Claim> { new Claim("type1", "val1") };
 
             var serviceManagerOptions = new ServiceManagerOptions
             {
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ServiceTransportType = ServiceTransportType.Transient
             };
             var serviceManager = new ServiceManager(serviceManagerOptions);
-            var tokenString = serviceManager.GenerateClientAccessToken(hubName, claims, lifeTime);
+            var tokenString = serviceManager.GenerateClientAccessToken(hubName, userId, claims, lifeTime);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
             var customClaims = new Claim[] { new Claim("type1", "val1") };
 
