@@ -13,5 +13,7 @@ namespace Microsoft.Azure.SignalR.Management
         Task<IServiceHubContext> CreateHubContextAsync(string hubName);
 
         string GenerateClientAccessToken(string hubName, string userId, IList<Claim> claims, TimeSpan? lifeTime = null);
+
+        string GenerateClientEndpoint(string hubName);
     }
 }

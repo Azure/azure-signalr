@@ -63,5 +63,7 @@ namespace Microsoft.Azure.SignalR.Management
             claimsWithUserId.AddRange(claims);
             return _endpoint.GenerateClientAccessToken(hubName, claimsWithUserId, lifeTime);
         }
+
+        public string GenerateClientEndpoint(string hubName) => _endpoint.GetClientEndpoint(hubName, null, null);
     }
 }
