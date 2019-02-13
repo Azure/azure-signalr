@@ -3,12 +3,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -16,6 +19,7 @@ namespace Microsoft.Azure.SignalR.Management
     internal class RestHubLifetimeManager : HubLifetimeManager<Hub>, IHubLifetimeManagerForUserGroup
     {
         private readonly RestApiProvider _restApiProvider;
+        private const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
 
         public RestHubLifetimeManager(ServiceManagerOptions serviceManagerOptions, string hubName)
         {
@@ -24,99 +28,213 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public override Task OnDisconnectedAsync(HubConnectionContext connection)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public override Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrEmpty(methodName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
+            }
+
             var api = _restApiProvider.GetBroadcastEndpoint();
-            return CallRestApi(api, HttpMethod.Post, methodName, args, cancellationToken);
+            var request = BuildRequest(api, HttpMethod.Post, methodName, args, cancellationToken);
+            return CallRestApiAsync(request);
         }
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public override Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrEmpty(methodName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
+            }
+
+            if (string.IsNullOrEmpty(groupName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
+            }
+
             var api = _restApiProvider.GetSendToGroupEndpoint(groupName);
-            return CallRestApi(api, HttpMethod.Post, methodName, args, cancellationToken);
+            var request = BuildRequest(api, HttpMethod.Post, methodName, args, cancellationToken);
+            return CallRestApiAsync(request);
         }
 
         public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
-        public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
+        public override async Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            Task all = null;
+
+            try
+            {
+                await (all = Task.WhenAll(from groupName in groupNames
+                                          select SendGroupAsync(groupName, methodName, args, cancellationToken)));
+            }
+            catch
+            {
+                throw all.Exception;
+            }
         }
 
         public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrEmpty(methodName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
+            }
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
+            }
+
             var api = _restApiProvider.GetSendToUserEndpoint(userId);
-            return CallRestApi(api, HttpMethod.Post, methodName, args, cancellationToken);
+            var request = BuildRequest(api, HttpMethod.Post, methodName, args, cancellationToken);
+            return CallRestApiAsync(request);
         }
 
-        public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args, CancellationToken cancellationToken = default)
+        public override async Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            Task all = null;
+
+            try
+            {
+                await(all = Task.WhenAll(from userId in userIds
+                                         select SendUserAsync(userId, methodName, args, cancellationToken)));
+            }
+            catch
+            {
+                throw all.Exception;
+            }
         }
 
         public Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
+            ValidateUserIdAndGroupName(userId, groupName);
+
             var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
-            return CallRestApi(api, HttpMethod.Put, null, null, cancellationToken);
+            var request = BuildRequest(api, HttpMethod.Put, null, null, cancellationToken);
+            return CallRestApiAsync(request);
         }
 
         public Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
+            ValidateUserIdAndGroupName(userId, groupName);
+
             var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
-            return CallRestApi(api, HttpMethod.Delete, null, null, cancellationToken);
+            var request = BuildRequest(api, HttpMethod.Delete, null, null, cancellationToken);
+            return CallRestApiAsync(request);
         }
 
-        private Task CallRestApi(RestApiEndpoint endpoint, HttpMethod httpMethod, string methodName = null, object[] args = null, CancellationToken cancellationToken = default)
-        {
-            var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
-            var httpClient = HttpClientFactory.CreateClient();
-            var request = GenerateHttpRequest(endpoint.Audience, payload, endpoint.Token, HttpMethod.Post);
-            return httpClient.SendAsync(request);
-        }
-
-        private HttpRequestMessage GenerateHttpRequest(string url, PayloadMessage payload, string tokenString, HttpMethod httpMethod)
+        private static HttpRequestMessage GenerateHttpRequest(string url, PayloadMessage payload, string tokenString, HttpMethod httpMethod)
         {
             var request = new HttpRequestMessage(httpMethod, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
             return request;
+        }
+
+        private static void ThrowExceptionOnResponseFailure(Exception innerException, HttpStatusCode? statusCode, string requestUri, string detail = null)
+        {
+            switch (statusCode)
+            {
+                case HttpStatusCode.BadRequest:
+                    {
+                        throw new AzureSignalRInvalidArgumentException(requestUri, innerException, detail);
+                    }
+                case HttpStatusCode.Unauthorized:
+                    {
+                        throw new AzureSignalRUnauthorizedException(requestUri, innerException);
+                    }
+                case HttpStatusCode.NotFound:
+                    {
+                        throw new AzureSignalRInaccessibleEndpointException(requestUri, innerException);
+                    }
+                default:
+                    {
+                        throw new AzureSignalRRuntimeException(requestUri, innerException);
+                    }
+            }
+        }
+
+        private static HttpRequestMessage BuildRequest(RestApiEndpoint endpoint, HttpMethod httpMethod, string methodName = null, object[] args = null, CancellationToken cancellationToken = default)
+        {
+            var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
+            return GenerateHttpRequest(endpoint.Audience, payload, endpoint.Token, HttpMethod.Post);
+        }
+
+        private static async Task CallRestApiAsync(HttpRequestMessage request)
+        {
+            var httpClient = HttpClientFactory.CreateClient();
+            HttpResponseMessage response = null;
+            var detail = "";
+
+            try
+            {
+                response = await httpClient.SendAsync(request);
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), ex);
+            }
+
+            try
+            {
+                detail = await response.Content.ReadAsStringAsync();
+                response.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException ex)
+            {
+                ThrowExceptionOnResponseFailure(ex, response.StatusCode, request.RequestUri.ToString(), detail);
+            }
+        }
+
+        private static void ValidateUserIdAndGroupName(string userId, string groupName)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
+            }
+
+            if (string.IsNullOrEmpty(groupName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
+            }
         }
     }
 }
