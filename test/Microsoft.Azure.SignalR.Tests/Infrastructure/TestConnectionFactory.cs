@@ -14,16 +14,9 @@ namespace Microsoft.Azure.SignalR.Tests
     {
         private readonly Func<TestConnection, Task> _connectCallback;
 
-        private int _connectionCount;
-
-        private readonly ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>> _waitForConnection =
-            new ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>>();
-
-        public virtual TestConnection CurrentConnectionContext { get; private set; }
-
         public List<DateTime> Times { get; } = new List<DateTime>();
 
-        public TestConnectionFactory(Func<TestConnection, Task> connectCallback = null)
+        public TestConnectionFactory(Func<TestConnection, Task> connectCallback)
         {
             _connectCallback = connectCallback;
         }
@@ -32,18 +25,20 @@ namespace Microsoft.Azure.SignalR.Tests
             CancellationToken cancellationToken = default)
         {
             Times.Add(DateTime.Now);
-            CurrentConnectionContext = null;
 
-            var connection = new TestConnection();
+            var connection = new TestConnection
+            {
+                ConnectionId = connectionId,
+                Target = target
+            };
             // Start a task to process handshake request from the newly-created server connection.
             _ = HandshakeAsync(connection);
 
-            if (_connectCallback != null)
-            {
-                await _connectCallback(connection);
-            }
+            // Do something for test purpose
+            await AfterConnectedAsync(connection);
 
-            CurrentConnectionContext = connection;
+            await _connectCallback(connection);
+
             return connection;
         }
 
@@ -55,7 +50,6 @@ namespace Microsoft.Azure.SignalR.Tests
         private async Task HandshakeAsync(TestConnection connection)
         {
             await DoHandshakeAsync(connection);
-            AddConnection(connection);
         }
 
         /// <summary>
@@ -67,20 +61,12 @@ namespace Microsoft.Azure.SignalR.Tests
             await HandshakeUtils.SendHandshakeResponseAsync(connection.Application.Output);
         }
 
-        public Task<ConnectionContext> WaitForConnectionAsync(int connectionCount)
+        /// <summary>
+        /// Allow sub-class to override. Do something after connect being created.
+        /// </summary>
+        protected virtual Task AfterConnectedAsync(TestConnection connection)
         {
-            return _waitForConnection
-                .GetOrAdd(connectionCount, key => new TaskCompletionSource<ConnectionContext>()).Task;
-        }
-
-        private void AddConnection(ConnectionContext connection)
-        {
-            var count = Interlocked.Increment(ref _connectionCount);
-
-            if (_waitForConnection.TryGetValue(count, out var tcs))
-            {
-                tcs.TrySetResult(connection);
-            }
+            return Task.CompletedTask;
         }
     }
 }
