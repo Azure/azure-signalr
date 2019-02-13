@@ -54,16 +54,20 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
-        public string GenerateClientAccessToken(string hubName, string userId, IList<Claim> claims, TimeSpan? lifeTime = null)
+        public string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)
         {
-            var claimsWithUserId = new List<Claim>
+            var claimsWithUserId = new List<Claim>();
+            if (userId != null)
             {
-                new Claim(ClaimTypes.NameIdentifier, userId)
+                claimsWithUserId.Add(new Claim(ClaimTypes.NameIdentifier, userId));
             };
-            claimsWithUserId.AddRange(claims);
+            if (claims != null)
+            {
+                claimsWithUserId.AddRange(claims);
+            }
             return _endpoint.GenerateClientAccessToken(hubName, claimsWithUserId, lifeTime);
         }
 
-        public string GenerateClientEndpoint(string hubName) => _endpoint.GetClientEndpoint(hubName, null, null);
+        public string GetClientEndpoint(string hubName) => _endpoint.GetClientEndpoint(hubName, null, null);
     }
 }

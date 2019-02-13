@@ -14,6 +14,6 @@ namespace Microsoft.Azure.SignalR.Management
 
         string GenerateClientAccessToken(string hubName, string userId, IList<Claim> claims, TimeSpan? lifeTime = null);
 
-        string GenerateClientEndpoint(string hubName);
+        string GetClientEndpoint(string hubName);
     }
 }
