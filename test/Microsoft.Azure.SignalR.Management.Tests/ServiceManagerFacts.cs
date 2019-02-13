@@ -11,31 +11,61 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 {
     public class ServiceManagerFacts
     {
-        [Fact]
-        internal void GenerateClientAccessTokenTest()
+        private const string Endpoint = "https://abc";
+        private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
+        private const string HubName = "signalrBench";
+        private const string UserId = "UserA";
+        private static readonly string _clientEndpoint = $"{Endpoint}/client/?hub={HubName.ToLower()}";
+        private static readonly string _testConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0;";
+        private static readonly TimeSpan _tokenLifeTime = TimeSpan.FromSeconds(99);
+        private static readonly ServiceManagerOptions _serviceManagerOptions = new ServiceManagerOptions
         {
-            var endpoint = "https://abc";
-            var accessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
-            var testConnectionString = $"Endpoint={endpoint};AccessKey={accessKey};Version=1.0;";
-            var userId = "UserA";
-            var hubName = "signalrbench";
-            var expectedAudience = $"{endpoint}/client/?hub={hubName.ToLower()}";
-            var lifeTime = TimeSpan.FromSeconds(99);
-            var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, userId), new Claim("type1", "val1") };
-
-            var serviceManagerOptions = new ServiceManagerOptions
+            ConnectionString = _testConnectionString
+        };
+        private static readonly ServiceManager _serviceManager = new ServiceManager(_serviceManagerOptions);
+        private static readonly Claim[] _defaultClaims = new Claim[] { new Claim("type1", "val1") };
+        public static IEnumerable<object[]> TestGenerateAccessTokenData = new object[][]
+        {
+            new object[]
             {
-                ConnectionString = testConnectionString,
-                ServiceTransportType = ServiceTransportType.Transient
-            };
-            var serviceManager = new ServiceManager(serviceManagerOptions);
-            var tokenString = serviceManager.GenerateClientAccessToken(hubName, claims, lifeTime);
-            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
-            var customClaims = new Claim[] { new Claim("type1", "val1") };
+                null,
+                null
+            },
+            new object[]
+            {
+                UserId,
+                null
+            },
+            new object[]
+            {
+                null,
+               _defaultClaims
+            },
+            new object[]
+            {
+                UserId,
+                _defaultClaims
+            }
+        };
 
-            string expectedToken = JwtTokenHelper.GenerateExpectedAccessToken(token, expectedAudience, accessKey, customClaims);
+        [Theory]
+        [MemberData(nameof(TestGenerateAccessTokenData))]
+        internal void GenerateClientAccessTokenTest(string userId, Claim[] claims)
+        {
+            var tokenString = _serviceManager.GenerateClientAccessToken(HubName, userId, claims, _tokenLifeTime);
+            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
+
+            string expectedToken = JwtTokenHelper.GenerateExpectedAccessToken(token, _clientEndpoint, AccessKey, claims);
 
             Assert.Equal(expectedToken, tokenString);
+        }
+
+        [Fact]
+        internal void GenerateClientEndpointTest()
+        {
+            var clientEndpoint = _serviceManager.GetClientEndpoint(HubName);
+
+            Assert.Equal(_clientEndpoint, clientEndpoint);
         }
     }
 }
