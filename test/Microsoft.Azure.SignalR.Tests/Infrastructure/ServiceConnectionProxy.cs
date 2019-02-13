@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
@@ -13,7 +14,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnectionFactory
+    internal class ServiceConnectionProxy : IClientConnectionManager, IClientConnectionFactory, IServiceConnectionFactory
     {
         private static readonly IServiceProtocol SharedServiceProtocol = new ServiceProtocol();
         private readonly PipeOptions _clientPipeOptions;
@@ -36,6 +37,8 @@ namespace Microsoft.Azure.SignalR.Tests
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
         private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
+        private readonly ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>> _waitForServerConnection = new ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>>();
+        private int _connectedServerConnectionCount;
 
         public ServiceConnectionProxy(ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null,
             Type connectionFactoryType = null, int connectionCount = 1)
@@ -48,10 +51,11 @@ namespace Microsoft.Azure.SignalR.Tests
             _clientPipeOptions = clientPipeOptions;
             ConnectionDelegateCallback = callback ?? OnConnectionAsync;
 
-            ServiceConnectionContainer = new StrongServiceConnectionContainer(new TestServiceConnectionFactory(CreateServiceConnection), ConnectionFactory, connectionCount, new ServiceEndpoint("", ""));
+            ServiceConnectionContainer = new StrongServiceConnectionContainer(this, ConnectionFactory, connectionCount, new ServiceEndpoint("", ""));
         }
 
-        private ServiceConnection CreateServiceConnection(IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
+        public IServiceConnection Create(IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler,
+            ServerConnectionType type)
         {
             var connectionId = Guid.NewGuid().ToString("N");
             var connection = new ServiceConnection(
@@ -78,8 +82,17 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private async Task StartProcessApplicationMessagesAsync(TestConnection connection)
         {
-            await connection.ConnectionInitialized;
-            await ProcessApplicationMessagesAsync(connection.Application.Input);
+            await ServiceConnections[connection.ConnectionId].ConnectionInitializedTask;
+
+            if (ServiceConnections[connection.ConnectionId].Status == ServiceConnectionStatus.Connected)
+            {
+                Interlocked.Increment(ref _connectedServerConnectionCount);
+                if (_waitForServerConnection.TryGetValue(_connectedServerConnectionCount, out var tcs))
+                {
+                    tcs.TrySetResult(connection);
+                }
+                await ProcessApplicationMessagesAsync(connection.Application.Input);
+            } 
         }
 
         public Task StartAsync()
@@ -137,6 +150,10 @@ namespace Microsoft.Azure.SignalR.Tests
         public void Stop()
         {
             _ = Task.WhenAll(ServiceConnections.Select(c => c.Value.StopAsync()));
+            foreach (var connectionContext in ConnectionContexts)
+            {
+                connectionContext.Value.Application.Input.CancelPendingRead();
+            }
         }
 
         /// <summary>
@@ -187,7 +204,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public Task<ConnectionContext> WaitForServerConnectionAsync(int count)
         {
-            return ConnectionFactory.WaitForConnectionAsync(count);
+            return _waitForServerConnection.GetOrAdd(count, key => new TaskCompletionSource<ConnectionContext>()).Task;
         }
 
         private Task OnConnectionAsync(ConnectionContext connection)

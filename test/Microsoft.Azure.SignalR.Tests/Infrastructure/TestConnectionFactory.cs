@@ -14,11 +14,6 @@ namespace Microsoft.Azure.SignalR.Tests
     {
         private readonly Func<TestConnection, Task> _connectCallback;
 
-        private int _connectionCount;
-
-        private readonly ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>> _waitForConnection =
-            new ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>>();
-
         public List<DateTime> Times { get; } = new List<DateTime>();
 
         public TestConnectionFactory(Func<TestConnection, Task> connectCallback)
@@ -31,9 +26,11 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             Times.Add(DateTime.Now);
 
-            var connection = new TestConnection();
-            connection.ConnectionId = connectionId;
-            connection.Target = target;
+            var connection = new TestConnection
+            {
+                ConnectionId = connectionId,
+                Target = target
+            };
             // Start a task to process handshake request from the newly-created server connection.
             _ = HandshakeAsync(connection);
 
@@ -53,7 +50,6 @@ namespace Microsoft.Azure.SignalR.Tests
         private async Task HandshakeAsync(TestConnection connection)
         {
             await DoHandshakeAsync(connection);
-            AddConnection(connection);
             connection.SetConnectionInitialized();
         }
 
@@ -72,22 +68,6 @@ namespace Microsoft.Azure.SignalR.Tests
         protected virtual Task AfterConnectedAsync(TestConnection connection)
         {
             return Task.CompletedTask;
-        }
-
-        public Task<ConnectionContext> WaitForConnectionAsync(int connectionCount)
-        {
-            return _waitForConnection
-                .GetOrAdd(connectionCount, key => new TaskCompletionSource<ConnectionContext>()).Task;
-        }
-
-        private void AddConnection(ConnectionContext connection)
-        {
-            var count = Interlocked.Increment(ref _connectionCount);
-
-            if (_waitForConnection.TryGetValue(count, out var tcs))
-            {
-                tcs.TrySetResult(connection);
-            }
         }
     }
 }

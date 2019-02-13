@@ -302,17 +302,11 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
-            await serverTask.OrTimeout();
 
-            var connectionId = Guid.NewGuid().ToString("N");
-            var connectionTask = proxy.WaitForConnectionAsync(connectionId);
-
-            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, null));
-
-            // Connection exits so the Task should be timeout
-            Assert.False(Task.WaitAll(new Task[] { connectionTask }, TimeSpan.FromSeconds(1)));
 
             await Task.Delay(10 * 1000);
+            // No server connection will be connected
+            Assert.False(Task.WaitAll(new Task[] { serverTask }, TimeSpan.FromSeconds(1)));
 
             var list = proxy.ConnectionFactory.Times;
             Assert.True(TimeSpan.FromSeconds(0.9) < list[1] - list[0]);
@@ -332,7 +326,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var proxy = new ServiceConnectionProxy(connectionFactoryType: typeof(TestConnectionFactoryWithIntermittentInvalidHandshakeResponseMessage));
 
             // Throw exception for 3 times and will be success in the 4th retry
-            var serverTask = proxy.WaitForServerConnectionAsync(4);
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
             // fail 3 times, 1~2 + 2~3 + 4~5 = 7~10
             await serverTask.OrTimeout(11 * 1000);
@@ -343,7 +337,6 @@ namespace Microsoft.Azure.SignalR.Tests
             await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId, null));
             await connectionTask.OrTimeout();
 
-            //Assert.True(proxy.IsConnected);
             var list = proxy.ConnectionFactory.Times;
             Assert.True(TimeSpan.FromSeconds(0.9) < list[1] - list[0]);
             Assert.True(TimeSpan.FromSeconds(2.1) > list[1] - list[0]);
