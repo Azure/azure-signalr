@@ -50,7 +50,6 @@ namespace Microsoft.Azure.SignalR.Tests
         private async Task HandshakeAsync(TestConnection connection)
         {
             await DoHandshakeAsync(connection);
-            connection.SetConnectionInitialized();
         }
 
         /// <summary>

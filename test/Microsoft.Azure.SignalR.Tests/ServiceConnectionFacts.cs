@@ -19,6 +19,7 @@ namespace Microsoft.Azure.SignalR.Tests
     public class ServiceConnectionFacts
     {
         private static readonly ServiceProtocol Protocol = new ServiceProtocol();
+        private const int DefaultTimeoutInMilliSeconds = 1000;
 
         [Fact]
         public async Task ServiceConnectionStartsConnection()
@@ -257,7 +258,7 @@ namespace Microsoft.Azure.SignalR.Tests
             // Wait for 35s to make the server side timeout
             // Assert the server will reconnect
             var serverTask2 = proxy.WaitForServerConnectionAsync(2);
-            Assert.False(Task.WaitAll(new Task[] { serverTask2 }, TimeSpan.FromSeconds(1)));
+            AssertTimeout(serverTask2);
 
             await Task.Delay(TimeSpan.FromSeconds(35));
 
@@ -270,7 +271,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task ReconnectWhenHavingIntermittentConnectivityFailure()
         {
-            var proxy = new ServiceConnectionProxy(connectionFactoryType: typeof(TestConnectionFactoryWithConnectivityFailure));
+            var proxy = new ServiceConnectionProxy(connectionFactoryCallback: c => new TestConnectionFactoryWithConnectivityFailure(c));
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
@@ -298,7 +299,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task ReconnectAfterReceivingHandshakeErrorMessage()
         {
-            var proxy = new ServiceConnectionProxy(connectionFactoryType: typeof(TestConnectionFactoryWithHandshakeError));
+            var proxy = new ServiceConnectionProxy(connectionFactoryCallback: c => new TestConnectionFactoryWithHandshakeError(c));
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
@@ -306,7 +307,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             await Task.Delay(10 * 1000);
             // No server connection will be connected
-            Assert.False(Task.WaitAll(new Task[] { serverTask }, TimeSpan.FromSeconds(1)));
+            AssertTimeout(serverTask);
 
             var list = proxy.ConnectionFactory.Times;
             Assert.True(TimeSpan.FromSeconds(0.9) < list[1] - list[0]);
@@ -323,7 +324,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task ReconnectWhenHandshakeThrowException()
         {
-            var proxy = new ServiceConnectionProxy(connectionFactoryType: typeof(TestConnectionFactoryWithIntermittentInvalidHandshakeResponseMessage));
+            var proxy = new ServiceConnectionProxy(connectionFactoryCallback: c => new TestConnectionFactoryWithIntermittentInvalidHandshakeResponseMessage(c));
 
             // Throw exception for 3 times and will be success in the 4th retry
             var serverTask = proxy.WaitForServerConnectionAsync(1);
@@ -361,7 +362,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // Try to wait the second handshake after reconnect
             var serverTask2 = proxy.WaitForServerConnectionAsync(2);
-            Assert.False(Task.WaitAll(new Task[] { serverTask2 }, TimeSpan.FromSeconds(1)));
+            AssertTimeout(serverTask2);
 
             // Dispose the connection, then server will throw exception and reconnect
             serverConnection1.Transport.Input.CancelPendingRead();
@@ -404,10 +405,10 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // Dispose the on-demand connection. Assert it won't reconnection
             var serverTask3 = proxy.WaitForServerConnectionAsync(3);
-            Assert.False(Task.WaitAll(new Task[] { serverTask3 }, TimeSpan.FromSeconds(1)));
+            AssertTimeout(serverTask3);
 
             onDemandConnection.Transport.Input.CancelPendingRead();
-            Assert.False(Task.WaitAll(new Task[] { serverTask3 }, TimeSpan.FromSeconds(1)));
+            AssertTimeout(serverTask3);
         }
 
         /// <summary>
@@ -438,15 +439,20 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // Try to dispose default connection
             var serverTask3 = proxy.WaitForServerConnectionAsync(3);
-            Assert.False(Task.WaitAll(new Task[] { serverTask3 }, TimeSpan.FromSeconds(1)));
+            AssertTimeout(serverTask3);
 
             defaultConnection.Transport.Input.CancelPendingRead();
             // There won't be another connection to be created
-            Assert.False(Task.WaitAll(new Task[] { serverTask3 }, TimeSpan.FromSeconds(1)));
+            AssertTimeout(serverTask3);
 
             // on-demand connection has been promoted. Try to dispose and another connection will be created
             onDemandConnection.Transport.Input.CancelPendingRead();
             await serverTask3.OrTimeout();
+        }
+
+        private static void AssertTimeout(params Task[] task)
+        {
+            Assert.False(Task.WaitAll(task, DefaultTimeoutInMilliSeconds));
         }
 
         private class TestConnectionFactoryWithHandshakeError : TestConnectionFactory

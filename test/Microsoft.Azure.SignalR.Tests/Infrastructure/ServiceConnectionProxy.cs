@@ -41,12 +41,9 @@ namespace Microsoft.Azure.SignalR.Tests
         private int _connectedServerConnectionCount;
 
         public ServiceConnectionProxy(ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null,
-            Type connectionFactoryType = null, int connectionCount = 1)
+            Func<Func<TestConnection, Task>, TestConnectionFactory> connectionFactoryCallback = null, int connectionCount = 1)
         {
-            Type factoryType = connectionFactoryType ?? typeof(TestConnectionFactory);
-            Func<TestConnection, Task> callbackParam = ConnectionFactoryCallbackAsync;
-
-            ConnectionFactory = (TestConnectionFactory) Activator.CreateInstance(factoryType, callbackParam);
+            ConnectionFactory = connectionFactoryCallback?.Invoke(ConnectionFactoryCallbackAsync) ?? new TestConnectionFactory(ConnectionFactoryCallbackAsync);
             ClientConnectionManager = new ClientConnectionManager();
             _clientPipeOptions = clientPipeOptions;
             ConnectionDelegateCallback = callback ?? OnConnectionAsync;

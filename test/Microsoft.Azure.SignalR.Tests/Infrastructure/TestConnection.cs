@@ -4,7 +4,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Features;
 
@@ -24,10 +23,6 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public string Target { get; set; }
 
-        public Task ConnectionInitialized { get; }
-
-        private readonly TaskCompletionSource<bool> _tcs;
-
         public TestConnection()
         {
             Features = new FeatureCollection();
@@ -37,13 +32,6 @@ namespace Microsoft.Azure.SignalR.Tests
             var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
             Transport = pair.Transport;
             Application = pair.Application;
-            _tcs = new TaskCompletionSource<bool>();
-            ConnectionInitialized = _tcs.Task;
-        }
-
-        public void SetConnectionInitialized()
-        {
-            _tcs.SetResult(true);
         }
     }
 }
