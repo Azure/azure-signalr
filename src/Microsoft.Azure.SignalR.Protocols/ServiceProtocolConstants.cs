@@ -22,5 +22,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         public const int ServiceErrorMessageType = 15;
         public const int UserJoinGroupMessageType = 16;
         public const int UserLeaveGroupMessageType = 17;
+        public const int JoinGroupWithAckMessageType = 18;
+        public const int LeaveGroupWithAckMessageType = 19;
+        public const int AckMessageType = 20;
     }
 }

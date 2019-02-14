@@ -59,6 +59,12 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         (MultiGroupBroadcastDataMessage)y);
                 case ServiceErrorMessage serviceErrorMessage:
                     return ServiceErrorMessageEqual(serviceErrorMessage, (ServiceErrorMessage)y);
+                case JoinGroupWithAckMessage joinGroupWithAckMessage:
+                    return JoinGroupWithAckMessageEqual(joinGroupWithAckMessage, (JoinGroupWithAckMessage) y);
+                case LeaveGroupWithAckMessage leaveGroupWithAckMessage:
+                    return LeaveGroupWithAckMessageEqual(leaveGroupWithAckMessage, (LeaveGroupWithAckMessage) y);
+                case AckMessage ackMessage:
+                    return AckMessageEqual(ackMessage, (AckMessage) y);
                 default:
                     throw new InvalidOperationException($"Unknown message type: {x.GetType().FullName}");
             }
@@ -153,6 +159,26 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         private bool ServiceErrorMessageEqual(ServiceErrorMessage x, ServiceErrorMessage y)
         {
             return StringEqual(x.ErrorMessage, y.ErrorMessage);
+        }
+
+        private bool JoinGroupWithAckMessageEqual(JoinGroupWithAckMessage x, JoinGroupWithAckMessage y)
+        {
+            return StringEqual(x.ConnectionId, y.ConnectionId) &&
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   x.AckId == y.AckId;
+        }
+
+        private bool LeaveGroupWithAckMessageEqual(LeaveGroupWithAckMessage x, LeaveGroupWithAckMessage y)
+        {
+            return StringEqual(x.ConnectionId, y.ConnectionId) &&
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   x.AckId == y.AckId;
+        }
+
+        private bool AckMessageEqual(AckMessage x, AckMessage y)
+        {
+            return x.AckId == y.AckId &&
+                   x.Status == y.Status;
         }
 
         private static bool StringEqual(string x, string y)

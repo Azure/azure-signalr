@@ -95,6 +95,12 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateMultiGroupBroadcastDataMessage(input, ref startOffset);
                 case ServiceProtocolConstants.ServiceErrorMessageType:
                     return CreateServiceErrorMessage(input, ref startOffset);
+                case ServiceProtocolConstants.JoinGroupWithAckMessageType:
+                    return CreateJoinGroupWithAckMessage(input, ref startOffset);
+                case ServiceProtocolConstants.LeaveGroupWithAckMessageType:
+                    return CreateLeaveGroupWithAckMessage(input, ref startOffset);
+                case ServiceProtocolConstants.AckMessageType:
+                    return CreateAckMessage(input, ref startOffset);
                 default:
                     // Future protocol changes can add message types, old clients can ignore them
                     return null;
@@ -187,8 +193,14 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case JoinGroupMessage joinGroupMessage:
                     WriteJoinGroupMessage(joinGroupMessage, packer);
                     break;
+                case JoinGroupWithAckMessage joinGroupWithAckMessage:
+                    WriteJoinGroupWithAckMessage(joinGroupWithAckMessage, packer);
+                    break;
                 case LeaveGroupMessage leaveGroupMessage:
                     WriteLeaveGroupMessage(leaveGroupMessage, packer);
+                    break;
+                case LeaveGroupWithAckMessage leaveGroupWithAckMessage:
+                    WriteLeaveGroupWithAckMessage(leaveGroupWithAckMessage, packer);
                     break;
                 case UserJoinGroupMessage userJoinGroupMessage:
                     WriteUserJoinGroupMessage(userJoinGroupMessage, packer);
@@ -204,6 +216,9 @@ namespace Microsoft.Azure.SignalR.Protocol
                     break;
                 case ServiceErrorMessage serviceErrorMessage:
                     WriteServiceErrorMessage(serviceErrorMessage, packer);
+                    break;
+                case AckMessage ackMessage:
+                    WriteAckMessage(ackMessage, packer);
                     break;
                 default:
                     throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
@@ -408,6 +423,32 @@ namespace Microsoft.Azure.SignalR.Protocol
             MessagePackBinary.WriteArrayHeader(packer, 2);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ServiceErrorMessageType);
             MessagePackBinary.WriteString(packer, message.ErrorMessage);
+        }
+
+        private static void WriteJoinGroupWithAckMessage(JoinGroupWithAckMessage message, Stream packer)
+        {
+            MessagePackBinary.WriteArrayHeader(packer, 4);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.JoinGroupWithAckMessageType);
+            MessagePackBinary.WriteString(packer, message.ConnectionId);
+            MessagePackBinary.WriteString(packer, message.GroupName);
+            MessagePackBinary.WriteInt32(packer, message.AckId);
+        }
+
+        private static void WriteLeaveGroupWithAckMessage(LeaveGroupWithAckMessage message, Stream packer)
+        {
+            MessagePackBinary.WriteArrayHeader(packer, 4);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.LeaveGroupWithAckMessageType);
+            MessagePackBinary.WriteString(packer, message.ConnectionId);
+            MessagePackBinary.WriteString(packer, message.GroupName);
+            MessagePackBinary.WriteInt32(packer, message.AckId);
+        }
+
+        private static void WriteAckMessage(AckMessage message, Stream packer)
+        {
+            MessagePackBinary.WriteArrayHeader(packer, 2);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.AckMessageType);
+            MessagePackBinary.WriteInt32(packer, message.AckId);
+            MessagePackBinary.WriteInt32(packer, message.Status);
         }
 
         private static void WriteStringArray(IReadOnlyList<string> array, Stream packer)
@@ -622,6 +663,32 @@ namespace Microsoft.Azure.SignalR.Protocol
             var errorMessage = ReadString(input, ref offset, "errorMessage");
 
             return new ServiceErrorMessage(errorMessage);
+        }
+
+        private static JoinGroupWithAckMessage CreateJoinGroupWithAckMessage(byte[] input, ref int offset)
+        {
+            var connectionId = ReadString(input, ref offset, "connectionId");
+            var groupName = ReadString(input, ref offset, "groupName");
+            var ackId = ReadInt32(input, ref offset, "ackId");
+
+            return new JoinGroupWithAckMessage(connectionId, groupName, ackId);
+        }
+
+        private static LeaveGroupWithAckMessage CreateLeaveGroupWithAckMessage(byte[] input, ref int offset)
+        {
+            var connectionId = ReadString(input, ref offset, "connectionId");
+            var groupName = ReadString(input, ref offset, "groupName");
+            var ackId = ReadInt32(input, ref offset, "ackId");
+
+            return new LeaveGroupWithAckMessage(connectionId, groupName, ackId);
+        }
+
+        private static AckMessage CreateAckMessage(byte[] input, ref int offset)
+        {
+            var ackId = ReadInt32(input, ref offset, "ackId");
+            var status = ReadInt32(input, ref offset, "status");
+
+            return new AckMessage(ackId, status);
         }
 
         private static Claim[] ReadClaims(byte[] input, ref int offset)
