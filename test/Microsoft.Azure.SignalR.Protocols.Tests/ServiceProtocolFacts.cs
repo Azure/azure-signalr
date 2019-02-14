@@ -190,7 +190,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             new ProtocolTestData(
                 name: "Ack",
                 message: new AckMessage(1, 100), 
-                binary: "khQBZA=="),
+                binary: "kxQBZA=="),
         }.ToDictionary(t => t.Name);
 
         [Theory]

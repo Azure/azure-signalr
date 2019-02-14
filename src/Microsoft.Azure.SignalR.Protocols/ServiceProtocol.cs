@@ -445,7 +445,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteAckMessage(AckMessage message, Stream packer)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 2);
+            MessagePackBinary.WriteArrayHeader(packer, 3);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.AckMessageType);
             MessagePackBinary.WriteInt32(packer, message.AckId);
             MessagePackBinary.WriteInt32(packer, message.Status);
