@@ -54,8 +54,8 @@ namespace Microsoft.Azure.SignalR.Management
             }
 
             var api = _restApiProvider.GetBroadcastEndpoint();
-            var request = BuildRequest(api, HttpMethod.Post, methodName, args, cancellationToken);
-            return CallRestApiAsync(request);
+            var request = BuildRequest(api, HttpMethod.Post, methodName, args);
+            return CallRestApiAsync(request, cancellationToken);
         }
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
@@ -86,8 +86,8 @@ namespace Microsoft.Azure.SignalR.Management
             }
 
             var api = _restApiProvider.GetSendToGroupEndpoint(groupName);
-            var request = BuildRequest(api, HttpMethod.Post, methodName, args, cancellationToken);
-            return CallRestApiAsync(request);
+            var request = BuildRequest(api, HttpMethod.Post, methodName, args);
+            return CallRestApiAsync(request, cancellationToken);
         }
 
         public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
@@ -123,8 +123,8 @@ namespace Microsoft.Azure.SignalR.Management
             }
 
             var api = _restApiProvider.GetSendToUserEndpoint(userId);
-            var request = BuildRequest(api, HttpMethod.Post, methodName, args, cancellationToken);
-            return CallRestApiAsync(request);
+            var request = BuildRequest(api, HttpMethod.Post, methodName, args);
+            return CallRestApiAsync(request, cancellationToken);
         }
 
         public override async Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -147,8 +147,8 @@ namespace Microsoft.Azure.SignalR.Management
             ValidateUserIdAndGroupName(userId, groupName);
 
             var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
-            var request = BuildRequest(api, HttpMethod.Put, null, null, cancellationToken);
-            return CallRestApiAsync(request);
+            var request = BuildRequest(api, HttpMethod.Put, null, null);
+            return CallRestApiAsync(request, cancellationToken);
         }
 
         public Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
@@ -156,8 +156,8 @@ namespace Microsoft.Azure.SignalR.Management
             ValidateUserIdAndGroupName(userId, groupName);
 
             var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
-            var request = BuildRequest(api, HttpMethod.Delete, null, null, cancellationToken);
-            return CallRestApiAsync(request);
+            var request = BuildRequest(api, HttpMethod.Delete, null, null);
+            return CallRestApiAsync(request, cancellationToken);
         }
 
         private static HttpRequestMessage GenerateHttpRequest(string url, PayloadMessage payload, string tokenString, HttpMethod httpMethod)
@@ -192,13 +192,13 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
-        private static HttpRequestMessage BuildRequest(RestApiEndpoint endpoint, HttpMethod httpMethod, string methodName = null, object[] args = null, CancellationToken cancellationToken = default)
+        private static HttpRequestMessage BuildRequest(RestApiEndpoint endpoint, HttpMethod httpMethod, string methodName = null, object[] args = null)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
             return GenerateHttpRequest(endpoint.Audience, payload, endpoint.Token, HttpMethod.Post);
         }
 
-        private static async Task CallRestApiAsync(HttpRequestMessage request)
+        private static async Task CallRestApiAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
         {
             var httpClient = HttpClientFactory.CreateClient();
             HttpResponseMessage response = null;
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.SignalR.Management
 
             try
             {
-                response = await httpClient.SendAsync(request);
+                response = await httpClient.SendAsync(request, cancellationToken);
             }
             catch (HttpRequestException ex)
             {
