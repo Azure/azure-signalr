@@ -17,24 +17,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [SkipIfConnectionStringNotPresent]
         internal async Task ClientConnectionConnectToServiceTest()
         {
-            var serviceManagerOptions = new ServiceManagerOptions
-            {
-                ConnectionString = TestConfiguration.Instance.ConnectionString
-            };
-
-            var serviceManager = new ServiceManager(serviceManagerOptions);
-
+            var serviceManager = Utility.GenerateServiceManager(TestConfiguration.Instance.ConnectionString);
             var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
-
-            var connection = new HubConnectionBuilder()
-                .WithUrl(clientEndpoint, option =>
-                {
-                    option.AccessTokenProvider = () =>
-                    {
-                        var clientAccessToken = serviceManager.GenerateClientAccessToken(HubName);
-                        return Task.FromResult(clientAccessToken);
-                    };
-                }).Build();
+            var clientAccessToken = serviceManager.GenerateClientAccessToken(HubName, null, null);
+            var connection = Utility.CreateHubConnection(clientEndpoint, clientAccessToken);
 
             Task task = null;
             try
