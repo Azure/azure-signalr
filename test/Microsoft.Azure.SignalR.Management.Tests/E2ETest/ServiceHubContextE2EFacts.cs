@@ -129,7 +129,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private static async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType)
         {
-            var serviceManager = Utility.GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType);
+            var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType);
             var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName);
 
             var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private static async Task<IEnumerable<HubConnection>> CreateAndStartClientConnections(string clientEndpoint, IEnumerable<string> clientAccessTokens)
         {
             var connections = (from clientAccessToken in clientAccessTokens
-                               select Utility.CreateHubConnection(clientEndpoint, clientAccessToken)).ToList();
+                               select CreateHubConnection(clientEndpoint, clientAccessToken)).ToList();
 
             await Task.WhenAll(from connection in connections
                                select connection.StartAsync());
@@ -161,5 +161,26 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 });
             }
         }
+
+        private static IServiceManager GenerateServiceManager(string connectionString, ServiceTransportType serviceTransportType = ServiceTransportType.Transient)
+        {
+            var serviceManagerOptions = new ServiceManagerOptions
+            {
+                ConnectionString = connectionString,
+                ServiceTransportType = serviceTransportType
+            };
+
+            return new ServiceManager(serviceManagerOptions);
+        }
+
+        private static HubConnection CreateHubConnection(string endpoint, string accessToken) =>
+            new HubConnectionBuilder()
+                .WithUrl(endpoint, option =>
+                {
+                    option.AccessTokenProvider = () =>
+                    {
+                        return Task.FromResult(accessToken);
+                    };
+                }).Build();
     }
 }
