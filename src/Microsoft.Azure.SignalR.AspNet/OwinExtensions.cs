@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -16,6 +17,7 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.Owin.Infrastructure;
 
 namespace Owin
 {
@@ -192,32 +194,41 @@ namespace Owin
                 throw new ArgumentException(nameof(applicationName), "Empty application name is not allowed.");
             }
 
+            if (configuration == null)
+            {
+                // Keep the same as SignalR's exception
+                throw new ArgumentException("A configuration object must be specified.");
+            }
+
+            var resolver = configuration.Resolver ?? throw new ArgumentException("A dependency resolver must be specified.");
+
+            // Ensure we have the conversions for MS.Owin so that
+            // the app builder respects the OwinMiddleware base class
+            SignatureConversions.AddConversions(builder);
+
+            // ServiceEndpointManager needs the logger
+            var loggerFactory = new LoggerFactory();
+
             var hubs = GetAvailableHubNames(configuration);
 
-            ILoggerFactory logger;
-            var traceManager = configuration.Resolver.Resolve<ITraceManager>();
-            if (traceManager != null)
-            {
-                logger = new LoggerFactory(new ILoggerProvider[] { new TraceManagerLoggerProvider(traceManager) });
-            }
-            else
-            {
-                logger = NullLoggerFactory.Instance;
-            }
-
-            var endpoint = new ServiceEndpointManager(options, logger);
+            var endpoint = new ServiceEndpointManager(options, loggerFactory);
             configuration.Resolver.Register(typeof(IServiceEndpointManager), () => endpoint);
 
             // Get the one from DI or new a default one
-            var router = configuration.Resolver.Resolve<IEndpointRouter>() ?? new DefaultRouter();
+            var router = configuration.Resolver.Resolve<IEndpointRouter>() ?? new DefaultEndpointRouter();
 
-            // TODO: Update to use Middleware when SignalR SDK is ready
-            // Replace default HubDispatcher with a custom one, which has its own negotiation logic
-            // https://github.com/SignalR/SignalR/blob/dev/src/Microsoft.AspNet.SignalR.Core/Hosting/PersistentConnectionFactory.cs#L42
-            configuration.Resolver.Register(typeof(PersistentConnection), () => new NegotiateHandler(configuration, applicationName, endpoint, router, options, logger));
-            builder.RunSignalR(typeof(PersistentConnection), configuration);
+            builder.Use<NegotiateMiddleware>(configuration, applicationName, endpoint, router, options, loggerFactory);
 
-            var dispatcher = PrepareAndGetDispatcher(configuration, options, endpoint, router, applicationName, hubs, logger);
+            builder.RunSignalR(configuration);
+
+            // Fetch the trace manager from DI and add logger provider
+            var traceManager = configuration.Resolver.Resolve<ITraceManager>();
+            if (traceManager != null)
+            {
+                loggerFactory.AddProvider(new TraceManagerLoggerProvider(traceManager));
+            }
+
+            var dispatcher = PrepareAndGetDispatcher(configuration, options, endpoint, router, applicationName, hubs, loggerFactory);
             if (dispatcher != null)
             {
                 // Start the server->service connection asynchronously 
@@ -238,9 +249,6 @@ namespace Owin
 
             var serviceProtocol = new ServiceProtocol();
             configuration.Resolver.Register(typeof(IServiceProtocol), () => serviceProtocol);
-
-            var provider = new EmptyProtectedData();
-            configuration.Resolver.Register(typeof(IProtectedData), () => provider);
 
             var scm = new ServiceConnectionManager(applicationName, hubs);
             configuration.Resolver.Register(typeof(Microsoft.Azure.SignalR.AspNet.IServiceConnectionManager), () => scm);

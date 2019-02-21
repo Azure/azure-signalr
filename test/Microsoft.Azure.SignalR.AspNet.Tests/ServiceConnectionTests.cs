@@ -24,9 +24,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public ServiceConnectionTests(ITestOutputHelper output) : base(output)
         {
             var hubConfig = new HubConfiguration();
-            var protectedData = new EmptyProtectedData();
             var transport = new AzureTransportManager(hubConfig.Resolver);
-            hubConfig.Resolver.Register(typeof(IProtectedData), () => protectedData);
             hubConfig.Resolver.Register(typeof(ITransportManager), () => transport);
 
             _clientConnectionManager = new TestConnectionManager();

@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
@@ -22,11 +21,6 @@ namespace Microsoft.Azure.SignalR
             if (endpoints.Count == 0)
             {
                 (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringSecondaryKey, Constants.ConnectionStringSecondaryKeyPrefix);
-            }
-
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                connectionString = endpoints.FirstOrDefault()?.ConnectionString;
             }
 
             _connectionString = connectionString;

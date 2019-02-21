@@ -22,8 +22,15 @@ namespace Microsoft.Azure.SignalR.Tests
             var userClaimType = JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap[ClaimTypes.NameIdentifier];
             var userId = token.Claims.FirstOrDefault(claim => claim.Type == userClaimType)?.Value;
 
-            var claims = new Claim[] { new Claim(ClaimTypes.NameIdentifier, userId) };
-            if(customClaims != null) claims = claims.Concat(customClaims).ToArray();
+            var claims = new List<Claim>();
+            if (userId != null)
+            {
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, userId));
+            }
+            if (customClaims != null)
+            {
+                claims.AddRange(customClaims.ToList());
+            }
 
             var tokenString = GenerateJwtBearer(audience, claims, token.ValidTo,
                 token.ValidFrom,

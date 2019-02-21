@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    public class ServiceManager : IServiceManager
+    internal class ServiceManager : IServiceManager
     {
         private readonly ServiceManagerOptions _serviceManagerOptions;
         private readonly ServiceEndpointProvider _endpoint;
@@ -54,9 +54,20 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
-        public string GenerateClientAccessToken(string hubName, IList<Claim> claims, TimeSpan? lifeTime = null)
+        public string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)
         {
-            return _endpoint.GenerateClientAccessToken(hubName, claims, lifeTime);
+            var claimsWithUserId = new List<Claim>();
+            if (userId != null)
+            {
+                claimsWithUserId.Add(new Claim(ClaimTypes.NameIdentifier, userId));
+            };
+            if (claims != null)
+            {
+                claimsWithUserId.AddRange(claims);
+            }
+            return _endpoint.GenerateClientAccessToken(hubName, claimsWithUserId, lifeTime);
         }
+
+        public string GetClientEndpoint(string hubName) => _endpoint.GetClientEndpoint(hubName, null, null);
     }
 }

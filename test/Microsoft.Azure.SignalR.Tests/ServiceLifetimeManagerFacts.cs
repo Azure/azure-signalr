@@ -106,8 +106,6 @@ namespace Microsoft.Azure.SignalR.Tests
             _ = proxy.StartAsync();
             await serverTask.OrTimeout();
 
-            _ = proxy.ProcessApplicationMessagesAsync();
-
             var task = proxy.WaitForApplicationMessageAsync(messageType);
 
             await InvokeMethod(serviceLifetimeManager, methodName);

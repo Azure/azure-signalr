@@ -5,28 +5,44 @@ using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR
 {
-    /// <summary>
-    /// TODO: expose
-    /// </summary>
-    internal interface IEndpointRouter
+    public interface IEndpointRouter
     {
         /// <summary>
-        /// TODO: add HttpContext for Core and HostContext for AspNet one?
+        /// Get the service endpoint for the client to connect to
         /// </summary>
-        /// <param name="primaryEndpoints"></param>
+        /// <param name="endpoints">All the available endpoints</param>
         /// <returns></returns>
-        ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> primaryEndpoints);
+        ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> endpoints);
 
-        IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> availableEnpoints);
+        /// <summary>
+        /// Get the service endpoints for broadcast message to send to
+        /// </summary>
+        /// <param name="endpoints">All the available endpoints</param>
+        /// <returns></returns>
+        IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> endpoints);
 
-        IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> availableEnpoints);
+        /// <summary>
+        /// Get the service endpoints for the specified user to send to
+        /// </summary>
+        /// <param name="userId">The id of the user</param>
+        /// <param name="endpoints">All the available endpoints</param>
+        /// <returns></returns>
+        IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> endpoints);
 
-        IEnumerable<ServiceEndpoint> GetEndpointsForUsers(IReadOnlyList<string> userList, IEnumerable<ServiceEndpoint> availableEnpoints);
+        /// <summary>
+        /// Get the service endpoints for the specified group to send to
+        /// </summary>
+        /// <param name="groupName">The name of the group</param>
+        /// <param name="endpoints">All the available endpoints</param>
+        /// <returns></returns>
+        IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> endpoints);
 
-        IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> availableEnpoints);
-
-        IEnumerable<ServiceEndpoint> GetEndpointsForGroups(IReadOnlyList<string> groupList, IEnumerable<ServiceEndpoint> availableEnpoints);
-
-        IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> availableEnpoints);
+        /// <summary>
+        /// Get the service endpoints for the specified connection to send to
+        /// </summary>
+        /// <param name="connectionId">The id of the connection</param>
+        /// <param name="endpoints">All the available endpoints</param>
+        /// <returns></returns>
+        IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints);
     }
 }

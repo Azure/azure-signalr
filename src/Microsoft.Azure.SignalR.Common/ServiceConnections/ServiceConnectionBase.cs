@@ -27,12 +27,6 @@ namespace Microsoft.Azure.SignalR
         // App server ping is triggered by incoming requests and send by checking last send timestamp.
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
         private static readonly long DefaultKeepAliveTicks = DefaultKeepAliveInterval.Seconds * Stopwatch.Frequency;
-        private static readonly int MaxReconnectBackoffInternalInMilliseconds = 1000;
-        private const string PingTargetKey = "target";
-
-        // Start reconnect after a random interval less than 1 second
-        private static TimeSpan ReconnectInterval =>
-            TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackoffInternalInMilliseconds));
 
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
         private readonly HandshakeRequestMessage _handshakeRequest;
@@ -42,9 +36,8 @@ namespace Microsoft.Azure.SignalR
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
         private readonly ServerConnectionType _connectionType;
 
-        private readonly IServiceConnectionManager _serviceConnectionManager;
+        private readonly IServiceMessageHandler _serviceMessageHandler;
 
-        private bool _isStopped;
         // Check service timeout
         private long _lastReceiveTimestamp;
         // Keep-alive tick
@@ -65,7 +58,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task ConnectionInitializedTask => _serviceConnectionStartTcs.Task;
 
-        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILoggerFactory loggerFactory, string connectionId, IServiceConnectionManager serviceConnectionManager, ServerConnectionType connectionType)
+        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILoggerFactory loggerFactory, string connectionId, IServiceMessageHandler serviceMessageHandler, ServerConnectionType connectionType)
         {
             ServiceProtocol = serviceProtocol;
             ConnectionId = connectionId;
@@ -75,50 +68,54 @@ namespace Microsoft.Azure.SignalR
             _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
             _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
             _logger = loggerFactory?.CreateLogger<ServiceConnectionBase>() ?? NullLogger<ServiceConnectionBase>.Instance;
-            _serviceConnectionManager = serviceConnectionManager;
-        }
-
-        public async Task StartAsync(string target = null)
-        {
-            int retryCount = 0;
-            while (!_isStopped)
-            {
-                // If we are not able to start, we will quit this connection.
-                if (!await StartAsyncCore(target))
-                {
-                    _serviceConnectionStartTcs.TrySetResult(false);
-
-                    await Task.Delay(GetRetryDelay(ref retryCount));
-                    continue;
-                }
-
-                _serviceConnectionStartTcs.TrySetResult(true);
-                retryCount = 0;
-                _isConnected = true;
-                await ProcessIncomingAsync();
-                _isConnected = false;
-            }
+            _serviceMessageHandler = serviceMessageHandler;
         }
 
         /// <summary>
-        /// exponential back off with max 1 minute.
+        /// Start a service connection without the lifetime management.
+        /// To get full lifetime management including dispose or restart, use <see cref="ServiceConnectionContainerBase"/>
         /// </summary>
-        public static TimeSpan GetRetryDelay(ref int retryCount)
+        /// <param name="target">The target instance Id</param>
+        /// <returns>The task of StartAsync</returns>
+        public async Task StartAsync(string target = null)
         {
-            // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
-            // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
-            if (retryCount > 5)
+            // Codes in try block should catch and log exceptions separately.
+            // The catch here should be very rare to reach.
+            try
             {
-                return TimeSpan.FromMinutes(1) + ReconnectInterval;
+                if (await StartAsyncCore(target))
+                {
+                    _serviceConnectionStartTcs.TrySetResult(true);
+                    _isConnected = true;
+                    await ProcessIncomingAsync();
+                    _isConnected = false;
+                }
+
+                _serviceConnectionStartTcs.TrySetResult(false);
             }
-            return TimeSpan.FromSeconds(1 << retryCount++) + ReconnectInterval;
+            catch (Exception ex)
+            {
+                Status = ServiceConnectionStatus.Disconnected;
+                _serviceConnectionStartTcs.TrySetException(ex);
+                Log.UnexpectedExceptionInStart(_logger, ConnectionId, ex);
+            }
+            finally
+            {
+                await StopAsync();
+            }
         }
 
-        // For test purpose only
         public Task StopAsync()
         {
-            _isStopped = true;
-            ConnectionContext?.Transport.Input.CancelPendingRead();
+            try
+            {
+                ConnectionContext?.Transport.Input.CancelPendingRead();
+            }
+            catch (Exception ex)
+            {
+                Log.UnexpectedExceptionInStop(_logger, ConnectionId, ex);
+            }
+            
             return Task.CompletedTask;
         }
 
@@ -189,25 +186,7 @@ namespace Microsoft.Azure.SignalR
 
         protected Task OnPingMessageAsync(PingMessage pingMessage)
         {
-            if (pingMessage.Messages.Length == 0)
-            {
-                return Task.CompletedTask;
-            }
-
-            int index = 0;
-            while (index < pingMessage.Messages.Length - 1)
-            {
-                if (pingMessage.Messages[index] == PingTargetKey &&
-                    !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
-                {
-                    var connection = _serviceConnectionManager.CreateServiceConnection();
-                    return connection.StartAsync(pingMessage.Messages[index + 1]);
-                }
-
-                index += 2;
-            }
-
-            return Task.CompletedTask;
+            return _serviceMessageHandler.HandlePingAsync(pingMessage);
         }
 
         private async Task<bool> StartAsyncCore(string target)
@@ -441,8 +420,7 @@ namespace Microsoft.Azure.SignalR
                 case ServiceErrorMessage serviceErrorMessage:
                     return OnServiceErrorAsync(serviceErrorMessage);
                 case PingMessage pingMessage:
-                    // TODO: Call OnPingMessageAsync when the full pipeline is completed.
-                    break;
+                    return OnPingMessageAsync(pingMessage);
             }
             return Task.CompletedTask;
         }
@@ -619,6 +597,12 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, string, Exception> _receivedServiceErrorMessage =
                 LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(27, "ReceivedServiceErrorMessage"), "Connection {ServiceConnectionId} received error message from service: {Error}");
 
+            private static readonly Action<ILogger, string, Exception> _unexpectedExceptionInStart =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(28, "UnexpectedExceptionInStart"), "Connection {ServiceConnectionId} got unexpected exception in StarAsync.");
+
+            private static readonly Action<ILogger, string, Exception> _unexpectedExceptionInStop =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(29, "UnexpectedExceptionInStop"), "Connection {ServiceConnectionId} got unexpected exception in StopAsync.");
+
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
                 _failedToWrite(logger, exception);
@@ -759,6 +743,16 @@ namespace Microsoft.Azure.SignalR
             public static void ReceivedServiceErrorMessage(ILogger logger, string connectionId, string errorMessage)
             {
                 _receivedServiceErrorMessage(logger, connectionId, errorMessage, null);
+            }
+
+            public static void UnexpectedExceptionInStart(ILogger logger, string connectionId, Exception exception)
+            {
+                _unexpectedExceptionInStart(logger, connectionId, exception);
+            }
+
+            public static void UnexpectedExceptionInStop(ILogger logger, string connectionId, Exception exception)
+            {
+                _unexpectedExceptionInStop(logger, connectionId, exception);
             }
         }
     }

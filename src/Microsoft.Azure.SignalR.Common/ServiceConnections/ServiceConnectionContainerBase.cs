@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,14 +13,21 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceConnectionManager
+    abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler
     {
+        private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
+        private static TimeSpan ReconnectInterval =>
+            TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackOffInternalInMilliseconds));
+
         private readonly ServiceEndpoint _endpoint;
 
         protected readonly IServiceConnectionFactory ServiceConnectionFactory;
         protected readonly IConnectionFactory ConnectionFactory;
-        protected readonly List<IServiceConnection> FixedServiceConnections;
+        protected volatile List<IServiceConnection> FixedServiceConnections;
         protected readonly int FixedConnectionCount;
+
+        private volatile int _defaultConnectionRetry;
+        private object _lock = new object();
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory,
@@ -41,7 +52,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task StartAsync()
         {
-            var task = Task.WhenAll(FixedServiceConnections.Select(c => c.StartAsync()));
+            var task = Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
             await Task.WhenAny(FixedServiceConnections.Select(s => s.ConnectionInitializedTask));
 
             // Set the endpoint connection after one connection is initialized
@@ -54,21 +65,91 @@ namespace Microsoft.Azure.SignalR
         }
 
         /// <summary>
-        /// Get a connection in initialization and reconnection
+        /// Start and manage the whole connection lifetime
+        /// </summary>
+        /// <returns></returns>
+        protected async Task StartCoreAsync(IServiceConnection connection, string target = null)
+        {
+            try
+            {
+                await connection.StartAsync(target);
+            }
+            finally
+            {
+                await OnConnectionComplete(connection);
+            }
+        }
+
+        public abstract Task HandlePingAsync(PingMessage pingMessage);
+
+        /// <summary>
+        /// Create a connection in initialization and reconnection
         /// </summary>
         protected abstract IServiceConnection CreateServiceConnectionCore();
 
         /// <summary>
-        /// Get a connection for a specific service connection type
+        /// Create a connection for a specific service connection type
         /// </summary>
-        protected virtual IServiceConnection CreateServiceConnectionCore(ServerConnectionType type)
+        protected IServiceConnection CreateServiceConnectionCore(ServerConnectionType type)
         {
             return ServiceConnectionFactory.Create(ConnectionFactory, this, type);
         }
 
-        public abstract IServiceConnection CreateServiceConnection();
+        protected virtual async Task OnConnectionComplete(IServiceConnection serviceConnection)
+        {
+            if (serviceConnection == null)
+            {
+                throw new ArgumentNullException(nameof(serviceConnection));
+            }
 
-        public abstract void DisposeServiceConnection(IServiceConnection connection);
+            var index = FixedServiceConnections.IndexOf(serviceConnection);
+            if (index != -1)
+            {
+                await RestartServiceConnectionCoreAsync(index);
+            }
+        }
+
+        private async Task RestartServiceConnectionCoreAsync(int index)
+        {
+            await Task.Delay(GetRetryDelay(_defaultConnectionRetry));
+
+            // Increase retry count after delay, then if a group of connections get disconnected simultaneously,
+            // all of them will delay a similar range of time and reconnect. But if they get disconnected again (when SignalR service down), 
+            // they will all delay for a much longer time.
+            Interlocked.Increment(ref _defaultConnectionRetry);
+
+            var connection = CreateServiceConnectionCore();
+            ReplaceFixedConnections(index, connection);
+
+            _ = StartCoreAsync(connection);
+            await connection.ConnectionInitializedTask;
+
+            if (connection.Status == ServiceConnectionStatus.Connected)
+            {
+                Interlocked.Exchange(ref _defaultConnectionRetry, 0);
+            }
+        }
+
+        internal static TimeSpan GetRetryDelay(int retryCount)
+        {
+            // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
+            // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
+            if (retryCount > 5)
+            {
+                return TimeSpan.FromMinutes(1) + ReconnectInterval;
+            }
+            return TimeSpan.FromSeconds(1 << retryCount) + ReconnectInterval;
+        }
+
+        protected void ReplaceFixedConnections(int index, IServiceConnection serviceConnection)
+        {
+            lock (_lock)
+            {
+                var newImmutableConnections = FixedServiceConnections.ToList();
+                newImmutableConnections[index] = serviceConnection;
+                FixedServiceConnections = newImmutableConnections;
+            }
+        }
 
         public ServiceConnectionStatus Status => GetStatus();
 

@@ -8,12 +8,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Reflection;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
-using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Json;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.AspNet.SignalR.Transports;
@@ -21,7 +19,6 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Options;
 using Microsoft.Owin.Hosting;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Owin;
 using Xunit;
 
@@ -45,9 +42,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var resolver = hubConfig.Resolver;
                 var options = resolver.Resolve<IOptions<ServiceOptions>>();
                 Assert.Equal(ConnectionString, options.Value.ConnectionString);
-                Assert.IsType<NegotiateHandler>(resolver.Resolve<PersistentConnection>());
                 Assert.IsType<ServiceConnectionManager>(resolver.Resolve<IServiceConnectionManager>());
-                Assert.IsType<EmptyProtectedData>(resolver.Resolve<IProtectedData>());
                 Assert.IsType<ServiceMessageBus>(resolver.Resolve<IMessageBus>());
                 Assert.IsType<AzureTransportManager>(resolver.Resolve<ITransportManager>());
                 Assert.IsType<ServiceProtocol>(resolver.Resolve<IServiceProtocol>());
@@ -58,6 +53,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestRunAzureSignalRWithAppNameEqualToHubNameThrows()
         {
             var hubConfig = new HubConfiguration();
+            // Resolver is shared in GloblHost, use a new one instead
+            hubConfig.Resolver = new DefaultDependencyResolver();
             var hubName = "hub";
             var testHub = new TestHubManager(hubName);
             hubConfig.Resolver.Register(typeof(IHubManager), () => testHub);
@@ -137,9 +134,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
                     var endpoints = manager.GetAvailableEndpoints().ToArray();
                     Assert.Equal(4, endpoints.Length);
-
-                    endpoints = manager.GetPrimaryEndpoints().ToArray();
-                    Assert.Equal(4, endpoints.Length);
                 }
             }
         }
@@ -151,7 +145,40 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
             {
                 var hubConfig = new HubConfiguration();
-                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options=>
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
+                {
+                    options.Endpoints = new ServiceEndpoint[]
+                    {
+                        new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
+                        new ServiceEndpoint(ConnectionString3),
+                        new ServiceEndpoint(ConnectionString4)
+                    };
+                })))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+
+                    Assert.Equal(ConnectionString, options.Value.ConnectionString);
+
+                    Assert.Equal(3, options.Value.Endpoints.Length);
+
+                    var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
+                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    Assert.Equal(4, endpoints.Length);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestRunAzureSignalRWithMultipleAppSettingsAndCustomSettingsAndCustomRouter()
+        {
+            // Prepare the configuration
+            using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
+            {
+                var hubConfig = new HubConfiguration();
+                hubConfig.Resolver = new DefaultDependencyResolver();
+                var router = new TestCustomRouter(ConnectionString3);
+                hubConfig.Resolver.Register(typeof(IEndpointRouter), () => router);
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
                 {
                     options.Endpoints = new ServiceEndpoint[]
                     {
@@ -171,9 +198,54 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var endpoints = manager.GetAvailableEndpoints().ToArray();
                     Assert.Equal(4, endpoints.Length);
 
-                    endpoints = manager.GetPrimaryEndpoints().ToArray();
-                    Assert.Equal(3, endpoints.Length);
+                    var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
+                    var response = await client.GetAsync("/negotiate");
+
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    var message = await response.Content.ReadAsStringAsync();
+                    var responseObject = JsonConvert.DeserializeObject<ResponseMessage>(message);
+                    Assert.Equal("2.0", responseObject.ProtocolVersion);
+
+                    // with custome router, always goes to connection string 3 as passed into the router
+                    Assert.Equal("http://localhost3/aspnetclient", responseObject.RedirectUrl);
                 }
+            }
+        }
+
+        [Fact]
+        public async Task TestRunAzureSignalRWithDefaultRouterNegotiateWithFallback()
+        {
+            // Prepare the configuration
+            var hubConfig = new HubConfiguration();
+            hubConfig.Resolver = new DefaultDependencyResolver();
+            var router = new DefaultEndpointRouter();
+            hubConfig.Resolver.Register(typeof(IEndpointRouter), () => router);
+            using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
+            {
+                options.Endpoints = new ServiceEndpoint[]
+                {
+                        new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
+                        new ServiceEndpoint(ConnectionString3)
+                        {
+                            Connection = new TestContainer(ServiceConnectionStatus.Disconnected)
+                        },
+                        new ServiceEndpoint(ConnectionString4)
+                        {
+                            Connection = new TestContainer(ServiceConnectionStatus.Disconnected)
+                        },
+                };
+            })))
+            {
+                var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
+                var response = await client.GetAsync("/negotiate");
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                var message = await response.Content.ReadAsStringAsync();
+                var responseObject = JsonConvert.DeserializeObject<ResponseMessage>(message);
+                Assert.Equal("2.0", responseObject.ProtocolVersion);
+
+                // The default router fallbacks to the secondary
+                Assert.Equal("http://localhost2/aspnetclient", responseObject.RedirectUrl);
             }
         }
 
@@ -196,7 +268,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Theory]
         [InlineData(typeof(NullUserIdProvider), null)]
         [InlineData(typeof(CustomUserIdProvider), "hello")]
-        public async Task TestNegotiateWithRunAzureSignalR(Type providerType, string expectedUser)
+        public async Task TestRequestsWithRunAzureSignalR(Type providerType, string expectedUser)
         {
             var hubConfiguration = new HubConfiguration();
             hubConfiguration.Resolver.Register(typeof(IUserIdProvider), () => Activator.CreateInstance(providerType));
@@ -215,6 +287,16 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 Assert.Equal(AppName, token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.AppName).Value);
                 var user = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.UserId)?.Value;
                 Assert.Equal(expectedUser, user);
+
+                // 1. test client proxy file can return
+                response = await client.GetAsync("/signalr/hubs");
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                message = await response.Content.ReadAsStringAsync();
+                Assert.StartsWith("/*!\r\n * ASP.NET SignalR JavaScript ", message);
+
+                // 2. test other requests should not be handled
+                response = await client.GetAsync("/not-exists");
+                Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             }
         }
 
@@ -248,6 +330,75 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
                 Assert.NotNull(requestId);
                 Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
+            }
+        }
+
+        private class TestContainer : IServiceConnectionContainer
+        {
+            public ServiceConnectionStatus Status { get; }
+
+            public TestContainer(ServiceConnectionStatus status)
+            {
+                Status = status;
+            }
+            public Task StartAsync()
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task WriteAsync(ServiceMessage serviceMessage)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        private class TestCustomRouter : IEndpointRouter
+        {
+            private readonly string _negotiateEndpoint;
+
+            public TestCustomRouter(string negotiateEndpoint)
+            {
+                _negotiateEndpoint = negotiateEndpoint;
+            }
+
+            public IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> availableEnpoints)
+            {
+                return availableEnpoints;
+            }
+
+            public IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> availableEnpoints)
+            {
+                return availableEnpoints;
+            }
+
+            public IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> availableEnpoints)
+            {
+                return availableEnpoints;
+            }
+
+            public IEnumerable<ServiceEndpoint> GetEndpointsForGroups(IReadOnlyList<string> groupList, IEnumerable<ServiceEndpoint> availableEnpoints)
+            {
+                return availableEnpoints;
+            }
+
+            public IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> availableEnpoints)
+            {
+                return availableEnpoints;
+            }
+
+            public IEnumerable<ServiceEndpoint> GetEndpointsForUsers(IReadOnlyList<string> userList, IEnumerable<ServiceEndpoint> availableEnpoints)
+            {
+                return availableEnpoints;
+            }
+
+            public ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> primaryEndpoints)
+            {
+                return primaryEndpoints.First(e => e.ConnectionString == _negotiateEndpoint);
             }
         }
 

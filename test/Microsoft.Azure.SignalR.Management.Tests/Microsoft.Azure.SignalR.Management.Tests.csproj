@@ -14,10 +14,12 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkPackageVersion)" />
     <PackageReference Include="xunit" Version="$(XunitPackageVersion)" />
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualStudioPackageVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="$(MicrosoftAspNetCoreSignalRClient)" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.Management\Microsoft.Azure.SignalR.Management.csproj" />
+    <ProjectReference Include="..\Microsoft.Azure.SignalR.TestsCommon\Microsoft.Azure.SignalR.TestsCommon.csproj" />
   </ItemGroup>
 
 </Project>
