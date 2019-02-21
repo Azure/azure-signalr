@@ -26,9 +26,9 @@ If the key starts with `Azure:SignalR:ConnectionString:`, it is in format `Azure
 You can add multiple instance connection strings using the following `dotnet` commands:
 
 ```batch
-dotnet user-secrets set Azure:SignalR:ConnectionString:1 <ConnectionString1>
-dotnet user-secrets set Azure:SignalR:ConnectionString:2 <ConnectionString2>
-dotnet user-secrets set Azure:SignalR:ConnectionString:3 <ConnectionString3>
+dotnet user-secrets set Azure:SignalR:ConnectionString:east-region-a <ConnectionString1>
+dotnet user-secrets set Azure:SignalR:ConnectionString:east-region-b:primary <ConnectionString2>
+dotnet user-secrets set Azure:SignalR:ConnectionString:Backup:Secondary <ConnectionString3>
 ```
 
 ### How to add multiple endpoints from code
@@ -54,12 +54,12 @@ services.AddSignalR()
 ### How to customize endpoint router
 <a name="customize-router"></a>
 
-By default, the SDK uses the [DefaultEndpointRouter](https://github.com/Azure/azure-signalr/blob/dev/src/Microsoft.Azure.SignalR.Common/Endpoints/DefaultEndpointRouter.cs) to pick up endpoints.
+By default, the SDK uses the [DefaultEndpointRouter](../src/Microsoft.Azure.SignalR.Common/Endpoints/DefaultEndpointRouter.cs) to pick up endpoints.
 
 #### Default behavior 
 1. Client request routing
 
-    When client `/negotiate` with the app server. By default, SDK uses **round robin** algorithm to pick up the redirect Azure SignalR endpoint from the set of available service endpoints.
+    When client `/negotiate` with the app server. By default, SDK **randomly select** one endpoint from the set of available service endpoints.
 
 2. Server message routing
 
@@ -72,21 +72,55 @@ You can create your own router when you have special knowledge to identify which
 Below defines a custom router when groups starting with `east-` always go to the endpoint named `east`:
 
 ```cs
-private sealed class CustomRouter : IEndpointRouter
+private class CustomRouter : EndpointRouterDecorator
 {
-    private readonly IEndpointRouter _inner = new DefaultEndpointRouter();
-
-    public IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> availableEndpoints)
+    public override IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> endpoints)
     {
+        // Override the group broadcast behavior, if the group name starts with "east-", only send messages to endpoints inside east
         if (groupName.StartsWith("east-"))
         {
-            return availableEndpoints.Where(e => e.Name == "east");
+            return endpoints.Where(e => e.Name.StartsWith("east-"));
         }
-        
-        return _inner.GetEndpointsForGroup(groupName, availableEndpoints);
+
+        return base.GetEndpointsForGroup(groupName, endpoints);
     }
-    ...
 }
+```
+
+Below is another example, that overrides the default negotiate behavior, to select the endpoints depends on where the app server locates.
+
+```cs
+private class CustomRouter : EndpointRouterDecorator
+{
+    public override ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> endpoints)
+    {
+        // Override the negotiate behavior that read the region from Environment
+        var region = Environment.GetEnvironmentVariable("SERVER_REGION");
+        if (!string.IsNullOrEmpty(region))
+        {
+            return base.GetNegotiateEndpoint(endpoints.Where(s => s.Name.StartsWith(region)));
+        }
+
+        return base.GetNegotiateEndpoint(endpoints);
+    }
+}
+```
+
+And don't forget to register the router to DI container using:
+
+```cs
+services.AddSingleton(typeof(IEndpointRouter), typeof(CustomRouter));
+services.AddSignalR()
+        .AddAzureSignalR(
+            options => 
+            {
+                options.Endpoints = new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint(name: "east", connectionString: "<connectionString1>"),
+                    new ServiceEndpoint(name: "west", connectionString: "<connectionString2>"),
+                    new ServiceEndpoint("<connectionString3>")
+                };
+            });
 ```
 
 ## For ASP.NET
@@ -106,9 +140,9 @@ You can add multiple instance connection strings to `web.config`:
 <configuration>
   <connectionStrings>
     <add name="Azure:SignalR:ConnectionString" connectionString="<ConnectionString1>"/>
-    <add name="Azure:SignalR:ConnectionString:1" connectionString="<ConnectionString2>"/>
-    <add name="Azure:SignalR:ConnectionString:2" connectionString="<ConnectionString3>"/>
-    <add name="Azure:SignalR:ConnectionString:3" connectionString="<ConnectionString4>"/>
+    <add name="Azure:SignalR:ConnectionString:en-us" connectionString="<ConnectionString2>"/>
+    <add name="Azure:SignalR:ConnectionString:zh-cn:secondary" connectionString="<ConnectionString3>"/>
+    <add name="Azure:SignalR:ConnectionString:Backup:secondary" connectionString="<ConnectionString4>"/>
   </connectionStrings>
   ...
 </configuration>
@@ -147,7 +181,7 @@ And don't forget to register the router to DI container using:
 var hub = new HubConfiguration();
 var router = new CustomRouter();
 hub.Resolver.Register(typeof(IEndpointRouter), () => router);
-app.MapAzureSignalR(GetType().FullName, hub,  => {
+app.MapAzureSignalR(GetType().FullName, hub, options => {
     options.Endpoints = new ServiceEndpoint[]
                 {
                     new ServiceEndpoint(name: "east", connectionString: "<connectionString1>"),
@@ -168,9 +202,15 @@ In cross-geo cases, cross-geo network can be comparatively unstable. For one app
 
 ![Cross-Geo Infra](./images/cross_geo_infra.png)
 
+When a client `/negotiate` with the app server, with the default router, SDK **randomly select** one endpoint from the set of available `primary` endpoints. When none of the `primary` endpoints are available, SDK then **randmonly select** from the set of all available `secondary` endpoints. The endpoint is **available** when the connection between server and this service endpoint is connected. 
+
+In cross-geo senario, when a client `/negotiate` with the app server hosted in East US, by default it always returns the `primary` endpoint located in East US for the client to establish persistent connection with. When all East US endpoints are not available, the client will then be redirected to endpoints in other regions, such as West US. [Failover](#failover) describes it in detail.
+
+![Normal Negotiate](./images/normal_negotiate.png)
+
 ## Failover
 <a name="failover"></a>
 
-When all `primary` endpoints are offline, client `/negotiate` returns one online `secondary` endpoint if any exists. In this way, the client is routed to an available `secondary` endpoint. This failover  mechanism relies on the settings that all the endpoints should be `primary` endpoints to some app server.
+When all `primary` endpoints are not available, client `/negotiate` picks from the `secondary` endpoints if any exists. In this way, the client is routed to an available `secondary` endpoint. This failover mechanism relies on the settings that all the endpoints should be `primary` endpoints to some app server.
 
-![Failover](./images/failover.png)
+![Failover](./images/failover_negotiate.png)
