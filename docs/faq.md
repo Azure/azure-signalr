@@ -82,3 +82,18 @@ You can find the details about how do we calculate these metrics [here](https://
 
 In the overview blade of Azure SignalR Service resources, we have already chosen the approperate aggregation type for you. And if you go to the Metrics blade, you can
 take the aggregation type [here](https://docs.microsoft.com/en-us/azure/azure-monitor/platform/metrics-supported#microsoftsignalrservicesignalr) as a reference.
+
+<a name="service-mode"></a>
+## What is the meaning of service mode `Default`/`Serverless`/`Classic`? how can I choose?
+
+Modes:
+* `Default` mode **require** hub server. When a hub without any available server connection, client connection will be reject.
+* `Serverless` mode do **NOT** allow any server connection, i.e. it will reject all server connections, all clients must in serverless mode. This mode allow dynamic hub.
+* `Classic` mode is a mixed status. When a hub has server connection, the new client will be route to hub server, if not, client will enter serverless mode.
+
+  This may cause some problem, for example, all of server connections are lost for a moment, some clients will enter serverless mode, instead of route to hub server.
+
+Choosing:
+1. No hub server, choose `Serverless`.
+1. All of hubs have hub servers, choose `Default`.
+1. Some of hubs have hub servers, others not, choose `Classic`.
