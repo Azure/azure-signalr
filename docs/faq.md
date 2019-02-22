@@ -7,6 +7,7 @@
 - [Why is exception thrown from my custom `IUserIdProvider` when switching from ASP.NET Core SignalR to Azure SignalR Service SDK?](#limited-context)
 - [Can I configure available transports at server side in Azure SignalR Service like ASP.NET Core SignalR?](#configure-transports)
 - [What is the meaning of metrics like message count or connection count showed in Azure portal? Which kind of aggregation type should I choose?](#metrics-meaning)
+- [What is the meaning of service mode `Default`/`Serverless`/`Classic`? How can I choose?](#service-mode)
 
 <a name="production-use"></a>
 ## Is Azure SignalR Service ready for production use?
@@ -87,9 +88,9 @@ take the aggregation type [here](https://docs.microsoft.com/en-us/azure/azure-mo
 ## What is the meaning of service mode `Default`/`Serverless`/`Classic`? How can I choose?
 
 Modes:
-* `Default` mode **require** hub server. When a hub without any available server connection, client connection will be reject.
-* `Serverless` mode do **NOT** allow any server connection, i.e. it will reject all server connections, all clients must in serverless mode. This mode allow dynamic hub.
-* `Classic` mode is a mixed status. When a hub has server connection, the new client will be route to hub server, if not, client will enter serverless mode.
+* `Default` mode **require** hub server. When there is no server connection available for the hub, the client tries to connect to this hub fails.
+* `Serverless` mode does **NOT** allow any server connection, i.e. it will reject all server connections, all clients must in serverless mode. This mode allow dynamic hub.
+* `Classic` mode is a mixed status. When a hub has server connection, the new client will be routed to hub server, if not, client will enter serverless mode.
 
   This may cause some problem, for example, all of server connections are lost for a moment, some clients will enter serverless mode, instead of route to hub server.
 
