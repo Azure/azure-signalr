@@ -94,7 +94,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             await coreTask();
 
-            await Task.WhenAll(listenTasks).OrTimeout((int)_timeout.TotalMilliseconds);
+            await Task.WhenAny(Task.WhenAll(listenTasks), Task.Delay(_timeout));
 
             var receivedMessageCount = (from listenTask in listenTasks
                                        where listenTask.Status == TaskStatus.RanToCompletion
