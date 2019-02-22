@@ -87,25 +87,19 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             await Task.Delay(_timeout);
         }
 
-        private static async Task RunTestCore(string clientEndpoint, IEnumerable<string> clientAccessTokens, Func<Task> taskFunc, int expectedReceivedMessageCount)
+        private static async Task RunTestCore(string clientEndpoint, IEnumerable<string> clientAccessTokens, Func<Task> coreTask, int expectedReceivedMessageCount)
         {
             var connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
-            var receivedMessageCount = new StrongBox<int>();
-            var listenTasks = ListenOnMessage(connections, () => Interlocked.Increment(ref receivedMessageCount.Value));
+            var listenTasks = ListenOnMessage(connections);
 
-            Task task = null;
-            try
-            {
-                await (task = taskFunc.Invoke());
-            }
-            finally
-            {
-                Assert.Null(task.Exception);
-            }
+            await coreTask();
 
-            await Task.WhenAny(Task.WhenAll(listenTasks), Task.Delay(_timeout));
+            await Task.WhenAll(listenTasks).OrTimeout((int)_timeout.TotalMilliseconds);
 
-            Assert.Equal(expectedReceivedMessageCount, receivedMessageCount.Value);
+            var receivedMessageCount = (from listenTask in listenTasks
+                                       where listenTask.Status == TaskStatus.RanToCompletion
+                                       select listenTask).Count();
+            Assert.Equal(expectedReceivedMessageCount, receivedMessageCount);
         }
 
         private static string[] GetTestStringList(string prefix, int count)
@@ -137,7 +131,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             return connections;
         }
 
-        private static IList<Task<bool>> ListenOnMessage(IList<HubConnection> connections, Action increaseReceivedMassageCount)
+        private static IList<Task<bool>> ListenOnMessage(IList<HubConnection> connections)
         {
             var tcss = new List<TaskCompletionSource<bool>>();
 
@@ -146,7 +140,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 var tcs = new TaskCompletionSource<bool>();
                 connections[i].On(MethodName, (string message) =>
                 {
-                    increaseReceivedMassageCount.Invoke();
                     Assert.Equal(Message, message);
                     tcs.SetResult(true);
                 });

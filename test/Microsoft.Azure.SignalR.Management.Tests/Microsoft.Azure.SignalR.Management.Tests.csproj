@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Microsoft.Azure.SignalR.Tests\Infrastructure\TaskExtensions.cs" Link="TaskExtensions.cs" />
     <Compile Include="..\Microsoft.Azure.SignalR.Tests\JwtTokenHelper.cs" Link="JwtTokenHelper.cs" />
   </ItemGroup>
 
