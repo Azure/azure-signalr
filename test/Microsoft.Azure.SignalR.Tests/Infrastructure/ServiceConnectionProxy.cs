@@ -97,6 +97,11 @@ namespace Microsoft.Azure.SignalR.Tests
             return ServiceConnectionContainer.StartAsync();
         }
 
+        public Task WaitForServerConnectionsInited()
+        {
+            return Task.WhenAll(ServiceConnections.Values.Select(s => s.ConnectionInitializedTask));
+        }
+
         public async Task ProcessApplicationMessagesAsync(PipeReader pipeReader)
         {
             try

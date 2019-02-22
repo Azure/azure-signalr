@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public void TestRunAzureSignalRWithDefaultOptions()
         {
-            var hubConfig = new HubConfiguration();
+            var hubConfig = GetEmptyHubConfig();
             using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, ConnectionString, hubConfig)))
             {
                 var resolver = hubConfig.Resolver;
@@ -52,9 +52,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public void TestRunAzureSignalRWithAppNameEqualToHubNameThrows()
         {
-            var hubConfig = new HubConfiguration();
-            // Resolver is shared in GloblHost, use a new one instead
-            hubConfig.Resolver = new DefaultDependencyResolver();
+            var hubConfig = GetEmptyHubConfig();
             var hubName = "hub";
             var testHub = new TestHubManager(hubName);
             hubConfig.Resolver.Register(typeof(IHubManager), () => testHub);
@@ -92,7 +90,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public void TestRunAzureSignalRWithConnectionString()
         {
-            var hubConfig = new HubConfiguration();
+            var hubConfig = GetEmptyHubConfig();
             using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, ConnectionString, hubConfig)))
             {
                 var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
@@ -106,7 +104,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             // Prepare the configuration
             using (new AppSettingsConfigScope(ConnectionString))
             {
-                var hubConfig = new HubConfiguration();
+                var hubConfig = GetEmptyHubConfig();
                 using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig)))
                 {
                     var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
@@ -122,7 +120,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             // Prepare the configuration
             using (new AppSettingsConfigScope(ConnectionString, ConnectionString2, ConnectionString3, ConnectionString4))
             {
-                var hubConfig = new HubConfiguration();
+                var hubConfig = GetEmptyHubConfig();
                 using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig)))
                 {
                     var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
@@ -144,7 +142,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             // Prepare the configuration
             using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
             {
-                var hubConfig = new HubConfiguration();
+                var hubConfig = GetEmptyHubConfig();
                 using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
                 {
                     options.Endpoints = new ServiceEndpoint[]
@@ -174,8 +172,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             // Prepare the configuration
             using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
             {
-                var hubConfig = new HubConfiguration();
-                hubConfig.Resolver = new DefaultDependencyResolver();
+                var hubConfig = GetEmptyHubConfig();
                 var router = new TestCustomRouter(ConnectionString3);
                 hubConfig.Resolver.Register(typeof(IEndpointRouter), () => router);
                 using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
@@ -252,7 +249,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public void TestRunAzureSignalRWithOptions()
         {
-            var hubConfig = new HubConfiguration();
+            var hubConfig = GetEmptyHubConfig();
             using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, o =>
             {
                 o.ConnectionString = ConnectionString;
@@ -270,7 +267,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData(typeof(CustomUserIdProvider), "hello")]
         public async Task TestRequestsWithRunAzureSignalR(Type providerType, string expectedUser)
         {
-            var hubConfiguration = new HubConfiguration();
+            var hubConfiguration = GetEmptyHubConfig();
             hubConfiguration.Resolver.Register(typeof(IUserIdProvider), () => Activator.CreateInstance(providerType));
             using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, ConnectionString, hubConfiguration)))
             {
@@ -303,7 +300,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public async Task TestClaimsProviderInServiceOptionsTakeEffect()
         {
-            var hubConfiguration = new HubConfiguration();
+            var hubConfiguration = GetEmptyHubConfig();
             using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, hubConfiguration, options =>
             {
                 options.ConnectionString = ConnectionString;
@@ -331,6 +328,16 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 Assert.NotNull(requestId);
                 Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
             }
+        }
+
+        private static HubConfiguration GetEmptyHubConfig()
+        {
+            var hubConfig = new HubConfiguration();
+            // Resolver is shared in GloblHost, use a new one instead
+            hubConfig.Resolver = new DefaultDependencyResolver();
+            var testHub = new TestHubManager();
+            hubConfig.Resolver.Register(typeof(IHubManager), () => testHub);
+            return hubConfig;
         }
 
         private class TestContainer : IServiceConnectionContainer
@@ -412,17 +419,17 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             public HubDescriptor GetHub(string hubName)
             {
-                throw new NotImplementedException();
+                return null;
             }
 
             public MethodDescriptor GetHubMethod(string hubName, string method, IList<IJsonValue> parameters)
             {
-                throw new NotImplementedException();
+                return null;
             }
 
             public IEnumerable<MethodDescriptor> GetHubMethods(string hubName, Func<MethodDescriptor, bool> predicate)
             {
-                throw new NotImplementedException();
+                yield break;
             }
 
             public IEnumerable<HubDescriptor> GetHubs(Func<HubDescriptor, bool> predicate)
@@ -432,12 +439,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             public IHub ResolveHub(string hubName)
             {
-                throw new NotImplementedException();
+                return null;
             }
 
             public IEnumerable<IHub> ResolveHubs()
             {
-                throw new NotImplementedException();
+                yield break;
             }
         }
 
