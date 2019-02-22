@@ -91,7 +91,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
             var receivedMessageCount = new StrongBox<int>();
-            var receiveTasks = ListenOnMessage(connections, () => Interlocked.Increment(ref receivedMessageCount.Value));
+            var listenTasks = ListenOnMessage(connections, () => Interlocked.Increment(ref receivedMessageCount.Value));
 
             Task task = null;
             try
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 Assert.Null(task.Exception);
             }
 
-            await Task.WhenAny(Task.WhenAll(receiveTasks), Task.Delay(_timeout));
+            await Task.WhenAny(Task.WhenAll(listenTasks), Task.Delay(_timeout));
 
             Assert.Equal(expectedReceivedMessageCount, receivedMessageCount.Value);
         }
