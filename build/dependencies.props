@@ -19,7 +19,7 @@
     
     <!-- Azure ASP.NET SignalR -->
     <MicrosoftAspNetSignalRPackageVersion>2.4.0</MicrosoftAspNetSignalRPackageVersion>
-    <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.0</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
+    <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.2.0</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
     <MicrosoftExtensionsLoggingTraceSourcePackageVersion>2.1.0</MicrosoftExtensionsLoggingTraceSourcePackageVersion>
     <SystemThreadingChannelsPackageVersion>4.5.0</SystemThreadingChannelsPackageVersion>
     
