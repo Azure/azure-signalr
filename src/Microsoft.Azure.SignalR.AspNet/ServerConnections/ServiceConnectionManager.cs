@@ -11,7 +11,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class ServiceConnectionManager : IServiceConnectionManager
     {
-        private static readonly string[] EmptyHubs = new string[0];
         private IReadOnlyDictionary<string, IServiceConnectionContainer> _serviceConnections = null;
 
         private readonly object _lock = new object();
@@ -25,7 +24,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public ServiceConnectionManager(string appName, IReadOnlyList<string> hubs)
         {
-            _hubs = hubs ?? EmptyHubs;
+            _hubs = hubs ?? Array.Empty<string>();
             if (_hubs.Contains(appName))
             {
                 throw new ArgumentException("App name should not be the same as hub name.");
