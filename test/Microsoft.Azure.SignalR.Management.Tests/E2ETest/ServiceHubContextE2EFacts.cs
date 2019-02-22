@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [InlineData(ServiceTransportType.Transient)]
         internal async Task BroadcastTest(ServiceTransportType serviceTransportType)
         {
-            (string clientEndpoint, IEnumerable<string> clientAccessTokens, IServiceHubContext serviceHubContext) = await InitAsync(serviceTransportType);
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
             await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.All.SendAsync(MethodName, Message), ClientConnectionCount);
         }
 
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [InlineData(ServiceTransportType.Transient)]
         internal async Task SendToUserTest(ServiceTransportType serviceTransportType)
         {
-            (string clientEndpoint, IEnumerable<string> clientAccessTokens, IServiceHubContext serviceHubContext) = await InitAsync(serviceTransportType);
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
             await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.User(_userNames[0]).SendAsync(MethodName, Message), 1);
         }
 
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [InlineData(ServiceTransportType.Transient)]
         internal async Task SendToUsersTest(ServiceTransportType serviceTransportType)
         {
-            (string clientEndpoint, IEnumerable<string> clientAccessTokens, IServiceHubContext serviceHubContext) = await InitAsync(serviceTransportType);
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
             await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.Users(_userNames).SendAsync(MethodName, Message), ClientConnectionCount);
         }
 
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [InlineData(ServiceTransportType.Transient)]
         internal async Task SendToGroupTest(ServiceTransportType serviceTransportType)
         {
-            (string clientEndpoint, IEnumerable<string> clientAccessTokens, IServiceHubContext serviceHubContext) = await InitAsync(serviceTransportType);
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
             Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
             await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), _userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length);
         }
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [InlineData(ServiceTransportType.Transient)]
         internal async Task SendToGroupsTest(ServiceTransportType serviceTransportType)
         {
-            (string clientEndpoint, IEnumerable<string> clientAccessTokens, IServiceHubContext serviceHubContext) = await InitAsync(serviceTransportType);
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
             Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(_groupNames).SendAsync(MethodName, Message);
             await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), ClientConnectionCount);
         }
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
             var receivedMessageCount = new StrongBox<int>();
-            ListenOnMessage(connections, () => Interlocked.Increment(ref receivedMessageCount.Value));
+            var receiveTasks = ListenOnMessage(connections, () => Interlocked.Increment(ref receivedMessageCount.Value));
 
             Task task = null;
             try
@@ -103,22 +103,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 Assert.Null(task.Exception);
             }
 
-            await WaitTaskComplete(expectedReceivedMessageCount, receivedMessageCount);
+            await Task.WhenAny(Task.WhenAll(receiveTasks), Task.Delay(_timeout));
 
             Assert.Equal(expectedReceivedMessageCount, receivedMessageCount.Value);
-        }
-
-        private static async Task WaitTaskComplete(int expectedReceivedMessageCount, StrongBox<int> receivedMessageCount)
-        {
-            var length = 100;
-            for (int i = 0; i < length; i++)
-            {
-                await Task.Delay((int)_timeout.TotalMilliseconds / length);
-                if (expectedReceivedMessageCount == receivedMessageCount.Value)
-                {
-                    return;
-                }
-            }
         }
 
         private static string[] GetTestStringList(string prefix, int count)
@@ -139,7 +126,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             return (clientEndpoint, clientAccessTokens.ToArray(), serviceHubContext);
         }
 
-        private static async Task<IEnumerable<HubConnection>> CreateAndStartClientConnections(string clientEndpoint, IEnumerable<string> clientAccessTokens)
+        private static async Task<IList<HubConnection>> CreateAndStartClientConnections(string clientEndpoint, IEnumerable<string> clientAccessTokens)
         {
             var connections = (from clientAccessToken in clientAccessTokens
                                select CreateHubConnection(clientEndpoint, clientAccessToken)).ToList();
@@ -150,16 +137,24 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             return connections;
         }
 
-        private static void ListenOnMessage(IEnumerable<HubConnection> connections, Action increaseReceivedMassageCount)
+        private static IList<Task<bool>> ListenOnMessage(IList<HubConnection> connections, Action increaseReceivedMassageCount)
         {
-            foreach(var connection in connections)
+            var tcss = new List<TaskCompletionSource<bool>>();
+
+            for (var i = 0; i < connections.Count(); i++)
             {
-                connection.On(MethodName, (string message) =>
+                var tcs = new TaskCompletionSource<bool>();
+                connections[i].On(MethodName, (string message) =>
                 {
                     increaseReceivedMassageCount.Invoke();
                     Assert.Equal(Message, message);
+                    tcs.SetResult(true);
                 });
+                tcss.Add(tcs);
             }
+
+            return (from tcs in tcss
+                   select tcs.Task).ToList();
         }
 
         private static IServiceManager GenerateServiceManager(string connectionString, ServiceTransportType serviceTransportType = ServiceTransportType.Transient)
