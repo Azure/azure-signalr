@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -31,8 +32,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [InlineData(ServiceTransportType.Transient)]
         internal async Task BroadcastTest(ServiceTransportType serviceTransportType)
         {
+            var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
-            await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.All.SendAsync(MethodName, Message), ClientConnectionCount);
+            await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.All.SendAsync(MethodName, Message), ClientConnectionCount, receivedMessageDict);
         }
 
         [ConditionalTheory]
@@ -40,8 +42,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [InlineData(ServiceTransportType.Transient)]
         internal async Task SendToUserTest(ServiceTransportType serviceTransportType)
         {
+            var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
-            await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.User(_userNames[0]).SendAsync(MethodName, Message), 1);
+            await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.User(_userNames[0]).SendAsync(MethodName, Message), 1, receivedMessageDict);
         }
 
         [ConditionalTheory]
@@ -49,8 +52,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [InlineData(ServiceTransportType.Transient)]
         internal async Task SendToUsersTest(ServiceTransportType serviceTransportType)
         {
+            var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
-            await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.Users(_userNames).SendAsync(MethodName, Message), ClientConnectionCount);
+            await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.Users(_userNames).SendAsync(MethodName, Message), ClientConnectionCount, receivedMessageDict);
         }
 
         [ConditionalTheory]
@@ -58,9 +62,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [InlineData(ServiceTransportType.Transient)]
         internal async Task SendToGroupTest(ServiceTransportType serviceTransportType)
         {
+            var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
             Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
-            await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), _userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length);
+            await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), _userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length, receivedMessageDict);
         }
 
         [ConditionalTheory]
@@ -68,9 +73,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [InlineData(ServiceTransportType.Transient)]
         internal async Task SendToGroupsTest(ServiceTransportType serviceTransportType)
         {
+            var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
             Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(_groupNames).SendAsync(MethodName, Message);
-            await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), ClientConnectionCount);
+            await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), ClientConnectionCount, receivedMessageDict);
         }
 
         private static async Task SendToGroupCore(IServiceHubContext serviceHubContext, Func<Task> sendTask)
@@ -87,18 +93,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             await Task.Delay(_timeout);
         }
 
-        private static async Task RunTestCore(string clientEndpoint, IEnumerable<string> clientAccessTokens, Func<Task> coreTask, int expectedReceivedMessageCount)
+        private static async Task RunTestCore(string clientEndpoint, IEnumerable<string> clientAccessTokens, Func<Task> coreTask, int expectedReceivedMessageCount, ConcurrentDictionary<int, int> receivedMessageDict)
         {
             var connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
-            var listenTasks = ListenOnMessage(connections);
+            ListenOnMessage(connections, receivedMessageDict);
 
             await coreTask();
 
-            await Task.WhenAny(Task.WhenAll(listenTasks), Task.Delay(_timeout));
+            await Task.Delay(_timeout);
 
-            var receivedMessageCount = (from listenTask in listenTasks
-                                       where listenTask.Status == TaskStatus.RanToCompletion
-                                       select listenTask).Count();
+            var receivedMessageCount = (from pair in receivedMessageDict
+                                        select pair.Value).Sum();
             Assert.Equal(expectedReceivedMessageCount, receivedMessageCount);
         }
 
@@ -131,23 +136,19 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             return connections;
         }
 
-        private static IList<Task<bool>> ListenOnMessage(IList<HubConnection> connections)
+        private static void ListenOnMessage(IList<HubConnection> connections, ConcurrentDictionary<int, int> receivedMessageDict)
         {
-            var tcss = new List<TaskCompletionSource<bool>>();
-
             for (var i = 0; i < connections.Count(); i++)
             {
-                var tcs = new TaskCompletionSource<bool>();
+                var ind = i;
                 connections[i].On(MethodName, (string message) =>
                 {
-                    Assert.Equal(Message, message);
-                    tcs.SetResult(true);
+                    if (message == Message)
+                    {
+                        receivedMessageDict.AddOrUpdate(ind, 1, (k, v) => v + 1);
+                    }
                 });
-                tcss.Add(tcs);
             }
-
-            return (from tcs in tcss
-                   select tcs.Task).ToList();
         }
 
         private static IServiceManager GenerateServiceManager(string connectionString, ServiceTransportType serviceTransportType = ServiceTransportType.Transient)
