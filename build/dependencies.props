@@ -5,8 +5,8 @@
   <PropertyGroup Label="Package Versions">
     <!-- Azure ASP.NET Core SignalR -->
     <MessagePackPackageVersion>1.7.3.4</MessagePackPackageVersion>
-    <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
-    <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0</MicrosoftAspNetCoreSignalRPackageVersion>
+    <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.1.0</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
+    <MicrosoftAspNetCoreSignalRPackageVersion>1.1.0</MicrosoftAspNetCoreSignalRPackageVersion>
     <MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>3.19.1</MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>
     <MicrosoftAzureKeyVaultPackageVersion>2.3.2</MicrosoftAzureKeyVaultPackageVersion>
     <SystemBuffersPackageVersion>4.5.0</SystemBuffersPackageVersion>
@@ -19,7 +19,7 @@
     
     <!-- Azure ASP.NET SignalR -->
     <MicrosoftAspNetSignalRPackageVersion>2.4.0</MicrosoftAspNetSignalRPackageVersion>
-    <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.0</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
+    <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.2.0</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
     <MicrosoftExtensionsLoggingTraceSourcePackageVersion>2.1.0</MicrosoftExtensionsLoggingTraceSourcePackageVersion>
     <SystemThreadingChannelsPackageVersion>4.5.0</SystemThreadingChannelsPackageVersion>
     
@@ -40,7 +40,7 @@
     <OwinPackageVersion>1.0.0</OwinPackageVersion>
 
     <!--Testing -->
-    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.0.0</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
+    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.1.0</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
     <MicrosoftNETTestSdkPackageVersion>15.6.1</MicrosoftNETTestSdkPackageVersion>
     <MoqPackageVersion>4.7.49</MoqPackageVersion>
     <XunitPackageVersion>2.4.0</XunitPackageVersion>
