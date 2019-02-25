@@ -88,8 +88,8 @@ take the aggregation type [here](https://docs.microsoft.com/en-us/azure/azure-mo
 ## What is the meaning of service mode `Default`/`Serverless`/`Classic`? How can I choose?
 
 Modes:
-* `Default` mode **require** hub server. When there is no server connection available for the hub, the client tries to connect to this hub fails.
-* `Serverless` mode does **NOT** allow any server connection, i.e. it will reject all server connections, all clients must in serverless mode. This mode allow dynamic hub.
+* `Default` mode **requires** hub server. When there is no server connection available for the hub, the client tries to connect to this hub fails.
+* `Serverless` mode does **NOT** allow any server connection, i.e. it will reject all server connections, all clients must in serverless mode.
 * `Classic` mode is a mixed status. When a hub has server connection, the new client will be routed to hub server, if not, client will enter serverless mode.
 
   This may cause some problem, for example, all of server connections are lost for a moment, some clients will enter serverless mode, instead of route to hub server.
@@ -97,4 +97,4 @@ Modes:
 Choosing:
 1. No hub server, choose `Serverless`.
 1. All of hubs have hub servers, choose `Default`.
-1. Some of hubs have hub servers, others not, choose `Classic`.
+1. Some of hubs have hub servers, others not, choose `Classic`, but this may cause some problem, the better way is create two instances, one is `Serverless`, another is `Classic`.
