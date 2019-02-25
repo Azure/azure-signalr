@@ -308,7 +308,16 @@ namespace Microsoft.Azure.SignalR
                             }
 
                             // Handshake error. Will stop reconnect.
-                            Log.HandshakeError(_logger, handshakeResponse.ErrorMessage);
+                            if (_connectionType == ServerConnectionType.OnDemand)
+                            {
+                                // Handshake errors on on-demand connections are acceptable.
+                                Log.OnDemandConnectionHandshakeError(_logger, handshakeResponse.ErrorMessage);
+                            }
+                            else
+                            {
+                                Log.HandshakeError(_logger, handshakeResponse.ErrorMessage);
+                            }
+                            
                             return false;
                         }
                     }
@@ -603,6 +612,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _unexpectedExceptionInStop =
                 LoggerMessage.Define<string>(LogLevel.Warning, new EventId(29, "UnexpectedExceptionInStop"), "Connection {ServiceConnectionId} got unexpected exception in StopAsync.");
 
+            private static readonly Action<ILogger, string, Exception> _onDemandConnectionHandshakeError =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(30, "OnDemandConnectionHandshakeError"), "Service returned handshake error: {Error}");
+
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
                 _failedToWrite(logger, exception);
@@ -728,6 +740,11 @@ namespace Microsoft.Azure.SignalR
             public static void HandshakeError(ILogger logger, string error)
             {
                 _handshakeError(logger, error, null);
+            }
+
+            public static void OnDemandConnectionHandshakeError(ILogger logger, string error)
+            {
+                _onDemandConnectionHandshakeError(logger, error, null);
             }
 
             public static void SentPing(ILogger logger)
