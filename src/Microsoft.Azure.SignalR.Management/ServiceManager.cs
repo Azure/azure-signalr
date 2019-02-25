@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
-using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
@@ -57,17 +56,11 @@ namespace Microsoft.Azure.SignalR.Management
                         var serviceConnectionFactory = new ServiceConnectionFactory(serviceProtocol, clientConnectionManager, loggerFactory, connectionDelegate, clientConnectionFactory);
                         var weakConnectionContainer = new WeakServiceConnectionContainer(serviceConnectionFactory, connectionFactory, ServerConnectionCount, endpoint);
 
-                        var HubProtocolResolver =
-                             new DefaultHubProtocolResolver(new IHubProtocol[]
-                                {
-                                    new JsonHubProtocol(),
-                                    new MessagePackHubProtocol()
-                                },
-                                NullLogger<DefaultHubProtocolResolver>.Instance);
+                        var serviceCollection = new ServiceCollection();
+                        serviceCollection.AddSignalRCore();
 
-                        var serviceCollection = new ServiceCollection()
+                        serviceCollection
                             .AddSingleton(typeof(ILogger<DefaultHubProtocolResolver>), NullLogger<DefaultHubProtocolResolver>.Instance)
-                            .AddSingleton(typeof(IHubProtocolResolver), typeof(DefaultHubProtocolResolver))
                             .AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManagerCore<>))
                             .AddSingleton(typeof(IServiceEndpointManager), typeof(ServiceEndpointManager))
                             .AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol))
@@ -75,9 +68,13 @@ namespace Microsoft.Azure.SignalR.Management
                             .AddSingleton<IHostedService, HeartBeat>()
                             .AddSingleton<NegotiateHandler>()
                             .AddSingleton(typeof(IServiceConnectionContainer), weakConnectionContainer);
+                            
                         var services = serviceCollection.BuildServiceProvider();
 
                         var serviceConnectionManager = services.GetRequiredService<IServiceConnectionManager<Hub>>();
+                        serviceConnectionManager.SetServiceConnection(weakConnectionContainer);
+                        _ = serviceConnectionManager.StartAsync();
+
                         var protocolResolver = services.GetRequiredService<IHubProtocolResolver>();
                         var websocketsHubLifetimeManager = new WebsocketsHubLifetimeManager(serviceConnectionManager, protocolResolver);
 
