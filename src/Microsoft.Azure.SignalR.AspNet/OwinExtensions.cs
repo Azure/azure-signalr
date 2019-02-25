@@ -2,22 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using Microsoft.AspNet.SignalR;
-using Microsoft.AspNet.SignalR.Hubs;
-using Microsoft.AspNet.SignalR.Infrastructure;
-using Microsoft.AspNet.SignalR.Messaging;
-using Microsoft.AspNet.SignalR.Tracing;
-using Microsoft.AspNet.SignalR.Transports;
-using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.AspNet;
-using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
-using Microsoft.Owin.Infrastructure;
 
 namespace Owin
 {
@@ -202,84 +189,12 @@ namespace Owin
 
             var resolver = configuration.Resolver ?? throw new ArgumentException("A dependency resolver must be specified.");
 
-            // Ensure we have the conversions for MS.Owin so that
-            // the app builder respects the OwinMiddleware base class
-            SignatureConversions.AddConversions(builder);
-
-            // ServiceEndpointManager needs the logger
-            var loggerFactory = new LoggerFactory();
-
-            var hubs = GetAvailableHubNames(configuration);
-
-            var endpoint = new ServiceEndpointManager(options, loggerFactory);
-            configuration.Resolver.Register(typeof(IServiceEndpointManager), () => endpoint);
-
-            // Get the one from DI or new a default one
-            var router = configuration.Resolver.Resolve<IEndpointRouter>() ?? new DefaultEndpointRouter();
-
-            builder.Use<NegotiateMiddleware>(configuration, applicationName, endpoint, router, options, loggerFactory);
-
-            builder.RunSignalR(configuration);
-
-            // Fetch the trace manager from DI and add logger provider
-            var traceManager = configuration.Resolver.Resolve<ITraceManager>();
-            if (traceManager != null)
-            {
-                loggerFactory.AddProvider(new TraceManagerLoggerProvider(traceManager));
-            }
-
-            var dispatcher = PrepareAndGetDispatcher(configuration, options, endpoint, router, applicationName, hubs, loggerFactory);
+            var dispatcher = DispatcherHelper.PrepareAndGetDispatcher(builder, configuration, options, applicationName, new LoggerFactory());
             if (dispatcher != null)
             {
                 // Start the server->service connection asynchronously 
                 _ = dispatcher.StartAsync();
             }
-        }
-
-        private static ServiceHubDispatcher PrepareAndGetDispatcher(HubConfiguration configuration, ServiceOptions options, IServiceEndpointManager endpoint, IEndpointRouter router, string applicationName, IReadOnlyList<string> hubs, ILoggerFactory loggerFactory)
-        {
-            // TODO: Using IOptions looks wierd, thinking of a way removing it
-            // share the same object all through
-            var serviceOptions = Options.Create(options);
-
-            // For safety, ALWAYS register abstract classes or interfaces
-            // Some third-party DI frameworks such as Ninject, implicit self-binding concrete types:
-            // https://github.com/ninject/ninject/wiki/dependency-injection-with-ninject#skipping-the-type-binding-bit--implicit-self-binding-of-concrete-types
-            configuration.Resolver.Register(typeof(IOptions<ServiceOptions>), () => serviceOptions);
-
-            var serviceProtocol = new ServiceProtocol();
-            configuration.Resolver.Register(typeof(IServiceProtocol), () => serviceProtocol);
-
-            var scm = new ServiceConnectionManager(applicationName, hubs);
-            configuration.Resolver.Register(typeof(Microsoft.Azure.SignalR.AspNet.IServiceConnectionManager), () => scm);
-
-            var ccm = new ClientConnectionManager(configuration);
-            configuration.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
-
-            var atm = new AzureTransportManager(configuration.Resolver);
-            configuration.Resolver.Register(typeof(ITransportManager), () => atm);
-
-            var parser = new SignalRMessageParser(hubs, configuration.Resolver);
-            configuration.Resolver.Register(typeof(IMessageParser), () => parser);
-
-            var smb = new ServiceMessageBus(configuration.Resolver);
-            configuration.Resolver.Register(typeof(IMessageBus), () => smb);
-
-            if (hubs?.Count > 0)
-            {
-                return new ServiceHubDispatcher(hubs, serviceProtocol, scm, ccm, endpoint, router, serviceOptions, loggerFactory);
-            }
-            else
-            {
-                loggerFactory.CreateLogger<IAppBuilder>().Log(LogLevel.Warning, "No hubs found.");
-                return null;
-            }
-        }
-
-        private static IReadOnlyList<string> GetAvailableHubNames(HubConfiguration configuration)
-        {
-            var hubManager = configuration.Resolver.Resolve<IHubManager>();
-            return hubManager?.GetHubs().Select(s => s.Name).ToList();
         }
     }
 }

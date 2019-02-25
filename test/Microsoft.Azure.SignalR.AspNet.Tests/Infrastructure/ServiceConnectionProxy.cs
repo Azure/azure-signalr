@@ -24,14 +24,14 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         private TestConnectionContext _connectionContext;
 
-        public ServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null, SignalR.IServiceConnectionManager serviceConnectionManager = null) :
+        public ServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null, SignalR.IServiceMessageHandler serviceMessageHandler = null) :
             base(
                 Guid.NewGuid().ToString("N"),
                 SharedServiceProtocol,
                 new TestConnectionFactory(),
                 clientConnectionManager,
                 loggerFactory,
-                serviceConnectionManager)
+                serviceMessageHandler ?? new TestServiceMessageHandler())
         {
         }
 

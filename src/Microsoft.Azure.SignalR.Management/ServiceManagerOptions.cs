@@ -6,10 +6,19 @@ using Microsoft.Azure.SignalR;
 
 namespace Microsoft.Azure.SignalR.Management
 {
+    /// <summary>
+    /// Configurable options for Azure SignalR Management SDK.
+    /// </summary>
     public class ServiceManagerOptions
     {
+        /// <summary>
+        /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
+        /// </summary>
         public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
 
+        /// <summary>
+        /// Gets or sets the connection string of Azure SignalR Service instance.
+        /// </summary>
         public string ConnectionString { get; set; } = null;
 
         internal void ValidateOptions()

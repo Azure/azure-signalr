@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR
             var claims = BuildClaims(context);
             var request = context.Request;
             var originalPath = GetOriginalPath(request.Path);
-            var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(_endpointManager.GetPrimaryEndpoints()));
+            var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(_endpointManager.GetAvailableEndpoints()));
 
             if (provider == null)
             {
