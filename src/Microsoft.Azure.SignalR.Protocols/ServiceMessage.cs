@@ -144,14 +144,30 @@ namespace Microsoft.Azure.SignalR.Protocol
         public int Status { get; set; }
 
         /// <summary>
+        /// Gets or sets the ack message
+        /// </summary>
+        public string Message { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="AckMessage"/> class.
         /// </summary>
         /// <param name="ackId">The ack Id</param>
         /// <param name="status">The status code</param>
-        public AckMessage(int ackId, int status)
+        public AckMessage(int ackId, int status) : this(ackId, status, string.Empty)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AckMessage"/> class.
+        /// </summary>
+        /// <param name="ackId">The ack Id</param>
+        /// <param name="status">The status code</param>
+        /// <param name="message">The ack message</param>
+        public AckMessage(int ackId, int status, string message)
         {
             AckId = ackId;
             Status = status;
+            Message = message;
         }
     }
 }

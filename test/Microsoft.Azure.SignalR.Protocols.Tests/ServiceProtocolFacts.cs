@@ -190,7 +190,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             new ProtocolTestData(
                 name: "Ack",
                 message: new AckMessage(1, 100), 
-                binary: "kxQBZA=="),
+                binary: "lBQBZKA="),
+            new ProtocolTestData(
+                name: "AckWithMessage",
+                message: new AckMessage(2, 101, "Joined group successfully"),
+                binary: "lBQCZblKb2luZWQgZ3JvdXAgc3VjY2Vzc2Z1bGx5"),
         }.ToDictionary(t => t.Name);
 
         [Theory]

@@ -445,10 +445,11 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteAckMessage(AckMessage message, Stream packer)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
+            MessagePackBinary.WriteArrayHeader(packer, 4);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.AckMessageType);
             MessagePackBinary.WriteInt32(packer, message.AckId);
             MessagePackBinary.WriteInt32(packer, message.Status);
+            MessagePackBinary.WriteString(packer, message.Message);
         }
 
         private static void WriteStringArray(IReadOnlyList<string> array, Stream packer)
@@ -687,8 +688,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             var ackId = ReadInt32(input, ref offset, "ackId");
             var status = ReadInt32(input, ref offset, "status");
+            var message = ReadString(input, ref offset, "message");
 
-            return new AckMessage(ackId, status);
+            return new AckMessage(ackId, status, message);
         }
 
         private static Claim[] ReadClaims(byte[] input, ref int offset)

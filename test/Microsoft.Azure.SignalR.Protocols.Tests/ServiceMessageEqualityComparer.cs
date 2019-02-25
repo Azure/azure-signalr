@@ -178,7 +178,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         private bool AckMessageEqual(AckMessage x, AckMessage y)
         {
             return x.AckId == y.AckId &&
-                   x.Status == y.Status;
+                   x.Status == y.Status &&
+                   StringEqual(x.Message, y.Message);
         }
 
         private static bool StringEqual(string x, string y)
