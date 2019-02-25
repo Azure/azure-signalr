@@ -24,7 +24,8 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public ServiceConnectionManager(string appName, IReadOnlyList<string> hubs)
         {
-            if (hubs.Contains(appName))
+            _hubs = hubs ?? Array.Empty<string>();
+            if (_hubs.Contains(appName))
             {
                 throw new ArgumentException("App name should not be the same as hub name.");
             }
@@ -82,7 +83,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             return connection;
         }
 
-        public Task WriteAsync(ServiceMessage serviceMessage)
+        public virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
             if (_appConnection == null)
             {
@@ -92,7 +93,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _appConnection.WriteAsync(serviceMessage);
         }
 
-        public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+        public virtual Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
         {
             if (_appConnection == null)
             {

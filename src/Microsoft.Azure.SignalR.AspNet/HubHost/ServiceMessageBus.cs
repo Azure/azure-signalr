@@ -70,7 +70,14 @@ namespace Microsoft.Azure.SignalR.AspNet
                     }
                     break;
                 case LeaveGroupMessage leaveGroupMessage:
-                    await connection.WriteAsync(leaveGroupMessage.GroupName, leaveGroupMessage);
+                    try
+                    {
+                        await connection.WriteAsync(leaveGroupMessage.GroupName, leaveGroupMessage);
+                    }
+                    finally
+                    {
+                        _ackHandler.TriggerAck(appMessage.RawMessage.CommandId);
+                    }
                     break;
                 case GroupBroadcastDataMessage groupBroadcastMessage:
                     await connection.WriteAsync(groupBroadcastMessage.GroupName, groupBroadcastMessage);

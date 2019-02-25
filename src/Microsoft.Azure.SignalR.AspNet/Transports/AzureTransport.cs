@@ -77,6 +77,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             var received = Received;
             if (received != null)
             {
+                // TODO: Add log
                 _ = received(value);
             }
         }
