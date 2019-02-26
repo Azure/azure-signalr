@@ -82,6 +82,11 @@ namespace Microsoft.Azure.SignalR
 
         public abstract Task HandlePingAsync(PingMessage pingMessage);
 
+        public Task HandleAckAsync(AckMessage ackMessage)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Create a connection in initialization and reconnection
         /// </summary>
@@ -231,5 +236,7 @@ namespace Microsoft.Azure.SignalR
 
             return connections;
         }
+
+        
     }
 }
