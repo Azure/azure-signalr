@@ -23,8 +23,15 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         public override Task WriteAsync(ServiceMessage serviceMessage)
         {
-            var tcs = _waitForTransportOutputMessage.GetOrAdd(serviceMessage.GetType(), i => new TaskCompletionSource<ServiceMessage>());
-            tcs.TrySetResult(serviceMessage);
+            if (_waitForTransportOutputMessage.TryGetValue(serviceMessage.GetType(), out var tcs))
+            {
+                tcs.SetResult(serviceMessage);
+            }
+            else
+            {
+                throw new InvalidOperationException("Not expected to write before tcs is inited");
+            }
+
             return Task.CompletedTask;
         }
 
@@ -44,7 +51,13 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         public Task WaitForTransportOutputMessageAsync(Type messageType)
         {
-            var tcs = _waitForTransportOutputMessage[messageType] = new TaskCompletionSource<ServiceMessage>();
+            if (_waitForTransportOutputMessage.TryGetValue(messageType, out var tcs))
+            {
+                tcs.TrySetCanceled();
+            }
+
+            // re-init the tcs
+            tcs = _waitForTransportOutputMessage[messageType] = new TaskCompletionSource<ServiceMessage>();
 
             return tcs.Task;
         }

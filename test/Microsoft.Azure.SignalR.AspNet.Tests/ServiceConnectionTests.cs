@@ -47,18 +47,21 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     // Application layer sends OpenConnectionMessage
                     var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null, "?transport=webSockets");
+                    var task = proxy.WaitForClientConnectAsync(clientConnection).OrTimeout();
                     await proxy.WriteMessageAsync(openConnectionMessage);
-                    await proxy.WaitForClientConnectAsync(clientConnection).OrTimeout();
+                    await task;
                     
                     while (count < 1000)
                     {
+                        task = proxy.WaitForApplicationMessageAsync(clientConnection).OrTimeout();
                         await proxy.WriteMessageAsync(new ConnectionDataMessage(clientConnection, GetPayload("Hello World")));
-                        await proxy.WaitForApplicationMessageAsync(clientConnection).OrTimeout();
+                        await task;
                         count++;
                     }
 
+                    task = proxy.WaitForClientDisconnectAsync(clientConnection).OrTimeout();
                     await proxy.WriteMessageAsync(new CloseConnectionMessage(clientConnection));
-                    await proxy.WaitForClientDisconnectAsync(clientConnection).OrTimeout();
+                    await task;
 
                     // Validate in transport for 1000 data messages.
                     _clientConnectionManager.CurrentTransports.TryGetValue(clientConnection, out var transport);
@@ -113,8 +116,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     await lgTask;
                     await gbTask;
 
+                    var dTask = proxy.WaitForClientDisconnectAsync(clientConnection).OrTimeout();
                     await proxy.WriteMessageAsync(new CloseConnectionMessage(clientConnection));
-                    await proxy.WaitForClientDisconnectAsync(clientConnection).OrTimeout();
+                    await dTask;
                 }
             }
         }
