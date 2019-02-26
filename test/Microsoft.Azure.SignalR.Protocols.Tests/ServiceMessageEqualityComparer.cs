@@ -60,11 +60,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 case ServiceErrorMessage serviceErrorMessage:
                     return ServiceErrorMessageEqual(serviceErrorMessage, (ServiceErrorMessage)y);
                 case JoinGroupWithAckMessage joinGroupWithAckMessage:
-                    return JoinGroupWithAckMessageEqual(joinGroupWithAckMessage, (JoinGroupWithAckMessage) y);
+                    return JoinGroupWithAckMessageEqual(joinGroupWithAckMessage, (JoinGroupWithAckMessage)y);
                 case LeaveGroupWithAckMessage leaveGroupWithAckMessage:
-                    return LeaveGroupWithAckMessageEqual(leaveGroupWithAckMessage, (LeaveGroupWithAckMessage) y);
+                    return LeaveGroupWithAckMessageEqual(leaveGroupWithAckMessage, (LeaveGroupWithAckMessage)y);
                 case AckMessage ackMessage:
-                    return AckMessageEqual(ackMessage, (AckMessage) y);
+                    return AckMessageEqual(ackMessage, (AckMessage)y);
                 default:
                     throw new InvalidOperationException($"Unknown message type: {x.GetType().FullName}");
             }
