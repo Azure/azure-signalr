@@ -308,7 +308,16 @@ namespace Microsoft.Azure.SignalR
                             }
 
                             // Handshake error. Will stop reconnect.
-                            Log.HandshakeError(_logger, handshakeResponse.ErrorMessage);
+                            if (_connectionType == ServerConnectionType.OnDemand)
+                            {
+                                // Handshake errors on on-demand connections are acceptable.
+                                Log.OnDemandConnectionHandshakeResponse(_logger, handshakeResponse.ErrorMessage);
+                            }
+                            else
+                            {
+                                Log.HandshakeError(_logger, handshakeResponse.ErrorMessage);
+                            }
+                            
                             return false;
                         }
                     }
@@ -603,6 +612,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _unexpectedExceptionInStop =
                 LoggerMessage.Define<string>(LogLevel.Warning, new EventId(29, "UnexpectedExceptionInStop"), "Connection {ServiceConnectionId} got unexpected exception in StopAsync.");
 
+            private static readonly Action<ILogger, string, Exception> _onDemandConnectionHandshakeResponse =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(30, "OnDemandConnectionHandshakeResponse"), "Service returned handshake response: {Message}");
+
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
                 _failedToWrite(logger, exception);
@@ -728,6 +740,11 @@ namespace Microsoft.Azure.SignalR
             public static void HandshakeError(ILogger logger, string error)
             {
                 _handshakeError(logger, error, null);
+            }
+
+            public static void OnDemandConnectionHandshakeResponse(ILogger logger, string message)
+            {
+                _onDemandConnectionHandshakeResponse(logger, message, null);
             }
 
             public static void SentPing(ILogger logger)

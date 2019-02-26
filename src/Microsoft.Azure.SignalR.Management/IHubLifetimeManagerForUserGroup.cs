@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    interface IHubLifetimeManagerForUserGroup
+    internal interface IHubLifetimeManagerForUserGroup
     {
         Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default);
 
