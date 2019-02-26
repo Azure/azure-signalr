@@ -311,7 +311,7 @@ namespace Microsoft.Azure.SignalR
                             if (_connectionType == ServerConnectionType.OnDemand)
                             {
                                 // Handshake errors on on-demand connections are acceptable.
-                                Log.OnDemandConnectionHandshakeError(_logger, handshakeResponse.ErrorMessage);
+                                Log.OnDemandConnectionHandshakeResponse(_logger, handshakeResponse.ErrorMessage);
                             }
                             else
                             {
@@ -612,8 +612,8 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _unexpectedExceptionInStop =
                 LoggerMessage.Define<string>(LogLevel.Warning, new EventId(29, "UnexpectedExceptionInStop"), "Connection {ServiceConnectionId} got unexpected exception in StopAsync.");
 
-            private static readonly Action<ILogger, string, Exception> _onDemandConnectionHandshakeError =
-                LoggerMessage.Define<string>(LogLevel.Information, new EventId(30, "OnDemandConnectionHandshakeError"), "Service returned handshake error: {Error}");
+            private static readonly Action<ILogger, string, Exception> _onDemandConnectionHandshakeResponse =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(30, "OnDemandConnectionHandshakeResponse"), "Service returned handshake response: {Message}");
 
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
@@ -742,9 +742,9 @@ namespace Microsoft.Azure.SignalR
                 _handshakeError(logger, error, null);
             }
 
-            public static void OnDemandConnectionHandshakeError(ILogger logger, string error)
+            public static void OnDemandConnectionHandshakeResponse(ILogger logger, string message)
             {
-                _onDemandConnectionHandshakeError(logger, error, null);
+                _onDemandConnectionHandshakeResponse(logger, message, null);
             }
 
             public static void SentPing(ILogger logger)
