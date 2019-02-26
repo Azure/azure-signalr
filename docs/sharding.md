@@ -28,7 +28,7 @@ You can add multiple instance connection strings using the following `dotnet` co
 ```batch
 dotnet user-secrets set Azure:SignalR:ConnectionString:east-region-a <ConnectionString1>
 dotnet user-secrets set Azure:SignalR:ConnectionString:east-region-b:primary <ConnectionString2>
-dotnet user-secrets set Azure:SignalR:ConnectionString:Backup:Secondary <ConnectionString3>
+dotnet user-secrets set Azure:SignalR:ConnectionString:backup:secondary <ConnectionString3>
 ```
 
 ### How to add multiple endpoints from code
@@ -38,16 +38,18 @@ A `ServicEndpoint` class is introduced in to describe the properties of an Azure
 You can configure multiple instance endpoints when using Azure SignalR Service SDK through:
 ```cs
 services.AddSignalR()
-        .AddAzureSignalR(options => {
+        .AddAzureSignalR(options => 
+        {
             options.Endpoints = new ServiceEndpoint[]
             {
                 // Note: this is just a demonstration of how to set options.Endpoints
                 // Having ConnectionStrings explicitly set inside the code is not encouraged
                 // You can fetch it from a safe place such as Azure KeyVault
-                new ServiceEndpoint("<ConnectionString1>"),
-                new ServiceEndpoint("<ConnectionString2>"),
-                new ServiceEndpoint("<ConnectionString3>"),
-            }
+                new ServiceEndpoint("<ConnectionString0>"),
+                new ServiceEndpoint("<ConnectionString1>", type: EndpointType.Primary, name: "east-region-a"),
+                new ServiceEndpoint("<ConnectionString2>", type: EndpointType.Primary, name: "east-region-b"),
+                new ServiceEndpoint("<ConnectionString3>", type: EndpointType.Secondary, name: "backup"),
+            };
         });
 ```
 
@@ -198,7 +200,7 @@ A `ServiceEndpoint` object has an `EndpointType` property with value `primary` o
 
 In general, `primary` endpoints are considered to have more reliable network connections and are taking client traffics in; `secondary` endpoints are considered to have less reliable network connections and are not taking client traffic in, but only taking server to client side traffic, for example, broadcast messages.
 
-In cross-geo cases, cross-geo network can be comparatively unstable. For one app server located in *east us*, the endpoint located in east us can be marked as `primary` and endpoints in other regions marked as `secondary`. In this way, service endpoints in other regions can **receive** messages from this *east us* app server, but there will be no **cross-geo** clients routed to this app server on the cross-geo unstable server connections, the infrastructure is as below:
+In cross-geo cases, cross-geo network can be comparatively unstable. For one app server located in *East US*, the endpoint located in East US can be marked as `primary` and endpoints in other regions marked as `secondary`. In this way, service endpoints in other regions can **receive** messages from this *East US* app server, but there will be no **cross-geo** clients routed to this app server on the cross-geo unstable server connections, the infrastructure is as below:
 
 ![Cross-Geo Infra](./images/cross_geo_infra.png)
 
