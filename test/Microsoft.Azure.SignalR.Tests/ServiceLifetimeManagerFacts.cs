@@ -66,8 +66,8 @@ namespace Microsoft.Azure.SignalR.Tests
         [Theory]
         [InlineData("SendGroupAsync", typeof(GroupBroadcastDataMessage))]
         [InlineData("SendGroupExceptAsync", typeof(GroupBroadcastDataMessage))]
-        [InlineData("AddToGroupAsync", typeof(JoinGroupMessage))]
-        [InlineData("RemoveFromGroupAsync", typeof(LeaveGroupMessage))]
+        [InlineData("AddToGroupAsync", typeof(JoinGroupWithAckMessage))]
+        [InlineData("RemoveFromGroupAsync", typeof(LeaveGroupWithAckMessage))]
         public async void ServiceLifetimeManagerGroupTest(string functionName, Type type)
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
-            Assert.Equal(1, serviceConnectionManager.GetPartitionedCallCount(type));
+            Assert.Equal(1, serviceConnectionManager.GetCallCount(type));
             VerifyServiceMessage(functionName, serviceConnectionManager.ServiceMessage);
         }
 
@@ -90,8 +90,8 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData("SendGroupExceptAsync", typeof(GroupBroadcastDataMessage))]
         [InlineData("SendUserAsync", typeof(UserDataMessage))]
         [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
-        [InlineData("AddToGroupAsync", typeof(JoinGroupMessage))]
-        [InlineData("RemoveFromGroupAsync", typeof(LeaveGroupMessage))]
+        [InlineData("AddToGroupAsync", typeof(JoinGroupWithAckMessage))]
+        [InlineData("RemoveFromGroupAsync", typeof(LeaveGroupWithAckMessage))]
         public async void ServiceLifetimeManagerIntegrationTest(string methodName, Type messageType)
         {
             var proxy = new ServiceConnectionProxy();
@@ -109,7 +109,15 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var task = proxy.WaitForApplicationMessageAsync(messageType);
 
-            await InvokeMethod(serviceLifetimeManager, methodName);
+            var invokeTask = InvokeMethod(serviceLifetimeManager, methodName);
+
+            if (typeof(IAckableMessage).IsAssignableFrom(messageType))
+            {
+                await proxy.WriteMessageAsync(new AckMessage(1, AckStatus.Ok));
+            }
+
+            // Need to return in time, or it indicate a timeout when sending ack-able messages.
+            await invokeTask.OrTimeout();
 
             var message = await task.OrTimeout();
 
@@ -193,12 +201,12 @@ namespace Microsoft.Azure.SignalR.Tests
                     Assert.Equal(TestUsers, ((MultiUserDataMessage) serviceMessage).UserList);
                     break;
                 case "AddToGroupAsync":
-                    Assert.Equal(TestConnectionIds[0], ((JoinGroupMessage) serviceMessage).ConnectionId);
-                    Assert.Equal(TestGroups[0], ((JoinGroupMessage) serviceMessage).GroupName);
+                    Assert.Equal(TestConnectionIds[0], ((JoinGroupWithAckMessage) serviceMessage).ConnectionId);
+                    Assert.Equal(TestGroups[0], ((JoinGroupWithAckMessage) serviceMessage).GroupName);
                     break;
                 case "RemoveFromGroupAsync":
-                    Assert.Equal(TestConnectionIds[0], ((LeaveGroupMessage) serviceMessage).ConnectionId);
-                    Assert.Equal(TestGroups[0], ((LeaveGroupMessage) serviceMessage).GroupName);
+                    Assert.Equal(TestConnectionIds[0], ((LeaveGroupWithAckMessage) serviceMessage).ConnectionId);
+                    Assert.Equal(TestGroups[0], ((LeaveGroupWithAckMessage) serviceMessage).GroupName);
                     break;
                 default:
                     break;

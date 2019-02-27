@@ -32,10 +32,12 @@ namespace Microsoft.Azure.SignalR.Tests
             return Task.CompletedTask;
         }
 
-        public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+        public Task WriteAckableMessageAsync(ServiceMessage serviceMessage)
         {
-            _partitionedWriteAsyncCallCount.AddOrUpdate(serviceMessage.GetType(), 1, (_, value) => value + 1);
-            ServiceMessage = serviceMessage;
+            if (serviceMessage is IAckableMessage)
+            {
+                return WriteAsync(serviceMessage);
+            }
             return Task.CompletedTask;
         }
 

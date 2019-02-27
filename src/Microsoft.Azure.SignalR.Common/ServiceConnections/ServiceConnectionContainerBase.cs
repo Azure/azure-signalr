@@ -29,6 +29,8 @@ namespace Microsoft.Azure.SignalR
         private volatile int _defaultConnectionRetry;
         private object _lock = new object();
 
+        private readonly AckHandler _ackHandler;
+
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory,
             int fixedConnectionCount, ServiceEndpoint endpoint)
@@ -38,6 +40,7 @@ namespace Microsoft.Azure.SignalR
             FixedServiceConnections = CreateFixedServiceConnection(fixedConnectionCount);
             FixedConnectionCount = fixedConnectionCount;
             _endpoint = endpoint;
+            _ackHandler = new AckHandler();
         }
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
@@ -48,6 +51,7 @@ namespace Microsoft.Azure.SignalR
             FixedServiceConnections = initialConnections;
             FixedConnectionCount = initialConnections.Count;
             _endpoint = endpoint;
+            _ackHandler = new AckHandler();
         }
 
         public async Task StartAsync()
@@ -82,9 +86,13 @@ namespace Microsoft.Azure.SignalR
 
         public abstract Task HandlePingAsync(PingMessage pingMessage);
 
-        public Task HandleAckAsync(AckMessage ackMessage)
+        public void HandleAck(AckMessage ackMessage)
         {
-            throw new NotImplementedException();
+            if (ackMessage.Status == AckStatus.Ok)
+            {
+                _ackHandler.TriggerAck(ackMessage.AckId, true);
+            }
+            _ackHandler.TriggerAck(ackMessage.AckId, false);
         }
 
         /// <summary>
@@ -172,6 +180,21 @@ namespace Microsoft.Azure.SignalR
             }
 
             return WriteToPartitionedConnection(partitionKey, serviceMessage);
+        }
+
+        public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage)
+        {
+            if (!(serviceMessage is IAckableMessage))
+            {
+                throw new ArgumentException($"{nameof(serviceMessage)} is not {nameof(IAckableMessage)}");
+            }
+
+            var task = _ackHandler.CreateAck(out var id);
+            ((IAckableMessage) serviceMessage).AckId = id;
+
+            await WriteToRandomAvailableConnection(serviceMessage);
+
+            return await task;
         }
 
         protected virtual ServiceConnectionStatus GetStatus()

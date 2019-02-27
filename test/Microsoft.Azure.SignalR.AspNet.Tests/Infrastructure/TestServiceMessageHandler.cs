@@ -35,7 +35,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             return Task.CompletedTask;
         }
 
-        public override Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+        public override Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage)
         {
             if (_waitForTransportOutputMessage.TryGetValue(serviceMessage.GetType(), out var tcs))
             {
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 throw new InvalidOperationException("Not expected to write before tcs is inited");
             }
 
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
         public Task WaitForTransportOutputMessageAsync(Type messageType)
@@ -79,6 +79,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         public Task HandlePingAsync(PingMessage pingMessage)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void HandleAck(AckMessage serviceMessage)
         {
             throw new NotImplementedException();
         }

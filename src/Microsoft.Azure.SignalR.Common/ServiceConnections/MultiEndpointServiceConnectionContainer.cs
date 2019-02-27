@@ -83,24 +83,6 @@ namespace Microsoft.Azure.SignalR
             }));
         }
 
-        public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
-        {
-            if (_inner != null)
-            {
-                return _inner.WriteAsync(partitionKey, serviceMessage);
-            }
-
-            // re-evaluate availbale endpoints as they might be offline, however it can not guarantee that all endpoints are online
-            var routed = GetRoutedEndpoints(serviceMessage, _endpointManager.GetAvailableEndpoints()).ToArray();
-
-            if (routed.Length == 0)
-            {
-                throw new AzureSignalRNotConnectedException();
-            }
-
-            return Task.WhenAll(routed.Select(s => Connections[s]).Select(s => s.WriteAsync(partitionKey, serviceMessage)));
-        }
-
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
             if (_inner != null)
@@ -118,6 +100,48 @@ namespace Microsoft.Azure.SignalR
             return Task.WhenAll(routed.Select(s => Connections[s]).Select(s => s.WriteAsync(serviceMessage)));
         }
 
+        public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage)
+        {
+            if (_inner != null)
+            {
+                return await _inner.WriteAckableMessageAsync(serviceMessage);
+            }
+
+            var routed = GetRoutedEndpoints(serviceMessage, _endpointManager.GetAvailableEndpoints()).ToArray();
+
+            if (routed.Length == 0)
+            {
+                throw new AzureSignalRNotConnectedException();
+            }
+
+            var tasks = new List<Task>();
+            var containers = routed.Select(s => Connections[s]);
+            var tcs = new TaskCompletionSource<object>();
+
+            foreach (var container in containers)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    var succeeded = await container.WriteAckableMessageAsync(serviceMessage);
+                    if (succeeded)
+                    {
+                        tcs.SetResult(null);
+                    }
+                }));
+            }
+
+            await Task.WhenAny(tcs.Task, Task.WhenAll(tasks));
+
+            if (tcs.Task.IsCompleted)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message, IEnumerable<ServiceEndpoint> availableEndpoints)
         {
             switch (message)
@@ -126,9 +150,9 @@ namespace Microsoft.Azure.SignalR
                     return _router.GetEndpointsForBroadcast(availableEndpoints);
                 case GroupBroadcastDataMessage gbdm:
                     return _router.GetEndpointsForGroup(gbdm.GroupName, availableEndpoints);
-                case JoinGroupMessage jgm:
+                case JoinGroupWithAckMessage jgm:
                     return _router.GetEndpointsForGroup(jgm.GroupName, availableEndpoints);
-                case LeaveGroupMessage lgm:
+                case LeaveGroupWithAckMessage lgm:
                     return _router.GetEndpointsForGroup(lgm.GroupName, availableEndpoints);
                 case MultiGroupBroadcastDataMessage mgbdm:
                     return mgbdm.GroupList.SelectMany(g => _router.GetEndpointsForGroup(g, availableEndpoints)).Distinct();

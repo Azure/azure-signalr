@@ -358,7 +358,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 throw new NotImplementedException();
             }
 
-            public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+            public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage)
             {
                 throw new NotImplementedException();
             }

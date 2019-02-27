@@ -28,20 +28,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             return Task.CompletedTask;
         }
 
-        public override Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
-        {
-            if (_waitForTransportOutputMessage.TryGetValue(serviceMessage.GetType(), out var tcs))
-            {
-                tcs.SetResult(serviceMessage);
-            }
-            else
-            {
-                throw new InvalidOperationException("Not expected to write before tcs is inited");
-            }
-
-            return Task.CompletedTask;
-        }
-
         public Task WaitForTransportOutputMessageAsync(Type messageType)
         {
             var tcs = _waitForTransportOutputMessage[messageType] = new TaskCompletionSource<ServiceMessage>();

@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string Url2 = "https://url2";
         private readonly string ConnectionString1 = string.Format(ConnectionStringFormatter, Url1);
         private readonly string ConnectionString2 = string.Format(ConnectionStringFormatter, Url2);
-        private static readonly JoinGroupMessage DefaultGroupMessage = new JoinGroupMessage("a", "a");
+        private static readonly JoinGroupWithAckMessage DefaultGroupMessage = new JoinGroupWithAckMessage("a", "a", -1);
 
         [Fact]
         public void TestGetRoutedEndpointsReturnDistinctResultForMultiMessages()
@@ -132,8 +132,9 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
             var router = new TestEndpointRouter(true);
+            TestServiceConnectionContainer innerContainer = null;
             var container = new MultiEndpointServiceConnectionContainer(
-                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                e => innerContainer = new TestServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -142,9 +143,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(),
                 new TestServiceConnection(),
             }, e), sem, router, null);
-            await container.WriteAsync(DefaultGroupMessage);
 
-            await container.WriteAsync("1", DefaultGroupMessage);
+            var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
+            innerContainer.HandleAck(new AckMessage(1, AckStatus.Ok));
+            await task.OrTimeout();
         }
 
 
@@ -165,11 +167,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }, e), sem, router, null);
 
             await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
-                () => container.WriteAsync(DefaultGroupMessage)
-                );
-
-            await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
-                () => container.WriteAsync("1", DefaultGroupMessage)
+                () => container.WriteAckableMessageAsync(DefaultGroupMessage)
                 );
         }
 
@@ -194,10 +192,6 @@ namespace Microsoft.Azure.SignalR.Tests
             await Assert.ThrowsAsync<InvalidOperationException>(
                 () => container.WriteAsync(DefaultGroupMessage)
                 );
-
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                () => container.WriteAsync("1", DefaultGroupMessage)
-                );
         }
 
         [Fact]
@@ -219,8 +213,6 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(),
             }, e), sem, router, null);
             await container.WriteAsync(DefaultGroupMessage);
-
-            await container.WriteAsync("1", DefaultGroupMessage);
         }
 
         [Fact]
@@ -244,10 +236,6 @@ namespace Microsoft.Azure.SignalR.Tests
 
             await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
                 () => container.WriteAsync(DefaultGroupMessage)
-                );
-
-            await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
-                () => container.WriteAsync("1", DefaultGroupMessage)
                 );
         }
 
@@ -275,10 +263,6 @@ namespace Microsoft.Azure.SignalR.Tests
             // Instead of NotActiveException, throws NotConnectedException
             await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(
                 () => container.WriteAsync(DefaultGroupMessage)
-                );
-
-            await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(
-                () => container.WriteAsync("1", DefaultGroupMessage)
                 );
         }
 
@@ -318,10 +302,6 @@ namespace Microsoft.Azure.SignalR.Tests
             await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
                 () => container.WriteAsync(DefaultGroupMessage)
                 );
-
-            await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
-                () => container.WriteAsync("1", DefaultGroupMessage)
-                );
         }
 
         [Fact]
@@ -360,8 +340,6 @@ namespace Microsoft.Azure.SignalR.Tests
             _ = container.StartAsync();
 
             await container.WriteAsync(DefaultGroupMessage);
-
-            await container.WriteAsync("1", DefaultGroupMessage);
         }
 
         [Fact]
@@ -400,8 +378,6 @@ namespace Microsoft.Azure.SignalR.Tests
             _ = container.StartAsync();
 
             await container.WriteAsync(DefaultGroupMessage);
-
-            await container.WriteAsync("1", DefaultGroupMessage);
 
             var endpoints = sem.GetAvailableEndpoints();
             Assert.Single(endpoints);

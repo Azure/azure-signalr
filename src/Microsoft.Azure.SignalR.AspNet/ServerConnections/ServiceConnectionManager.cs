@@ -93,14 +93,14 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _appConnection.WriteAsync(serviceMessage);
         }
 
-        public virtual Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+        public virtual Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage)
         {
             if (_appConnection == null)
             {
                 throw new InvalidOperationException("App connection is not yet initialized.");
             }
 
-            return _appConnection.WriteAsync(partitionKey, serviceMessage);
+            return _appConnection.WriteAckableMessageAsync(serviceMessage);
         }
 
         private IEnumerable<IServiceConnectionContainer> GetConnections()

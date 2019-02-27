@@ -56,7 +56,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             var msgs = parser.GetMessages(message).ToList();
             Assert.Single(msgs);
-            var msg = msgs[0].Message as JoinGroupMessage;
+            var msg = msgs[0].Message as JoinGroupWithAckMessage;
             Assert.NotNull(msg);
             Assert.Equal(connectionId, msg.ConnectionId);
             Assert.Equal(groupName, msg.GroupName);
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             var msgs = parser.GetMessages(message).ToList();
             Assert.Single(msgs);
-            var msg = msgs[0].Message as LeaveGroupMessage;
+            var msg = msgs[0].Message as LeaveGroupWithAckMessage;
             Assert.NotNull(msg);
             Assert.Equal(connectionId, msg.ConnectionId);
             Assert.Equal(groupName, msg.GroupName);

@@ -114,8 +114,8 @@ namespace Microsoft.Azure.SignalR
             }
 
             var message = new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args));
-            // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionManager.WriteAsync(groupName, message);
+
+            return _serviceConnectionManager.WriteAsync(message);
         }
 
         public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -139,8 +139,8 @@ namespace Microsoft.Azure.SignalR
             }
 
             var message = new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args));
-            // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionManager.WriteAsync(groupName, message);
+
+            return _serviceConnectionManager.WriteAsync(message);
         }
 
         public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -173,9 +173,9 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            var message = new JoinGroupMessage(connectionId, groupName);
-            // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionManager.WriteAsync(groupName, message);
+            var message = new JoinGroupWithAckMessage(connectionId, groupName, -1);
+
+            return _serviceConnectionManager.WriteAckableMessageAsync(message);
         }
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -185,9 +185,9 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            var message = new LeaveGroupMessage(connectionId, groupName);
-            // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionManager.WriteAsync(groupName, message);
+            var message = new LeaveGroupWithAckMessage(connectionId, groupName, -1);
+
+            return _serviceConnectionManager.WriteAckableMessageAsync(message);
         }
 
         private static bool IsInvalidArgument(string value)

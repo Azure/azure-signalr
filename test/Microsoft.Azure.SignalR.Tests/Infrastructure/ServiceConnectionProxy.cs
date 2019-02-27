@@ -25,6 +25,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public IServiceConnectionContainer ServiceConnectionContainer { get; }
 
+        public IServiceMessageHandler ServiceMessageHandler { get; }
+
         public ConnectionDelegate ConnectionDelegateCallback { get; }
 
         public ConcurrentDictionary<string, TestConnection> ConnectionContexts { get; } =
@@ -49,6 +51,7 @@ namespace Microsoft.Azure.SignalR.Tests
             ConnectionDelegateCallback = callback ?? OnConnectionAsync;
 
             ServiceConnectionContainer = new StrongServiceConnectionContainer(this, ConnectionFactory, connectionCount, new ServiceEndpoint("", ""));
+            ServiceMessageHandler = (StrongServiceConnectionContainer) ServiceConnectionContainer;
         }
 
         public IServiceConnection Create(IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler,

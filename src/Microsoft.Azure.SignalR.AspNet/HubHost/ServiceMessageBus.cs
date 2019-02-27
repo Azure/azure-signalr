@@ -59,20 +59,20 @@ namespace Microsoft.Azure.SignalR.AspNet
             switch (message)
             {
                 // For group related messages, make sure messages are written to the same partition
-                case JoinGroupMessage joinGroupMessage:
+                case JoinGroupWithAckMessage joinGroupMessage:
                     try
                     {
-                        await connection.WriteAsync(joinGroupMessage.GroupName, joinGroupMessage);
+                        await connection.WriteAckableMessageAsync(joinGroupMessage);
                     }
                     finally
                     {
                         _ackHandler.TriggerAck(appMessage.RawMessage.CommandId);
                     }
                     break;
-                case LeaveGroupMessage leaveGroupMessage:
+                case LeaveGroupWithAckMessage leaveGroupMessage:
                     try
                     {
-                        await connection.WriteAsync(leaveGroupMessage.GroupName, leaveGroupMessage);
+                        await connection.WriteAckableMessageAsync(leaveGroupMessage);
                     }
                     finally
                     {
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                     }
                     break;
                 case GroupBroadcastDataMessage groupBroadcastMessage:
-                    await connection.WriteAsync(groupBroadcastMessage.GroupName, groupBroadcastMessage);
+                    await connection.WriteAsync(groupBroadcastMessage);
                     break;
                 case ConnectionDataMessage connectionDataMessage:
                     if (_clientConnectionManager.TryGetServiceConnection(connectionDataMessage.ConnectionId, out var serviceConnection))

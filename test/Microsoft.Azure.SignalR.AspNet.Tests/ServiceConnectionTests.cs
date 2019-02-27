@@ -101,7 +101,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     // group message goes into the manager
                     // make sure the tcs is called before writing message
-                    var jgTask = scm.WaitForTransportOutputMessageAsync(typeof(JoinGroupMessage)).OrTimeout();
+                    var jgTask = scm.WaitForTransportOutputMessageAsync(typeof(JoinGroupWithAckMessage)).OrTimeout();
                     var gbTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
 
                     await proxy.WriteMessageAsync(new ConnectionDataMessage(clientConnection, Encoding.UTF8.GetBytes("{\"H\":\"chat\",\"M\":\"JoinGroup\",\"A\":[\"user1\",\"message1\"],\"I\":1}")));
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     await jgTask;
                     await gbTask;
                     
-                    var lgTask = scm.WaitForTransportOutputMessageAsync(typeof(LeaveGroupMessage)).OrTimeout();
+                    var lgTask = scm.WaitForTransportOutputMessageAsync(typeof(LeaveGroupWithAckMessage)).OrTimeout();
                     gbTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
 
                     await proxy.WriteMessageAsync(new ConnectionDataMessage(clientConnection, Encoding.UTF8.GetBytes("{\"H\":\"chat\",\"M\":\"LeaveGroup\",\"A\":[\"user1\",\"message1\"],\"I\":1}")));
