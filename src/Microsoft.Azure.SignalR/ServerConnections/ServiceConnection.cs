@@ -116,7 +116,6 @@ namespace Microsoft.Azure.SignalR
 
                     connection.Application.Input.AdvanceTo(buffer.End);
                 }
-                connection.Application.Input.Complete();
             }
             catch (Exception ex)
             {
@@ -125,6 +124,9 @@ namespace Microsoft.Azure.SignalR
                 // Here is abort close and WaitOnApplicationTask will send close message to notify client to disconnect
                 Log.SendLoopStopped(_logger, connection.ConnectionId, ex);
                 connection.Application.Output.CancelPendingFlush();
+            }
+            finally
+            {
                 connection.Application.Input.Complete();
                 await PerformDisconnectAsyncCore(connection.ConnectionId, true);
             }
