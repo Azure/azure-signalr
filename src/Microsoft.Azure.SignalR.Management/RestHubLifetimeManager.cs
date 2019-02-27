@@ -195,7 +195,7 @@ namespace Microsoft.Azure.SignalR.Management
         private static HttpRequestMessage BuildRequest(RestApiEndpoint endpoint, HttpMethod httpMethod, string methodName = null, object[] args = null)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
-            return GenerateHttpRequest(endpoint.Audience, payload, endpoint.Token, HttpMethod.Post);
+            return GenerateHttpRequest(endpoint.Audience, payload, endpoint.Token, httpMethod);
         }
 
         private static async Task CallRestApiAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
