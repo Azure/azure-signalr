@@ -61,6 +61,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     if (_acks.TryRemove(pair.Key, out var ack))
                     {
+                        // If acks not coming back in time, do not throw an exception
                         ack.Tcs.TrySetResult(false);
                     }
                 }

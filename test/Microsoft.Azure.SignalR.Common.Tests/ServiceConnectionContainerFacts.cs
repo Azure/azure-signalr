@@ -28,8 +28,6 @@ namespace Microsoft.Azure.SignalR.Tests
             });
 
             await container.WriteAsync(new HandshakeResponseMessage());
-
-            await container.WriteAsync("1", new HandshakeResponseMessage());
         }
 
         [Fact]
@@ -47,10 +45,6 @@ namespace Microsoft.Azure.SignalR.Tests
 
             await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
                 () => container.WriteAsync(new HandshakeResponseMessage())
-                );
-
-            await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
-                () => container.WriteAsync("1", new HandshakeResponseMessage())
                 );
         }
 
@@ -70,10 +64,6 @@ namespace Microsoft.Azure.SignalR.Tests
             await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
                 () => container.WriteAsync(new HandshakeResponseMessage())
                 );
-
-            await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
-                () => container.WriteAsync("1", new HandshakeResponseMessage())
-                );
         }
 
         [Fact]
@@ -90,7 +80,6 @@ namespace Microsoft.Azure.SignalR.Tests
             });
 
             await container.WriteAsync(new HandshakeResponseMessage());
-            await container.WriteAsync("1", new HandshakeResponseMessage());
         }
 
         [Fact]
@@ -107,7 +96,6 @@ namespace Microsoft.Azure.SignalR.Tests
             });
 
             await container.WriteAsync(new HandshakeResponseMessage());
-            await container.WriteAsync("1", new HandshakeResponseMessage());
         }
 
         [Fact]
@@ -124,7 +112,6 @@ namespace Microsoft.Azure.SignalR.Tests
             });
 
             await container.WriteAsync(new HandshakeResponseMessage());
-            await container.WriteAsync("1", new HandshakeResponseMessage());
         }
 
         private sealed class TestServiceConnection : IServiceConnection

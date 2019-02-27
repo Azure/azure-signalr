@@ -171,17 +171,6 @@ namespace Microsoft.Azure.SignalR
             return WriteToRandomAvailableConnection(serviceMessage);
         }
 
-        public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
-        {
-            // If we hit this check, it is a code bug.
-            if (string.IsNullOrEmpty(partitionKey))
-            {
-                throw new ArgumentNullException(nameof(partitionKey));
-            }
-
-            return WriteToPartitionedConnection(partitionKey, serviceMessage);
-        }
-
         public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage)
         {
             if (!(serviceMessage is IAckableMessage))
@@ -202,11 +191,6 @@ namespace Microsoft.Azure.SignalR
             return FixedServiceConnections.Any(s => s.Status == ServiceConnectionStatus.Connected)
                 ? ServiceConnectionStatus.Connected
                 : ServiceConnectionStatus.Disconnected;
-        }
-
-        private Task WriteToPartitionedConnection(string partitionKey, ServiceMessage serviceMessage)
-        {
-            return WriteWithRetry(serviceMessage, partitionKey.GetHashCode(), FixedConnectionCount);
         }
 
         private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
@@ -259,7 +243,5 @@ namespace Microsoft.Azure.SignalR
 
             return connections;
         }
-
-        
     }
 }
