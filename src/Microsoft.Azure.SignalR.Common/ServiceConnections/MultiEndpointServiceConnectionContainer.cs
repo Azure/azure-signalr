@@ -116,7 +116,7 @@ namespace Microsoft.Azure.SignalR
 
             var tasks = new List<Task>();
             var containers = routed.Select(s => Connections[s]);
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<bool>();
 
             foreach (var container in containers)
             {
@@ -125,12 +125,12 @@ namespace Microsoft.Azure.SignalR
                     var succeeded = await container.WriteAckableMessageAsync(serviceMessage);
                     if (succeeded)
                     {
-                        tcs.SetResult(null);
+                        tcs.SetResult(true);
                     }
                 }));
             }
 
-            await Task.WhenAny(tcs.Task, Task.WhenAll(tasks));
+            var task = await Task.WhenAny(tcs.Task, Task.WhenAll(tasks));
 
             if (tcs.Task.IsCompleted)
             {
@@ -138,6 +138,16 @@ namespace Microsoft.Azure.SignalR
             }
             else
             {
+                if (task.IsFaulted && task.Exception != null)
+                {
+                    if (task.Exception.InnerException != null)
+                    {
+                        throw task.Exception.InnerException;
+                    }
+
+                    throw task.Exception;
+                }
+
                 return false;
             }
         }

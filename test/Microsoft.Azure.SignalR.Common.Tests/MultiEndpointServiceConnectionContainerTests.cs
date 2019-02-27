@@ -132,6 +132,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
             var router = new TestEndpointRouter(true);
+
             TestServiceConnectionContainer innerContainer = null;
             var container = new MultiEndpointServiceConnectionContainer(
                 e => innerContainer = new TestServiceConnectionContainer(new List<IServiceConnection> {
@@ -145,6 +146,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }, e), sem, router, null);
 
             var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
+            await Task.Delay(100);
             innerContainer.HandleAck(new AckMessage(1, AckStatus.Ok));
             await task.OrTimeout();
         }
@@ -190,7 +192,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(),
             }, e), sem, router, null);
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => container.WriteAsync(DefaultGroupMessage)
+                () => container.WriteAckableMessageAsync(DefaultGroupMessage)
                 );
         }
 
@@ -201,9 +203,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString1),
                 new ServiceEndpoint(ConnectionString2));
 
+            var containers = new Dictionary<ServiceEndpoint, TestServiceConnectionContainer>();
             var router = new TestEndpointRouter(false);
             var container = new MultiEndpointServiceConnectionContainer(
-                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                e => containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -212,7 +215,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(),
                 new TestServiceConnection(),
             }, e), sem, router, null);
-            await container.WriteAsync(DefaultGroupMessage);
+
+            var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
+            await Task.Delay(100);
+            containers.First().Value.HandleAck(new AckMessage(1, AckStatus.Ok));
+            await task.OrTimeout();
         }
 
         [Fact]
@@ -235,7 +242,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }, e), sem, router, null);
 
             await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
-                () => container.WriteAsync(DefaultGroupMessage)
+                () => container.WriteAckableMessageAsync(DefaultGroupMessage)
                 );
         }
 
@@ -262,7 +269,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // Instead of NotActiveException, throws NotConnectedException
             await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(
-                () => container.WriteAsync(DefaultGroupMessage)
+                () => container.WriteAckableMessageAsync(DefaultGroupMessage)
                 );
         }
 
@@ -300,7 +307,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }, sem, router, null);
 
             await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
-                () => container.WriteAsync(DefaultGroupMessage)
+                () => container.WriteAckableMessageAsync(DefaultGroupMessage)
                 );
         }
 
@@ -311,12 +318,13 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString1),
                 new ServiceEndpoint(ConnectionString2, name: "online"));
 
+            var containers = new Dictionary<ServiceEndpoint, TestServiceConnectionContainer>();
             var router = new TestEndpointRouter(false);
             var container = new MultiEndpointServiceConnectionContainer(e =>
             {
                 if (string.IsNullOrEmpty(e.Name))
                 {
-                    return new TestServiceConnectionContainer(new List<IServiceConnection> {
+                    return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -326,7 +334,7 @@ namespace Microsoft.Azure.SignalR.Tests
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                     }, e);
                 }
-                return new TestServiceConnectionContainer(new List<IServiceConnection> {
+                return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
                         new TestServiceConnection(),
                         new TestServiceConnection(),
                         new TestServiceConnection(),
@@ -339,7 +347,10 @@ namespace Microsoft.Azure.SignalR.Tests
 
             _ = container.StartAsync();
 
-            await container.WriteAsync(DefaultGroupMessage);
+            var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
+            containers.First(p => !string.IsNullOrEmpty(p.Key.Name)).Value.HandleAck(new AckMessage(1, AckStatus.Ok));
+            await Task.Delay(100);
+            await task.OrTimeout();
         }
 
         [Fact]
@@ -349,12 +360,13 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString1),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "online"));
 
+            var containers = new Dictionary<ServiceEndpoint, TestServiceConnectionContainer>();
             var router = new TestEndpointRouter(false);
             var container = new MultiEndpointServiceConnectionContainer(e =>
             {
                 if (string.IsNullOrEmpty(e.Name))
                 {
-                    return new TestServiceConnectionContainer(new List<IServiceConnection> {
+                    return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -364,7 +376,7 @@ namespace Microsoft.Azure.SignalR.Tests
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                     }, e);
                 }
-                return new TestServiceConnectionContainer(new List<IServiceConnection> {
+                return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
                         new TestServiceConnection(),
                         new TestServiceConnection(),
                         new TestServiceConnection(),
@@ -377,7 +389,10 @@ namespace Microsoft.Azure.SignalR.Tests
 
             _ = container.StartAsync();
 
-            await container.WriteAsync(DefaultGroupMessage);
+            var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
+            containers.First(p => !string.IsNullOrEmpty(p.Key.Name)).Value.HandleAck(new AckMessage(1, AckStatus.Ok));
+            await Task.Delay(100);
+            await task.OrTimeout();
 
             var endpoints = sem.GetAvailableEndpoints();
             Assert.Single(endpoints);
