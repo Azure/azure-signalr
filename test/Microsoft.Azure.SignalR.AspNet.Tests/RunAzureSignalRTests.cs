@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -358,7 +359,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 throw new NotImplementedException();
             }
 
-            public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage)
+            public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
             {
                 throw new NotImplementedException();
             }

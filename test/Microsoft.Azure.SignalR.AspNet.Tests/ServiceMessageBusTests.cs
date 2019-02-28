@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Messaging;
@@ -331,7 +332,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 return Task.CompletedTask;
             }
 
-            public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage)
+            public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
             {
                 throw new NotImplementedException();
             }

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             return Task.CompletedTask;
         }
 
-        public override Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage)
+        public override Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
             if (_waitForTransportOutputMessage.TryGetValue(serviceMessage.GetType(), out var tcs))
             {

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Common.ServiceConnections;
@@ -100,11 +101,11 @@ namespace Microsoft.Azure.SignalR
             return Task.WhenAll(routed.Select(s => Connections[s]).Select(s => s.WriteAsync(serviceMessage)));
         }
 
-        public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage)
+        public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
             if (_inner != null)
             {
-                return await _inner.WriteAckableMessageAsync(serviceMessage);
+                return await _inner.WriteAckableMessageAsync(serviceMessage, cancellationToken);
             }
 
             var routed = GetRoutedEndpoints(serviceMessage, _endpointManager.GetAvailableEndpoints()).ToArray();
@@ -120,35 +121,24 @@ namespace Microsoft.Azure.SignalR
 
             foreach (var container in containers)
             {
-                tasks.Add(Task.Run(async () =>
-                {
-                    var succeeded = await container.WriteAckableMessageAsync(serviceMessage);
-                    if (succeeded)
-                    {
-                        tcs.SetResult(true);
-                    }
-                }));
+                tasks.Add(WriteAndVerifyAckableMessageAsync(container, serviceMessage, tcs, cancellationToken));
             }
 
             var task = await Task.WhenAny(tcs.Task, Task.WhenAll(tasks));
 
-            if (tcs.Task.IsCompleted)
-            {
-                return true;
-            }
-            else
-            {
-                if (task.IsFaulted && task.Exception != null)
-                {
-                    if (task.Exception.InnerException != null)
-                    {
-                        throw task.Exception.InnerException;
-                    }
+            // This will throw exceptions in tasks if needed
+            await task;
 
-                    throw task.Exception;
-                }
+            return tcs.Task.IsCompleted;
+        }
 
-                return false;
+        private async Task WriteAndVerifyAckableMessageAsync(IServiceConnectionContainer container, ServiceMessage serviceMessage,
+            TaskCompletionSource<bool> tcs, CancellationToken cancellationToken)
+        {
+            var succeeded = await container.WriteAckableMessageAsync(serviceMessage, cancellationToken);
+            if (succeeded)
+            {
+                tcs.TrySetResult(true);
             }
         }
 

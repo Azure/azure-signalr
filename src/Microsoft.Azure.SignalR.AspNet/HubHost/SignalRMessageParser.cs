@@ -62,7 +62,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
                             // go through the app connection
                             // use groupName as the partitionkey so that commands towards the same group always goes into the same service connection
-                            yield return new AppMessage(new JoinGroupWithAckMessage(connectionId, groupName, -1), message);
+                            yield return new AppMessage(new JoinGroupWithAckMessage(connectionId, groupName), message);
                             yield break;
                         }
                     case CommandType.RemoveFromGroup:
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
                             // go through the app connection
                             // use groupName as the partitionkey so that commands towards the same group always goes into the same service connection
-                            yield return new AppMessage(new LeaveGroupWithAckMessage(connectionId, groupName, -1), message);
+                            yield return new AppMessage(new LeaveGroupWithAckMessage(connectionId, groupName), message);
                             yield break;
                         }
                     case CommandType.Initializing:

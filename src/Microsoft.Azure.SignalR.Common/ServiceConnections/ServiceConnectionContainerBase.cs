@@ -92,7 +92,10 @@ namespace Microsoft.Azure.SignalR
             {
                 _ackHandler.TriggerAck(ackMessage.AckId, true);
             }
-            _ackHandler.TriggerAck(ackMessage.AckId, false);
+            else
+            {
+                _ackHandler.TriggerAck(ackMessage.AckId, false);
+            }
         }
 
         /// <summary>
@@ -171,15 +174,15 @@ namespace Microsoft.Azure.SignalR
             return WriteToRandomAvailableConnection(serviceMessage);
         }
 
-        public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage)
+        public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            if (!(serviceMessage is IAckableMessage))
+            if (!(serviceMessage is IAckableMessage ackableMessage))
             {
                 throw new ArgumentException($"{nameof(serviceMessage)} is not {nameof(IAckableMessage)}");
             }
 
-            var task = _ackHandler.CreateAck(out var id);
-            ((IAckableMessage)serviceMessage).AckId = id;
+            var task = _ackHandler.CreateAck(out var id, cancellationToken);
+            ackableMessage.AckId = id;
 
             await WriteToRandomAvailableConnection(serviceMessage);
 

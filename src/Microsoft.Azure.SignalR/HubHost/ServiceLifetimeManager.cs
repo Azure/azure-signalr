@@ -173,7 +173,7 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            var message = new JoinGroupWithAckMessage(connectionId, groupName, -1);
+            var message = new JoinGroupWithAckMessage(connectionId, groupName);
 
             return _serviceConnectionManager.WriteAckableMessageAsync(message);
         }
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            var message = new LeaveGroupWithAckMessage(connectionId, groupName, -1);
+            var message = new LeaveGroupWithAckMessage(connectionId, groupName);
 
             return _serviceConnectionManager.WriteAckableMessageAsync(message);
         }

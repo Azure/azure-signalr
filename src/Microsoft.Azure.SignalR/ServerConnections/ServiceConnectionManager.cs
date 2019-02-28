@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
@@ -35,14 +36,14 @@ namespace Microsoft.Azure.SignalR
             return _serviceConnection.WriteAsync(serviceMessage);
         }
 
-        public Task WriteAckableMessageAsync(ServiceMessage seviceMessage)
+        public Task WriteAckableMessageAsync(ServiceMessage seviceMessage, CancellationToken cancellationToken = default)
         {
             if (_serviceConnection == null)
             {
                 throw new AzureSignalRNotConnectedException();
             }
 
-            return _serviceConnection.WriteAckableMessageAsync(seviceMessage);
+            return _serviceConnection.WriteAckableMessageAsync(seviceMessage, cancellationToken);
         }
     }
 }

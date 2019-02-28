@@ -79,9 +79,6 @@ namespace Microsoft.Azure.SignalR.AspNet
                         _ackHandler.TriggerAck(appMessage.RawMessage.CommandId);
                     }
                     break;
-                case GroupBroadcastDataMessage groupBroadcastMessage:
-                    await connection.WriteAsync(groupBroadcastMessage);
-                    break;
                 case ConnectionDataMessage connectionDataMessage:
                     if (_clientConnectionManager.TryGetServiceConnection(connectionDataMessage.ConnectionId, out var serviceConnection))
                     {

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ConcurrentDictionary<int, AckInfo> _acks = new ConcurrentDictionary<int, AckInfo>();
         private readonly Timer _timer;
         private readonly TimeSpan _ackInterval = TimeSpan.FromSeconds(5);
-        private volatile int _currentId = 0;
+        private int _currentId = 0;
 
         public AckHandler()
         {
@@ -37,10 +37,12 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public Task<bool> CreateAck(out int id)
+        public Task<bool> CreateAck(out int id, CancellationToken cancellationToken = default)
         {
             id = Interlocked.Increment(ref _currentId);
-            return _acks.GetOrAdd(id, _ => new AckInfo()).Tcs.Task;
+            var tcs = _acks.GetOrAdd(id, _ => new AckInfo()).Tcs;
+            cancellationToken.Register(() => tcs.TrySetCanceled());
+            return tcs.Task;
         }
 
         public void TriggerAck(int id, bool isSuccess)
