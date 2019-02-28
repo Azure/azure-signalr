@@ -13,7 +13,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler
+    abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler, IDisposable
     {
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
         private static TimeSpan ReconnectInterval =>
@@ -187,6 +187,21 @@ namespace Microsoft.Azure.SignalR
             await WriteToRandomAvailableConnection(serviceMessage);
 
             return await task;
+        }
+
+        // Ready for scalable containers
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _ackHandler.Dispose();
+            }
         }
 
         protected virtual ServiceConnectionStatus GetStatus()
