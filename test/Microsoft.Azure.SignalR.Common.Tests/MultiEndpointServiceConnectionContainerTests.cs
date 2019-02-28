@@ -349,8 +349,8 @@ namespace Microsoft.Azure.SignalR.Tests
             }, sem, router, null);
 
             var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
-            containers.First(p => !string.IsNullOrEmpty(p.Key.Name)).Value.HandleAck(new AckMessage(1, AckStatus.Ok));
             await writeTcs.Task.OrTimeout();
+            containers.First(p => !string.IsNullOrEmpty(p.Key.Name)).Value.HandleAck(new AckMessage(1, AckStatus.Ok));
             await task.OrTimeout();
         }
 
@@ -392,8 +392,8 @@ namespace Microsoft.Azure.SignalR.Tests
             _ = container.StartAsync();
 
             var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
-            containers.First(p => !string.IsNullOrEmpty(p.Key.Name)).Value.HandleAck(new AckMessage(1, AckStatus.Ok));
             await writeTcs.Task.OrTimeout();
+            containers.First(p => !string.IsNullOrEmpty(p.Key.Name)).Value.HandleAck(new AckMessage(1, AckStatus.Ok));  
             await task.OrTimeout();
         }
 
@@ -435,8 +435,8 @@ namespace Microsoft.Azure.SignalR.Tests
             _ = container.StartAsync();
 
             var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
-            containers.First(p => !string.IsNullOrEmpty(p.Key.Name)).Value.HandleAck(new AckMessage(1, AckStatus.Ok));
             await writeTcs.Task.OrTimeout();
+            containers.First(p => !string.IsNullOrEmpty(p.Key.Name)).Value.HandleAck(new AckMessage(1, AckStatus.Ok));
             await task.OrTimeout();
 
             var endpoints = sem.GetAvailableEndpoints();
