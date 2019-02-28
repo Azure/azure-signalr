@@ -61,12 +61,8 @@ namespace Microsoft.Azure.SignalR.Management
 
                         serviceCollection
                             .AddSingleton(typeof(ILogger<DefaultHubProtocolResolver>), NullLogger<DefaultHubProtocolResolver>.Instance)
-                            .AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManagerCore<>))
-                            .AddSingleton(typeof(IServiceEndpointManager), typeof(ServiceEndpointManager))
-                            .AddSingleton(typeof(IServiceProtocol), typeof(ServiceProtocol))
+                            .AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManagerBase<>))
                             .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
-                            .AddSingleton<IHostedService, HeartBeat>()
-                            .AddSingleton<NegotiateHandler>()
                             .AddSingleton(typeof(IServiceConnectionContainer), weakConnectionContainer);
                             
                         var services = serviceCollection.BuildServiceProvider();
@@ -76,10 +72,10 @@ namespace Microsoft.Azure.SignalR.Management
                         _ = serviceConnectionManager.StartAsync();
 
                         var protocolResolver = services.GetRequiredService<IHubProtocolResolver>();
-                        var websocketsHubLifetimeManager = new WebsocketsHubLifetimeManager(serviceConnectionManager, protocolResolver);
+                        var webSocketsHubLifetimeManager = new WebSocketsHubLifetimeManager(serviceConnectionManager, protocolResolver);
 
                         var hubContext = services.GetRequiredService<IHubContext<Hub>>();
-                        var serviceHubContext = new ServiceHubContext(hubContext, websocketsHubLifetimeManager);
+                        var serviceHubContext = new ServiceHubContext(hubContext, webSocketsHubLifetimeManager);
                         return Task.FromResult<IServiceHubContext>(serviceHubContext);
                     }
                 case ServiceTransportType.Transient:

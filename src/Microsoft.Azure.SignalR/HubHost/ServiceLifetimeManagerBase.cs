@@ -12,13 +12,13 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceLifetimeManagerCore<THub> : HubLifetimeManager<THub> where THub : Hub
+    internal class ServiceLifetimeManagerBase<THub> : HubLifetimeManager<THub> where THub : Hub
     {
         private readonly IReadOnlyList<IHubProtocol> _allProtocols;
 
         private readonly IServiceConnectionManager<THub> _serviceConnectionContainer;
 
-        public ServiceLifetimeManagerCore(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver)
+        public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver)
         {
             _serviceConnectionContainer = serviceConnectionManager;
             _allProtocols = protocolResolver.AllProtocols;

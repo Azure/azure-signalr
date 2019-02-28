@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceLifetimeManager<THub> : ServiceLifetimeManagerCore<THub> where THub : Hub
+    internal class ServiceLifetimeManager<THub> : ServiceLifetimeManagerBase<THub> where THub : Hub
     {
         private const string MarkerNotConfiguredError =
             "'AddAzureSignalR(...)' was called without a matching call to 'IApplicationBuilder.UseAzureSignalR(...)'.";
@@ -56,17 +56,17 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            if (!_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var serviceConnectionContext))
+            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var serviceConnectionContext))
             {
-                // Connection isn't on this server so serialize to all protocols and send it to the service
-                return _serviceConnectionManager.WriteAsync(
-                    new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)));
+                var message = new InvocationMessage(methodName, args);
+
+                // Write directly to this connection
+                return serviceConnectionContext.HubConnectionContext.WriteAsync(message).AsTask();
             }
 
-            var message = new InvocationMessage(methodName, args);
+            return base.SendConnectionAsync(connectionId, methodName, args, cancellationToken);
 
-            // Write directly to this connection
-            return serviceConnectionContext.HubConnectionContext.WriteAsync(message).AsTask();
+            
         }
     }
 }
