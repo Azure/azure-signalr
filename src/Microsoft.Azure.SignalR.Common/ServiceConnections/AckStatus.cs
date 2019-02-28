@@ -6,8 +6,8 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class AckStatus
     {
-        public const int Ok = 200;
-        public const int NotFound = 404;
-        public const int Timeout = 408;
+        public const int Ok = 1;
+        public const int NotFound = 2;
+        public const int Timeout = 3;
     }
 }

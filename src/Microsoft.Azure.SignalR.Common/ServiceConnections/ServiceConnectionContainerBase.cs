@@ -179,7 +179,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             var task = _ackHandler.CreateAck(out var id);
-            ((IAckableMessage) serviceMessage).AckId = id;
+            ((IAckableMessage)serviceMessage).AckId = id;
 
             await WriteToRandomAvailableConnection(serviceMessage);
 
