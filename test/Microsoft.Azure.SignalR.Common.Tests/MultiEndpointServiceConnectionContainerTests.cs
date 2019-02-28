@@ -314,6 +314,47 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        public async Task TestContainerWithTwoEndpointWithOneOfflineSucceeds()
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1),
+                new ServiceEndpoint(ConnectionString2, name: "online"));
+
+            var writeTcs = new TaskCompletionSource<object>();
+            var containers = new Dictionary<ServiceEndpoint, TestServiceConnectionContainer>();
+            var router = new TestEndpointRouter(false);
+            var container = new MultiEndpointServiceConnectionContainer(e =>
+            {
+                if (string.IsNullOrEmpty(e.Name))
+                {
+                    return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
+                    }, e);
+                }
+                return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
+                    new TestServiceConnection(writeAsyncTcs: writeTcs),
+                    new TestServiceConnection(writeAsyncTcs: writeTcs),
+                    new TestServiceConnection(writeAsyncTcs: writeTcs),
+                    new TestServiceConnection(writeAsyncTcs: writeTcs),
+                    new TestServiceConnection(writeAsyncTcs: writeTcs),
+                    new TestServiceConnection(writeAsyncTcs: writeTcs),
+                    new TestServiceConnection(writeAsyncTcs: writeTcs),
+                }, e);
+            }, sem, router, null);
+
+            var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
+            containers.First(p => !string.IsNullOrEmpty(p.Key.Name)).Value.HandleAck(new AckMessage(1, AckStatus.Ok));
+            await writeTcs.Task.OrTimeout();
+            await task.OrTimeout();
+        }
+
+        [Fact]
         public async Task TestContainerWithTwoEndpointWithOneOfflineAndConnectionStartedSucceeds()
         {
             var sem = new TestServiceEndpointManager(
