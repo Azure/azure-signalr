@@ -134,6 +134,8 @@ namespace Microsoft.Azure.SignalR
                     return mgbdm.GroupList.SelectMany(g => _router.GetEndpointsForGroup(g, availableEndpoints)).Distinct();
                 case ConnectionDataMessage cdm:
                     return _router.GetEndpointsForConnection(cdm.ConnectionId, availableEndpoints);
+                case MultiConnectionDataMessage mcd:
+                    return mcd.ConnectionList.SelectMany(c => _router.GetEndpointsForConnection(c, availableEndpoints)).Distinct();
                 case UserDataMessage udm:
                     return _router.GetEndpointsForUser(udm.UserId, availableEndpoints);
                 case MultiUserDataMessage mudm:
