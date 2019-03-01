@@ -13,6 +13,14 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
+    /// Interface of ack-able message 
+    /// </summary>
+    public interface IAckableMessage
+    {
+        int AckId { get; set; }
+    }
+
+    /// <summary>
     /// A handshake request message.
     /// </summary>
     public class HandshakeRequestMessage : ServiceMessage
@@ -117,6 +125,49 @@ namespace Microsoft.Azure.SignalR.Protocol
         public ServiceErrorMessage(string errorMessage)
         {
             ErrorMessage = errorMessage;
+        }
+    }
+
+    /// <summary>
+    /// A ack message to response ack-able message
+    /// </summary>
+    public class AckMessage : ServiceMessage
+    {
+        /// <summary>
+        /// Gets or sets the ack id.
+        /// </summary>
+        public int AckId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the status code
+        /// </summary>
+        public int Status { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ack message
+        /// </summary>
+        public string Message { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AckMessage"/> class.
+        /// </summary>
+        /// <param name="ackId">The ack Id</param>
+        /// <param name="status">The status code</param>
+        public AckMessage(int ackId, int status) : this(ackId, status, string.Empty)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AckMessage"/> class.
+        /// </summary>
+        /// <param name="ackId">The ack Id</param>
+        /// <param name="status">The status code</param>
+        /// <param name="message">The ack message</param>
+        public AckMessage(int ackId, int status, string message)
+        {
+            AckId = ackId;
+            Status = status;
+            Message = message;
         }
     }
 }
