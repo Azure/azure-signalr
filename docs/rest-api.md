@@ -134,12 +134,12 @@ Then SignalR Service will use the value of `nameid` claim as the user id of each
 As shown in the [architecture section](#serverless), the `negotiate` function will return a redirect negotiation response to client.
 A typical negotiation response looks like as folllowing. The `nameid` claim should be included in the access token.
 
-    ```json
-    {
-        "url":"https://test.service.signalr.net:5001/client/?hub=chat&...",
-        "accessToken":"<a typical JWT token>"
-    }
-    ```
+```json
+{
+    "url":"https://test.service.signalr.net/client/?hub=chat&...",
+    "accessToken":"<a typical JWT token>"
+}
+```
 
 Read more about redirecting client to Azure SignalR Service at [here](./internal.md#client-connections).
 
