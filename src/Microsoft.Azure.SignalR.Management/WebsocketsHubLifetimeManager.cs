@@ -8,9 +8,9 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class WebSocketsHubLifetimeManager : ServiceLifetimeManagerBase<Hub>, IHubLifetimeManagerForUserGroup
+    internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IHubLifetimeManagerForUserGroup where THub : Hub
     {
-        public WebSocketsHubLifetimeManager(IServiceConnectionManager<Hub> serviceConnectionManager, IHubProtocolResolver protocolResolver) : base(serviceConnectionManager, protocolResolver)
+        public WebSocketsHubLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver) : base(serviceConnectionManager, protocolResolver)
         {
         }
 
