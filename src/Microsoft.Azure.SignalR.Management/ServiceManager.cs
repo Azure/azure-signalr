@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Management
             _endpoint = new ServiceEndpointProvider(new ServiceEndpoint(_serviceManagerOptions.ConnectionString));
         }
 
-        public Task<IServiceHubContext> CreateHubContextAsync(string hubName)
+        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName)
         {
             switch (_serviceManagerOptions.ServiceTransportType)
             {
@@ -77,12 +77,13 @@ namespace Microsoft.Azure.SignalR.Management
                         // todo: expose ConnectionInitializedTask in IServiceConnectionContainer,
                         //       wait for ConnectionInitializedTask to make sure service connection connected successfully.
                         _ = serviceConnectionManager.StartAsync();
+                        await weakConnectionContainer.ConnectionInitializedTask;
 
                         var webSocketsHubLifetimeManager = (WebSocketsHubLifetimeManager<Hub>)services.GetRequiredService<HubLifetimeManager<Hub>>();
 
                         var hubContext = services.GetRequiredService<IHubContext<Hub>>();
                         var serviceHubContext = new ServiceHubContext(hubContext, webSocketsHubLifetimeManager);
-                        return Task.FromResult<IServiceHubContext>(serviceHubContext);
+                        return serviceHubContext;
                     }
                 case ServiceTransportType.Transient:
                     {
@@ -100,7 +101,7 @@ namespace Microsoft.Azure.SignalR.Management
                         var services = serviceCollection.BuildServiceProvider();
                         var hubContext = services.GetRequiredService<IHubContext<Hub>>();
                         var serviceHubContext = new ServiceHubContext(hubContext, restHubLifetimeManager);
-                        return Task.FromResult<IServiceHubContext>(serviceHubContext);
+                        return serviceHubContext;
                     }
                 default:
                     throw new ArgumentException("Not supported service transport type.");

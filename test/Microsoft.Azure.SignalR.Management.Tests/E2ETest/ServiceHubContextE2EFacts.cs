@@ -30,6 +30,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
         [InlineData(ServiceTransportType.Transient)]
+        [InlineData(ServiceTransportType.Persistent)]
         internal async Task BroadcastTest(ServiceTransportType serviceTransportType)
         {
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
@@ -40,6 +41,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
         [InlineData(ServiceTransportType.Transient)]
+        [InlineData(ServiceTransportType.Persistent)]
         internal async Task SendToUserTest(ServiceTransportType serviceTransportType)
         {
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
@@ -50,6 +52,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
         [InlineData(ServiceTransportType.Transient)]
+        [InlineData(ServiceTransportType.Persistent)]
         internal async Task SendToUsersTest(ServiceTransportType serviceTransportType)
         {
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
