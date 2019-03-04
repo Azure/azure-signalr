@@ -38,6 +38,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidArgument(methodName))
             {
+                // todo: throw exception for invalid args
                 return Task.CompletedTask;
             }
 
@@ -49,6 +50,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidArgument(methodName))
             {
+                // todo: throw exception for invalid args
                 return Task.CompletedTask;
             }
 
@@ -60,6 +62,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidArgument(connectionId) || IsInvalidArgument(methodName))
             {
+                // todo: throw exception for invalid args
                 return Task.CompletedTask;
             }
 
@@ -71,6 +74,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidArgument(connectionIds) || IsInvalidArgument(methodName))
             {
+                // todo: throw exception for invalid args
                 return Task.CompletedTask;
             }
 
@@ -82,6 +86,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidArgument(groupName) || IsInvalidArgument(methodName))
             {
+                // todo: throw exception for invalid args
                 return Task.CompletedTask;
             }
 
@@ -94,6 +99,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidArgument(groupNames))
             {
+                // todo: throw exception for invalid args
                 return Task.CompletedTask;
             }
 
@@ -107,6 +113,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidArgument(groupName) || IsInvalidArgument(methodName))
             {
+                // todo: throw exception for invalid args
                 return Task.CompletedTask;
             }
 
@@ -119,6 +126,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidArgument(userId) || IsInvalidArgument(methodName))
             {
+                // todo: throw exception for invalid args
                 return Task.CompletedTask;
             }
 
@@ -131,6 +139,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidArgument(userIds) || IsInvalidArgument(methodName))
             {
+                // todo: throw exception for invalid args
                 return Task.CompletedTask;
             }
 
@@ -142,6 +151,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidArgument(connectionId) || IsInvalidArgument(groupName))
             {
+                // todo: throw exception for invalid args
                 return Task.CompletedTask;
             }
 
@@ -154,6 +164,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidArgument(connectionId) || IsInvalidArgument(groupName))
             {
+                // todo: throw exception for invalid args
                 return Task.CompletedTask;
             }
 
