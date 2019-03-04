@@ -179,6 +179,22 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "ServiceError",
                 message: new ServiceErrorMessage("Maximum message count limit reached: 100000"),
                 binary: "kg/ZK01heGltdW0gbWVzc2FnZSBjb3VudCBsaW1pdCByZWFjaGVkOiAxMDAwMDA="),
+            new ProtocolTestData(
+                name: "JoinGroupWithAck",
+                message: new JoinGroupWithAckMessage("conn14", "group1", 1), 
+                binary: "lBKmY29ubjE0pmdyb3VwMQE="),
+            new ProtocolTestData(
+                name: "LeaveGroupWithAck",
+                message: new LeaveGroupWithAckMessage("conn15", "group2", 1), 
+                binary: "lBOmY29ubjE1pmdyb3VwMgE="),
+            new ProtocolTestData(
+                name: "Ack",
+                message: new AckMessage(1, 100), 
+                binary: "lBQBZKA="),
+            new ProtocolTestData(
+                name: "AckWithMessage",
+                message: new AckMessage(2, 101, "Joined group successfully"),
+                binary: "lBQCZblKb2luZWQgZ3JvdXAgc3VjY2Vzc2Z1bGx5"),
         }.ToDictionary(t => t.Name);
 
         [Theory]
