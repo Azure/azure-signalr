@@ -73,21 +73,13 @@ namespace Microsoft.Azure.SignalR
         {
             get
             {
-                var connectionInitializedTasks = new List<Task>();
                 if (_inner != null)
                 {
-                    connectionInitializedTasks.Add(_inner.ConnectionInitializedTask);
+                    return _inner.ConnectionInitializedTask;
                 }
 
-                if (Connections != null)
-                {
-                    foreach(var entry in Connections)
-                    {
-                        connectionInitializedTasks.Add(entry.Value.ConnectionInitializedTask);
-                    }
-                }
-
-                return Task.WhenAll(connectionInitializedTasks);
+                return Task.WhenAll(from connection in Connections
+                                    select connection.Value.ConnectionInitializedTask);
             }
         }
 

@@ -22,26 +22,8 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();
 
-        public Task ConnectionInitializedTask
-        {
-            get
-            {
-                var connectionInitializedTasks = new List<Task>();
-                if (_appConnection != null)
-                {
-                    connectionInitializedTasks.Add(_appConnection.ConnectionInitializedTask);
-                }
-
-                if (_serviceConnections != null)
-                {
-                    foreach (var conn in _serviceConnections)
-                    {
-                        connectionInitializedTasks.Add(conn.Value.ConnectionInitializedTask);
-                    }
-                }
-                return Task.WhenAll(connectionInitializedTasks);
-            }
-        }
+        public Task ConnectionInitializedTask => Task.WhenAll(from connection in GetConnections()
+                                                              select connection.ConnectionInitializedTask);
 
         public ServiceConnectionManager(string appName, IReadOnlyList<string> hubs)
         {
