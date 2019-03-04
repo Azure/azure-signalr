@@ -47,8 +47,8 @@ The following table shows all versions of REST API we have for now. You can also
 
 API Version | Status | Port | Spec
 ---|---|---|---
-`1.0-preview` | Available | 5002 | [swagger](./swagger/v1-preview.json)
-`1.0` | *Not Available until GA* | Standard | [swagger](./swagger/v1.json)
+`1.0-preview` | Obsolete | Standard | [swagger](./swagger/v1-preview.json)
+`1.0` | Available | Standard | [swagger](./swagger/v1.json)
 
 Available APIs of each version are listed as following.
 
@@ -67,7 +67,7 @@ Send to a few users | :heavy_check_mark: (Deprecated) | `N/A`
 
 API Version | HTTP Method | Request URL | Request Body
 ---|---|---|---
-`1.0-preview` | `POST` | `https://<instance-name>.service.signalr.net:5002/api/v1-preview/hub/<hub-name>` | `{ "target":"<method-name>", "arguments":[ ... ] }`
+`1.0-preview` | `POST` | `https://<instance-name>.service.signalr.net/api/v1-preview/hub/<hub-name>` | `{ "target":"<method-name>", "arguments":[ ... ] }`
 `1.0` | `POST` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>` | Same as above
 
 <a name="broadcast-group"></a>
@@ -75,7 +75,7 @@ API Version | HTTP Method | Request URL | Request Body
 
 API Version | HTTP Method | Request URL | Request Body
 ---|---|---|---
-`1.0-preview` | `POST` | `https://<instance-name>.service.signalr.net:5002/api/v1-preview/hub/<hub-name>/group/<group-name>` | `{ "target":"<method-name>", "arguments":[ ... ] }`
+`1.0-preview` | `POST` | `https://<instance-name>.service.signalr.net/api/v1-preview/hub/<hub-name>/group/<group-name>` | `{ "target":"<method-name>", "arguments":[ ... ] }`
 `1.0` | `POST` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>` | Same as above
 
 <a name="send-user"></a>
@@ -83,7 +83,7 @@ API Version | HTTP Method | Request URL | Request Body
 
 API Version | HTTP Method | Request URL | Request Body
 ---|---|---|---
-`1.0-preview` | `POST` | `https://<instance-name>.service.signalr.net:5002/api/v1-preview/hub/<hub-name>/user/<user-id>` | `{ "target":"<method-name>", "arguments":[ ... ] }`
+`1.0-preview` | `POST` | `https://<instance-name>.service.signalr.net/api/v1-preview/hub/<hub-name>/user/<user-id>` | `{ "target":"<method-name>", "arguments":[ ... ] }`
 `1.0` | `POST` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>` | Same as above
 
 <a name="add-user-to-group"></a>
