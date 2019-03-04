@@ -69,6 +69,20 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();
 
+        public Task ConnectionInitializedTask
+        {
+            get
+            {
+                if (_inner != null)
+                {
+                    return _inner.ConnectionInitializedTask;
+                }
+
+                return Task.WhenAll(from connection in Connections
+                                    select connection.Value.ConnectionInitializedTask);
+            }
+        }
+
         public Task StartAsync()
         {
             if (_inner != null)
