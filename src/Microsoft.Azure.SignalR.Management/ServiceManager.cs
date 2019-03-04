@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR.Management
                 case ServiceTransportType.Persistent:
                     {
 
-                        // todo: discuss how to pass logger factory in netx pr:
+                        // todo: discuss how to pass logger factory in next pr:
                         // 1. customer defines in options
                         // 2. pass ILoggerFactory in CreateHubContextAsync(string hubName, ILoggerFactory)
                         var loggerFactory = new LoggerFactory();
@@ -74,8 +74,6 @@ namespace Microsoft.Azure.SignalR.Management
 
                         var serviceConnectionManager = services.GetRequiredService<IServiceConnectionManager<Hub>>();
                         serviceConnectionManager.SetServiceConnection(weakConnectionContainer);
-                        // todo: expose ConnectionInitializedTask in IServiceConnectionContainer,
-                        //       wait for ConnectionInitializedTask to make sure service connection connected successfully.
                         _ = serviceConnectionManager.StartAsync();
                         await weakConnectionContainer.ConnectionInitializedTask;
 
