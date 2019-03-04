@@ -344,6 +344,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             public ServiceConnectionStatus Status { get; }
 
+            public Task ConnectionInitializedTask => throw new NotImplementedException();
+
             public TestContainer(ServiceConnectionStatus status)
             {
                 Status = status;
