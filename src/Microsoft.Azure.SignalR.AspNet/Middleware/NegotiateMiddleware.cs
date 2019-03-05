@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
+using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Json;
 using Microsoft.Azure.SignalR.Common;
@@ -29,10 +30,12 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IServiceEndpointManager _endpointManager;
         private readonly IEndpointRouter _router;
         private readonly IUserIdProvider _provider;
+        private readonly HubConfiguration _configuration;
 
         public NegotiateMiddleware(OwinMiddleware next, HubConfiguration configuration, string appName, IServiceEndpointManager endpointManager, IEndpointRouter router, ServiceOptions options, ILoggerFactory loggerFactory)
             : base(next)
         {
+            _configuration = configuration;
             _provider = configuration.Resolver.Resolve<IUserIdProvider>();
             _appName = appName ?? throw new ArgumentNullException(nameof(appName));
             _claimsProvider = options?.ClaimsProvider;
@@ -62,6 +65,27 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             string accessToken = null;
             var claims = BuildClaims(owinContext, context.Request);
+            
+            var dispatcher = new HubDispatcher(_configuration);
+            dispatcher.Initialize(_configuration.Resolver);
+            if (!dispatcher.Authorize(context.Request))
+            {
+                string error = null;
+                if (context.Request.User != null && context.Request.User.Identity.IsAuthenticated)
+                {
+                    // If the user is authenticated and authorize failed then 403
+                    error = "Forbidden";
+                    context.Response.StatusCode = 403;
+                }
+                else
+                {
+                    // If failed to authorize the request then return 401
+                    error = "Unauthorized";
+                    context.Response.StatusCode = 401;
+                }
+                Log.NegotiateFailed(_logger, error);
+                return context.Response.End(error);
+            }
 
             IServiceEndpointProvider provider;
             try
