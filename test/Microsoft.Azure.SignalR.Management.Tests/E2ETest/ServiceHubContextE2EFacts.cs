@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddLogging(builder => builder.AddConsole());
             _serviceProvider = serviceCollection.BuildServiceProvider();
-            _serviceProvider.GetRequiredService<ILoggerFactory>().AddFile("Logs/myapp-{Date}.txt");
+            _serviceProvider.GetRequiredService<ILoggerFactory>();
         }
 
         ~ServiceHubContextE2EFacts()
@@ -121,6 +121,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var receivedMessageCount = (from pair in receivedMessageDict
                                         select pair.Value).Sum();
             Assert.Equal(expectedReceivedMessageCount, receivedMessageCount);
+
+            await Task.WhenAll(from connection in connections
+                               select connection.StopAsync());
         }
 
         private static string[] GetTestStringList(string prefix, int count)

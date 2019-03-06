@@ -16,7 +16,6 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualStudioPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="$(MicrosoftAspNetCoreSignalRClient)" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="$(MicrosoftConsoleLoggingVersion)" />
-    <PackageReference Include="Serilog.Extensions.Logging.File" Version="1.1.0" />
   </ItemGroup>
 
   <ItemGroup>
