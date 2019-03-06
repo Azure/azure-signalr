@@ -36,20 +36,26 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             var responseStream = new MemoryStream();
             var hostContext = GetHostContext(message, responseStream, serviceConnection);
-
-            // ProcessRequest checks if the connectionToken matches "{connectionid}:{userName}" format with context.User
-            _ = dispatcher.ProcessRequest(hostContext);
-
-            // TODO: check for errors written to the response
-            if (hostContext.Response.StatusCode != 200)
+            
+            if (dispatcher.Authorize(hostContext.Request))
             {
-                Log.ProcessRequestError(_logger, message.ConnectionId, hostContext.Request.QueryString.ToString());
-                var errorResponse = GetContentAndDispose(responseStream);
-                throw new InvalidOperationException(errorResponse);
+                // ProcessRequest checks if the connectionToken matches "{connectionid}:{userName}" format with context.User
+                _ = dispatcher.ProcessRequest(hostContext);
+
+                // TODO: check for errors written to the response
+                if (hostContext.Response.StatusCode != 200)
+                {
+                    Log.ProcessRequestError(_logger, message.ConnectionId, hostContext.Request.QueryString.ToString());
+                    var errorResponse = GetContentAndDispose(responseStream);
+                    throw new InvalidOperationException(errorResponse);
+                }
+
+                _clientConnections.TryAdd(message.ConnectionId, serviceConnection);
+                return (AzureTransport)hostContext.Environment[AspNetConstants.Context.AzureSignalRTransportKey];
             }
 
-            _clientConnections.TryAdd(message.ConnectionId, serviceConnection);
-            return (AzureTransport)hostContext.Environment[AspNetConstants.Context.AzureSignalRTransportKey];
+            // This happens when hub is not found
+            throw new InvalidOperationException("Unable to authorize request");
         }
 
         public bool TryGetServiceConnection(string key, out IServiceConnection serviceConnection)
