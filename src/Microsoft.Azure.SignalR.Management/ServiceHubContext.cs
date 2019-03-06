@@ -29,6 +29,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public Task DisposeAsync()
         {
+            // todo: stop service connection
             Dispose();
             return Task.CompletedTask;
         }

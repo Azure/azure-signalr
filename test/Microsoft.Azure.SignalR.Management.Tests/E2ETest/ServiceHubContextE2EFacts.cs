@@ -30,9 +30,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         public ServiceHubContextE2EFacts()
         {
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddLogging(builder => builder.AddConsole());
+            serviceCollection.AddLogging(builder =>
+            {
+                builder.AddConsole();
+                builder.SetMinimumLevel(LogLevel.Debug);
+            });
             _serviceProvider = serviceCollection.BuildServiceProvider();
-            _serviceProvider.GetRequiredService<ILoggerFactory>();
         }
 
         ~ServiceHubContextE2EFacts()
@@ -49,6 +52,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
             await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.All.SendAsync(MethodName, Message), ClientConnectionCount, receivedMessageDict);
+            serviceHubContext.Dispose();
         }
 
         [ConditionalTheory]
@@ -60,6 +64,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
             await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.User(_userNames[0]).SendAsync(MethodName, Message), 1, receivedMessageDict);
+            serviceHubContext.Dispose();
         }
 
         [ConditionalTheory]
@@ -71,6 +76,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
             await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.Users(_userNames).SendAsync(MethodName, Message), ClientConnectionCount, receivedMessageDict);
+            serviceHubContext.Dispose();
         }
 
         [ConditionalTheory]
@@ -82,6 +88,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
             Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
             await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), _userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length, receivedMessageDict);
+            serviceHubContext.Dispose();
         }
 
         [ConditionalTheory]
@@ -93,6 +100,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
             Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(_groupNames).SendAsync(MethodName, Message);
             await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), ClientConnectionCount, receivedMessageDict);
+            serviceHubContext.Dispose();
         }
 
         private static async Task SendToGroupCore(IServiceHubContext serviceHubContext, Func<Task> sendTask)
