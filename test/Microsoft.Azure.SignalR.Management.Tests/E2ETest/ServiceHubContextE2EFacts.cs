@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Azure.SignalR.TestsCommon;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
@@ -119,7 +120,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private static async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType)
         {
             var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType);
-            var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName);
+            Action<ILoggingBuilder> configure = builder => builder.AddConsole();
+            var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName, configure);
 
             var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
             var clientAccessTokens = from userName in _userNames

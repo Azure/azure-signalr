@@ -22,25 +22,22 @@ namespace Microsoft.Azure.SignalR.Management
     internal class ServiceManager : IServiceManager
     {
         private readonly ServiceManagerOptions _serviceManagerOptions;
-        private readonly ServiceEndpointProvider _endpoint;
+        private readonly ServiceEndpointProvider _endpointProvider;
         private const int ServerConnectionCount = 1;
 
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions)
         {
             _serviceManagerOptions = serviceManagerOptions;
-            _endpoint = new ServiceEndpointProvider(new ServiceEndpoint(_serviceManagerOptions.ConnectionString));
+            _endpointProvider = new ServiceEndpointProvider(new ServiceEndpoint(_serviceManagerOptions.ConnectionString));
         }
 
-        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName)
+        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, Action<ILoggingBuilder> configure)
         {
             switch (_serviceManagerOptions.ServiceTransportType)
             {
                 case ServiceTransportType.Persistent:
                     {
 
-                        // todo: discuss how to pass logger factory in next pr:
-                        // 1. customer defines in options
-                        // 2. pass ILoggerFactory in CreateHubContextAsync(string hubName, ILoggerFactory)
                         var loggerFactory = new LoggerFactory();
                         var endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString);
                         var serverOptions = new ServiceOptions
@@ -64,23 +61,23 @@ namespace Microsoft.Azure.SignalR.Management
                         serviceCollection.AddSignalRCore();
 
                         serviceCollection
-                            .AddSingleton(typeof(ILoggerFactory), loggerFactory)
-                            .AddLogging()
+                            .AddSingleton(typeof(ILoggerFactory), sp => loggerFactory)
+                            .AddLogging(configure)
                             .AddSingleton(typeof(HubLifetimeManager<>), typeof(WebSocketsHubLifetimeManager<>))
                             .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
-                            .AddSingleton(typeof(IServiceConnectionContainer), weakConnectionContainer);
+                            .AddSingleton(typeof(IServiceConnectionContainer), sp => weakConnectionContainer);
                             
-                        var services = serviceCollection.BuildServiceProvider();
+                        var serviceProvider = serviceCollection.BuildServiceProvider();
 
-                        var serviceConnectionManager = services.GetRequiredService<IServiceConnectionManager<Hub>>();
+                        var serviceConnectionManager = serviceProvider.GetRequiredService<IServiceConnectionManager<Hub>>();
                         serviceConnectionManager.SetServiceConnection(weakConnectionContainer);
                         _ = serviceConnectionManager.StartAsync();
                         await weakConnectionContainer.ConnectionInitializedTask;
 
-                        var webSocketsHubLifetimeManager = (WebSocketsHubLifetimeManager<Hub>)services.GetRequiredService<HubLifetimeManager<Hub>>();
+                        var webSocketsHubLifetimeManager = (WebSocketsHubLifetimeManager<Hub>)serviceProvider.GetRequiredService<HubLifetimeManager<Hub>>();
 
-                        var hubContext = services.GetRequiredService<IHubContext<Hub>>();
-                        var serviceHubContext = new ServiceHubContext(hubContext, webSocketsHubLifetimeManager);
+                        var hubContext = serviceProvider.GetRequiredService<IHubContext<Hub>>();
+                        var serviceHubContext = new ServiceHubContext(hubContext, webSocketsHubLifetimeManager, serviceProvider);
                         return serviceHubContext;
                     }
                 case ServiceTransportType.Transient:
@@ -94,11 +91,11 @@ namespace Microsoft.Azure.SignalR.Management
 
                         // add rest hub lifetime manager
                         var restHubLifetimeManager = new RestHubLifetimeManager(_serviceManagerOptions, hubName);
-                        serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), restHubLifetimeManager);
+                        serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), sp => restHubLifetimeManager);
 
-                        var services = serviceCollection.BuildServiceProvider();
-                        var hubContext = services.GetRequiredService<IHubContext<Hub>>();
-                        var serviceHubContext = new ServiceHubContext(hubContext, restHubLifetimeManager);
+                        var serviceProvider = serviceCollection.BuildServiceProvider();
+                        var hubContext = serviceProvider.GetRequiredService<IHubContext<Hub>>();
+                        var serviceHubContext = new ServiceHubContext(hubContext, restHubLifetimeManager, serviceProvider);
                         return serviceHubContext;
                     }
                 default:
@@ -117,9 +114,9 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 claimsWithUserId.AddRange(claims);
             }
-            return _endpoint.GenerateClientAccessToken(hubName, claimsWithUserId, lifeTime);
+            return _endpointProvider.GenerateClientAccessToken(hubName, claimsWithUserId, lifeTime);
         }
 
-        public string GetClientEndpoint(string hubName) => _endpoint.GetClientEndpoint(hubName, null, null);
+        public string GetClientEndpoint(string hubName) => _endpointProvider.GetClientEndpoint(hubName, null, null);
     }
 }

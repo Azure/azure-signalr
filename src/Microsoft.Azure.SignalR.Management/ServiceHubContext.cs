@@ -4,12 +4,14 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     internal class ServiceHubContext : IServiceHubContext
     {
         private IHubContext<Hub> _hubContext;
+        private ServiceProvider _serviceProvider;
 
         public IHubClients Clients => _hubContext.Clients;
 
@@ -19,18 +21,23 @@ namespace Microsoft.Azure.SignalR.Management
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            if (_serviceProvider != null)
+            {
+                _serviceProvider.Dispose();
+            }
         }
 
         public Task DisposeAsync()
         {
-            throw new NotImplementedException();
+            Dispose();
+            return Task.CompletedTask;
         }
 
-        public ServiceHubContext(IHubContext<Hub> hubContext, IHubLifetimeManagerForUserGroup lifetimeManager)
+        public ServiceHubContext(IHubContext<Hub> hubContext, IHubLifetimeManagerForUserGroup lifetimeManager, ServiceProvider serviceProvider)
         {
             _hubContext = hubContext;
             UserGroups = new UserGroupsManager(lifetimeManager);
+            _serviceProvider = serviceProvider;
         }
     }
 }
