@@ -5,13 +5,12 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Azure.SignalR.TestsCommon;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -27,6 +26,19 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(1);
         private static readonly string[] _userNames = GetTestStringList("User", ClientConnectionCount);
         private static readonly string[] _groupNames = GetTestStringList("Group", GroupCount);
+        private ServiceProvider _serviceProvider = null;
+        public ServiceHubContextE2EFacts()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddLogging(builder => builder.AddConsole());
+            _serviceProvider = serviceCollection.BuildServiceProvider();
+            _serviceProvider.GetRequiredService<ILoggerFactory>().AddFile("Logs/myapp-{Date}.txt");
+        }
+
+        ~ServiceHubContextE2EFacts()
+        {
+            _serviceProvider.Dispose();
+        }
 
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
@@ -117,11 +129,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     select $"{prefix}{i}").ToArray();
         }
 
-        private static async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType)
+        private async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType)
         {
+            
             var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType);
-            Action<ILoggingBuilder> configure = builder => builder.AddConsole();
-            var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName, configure);
+            var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName, _serviceProvider.GetRequiredService<ILoggerFactory>());
 
             var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
             var clientAccessTokens = from userName in _userNames

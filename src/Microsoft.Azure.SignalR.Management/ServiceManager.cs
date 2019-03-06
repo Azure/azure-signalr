@@ -8,14 +8,10 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -23,46 +19,36 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private readonly ServiceManagerOptions _serviceManagerOptions;
         private readonly ServiceEndpointProvider _endpointProvider;
+        private readonly ServiceEndpoint _endpoint;
         private const int ServerConnectionCount = 1;
 
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions)
         {
             _serviceManagerOptions = serviceManagerOptions;
-            _endpointProvider = new ServiceEndpointProvider(new ServiceEndpoint(_serviceManagerOptions.ConnectionString));
+            _endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString, EndpointType.Secondary);
+            _endpointProvider = new ServiceEndpointProvider(_endpoint);
         }
 
-        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, Action<ILoggingBuilder> configure)
+        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory)
         {
             switch (_serviceManagerOptions.ServiceTransportType)
             {
                 case ServiceTransportType.Persistent:
                     {
-
-                        var loggerFactory = new LoggerFactory();
-                        var endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString);
-                        var serverOptions = new ServiceOptions
-                        {
-                            ConnectionString = _serviceManagerOptions.ConnectionString,
-                            ConnectionCount = ServerConnectionCount,
-                            Endpoints = new ServiceEndpoint[] { endpoint }
-                        };
-                        var options = Options.Create(serverOptions);
-                        var endpointManager = new ServiceEndpointManager(options, loggerFactory);
-                        var provider = endpointManager.GetEndpointProvider(endpoint);
-                        var connectionFactory = new ConnectionFactory(hubName, provider, loggerFactory);
+                        var connectionFactory = new ConnectionFactory(hubName, _endpointProvider, loggerFactory);
                         var serviceProtocol = new ServiceProtocol();
                         var clientConnectionManager = new ClientConnectionManager();
                         var clientConnectionFactory = new ClientConnectionFactory();
                         ConnectionDelegate connectionDelegate = connectionContext => Task.CompletedTask;
                         var serviceConnectionFactory = new ServiceConnectionFactory(serviceProtocol, clientConnectionManager, loggerFactory, connectionDelegate, clientConnectionFactory);
-                        var weakConnectionContainer = new WeakServiceConnectionContainer(serviceConnectionFactory, connectionFactory, ServerConnectionCount, endpoint);
+                        var weakConnectionContainer = new WeakServiceConnectionContainer(serviceConnectionFactory, connectionFactory, ServerConnectionCount, _endpoint);
 
                         var serviceCollection = new ServiceCollection();
                         serviceCollection.AddSignalRCore();
 
                         serviceCollection
-                            .AddSingleton(typeof(ILoggerFactory), sp => loggerFactory)
-                            .AddLogging(configure)
+                            .AddSingleton(typeof(ILoggerFactory), loggerFactory)
+                            .AddLogging()
                             .AddSingleton(typeof(HubLifetimeManager<>), typeof(WebSocketsHubLifetimeManager<>))
                             .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
                             .AddSingleton(typeof(IServiceConnectionContainer), sp => weakConnectionContainer);

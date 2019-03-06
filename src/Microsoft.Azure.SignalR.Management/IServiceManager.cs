@@ -18,9 +18,9 @@ namespace Microsoft.Azure.SignalR.Management
         /// Creates an instance of <see cref="IServiceHubContext"/> asynchronously.
         /// </summary>
         /// <param name="hubName">The hub name.</param>
-        /// <param name="configure">The logging builder configuration action</param>
+        /// <param name="loggerFactory">The logger factory.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
-        Task<IServiceHubContext> CreateHubContextAsync(string hubName, Action<ILoggingBuilder> configure);
+        Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory);
 
         /// <summary>
         /// Creates a client access token for SignalR hub connections to connect to Azure SignalR Service.
