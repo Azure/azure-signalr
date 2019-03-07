@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -13,10 +13,11 @@ using Microsoft.Azure.SignalR.TestsCommon;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
-    public class ServiceHubContextE2EFacts
+    public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     {
         private const string HubName = "signalrBench";
         private const string MethodName = "SendMessage";
@@ -26,21 +27,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(1);
         private static readonly string[] _userNames = GetTestStringList("User", ClientConnectionCount);
         private static readonly string[] _groupNames = GetTestStringList("Group", GroupCount);
-        private ServiceProvider _serviceProvider = null;
-        public ServiceHubContextE2EFacts()
-        {
-            var serviceCollection = new ServiceCollection();
-            serviceCollection.AddLogging(builder =>
-            {
-                builder.AddConsole();
-                builder.SetMinimumLevel(LogLevel.Debug);
-            });
-            _serviceProvider = serviceCollection.BuildServiceProvider();
-        }
 
-        ~ServiceHubContextE2EFacts()
+        public ServiceHubContextE2EFacts(ITestOutputHelper output) : base(output)
         {
-            _serviceProvider.Dispose();
         }
 
         [ConditionalTheory]
@@ -51,8 +40,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
-            await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.All.SendAsync(MethodName, Message), ClientConnectionCount, receivedMessageDict);
-            serviceHubContext.Dispose();
+            using (serviceHubContext)
+            {
+                await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.All.SendAsync(MethodName, Message), ClientConnectionCount, receivedMessageDict);
+            }
         }
 
         [ConditionalTheory]
@@ -142,9 +133,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType)
         {
-            
+            StartVerifiableLog(out var loggerFactory, LogLevel.Debug);
+
             var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType);
-            var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName, _serviceProvider.GetRequiredService<ILoggerFactory>());
+            var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName, loggerFactory);
 
             var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
             var clientAccessTokens = from userName in _userNames

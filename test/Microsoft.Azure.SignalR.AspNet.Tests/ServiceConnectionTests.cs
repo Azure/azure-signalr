@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.TestsCommon;
 using Microsoft.Extensions.Logging;
 using Owin;
 using Xunit;

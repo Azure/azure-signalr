@@ -15,7 +15,6 @@
     <PackageReference Include="xunit" Version="$(XunitPackageVersion)" />
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualStudioPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="$(MicrosoftAspNetCoreSignalRClient)" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="$(MicrosoftConsoleLoggingVersion)" />
   </ItemGroup>
 
   <ItemGroup>
