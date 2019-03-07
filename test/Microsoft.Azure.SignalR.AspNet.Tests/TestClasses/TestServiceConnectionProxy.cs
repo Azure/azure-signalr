@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
-    internal partial class TestServiceConnectionProxy : ServiceConnection, IDisposable
+    internal class TestServiceConnectionProxy : ServiceConnection, IDisposable
     {
         private static readonly ServiceProtocol SharedServiceProtocol = new ServiceProtocol();
 
