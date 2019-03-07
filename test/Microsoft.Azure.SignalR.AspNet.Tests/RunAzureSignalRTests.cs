@@ -12,7 +12,6 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
-using Microsoft.AspNet.SignalR.Json;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
@@ -173,7 +172,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
             {
                 var hubConfig = GetEmptyHubConfig();
-                var router = new TestCustomRouter(ConnectionString3);
+                var router = new TestEndpointRouter(ConnectionString3);
                 hubConfig.Resolver.Register(typeof(IEndpointRouter), () => router);
                 using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
                 {
@@ -224,11 +223,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                         new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
                         new ServiceEndpoint(ConnectionString3)
                         {
-                            Connection = new TestContainer(ServiceConnectionStatus.Disconnected)
+                            Connection = new TestServiceConnectionContainer(ServiceConnectionStatus.Disconnected)
                         },
                         new ServiceEndpoint(ConnectionString4)
                         {
-                            Connection = new TestContainer(ServiceConnectionStatus.Disconnected)
+                            Connection = new TestServiceConnectionContainer(ServiceConnectionStatus.Disconnected)
                         },
                 };
             })))
@@ -338,116 +337,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var testHub = new TestHubManager();
             hubConfig.Resolver.Register(typeof(IHubManager), () => testHub);
             return hubConfig;
-        }
-
-        private class TestContainer : IServiceConnectionContainer
-        {
-            public ServiceConnectionStatus Status { get; }
-
-            public Task ConnectionInitializedTask => throw new NotImplementedException();
-
-            public TestContainer(ServiceConnectionStatus status)
-            {
-                Status = status;
-            }
-            public Task StartAsync()
-            {
-                throw new NotImplementedException();
-            }
-
-            public Task WriteAsync(ServiceMessage serviceMessage)
-            {
-                throw new NotImplementedException();
-            }
-
-            public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        private class TestCustomRouter : IEndpointRouter
-        {
-            private readonly string _negotiateEndpoint;
-
-            public TestCustomRouter(string negotiateEndpoint)
-            {
-                _negotiateEndpoint = negotiateEndpoint;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForGroups(IReadOnlyList<string> groupList, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForUsers(IReadOnlyList<string> userList, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> primaryEndpoints)
-            {
-                return primaryEndpoints.First(e => e.ConnectionString == _negotiateEndpoint);
-            }
-        }
-
-        private sealed class TestHubManager : IHubManager
-        {
-            private readonly string[] _hubs;
-            public TestHubManager(params string[] hubs)
-            {
-                _hubs = hubs;
-            }
-
-            public HubDescriptor GetHub(string hubName)
-            {
-                return null;
-            }
-
-            public MethodDescriptor GetHubMethod(string hubName, string method, IList<IJsonValue> parameters)
-            {
-                return null;
-            }
-
-            public IEnumerable<MethodDescriptor> GetHubMethods(string hubName, Func<MethodDescriptor, bool> predicate)
-            {
-                yield break;
-            }
-
-            public IEnumerable<HubDescriptor> GetHubs(Func<HubDescriptor, bool> predicate)
-            {
-                return _hubs.Select(s => new HubDescriptor() { Name = s });
-            }
-
-            public IHub ResolveHub(string hubName)
-            {
-                return null;
-            }
-
-            public IEnumerable<IHub> ResolveHubs()
-            {
-                yield break;
-            }
         }
 
         private sealed class AppSettingsConfigScope : IDisposable

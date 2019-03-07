@@ -3,18 +3,15 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO.Pipelines;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
-    internal class ServiceConnectionProxy : ServiceConnection, IDisposable
+    internal partial class TestServiceConnectionProxy : ServiceConnection, IDisposable
     {
         private static readonly ServiceProtocol SharedServiceProtocol = new ServiceProtocol();
 
@@ -24,7 +21,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         private TestConnectionContext _connectionContext;
 
-        public ServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null, SignalR.IServiceMessageHandler serviceMessageHandler = null) :
+        public TestServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null, IServiceMessageHandler serviceMessageHandler = null) :
             base(
                 Guid.NewGuid().ToString("N"),
                 SharedServiceProtocol,
@@ -111,76 +108,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void Dispose()
         {
             _ = StopAsync();
-        }
-
-        private sealed class TestConnectionFactory : IConnectionFactory
-        {
-            private readonly ConnectionDelegate _connectCallback;
-            private TaskCompletionSource<TestConnectionContext> _waitForServerConnection = new TaskCompletionSource<TestConnectionContext>();
-
-            public TestConnectionFactory(ConnectionDelegate connectCallback = null)
-            {
-                _connectCallback = connectCallback ?? OnConnectionAsync;
-            }
-
-            public Task<TestConnectionContext> GetConnectedServerAsync()
-            {
-                return _waitForServerConnection.Task;
-            }
-
-            public Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken = default)
-            {
-                var connection = new TestConnectionContext();
-                _connectCallback?.Invoke(connection);
-
-                _waitForServerConnection.TrySetResult(connection);
-                return Task.FromResult<ConnectionContext>(connection);
-            }
-
-            public Task DisposeAsync(ConnectionContext connection)
-            {
-                return Task.CompletedTask;
-            }
-
-            private Task OnConnectionAsync(ConnectionContext connection)
-            {
-                var tcs = new TaskCompletionSource<object>();
-
-                // Wait for the connection to close
-                connection.Transport.Input.OnWriterCompleted((ex, state) =>
-                {
-                    tcs.TrySetResult(null);
-                },
-                null);
-
-                return tcs.Task;
-            }
-        }
-
-        private sealed class TestConnectionContext : ConnectionContext
-        {
-            public TestConnectionContext()
-            {
-                Features = new FeatureCollection();
-                Items = new ConcurrentDictionary<object, object>();
-
-                var pipeOptions = new PipeOptions();
-                var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
-                var proxyToApplication = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
-
-                Transport = pair.Transport;
-                Application = pair.Application;
-            }
-
-            public override string ConnectionId { get; set; }
-
-            public override IFeatureCollection Features { get; }
-
-            public override IDictionary<object, object> Items { get; set; }
-
-            public override IDuplexPipe Transport { get; set; }
-
-            public IDuplexPipe Application { get; set; }
         }
     }
 }

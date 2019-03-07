@@ -20,6 +20,19 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         private static readonly JsonSerializer DefaultJsonSerializer = new JsonSerializer();
         private static readonly MemoryPool DefaultPool = new MemoryPool();
 
+        public static ReadOnlyMemory<byte> GenerateSingleFrameBuffer(this ReadOnlyMemory<byte> inner)
+        {
+            var singleFrameMessage = new ConnectionDataMessage(string.Empty, inner);
+            return DefaultServiceProtocol.GetMessageBytes(singleFrameMessage);
+        }
+
+        public static ReadOnlyMemory<byte> GenerateSingleFrameBuffer(this string message)
+        {
+            var inner = Encoding.UTF8.GetBytes(message);
+            var singleFrameMessage = new ConnectionDataMessage(string.Empty, inner);
+            return DefaultServiceProtocol.GetMessageBytes(singleFrameMessage);
+        }
+
         public static string GetSingleFramePayload(this ReadOnlyMemory<byte> payload)
         {
             var buffer = new ReadOnlySequence<byte>(payload);

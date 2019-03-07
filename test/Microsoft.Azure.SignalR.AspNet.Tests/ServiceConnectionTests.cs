@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,7 +10,6 @@ using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.TestsCommon;
 using Microsoft.Extensions.Logging;
-using Owin;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -20,9 +18,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
     public partial class ServiceConnectionTests : VerifiableLoggedTest
     {
         private const string ConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
-        private static readonly ServiceProtocol Protocol = new ServiceProtocol();
 
-        private readonly TestConnectionManager _clientConnectionManager;
+        private readonly TestClientConnectionManager _clientConnectionManager;
 
         public ServiceConnectionTests(ITestOutputHelper output) : base(output)
         {
@@ -30,7 +27,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var transport = new AzureTransportManager(hubConfig.Resolver);
             hubConfig.Resolver.Register(typeof(ITransportManager), () => transport);
 
-            _clientConnectionManager = new TestConnectionManager();
+            _clientConnectionManager = new TestClientConnectionManager();
         }
 
         [Fact]
@@ -39,7 +36,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             int count = 0;
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
-                using (var proxy = new ServiceConnectionProxy(_clientConnectionManager, loggerFactory: loggerFactory))
+                using (var proxy = new TestServiceConnectionProxy(_clientConnectionManager, loggerFactory: loggerFactory))
                 {
                     // start the server connection
                     await proxy.StartServiceAsync().OrTimeout();
@@ -55,7 +52,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     while (count < 1000)
                     {
                         task = proxy.WaitForApplicationMessageAsync(clientConnection).OrTimeout();
-                        await proxy.WriteMessageAsync(new ConnectionDataMessage(clientConnection, GetPayload("Hello World")));
+                        await proxy.WriteMessageAsync(new ConnectionDataMessage(clientConnection, "Hello World".GenerateSingleFrameBuffer()));
                         await task;
                         count++;
                     }
@@ -80,7 +77,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             {
                 var hubConfig = new HubConfiguration();
                 hubConfig.Resolver = new DefaultDependencyResolver();
-                var scm = new TestServiceConnectionManager();
+                var scm = new TestServiceConnectionHandler();
                 hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
 
                 var ccm = new ClientConnectionManager(hubConfig);
@@ -88,7 +85,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                 DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig, new ServiceOptions { ConnectionString = ConnectionString }, "app1", loggerFactory);
 
-                using (var proxy = new ServiceConnectionProxy(ccm, loggerFactory: loggerFactory))
+                using (var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory))
                 {
                     // start the server connection
                     await proxy.StartServiceAsync().OrTimeout();
@@ -122,34 +119,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     await dTask;
                 }
             }
-        }
-
-        private sealed class TestAppBuilder : IAppBuilder
-        {
-            public IDictionary<string, object> Properties { get; } = new Dictionary<string, object>()
-            {
-                ["builder.AddSignatureConversion"] = new Action<Delegate>(e => { })
-            };
-
-            public object Build(Type returnType)
-            {
-                return null;
-            }
-
-            public IAppBuilder New()
-            {
-                return null;
-            }
-
-            public IAppBuilder Use(object middleware, params object[] args)
-            {
-                return this;
-            }
-        }
-
-        private ReadOnlyMemory<byte> GetPayload(string message)
-        {
-            return Protocol.GetMessageBytes(new ConnectionDataMessage(string.Empty, System.Text.Encoding.UTF8.GetBytes(message)));
         }
     }
 }
