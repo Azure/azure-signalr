@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Azure.SignalR.TestsCommon;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
@@ -54,8 +53,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
-            await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.User(_userNames[0]).SendAsync(MethodName, Message), 1, receivedMessageDict);
-            serviceHubContext.Dispose();
+            using (serviceHubContext)
+            {
+                await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.User(_userNames[0]).SendAsync(MethodName, Message), 1, receivedMessageDict);
+            }
         }
 
         [ConditionalTheory]
@@ -66,8 +67,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
-            await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.Users(_userNames).SendAsync(MethodName, Message), ClientConnectionCount, receivedMessageDict);
-            serviceHubContext.Dispose();
+            using (serviceHubContext)
+            {
+                await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.Users(_userNames).SendAsync(MethodName, Message), ClientConnectionCount, receivedMessageDict);
+            }
         }
 
         [ConditionalTheory]
@@ -77,9 +80,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
-            Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
-            await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), _userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length, receivedMessageDict);
-            serviceHubContext.Dispose();
+            using (serviceHubContext)
+            {
+                Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
+                await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), _userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length, receivedMessageDict);
+            }
         }
 
         [ConditionalTheory]
@@ -89,9 +94,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
-            Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(_groupNames).SendAsync(MethodName, Message);
-            await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), ClientConnectionCount, receivedMessageDict);
-            serviceHubContext.Dispose();
+            using (serviceHubContext)
+            {
+                Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(_groupNames).SendAsync(MethodName, Message);
+                await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), ClientConnectionCount, receivedMessageDict);
+            }
         }
 
         private static async Task SendToGroupCore(IServiceHubContext serviceHubContext, Func<Task> sendTask)

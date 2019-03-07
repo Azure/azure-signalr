@@ -19,6 +19,13 @@ namespace Microsoft.Azure.SignalR.Management
 
         public IUserGroupManager UserGroups { get; }
 
+        public ServiceHubContext(IHubContext<Hub> hubContext, IHubLifetimeManagerForUserGroup lifetimeManager, ServiceProvider serviceProvider)
+        {
+            _hubContext = hubContext;
+            UserGroups = new UserGroupsManager(lifetimeManager);
+            _serviceProvider = serviceProvider;
+        }
+
         public void Dispose()
         {
             if (_serviceProvider != null)
@@ -32,13 +39,6 @@ namespace Microsoft.Azure.SignalR.Management
             // todo: stop service connection
             Dispose();
             return Task.CompletedTask;
-        }
-
-        public ServiceHubContext(IHubContext<Hub> hubContext, IHubLifetimeManagerForUserGroup lifetimeManager, ServiceProvider serviceProvider)
-        {
-            _hubContext = hubContext;
-            UserGroups = new UserGroupsManager(lifetimeManager);
-            _serviceProvider = serviceProvider;
         }
     }
 }
