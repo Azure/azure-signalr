@@ -15,6 +15,7 @@ using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Json;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.AspNet.SignalR.Transports;
+using Microsoft.Azure.SignalR.AspNet.Tests.TestHubs;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Options;
 using Microsoft.Owin.Hosting;
@@ -327,6 +328,19 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
                 Assert.NotNull(requestId);
                 Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
+            }
+        }
+
+        [Fact]
+        public async Task TestRunAzureSignalRWithAnonymousUserOnAuthrizedHubReturnFail()
+        {
+            var hubConfig = new HubConfiguration();
+            hubConfig.Resolver = new DefaultDependencyResolver();
+            using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, ConnectionString, hubConfig)))
+            {
+                var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
+                var response = await client.GetAsync("/negotiate?connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
+                Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
             }
         }
 
