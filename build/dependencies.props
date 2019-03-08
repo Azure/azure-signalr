@@ -48,7 +48,6 @@
     <MicrosoftOwinTestingPackageVersion>4.0.0</MicrosoftOwinTestingPackageVersion>
     <MicrosoftAspNetCoreTestingVersion>2.1.0</MicrosoftAspNetCoreTestingVersion>
     <E2eTestUserSecretId>E2eTestUserSecret</E2eTestUserSecretId>
-  
 </PropertyGroup>
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition=" '$(DotNetPackageVersionPropsPath)' != '' " />
 </Project>

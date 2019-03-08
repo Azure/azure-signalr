@@ -28,10 +28,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public void Dispose()
         {
-            if (_serviceProvider != null)
-            {
-                _serviceProvider.Dispose();
-            }
+            _serviceProvider?.Dispose();
         }
 
         public Task DisposeAsync()

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
@@ -21,6 +22,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly ServiceEndpointProvider _endpointProvider;
         private readonly ServiceEndpoint _endpoint;
         private const int ServerConnectionCount = 1;
+        private static readonly TimeSpan _defaultTimeout = TimeSpan.FromMinutes(5);
 
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions)
         {
@@ -29,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Management
             _endpointProvider = new ServiceEndpointProvider(_endpoint);
         }
 
-        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory)
+        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory, CancellationToken cancellationToken = default)
         {
             switch (_serviceManagerOptions.ServiceTransportType)
             {
@@ -52,19 +54,34 @@ namespace Microsoft.Azure.SignalR.Management
                             .AddSingleton(typeof(HubLifetimeManager<>), typeof(WebSocketsHubLifetimeManager<>))
                             .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
                             .AddSingleton(typeof(IServiceConnectionContainer), sp => weakConnectionContainer);
-                            
-                        var serviceProvider = serviceCollection.BuildServiceProvider();
 
-                        var serviceConnectionManager = serviceProvider.GetRequiredService<IServiceConnectionManager<Hub>>();
-                        serviceConnectionManager.SetServiceConnection(weakConnectionContainer);
-                        _ = serviceConnectionManager.StartAsync();
-                        await weakConnectionContainer.ConnectionInitializedTask;
+                        var success = false;
+                        ServiceProvider serviceProvider = null;
+                        try
+                        {
+                            serviceProvider = serviceCollection.BuildServiceProvider();
 
-                        var webSocketsHubLifetimeManager = (WebSocketsHubLifetimeManager<Hub>)serviceProvider.GetRequiredService<HubLifetimeManager<Hub>>();
+                            var serviceConnectionManager = serviceProvider.GetRequiredService<IServiceConnectionManager<Hub>>();
+                            serviceConnectionManager.SetServiceConnection(weakConnectionContainer);
+                            _ = serviceConnectionManager.StartAsync();
 
-                        var hubContext = serviceProvider.GetRequiredService<IHubContext<Hub>>();
-                        var serviceHubContext = new ServiceHubContext(hubContext, webSocketsHubLifetimeManager, serviceProvider);
-                        return serviceHubContext;
+                            // wait until service connection established
+                            await weakConnectionContainer.ConnectionInitializedTask.OrTimeout(_defaultTimeout, cancellationToken);
+
+                            var webSocketsHubLifetimeManager = (WebSocketsHubLifetimeManager<Hub>)serviceProvider.GetRequiredService<HubLifetimeManager<Hub>>();
+
+                            var hubContext = serviceProvider.GetRequiredService<IHubContext<Hub>>();
+                            var serviceHubContext = new ServiceHubContext(hubContext, webSocketsHubLifetimeManager, serviceProvider);
+                            success = true;
+                            return serviceHubContext;
+                        }
+                        finally
+                        {
+                            if (!success)
+                            {
+                                serviceProvider?.Dispose();
+                            }
+                        }
                     }
                 case ServiceTransportType.Transient:
                     {
