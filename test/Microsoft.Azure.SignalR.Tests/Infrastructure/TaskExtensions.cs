@@ -11,6 +11,11 @@ namespace System.Threading.Tasks
     {
         private const int DefaultTimeout = 5000;
 
+        public static Task OrTimeout(this Task task, int milliseconds = DefaultTimeout, [CallerMemberName] string memberName = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int? lineNumber = null)
+        {
+            return OrTimeout(task, new TimeSpan(0, 0, 0, 0, milliseconds), memberName, filePath, lineNumber);
+        }
+
         public static async Task OrTimeout(this Task task, TimeSpan timeout, [CallerMemberName] string memberName = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int? lineNumber = null)
         {
             if (task.IsCompleted)
@@ -30,6 +35,17 @@ namespace System.Threading.Tasks
             await task;
         }
 
+        public static Task<T> OrTimeout<T>(this ValueTask<T> task, int milliseconds = DefaultTimeout, [CallerMemberName] string memberName = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int? lineNumber = null) =>
+            OrTimeout(task, new TimeSpan(0, 0, 0, 0, milliseconds), memberName, filePath, lineNumber);
+
+        public static Task<T> OrTimeout<T>(this ValueTask<T> task, TimeSpan timeout, [CallerMemberName] string memberName = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int? lineNumber = null) =>
+            task.AsTask().OrTimeout(timeout, memberName, filePath, lineNumber);
+
+        public static Task<T> OrTimeout<T>(this Task<T> task, int milliseconds = DefaultTimeout, [CallerMemberName] string memberName = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int? lineNumber = null)
+        {
+            return OrTimeout(task, new TimeSpan(0, 0, 0, 0, milliseconds), memberName, filePath, lineNumber);
+        }
+
         public static async Task<T> OrTimeout<T>(this Task<T> task, TimeSpan timeout, [CallerMemberName] string memberName = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int? lineNumber = null)
         {
             if (task.IsCompleted)
@@ -46,67 +62,6 @@ namespace System.Threading.Tasks
             cts.Cancel();
 
             return await task;
-        }
-
-        public static async Task OrTimeout(this Task task, TimeSpan timeout, CancellationToken cancellationToken, [CallerMemberName] string memberName = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int? lineNumber = null)
-        {
-            if (task.IsCompleted)
-            {
-                await task;
-                return;
-            }
-
-            if (cancellationToken == null)
-            {
-                await OrTimeout(task, timeout, memberName, filePath, lineNumber);
-                return;
-            }
-
-            var completed = await Task.WhenAny(task, Task.Delay(Debugger.IsAttached ? Timeout.InfiniteTimeSpan : timeout, cancellationToken));
-            if (completed != task)
-            {
-                throw new TimeoutException(GetMessage(memberName, filePath, lineNumber));
-            }
-
-            await task;
-            return;
-        }
-
-        public static async Task<T> OrTimeout<T>(this Task<T> task, TimeSpan timeout, CancellationToken cancellationToken, [CallerMemberName] string memberName = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int? lineNumber = null)
-        {
-            if (task.IsCompleted)
-            {
-                return await task;
-            }
-
-            if (cancellationToken == null)
-            {
-                return await OrTimeout(task, timeout, memberName, filePath, lineNumber);
-            }
-
-            var completed = await Task.WhenAny(task, Task.Delay(Debugger.IsAttached ? Timeout.InfiniteTimeSpan : timeout, cancellationToken));
-            if (completed != task)
-            {
-                throw new TimeoutException(GetMessage(memberName, filePath, lineNumber));
-            }
-
-            return await task;
-        }
-
-        public static Task OrTimeout(this Task task, int milliseconds = DefaultTimeout, CancellationToken cancellationToken = default, [CallerMemberName] string memberName = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int? lineNumber = null)
-        {
-            return OrTimeout(task, new TimeSpan(0, 0, 0, 0, milliseconds), cancellationToken, memberName, filePath, lineNumber);
-        }
-
-        public static Task<T> OrTimeout<T>(this ValueTask<T> task, int milliseconds = DefaultTimeout, CancellationToken cancellationToken = default, [CallerMemberName] string memberName = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int? lineNumber = null) =>
-            OrTimeout(task, new TimeSpan(0, 0, 0, 0, milliseconds), cancellationToken, memberName, filePath, lineNumber);
-
-        public static Task<T> OrTimeout<T>(this ValueTask<T> task, TimeSpan timeout, CancellationToken cancellationToken = default, [CallerMemberName] string memberName = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int? lineNumber = null) =>
-            task.AsTask().OrTimeout(timeout, cancellationToken, memberName, filePath, lineNumber);
-
-        public static Task<T> OrTimeout<T>(this Task<T> task, int milliseconds = DefaultTimeout, CancellationToken cancellationToken = default, [CallerMemberName] string memberName = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int? lineNumber = null)
-        {
-            return OrTimeout(task, new TimeSpan(0, 0, 0, 0, milliseconds), cancellationToken, memberName, filePath, lineNumber);
         }
 
         public static async Task OrThrowIfOtherFails(this Task task, Task otherTask)
