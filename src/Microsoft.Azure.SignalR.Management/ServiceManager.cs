@@ -65,22 +65,8 @@ namespace Microsoft.Azure.SignalR.Management
                             serviceConnectionManager.SetServiceConnection(weakConnectionContainer);
                             _ = serviceConnectionManager.StartAsync();
 
-                            CancellationTokenSource cts;
-                            if (cancellationToken == default)
-                            {
-                                using (cts = new CancellationTokenSource(_defaultTimeout))
-                                {
-                                    // wait until service connection established
-                                    await Task.WhenAny(weakConnectionContainer.ConnectionInitializedTask, Task.FromCanceled(cts.Token));
-                                }
-                            }
-                            else
-                            {
-                                // wait until service connection established
-                                await Task.WhenAny(weakConnectionContainer.ConnectionInitializedTask, Task.FromCanceled(cancellationToken));
-                            }
-
-                            
+                            // wait until service connection established
+                            await weakConnectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
 
                             var webSocketsHubLifetimeManager = (WebSocketsHubLifetimeManager<Hub>)serviceProvider.GetRequiredService<HubLifetimeManager<Hub>>();
 
