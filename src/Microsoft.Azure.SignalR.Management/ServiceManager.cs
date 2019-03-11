@@ -22,7 +22,6 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly ServiceEndpointProvider _endpointProvider;
         private readonly ServiceEndpoint _endpoint;
         private const int ServerConnectionCount = 1;
-        private static readonly TimeSpan _defaultTimeout = TimeSpan.FromMinutes(5);
 
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions)
         {
