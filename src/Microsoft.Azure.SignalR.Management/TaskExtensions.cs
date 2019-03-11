@@ -31,11 +31,6 @@ namespace Microsoft.Azure.SignalR.Management
                 return;
             }
 
-            if (cancellationToken == null)
-            {
-                throw new ArgumentNullException(nameof(cancellationToken));
-            }
-
             var completed = await Task.WhenAny(task, Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken));
             if (completed != task)
             {
