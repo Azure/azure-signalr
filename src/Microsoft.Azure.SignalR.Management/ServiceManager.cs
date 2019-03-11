@@ -65,8 +65,22 @@ namespace Microsoft.Azure.SignalR.Management
                             serviceConnectionManager.SetServiceConnection(weakConnectionContainer);
                             _ = serviceConnectionManager.StartAsync();
 
-                            // wait until service connection established
-                            await weakConnectionContainer.ConnectionInitializedTask.OrTimeout(_defaultTimeout, cancellationToken);
+                            CancellationTokenSource cts;
+                            if (cancellationToken == default)
+                            {
+                                using (cts = new CancellationTokenSource(_defaultTimeout))
+                                {
+                                    // wait until service connection established
+                                    await Task.WhenAny(weakConnectionContainer.ConnectionInitializedTask, Task.FromCanceled(cts.Token));
+                                }
+                            }
+                            else
+                            {
+                                // wait until service connection established
+                                await Task.WhenAny(weakConnectionContainer.ConnectionInitializedTask, Task.FromCanceled(cancellationToken));
+                            }
+
+                            
 
                             var webSocketsHubLifetimeManager = (WebSocketsHubLifetimeManager<Hub>)serviceProvider.GetRequiredService<HubLifetimeManager<Hub>>();
 
@@ -98,8 +112,7 @@ namespace Microsoft.Azure.SignalR.Management
 
                         var serviceProvider = serviceCollection.BuildServiceProvider();
                         var hubContext = serviceProvider.GetRequiredService<IHubContext<Hub>>();
-                        var serviceHubContext = new ServiceHubContext(hubContext, restHubLifetimeManager, serviceProvider);
-                        return serviceHubContext;
+                        return new ServiceHubContext(hubContext, restHubLifetimeManager, serviceProvider);
                     }
                 default:
                     throw new ArgumentException("Not supported service transport type.");

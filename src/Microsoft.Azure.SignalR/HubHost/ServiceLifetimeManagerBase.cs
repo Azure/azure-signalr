@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceLifetimeManagerBase<THub> : HubLifetimeManager<THub> where THub : Hub
+    internal abstract class ServiceLifetimeManagerBase<THub> : HubLifetimeManager<THub> where THub : Hub
     {
         private readonly IReadOnlyList<IHubProtocol> _allProtocols;
 

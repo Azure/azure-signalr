@@ -140,16 +140,18 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType)
         {
-            StartVerifiableLog(out var loggerFactory, LogLevel.Debug);
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
 
-            var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType);
-            var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName, loggerFactory);
+                var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType);
+                var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName, loggerFactory);
 
-            var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
-            var clientAccessTokens = from userName in _userNames
-                                     select serviceManager.GenerateClientAccessToken(HubName, userName);
+                var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
+                var clientAccessTokens = from userName in _userNames
+                                         select serviceManager.GenerateClientAccessToken(HubName, userName);
 
-            return (clientEndpoint, clientAccessTokens.ToArray(), serviceHubContext);
+                return (clientEndpoint, clientAccessTokens.ToArray(), serviceHubContext);
+            }
         }
 
         private static async Task<IList<HubConnection>> CreateAndStartClientConnections(string clientEndpoint, IEnumerable<string> clientAccessTokens)
