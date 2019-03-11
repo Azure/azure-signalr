@@ -11,15 +11,15 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
     internal class VerifyNoErrorsScope : IDisposable
     {
         private readonly IDisposable _wrappedDisposable;
-        private readonly Func<WriteContext, bool> _expectedErrorsFilter;
+        private readonly Func<WriteContext, bool> _expectedErrorsMatch;
         private readonly LogSinkProvider _sink;
 
         public ILoggerFactory LoggerFactory { get; }
 
-        public VerifyNoErrorsScope(ILoggerFactory loggerFactory = null, IDisposable wrappedDisposable = null, Func<WriteContext, bool> expectedErrorsFilter = null)
+        public VerifyNoErrorsScope(ILoggerFactory loggerFactory = null, IDisposable wrappedDisposable = null, Func<WriteContext, bool> expectedErrorsMatch = null)
         {
             _wrappedDisposable = wrappedDisposable;
-            _expectedErrorsFilter = expectedErrorsFilter;
+            _expectedErrorsMatch = expectedErrorsMatch;
             _sink = new LogSinkProvider();
 
             LoggerFactory = loggerFactory ?? new LoggerFactory();
@@ -32,9 +32,13 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             var results = _sink.GetLogs().Where(w => w.Write.LogLevel >= LogLevel.Error).ToList();
 
-            if (_expectedErrorsFilter != null)
+            if (_expectedErrorsMatch != null)
             {
-                results = results.Where(w => !_expectedErrorsFilter(w.Write)).ToList();
+                if (results.Where(w => _expectedErrorsMatch(w.Write)).ToList().Count == 0)
+                {
+                    throw new Exception("Fail to match expected error(s).");
+                }
+                results = results.Where(w => !_expectedErrorsMatch(w.Write)).ToList();
             }
 
             if (results.Count > 0)
