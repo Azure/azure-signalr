@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
