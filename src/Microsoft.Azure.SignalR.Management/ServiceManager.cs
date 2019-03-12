@@ -5,31 +5,82 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
+using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     internal class ServiceManager : IServiceManager
     {
         private readonly ServiceManagerOptions _serviceManagerOptions;
-        private readonly ServiceEndpointProvider _endpoint;
+        private readonly ServiceEndpointProvider _endpointProvider;
+        private readonly ServiceEndpoint _endpoint;
+        private const int ServerConnectionCount = 1;
 
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions)
         {
             _serviceManagerOptions = serviceManagerOptions;
-            _endpoint = new ServiceEndpointProvider(new ServiceEndpoint(_serviceManagerOptions.ConnectionString));
+            _endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString, EndpointType.Secondary);
+            _endpointProvider = new ServiceEndpointProvider(_endpoint);
         }
 
-        public Task<IServiceHubContext> CreateHubContextAsync(string hubName)
+        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory, CancellationToken cancellationToken = default)
         {
             switch (_serviceManagerOptions.ServiceTransportType)
             {
                 case ServiceTransportType.Persistent:
                     {
-                        throw new NotImplementedException();
+                        var connectionFactory = new ConnectionFactory(hubName, _endpointProvider, loggerFactory);
+                        var serviceProtocol = new ServiceProtocol();
+                        var clientConnectionManager = new ClientConnectionManager();
+                        var clientConnectionFactory = new ClientConnectionFactory();
+                        ConnectionDelegate connectionDelegate = connectionContext => Task.CompletedTask;
+                        var serviceConnectionFactory = new ServiceConnectionFactory(serviceProtocol, clientConnectionManager, loggerFactory, connectionDelegate, clientConnectionFactory);
+                        var weakConnectionContainer = new WeakServiceConnectionContainer(serviceConnectionFactory, connectionFactory, ServerConnectionCount, _endpoint);
+
+                        var serviceCollection = new ServiceCollection();
+                        serviceCollection.AddSignalRCore();
+
+                        serviceCollection
+                            .AddSingleton(typeof(ILoggerFactory), loggerFactory)
+                            .AddLogging()
+                            .AddSingleton(typeof(HubLifetimeManager<>), typeof(WebSocketsHubLifetimeManager<>))
+                            .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
+                            .AddSingleton(typeof(IServiceConnectionContainer), sp => weakConnectionContainer);
+
+                        var success = false;
+                        ServiceProvider serviceProvider = null;
+                        try
+                        {
+                            serviceProvider = serviceCollection.BuildServiceProvider();
+
+                            var serviceConnectionManager = serviceProvider.GetRequiredService<IServiceConnectionManager<Hub>>();
+                            serviceConnectionManager.SetServiceConnection(weakConnectionContainer);
+                            _ = serviceConnectionManager.StartAsync();
+
+                            // wait until service connection established
+                            await weakConnectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
+
+                            var webSocketsHubLifetimeManager = (WebSocketsHubLifetimeManager<Hub>)serviceProvider.GetRequiredService<HubLifetimeManager<Hub>>();
+
+                            var hubContext = serviceProvider.GetRequiredService<IHubContext<Hub>>();
+                            var serviceHubContext = new ServiceHubContext(hubContext, webSocketsHubLifetimeManager, serviceProvider);
+                            success = true;
+                            return serviceHubContext;
+                        }
+                        finally
+                        {
+                            if (!success)
+                            {
+                                serviceProvider?.Dispose();
+                            }
+                        }
                     }
                 case ServiceTransportType.Transient:
                     {
@@ -42,12 +93,11 @@ namespace Microsoft.Azure.SignalR.Management
 
                         // add rest hub lifetime manager
                         var restHubLifetimeManager = new RestHubLifetimeManager(_serviceManagerOptions, hubName);
-                        serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), restHubLifetimeManager);
+                        serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), sp => restHubLifetimeManager);
 
-                        var services = serviceCollection.BuildServiceProvider();
-                        var hubContext = services.GetRequiredService<IHubContext<Hub>>();
-                        var serviceHubContext = new ServiceHubContext(hubContext, restHubLifetimeManager);
-                        return Task.FromResult<IServiceHubContext>(serviceHubContext);
+                        var serviceProvider = serviceCollection.BuildServiceProvider();
+                        var hubContext = serviceProvider.GetRequiredService<IHubContext<Hub>>();
+                        return new ServiceHubContext(hubContext, restHubLifetimeManager, serviceProvider);
                     }
                 default:
                     throw new ArgumentException("Not supported service transport type.");
@@ -65,9 +115,9 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 claimsWithUserId.AddRange(claims);
             }
-            return _endpoint.GenerateClientAccessToken(hubName, claimsWithUserId, lifeTime);
+            return _endpointProvider.GenerateClientAccessToken(hubName, claimsWithUserId, lifeTime);
         }
 
-        public string GetClientEndpoint(string hubName) => _endpoint.GetClientEndpoint(hubName, null, null);
+        public string GetClientEndpoint(string hubName) => _endpointProvider.GetClientEndpoint(hubName, null, null);
     }
 }
