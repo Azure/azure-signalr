@@ -67,24 +67,33 @@ namespace Microsoft.Azure.SignalR.AspNet
             var claims = BuildClaims(owinContext, context.Request);
             
             var dispatcher = new HubDispatcher(_configuration);
-            dispatcher.Initialize(_configuration.Resolver);
-            if (!dispatcher.Authorize(context.Request))
+            try
             {
-                string error = null;
-                if (context.Request.User != null && context.Request.User.Identity.IsAuthenticated)
+                dispatcher.Initialize(_configuration.Resolver);
+                if (!dispatcher.Authorize(context.Request))
                 {
-                    // If the user is authenticated and authorize failed then 403
-                    error = "Forbidden";
-                    context.Response.StatusCode = 403;
+                    string error = null;
+                    if (context.Request.User != null && context.Request.User.Identity.IsAuthenticated)
+                    {
+                        // If the user is authenticated and authorize failed then 403
+                        error = "Forbidden";
+                        context.Response.StatusCode = 403;
+                    }
+                    else
+                    {
+                        // If failed to authorize the request then return 401
+                        error = "Unauthorized";
+                        context.Response.StatusCode = 401;
+                    }
+                    Log.NegotiateFailed(_logger, error);
+                    return context.Response.End(error);
                 }
-                else
-                {
-                    // If failed to authorize the request then return 401
-                    error = "Unauthorized";
-                    context.Response.StatusCode = 401;
-                }
-                Log.NegotiateFailed(_logger, error);
-                return context.Response.End(error);
+            }
+            catch (Exception e)
+            {
+                Log.NegotiateFailed(_logger, e.Message);
+                context.Response.StatusCode = 500;
+                return context.Response.End(e.Message);
             }
 
             IServiceEndpointProvider provider;
