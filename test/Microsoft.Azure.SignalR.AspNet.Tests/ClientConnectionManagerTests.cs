@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var transport = new AzureTransportManager(hubConfig.Resolver);
             hubConfig.Resolver.Register(typeof(ITransportManager), () => transport);
 
-            _clientConnectionManager = new ClientConnectionManager(hubConfig);
+            _clientConnectionManager = new ClientConnectionManager(hubConfig, null);
         }
 
         [Theory]

@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Transports;
+using Microsoft.Azure.SignalR.AspNet.Tests.TestHubs;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.TestsCommon;
 using Microsoft.Extensions.Logging;
@@ -19,15 +20,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
     {
         private const string ConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
 
-        private readonly TestClientConnectionManager _clientConnectionManager;
-
         public ServiceConnectionTests(ITestOutputHelper output) : base(output)
         {
-            var hubConfig = new HubConfiguration();
-            var transport = new AzureTransportManager(hubConfig.Resolver);
-            hubConfig.Resolver.Register(typeof(ITransportManager), () => transport);
-
-            _clientConnectionManager = new TestClientConnectionManager();
         }
 
         [Fact]
@@ -36,7 +30,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             int count = 0;
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
-                using (var proxy = new TestServiceConnectionProxy(_clientConnectionManager, loggerFactory: loggerFactory))
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                var atm = new AzureTransportManager(hubConfig.Resolver);
+                hubConfig.Resolver.Register(typeof(ITransportManager), () => atm);
+
+                var clientConnectionManager = new TestClientConnectionManager();
+                using (var proxy = new TestServiceConnectionProxy(clientConnectionManager, loggerFactory: loggerFactory))
                 {
                     // start the server connection
                     await proxy.StartServiceAsync().OrTimeout();
@@ -62,7 +61,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     await task;
 
                     // Validate in transport for 1000 data messages.
-                    _clientConnectionManager.CurrentTransports.TryGetValue(clientConnection, out var transport);
+                    clientConnectionManager.CurrentTransports.TryGetValue(clientConnection, out var transport);
                     Assert.NotNull(transport);
                     await transport.WaitOnDisconnected().OrTimeout();
                     Assert.Equal(transport.MessageCount, count);
@@ -75,16 +74,14 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
-                var hubConfig = new HubConfiguration();
-                hubConfig.Resolver = new DefaultDependencyResolver();
+                var hubConfig = Utility.GetActualHubConfig(loggerFactory);
+
                 var scm = new TestServiceConnectionHandler();
                 hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
-
-                var ccm = new ClientConnectionManager(hubConfig);
+                var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
                 hubConfig.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
-
                 DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig, new ServiceOptions { ConnectionString = ConnectionString }, "app1", loggerFactory);
-
+                var log = loggerFactory.CreateLogger("test");
                 using (var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory))
                 {
                     // start the server connection
@@ -100,17 +97,19 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     // group message goes into the manager
                     // make sure the tcs is called before writing message
                     var jgTask = scm.WaitForTransportOutputMessageAsync(typeof(JoinGroupMessage)).OrTimeout();
+
                     var gbTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
 
                     await proxy.WriteMessageAsync(new ConnectionDataMessage(clientConnection, Encoding.UTF8.GetBytes("{\"H\":\"chat\",\"M\":\"JoinGroup\",\"A\":[\"user1\",\"message1\"],\"I\":1}")));
                     
                     await jgTask;
                     await gbTask;
-                    
+
                     var lgTask = scm.WaitForTransportOutputMessageAsync(typeof(LeaveGroupMessage)).OrTimeout();
                     gbTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
 
                     await proxy.WriteMessageAsync(new ConnectionDataMessage(clientConnection, Encoding.UTF8.GetBytes("{\"H\":\"chat\",\"M\":\"LeaveGroup\",\"A\":[\"user1\",\"message1\"],\"I\":1}")));
+
                     await lgTask;
                     await gbTask;
 
