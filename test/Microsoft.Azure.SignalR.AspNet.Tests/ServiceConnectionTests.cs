@@ -81,7 +81,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
                 hubConfig.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
                 DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig, new ServiceOptions { ConnectionString = ConnectionString }, "app1", loggerFactory);
-                var log = loggerFactory.CreateLogger("test");
                 using (var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory))
                 {
                     // start the server connection
