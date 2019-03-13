@@ -289,7 +289,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             if (excludedSignals != null)
             {
-                return String.Join("|", excludedSignals);
+                return string.Join("|", excludedSignals);
             }
 
             return null;

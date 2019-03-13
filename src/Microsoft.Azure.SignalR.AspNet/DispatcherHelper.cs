@@ -44,6 +44,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                 loggerFactory.AddProvider(new TraceManagerLoggerProvider(traceManager));
             }
 
+            configuration.Resolver.Register(typeof(ILoggerFactory), () => loggerFactory);
+
             // TODO: Using IOptions looks wierd, thinking of a way removing it
             // share the same object all through
             var serviceOptions = Options.Create(options);
@@ -67,7 +69,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             var ccm = configuration.Resolver.Resolve<IClientConnectionManager>();
             if (ccm == null)
             {
-                ccm = new ClientConnectionManager(configuration);
+                ccm = new ClientConnectionManager(configuration, loggerFactory);
                 configuration.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
             }
 
