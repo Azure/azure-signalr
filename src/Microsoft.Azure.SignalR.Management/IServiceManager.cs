@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -17,8 +19,10 @@ namespace Microsoft.Azure.SignalR.Management
         /// Creates an instance of <see cref="IServiceHubContext"/> asynchronously.
         /// </summary>
         /// <param name="hubName">The hub name.</param>
+        /// <param name="loggerFactory">The logger factory.</param>
+        /// <param name="cancellationToken">Cancellation token for creating service hub context.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
-        Task<IServiceHubContext> CreateHubContextAsync(string hubName);
+        Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a client access token for SignalR hub connections to connect to Azure SignalR Service.

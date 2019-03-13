@@ -9,5 +9,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Testing" Version="$(MicrosoftAspNetCoreTestingVersion)" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="$(MicrosoftConfigurationUserSecretVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Testing" Version="$(MicrosoftExtensionsLoggingPackageVersion)" />
   </ItemGroup>
 </Project>

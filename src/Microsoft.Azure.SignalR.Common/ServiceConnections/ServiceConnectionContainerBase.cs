@@ -13,7 +13,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler
+    internal abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler
     {
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
         private static TimeSpan ReconnectInterval =>
