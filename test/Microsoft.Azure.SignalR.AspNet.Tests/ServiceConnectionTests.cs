@@ -132,9 +132,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrorsMatch: ExpectedErrors))
             {
                 var hubConfig = new HubConfiguration();
-                var ccm = new ClientConnectionManager(hubConfig);
+                var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
                 hubConfig.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
-                using (var proxy = new ServiceConnectionProxy(ccm, loggerFactory: loggerFactory))
+                using (var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory))
                 {
                     // start the server connection
                     await proxy.StartServiceAsync().OrTimeout();

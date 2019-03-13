@@ -361,19 +361,22 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
                 }
             }
+        }
+
         [Fact]
         public async Task TestRunAzureSignalRWithAnonymousUserOnAuthrizedHubReturnFail()
         {
-            var hubConfig = new HubConfiguration();
-            hubConfig.Resolver = new DefaultDependencyResolver();
-            using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, ConnectionString, hubConfig)))
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
-                var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
-                var response = await client.GetAsync("/negotiate?connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
-                Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+                var hubConfig = new HubConfiguration();
+                hubConfig.Resolver = new DefaultDependencyResolver();
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, ConnectionString, hubConfig)))
+                {
+                    var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
+                    var response = await client.GetAsync("/negotiate?connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
+                    Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+                }
             }
-        }
-
         }
 
         private sealed class AppSettingsConfigScope : IDisposable
