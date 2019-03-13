@@ -93,6 +93,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 Log.NegotiateFailed(_logger, e.Message);
                 context.Response.StatusCode = 500;
+                return context.Response.End("");
             }
 
             IServiceEndpointProvider provider;
