@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR
@@ -12,9 +13,10 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Randomly select from the available endpoints
         /// </summary>
-        /// <param name="endpoints"></param>
+        /// <param name="context">The http context of the incoming request</param>
+        /// <param name="endpoints">All the available endpoints</param>
         /// <returns></returns>
-        public ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> endpoints)
+        public ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
         {
             // get primary endpoints snapshot
             var availbaleEndpoints = GetNegotiateEndpoints(endpoints);

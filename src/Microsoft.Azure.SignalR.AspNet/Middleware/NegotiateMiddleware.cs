@@ -99,7 +99,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             IServiceEndpointProvider provider;
             try
             {
-                provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(_endpointManager.Endpoints));
+                provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(owinContext, _endpointManager.Endpoints));
             }
             catch (AzureSignalRNotConnectedException e)
             {

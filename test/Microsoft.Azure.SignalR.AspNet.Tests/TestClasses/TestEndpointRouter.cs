@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Owin;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
@@ -15,7 +16,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             _negotiateEndpoint = negotiateEndpoint;
         }
 
-        public override ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> primaryEndpoints)
+        public override ServiceEndpoint GetNegotiateEndpoint(IOwinContext context, IEnumerable<ServiceEndpoint> primaryEndpoints)
         {
             return primaryEndpoints.First(e => e.ConnectionString == _negotiateEndpoint);
         }

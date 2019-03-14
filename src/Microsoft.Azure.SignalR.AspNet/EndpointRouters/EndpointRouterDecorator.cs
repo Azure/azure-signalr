@@ -2,8 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using Microsoft.Owin;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR.AspNet
 {
     public class EndpointRouterDecorator : IEndpointRouter
     {
@@ -12,6 +13,11 @@ namespace Microsoft.Azure.SignalR
         public EndpointRouterDecorator(IEndpointRouter router = null)
         {
             _inner = router ?? new DefaultEndpointRouter();
+        }
+
+        public virtual ServiceEndpoint GetNegotiateEndpoint(IOwinContext owinContext, IEnumerable<ServiceEndpoint> endpoints)
+        {
+            return _inner.GetNegotiateEndpoint(owinContext, endpoints);
         }
 
         public virtual IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> endpoints)
@@ -32,11 +38,6 @@ namespace Microsoft.Azure.SignalR
         public virtual IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> endpoints)
         {
             return _inner.GetEndpointsForUser(userId, endpoints);
-        }
-
-        public virtual ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> endpoints)
-        {
-            return _inner.GetNegotiateEndpoint(endpoints);
         }
     }
 }

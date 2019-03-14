@@ -140,7 +140,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 o => o.Endpoints = new ServiceEndpoint[]
                 {
                     new ServiceEndpoint(ConnectionString2),
-                    new ServiceEndpoint(ConnectionString3),
+                    new ServiceEndpoint(ConnectionString3, name: "chosen"),
                     new ServiceEndpoint(ConnectionString4),
                 })
                 .Services
@@ -152,6 +152,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var requestFeature = new HttpRequestFeature
             {
                 Path = "/user/path/negotiate/",
+                QueryString = "?endpoint=chosen"
             };
 
             var features = new FeatureCollection();
@@ -162,10 +163,10 @@ namespace Microsoft.Azure.SignalR.Tests
             var negotiateResponse = handler.Process(httpContext, "chat");
 
             Assert.NotNull(negotiateResponse);
-            Assert.Equal($"http://localhost3/client/?hub=chat&asrs.op=%2Fuser%2Fpath", negotiateResponse.Url);
+            Assert.Equal($"http://localhost3/client/?hub=chat&asrs.op=%2Fuser%2Fpath&endpoint=chosen", negotiateResponse.Url);
         }
 
-        private class TestCustomRouter : IEndpointRouter
+        private class TestCustomRouter : EndpointRouterDecorator
         {
             private readonly string _negotiateEndpoint;
 
@@ -174,39 +175,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 _negotiateEndpoint = negotiateEndpoint;
             }
 
-            public IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> availableEnpoints)
+            public override ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> primaryEndpoints)
             {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForGroups(IReadOnlyList<string> groupList, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForUsers(IReadOnlyList<string> userList, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> primaryEndpoints)
-            {
-                return primaryEndpoints.First(e => e.ConnectionString == _negotiateEndpoint);
+                var endpointName = context.Request.Query["endpoint"];
+                return primaryEndpoints.First(e => e.Name == endpointName);
             }
         }
 

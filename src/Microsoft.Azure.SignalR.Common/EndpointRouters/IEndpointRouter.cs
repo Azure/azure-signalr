@@ -5,15 +5,8 @@ using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR
 {
-    public interface IEndpointRouter
+    public interface IMessageRouter
     {
-        /// <summary>
-        /// Get the service endpoint for the client to connect to
-        /// </summary>
-        /// <param name="endpoints">All the available endpoints</param>
-        /// <returns></returns>
-        ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> endpoints);
-
         /// <summary>
         /// Get the service endpoints for broadcast message to send to
         /// </summary>

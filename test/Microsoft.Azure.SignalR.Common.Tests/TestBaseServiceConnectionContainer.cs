@@ -10,7 +10,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    internal sealed class TestServiceConnectionContainer : ServiceConnectionContainerBase
+    internal sealed class TestBaseServiceConnectionContainer : ServiceConnectionContainerBase
     {
         public TestServiceConnectionContainer(List<IServiceConnection> serviceConnections, ServiceEndpoint endpoint = null)
             : base(null, null, serviceConnections, endpoint)
