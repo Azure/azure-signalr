@@ -11,6 +11,7 @@ using Microsoft.Azure.SignalR.AspNet.Tests.TestHubs;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.TestsCommon;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -115,6 +116,39 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var dTask = proxy.WaitForClientDisconnectAsync(clientConnection).OrTimeout();
                     await proxy.WriteMessageAsync(new CloseConnectionMessage(clientConnection));
                     await dTask;
+                }
+            }
+        }
+        
+        [Fact]
+        public async Task ServiceConnectionDispatchOpenConnectionToUnauthorizedHubTest()
+        {
+            bool ExpectedErrors(WriteContext writeContext)
+            {
+                return writeContext.LoggerName == typeof(ServiceConnection).FullName &&
+                    writeContext.EventId == new EventId(11, "ConnectedStartingFailed") &&
+                    writeContext.Exception.Message == "Unable to authorize request";
+            }
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: ExpectedErrors))
+            {
+                var hubConfig = new HubConfiguration();
+                var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
+                hubConfig.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
+                using (var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory))
+                {
+                    // start the server connection
+                    await proxy.StartServiceAsync().OrTimeout();
+
+                    var clientConnection = Guid.NewGuid().ToString("N");
+
+                    // Application layer sends OpenConnectionMessage to an authorized hub from anonymous user
+                    var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null, "?transport=webSockets&connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
+                    await proxy.WriteMessageAsync(openConnectionMessage);
+                    await proxy.WaitForClientConnectAsync(clientConnection).OrTimeout();
+                    
+                    // Verify client connection is not created due to authorized failure.
+                    ccm.TryGetServiceConnection(clientConnection, out var serviceConnection);
+                    Assert.Null(serviceConnection);
                 }
             }
         }
