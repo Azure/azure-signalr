@@ -34,11 +34,6 @@ In server-less architecture, clients still have persistent connections to Azure 
 Since there are no application server to handle traffic, clients are in `LISTEN` mode, which means they can only receive messages but can't send messages.
 SignalR Service will disconnect any client who sends messages because it is an invalid operation.
 
-> NOTE: In version 1.1.0-preview of ASP.NET Core SignalR, client will send `PingMessage` to server.
-> Right now it will cause SignalR Service disconnecting clients.
-> So the latest 1.0.x version of ASP.NET Core SignalR client library is recommended to use with Azure SignalR Service.
-> We are working in progress to support the new version of ASP.NET Core SignalR.
-
 You can find a complete sample of using Azure SignalR Service with Azure Functions at [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/RealtimeSignIn).
 
 ## API
