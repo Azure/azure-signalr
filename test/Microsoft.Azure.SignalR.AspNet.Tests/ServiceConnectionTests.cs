@@ -129,7 +129,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     writeContext.EventId == new EventId(11, "ConnectedStartingFailed") &&
                     writeContext.Exception.Message == "Unable to authorize request";
             }
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrorsMatch: ExpectedErrors))
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: ExpectedErrors))
             {
                 var hubConfig = new HubConfiguration();
                 var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
