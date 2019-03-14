@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
-using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
@@ -51,9 +50,14 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            if (IsInvalidArgument(connectionId) || IsInvalidArgument(methodName))
+            if (IsInvalidArgument(connectionId))
             {
-                return Task.CompletedTask;
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
+            if (IsInvalidArgument(methodName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var serviceConnectionContext))
