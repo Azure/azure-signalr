@@ -4,7 +4,7 @@
 using System;
 using Microsoft.AspNetCore.Testing.xunit;
 
-namespace Microsoft.Azure.SignalR.TestsCommon
+namespace Microsoft.Azure.SignalR.Tests.Common
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
     public class SkipIfConnectionStringNotPresentAttribute : Attribute, ITestCondition

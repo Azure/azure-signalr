@@ -9,7 +9,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 
-namespace Microsoft.Azure.SignalR.TestsCommon
+namespace Microsoft.Azure.SignalR.Tests.Common
 {
     // TestSink does not have an event
     internal class LogSinkProvider : ILoggerProvider

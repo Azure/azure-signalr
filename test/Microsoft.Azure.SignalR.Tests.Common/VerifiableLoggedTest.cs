@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using Xunit.Abstractions;
 
-namespace Microsoft.Azure.SignalR.TestsCommon
+namespace Microsoft.Azure.SignalR.Tests.Common
 {
     public class VerifiableLoggedTest : LoggedTest
     {
