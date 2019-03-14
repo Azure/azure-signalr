@@ -14,18 +14,18 @@ namespace Microsoft.Azure.SignalR.TestsCommon
         {
         }
 
-        public virtual IDisposable StartVerifiableLog(out ILoggerFactory loggerFactory, [CallerMemberName] string testName = null, Func<WriteContext, bool> expectedErrorsFilter = null)
+        public virtual IDisposable StartVerifiableLog(out ILoggerFactory loggerFactory, [CallerMemberName] string testName = null,Func<WriteContext, bool> expectedErrors = null)
         {
             var disposable = StartLog(out loggerFactory, testName);
 
-            return new VerifyNoErrorsScope(loggerFactory, disposable, expectedErrorsFilter);
+            return new VerifyLogScope(loggerFactory, disposable, expectedErrors);
         }
 
-        public virtual IDisposable StartVerifiableLog(out ILoggerFactory loggerFactory, LogLevel minLogLevel, [CallerMemberName] string testName = null, Func<WriteContext, bool> expectedErrorsFilter = null)
+        public virtual IDisposable StartVerifiableLog(out ILoggerFactory loggerFactory, LogLevel minLogLevel, [CallerMemberName] string testName = null, Func<WriteContext, bool> expectedErrors = null)
         {
             var disposable = StartLog(out loggerFactory, minLogLevel, testName);
 
-            return new VerifyNoErrorsScope(loggerFactory, disposable, expectedErrorsFilter);
+            return new VerifyLogScope(loggerFactory, disposable, expectedErrors);
         }
     }
 }

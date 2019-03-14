@@ -132,7 +132,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             if (_clientConnections.TryRemove(connectionId, out var clientContext))
             {
                 clientContext.Output.TryComplete();
-                clientContext.Transport.OnDisconnected();
+                clientContext.Transport?.OnDisconnected();
             }
 
             Log.ConnectedEnding(_logger, connectionId);

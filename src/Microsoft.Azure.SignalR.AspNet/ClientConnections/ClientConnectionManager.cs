@@ -35,7 +35,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             var responseStream = new MemoryStream();
             var hostContext = GetHostContext(message, responseStream, serviceConnection);
-
+            
             if (dispatcher.Authorize(hostContext.Request))
             {
                 // ProcessRequest checks if the connectionToken matches "{connectionid}:{userName}" format with context.User
@@ -54,7 +54,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             // This happens when hub is not found
-            Debug.Fail("Unauthorized");
             throw new InvalidOperationException("Unable to authorize request");
         }
 
