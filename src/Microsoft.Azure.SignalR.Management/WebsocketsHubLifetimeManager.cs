@@ -11,8 +11,6 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IHubLifetimeManagerForUserGroup where THub : Hub
     {
-        private const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
-
         public WebSocketsHubLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver) : base(serviceConnectionManager, protocolResolver)
         {
         }
