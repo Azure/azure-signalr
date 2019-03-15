@@ -8,7 +8,7 @@ using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class DefaultEndpointRouter : IEndpointRouter
+    internal class DefaultEndpointRouter : DefaultMessageRouter, IEndpointRouter
     {
         /// <summary>
         /// Randomly select from the available endpoints
@@ -21,51 +21,6 @@ namespace Microsoft.Azure.SignalR
             // get primary endpoints snapshot
             var availbaleEndpoints = GetNegotiateEndpoints(endpoints);
             return availbaleEndpoints[StaticRandom.Next(availbaleEndpoints.Length)];
-        }
-
-        /// <summary>
-        /// Broadcast to all available endpoints
-        /// </summary>
-        /// <param name="endpoints"></param>
-        /// <returns></returns>
-        public IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> endpoints)
-        {
-            // broadcast to all the endpoints
-            return endpoints;
-        }
-
-        /// <summary>
-        /// Broadcast to all available endpoints
-        /// </summary>
-        /// <param name="userId"></param>
-        /// <param name="endpoints"></param>
-        /// <returns></returns>
-        public IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> endpoints)
-        {
-            return endpoints;
-        }
-
-        /// <summary>
-        /// Broadcast to all available endpoints
-        /// </summary>
-        /// <param name="groupName"></param>
-        /// <param name="endpoints"></param>
-        /// <returns></returns>
-        public IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> endpoints)
-        {
-            return endpoints;
-        }
-
-        /// <summary>
-        /// Broadcast to all available endpoints
-        /// </summary>
-        /// <param name="connectionId"></param>
-        /// <param name="endpoints"></param>
-        /// <returns></returns>
-        public IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints)
-        {
-            // broadcast to all the endpoints and service side to do the filter
-            return endpoints;
         }
 
         /// <summary>
