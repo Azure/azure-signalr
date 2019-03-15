@@ -10,8 +10,8 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly RestApiAccessTokenGenerator _restApiAccessTokenGenerator;
         private readonly string _baseEndpoint;
         private readonly string _hubName;
-        private readonly string _commonRequestPrefix;
-        private readonly string _commonAudiencePrefix;
+        private readonly string _requestPrefix;
+        private readonly string _audiencePrefix;
         private readonly int? _port;
 
         public RestApiProvider(string connectionString, string hubName)
@@ -20,8 +20,8 @@ namespace Microsoft.Azure.SignalR.Management
             (_baseEndpoint, accessKey, _, _port) = ConnectionStringParser.Parse(connectionString);
             _hubName = hubName;
             _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(accessKey);
-            _commonRequestPrefix = _port == null ? $"{_baseEndpoint}/api/v1/hubs/{_hubName}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{_hubName}";
-            _commonAudiencePrefix = $"{_baseEndpoint}/api/v1/hubs/{_hubName}";
+            _requestPrefix = _port == null ? $"{_baseEndpoint}/api/v1/hubs/{_hubName}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{_hubName}";
+            _audiencePrefix = $"{_baseEndpoint}/api/v1/hubs/{_hubName}";
         }
 
         public RestApiEndpoint GetBroadcastEndpoint(TimeSpan? lifetime = null)
@@ -46,8 +46,8 @@ namespace Microsoft.Azure.SignalR.Management
 
         private RestApiEndpoint GenerateRestApiEndpoint(string path, TimeSpan? lifetime = null)
         {
-            var token = _restApiAccessTokenGenerator.Generate($"{_commonAudiencePrefix}{path}", lifetime);
-            return new RestApiEndpoint($"{_commonRequestPrefix}{path}", token);
+            var token = _restApiAccessTokenGenerator.Generate($"{_audiencePrefix}{path}", lifetime);
+            return new RestApiEndpoint($"{_requestPrefix}{path}", token);
         }
     }
 }
