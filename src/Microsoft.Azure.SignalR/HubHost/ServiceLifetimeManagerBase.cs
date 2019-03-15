@@ -17,6 +17,8 @@ namespace Microsoft.Azure.SignalR
 
         protected readonly IServiceConnectionManager<THub> ServiceConnectionContainer;
 
+        protected const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
+
         public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver)
         {
             ServiceConnectionContainer = serviceConnectionManager;
@@ -37,8 +39,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidArgument(methodName))
             {
-                // todo: throw exception for invalid args
-                return Task.CompletedTask;
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
             return ServiceConnectionContainer.WriteAsync(
@@ -49,8 +50,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidArgument(methodName))
             {
-                // todo: throw exception for invalid args
-                return Task.CompletedTask;
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
             return ServiceConnectionContainer.WriteAsync(
@@ -59,10 +59,14 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            if (IsInvalidArgument(connectionId) || IsInvalidArgument(methodName))
+            if (IsInvalidArgument(connectionId))
             {
-                // todo: throw exception for invalid args
-                return Task.CompletedTask;
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
+            if (IsInvalidArgument(methodName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
             return ServiceConnectionContainer.WriteAsync(
@@ -71,10 +75,14 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            if (IsInvalidArgument(connectionIds) || IsInvalidArgument(methodName))
+            if (IsInvalidArgument(connectionIds))
             {
-                // todo: throw exception for invalid args
-                return Task.CompletedTask;
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionIds));
+            }
+
+            if (IsInvalidArgument(methodName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
             return ServiceConnectionContainer.WriteAsync(
@@ -83,10 +91,14 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            if (IsInvalidArgument(groupName) || IsInvalidArgument(methodName))
+            if (IsInvalidArgument(groupName))
             {
-                // todo: throw exception for invalid args
-                return Task.CompletedTask;
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
+            }
+
+            if (IsInvalidArgument(methodName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
             var message = new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args));
@@ -98,8 +110,12 @@ namespace Microsoft.Azure.SignalR
         {
             if (IsInvalidArgument(groupNames))
             {
-                // todo: throw exception for invalid args
-                return Task.CompletedTask;
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupNames));
+            }
+
+            if (IsInvalidArgument(methodName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
             // Send this message from a random service connection because this message involves of multiple groups.
@@ -110,10 +126,14 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
         {
-            if (IsInvalidArgument(groupName) || IsInvalidArgument(methodName))
+            if (IsInvalidArgument(groupName))
             {
-                // todo: throw exception for invalid args
-                return Task.CompletedTask;
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
+            }
+
+            if (IsInvalidArgument(methodName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
             var message = new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args));
@@ -123,10 +143,14 @@ namespace Microsoft.Azure.SignalR
 
         public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            if (IsInvalidArgument(userId) || IsInvalidArgument(methodName))
+            if (IsInvalidArgument(userId))
             {
-                // todo: throw exception for invalid args
-                return Task.CompletedTask;
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
+            }
+
+            if (IsInvalidArgument(methodName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
             return ServiceConnectionContainer.WriteAsync(
@@ -136,10 +160,14 @@ namespace Microsoft.Azure.SignalR
         public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args,
             CancellationToken cancellationToken = default)
         {
-            if (IsInvalidArgument(userIds) || IsInvalidArgument(methodName))
+            if (IsInvalidArgument(userIds))
             {
-                // todo: throw exception for invalid args
-                return Task.CompletedTask;
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userIds));
+            }
+
+            if (IsInvalidArgument(methodName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
             return ServiceConnectionContainer.WriteAsync(
@@ -148,10 +176,14 @@ namespace Microsoft.Azure.SignalR
 
         public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
-            if (IsInvalidArgument(connectionId) || IsInvalidArgument(groupName))
+            if (IsInvalidArgument(connectionId))
             {
-                // todo: throw exception for invalid args
-                return Task.CompletedTask;
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
+            if (IsInvalidArgument(groupName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
             var message = new JoinGroupMessage(connectionId, groupName);
@@ -161,10 +193,14 @@ namespace Microsoft.Azure.SignalR
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
-            if (IsInvalidArgument(connectionId) || IsInvalidArgument(groupName))
+            if (IsInvalidArgument(connectionId))
             {
-                // todo: throw exception for invalid args
-                return Task.CompletedTask;
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
+            if (IsInvalidArgument(groupName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
             var message = new LeaveGroupMessage(connectionId, groupName);
