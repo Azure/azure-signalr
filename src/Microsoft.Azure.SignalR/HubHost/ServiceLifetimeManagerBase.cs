@@ -15,11 +15,11 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly IReadOnlyList<IHubProtocol> _allProtocols;
 
-        private readonly IServiceConnectionManager<THub> _serviceConnectionContainer;
+        protected readonly IServiceConnectionManager<THub> ServiceConnectionContainer;
 
         public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver)
         {
-            _serviceConnectionContainer = serviceConnectionManager;
+            ServiceConnectionContainer = serviceConnectionManager;
             _allProtocols = protocolResolver.AllProtocols;
         }
 
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            return _serviceConnectionContainer.WriteAsync(
+            return ServiceConnectionContainer.WriteAsync(
                 new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)));
         }
 
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            return _serviceConnectionContainer.WriteAsync(
+            return ServiceConnectionContainer.WriteAsync(
                 new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)));
         }
 
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            return _serviceConnectionContainer.WriteAsync(
+            return ServiceConnectionContainer.WriteAsync(
                 new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)));
         }
 
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            return _serviceConnectionContainer.WriteAsync(
+            return ServiceConnectionContainer.WriteAsync(
                 new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)));
         }
 
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args));
             // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionContainer.WriteAsync(groupName, message);
+            return ServiceConnectionContainer.WriteAsync(groupName, message);
         }
 
         public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.SignalR
 
             // Send this message from a random service connection because this message involves of multiple groups.
             // Unless we send message for each group one by one, we can not guarantee the message order for all groups.
-            return _serviceConnectionContainer.WriteAsync(
+            return ServiceConnectionContainer.WriteAsync(
                 new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)));
         }
 
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args));
             // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionContainer.WriteAsync(groupName, message);
+            return ServiceConnectionContainer.WriteAsync(groupName, message);
         }
 
         public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            return _serviceConnectionContainer.WriteAsync(
+            return ServiceConnectionContainer.WriteAsync(
                 new UserDataMessage(userId, SerializeAllProtocols(methodName, args)));
         }
 
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.SignalR
                 return Task.CompletedTask;
             }
 
-            return _serviceConnectionContainer.WriteAsync(
+            return ServiceConnectionContainer.WriteAsync(
                 new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)));
         }
 
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new JoinGroupMessage(connectionId, groupName);
             // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionContainer.WriteAsync(groupName, message);
+            return ServiceConnectionContainer.WriteAsync(groupName, message);
         }
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new LeaveGroupMessage(connectionId, groupName);
             // Send this message from a fixed service connection, so that message order can be reserved.
-            return _serviceConnectionContainer.WriteAsync(groupName, message);
+            return ServiceConnectionContainer.WriteAsync(groupName, message);
         }
 
         protected static bool IsInvalidArgument(string value)
