@@ -9,7 +9,7 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.AspNet.Tests.TestHubs;
 using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Azure.SignalR.TestsCommon;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using Xunit;
