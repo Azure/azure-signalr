@@ -4,7 +4,7 @@
 using System;
 using Microsoft.Extensions.Logging.Testing;
 
-namespace Microsoft.Azure.SignalR.TestsCommon
+namespace Microsoft.Azure.SignalR.Tests.Common
 {
     // WriteContext, but with a timestamp...
     internal class LogRecord

@@ -12,7 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.AspNet\Microsoft.Azure.SignalR.AspNet.csproj" />
     <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" />
-    <ProjectReference Include="..\..\test\Microsoft.Azure.SignalR.TestsCommon\Microsoft.Azure.SignalR.TestsCommon.csproj" />
+    <ProjectReference Include="..\Microsoft.Azure.SignalR.Tests.Common\Microsoft.Azure.SignalR.Tests.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,6 +23,7 @@
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="$(MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsDependencyInjectionPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingPackageVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Testing" Version="$(MicrosoftExtensionsLoggingPackageVersion)" />
     <PackageReference Include="Microsoft.Owin.Testing" Version="$(MicrosoftOwinTestingPackageVersion)" />
     <PackageReference Include="Microsoft.Owin.Host.HttpListener" Version="$(MicrosoftOwinTestingPackageVersion)" />
   </ItemGroup>
