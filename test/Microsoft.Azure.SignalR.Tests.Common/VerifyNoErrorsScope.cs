@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 
-namespace Microsoft.Azure.SignalR.TestsCommon
+namespace Microsoft.Azure.SignalR.Tests.Common
 {
     internal class VerifyLogScope : IDisposable
     {

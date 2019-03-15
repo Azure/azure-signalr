@@ -4,7 +4,7 @@
 using System.IO;
 using Microsoft.Extensions.Configuration;
 
-namespace Microsoft.Azure.SignalR.TestsCommon
+namespace Microsoft.Azure.SignalR.Tests.Common
 {
     public class TestConfiguration
     {

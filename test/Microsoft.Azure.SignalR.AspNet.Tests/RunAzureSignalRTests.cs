@@ -15,7 +15,7 @@ using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Azure.SignalR.TestsCommon;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Owin.Hosting;
