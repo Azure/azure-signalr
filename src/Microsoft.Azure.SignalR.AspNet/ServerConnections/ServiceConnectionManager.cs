@@ -76,6 +76,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             return Task.WhenAll(GetConnections().Select(s => s.StartAsync()));
         }
 
+        public Task StopAsync()
+        {
+            return Task.WhenAll(GetConnections().Select(s => s.StopAsync()));
+        }
+
         public IServiceConnectionContainer WithHub(string hubName)
         {
             if (_serviceConnections == null ||!_serviceConnections.TryGetValue(hubName, out var connection))
