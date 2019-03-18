@@ -8,6 +8,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
@@ -32,11 +33,11 @@ namespace Microsoft.Azure.SignalR
             var claims = BuildClaims(context);
             var request = context.Request;
             var originalPath = GetOriginalPath(request.Path);
-            var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(context, _endpointManager.GetAvailableEndpoints()));
+            var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(context, _endpointManager.Endpoints));
 
             if (provider == null)
             {
-                throw new InvalidOperationException("No endpoint available.");
+                return null;
             }
 
             return new NegotiationResponse

@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             if (endpoint == null)
             {
-                throw new ArgumentNullException(nameof(endpoint));
+                return null;
             }
 
             return new ServiceEndpointProvider(endpoint, _ttl);

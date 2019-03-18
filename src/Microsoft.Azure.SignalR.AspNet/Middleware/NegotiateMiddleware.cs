@@ -100,6 +100,19 @@ namespace Microsoft.Azure.SignalR.AspNet
             try
             {
                 provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(owinContext, _endpointManager.Endpoints));
+
+                // Consider it as internal server error when we don't successfully get negotiate response
+                if (provider == null)
+                {
+                    // If status code is 200, we consider the response not set
+                    if (context.Response.StatusCode == 200)
+                    {
+                        Log.NegotiateFailed(_logger, "Unable to get the negotiate endpoint");
+                        context.Response.StatusCode = 500;
+                    }
+
+                    return Task.CompletedTask;
+                }
             }
             catch (AzureSignalRNotConnectedException e)
             {

@@ -80,12 +80,31 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 negotiateResponse = _negotiateHandler.Process(context, hubName);
+
+                // Consider it as internal server error when we don't successfully get negotiate response
+                if (negotiateResponse == null)
+                {
+                    if (!context.Response.HasStarted)
+                    {
+                        Log.NegotiateFailed(_logger, "Unable to get the negotiate endpoint");
+                        context.Response.StatusCode = 500;
+                    }
+
+                    return;
+                }
             }
             catch (AzureSignalRAccessTokenTooLongException ex)
             {
                 Log.NegotiateFailed(_logger, ex.Message);
                 context.Response.StatusCode = 413;
                 await HttpResponseWritingExtensions.WriteAsync(context.Response, ex.Message);
+                return;
+            }
+            catch (AzureSignalRNotConnectedException e)
+            {
+                Log.NegotiateFailed(_logger, e.Message);
+                context.Response.StatusCode = 500;
+                await HttpResponseWritingExtensions.WriteAsync(context.Response, e.Message);
                 return;
             }
 

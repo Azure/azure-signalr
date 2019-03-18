@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.SignalR;
@@ -134,7 +135,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void TestNegotiateHandlerWithMultipleEndpointsAndCustomRouter()
         {
             var config = new ConfigurationBuilder().Build();
-            var router = new TestCustomRouter(ConnectionString3);
+            var router = new TestCustomRouter();
             var serviceProvider = new ServiceCollection().AddSignalR()
                 .AddAzureSignalR(
                 o => o.Endpoints = new ServiceEndpoint[]
@@ -154,7 +155,6 @@ namespace Microsoft.Azure.SignalR.Tests
                 Path = "/user/path/negotiate/",
                 QueryString = "?endpoint=chosen"
             };
-
             var features = new FeatureCollection();
             features.Set<IHttpRequestFeature>(requestFeature);
             var httpContext = new DefaultHttpContext(features);
@@ -164,21 +164,55 @@ namespace Microsoft.Azure.SignalR.Tests
 
             Assert.NotNull(negotiateResponse);
             Assert.Equal($"http://localhost3/client/?hub=chat&asrs.op=%2Fuser%2Fpath&endpoint=chosen", negotiateResponse.Url);
+
+            // With no query string should return 400
+            requestFeature = new HttpRequestFeature
+            {
+                Path = "/user/path/negotiate/",
+            };
+
+            var responseFeature = new HttpResponseFeature();
+            features.Set<IHttpRequestFeature>(requestFeature);
+            features.Set<IHttpResponseFeature>(responseFeature);
+            httpContext = new DefaultHttpContext(features);
+
+            handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            negotiateResponse = handler.Process(httpContext, "chat");
+
+            Assert.Null(negotiateResponse);
+
+            Assert.Equal(400, responseFeature.StatusCode);
+
+            // With no query string should return 400
+            requestFeature = new HttpRequestFeature
+            {
+                Path = "/user/path/negotiate/",
+                QueryString = "?endpoint=notexists"
+            };
+
+            responseFeature = new HttpResponseFeature();
+            features.Set<IHttpRequestFeature>(requestFeature);
+            features.Set<IHttpResponseFeature>(responseFeature);
+            httpContext = new DefaultHttpContext(features);
+
+            handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            Assert.Throws<InvalidOperationException>(() => handler.Process(httpContext, "chat"));
         }
 
         private class TestCustomRouter : EndpointRouterDecorator
         {
-            private readonly string _negotiateEndpoint;
-
-            public TestCustomRouter(string negotiateEndpoint)
-            {
-                _negotiateEndpoint = negotiateEndpoint;
-            }
-
-            public override ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> primaryEndpoints)
+            public override ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
             {
                 var endpointName = context.Request.Query["endpoint"];
-                return primaryEndpoints.First(e => e.Name == endpointName);
+                if (endpointName.Count == 0)
+                {
+                    context.Response.StatusCode = 400;
+                    var response = Encoding.UTF8.GetBytes("Invalid request");
+                    context.Response.Body.Write(response, 0, response.Length);
+                    return null;
+                }
+
+                return endpoints.First(s => s.Name == endpointName && s.Online);
             }
         }
 

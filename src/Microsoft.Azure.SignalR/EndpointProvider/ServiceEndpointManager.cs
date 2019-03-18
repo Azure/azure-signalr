@@ -25,6 +25,11 @@ namespace Microsoft.Azure.SignalR
 
         public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
         {
+            if (endpoint == null)
+            {
+                return null;
+            }
+
             return new ServiceEndpointProvider(endpoint, _ttl);
         }
     }

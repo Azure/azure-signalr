@@ -15,6 +15,11 @@ namespace Microsoft.Azure.SignalR
             _inner = router ?? new DefaultEndpointRouter();
         }
 
+        public virtual ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
+        {
+            return _inner.GetNegotiateEndpoint(context, endpoints);
+        }
+
         public virtual IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> endpoints)
         {
             return _inner.GetEndpointsForBroadcast(endpoints);
@@ -33,11 +38,6 @@ namespace Microsoft.Azure.SignalR
         public virtual IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> endpoints)
         {
             return _inner.GetEndpointsForUser(userId, endpoints);
-        }
-
-        public virtual ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
-        {
-            return _inner.GetNegotiateEndpoint(context, endpoints);
         }
     }
 }
