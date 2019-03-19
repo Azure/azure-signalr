@@ -28,28 +28,24 @@ namespace Microsoft.Azure.SignalR.Management
 
         public void Dispose()
         {
-            if (GetServiceConnectionStatus() != ServiceConnectionStatus.Disconnected)
-            {
-                StopConnectionAsync().Wait();
-            }
-            _serviceProvider?.Dispose();
+            _ = DisposeAsync();
         }
 
         public async Task DisposeAsync()
         {
-            if (GetServiceConnectionStatus() != ServiceConnectionStatus.Disconnected)
-            {
-                await StopConnectionAsync();
-            }
-            Dispose();
+            await StopConnectionAsync();
+            _serviceProvider?.Dispose();
         }
-
-        private ServiceConnectionStatus GetServiceConnectionStatus() => _serviceProvider.GetRequiredService<IServiceConnectionContainer>().Status;
 
         private Task StopConnectionAsync()
         {
             var serviceContainer = _serviceProvider.GetRequiredService<IServiceConnectionContainer>();
-            return serviceContainer.StopAsync();
+            if (serviceContainer.Status != ServiceConnectionStatus.Disconnected)
+            {
+                return serviceContainer.StopAsync();
+            }
+
+            return Task.CompletedTask;
         }
     }
 }
