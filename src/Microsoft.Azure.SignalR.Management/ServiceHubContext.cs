@@ -26,11 +26,6 @@ namespace Microsoft.Azure.SignalR.Management
             _serviceProvider = serviceProvider;
         }
 
-        public void Dispose()
-        {
-            _ = DisposeAsync();
-        }
-
         public async Task DisposeAsync()
         {
             await StopConnectionAsync();
