@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,7 +33,12 @@ namespace Microsoft.Azure.SignalR.Management
 
         private Task StopConnectionAsync()
         {
-            var serviceContainer = _serviceProvider.GetRequiredService<IServiceConnectionContainer>();
+            var serviceContainer = _serviceProvider.GetService<IServiceConnectionContainer>();
+            if (serviceContainer == null)
+            {
+                return Task.CompletedTask;
+            }
+
             if (serviceContainer.Status != ServiceConnectionStatus.Disconnected)
             {
                 return serviceContainer.StopAsync();
