@@ -117,26 +117,32 @@ Claim Type | Is Required | Description
 `aud` | true | Should be the **SAME** as your HTTP request url, trailing slash and query paramters not included. For example, a broadcast request's audience should look like: `https://example.service.signalr.net/api/v1/hubs/myhub`.
 `exp` | true | Epoch time when this token will be expired.
 
-<a name="user-api"></a>
-### User-related REST API
+### Implement Negotiate Endpoint
 
-In order to call user-related REST API, each of your clients should identify themselves to Azure SignalR Service.
-Otherwise SignalR Service can't find target connections from a given user id.
-
-This can be achieved by including a `nameid` claim in each client's JWT token when they are connecting to Azure SignalR Service.
-Then SignalR Service will use the value of `nameid` claim as the user id of each client connection.
-
-As shown in the [architecture section](#serverless), the `negotiate` function will return a redirect negotiation response to client.
-A typical negotiation response looks like as folllowing. The `nameid` claim should be included in the access token.
+As shown in the [architecture section](#serverless), you should implement a `negotiate` function that returns a redirect negotiation response so that client can connect to the service.
+A typical negotiation response looks like as following:
 
 ```json
 {
-    "url":"https://test.service.signalr.net/client/?hub=chat&...",
+    "url":"https://<service_name>.service.signalr.net/client/?hub=<hub_name>",
     "accessToken":"<a typical JWT token>"
 }
 ```
 
+The `accessToken` is generated using the same algorithm described in [authentication section](#authentication). The only difference is the `aud` claim should be same as `url`.
+
+You should host your negotiate API in `https://<hub_url>/negotiate` so you can still use SignalR client to connect to the hub url.
+
 Read more about redirecting client to Azure SignalR Service at [here](./internal.md#client-connections).
+
+<a name="user-api"></a>
+### User-related REST API
+
+In order to call user-related REST API, each of your clients should identify itself to Azure SignalR Service.
+Otherwise SignalR Service can't find target connections from a given user id.
+
+This can be achieved by including a `nameid` claim in each client's JWT token when they are connecting to Azure SignalR Service.
+Then SignalR Service will use the value of `nameid` claim as the user id of each client connection.
 
 ### Sample
 
