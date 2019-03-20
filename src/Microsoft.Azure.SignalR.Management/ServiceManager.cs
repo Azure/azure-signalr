@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.Management
             _endpointProvider = new ServiceEndpointProvider(_endpoint);
         }
 
-        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory, CancellationToken cancellationToken = default)
+        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
         {
             switch (_serviceManagerOptions.ServiceTransportType)
             {

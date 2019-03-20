@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <param name="loggerFactory">The logger factory.</param>
         /// <param name="cancellationToken">Cancellation token for creating service hub context.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
-        Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory, CancellationToken cancellationToken = default);
+        Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a client access token for SignalR hub connections to connect to Azure SignalR Service.
