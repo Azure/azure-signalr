@@ -81,6 +81,12 @@ namespace Microsoft.Azure.SignalR
             {
                 negotiateResponse = _negotiateHandler.Process(context, hubName);
 
+                if (context.Response.StatusCode >= 400)
+                {
+                    // Inner handler already write to context.Response, no need to continue with error case
+                    return;
+                }
+
                 // Consider it as internal server error when we don't successfully get negotiate response
                 if (negotiateResponse == null)
                 {

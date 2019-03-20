@@ -101,6 +101,12 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(owinContext, _endpointManager.Endpoints));
 
+                if (context.Response.StatusCode >= 400)
+                {
+                    // Inner handler already write to context.Response, no need to continue with error case
+                    return Task.CompletedTask;
+                }
+
                 // Consider it as internal server error when we don't successfully get negotiate response
                 if (provider == null)
                 {
