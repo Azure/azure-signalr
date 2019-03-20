@@ -64,6 +64,8 @@ namespace Microsoft.Azure.SignalR
             await task;
         }
 
+        public virtual Task StopAsync() => Task.WhenAll(FixedServiceConnections.Select(c => c.StopAsync()));
+
         /// <summary>
         /// Start and manage the whole connection lifetime
         /// </summary>

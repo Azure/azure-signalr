@@ -97,6 +97,20 @@ namespace Microsoft.Azure.SignalR
             }));
         }
 
+        public Task StopAsync()
+        {
+            if (_inner != null)
+            {
+                return _inner.StopAsync();
+            }
+
+            return Task.WhenAll(Connections.Select(s =>
+            {
+                Log.StoppingConnection(_logger, s.Key.Endpoint);
+                return s.Value.StopAsync();
+            }));
+        }
+
         public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
         {
             if (_inner != null)
@@ -164,9 +178,17 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _startingConnection =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Staring connections for endpoint {endpoint}");
 
+            private static readonly Action<ILogger, string, Exception> _stoppingConnection =
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(1, "StoppingConnection"), "Stopping connections for endpoint {endpoint}");
+
             public static void StartingConnection(ILogger logger, string endpoint)
             {
                 _startingConnection(logger, endpoint, null);
+            }
+
+            public static void StoppingConnection(ILogger logger, string endpoint)
+            {
+                _stoppingConnection(logger, endpoint, null);
             }
         }
     }

@@ -206,7 +206,7 @@ namespace Microsoft.Azure.SignalR.Management
 
             try
             {
-                response = await httpClient.SendAsync(request, cancellationToken);
+                response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             }
             catch (HttpRequestException ex)
             {
@@ -221,6 +221,10 @@ namespace Microsoft.Azure.SignalR.Management
             catch (HttpRequestException ex)
             {
                 ThrowExceptionOnResponseFailure(ex, response.StatusCode, request.RequestUri.ToString(), detail);
+            }
+            finally
+            {
+                response.Dispose();
             }
         }
 
