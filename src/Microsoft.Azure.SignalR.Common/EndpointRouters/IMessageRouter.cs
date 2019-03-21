@@ -32,6 +32,8 @@ namespace Microsoft.Azure.SignalR
 
         /// <summary>
         /// Get the service endpoints for the specified connection to send to
+        /// Note that this one is only called when the SDK is not able to identify where the connectionId is.
+        /// When the outcoming connectionId happens to be also connected to this app server, SDK can directly send the messages back to that connectionId
         /// </summary>
         /// <param name="connectionId">The id of the connection</param>
         /// <param name="endpoints">All the available endpoints</param>
