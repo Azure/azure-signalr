@@ -106,17 +106,28 @@ For ASP.NET Core SignalR's other transport type, SSE and longpolling, this means
 
 For ASP.NET SignalR, the client sends a `/ping` KeepAlive request to the service from time to time, when the `/ping` fails, the client **aborts** the connection and never reconnect. This means, for ASP.NET SignalR, the default token lifetime makes the connection lasts for **at most** 1 hour for all the transport type.
 
-### Workaround
+### Solution
 
-There is a `AccessTokenLifetime` for you to customize the lifetime of the access token.
+For security concerns, extend TTL is not encouraged. We suggest adding reconnect logic from client to restart the connection when such 401 occurs. When client restarts the connection, it will negotiate with app server to get the JWT token again and get a renewed token.
+
+Sample code for ASP.NET Core supporting restarting the connection is:
 
 ```cs
-services.AddSignalR()
-        .AddAzureSignalR(options =>
+connection.Closed += async (error) =>
             {
-                // extend the TTL
-                options.AccessTokenLifetime = TimeSpan.FromDays(1);
-            });
+                await Task.Delay(new Random().Next(0,5) * 1000);
+                await connection.StartAsync();
+            };
+```
+
+Sample code for ASP.NET JavaScript Client is:
+
+```js
+$.connection.hub.disconnected(function() {
+   setTimeout(function() {
+       $.connection.hub.start();
+   }, 5000); // Restart connection after 5 seconds.
+});
 ```
 
 ## ⌛️[TODO]Client side connection drop
