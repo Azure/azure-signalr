@@ -130,26 +130,46 @@ $.connection.hub.disconnected(function() {
 });
 ```
 
-## ⌛️[TODO]Client side connection drop
+## ⌛️[TODO]Client connection drop
 
-### Possible errors:
-1. Client side error log: "The remote party closed the WebSocket connection without completing the close handshake"
-2. Client side error log: "Service timeout. 30.00ms elapsed without receiving a message from service."
+When client is connected to the Azure SignalR, the persistent connection between client and Azure SignalR can sometimes drop for different reasons. This section describes several possibilities causing such connection drop, and provide some guidence to how to identify the root cause.
+
+### Possible errors seen from the client side
+1. `The remote party closed the WebSocket connection without completing the close handshake`
+2. `Service timeout. 30.00ms elapsed without receiving a message from service.`
+3. `{"type":7,"error":"Connection closed with an error."}`
+4. `{"type":7,"error":"Internal server error."}`
 
 ### Root cause:
-Possibility 1. App server restarts
-Possibility 2. **ASRS**(**A**zure **S**ignal**R** **S**ervice) internal error
+Client connections can drop under various circumstances:
+1. When `Hub` throws exceptions with the incoming request.
+
+2. When the server connection it routed to drops, see below section for details on [server connection drops](#server-conn-drop).
+
+3. When network connectivity issue happens between client and SignalR Service 
+
+4. When SignalR Service has some internal errors such as instance restart, failover..
 
 ### Troubleshooting Guide
 1. Open app server side log to see if anything abnormal took place
 2. Check app server side event log to see if the app server restarted
 3. Create an issue to us providing time frame, and email the resource name to us
 
+<a id="server-conn-drop"/>
 ## ⌛️[TODO]Server side connection drop
 
-### Possible errors:
-1. Server side error log: "[Error]Connection "..." to the service was dropped"
-2. Server side error: "The remote party closed the WebSocket connection without completing the close handshake"
+When app server starts, in the background, the Azure SDK starts to initiate server connections to the remote Azure SignalR. As described in [Internals of Azure SignalR Service](internal.md), Azure SignalR routes incoming client taffics to these server connections. Once a server connection is dropped, all the client connections it serves will be closed too.
+
+As the connections between app server and SignalR Service are persistent connections, they may experience network connectivity issues. In the Server SDK, we have “Always Reconnect” strategy to server connections. As the best practice, we also encourage users to add continuous reconnect logic to the clients with a random delay time to avoid massive simultaneous requests to the server.
+
+On regular basis there are new version releases for the Azure SignalR Service, and sometimes the Azure wide OS patching or upgrades or occasionally our dependent services’ interruption. These may bring in a very short period of service disruption, but as long as client side has the disconnect/reconnect mechanism, the impact is minimal like any client-side caused disconnect-reconnect.
+
+This section describes several possibilities leading to server connection drop, and provide some guidence to how to identify the root cause.
+
+### Possible errors seen from server side:
+1. `[Error]Connection "..." to the service was dropped`
+2. `The remote party closed the WebSocket connection without completing the close handshake`
+3. `Service timeout. 30.00ms elapsed without receiving a message from service.`
 
 ### Root cause:
 Server-service connection is closed by **ASRS**(**A**zure **S**ignal**R** **S**ervice).
@@ -158,13 +178,3 @@ Server-service connection is closed by **ASRS**(**A**zure **S**ignal**R** **S**e
 1. Open app server side log to see if anything abnormal took place
 2. Check app server side event log to see if the app server restarted
 3. Create an issue to us providing time frame, and email the resource name to us
-
-## ⌛️[TODO]Heartbeat failed
-
-### Possible errors:
-1. Server side log: "Service timeout. 30.00ms elapsed without receiving a message from service."
-2. Client side error log: "Service timeout. 30.00ms elapsed without receiving a message from service."
-
-### Troubleshooting Guide
-1. Open app server side log to see if anything abnormal took place
-2. Create server side dump file to see if the app server is thread starving
