@@ -96,7 +96,7 @@ For a SignalR persistent connection, it first `/negotiate` to Azure SignalR serv
 2. Check if there are multiple `access_token` inside the outgoing request. Our load balancer is not able to handle duplicate `access_token` correctly, as described in [#346](https://github.com/Azure/azure-signalr/issues/346).
 3. Another 404 can happen when the connect request is handled more than **5** seconds after `/negotiate` is called. Check the timestamp of client request, and open an issue to us if the request to the service has very slow response.
 
-## 403 returned for client requests
+## 401 Unauthorized returned for client requests
 ### Root cause
 Currently the default value of JWT token's lifetime is 1 hour.
 
