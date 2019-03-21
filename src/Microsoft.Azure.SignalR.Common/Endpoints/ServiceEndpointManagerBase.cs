@@ -90,7 +90,7 @@ namespace Microsoft.Azure.SignalR
 
             if (!string.IsNullOrEmpty(connectionString) && !connectionStringIncluded)
             {
-                yield return new ServiceEndpoint(options.ConnectionString);
+                yield return new ServiceEndpoint(options.ConnectionString, hubPrefix: options.HubPrefix);
             }
         }
 
