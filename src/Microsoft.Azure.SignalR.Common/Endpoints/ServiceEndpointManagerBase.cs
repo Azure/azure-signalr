@@ -70,20 +70,26 @@ namespace Microsoft.Azure.SignalR
             var endpoints = options.Endpoints;
             var connectionString = options.ConnectionString;
 
-            // ConnectionString can be set by custom Csonfigure
+            // ConnectionString can be set by custom Configure
             // Return both the one from ConnectionString and from Endpoints
-            // TODO: Better way if Endpoints already contains ConnectionString one?
-            if (!string.IsNullOrEmpty(connectionString))
-            {
-                yield return new ServiceEndpoint(options.ConnectionString);
-            }
-
+            // when the one from connectionString is not included in Endpoints
+            var connectionStringIncluded = false;
             if (endpoints != null)
             {
                 foreach (var endpoint in endpoints)
                 {
+                    if (endpoint.ConnectionString == connectionString)
+                    {
+                        connectionStringIncluded = true;
+                    }
+
                     yield return endpoint;
                 }
+            }
+
+            if (!string.IsNullOrEmpty(connectionString) && !connectionStringIncluded)
+            {
+                yield return new ServiceEndpoint(options.ConnectionString);
             }
         }
 
