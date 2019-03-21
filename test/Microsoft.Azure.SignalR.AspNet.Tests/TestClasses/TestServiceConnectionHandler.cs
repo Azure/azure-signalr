@@ -67,21 +67,4 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
         }
     }
-
-    internal sealed class TestServiceMessageHandler : IServiceMessageHandler
-    {
-        public TestServiceMessageHandler()
-        {
-        }
-
-        public Task HandlePingAsync(PingMessage pingMessage)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void HandleAck(AckMessage serviceMessage)
-        {
-            throw new NotImplementedException();
-        }
-    }
 }
