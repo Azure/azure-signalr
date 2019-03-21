@@ -193,14 +193,14 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
             {
                 var hubConfig = Utility.GetTestHubConfig(loggerFactory);
-                var router = new TestEndpointRouter(ConnectionString3);
+                var router = new TestEndpointRouter();
                 hubConfig.Resolver.Register(typeof(IEndpointRouter), () => router);
                 using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
                 {
                     options.Endpoints = new ServiceEndpoint[]
                     {
                         new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
-                        new ServiceEndpoint(ConnectionString3),
+                        new ServiceEndpoint(ConnectionString3, name: "chosen"),
                         new ServiceEndpoint(ConnectionString4)
                     };
                 })))
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(4, endpoints.Length);
 
                     var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
-                    var response = await client.GetAsync("/negotiate");
+                    var response = await client.GetAsync("/negotiate?endpoint=chosen");
 
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     var message = await response.Content.ReadAsStringAsync();
@@ -225,6 +225,16 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     // with custome router, always goes to connection string 3 as passed into the router
                     Assert.Equal("http://localhost3/aspnetclient", responseObject.RedirectUrl);
+
+                    // Invalid request
+                    response = await client.GetAsync("/negotiate");
+
+                    Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+                    // Invalid request
+                    response = await client.GetAsync("/negotiate?endpoint=notexists");
+
+                    Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
                 }
             }
         }

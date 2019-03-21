@@ -158,12 +158,12 @@ namespace Microsoft.Azure.SignalR
         public Task ConnectionInitializedTask => Task.WhenAll(from connection in FixedServiceConnections
                                                               select connection.ConnectionInitializedTask);
 
-        public Task WriteAsync(ServiceMessage serviceMessage)
+        public virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
             return WriteToRandomAvailableConnection(serviceMessage);
         }
 
-        public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+        public virtual Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
         {
             // If we hit this check, it is a code bug.
             if (string.IsNullOrEmpty(partitionKey))

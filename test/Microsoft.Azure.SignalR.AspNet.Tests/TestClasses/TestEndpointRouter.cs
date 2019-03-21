@@ -3,21 +3,27 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Owin;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
     internal class TestEndpointRouter : EndpointRouterDecorator
     {
-        private readonly string _negotiateEndpoint;
-
-        public TestEndpointRouter(string negotiateEndpoint) : base()
+        public TestEndpointRouter() : base()
         {
-            _negotiateEndpoint = negotiateEndpoint;
         }
 
-        public override ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> primaryEndpoints)
+        public override ServiceEndpoint GetNegotiateEndpoint(IOwinContext context, IEnumerable<ServiceEndpoint> endpoints)
         {
-            return primaryEndpoints.First(e => e.ConnectionString == _negotiateEndpoint);
+            var endpointName = context.Request.Query["endpoint"];
+            if (string.IsNullOrEmpty(endpointName))
+            {
+                context.Response.StatusCode = 400;
+                context.Response.Write("Invalid request.");
+                return null;
+            }
+
+            return endpoints.First(s => s.Name == endpointName && s.Online);
         }
     }
 }
