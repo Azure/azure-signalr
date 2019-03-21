@@ -99,7 +99,23 @@ namespace Microsoft.Azure.SignalR.AspNet
             IServiceEndpointProvider provider;
             try
             {
-                provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(_endpointManager.Endpoints));
+                provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(owinContext, _endpointManager.Endpoints));
+
+                // When status code changes, we consider the inner router changed the repsonse, then we stop here
+                if (context.Response.StatusCode != 200)
+                {
+                    // Inner handler already write to context.Response, no need to continue with error case
+                    return Task.CompletedTask;
+                }
+
+                // Consider it as internal server error when we don't successfully get negotiate response
+                if (provider == null)
+                {
+                    var message = "Unable to get the negotiate endpoint";
+                    Log.NegotiateFailed(_logger, message);
+                    context.Response.StatusCode = 500;
+                    return context.Response.End(message);
+                }
             }
             catch (AzureSignalRNotConnectedException e)
             {
@@ -109,7 +125,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             // Redirect to Service
-            // TODO: add OriginalPaht and QueryString when the clients support it
+            // TODO: add OriginalPath and QueryString when the clients support it
             var url = provider.GetClientEndpoint(null, null, null);
             try
             {
