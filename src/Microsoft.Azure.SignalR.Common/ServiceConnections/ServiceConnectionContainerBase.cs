@@ -13,7 +13,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler, IDisposable
+    internal abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler, IDisposable
     {
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
         private static TimeSpan ReconnectInterval =>
@@ -67,6 +67,8 @@ namespace Microsoft.Azure.SignalR
 
             await task;
         }
+
+        public virtual Task StopAsync() => Task.WhenAll(FixedServiceConnections.Select(c => c.StopAsync()));
 
         /// <summary>
         /// Start and manage the whole connection lifetime
@@ -168,6 +170,9 @@ namespace Microsoft.Azure.SignalR
         }
 
         public ServiceConnectionStatus Status => GetStatus();
+
+        public Task ConnectionInitializedTask => Task.WhenAll(from connection in FixedServiceConnections
+                                                              select connection.ConnectionInitializedTask);
 
         public Task WriteAsync(ServiceMessage serviceMessage)
         {

@@ -10,15 +10,15 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
-    internal sealed class TestServiceConnectionManager : ServiceConnectionManager
+    internal sealed class TestServiceConnectionHandler : ServiceConnectionManager
     {
         private readonly ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>> _waitForTransportOutputMessage = new ConcurrentDictionary<Type, TaskCompletionSource<ServiceMessage>>();
 
-        public TestServiceConnectionManager(): this(null, null)
+        public TestServiceConnectionHandler(): this(null, null)
         {
         }
 
-        public TestServiceConnectionManager(string appName, IReadOnlyList<string> hubs) : base(appName, hubs)
+        public TestServiceConnectionHandler(string appName, IReadOnlyList<string> hubs) : base(appName, hubs)
         {
         }
 
@@ -61,11 +61,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             tcs = _waitForTransportOutputMessage[messageType] = new TaskCompletionSource<ServiceMessage>();
 
             return tcs.Task;
-        }
-
-        public IServiceConnection CreateServiceConnection()
-        {
-            throw new NotImplementedException();
         }
 
         public void DisposeServiceConnection(IServiceConnection connection)

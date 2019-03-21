@@ -131,7 +131,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             PrepareConnection(scm, out var result);
 
             var anotherResult = new List<ServiceMessage>();
-            var anotherSCM = new TestServiceConnection(null,
+            var anotherSCM = new TestServiceConnectionContainer(null,
                     m =>
                     {
                         lock (anotherResult)
@@ -247,7 +247,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         private static void PrepareConnection(IServiceConnectionManager scm, out SortedList<string, ServiceMessage> output)
         {
             var result = new SortedList<string, ServiceMessage>();
-            scm.Initialize(hub => new TestServiceConnection(hub,
+            scm.Initialize(hub => new TestServiceConnectionContainer(hub,
                     m =>
                     {
                         lock (result)
@@ -262,95 +262,13 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             var resolver = new DefaultDependencyResolver();
             resolver.Register(typeof(IServiceProtocol), () => new ServiceProtocol());
-            var ccm = new TestConnectionManager();
+            var ccm = new TestClientConnectionManager();
             resolver.Register(typeof(IClientConnectionManager), () => ccm);
             var connectionManager = new ServiceConnectionManager(AppName, hubs);
             resolver.Register(typeof(IServiceConnectionManager), () => connectionManager);
             resolver.Register(typeof(IMessageParser), () => new SignalRMessageParser(hubs, resolver));
             scm = connectionManager;
             return resolver;
-        }
-
-        private sealed class TestClientConnectionManager : IClientConnectionManager
-        {
-            private readonly IServiceConnection _serverConnection;
-
-            private readonly bool _contains;
-
-            public TestClientConnectionManager(IServiceConnection serverConnection, bool contains)
-            {
-                _serverConnection = serverConnection;
-                _contains = contains;
-            }
-
-            public IServiceTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool TryGetServiceConnection(string key, out IServiceConnection serviceConnection)
-            {
-                serviceConnection = _serverConnection;
-                return _contains;
-            }
-        }
-
-        private sealed class TestServiceConnection : IServiceConnectionContainer, IServiceConnection
-        {
-            private readonly Action<(ServiceMessage, IServiceConnectionContainer)> _validator;
-
-            public string HubName { get; }
-
-            public ServiceConnectionStatus Status => ServiceConnectionStatus.Connected;
-
-            public Task ConnectionInitializedTask => Task.CompletedTask;
-
-            public TestServiceConnection(string name, Action<(ServiceMessage, IServiceConnectionContainer)> validator)
-            {
-                _validator = validator;
-                HubName = name;
-            }
-
-            public Task StartAsync()
-            {
-                return Task.CompletedTask;
-            }
-
-            public Task StartAsync(string target)
-            {
-                return Task.CompletedTask;
-            }
-
-            public Task WriteAsync(ServiceMessage serviceMessage)
-            {
-                _validator?.Invoke((serviceMessage, this));
-                return Task.CompletedTask;
-            }
-
-            public Task StopAsync()
-            {
-                return Task.CompletedTask;
-            }
-
-            public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        private static IServiceProtocol DefaultServiceProtocol = new ServiceProtocol();
-
-        private static ReadOnlyMemory<byte> GenerateSingleFrameBuffer(ReadOnlyMemory<byte> inner)
-        {
-            var singleFrameMessage = new ConnectionDataMessage(string.Empty, inner);
-            return DefaultServiceProtocol.GetMessageBytes(singleFrameMessage);
-        }
-
-        private static ReadOnlyMemory<byte> GenerateSingleFrameBuffer(string message)
-        {
-            var inner = Encoding.UTF8.GetBytes(message);
-            var singleFrameMessage = new ConnectionDataMessage(string.Empty, inner);
-            return DefaultServiceProtocol.GetMessageBytes(singleFrameMessage);
         }
     }
 }

@@ -189,7 +189,9 @@ namespace Owin
 
             var resolver = configuration.Resolver ?? throw new ArgumentException("A dependency resolver must be specified.");
 
-            var dispatcher = DispatcherHelper.PrepareAndGetDispatcher(builder, configuration, options, applicationName, new LoggerFactory());
+            var loggerFactory = resolver.Resolve<ILoggerFactory>() ?? new LoggerFactory();
+
+            var dispatcher = DispatcherHelper.PrepareAndGetDispatcher(builder, configuration, options, applicationName, loggerFactory);
             if (dispatcher != null)
             {
                 // Start the server->service connection asynchronously 

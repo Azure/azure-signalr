@@ -12,10 +12,14 @@ namespace Microsoft.Azure.SignalR
     {
         Task StartAsync();
 
+        Task StopAsync();
+
         Task WriteAsync(ServiceMessage serviceMessage);
 
         Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default);
 
         ServiceConnectionStatus Status { get; }
+
+        Task ConnectionInitializedTask { get; }
     }
 }
