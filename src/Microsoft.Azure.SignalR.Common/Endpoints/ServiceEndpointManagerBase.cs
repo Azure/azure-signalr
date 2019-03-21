@@ -72,12 +72,6 @@ namespace Microsoft.Azure.SignalR
 
             // ConnectionString can be set by custom Configure
             // Return both the one from ConnectionString and from Endpoints
-            // TODO: Better way if Endpoints already contains ConnectionString one?
-            if (!string.IsNullOrEmpty(connectionString))
-            {
-                yield return new ServiceEndpoint(options.ConnectionString, hubPrefix: options.HubPrefix);
-            }
-
             // when the one from connectionString is not included in Endpoints
             var connectionStringIncluded = false;
             if (endpoints != null)

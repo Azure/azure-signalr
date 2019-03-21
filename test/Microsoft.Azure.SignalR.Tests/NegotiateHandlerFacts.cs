@@ -166,7 +166,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void TestNegotiateHandlerWithMultipleEndpointsAndCustomerRouterAndHubPrefix()
         {
             var config = new ConfigurationBuilder().Build();
-            var router = new TestCustomRouter(ConnectionString3);
+            var router = new TestCustomRouter();
             var serviceProvider = new ServiceCollection().AddSignalR()
                 .AddAzureSignalR(o =>
                 {
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     o.Endpoints = new ServiceEndpoint[]
                     {
                         new ServiceEndpoint(ConnectionString2),
-                        new ServiceEndpoint(ConnectionString3),
+                        new ServiceEndpoint(ConnectionString3, name: "chosen"),
                         new ServiceEndpoint(ConnectionString4),
                     };
                 })
@@ -187,6 +187,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var requestFeature = new HttpRequestFeature
             {
                 Path = "/user/path/negotiate/",
+                QueryString = "?endpoint=chosen"
             };
 
             var features = new FeatureCollection();
@@ -197,7 +198,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var negotiateResponse = handler.Process(httpContext, "chat");
 
             Assert.NotNull(negotiateResponse);
-            Assert.Equal($"http://localhost3/client/?hub=testprefix_chat&asrs.op=%2Fuser%2Fpath", negotiateResponse.Url);
+            Assert.Equal($"http://localhost3/client/?hub=testprefix_chat&asrs.op=%2Fuser%2Fpath&endpoint=chosen", negotiateResponse.Url);
         }
 
         [Fact]
