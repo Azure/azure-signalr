@@ -17,18 +17,22 @@ namespace Microsoft.Azure.SignalR
 
         public string Version { get; }
 
+        public string HubPrefix { get; }
+
         public int? Port { get; }
 
-        public DefaultServiceEndpointGenerator(string endpoint, string accessKey, string version, int? port)
+        public DefaultServiceEndpointGenerator(string endpoint, string accessKey, string version, int? port, string hubPrefix)
         {
             Endpoint = endpoint;
             AccessKey = accessKey;
             Version = version;
             Port = port;
+            HubPrefix = hubPrefix;
         }
 
         public string GetClientAudience(string hubName) =>
-            InternalGetAudience(ClientPath, hubName);
+            InternalGetAudience(ClientPath, hubName, HubPrefix);
+
 
         public string GetClientEndpoint(string hubName, string originalPath, string queryString)
         {
@@ -46,21 +50,27 @@ namespace Microsoft.Azure.SignalR
                 queryBuilder.Append("&").Append(queryString);
             }
 
-            return $"{InternalGetEndpoint(ClientPath, hubName)}{queryBuilder}";
+            return $"{InternalGetEndpoint(ClientPath, hubName, HubPrefix)}{queryBuilder}";
         }
 
         public string GetServerAudience(string hubName) =>
-            InternalGetAudience(ServerPath, hubName);
+            InternalGetAudience(ServerPath, hubName, HubPrefix);
 
         public string GetServerEndpoint(string hubName) =>
-            InternalGetEndpoint(ServerPath, hubName);
+            InternalGetEndpoint(ServerPath, hubName, HubPrefix);
 
-        private string InternalGetEndpoint(string path, string hubName) =>
-            Port.HasValue ?
-            $"{Endpoint}:{Port}/{path}/?hub={hubName.ToLower()}" :
-            $"{Endpoint}/{path}/?hub={hubName.ToLower()}";
+        private string InternalGetEndpoint(string path, string hubName, string hubPrefix)
+        {
+            var prefixedHubName = string.IsNullOrEmpty(hubPrefix) ? hubName.ToLower() : $"{hubPrefix.ToLower()}_{hubName.ToLower()}";
+            return Port.HasValue ?
+                $"{Endpoint}:{Port}/{path}/?hub={prefixedHubName}" :
+                $"{Endpoint}/{path}/?hub={prefixedHubName}";
+        }
 
-        private string InternalGetAudience(string path, string hubName) =>
-            $"{Endpoint}/{path}/?hub={hubName.ToLower()}";
+        private string InternalGetAudience(string path, string hubName, string hubPrefix)
+        {
+            var prefixedHubName = string.IsNullOrEmpty(hubPrefix) ? hubName.ToLower() : $"{hubPrefix.ToLower()}_{hubName.ToLower()}";
+            return $"{Endpoint}/{path}/?hub={prefixedHubName}";
+        }
     }
 }

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.SignalR
     internal interface IServiceEndpointOptions
     {
         ServiceEndpoint[] Endpoints { get; }
+        string HubPrefix { get; }
         string ConnectionString { get; }
     }
 }

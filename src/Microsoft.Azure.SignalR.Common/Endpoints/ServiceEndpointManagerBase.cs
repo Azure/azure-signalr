@@ -75,13 +75,14 @@ namespace Microsoft.Azure.SignalR
             // TODO: Better way if Endpoints already contains ConnectionString one?
             if (!string.IsNullOrEmpty(connectionString))
             {
-                yield return new ServiceEndpoint(options.ConnectionString);
+                yield return new ServiceEndpoint(options.ConnectionString, hubPrefix: options.HubPrefix);
             }
 
             if (endpoints != null)
             {
                 foreach (var endpoint in endpoints)
                 {
+                    endpoint.HubPrefix = options.HubPrefix;
                     yield return endpoint;
                 }
             }

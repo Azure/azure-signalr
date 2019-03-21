@@ -33,6 +33,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+        private const string HubPrefix = "testprefix";
         private const string AppName = "AzureSignalRTest";
 
         public RunAzureSignalRTests(ITestOutputHelper output) : base(output)
@@ -186,6 +187,44 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Fact]
+        public void TestRunAzureSignalRWithMultipleAppSettingsAndCustomSettingsIncludingHubPrefix()
+        {
+            // Prepare the configuration
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
+                {
+                    options.HubPrefix = HubPrefix;
+                    options.Endpoints = new ServiceEndpoint[]
+                    {
+                        new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
+                        new ServiceEndpoint(ConnectionString3),
+                        new ServiceEndpoint(ConnectionString4)
+                    };
+                })))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+
+                    Assert.Equal(ConnectionString, options.Value.ConnectionString);
+                    Assert.Equal(HubPrefix, options.Value.HubPrefix);
+
+                    Assert.Equal(3, options.Value.Endpoints.Length);
+
+                    var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
+                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    Assert.Equal(4, endpoints.Length);
+
+                    Assert.Equal(HubPrefix, endpoints[0].HubPrefix);
+                    Assert.Equal(HubPrefix, endpoints[1].HubPrefix);
+                    Assert.Equal(HubPrefix, endpoints[2].HubPrefix);
+                    Assert.Equal(HubPrefix, endpoints[3].HubPrefix);
+                }
+            }
+        }
+
+        [Fact]
         public async Task TestRunAzureSignalRWithMultipleAppSettingsAndCustomSettingsAndCustomRouter()
         {
             // Prepare the configuration
@@ -280,10 +319,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 {
                     o.ConnectionString = ConnectionString;
                     o.ConnectionCount = -1;
+                    o.HubPrefix = HubPrefix;
                 })))
                 {
                     var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
                     Assert.Equal(ConnectionString, options.Value.ConnectionString);
+                    Assert.Equal(HubPrefix, options.Value.HubPrefix);
                     Assert.Equal(-1, options.Value.ConnectionCount);
                 }
             }

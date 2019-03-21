@@ -26,6 +26,11 @@ namespace Microsoft.Azure.SignalR.AspNet
         public int ConnectionCount { get; set; } = 5;
 
         /// <summary>
+        /// Gets or sets the prefix to apply to each hub name
+        /// </summary>
+        public string HubPrefix{ get; set; }
+
+        /// <summary>
         /// Gets or sets the func to generate claims from <see cref="IOwinContext" />.
         /// The claims will be included in the auto-generated token for clients.
         /// </summary>
@@ -47,7 +52,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             for (int i = 0; i < count; i++)
             {
                 var setting = ConfigurationManager.ConnectionStrings[i];
-                var (isDefault, endpoint) = GetEndpoint(setting.Name, () => setting.ConnectionString);
+                var (isDefault, endpoint) = GetEndpoint(setting.Name, this.HubPrefix, () => setting.ConnectionString);
                 if (endpoint != null)
                 {
                     if (isDefault)
@@ -64,7 +69,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 // Fallback to use AppSettings
                 foreach(var key in ConfigurationManager.AppSettings.AllKeys)
                 {
-                    var (isDefault, endpoint) = GetEndpoint(key, () => ConfigurationManager.AppSettings[key]);
+                    var (isDefault, endpoint) = GetEndpoint(key, this.HubPrefix, () => ConfigurationManager.AppSettings[key]);
                     if (endpoint != null)
                     {
                         if (isDefault)
@@ -81,16 +86,16 @@ namespace Microsoft.Azure.SignalR.AspNet
             Endpoints = endpoints.ToArray();
         }
 
-        private static (bool isDefault, ServiceEndpoint endpoint) GetEndpoint(string key, Func<string> valueGetter)
+        private static (bool isDefault, ServiceEndpoint endpoint) GetEndpoint(string key, string hubPrefix, Func<string> valueGetter)
         {
             if (key == Constants.ConnectionStringDefaultKey && !string.IsNullOrEmpty(valueGetter()))
             {
-                return (true, new ServiceEndpoint(valueGetter()));
+                return (true, new ServiceEndpoint(valueGetter(), hubPrefix: hubPrefix));
             }
 
             if (key.StartsWith(Constants.ConnectionStringKeyPrefix) && !string.IsNullOrEmpty(valueGetter()))
             {
-                return (false, new ServiceEndpoint(key, valueGetter()));
+                return (false, new ServiceEndpoint(key, valueGetter(), hubPrefix));
             }
 
             return (false, null);

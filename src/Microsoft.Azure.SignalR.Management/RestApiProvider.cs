@@ -10,18 +10,28 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly RestApiAccessTokenGenerator _restApiAccessTokenGenerator;
         private readonly string _baseEndpoint;
         private readonly string _hubName;
+        private readonly string _hubPrefix;
         private readonly string _requestPrefix;
         private readonly string _audiencePrefix;
         private readonly int? _port;
 
-        public RestApiProvider(string connectionString, string hubName)
+        public RestApiProvider(string connectionString, string hubName, string hubPrefix)
         {
             string accessKey;
             (_baseEndpoint, accessKey, _, _port) = ConnectionStringParser.Parse(connectionString);
             _hubName = hubName;
+            _hubPrefix = hubPrefix;
             _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(accessKey);
-            _requestPrefix = _port == null ? $"{_baseEndpoint}/api/v1/hubs/{_hubName}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{_hubName}";
-            _audiencePrefix = $"{_baseEndpoint}/api/v1/hubs/{_hubName}";
+            if (string.IsNullOrEmpty(_hubPrefix))
+            {
+                _requestPrefix = _port == null ? $"{_baseEndpoint}/api/v1/hubs/{_hubName}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{_hubName}";
+                _audiencePrefix = $"{_baseEndpoint}/api/v1/hubs/{_hubName}";
+            }
+            else
+            {
+                _requestPrefix = _port == null ? $"{_baseEndpoint}/api/v1/hubs/{_hubPrefix}_{_hubName}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{_hubPrefix}_{_hubName}";
+                _audiencePrefix = $"{_baseEndpoint}/api/v1/hubs/{_hubPrefix}_{_hubName}";
+            }
         }
 
         public RestApiEndpoint GetBroadcastEndpoint(TimeSpan? lifetime = null)

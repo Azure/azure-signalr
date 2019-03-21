@@ -24,6 +24,11 @@ namespace Microsoft.Azure.SignalR
         public int ConnectionCount { get; set; } = 5;
 
         /// <summary>
+        /// Gets or sets the prefix to apply to each hub name
+        /// </summary>
+        public string HubPrefix { get; set; }
+
+        /// <summary>
         /// Gets or sets the func to generate claims from <see cref="HttpContext" />.
         /// The claims will be included in the auto-generated token for clients.
         /// </summary>

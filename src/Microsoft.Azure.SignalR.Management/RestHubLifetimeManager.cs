@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public RestHubLifetimeManager(ServiceManagerOptions serviceManagerOptions, string hubName)
         {
-            _restApiProvider = new RestApiProvider(serviceManagerOptions.ConnectionString, hubName);
+            _restApiProvider = new RestApiProvider(serviceManagerOptions.ConnectionString, serviceManagerOptions.HubPrefix, hubName);
         }
 
         public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)

@@ -10,21 +10,42 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceOptionsSetup : IConfigureOptions<ServiceOptions>
     {
+        private readonly string _hubPrefix;
         private readonly string _connectionString;
         private readonly ServiceEndpoint[] _endpoints;
 
         public ServiceOptionsSetup(IConfiguration configuration)
         {
-            var (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringDefaultKey, Constants.ConnectionStringKeyPrefix);
+            _hubPrefix = GetHubPrefix(configuration);
+
+            var (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringDefaultKey, Constants.ConnectionStringKeyPrefix, _hubPrefix);
 
             // Fallback to ConnectionStrings:Azure:SignalR:ConnectionString format when the default one is not available
             if (endpoints.Count == 0)
             {
-                (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringSecondaryKey, Constants.ConnectionStringSecondaryKeyPrefix);
+                (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringSecondaryKey, Constants.ConnectionStringSecondaryKeyPrefix, _hubPrefix);
             }
 
             _connectionString = connectionString;
             _endpoints = endpoints.ToArray();
+        }
+
+        private string GetHubPrefix(IConfiguration configuration)
+        {
+            foreach (var pair in configuration.AsEnumerable())
+            {
+                var key = pair.Key;
+                if (key == Constants.HubPrefixDefaultKey && !string.IsNullOrEmpty(pair.Value))
+                {
+                    return pair.Value;
+                }
+
+                if (key.StartsWith(Constants.HubPrefixDefaultKeyPrefix) && !string.IsNullOrEmpty(pair.Value))
+                {
+                    return pair.Value;
+                }
+            }
+            return string.Empty;
         }
 
         public void Configure(ServiceOptions options)
@@ -32,9 +53,10 @@ namespace Microsoft.Azure.SignalR
             // The default setup of ServiceOptions
             options.ConnectionString = _connectionString;
             options.Endpoints = _endpoints;
+            options.HubPrefix = _hubPrefix;
         }
 
-        private static (string, List<ServiceEndpoint>) GetEndpoint(IConfiguration configuration, string defaultKey, string keyPrefix)
+        private static (string, List<ServiceEndpoint>) GetEndpoint(IConfiguration configuration, string defaultKey, string keyPrefix, string hubPrefix)
         {
             var endpoints = new List<ServiceEndpoint>();
             string connectionString = null;
@@ -44,12 +66,12 @@ namespace Microsoft.Azure.SignalR
                 if (key == defaultKey && !string.IsNullOrEmpty(pair.Value))
                 {
                     connectionString = pair.Value;
-                    endpoints.Add(new ServiceEndpoint(pair.Value));
+                    endpoints.Add(new ServiceEndpoint(pair.Value, hubPrefix: hubPrefix));
                 }
 
                 if (key.StartsWith(keyPrefix) && !string.IsNullOrEmpty(pair.Value))
                 {
-                    endpoints.Add(new ServiceEndpoint(key, pair.Value));
+                    endpoints.Add(new ServiceEndpoint(key, pair.Value, hubPrefix));
                 }
             }
 
