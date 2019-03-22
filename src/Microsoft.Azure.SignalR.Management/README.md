@@ -16,6 +16,10 @@ Azure SignalR Service Management SDK helps you to manages SignalR clients throug
 
 ### Features
 
+#### Transient Mode:
+
+Features are limited. The supported features are:
+
 * Publishing messages:
   * Broadcast messages to all SignalR clients
   * Publish messages to a specific user(s)
@@ -24,6 +28,11 @@ Azure SignalR Service Management SDK helps you to manages SignalR clients throug
   * Add a specific user to a specific group
   * Remove a specific user from a specific group
 
+#### Persistent Mode:
+
+Persistent Mode includes the aboves fetures and are extended to all features that .Net Core SignalR supports.
+
+> More details about different modes can be found [here](#Transport-Type).
 
 ## Quick Start
 
@@ -86,20 +95,11 @@ finally
 }
 ```
 
+## Transport Type
 
-## Development
-
-To support this scenario quickly, we plan to develop it in 2 steps.
-
-* Step 1: Call SignalR service's [rest api](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-quickstart-rest-api) as backend. 
-  * Pros: Simple implementation
-  * Cons: User needs to generate access tokens for different audiences. 
-
-* Step 2: Use Websocket connect to SignalR service. 
-  * Pros: More Efficient, don't have to establish connection to service for each request. Users don't have to generate access token for each specific scenario.
-  * Cons: Unknown
-
-To minimize the gap of usage between Microsoft.Azure.SignalR and this SDK, the APIs in this SDK are planed to be the same Microsoft.Azure.SignalR as much as possible.
+This SDK can communicates to Azure SignalR Service with two transport types:
+* Transient: Create a Http request Azure SignalR Service for each message sent. It is useful when you are unable to establish a WebSockets connection.
+* Persistent: Create a WebSockets connection first and then sent all messages in this connection. It is useful when you send large amount of messages.
 
 ## Interface
 
