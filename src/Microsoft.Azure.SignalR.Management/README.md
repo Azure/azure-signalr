@@ -30,7 +30,7 @@ Features are limited. The supported features are:
 
 #### Persistent Mode:
 
-Persistent Mode includes the aboves fetures and are extended to all features that .Net Core SignalR supports.
+Persistent mode includes the aboves fetures and are extended to all features that .Net Core SignalR supports.
 
 > More details about different modes can be found [here](#Transport-Type).
 
