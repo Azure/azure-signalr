@@ -95,6 +95,8 @@ finally
 }
 ```
 
+For full sample on how to use Management SDK can be found [here](TODO).
+
 ## Transport Type
 
 This SDK can communicates to Azure SignalR Service with two transport types:
