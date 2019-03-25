@@ -8,7 +8,8 @@
 ## Nuget Packages
 
 Package Name | Target Framework | NuGet | MyGet
-[TODO]
+---|---|---|---
+Microsoft.Azure.SignalR.Management | .NET Standard 2.0 | null | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Management.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Management)
 
 ## Getting Started
 
