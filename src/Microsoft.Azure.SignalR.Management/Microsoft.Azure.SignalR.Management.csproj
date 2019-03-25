@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" />
+    <ProjectReference Include="..\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Microsoft.Azure.SignalR\Microsoft.Azure.SignalR.csproj" />
   </ItemGroup>
 
