@@ -31,8 +31,17 @@ Features are limited. The supported features are:
 
 #### Persistent Mode:
 
-Persistent mode includes the aboves fetures and are extended to all features that .Net Core SignalR supports.
-
+* Publishing messages:
+  * Broadcast messages to all SignalR clients
+  * Broadcast messages to all SignalR clients excepts clients in a specific exclusion list
+  * Publish messages to a specific SignalR client(s)
+  * Publish messages to a specific user(s)
+  * Publish messages to a specific group(s)
+  * Publish messages to a specific group(s) excepts clients in a specific exclusion list
+* Group membership:
+  * Add a specific user to a specific group
+  * Remove a specific user from a specific group
+  
 > More details about different modes can be found [here](#Transport-Type).
 
 ## Quick Start
