@@ -16,13 +16,13 @@ namespace Microsoft.Azure.SignalR
     internal class MultiEndpointServiceConnectionContainer : IServiceConnectionContainer
     {
         private readonly IServiceEndpointManager _endpointManager;
-        private readonly IEndpointRouter _router;
+        private readonly IMessageRouter _router;
         private readonly ILogger _logger;
         private readonly IServiceConnectionContainer _inner;
 
         public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
 
-        public MultiEndpointServiceConnectionContainer(Func<ServiceEndpoint, IServiceConnectionContainer> generator, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
+        public MultiEndpointServiceConnectionContainer(Func<ServiceEndpoint, IServiceConnectionContainer> generator, IServiceEndpointManager endpointManager, IMessageRouter router, ILoggerFactory loggerFactory)
         {
             if (generator == null)
             {
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         public MultiEndpointServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, string hub,
-            int count, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
+            int count, IServiceEndpointManager endpointManager, IMessageRouter router, ILoggerFactory loggerFactory)
         :this(endpoint => CreateContainer(serviceConnectionFactory, endpoint, hub, count, endpointManager, loggerFactory),
             endpointManager, router, loggerFactory)
         {
@@ -69,6 +69,20 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();
 
+        public Task ConnectionInitializedTask
+        {
+            get
+            {
+                if (_inner != null)
+                {
+                    return _inner.ConnectionInitializedTask;
+                }
+
+                return Task.WhenAll(from connection in Connections
+                                    select connection.Value.ConnectionInitializedTask);
+            }
+        }
+
         public Task StartAsync()
         {
             if (_inner != null)
@@ -80,6 +94,20 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.StartingConnection(_logger, s.Key.Endpoint);
                 return s.Value.StartAsync();
+            }));
+        }
+
+        public Task StopAsync()
+        {
+            if (_inner != null)
+            {
+                return _inner.StopAsync();
+            }
+
+            return Task.WhenAll(Connections.Select(s =>
+            {
+                Log.StoppingConnection(_logger, s.Key.Endpoint);
+                return s.Value.StopAsync();
             }));
         }
 
@@ -134,6 +162,8 @@ namespace Microsoft.Azure.SignalR
                     return mgbdm.GroupList.SelectMany(g => _router.GetEndpointsForGroup(g, availableEndpoints)).Distinct();
                 case ConnectionDataMessage cdm:
                     return _router.GetEndpointsForConnection(cdm.ConnectionId, availableEndpoints);
+                case MultiConnectionDataMessage mcd:
+                    return mcd.ConnectionList.SelectMany(c => _router.GetEndpointsForConnection(c, availableEndpoints)).Distinct();
                 case UserDataMessage udm:
                     return _router.GetEndpointsForUser(udm.UserId, availableEndpoints);
                 case MultiUserDataMessage mudm:
@@ -148,9 +178,17 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _startingConnection =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Staring connections for endpoint {endpoint}");
 
+            private static readonly Action<ILogger, string, Exception> _stoppingConnection =
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(1, "StoppingConnection"), "Stopping connections for endpoint {endpoint}");
+
             public static void StartingConnection(ILogger logger, string endpoint)
             {
                 _startingConnection(logger, endpoint, null);
+            }
+
+            public static void StoppingConnection(ILogger logger, string endpoint)
+            {
+                _stoppingConnection(logger, endpoint, null);
             }
         }
     }

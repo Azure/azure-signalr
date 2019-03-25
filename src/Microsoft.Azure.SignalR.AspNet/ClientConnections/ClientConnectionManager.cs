@@ -22,11 +22,10 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private readonly ConcurrentDictionary<string, IServiceConnection> _clientConnections = new ConcurrentDictionary<string, IServiceConnection>();
 
-        public ClientConnectionManager(HubConfiguration configuration)
+        public ClientConnectionManager(HubConfiguration configuration, ILoggerFactory loggerFactory)
         {
             _configuration = configuration;
-            var loggerFactory = configuration.Resolver.Resolve<ILoggerFactory>() ?? NullLoggerFactory.Instance;
-            _logger = loggerFactory.CreateLogger<ClientConnectionManager>();
+            _logger = loggerFactory?.CreateLogger<ClientConnectionManager>() ?? NullLogger<ClientConnectionManager>.Instance;
         }
 
         public IServiceTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
@@ -36,7 +35,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             var responseStream = new MemoryStream();
             var hostContext = GetHostContext(message, responseStream, serviceConnection);
-
+            
             if (dispatcher.Authorize(hostContext.Request))
             {
                 // ProcessRequest checks if the connectionToken matches "{connectionid}:{userName}" format with context.User
@@ -55,7 +54,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             // This happens when hub is not found
-            Debug.Fail("Unauthorized");
             throw new InvalidOperationException("Unable to authorize request");
         }
 

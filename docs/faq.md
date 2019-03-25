@@ -7,6 +7,7 @@
 - [Why is exception thrown from my custom `IUserIdProvider` when switching from ASP.NET Core SignalR to Azure SignalR Service SDK?](#limited-context)
 - [Can I configure available transports at server side in Azure SignalR Service like ASP.NET Core SignalR?](#configure-transports)
 - [What is the meaning of metrics like message count or connection count showed in Azure portal? Which kind of aggregation type should I choose?](#metrics-meaning)
+- [What is the meaning of service mode `Default`/`Serverless`/`Classic`? How can I choose?](#service-mode)
 
 <a name="production-use"></a>
 ## Is Azure SignalR Service ready for production use?
@@ -82,3 +83,18 @@ You can find the details about how do we calculate these metrics [here](https://
 
 In the overview blade of Azure SignalR Service resources, we have already chosen the approperate aggregation type for you. And if you go to the Metrics blade, you can
 take the aggregation type [here](https://docs.microsoft.com/en-us/azure/azure-monitor/platform/metrics-supported#microsoftsignalrservicesignalr) as a reference.
+
+<a name="service-mode"></a>
+## What is the meaning of service mode `Default`/`Serverless`/`Classic`? How can I choose?
+
+Modes:
+* `Default` mode **requires** hub server. When there is no server connection available for the hub, the client tries to connect to this hub fails.
+* `Serverless` mode does **NOT** allow any server connection, i.e. it will reject all server connections, all clients must in serverless mode.
+* `Classic` mode is a mixed status. When a hub has server connection, the new client will be routed to hub server, if not, client will enter serverless mode.
+
+  This may cause some problem, for example, all of server connections are lost for a moment, some clients will enter serverless mode, instead of route to hub server.
+
+Choosing:
+1. No hub server, choose `Serverless`.
+1. All of hubs have hub servers, choose `Default`.
+1. Some of hubs have hub servers, others not, choose `Classic`, but this may cause some problem, the better way is create two instances, one is `Serverless`, another is `Classic`.

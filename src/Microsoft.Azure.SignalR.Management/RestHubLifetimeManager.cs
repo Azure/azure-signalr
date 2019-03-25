@@ -195,7 +195,7 @@ namespace Microsoft.Azure.SignalR.Management
         private static HttpRequestMessage BuildRequest(RestApiEndpoint endpoint, HttpMethod httpMethod, string methodName = null, object[] args = null)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
-            return GenerateHttpRequest(endpoint.Audience, payload, endpoint.Token, HttpMethod.Post);
+            return GenerateHttpRequest(endpoint.Audience, payload, endpoint.Token, httpMethod);
         }
 
         private static async Task CallRestApiAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.SignalR.Management
 
             try
             {
-                response = await httpClient.SendAsync(request, cancellationToken);
+                response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             }
             catch (HttpRequestException ex)
             {
@@ -221,6 +221,10 @@ namespace Microsoft.Azure.SignalR.Management
             catch (HttpRequestException ex)
             {
                 ThrowExceptionOnResponseFailure(ex, response.StatusCode, request.RequestUri.ToString(), detail);
+            }
+            finally
+            {
+                response.Dispose();
             }
         }
 

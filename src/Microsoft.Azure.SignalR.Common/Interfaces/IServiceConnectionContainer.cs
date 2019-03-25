@@ -11,10 +11,14 @@ namespace Microsoft.Azure.SignalR
     {
         Task StartAsync();
 
+        Task StopAsync();
+
         Task WriteAsync(ServiceMessage serviceMessage);
 
         Task WriteAsync(string partitionKey, ServiceMessage serviceMessage);
 
         ServiceConnectionStatus Status { get; }
+
+        Task ConnectionInitializedTask { get; }
     }
 }

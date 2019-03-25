@@ -47,6 +47,9 @@ JoinGroup | Server | Sent by server to ask Service adding the target connection 
 LeaveGroup | Server | Sent by server to ask Service removing the target connection from the target group.
 GroupBroadcastData | Server | Sent from Server to Service. Payloads in the message will be broadcasted to all connections within the target group by Service.
 MultiGroupBroadcastData | Server | Sent from Server to Service. Payloads in the message will be broadcasted to all connections within the target groups by Service.
+JoinGroupWithAck | Server | Sent by server to ask Service adding the target connection to the target group. Server will wait for the ack to continue.
+LeaveGroupWithAck | Server | Sent by server to ask Service removing the target connection from the target group. Server will wait for the ack to continue.
+Ack | Service | Sent from Service to Server to return the operation result of JoinGroupWithAck and LeaveGroupWithAck
 
 ## Communication Model
 
@@ -260,5 +263,41 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 - 17 - Message Type, indicating this is a `UserLeaveGroup` message.
 - UserId - A `String` encoding unique Id for the user.
 - GroupName - A `String` encoding group name, which the user will leave.
+
+#### Example: TODO
+
+### JoinGroupWithAck Message
+`JoinGroupWithAck` messages have the following structure.
+```
+[18, ConnectionId, GroupName, AckId]
+```
+- 18 - Message Type, indicating this is a `JoinGroupWithAck` message.
+- ConnectionId - A `String` encoding unique Id for the connection.
+- GroupName - A `String` encoding group name, which the connection will join.
+- AckId - A `Int32` encoding Id number to identify the corresponding ack message.
+
+#### Example: TODO
+
+### LeaveGroupWithAck Message
+`LeaveGroupWithAck` messages have the following structure.
+```
+[19, ConnectionId, GroupName, AckId]
+```
+- 19 - Message Type, indicating this is a `LeaveGroupWithAck` message.
+- ConnectionId - A `String` encoding unique Id for the connection.
+- GroupName - A `String` encoding group name, which the connection will leave.
+- AckId - A `Int32` encoding Id number to identify the corresponding ack message.
+
+#### Example: TODO
+
+### Ack Message
+`Ack` messages have the following structure.
+```
+[20, AckId, Status, Message]
+```
+- 20 - Message Type, indicating this is a `Ack` message.
+- AckId - A `Int32` encoding Id number to associate the corresponding message.
+- Status - A `Int32` encoding status code to indicate the operation result.
+- Message -  A `String` encoding ack message to explain status details.
 
 #### Example: TODO
