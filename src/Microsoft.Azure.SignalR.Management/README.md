@@ -101,7 +101,7 @@ For full sample on how to use Management SDK can be found [here](TODO).
 ## Transport Type
 
 This SDK can communicates to Azure SignalR Service with two transport types:
-* Transient: Create a Http request Azure SignalR Service for each message sent. It is useful when you are unable to establish a WebSockets connection.
+* Transient: Create a Http request Azure SignalR Service for each message sent. The SDK simply wrap up [Azure SignalR Service REST API](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-quickstart-rest-api#--integration-with-third-party-services) in Transient mode. It is useful when you are unable to establish a WebSockets connection.
 * Persistent: Create a WebSockets connection first and then sent all messages in this connection. It is useful when you send large amount of messages.
 
 ## Interface
