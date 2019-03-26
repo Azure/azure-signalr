@@ -17,13 +17,13 @@ namespace Microsoft.Azure.SignalR
     internal class MultiEndpointServiceConnectionContainer : IServiceConnectionContainer
     {
         private readonly IServiceEndpointManager _endpointManager;
-        private readonly IEndpointRouter _router;
+        private readonly IMessageRouter _router;
         private readonly ILogger _logger;
         private readonly IServiceConnectionContainer _inner;
 
         public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
 
-        public MultiEndpointServiceConnectionContainer(Func<ServiceEndpoint, IServiceConnectionContainer> generator, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
+        public MultiEndpointServiceConnectionContainer(Func<ServiceEndpoint, IServiceConnectionContainer> generator, IServiceEndpointManager endpointManager, IMessageRouter router, ILoggerFactory loggerFactory)
         {
             if (generator == null)
             {
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         public MultiEndpointServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, string hub,
-            int count, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
+            int count, IServiceEndpointManager endpointManager, IMessageRouter router, ILoggerFactory loggerFactory)
         :this(endpoint => CreateContainer(serviceConnectionFactory, endpoint, hub, count, endpointManager, loggerFactory),
             endpointManager, router, loggerFactory)
         {

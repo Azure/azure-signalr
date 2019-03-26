@@ -174,7 +174,7 @@ namespace Microsoft.Azure.SignalR
         public Task ConnectionInitializedTask => Task.WhenAll(from connection in FixedServiceConnections
                                                               select connection.ConnectionInitializedTask);
 
-        public Task WriteAsync(ServiceMessage serviceMessage)
+        public virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
             return WriteToRandomAvailableConnection(serviceMessage);
         }

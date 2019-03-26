@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.SignalR;
@@ -134,13 +135,13 @@ namespace Microsoft.Azure.SignalR.Tests
         public void TestNegotiateHandlerWithMultipleEndpointsAndCustomRouter()
         {
             var config = new ConfigurationBuilder().Build();
-            var router = new TestCustomRouter(ConnectionString3);
+            var router = new TestCustomRouter();
             var serviceProvider = new ServiceCollection().AddSignalR()
                 .AddAzureSignalR(
                 o => o.Endpoints = new ServiceEndpoint[]
                 {
                     new ServiceEndpoint(ConnectionString2),
-                    new ServiceEndpoint(ConnectionString3),
+                    new ServiceEndpoint(ConnectionString3, name: "chosen"),
                     new ServiceEndpoint(ConnectionString4),
                 })
                 .Services
@@ -152,8 +153,8 @@ namespace Microsoft.Azure.SignalR.Tests
             var requestFeature = new HttpRequestFeature
             {
                 Path = "/user/path/negotiate/",
+                QueryString = "?endpoint=chosen"
             };
-
             var features = new FeatureCollection();
             features.Set<IHttpRequestFeature>(requestFeature);
             var httpContext = new DefaultHttpContext(features);
@@ -162,51 +163,56 @@ namespace Microsoft.Azure.SignalR.Tests
             var negotiateResponse = handler.Process(httpContext, "chat");
 
             Assert.NotNull(negotiateResponse);
-            Assert.Equal($"http://localhost3/client/?hub=chat&asrs.op=%2Fuser%2Fpath", negotiateResponse.Url);
+            Assert.Equal($"http://localhost3/client/?hub=chat&asrs.op=%2Fuser%2Fpath&endpoint=chosen", negotiateResponse.Url);
+
+            // With no query string should return 400
+            requestFeature = new HttpRequestFeature
+            {
+                Path = "/user/path/negotiate/",
+            };
+
+            var responseFeature = new HttpResponseFeature();
+            features.Set<IHttpRequestFeature>(requestFeature);
+            features.Set<IHttpResponseFeature>(responseFeature);
+            httpContext = new DefaultHttpContext(features);
+
+            handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            negotiateResponse = handler.Process(httpContext, "chat");
+
+            Assert.Null(negotiateResponse);
+
+            Assert.Equal(400, responseFeature.StatusCode);
+
+            // With no query string should return 400
+            requestFeature = new HttpRequestFeature
+            {
+                Path = "/user/path/negotiate/",
+                QueryString = "?endpoint=notexists"
+            };
+
+            responseFeature = new HttpResponseFeature();
+            features.Set<IHttpRequestFeature>(requestFeature);
+            features.Set<IHttpResponseFeature>(responseFeature);
+            httpContext = new DefaultHttpContext(features);
+
+            handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            Assert.Throws<InvalidOperationException>(() => handler.Process(httpContext, "chat"));
         }
 
-        private class TestCustomRouter : IEndpointRouter
+        private class TestCustomRouter : EndpointRouterDecorator
         {
-            private readonly string _negotiateEndpoint;
-
-            public TestCustomRouter(string negotiateEndpoint)
+            public override ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
             {
-                _negotiateEndpoint = negotiateEndpoint;
-            }
+                var endpointName = context.Request.Query["endpoint"];
+                if (endpointName.Count == 0)
+                {
+                    context.Response.StatusCode = 400;
+                    var response = Encoding.UTF8.GetBytes("Invalid request");
+                    context.Response.Body.Write(response, 0, response.Length);
+                    return null;
+                }
 
-            public IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForGroups(IReadOnlyList<string> groupList, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForUsers(IReadOnlyList<string> userList, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> primaryEndpoints)
-            {
-                return primaryEndpoints.First(e => e.ConnectionString == _negotiateEndpoint);
+                return endpoints.First(s => s.Name == endpointName && s.Online);
             }
         }
 
