@@ -12,16 +12,16 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 {
     public class ClaimsUtilityTests
     {
-        private static readonly Claim[] JwtAuthenticatedClaims = new Claim[] { new Claim("dummy", "dummy"), new Claim("name", "name"), new Claim("role", "admin") };
+        private static readonly Claim[] JwtAuthenticatedClaims = new Claim[] { new Claim("dummy", "dummy"), new Claim("name", "name"), new Claim("role", "admin"), new Claim("aud", "aud") };
         private static readonly (ClaimsIdentity identity, string userId, Func<IEnumerable<Claim>> provider, string expectedAuthenticationType, int expectedClaimsCount)[] _claimsParameters =
         {
             (new ClaimsIdentity(), null, null, null, 0),
             (new ClaimsIdentity(null, null, null, null), null, null, null, 0),
-            (new ClaimsIdentity("", "", ""), "", () => JwtAuthenticatedClaims, "", 3),
-            (new ClaimsIdentity(), "user1", () => JwtAuthenticatedClaims, "Bearer", 3),
-            (new ClaimsIdentity(JwtAuthenticatedClaims, "Bearer"), null, null, "Bearer", 3),
-            (new ClaimsIdentity(JwtAuthenticatedClaims, "Bearer", "name", "role"), null, null, "Bearer", 3),
-            (new ClaimsIdentity("jwt", "name", "role"), "user", () => JwtAuthenticatedClaims, "jwt", 3),
+            (new ClaimsIdentity("", "", ""), "", () => JwtAuthenticatedClaims, "", 4),
+            (new ClaimsIdentity(), "user1", () => JwtAuthenticatedClaims, "Bearer", 4),
+            (new ClaimsIdentity(JwtAuthenticatedClaims, "Bearer"), null, null, "Bearer", 4),
+            (new ClaimsIdentity(JwtAuthenticatedClaims, "Bearer", "name", "role"), null, null, "Bearer", 4),
+            (new ClaimsIdentity("jwt", "name", "role"), "user", () => JwtAuthenticatedClaims, "jwt", 4),
         };
 
         public static IEnumerable<object[]> ClaimsParameters =>
