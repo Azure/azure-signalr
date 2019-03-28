@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Startup
                 {
                     var hasHubMetadata = context.GetEndpoint()?.Metadata.GetMetadata<HubMetadata>();
 
-                    if (hasHubMetadata == null || !context.Request.Path.Value.EndsWith("/negotiate"))
+                    if (hasHubMetadata == null || !context.Request.Path.Value.EndsWith(Constants.Path.Negotiate))
                     {
                         await next();
                         return;

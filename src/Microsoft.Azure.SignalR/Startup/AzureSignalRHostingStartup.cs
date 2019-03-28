@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Startup
 #if NETCOREAPP3_0
             builder.ConfigureServices((context, services) =>
             {
-                if (!context.HostingEnvironment.IsDevelopment() || context.Configuration.GetSection("Azure:SignalR:Enabled").Get<bool>())
+                if (!context.HostingEnvironment.IsDevelopment() || context.Configuration.GetSection(Constants.AzureSignalREnabledKey).Get<bool>())
                 {
                     services.AddSignalR().AddAzureSignalR();
                 }
