@@ -46,13 +46,8 @@ namespace Microsoft.Azure.SignalR
         /// <param name="path">The request path.</param>
         public void MapHub<THub>(PathString path) where THub: Hub
         {
-            // find auth attributes
-            var authorizeAttributes = typeof(THub).GetCustomAttributes<AuthorizeAttribute>(inherit: true);
-            var authorizationData = new List<IAuthorizeData>();
-            foreach (var attribute in authorizeAttributes)
-            {
-                authorizationData.Add(attribute);
-            }
+            // Get auth attributes
+            var authorizationData = ServiceRouteHelper.BuildAuthorizePolicy(typeof(THub));
             _routes.MapRoute(path + Constants.Path.Negotiate, c => ServiceRouteHelper.RedirectToService(c, typeof(THub).Name, authorizationData));
 
             Start<THub>();

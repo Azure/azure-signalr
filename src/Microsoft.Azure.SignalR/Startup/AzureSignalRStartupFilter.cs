@@ -38,13 +38,7 @@ namespace Microsoft.Azure.SignalR.Startup
                         return;
                     }
 
-                    // get auth attributes
-                    var authorizeAttributes = hasHubMetadata.HubType.GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true);
-                    var authorizationData = new List<IAuthorizeData>();
-                    foreach (var attribute in authorizeAttributes)
-                    {
-                        authorizationData.Add((AuthorizeAttribute)attribute);
-                    }
+                    var authorizationData = service.HubAuthorizePolicy[hasHubMetadata.HubType.Name];
 
                     await ServiceRouteHelper.RedirectToService(context, hasHubMetadata.HubType.Name, authorizationData);
                 });
