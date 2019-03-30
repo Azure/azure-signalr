@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if NETCOREAPP3_0
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.SignalR.Startup;
 using Microsoft.Extensions.Configuration;
@@ -15,7 +16,6 @@ namespace Microsoft.Azure.SignalR.Startup
     {
         public void Configure(IWebHostBuilder builder)
         {
-#if NETCOREAPP3_0
             builder.ConfigureServices((context, services) =>
             {
                 if (!context.HostingEnvironment.IsDevelopment() || context.Configuration.GetSection(Constants.AzureSignalREnabledKey).Get<bool>())
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Startup
                     services.AddSignalR().AddAzureSignalR();
                 }
             });
-#endif
         }
     }
 }
+#endif

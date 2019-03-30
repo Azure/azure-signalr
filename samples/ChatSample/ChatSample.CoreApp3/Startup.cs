@@ -23,15 +23,15 @@ namespace ChatSample.CoreApp3
             {
                 app.UseDeveloperExceptionPage();
             }
-            app.UseMvc();
             app.UseFileServer();
-            app.UseRouting(routes =>
+            app.UseRouting();
+            app.UseAuthorization();
+
+            app.UseEndpoints(routes =>
             {
                 routes.MapHub<Chat>("/chat");
                 routes.MapHub<NotificationHub>("/notificatons");
             });
-
-            app.UseAuthorization();
         }
     }
 }

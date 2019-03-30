@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR
         public static async Task RedirectToService(HttpContext context, string hubName, IList<IAuthorizeData> authorizationData)
         {
             var handler = context.RequestServices.GetRequiredService<NegotiateHandler>();
-            var loggerFactory = context.RequestServices.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance;
+            var loggerFactory = context.RequestServices.GetService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger<ServiceRouteHelper>();
 
             if (!await AuthorizeHelper.AuthorizeAsync(context, authorizationData))

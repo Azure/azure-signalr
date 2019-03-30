@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
@@ -81,6 +82,7 @@ namespace Microsoft.Extensions.DependencyInjection
 #if NETCOREAPP3_0
             builder.Services.TryAddSingleton<AzureSignalRHostedService>();
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IStartupFilter, AzureSignalRStartupFilter>());
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<MatcherPolicy, NegotiateMatcherPolicy>());
 #endif
 
             return builder;
