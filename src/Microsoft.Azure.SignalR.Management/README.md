@@ -55,7 +55,7 @@ var serviceManager = new ServiceManagerBuilder()
 You can generate the endpoint for SignalR clients connecting to your Azure SignalR Service.
 You can also generate the access token for SignalR clients connecting to your Azure SignalR Service in serverless mode.
 
-Both of endpoint and access token are useful when you want to redirect SignalR clients to your Azure SignalR Service. The sample on how to use Management SDK to redirect SignalR clients to Azure SignalR Service can be found [here](TODO).
+Both of endpoint and access token are useful when you want to redirect SignalR clients to your Azure SignalR Service. The sample on how to use Management SDK to redirect SignalR clients to Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
 
 > Usually you don't want to expose your connection string to SignalR clients. In this situation, the SignalR clients connect to a spacific endpoint which will return a special negotiation response and redirect clients to your Azure SignalR Service from the connection string. Read more details about the redirection at SignalR's [Negotiation Protocol](https://github.com/aspnet/SignalR/blob/master/specs/TransportProtocols.md#post-endpoint-basenegotiate-request).
 
@@ -67,7 +67,7 @@ var accessToken = serviceManager.GenerateClientAccessToken("<Your Hub Name>", "<
 
 ### Create and Use ServiceHubContext
 
-You can create a instance of `IServiceHubContext` to publish messages or manage group membership. The sample on how to use Management SDK to publish messages to SignalR clients can be found [here](TODO).
+You can create a instance of `IServiceHubContext` to publish messages or manage group membership. The sample on how to use Management SDK to publish messages to SignalR clients can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
 
 ``` C#
 try
@@ -95,12 +95,12 @@ finally
 }
 ```
 
-For full sample on how to use Management SDK can be found [here](TODO).
+For full sample on how to use Management SDK can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
 
 ## Transport Type
 
 This SDK can communicates to Azure SignalR Service with two transport types:
-* Transient: Create a Http request Azure SignalR Service for each message sent. The SDK simply wrap up [Azure SignalR Service REST API](https://github.com/Azure/azure-signalr/blob/dev/docs/rest-api.md) in Transient mode. It is useful when you are unable to establish a WebSockets connection.
+* Transient: Create a Http request Azure SignalR Service for each message sent. The SDK simply wrap up [Azure SignalR Service REST API](https://github.com/Azure/azure-signalr/blob/master/docs/rest-api.md) in Transient mode. It is useful when you are unable to establish a WebSockets connection.
 * Persistent: Create a WebSockets connection first and then sent all messages in this connection. It is useful when you send large amount of messages.
 
 ## Interface
