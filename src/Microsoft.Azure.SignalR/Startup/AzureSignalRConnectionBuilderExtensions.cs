@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR.Startup
 {
-    public static class AzureSignalRConnectionBuilderExtensions
+    internal static class AzureSignalRConnectionBuilderExtensions
     {
         private static readonly MethodInfo _useHubMethod = typeof(SignalRConnectionBuilderExtensions).GetMethod(nameof(SignalRConnectionBuilderExtensions.UseHub));
 

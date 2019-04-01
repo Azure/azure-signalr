@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -76,17 +75,6 @@ namespace Microsoft.Azure.SignalR
             {
                 writer.Reset();
             }
-        }
-
-        public static List<IAuthorizeData> BuildAuthorizePolicy(Type hub)
-        {
-            var authorizeAttributes = hub.GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true);
-            var authorizationData = new List<IAuthorizeData>();
-            foreach (var attribute in authorizeAttributes)
-            {
-                authorizationData.Add((AuthorizeAttribute)attribute);
-            }
-            return authorizationData;
         }
 
         private static class Log

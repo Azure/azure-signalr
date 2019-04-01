@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Startup
                                    .Where(hubType => hubType != null)
                                    .Distinct()
                                    .ToList();
-
+            
             foreach (var hubType in hubTypes)
             {
                 var app = new ConnectionBuilder(_serviceProvider)
