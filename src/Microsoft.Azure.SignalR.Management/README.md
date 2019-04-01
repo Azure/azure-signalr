@@ -9,7 +9,8 @@
 
 Package Name | Target Framework | NuGet | MyGet
 ---|---|---|---
-Microsoft.Azure.SignalR.Management | .NET Standard 2.0 | null | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Management.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Management)
+Microsoft.Azure.SignalR.Management | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Management.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Management.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Management)
+
 
 ## Getting Started
 
@@ -17,30 +18,19 @@ Azure SignalR Service Management SDK helps you to manages SignalR clients throug
 
 ### Features
 
-#### Transient Mode:
-
-Features are limited. The supported features are:
-
-* Publishing messages:
-  * Broadcast messages to all SignalR clients
-  * Publish messages to a specific user(s)
-  * Publish messages to a specific group(s)
-* Group membership:
-  * Add a specific user to a specific group
-  * Remove a specific user from a specific group
-
-#### Persistent Mode:
-
-* Publishing messages:
-  * Broadcast messages to all SignalR clients
-  * Broadcast messages to all SignalR clients excepts clients in a specific exclusion list
-  * Publish messages to a specific SignalR client(s)
-  * Publish messages to a specific user(s)
-  * Publish messages to a specific group(s)
-  * Publish messages to a specific group(s) excepts clients in a specific exclusion list
-* Group membership:
-  * Add a specific user to a specific group
-  * Remove a specific user from a specific group
+|                                     | Transient          | Persistent         |
+|-------------------------------------|--------------------|--------------------|
+| Broadcast                           | :heavy_check_mark: | :heavy_check_mark: |
+| Broadcast except some clients       | `N/A`              | :heavy_check_mark: |
+| Send to a client                    | `N/A`              | :heavy_check_mark: |
+| Send to clients                     | `N/A`              | :heavy_check_mark: |
+| Send to a user                      | :heavy_check_mark: | :heavy_check_mark: |
+| Send to users                       | `N/A`              | :heavy_check_mark: |
+| Send to a group                     | :heavy_check_mark: | :heavy_check_mark: |
+| Send to groups                      | `N/A`              | :heavy_check_mark: |
+| Send to a group except some clients | `N/A`              | :heavy_check_mark: |
+| Add a user to a group               | :heavy_check_mark: | :heavy_check_mark: |
+| Remove a user from a group          | :heavy_check_mark: | :heavy_check_mark: |
   
 > More details about different modes can be found [here](#Transport-Type).
 
@@ -110,7 +100,7 @@ For full sample on how to use Management SDK can be found [here](TODO).
 ## Transport Type
 
 This SDK can communicates to Azure SignalR Service with two transport types:
-* Transient: Create a Http request Azure SignalR Service for each message sent. The SDK simply wrap up [Azure SignalR Service REST API](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-quickstart-rest-api#--integration-with-third-party-services) in Transient mode. It is useful when you are unable to establish a WebSockets connection.
+* Transient: Create a Http request Azure SignalR Service for each message sent. The SDK simply wrap up [Azure SignalR Service REST API](https://github.com/Azure/azure-signalr/blob/dev/docs/rest-api.md) in Transient mode. It is useful when you are unable to establish a WebSockets connection.
 * Persistent: Create a WebSockets connection first and then sent all messages in this connection. It is useful when you send large amount of messages.
 
 ## Interface
