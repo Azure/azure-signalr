@@ -143,18 +143,22 @@ namespace Microsoft.Azure.SignalR
                 throw new AzureSignalRNotConnectedException();
             }
 
+            // If we have multiple endpoints, we should wait to one of the following conditions hit
+            // 1. One endpoint responses "OK" state
+            // 2. All the endpoints response failed state including "NotFound", "Timeout" and waiting response to timeout
             var tasks = new List<Task>();
             var containers = routed.Select(s => Connections[s]);
-            var tcs = new TaskCompletionSource<bool>();
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             foreach (var container in containers)
             {
                 tasks.Add(WriteAndVerifyAckableMessageAsync(container, serviceMessage, tcs, cancellationToken));
             }
 
+            // If tcs.Task completes, one Endpoint responses "OK" state.
             var task = await Task.WhenAny(tcs.Task, Task.WhenAll(tasks));
 
-            // This will throw exceptions in tasks if needed
+            // This will throw exceptions in tasks if exceptions exist
             await task;
 
             return tcs.Task.IsCompleted;
