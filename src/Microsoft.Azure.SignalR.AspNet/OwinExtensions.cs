@@ -144,11 +144,7 @@ namespace Owin
         /// <param name="configuration">The hub configuration <see cref="HubConfiguration"/>.</param>
         public static void RunAzureSignalR(this IAppBuilder builder, string applicationName, string connectionString, HubConfiguration configuration)
         {
-            RunAzureSignalR(builder, applicationName, configuration, s => 
-            {
-                s.ConnectionString = connectionString;
-                s.ApplicationName = applicationName;
-            });
+            RunAzureSignalR(builder, applicationName, configuration, s => s.ConnectionString = connectionString);
         }
 
 
@@ -185,14 +181,14 @@ namespace Owin
                 throw new ArgumentException(nameof(applicationName), "Empty application name is not allowed.");
             }
 
-            if (!string.IsNullOrEmpty(options.ApplicationName) &&
-                !options.ApplicationName.Equals(applicationName, StringComparison.InvariantCultureIgnoreCase))
+            if (options.UseHubNamePrefix)
             {
-                throw new ArgumentException(nameof(applicationName), "Options application name (if supplied) must be the same as application name.");
+                options.ApplicationName = applicationName;
             }
-
-            //Options ApplicationName must be the same as the applicationName passed in.
-            options.ApplicationName = applicationName;
+            else
+            {
+                options.ApplicationName = "";
+            }
 
             if (configuration == null)
             {

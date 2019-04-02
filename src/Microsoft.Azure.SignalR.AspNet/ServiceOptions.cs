@@ -26,9 +26,14 @@ namespace Microsoft.Azure.SignalR.AspNet
         public int ConnectionCount { get; set; } = 5;
 
         /// <summary>
-        /// Gets or sets the prefix to apply to each hub name
+        /// Gets applicationName, which will be used as a prefix to apply to each hub name
         /// </summary>
-        public string ApplicationName{ get; set; }
+        public string ApplicationName{ get; internal set; }
+
+        /// <summary>
+        /// Gets or sets whether the hub name wiull be prefixed with the ApplicationName
+        /// </summary>
+        public bool UseHubNamePrefix { get; set; }
 
         /// <summary>
         /// Gets or sets the func to generate claims from <see cref="IOwinContext" />.
