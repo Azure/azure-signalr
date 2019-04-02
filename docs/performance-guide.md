@@ -5,6 +5,7 @@ Azure SignalR Service 1.0 Performance Guide
 - [Audience](#audience)
 - [Overview](#overview)
 - [Performance insight](#perf_insight)
+  - [Methodology](#perf_methodology)
   - [Performance factors](#perf_factors)
   - [Find proper SKU](#evaluation)
     - [Quick evaluation](#quick_evaluation)
