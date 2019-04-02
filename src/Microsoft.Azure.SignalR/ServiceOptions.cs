@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Gets or sets the prefix to apply to each hub name
         /// </summary>
-        public string HubPrefix { get; set; }
+        public string ApplicationName { get; set; }
 
         /// <summary>
         /// Gets or sets the func to generate claims from <see cref="HttpContext" />.

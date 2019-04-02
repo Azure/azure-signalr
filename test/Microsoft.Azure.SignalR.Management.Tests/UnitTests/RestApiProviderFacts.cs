@@ -14,12 +14,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private static readonly string _connectionString = $"Endpoint={_endpoint};AccessKey={_accessKey};Version=1.0;";
         private const string _hubName = "signalrbench";
-        private const string _hubPrefix = "prefix";
+        private const string _appName = "appName";
         private const string _userId = "UserA";
         private const string _groupName = "GroupA";
-        private static readonly string _commonEndpoint = $"{_endpoint}/api/v1/hubs/{_hubPrefix}_{_hubName}";
+        private static readonly string _commonEndpoint = $"{_endpoint}/api/v1/hubs/{_appName.ToLower()}_{_hubName}";
 
-        private static readonly RestApiProvider _restApiProvider = new RestApiProvider(_connectionString, _hubName, _hubPrefix);
+        private static readonly RestApiProvider _restApiProvider = new RestApiProvider(_connectionString, _hubName, _appName);
 
         [Theory]
         [MemberData(nameof(GetTestData))]

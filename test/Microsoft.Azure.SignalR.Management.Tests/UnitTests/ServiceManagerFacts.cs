@@ -15,9 +15,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
         private const string HubName = "signalrBench";
         private const string UserId = "UserA";
-        private const string _hubPrefix = "hubPrefix";
+        private const string _appName = "appName";
         private static readonly string _clientEndpoint = $"{Endpoint}/client/?hub={HubName.ToLower()}";
-        private static readonly string _clientEndpointWithHubPrefix = $"{Endpoint}/client/?hub={_hubPrefix.ToLower()}_{HubName.ToLower()}";
+        private static readonly string _clientEndpointWithAppName = $"{Endpoint}/client/?hub={_appName.ToLower()}_{HubName.ToLower()}";
         private static readonly string _testConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0;";
         private static readonly TimeSpan _tokenLifeTime = TimeSpan.FromSeconds(99);
         private static readonly ServiceManagerOptions _serviceManagerOptions = new ServiceManagerOptions
@@ -72,12 +72,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        internal void GenerateClientEndpointWithHubPrefixTest()
+        internal void GenerateClientEndpointWithAppNameTest()
         {
-            var manager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = _testConnectionString, HubPrefix = _hubPrefix });
+            var manager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = _testConnectionString, ApplicationName = _appName });
             var clientEndpoint = manager.GetClientEndpoint(HubName);
 
-            Assert.Equal(_clientEndpointWithHubPrefix, clientEndpoint);
+            Assert.Equal(_clientEndpointWithAppName, clientEndpoint);
         }
     }
 }

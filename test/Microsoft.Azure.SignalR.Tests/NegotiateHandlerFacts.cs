@@ -107,15 +107,15 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [InlineData("", "?hub=chat")]
-        [InlineData("hubPrefix", "?hub=hubprefix_chat")]
-        public void GenerateNegotiateResponseWithHubPrefix(string hubPrefix, string expectedResponse)
+        [InlineData("appName", "?hub=appname_chat")]
+        public void GenerateNegotiateResponseWithAppName(string appName, string expectedResponse)
         {
             var config = new ConfigurationBuilder().Build();
             var serviceProvider = new ServiceCollection().AddSignalR()
                 .AddAzureSignalR(o =>
                 {
                     o.ConnectionString = DefaultConnectionString;
-                    o.HubPrefix = hubPrefix;
+                    o.ApplicationName = appName;
                 })
                 .Services
                 .AddLogging()
@@ -163,14 +163,14 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void TestNegotiateHandlerWithMultipleEndpointsAndCustomerRouterAndHubPrefix()
+        public void TestNegotiateHandlerWithMultipleEndpointsAndCustomerRouterAndAppName()
         {
             var config = new ConfigurationBuilder().Build();
             var router = new TestCustomRouter();
             var serviceProvider = new ServiceCollection().AddSignalR()
                 .AddAzureSignalR(o =>
                 {
-                    o.HubPrefix = "testprefix";
+                    o.ApplicationName = "testprefix";
                     o.Endpoints = new ServiceEndpoint[]
                     {
                         new ServiceEndpoint(ConnectionString2),

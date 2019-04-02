@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.Management
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions)
         {
             _serviceManagerOptions = serviceManagerOptions;
-            _endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString, EndpointType.Secondary, hubPrefix: _serviceManagerOptions.HubPrefix);
+            _endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString, EndpointType.Secondary, applicationName: _serviceManagerOptions.ApplicationName);
             _endpointProvider = new ServiceEndpointProvider(_endpoint);
         }
 

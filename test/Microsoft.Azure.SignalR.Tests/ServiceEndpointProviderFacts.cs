@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string Endpoint = "https://myendpoint";
         private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
         private static readonly string HubName = nameof(TestHub).ToLower();
-        private static readonly string HubPrefix = "testprefix";
+        private static readonly string AppName = "testapp";
 
         private static readonly string ConnectionStringWithoutVersion =
             $"Endpoint={Endpoint};AccessKey={AccessKey};";
@@ -33,9 +33,9 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private static readonly ServiceEndpointProvider[] EndpointProviderArrayWithPrefix =
 {
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion, hubPrefix: HubPrefix)),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion, hubPrefix: HubPrefix)),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version, hubPrefix: HubPrefix))
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion, applicationName: AppName)),
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion, applicationName: AppName)),
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version, applicationName: AppName))
         };
 
         private static readonly (string path, string queryString, string expectedQuery)[] PathAndQueryArray =
@@ -86,18 +86,18 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [MemberData(nameof(DefaultEndpointProvidersPlusPrefix))]
-        internal void GetServerEndpointWithHubPrefix(IServiceEndpointProvider provider)
+        internal void GetServerEndpointWithAppName(IServiceEndpointProvider provider)
         {
-            var expected = $"{Endpoint}/server/?hub={HubPrefix}_{HubName}";
+            var expected = $"{Endpoint}/server/?hub={AppName}_{HubName}";
             var actual = provider.GetServerEndpoint(nameof(TestHub));
             Assert.Equal(expected, actual);
         }
 
         [Theory]
         [MemberData(nameof(DefaultEndpointProvidersWithPathPlusPrefix))]
-        internal void GetClientEndpointWithHubPrefix(IServiceEndpointProvider provider, string path, string queryString, string expectedQueryString)
+        internal void GetClientEndpointWithAppName(IServiceEndpointProvider provider, string path, string queryString, string expectedQueryString)
         {
-            var expected = $"{Endpoint}/client/?hub={HubPrefix}_{HubName}{expectedQueryString}";
+            var expected = $"{Endpoint}/client/?hub={AppName}_{HubName}{expectedQueryString}";
             var actual = provider.GetClientEndpoint(HubName, path, queryString);
             Assert.Equal(expected, actual);
         }
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var tokenString = provider.GenerateServerAccessToken(nameof(TestHub), userId, requestId: string.Empty);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-            var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/server/?hub={HubPrefix}_{HubName}",
+            var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/server/?hub={AppName}_{HubName}",
                 new[]
                 {
                     new Claim(ClaimTypes.NameIdentifier, userId)
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var tokenString = provider.GenerateClientAccessToken(HubName, requestId: requestId);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-            var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/client/?hub={HubPrefix}_{HubName}",
+            var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/client/?hub={AppName}_{HubName}",
                 null,
                 token.ValidTo,
                 token.ValidFrom,

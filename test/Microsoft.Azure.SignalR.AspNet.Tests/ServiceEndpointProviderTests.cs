@@ -86,7 +86,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=prefix_hub1")]
         public void TestGenerateServerAccessTokenWIthPrefix(string connectionString, string expectedAudience)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString, hubPrefix: "prefix"));
+            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString, applicationName: "prefix"));
 
             var clientToken = provider.GenerateServerAccessToken("hub1", "user1");
 
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=prefix_hub1")]
         public void TestGenerateServerEndpointWithPrefix(string connectionString, string expectedEndpoint)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString, hubPrefix: "prefix"));
+            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString, applicationName: "prefix"));
 
             var clientEndpoint = provider.GetServerEndpoint("hub1");
 

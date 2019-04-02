@@ -78,7 +78,7 @@ namespace Microsoft.Azure.SignalR
             {
                 foreach (var endpoint in endpoints)
                 {
-                    endpoint.HubPrefix = options.HubPrefix;
+                    endpoint.ApplicationName = options.ApplicationName;
                     if (endpoint.ConnectionString == connectionString)
                     {
                         connectionStringIncluded = true;
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.SignalR
 
             if (!string.IsNullOrEmpty(connectionString) && !connectionStringIncluded)
             {
-                yield return new ServiceEndpoint(options.ConnectionString, hubPrefix: options.HubPrefix);
+                yield return new ServiceEndpoint(options.ConnectionString, applicationName: options.ApplicationName);
             }
         }
 

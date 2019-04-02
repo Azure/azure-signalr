@@ -22,9 +22,9 @@ namespace Microsoft.Azure.SignalR.Management
         public string ConnectionString { get; set; } = null;
 
         /// <summary>
-        /// Gets or sets the prefix to apply to each hub name
+        /// Gets or sets the ApplicationName which will be prefixed to each hub name
         /// </summary>
-        public string HubPrefix { get; set; }
+        public string ApplicationName { get; set; }
 
         internal void ValidateOptions()
         {

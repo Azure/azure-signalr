@@ -10,37 +10,37 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceOptionsSetup : IConfigureOptions<ServiceOptions>
     {
-        private readonly string _hubPrefix;
+        private readonly string _appName;
         private readonly string _connectionString;
         private readonly ServiceEndpoint[] _endpoints;
 
         public ServiceOptionsSetup(IConfiguration configuration)
         {
-            _hubPrefix = GetHubPrefix(configuration);
+            _appName = GetAppName(configuration);
 
-            var (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringDefaultKey, Constants.ConnectionStringKeyPrefix, _hubPrefix);
+            var (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringDefaultKey, Constants.ConnectionStringKeyPrefix, _appName);
 
             // Fallback to ConnectionStrings:Azure:SignalR:ConnectionString format when the default one is not available
             if (endpoints.Count == 0)
             {
-                (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringSecondaryKey, Constants.ConnectionStringSecondaryKeyPrefix, _hubPrefix);
+                (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringSecondaryKey, Constants.ConnectionStringSecondaryKeyPrefix, _appName);
             }
 
             _connectionString = connectionString;
             _endpoints = endpoints.ToArray();
         }
 
-        private string GetHubPrefix(IConfiguration configuration)
+        private string GetAppName(IConfiguration configuration)
         {
             foreach (var pair in configuration.AsEnumerable())
             {
                 var key = pair.Key;
-                if (key == Constants.HubPrefixDefaultKey && !string.IsNullOrEmpty(pair.Value))
+                if (key == Constants.ApplicationNameDefaultKey && !string.IsNullOrEmpty(pair.Value))
                 {
                     return pair.Value;
                 }
 
-                if (key.StartsWith(Constants.HubPrefixDefaultKeyPrefix) && !string.IsNullOrEmpty(pair.Value))
+                if (key.StartsWith(Constants.ApplicationNameDefaultKeyPrefix) && !string.IsNullOrEmpty(pair.Value))
                 {
                     return pair.Value;
                 }
@@ -53,10 +53,10 @@ namespace Microsoft.Azure.SignalR
             // The default setup of ServiceOptions
             options.ConnectionString = _connectionString;
             options.Endpoints = _endpoints;
-            options.HubPrefix = _hubPrefix;
+            options.ApplicationName = _appName;
         }
 
-        private static (string, List<ServiceEndpoint>) GetEndpoint(IConfiguration configuration, string defaultKey, string keyPrefix, string hubPrefix)
+        private static (string, List<ServiceEndpoint>) GetEndpoint(IConfiguration configuration, string defaultKey, string keyPrefix, string applicationName)
         {
             var endpoints = new List<ServiceEndpoint>();
             string connectionString = null;
@@ -66,12 +66,12 @@ namespace Microsoft.Azure.SignalR
                 if (key == defaultKey && !string.IsNullOrEmpty(pair.Value))
                 {
                     connectionString = pair.Value;
-                    endpoints.Add(new ServiceEndpoint(pair.Value, hubPrefix: hubPrefix));
+                    endpoints.Add(new ServiceEndpoint(pair.Value, applicationName: applicationName));
                 }
 
                 if (key.StartsWith(keyPrefix) && !string.IsNullOrEmpty(pair.Value))
                 {
-                    endpoints.Add(new ServiceEndpoint(key, pair.Value, hubPrefix));
+                    endpoints.Add(new ServiceEndpoint(key, pair.Value, applicationName));
                 }
             }
 

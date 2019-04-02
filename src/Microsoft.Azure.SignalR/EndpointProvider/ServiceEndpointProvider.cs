@@ -35,7 +35,7 @@ namespace Microsoft.Azure.SignalR
             var port = endpoint.Port;
             var version = endpoint.Version;
 
-            _generator = new DefaultServiceEndpointGenerator(_endpoint, _accessKey, version, port, endpoint.HubPrefix);
+            _generator = new DefaultServiceEndpointGenerator(_endpoint, _accessKey, version, port, endpoint.ApplicationName);
         }
 
         public string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, string requestId = null)

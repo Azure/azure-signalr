@@ -33,7 +33,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
-        private const string HubPrefix = "testprefix";
         private const string AppName = "AzureSignalRTest";
 
         public RunAzureSignalRTests(ITestOutputHelper output) : base(output)
@@ -187,8 +186,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Fact]
-        public void TestRunAzureSignalRWithMultipleAppSettingsAndCustomSettingsIncludingHubPrefix()
+        public void TestRunAzureSignalRWithMultipleAppSettingsAndCustomSettingsIncludingOptionsAppName()
         {
+            const string optionsAppName = AppName;
             // Prepare the configuration
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var hubConfig = Utility.GetTestHubConfig(loggerFactory);
                 using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
                 {
-                    options.HubPrefix = HubPrefix;
+                    options.ApplicationName = optionsAppName;
                     options.Endpoints = new ServiceEndpoint[]
                     {
                         new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
 
                     Assert.Equal(ConnectionString, options.Value.ConnectionString);
-                    Assert.Equal(HubPrefix, options.Value.HubPrefix);
+                    Assert.Equal(optionsAppName, options.Value.ApplicationName);
 
                     Assert.Equal(3, options.Value.Endpoints.Length);
 
@@ -216,10 +216,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var endpoints = manager.GetAvailableEndpoints().ToArray();
                     Assert.Equal(4, endpoints.Length);
 
-                    Assert.Equal(HubPrefix, endpoints[0].HubPrefix);
-                    Assert.Equal(HubPrefix, endpoints[1].HubPrefix);
-                    Assert.Equal(HubPrefix, endpoints[2].HubPrefix);
-                    Assert.Equal(HubPrefix, endpoints[3].HubPrefix);
+                    Assert.Equal(optionsAppName, endpoints[0].ApplicationName);
+                    Assert.Equal(optionsAppName, endpoints[1].ApplicationName);
+                    Assert.Equal(optionsAppName, endpoints[2].ApplicationName);
+                    Assert.Equal(optionsAppName, endpoints[3].ApplicationName);
                 }
             }
         }
@@ -322,6 +322,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public void TestRunAzureSignalRWithOptions()
         {
+            const string optionsAppName = AppName;
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
                 var hubConfig = Utility.GetTestHubConfig(loggerFactory);
@@ -329,12 +330,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 {
                     o.ConnectionString = ConnectionString;
                     o.ConnectionCount = -1;
-                    o.HubPrefix = HubPrefix;
+                    o.ApplicationName = optionsAppName;
                 })))
                 {
                     var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
                     Assert.Equal(ConnectionString, options.Value.ConnectionString);
-                    Assert.Equal(HubPrefix, options.Value.HubPrefix);
+                    Assert.Equal(optionsAppName, options.Value.ApplicationName);
                     Assert.Equal(-1, options.Value.ConnectionCount);
                 }
             }
