@@ -21,6 +21,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private readonly string _endpoint;
         private readonly string _accessKey;
+        private readonly string _hubPrefix;
         private readonly int? _port;
         private readonly TimeSpan _accessTokenLifetime;
 
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             // Version is ignored for aspnet signalr case
             _endpoint = endpoint.Endpoint;
             _accessKey = endpoint.AccessKey;
+            _hubPrefix = endpoint.HubPrefix;
             _port = endpoint.Port;
         }
 
@@ -57,7 +59,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                 };
             }
 
-            var audience = $"{_endpoint}/{ServerPath}/?hub={hubName.ToLower()}";
+            var prefixedHubName = string.IsNullOrEmpty(_hubPrefix) ? hubName.ToLower() : $"{_hubPrefix.ToLower()}_{hubName.ToLower()}";
+            var audience = $"{_endpoint}/{ServerPath}/?hub={prefixedHubName.ToLower()}";
 
             return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
         }
@@ -95,9 +98,10 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public string GetServerEndpoint(string hubName)
         {
+            var prefixedHubName = string.IsNullOrEmpty(_hubPrefix) ? hubName.ToLower() : $"{_hubPrefix.ToLower()}_{hubName.ToLower()}";
             return _port.HasValue ?
-                $"{_endpoint}:{_port}/{ServerPath}/?hub={hubName.ToLower()}" :
-                $"{_endpoint}/{ServerPath}/?hub={hubName.ToLower()}";
+                $"{_endpoint}:{_port}/{ServerPath}/?hub={prefixedHubName.ToLower()}" :
+                $"{_endpoint}/{ServerPath}/?hub={prefixedHubName.ToLower()}";
         }
     }
 }

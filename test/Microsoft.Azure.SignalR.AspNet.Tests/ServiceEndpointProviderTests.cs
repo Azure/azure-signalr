@@ -81,12 +81,46 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Theory]
+        [InlineData("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost/aspnetserver/?hub=prefix_hub1")]
+        [InlineData("Endpoint=http://localhost/;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost/aspnetserver/?hub=prefix_hub1")]
+        [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=prefix_hub1")]
+        public void TestGenerateServerAccessTokenWIthPrefix(string connectionString, string expectedAudience)
+        {
+            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString, hubPrefix: "prefix"));
+
+            var clientToken = provider.GenerateServerAccessToken("hub1", "user1");
+
+            var handler = new JwtSecurityTokenHandler();
+            var principal = handler.ValidateToken(clientToken, new TokenValidationParameters
+            {
+                ValidateIssuer = false,
+                IssuerSigningKey = SecurityKey,
+                ValidAudience = expectedAudience
+            }, out var token);
+
+            Assert.Equal("user1", principal.FindFirst(ClaimTypes.NameIdentifier).Value);
+        }
+
+        [Theory]
         [InlineData("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost:8080/aspnetserver/?hub=hub1")]
         [InlineData("Endpoint=http://localhost/;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost:8080/aspnetserver/?hub=hub1")]
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=hub1")]
         public void TestGenerateServerEndpoint(string connectionString, string expectedEndpoint)
         {
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString));
+
+            var clientEndpoint = provider.GetServerEndpoint("hub1");
+
+            Assert.Equal(expectedEndpoint, clientEndpoint);
+        }
+
+        [Theory]
+        [InlineData("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost:8080/aspnetserver/?hub=prefix_hub1")]
+        [InlineData("Endpoint=http://localhost/;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost:8080/aspnetserver/?hub=prefix_hub1")]
+        [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=prefix_hub1")]
+        public void TestGenerateServerEndpointWithPrefix(string connectionString, string expectedEndpoint)
+        {
+            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString, hubPrefix: "prefix"));
 
             var clientEndpoint = provider.GetServerEndpoint("hub1");
 
