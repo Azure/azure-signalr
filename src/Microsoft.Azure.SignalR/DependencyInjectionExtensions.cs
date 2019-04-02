@@ -30,9 +30,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder)
         {
+
+            builder.Services.AddSingleton<IConfigureOptions<ServiceOptions>, ServiceOptionsSetup>();
+
 #if NETCOREAPP3_0
             var serviceOptions = builder.Services
-                .AddSingleton<IConfigureOptions<ServiceOptions>, ServiceOptionsSetup>()
                 .BuildServiceProvider()
                 .GetRequiredService<IOptions<ServiceOptions>>().Value;
             if (!serviceOptions.IsEnabled)
@@ -40,7 +42,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 return builder;
             }
 #endif
-            builder.Services.AddSingleton<IConfigureOptions<ServiceOptions>, ServiceOptionsSetup>();
+
             return builder.AddAzureSignalRCore();
         }
 
