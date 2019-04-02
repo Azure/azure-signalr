@@ -41,7 +41,7 @@ Samples on how to use Azure SignalR Service can be found [here](https://github.c
 ### Management
 Package [Microsoft.Azure.SignalR.Management](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) is the one to use when you want to manage SignalR clients through Azure SignalR Service directly such as broadcast messages. This SDK can be but not limited to be used in [serverless](https://azure.microsoft.com/zh-cn/solutions/serverless/) environments. You can use this SDK to manage SignalR clients connected to your Azure SignalR Service in any environment, such as in a console app, in an Azure function or in an App Server.
 
-More details can be found [here](https://github.com/Azure/azure-signalr/tree/master/src/Microsoft.Azure.SignalR.Management).
+More details can be found [here](./docs/management-sdk-guide.md).
 
 The sample on how to use Management SDK to redirect SignalR clients to Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management)
 
