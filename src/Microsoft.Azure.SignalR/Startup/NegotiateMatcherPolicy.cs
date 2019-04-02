@@ -2,12 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if NETCOREAPP3_0
-using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Matching;
 using Microsoft.AspNetCore.SignalR;
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR.Startup
 
         public bool AppliesToEndpoints(IReadOnlyList<Endpoint> endpoints)
         {
-            foreach(var endpoint in endpoints)
+            foreach (var endpoint in endpoints)
             {
                 var hubMetadata = endpoint.Metadata.GetMetadata<HubMetadata>();
                 var negotiateMetadata = endpoint.Metadata.GetMetadata<NegotiateMetadata>();
