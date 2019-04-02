@@ -75,6 +75,25 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Fact]
+        public void TestRunAzureSignalRWithOptionsAppNameDifferentToParamterThrows()
+        {
+            const string optionsAppName = "thisiswrong";
+            // Prepare the configuration
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var ex = Assert.Throws<ArgumentException>(() =>
+                    WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, options =>
+                    {
+                        options.ConnectionString = ConnectionString2;
+                        options.ApplicationName = optionsAppName;
+                    }))
+                );
+
+                Assert.EndsWith("Options application name (if supplied) must be the same as application name.", ex.Message);
+            }
+        }
+
+        [Fact]
         public void TestRunAzureSignalRWithoutConnectionString()
         {
             var exception = Assert.Throws<ArgumentException>(
@@ -110,6 +129,20 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 {
                     var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
                     Assert.Equal(ConnectionString, options.Value.ConnectionString);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestRunAzureSignalRWiillUseApplicationNameInOptionsEvenIfNotExplictlySet()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, ConnectionString, hubConfig)))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+                    Assert.Equal(AppName, options.Value.ApplicationName);
                 }
             }
         }
