@@ -216,7 +216,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public void TestRunAzureSignalRWithMultipleAppSettingsAndCustomSettingsIncludingOptionsAppName()
         {
-            const string optionsAppName = AppName;
             // Prepare the configuration
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
@@ -224,7 +223,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var hubConfig = Utility.GetTestHubConfig(loggerFactory);
                 using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
                 {
-                    options.ApplicationName = optionsAppName;
+                    options.UseHubNamePrefix = true;
                     options.Endpoints = new ServiceEndpoint[]
                     {
                         new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
@@ -236,7 +235,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
 
                     Assert.Equal(ConnectionString, options.Value.ConnectionString);
-                    Assert.Equal(optionsAppName, options.Value.ApplicationName);
+                    Assert.Equal(AppName, options.Value.ApplicationName);
 
                     Assert.Equal(3, options.Value.Endpoints.Length);
 
@@ -244,10 +243,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var endpoints = manager.GetAvailableEndpoints().ToArray();
                     Assert.Equal(4, endpoints.Length);
 
-                    Assert.Equal(optionsAppName, endpoints[0].ApplicationName);
-                    Assert.Equal(optionsAppName, endpoints[1].ApplicationName);
-                    Assert.Equal(optionsAppName, endpoints[2].ApplicationName);
-                    Assert.Equal(optionsAppName, endpoints[3].ApplicationName);
+                    Assert.Equal(AppName, endpoints[0].ApplicationName);
+                    Assert.Equal(AppName, endpoints[1].ApplicationName);
+                    Assert.Equal(AppName, endpoints[2].ApplicationName);
+                    Assert.Equal(AppName, endpoints[3].ApplicationName);
                 }
             }
         }
@@ -350,7 +349,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public void TestRunAzureSignalRWithOptions()
         {
-            const string optionsAppName = AppName;
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
                 var hubConfig = Utility.GetTestHubConfig(loggerFactory);
@@ -358,12 +356,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 {
                     o.ConnectionString = ConnectionString;
                     o.ConnectionCount = -1;
-                    o.ApplicationName = optionsAppName;
                 })))
                 {
                     var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
                     Assert.Equal(ConnectionString, options.Value.ConnectionString);
-                    Assert.Equal(optionsAppName, options.Value.ApplicationName);
                     Assert.Equal(-1, options.Value.ConnectionCount);
                 }
             }
