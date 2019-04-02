@@ -52,22 +52,24 @@ var serviceManager = new ServiceManagerBuilder()
 
 ```
 
-You can generate the endpoint for SignalR clients connecting to your Azure SignalR Service.
-You can also generate the access token for SignalR clients connecting to your Azure SignalR Service in serverless mode.
+Usually you don't want to expose your connection string to SignalR clients. In this situation, the SignalR clients connect to a specific endpoint which will return a special negotiation response and redirect clients to your Azure SignalR Service from the connection string.
 
-Both of endpoint and access token are useful when you want to redirect SignalR clients to your Azure SignalR Service. The sample on how to use Management SDK to redirect SignalR clients to Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
+> Read more details about the redirection at SignalR's [Negotiation Protocol](https://github.com/aspnet/SignalR/blob/master/specs/TransportProtocols.md#post-endpoint-basenegotiate-request).
 
-> Usually you don't want to expose your connection string to SignalR clients. In this situation, the SignalR clients connect to a spacific endpoint which will return a special negotiation response and redirect clients to your Azure SignalR Service from the connection string. Read more details about the redirection at SignalR's [Negotiation Protocol](https://github.com/aspnet/SignalR/blob/master/specs/TransportProtocols.md#post-endpoint-basenegotiate-request).
+Both of endpoint and access token are useful when you want to redirect SignalR clients to your Azure SignalR Service. 
+
+You can use the instance of `IServiceManager` generate the endpoint and corresponding access token for SignalR clients to connect to your Azure SignalR Service.
 
 ``` C#
 var clientEndpoint = serviceManager.GetClientEndpoint("<Your Hub Name>");
 var accessToken = serviceManager.GenerateClientAccessToken("<Your Hub Name>", "<Your User ID>");
 ```
 
+The sample on how to use Management SDK to redirect SignalR clients to Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
 
 ### Create and Use ServiceHubContext
 
-You can create a instance of `IServiceHubContext` to publish messages or manage group membership. The sample on how to use Management SDK to publish messages to SignalR clients can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
+You can create an instance of `IServiceHubContext` to publish messages or manage group membership. The sample on how to use Management SDK to publish messages to SignalR clients can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
 
 ``` C#
 try
