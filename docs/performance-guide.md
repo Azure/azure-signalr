@@ -70,7 +70,18 @@ pattern etc.) in the limited paragraph, however, it provides some evaluation met
 Performance insight
 -------------------
 
-This section first lists all factors that take impact on performance, then provides methods to help evaluate the performance requirements.
+This section first describes the performance evaluation methodologies, then lists all factors that take impact on performance, at last provides methods to help evaluate the performance requirements.
+
+<a name="perf_methodology"></a>
+### Methodology
+
+**Throughput** and **latency** are two typical aspects of performance checking. For ASRS, different SKU tier has different throughput throttling policy. This document wants to find **the maximum allowed throughput (inbound and outbound bandwidth) with 99% of messages latency less than 1 second**.
+
+To simulate thousands of clients connections, a bunch of VMs are created in a virtual private network in Azure. All of them connect to the same ASRS instance.
+
+For ASRS default mode, app servers VMs are also deployed in the same virtual private network as client VMs.
+
+All client VMs and app server VMs are deployed in the same network of the same region to avoid cross region latency.
 
 <a name="perf_factors"></a>
 ### Performance factors
@@ -189,8 +200,6 @@ Case study
 ----------
 
 The following sections go through 4 typical use cases for Websockets transport: **echo**, **broadcast**, **send to group**, and **send to connection**. For every scenario, it lists the current ASRS inbound and outbound capacity, meanwhile explains what is the main factors on performance.
-
-For all use cases, the performance guide wants to find the maximum inbound and outbound with the criteria that 99% message latency is less than 1 second.
 
 On default mode, Azure SignalR SDK default creates 5 server connections with ASRS. In the below performance test, server connections are
 increased to 15 (or more for broadcast and send message to big group).
