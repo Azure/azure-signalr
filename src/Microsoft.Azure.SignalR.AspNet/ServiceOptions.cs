@@ -28,7 +28,8 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// <summary>
         /// Gets applicationName, which will be used as a prefix to apply to each hub name
         /// </summary>
-        public string ApplicationName{ get; internal set; }
+        internal string ApplicationName{ get; set; }
+        string IServiceEndpointOptions.ApplicationName => ApplicationName;
 
         /// <summary>
         /// Gets or sets whether the hub name wiull be prefixed with the ApplicationName

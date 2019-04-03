@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceOptionsSetup(IConfiguration configuration)
         {
-            _appName = GetAppName(configuration);
+            _appName = configuration[Constants.ApplicationNameDefaultKeyPrefix];
 
             var (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringDefaultKey, Constants.ConnectionStringKeyPrefix, _appName);
 
@@ -28,24 +28,6 @@ namespace Microsoft.Azure.SignalR
 
             _connectionString = connectionString;
             _endpoints = endpoints.ToArray();
-        }
-
-        private string GetAppName(IConfiguration configuration)
-        {
-            foreach (var pair in configuration.AsEnumerable())
-            {
-                var key = pair.Key;
-                if (key == Constants.ApplicationNameDefaultKey && !string.IsNullOrEmpty(pair.Value))
-                {
-                    return pair.Value;
-                }
-
-                if (key.StartsWith(Constants.ApplicationNameDefaultKeyPrefix) && !string.IsNullOrEmpty(pair.Value))
-                {
-                    return pair.Value;
-                }
-            }
-            return string.Empty;
         }
 
         public void Configure(ServiceOptions options)

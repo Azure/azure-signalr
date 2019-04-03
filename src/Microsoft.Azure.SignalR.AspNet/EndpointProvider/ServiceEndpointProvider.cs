@@ -100,8 +100,8 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             var prefixedHubName = string.IsNullOrEmpty(_appName) ? hubName.ToLower() : $"{_appName.ToLower()}_{hubName.ToLower()}";
             return _port.HasValue ?
-                $"{_endpoint}:{_port}/{ServerPath}/?hub={prefixedHubName.ToLower()}" :
-                $"{_endpoint}/{ServerPath}/?hub={prefixedHubName.ToLower()}";
+                $"{_endpoint}:{_port}/{ServerPath}/?hub={prefixedHubName}" :
+                $"{_endpoint}/{ServerPath}/?hub={prefixedHubName}";
         }
     }
 }
