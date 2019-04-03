@@ -113,7 +113,9 @@ namespace Microsoft.Azure.SignalR
 
         private async Task RestartServiceConnectionCoreAsync(int index)
         {
-            await Task.Delay(GetRetryDelay(_defaultConnectionRetry));
+            // multiple concurrent connection attempts can quickly reach long back off delays
+            // so we adjust the effective retry count according to the number of connections
+            await Task.Delay(GetRetryDelay(_defaultConnectionRetry/FixedConnectionCount));
 
             // Increase retry count after delay, then if a group of connections get disconnected simultaneously,
             // all of them will delay a similar range of time and reconnect. But if they get disconnected again (when SignalR service down), 
