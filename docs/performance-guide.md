@@ -78,6 +78,8 @@ This section first describes the performance evaluation methodologies, then list
 
 **Throughput** and **latency** are two typical aspects of performance checking. For ASRS, different SKU tier has different throughput throttling policy. This document wants to find **the maximum allowed throughput (inbound and outbound bandwidth) with 99% of messages latency less than 1 second**.
 
+The latency is the time span from the connection sending message to receiving the response message from ASRS. Let's take **echo** as an example, every client connection adds a timestamp in the message. App server's hub sends the original message back to the client. So the propagation delay is easily calculated by every client connection. The timestamp is attached for every message in **broadcast**, **send to group**, and **send to connection**.
+
 To simulate thousands of clients connections, a bunch of VMs are created in a virtual private network in Azure. All of them connect to the same ASRS instance.
 
 For ASRS default mode, app servers VMs are also deployed in the same virtual private network as client VMs.
