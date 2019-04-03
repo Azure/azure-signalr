@@ -18,7 +18,6 @@ namespace Microsoft.Azure.SignalR.Startup
     {
         // This caches the replacement endpoints for negotiate so they are not recomputed on every request
         private readonly ConcurrentDictionary<Endpoint, Endpoint> _negotiateEndpointCache = new ConcurrentDictionary<Endpoint, Endpoint>();
-        private readonly ConcurrentDictionary<string, List<IAuthorizeData>> _hubAuthorizePolicy = new ConcurrentDictionary<string, List<IAuthorizeData>>();
         
         public override int Order => 1;
 
@@ -56,17 +55,10 @@ namespace Microsoft.Azure.SignalR.Startup
             var routeEndpoint = (RouteEndpoint)endpoint;
             var hubMetadata = endpoint.Metadata.GetMetadata<HubMetadata>();
 
-            // Cache hub authorized policy
-            if (!_hubAuthorizePolicy.ContainsKey(hubMetadata.HubType.Name))
-            {
-                _hubAuthorizePolicy.TryAdd(hubMetadata.HubType.Name, AuthorizeHelper.BuildAuthorizePolicy(hubMetadata.HubType));
-            }
-            var authorizePolicy = _hubAuthorizePolicy[hubMetadata.HubType.Name];
-
             // Replaces the negotiate endpoint with one that does the service redirect
             var routeEndpointBuilder = new RouteEndpointBuilder(async context =>
             {
-                await ServiceRouteHelper.RedirectToService(context, hubMetadata.HubType.Name, authorizePolicy);
+                await ServiceRouteHelper.RedirectToService(context, hubMetadata.HubType.Name, null);
             },
             routeEndpoint.RoutePattern,
             routeEndpoint.Order);

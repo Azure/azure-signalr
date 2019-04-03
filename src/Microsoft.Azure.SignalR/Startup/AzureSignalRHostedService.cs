@@ -3,9 +3,7 @@
 
 #if NETCOREAPP3_0
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;

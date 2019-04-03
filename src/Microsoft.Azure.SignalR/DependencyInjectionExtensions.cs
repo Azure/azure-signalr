@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Startup;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -34,10 +35,14 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.AddSingleton<IConfigureOptions<ServiceOptions>, ServiceOptionsSetup>();
 
 #if NETCOREAPP3_0
-            var serviceOptions = builder.Services
-                .BuildServiceProvider()
-                .GetRequiredService<IOptions<ServiceOptions>>().Value;
-            if (!serviceOptions.IsEnabled)
+            // Load Azure:SignalR:Enabled to determine whether fallback to local SignalR
+            var config = new ConfigurationBuilder()
+                .SetBasePath(Environment.CurrentDirectory)
+                .AddJsonFile("appsettings.json", optional: false)
+                .Build();
+            var isEnabled = config.GetSection(Constants.AzureSignalREnabledKey).Value;
+            // Only apparently false will turn-off Azure SignalR Service
+            if (isEnabled != null && isEnabled.Equals("false", StringComparison.OrdinalIgnoreCase))
             {
                 return builder;
             }

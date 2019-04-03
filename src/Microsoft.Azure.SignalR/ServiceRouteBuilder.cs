@@ -3,13 +3,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -21,6 +20,8 @@ namespace Microsoft.Azure.SignalR
         private readonly IServiceProvider _serviceProvider;
         private readonly RouteBuilder _routes;
 
+        public readonly List<HubMapping> Hubs;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceRouteBuilder"/> class.
         /// </summary>
@@ -29,6 +30,7 @@ namespace Microsoft.Azure.SignalR
         {
             _routes = routes;
             _serviceProvider = _routes.ServiceProvider;
+            Hubs = new List<HubMapping>();
         }
 
         /// <summary>
@@ -46,11 +48,20 @@ namespace Microsoft.Azure.SignalR
         /// <param name="path">The request path.</param>
         public void MapHub<THub>(PathString path) where THub: Hub
         {
-            // Get auth attributes
-            var authorizationData = AuthorizeHelper.BuildAuthorizePolicy(typeof(THub));
-            _routes.MapRoute(path + Constants.Path.Negotiate, c => ServiceRouteHelper.RedirectToService(c, typeof(THub).Name, authorizationData));
+            var isEnabled = _serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value.IsEnabled;
+            if (isEnabled)
+            {
+                // Get auth attributes
+                var authorizationData = AuthorizeHelper.BuildAuthorizePolicy(typeof(THub));
+                _routes.MapRoute(path + Constants.Path.Negotiate, c => ServiceRouteHelper.RedirectToService(c, typeof(THub).Name, authorizationData));
 
-            Start<THub>();
+                Start<THub>();
+            }
+            else
+            {
+                // Build hub mappings to fallback UseSignalR()
+                Hubs.Add(new HubMapping(typeof(THub), path));
+            }
         }
 
         private void Start<THub>() where THub : Hub
