@@ -28,11 +28,9 @@ namespace Microsoft.Azure.SignalR
 
         internal int? Port { get; }
 
-        internal string ApplicationName { get; set; }
-
         internal IServiceConnectionContainer Connection { get; set; }
 
-        public ServiceEndpoint(string key, string connectionString, string applicationName = "") : this(connectionString, applicationName: applicationName)
+        public ServiceEndpoint(string key, string connectionString) : this(connectionString)
         {
             if (!string.IsNullOrEmpty(key))
             {
@@ -40,7 +38,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public ServiceEndpoint(string connectionString, EndpointType type = EndpointType.Primary, string name = "", string applicationName = "")
+        public ServiceEndpoint(string connectionString, EndpointType type = EndpointType.Primary, string name = "")
         {
             // The provider is responsible to check if the connection string is empty and throw correct error message
             if (!string.IsNullOrEmpty(connectionString))
@@ -51,7 +49,6 @@ namespace Microsoft.Azure.SignalR
             EndpointType = type;
             ConnectionString = connectionString;
             Name = name;
-            ApplicationName = applicationName;
         }
 
         public override string ToString()

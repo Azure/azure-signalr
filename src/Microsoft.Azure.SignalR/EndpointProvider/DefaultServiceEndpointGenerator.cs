@@ -17,24 +17,21 @@ namespace Microsoft.Azure.SignalR
 
         public string Version { get; }
 
-        public string ApplicationName { get; }
-
         public int? Port { get; }
 
-        public DefaultServiceEndpointGenerator(string endpoint, string accessKey, string version, int? port, string applicationName)
+        public DefaultServiceEndpointGenerator(string endpoint, string accessKey, string version, int? port)
         {
             Endpoint = endpoint;
             AccessKey = accessKey;
             Version = version;
             Port = port;
-            ApplicationName = applicationName;
         }
 
-        public string GetClientAudience(string hubName) =>
-            InternalGetAudience(ClientPath, hubName, ApplicationName);
+        public string GetClientAudience(string hubName, string applicationName) =>
+            InternalGetAudience(ClientPath, hubName, applicationName);
 
 
-        public string GetClientEndpoint(string hubName, string originalPath, string queryString)
+        public string GetClientEndpoint(string hubName, string applicationName, string originalPath, string queryString)
         {
             var queryBuilder = new StringBuilder();
             if (!string.IsNullOrEmpty(originalPath))
@@ -50,14 +47,14 @@ namespace Microsoft.Azure.SignalR
                 queryBuilder.Append("&").Append(queryString);
             }
 
-            return $"{InternalGetEndpoint(ClientPath, hubName, ApplicationName)}{queryBuilder}";
+            return $"{InternalGetEndpoint(ClientPath, hubName, applicationName)}{queryBuilder}";
         }
 
-        public string GetServerAudience(string hubName) =>
-            InternalGetAudience(ServerPath, hubName, ApplicationName);
+        public string GetServerAudience(string hubName, string applicationName) =>
+            InternalGetAudience(ServerPath, hubName, applicationName);
 
-        public string GetServerEndpoint(string hubName) =>
-            InternalGetEndpoint(ServerPath, hubName, ApplicationName);
+        public string GetServerEndpoint(string hubName, string applicationName) =>
+            InternalGetEndpoint(ServerPath, hubName, applicationName);
 
         private string InternalGetEndpoint(string path, string hubName, string applicationName)
         {

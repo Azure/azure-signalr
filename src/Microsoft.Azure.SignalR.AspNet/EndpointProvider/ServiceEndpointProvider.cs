@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly int? _port;
         private readonly TimeSpan _accessTokenLifetime;
 
-        public ServiceEndpointProvider(ServiceEndpoint endpoint, TimeSpan? ttl = null)
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions options, TimeSpan? ttl = null)
         {
             var connectionString = endpoint.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             // Version is ignored for aspnet signalr case
             _endpoint = endpoint.Endpoint;
             _accessKey = endpoint.AccessKey;
-            _appName = endpoint.ApplicationName;
+            _appName = options.ApplicationName;
             _port = endpoint.Port;
         }
 

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetclient")]
         public void TestGenerateClientAccessToken(string connectionString, string expectedAudience)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString));
+            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
             var clientToken = provider.GenerateClientAccessToken(null, new Claim[]
             {
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=https://abc.com;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "orig<inal.com", "?abc=%21dcf", "https://abc.com/aspnetclient?abc=%21dcf&asrs.op=orig%3Cinal.com")]
         public void TestGenerateClientEndpoint(string connectionString, string originalPath, string queryString, string expectedEndpoint)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString));
+            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
             var clientEndpoint = provider.GetClientEndpoint(null, originalPath, queryString);
 
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=hub1")]
         public void TestGenerateServerAccessToken(string connectionString, string expectedAudience)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString));
+            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
             var clientToken = provider.GenerateServerAccessToken("hub1", "user1");
 
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=prefix_hub1")]
         public void TestGenerateServerAccessTokenWIthPrefix(string connectionString, string expectedAudience)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString, applicationName: "prefix"));
+            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { ApplicationName = "prefix" });
 
             var clientToken = provider.GenerateServerAccessToken("hub1", "user1");
 
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=hub1")]
         public void TestGenerateServerEndpoint(string connectionString, string expectedEndpoint)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString));
+            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
             var clientEndpoint = provider.GetServerEndpoint("hub1");
 
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=prefix_hub1")]
         public void TestGenerateServerEndpointWithPrefix(string connectionString, string expectedEndpoint)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString, applicationName: "prefix"));
+            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { ApplicationName = "prefix" });
 
             var clientEndpoint = provider.GetServerEndpoint("hub1");
 
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void GenerateMutlipleAccessTokenShouldBeUnique()
         {
             var count = 1000;
-            var sep = new ServiceEndpointProvider(new ServiceEndpoint(DefaultConnectionString));
+            var sep = new ServiceEndpointProvider(new ServiceEndpoint(DefaultConnectionString), new ServiceOptions() { });
             var userId = Guid.NewGuid().ToString();
             var tokens = new List<string>();
             for (int i = 0; i < count; i++)

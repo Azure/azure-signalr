@@ -66,12 +66,12 @@ namespace Microsoft.Azure.SignalR
                 if (key == defaultKey && !string.IsNullOrEmpty(pair.Value))
                 {
                     connectionString = pair.Value;
-                    endpoints.Add(new ServiceEndpoint(pair.Value, applicationName: applicationName));
+                    endpoints.Add(new ServiceEndpoint(pair.Value));
                 }
 
                 if (key.StartsWith(keyPrefix) && !string.IsNullOrEmpty(pair.Value))
                 {
-                    endpoints.Add(new ServiceEndpoint(key, pair.Value, applicationName));
+                    endpoints.Add(new ServiceEndpoint(key, pair.Value));
                 }
             }
 

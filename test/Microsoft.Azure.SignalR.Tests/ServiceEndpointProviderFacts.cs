@@ -33,9 +33,9 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private static readonly ServiceEndpointProvider[] EndpointProviderArrayWithPrefix =
 {
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion, applicationName: AppName)),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion, applicationName: AppName)),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version, applicationName: AppName))
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), AppName),
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), AppName),
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), AppName)
         };
 
         private static readonly (string path, string queryString, string expectedQuery)[] PathAndQueryArray =

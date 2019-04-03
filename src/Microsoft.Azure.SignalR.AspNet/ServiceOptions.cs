@@ -95,12 +95,12 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             if (key == Constants.ConnectionStringDefaultKey && !string.IsNullOrEmpty(valueGetter()))
             {
-                return (true, new ServiceEndpoint(valueGetter(), applicationName: appName));
+                return (true, new ServiceEndpoint(valueGetter()));
             }
 
             if (key.StartsWith(Constants.ConnectionStringKeyPrefix) && !string.IsNullOrEmpty(valueGetter()))
             {
-                return (false, new ServiceEndpoint(key, valueGetter(), appName));
+                return (false, new ServiceEndpoint(key, valueGetter()));
             }
 
             return (false, null);
