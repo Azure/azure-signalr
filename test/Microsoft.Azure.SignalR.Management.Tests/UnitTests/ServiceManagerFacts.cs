@@ -3,8 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Tests;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
@@ -24,7 +27,20 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         };
         private static readonly ServiceManager _serviceManager = new ServiceManager(_serviceManagerOptions);
         private static readonly Claim[] _defaultClaims = new Claim[] { new Claim("type1", "val1") };
-        public static IEnumerable<object[]> TestGenerateAccessTokenData = new object[][]
+
+        private static readonly ServiceTransportType[] _serviceTransportTypes = new ServiceTransportType[]
+        {
+            ServiceTransportType.Transient,
+            ServiceTransportType.Persistent
+        };
+
+        private static readonly bool[] _useLoggerFatories = new bool[]
+        {
+            false,
+            true
+        };
+
+        public static readonly IEnumerable<object[]> TestGenerateAccessTokenData = new object[][]
         {
             new object[]
             {
@@ -48,6 +64,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         };
 
+        public static IEnumerable<object[]> TestServiceOptionData => from transport in _serviceTransportTypes
+                                                                     from useLoggerFactory in _useLoggerFatories
+                                                                     select new object[] { transport, useLoggerFactory };
+
         [Theory]
         [MemberData(nameof(TestGenerateAccessTokenData))]
         internal void GenerateClientAccessTokenTest(string userId, Claim[] claims)
@@ -66,6 +86,24 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var clientEndpoint = _serviceManager.GetClientEndpoint(HubName);
 
             Assert.Equal(_clientEndpoint, clientEndpoint);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestServiceOptionData))]
+        internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFacory)
+        {
+            var serviceManager = new ServiceManager(new ServiceManagerOptions
+            {
+                ConnectionString = _testConnectionString,
+                ServiceTransportType = serviceTransportType
+            });
+
+            LoggerFactory loggerFactory;
+
+            using (loggerFactory = useLoggerFacory ? new LoggerFactory() : null)
+            {
+                var hubContext = await serviceManager.CreateHubContextAsync(HubName, loggerFactory);
+            }
         }
     }
 }
