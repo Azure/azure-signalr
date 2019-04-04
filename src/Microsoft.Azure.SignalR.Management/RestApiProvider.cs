@@ -20,18 +20,15 @@ namespace Microsoft.Azure.SignalR.Management
             string accessKey;
             (_baseEndpoint, accessKey, _, _port) = ConnectionStringParser.Parse(connectionString);
             _hubName = hubName;
-            _appName = appName.ToLower();
+            _appName = appName;
             _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(accessKey);
-            if (string.IsNullOrEmpty(_appName))
-            {
-                _requestPrefix = _port == null ? $"{_baseEndpoint}/api/v1/hubs/{_hubName}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{_hubName}";
-                _audiencePrefix = $"{_baseEndpoint}/api/v1/hubs/{_hubName}";
-            }
-            else
-            {
-                _requestPrefix = _port == null ? $"{_baseEndpoint}/api/v1/hubs/{_appName}_{_hubName}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{_appName}_{_hubName}";
-                _audiencePrefix = $"{_baseEndpoint}/api/v1/hubs/{_appName}_{_hubName}";
-            }
+            _requestPrefix = _port == null ? $"{_baseEndpoint}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}";
+            _audiencePrefix = $"{_baseEndpoint}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}";
+        }
+
+        private string GetPrefixedHubName(string applicationName, string hubName)
+        {
+            return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
         }
 
         public RestApiEndpoint GetBroadcastEndpoint(TimeSpan? lifetime = null)

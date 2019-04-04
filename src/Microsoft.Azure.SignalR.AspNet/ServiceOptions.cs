@@ -32,11 +32,6 @@ namespace Microsoft.Azure.SignalR.AspNet
         string IServiceEndpointOptions.ApplicationName => ApplicationName;
 
         /// <summary>
-        /// Gets or sets whether the hub name wiull be prefixed with the ApplicationName
-        /// </summary>
-        public bool UseHubNamePrefix { get; set; }
-
-        /// <summary>
         /// Gets or sets the func to generate claims from <see cref="IOwinContext" />.
         /// The claims will be included in the auto-generated token for clients.
         /// </summary>

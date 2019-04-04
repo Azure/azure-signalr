@@ -120,24 +120,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
                 var hubConfig = Utility.GetTestHubConfig(loggerFactory);
-                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, opts => { opts.ConnectionString = ConnectionString; opts.UseHubNamePrefix = true; })))
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, opts => { opts.ConnectionString = ConnectionString; })))
                 {
                     var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
                     Assert.Equal(AppName, options.Value.ApplicationName);
-                }
-            }
-        }
-
-        [Fact]
-        public void TestRunAzureSignalRWiillNotUseApplicationNameInOptionsWhenUseHubPrefixIsFalse()
-        {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
-            {
-                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
-                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, opts => { opts.ConnectionString = ConnectionString; opts.UseHubNamePrefix = false; })))
-                {
-                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
-                    Assert.True(string.IsNullOrEmpty(options.Value.ApplicationName));
                 }
             }
         }
@@ -223,7 +209,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var hubConfig = Utility.GetTestHubConfig(loggerFactory);
                 using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
                 {
-                    options.UseHubNamePrefix = true;
                     options.Endpoints = new ServiceEndpoint[]
                     {
                         new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
@@ -242,11 +227,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
                     var endpoints = manager.GetAvailableEndpoints().ToArray();
                     Assert.Equal(4, endpoints.Length);
-
-                    //Assert.Equal(AppName, endpoints[0].ApplicationName);
-                    //Assert.Equal(AppName, endpoints[1].ApplicationName);
-                    //Assert.Equal(AppName, endpoints[2].ApplicationName);
-                    //Assert.Equal(AppName, endpoints[3].ApplicationName);
                 }
             }
         }

@@ -181,14 +181,7 @@ namespace Owin
                 throw new ArgumentException(nameof(applicationName), "Empty application name is not allowed.");
             }
 
-            if (options.UseHubNamePrefix)
-            {
-                options.ApplicationName = applicationName;
-            }
-            else
-            {
-                options.ApplicationName = "";
-            }
+            options.ApplicationName = applicationName;
 
             if (configuration == null)
             {

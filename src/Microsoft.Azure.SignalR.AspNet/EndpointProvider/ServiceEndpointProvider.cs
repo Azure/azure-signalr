@@ -42,6 +42,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             _port = endpoint.Port;
         }
 
+        private string GetPrefixedHubName(string applicationName, string hubName)
+        {
+            return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
+        }
+
         public string GenerateClientAccessToken(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, string requestId = null)
         {
             var audience = $"{_endpoint}/{ClientPath}";
@@ -59,8 +64,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 };
             }
 
-            var prefixedHubName = string.IsNullOrEmpty(_appName) ? hubName.ToLower() : $"{_appName.ToLower()}_{hubName.ToLower()}";
-            var audience = $"{_endpoint}/{ServerPath}/?hub={prefixedHubName.ToLower()}";
+            var audience = $"{_endpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
 
             return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
         }
@@ -98,10 +102,9 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public string GetServerEndpoint(string hubName)
         {
-            var prefixedHubName = string.IsNullOrEmpty(_appName) ? hubName.ToLower() : $"{_appName.ToLower()}_{hubName.ToLower()}";
             return _port.HasValue ?
-                $"{_endpoint}:{_port}/{ServerPath}/?hub={prefixedHubName}" :
-                $"{_endpoint}/{ServerPath}/?hub={prefixedHubName}";
+                $"{_endpoint}:{_port}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}" :
+                $"{_endpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
         }
     }
 }
