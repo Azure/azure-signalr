@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -57,6 +58,26 @@ namespace Microsoft.Azure.SignalR
             Log.StartingConnection(_logger, Name, _options.ConnectionCount);
             _ = _serviceConnectionManager.StartAsync();
         }
+
+#if NETCOREAPP3_0
+        public void Start(ConnectionDelegate connectionDelegate, Endpoint endpoint)
+        {
+            // Simply create a couple of connections which connect to Azure SignalR
+            var serviceConnection = GetMultiEndpointServiceConnectionContainer(_hubName, endpoint, connectionDelegate);
+
+            _serviceConnectionManager.SetServiceConnection(serviceConnection);
+
+            Log.StartingConnection(_logger, Name, _options.ConnectionCount);
+            _ = _serviceConnectionManager.StartAsync();
+        }
+
+        private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, Endpoint endpoint, ConnectionDelegate connectionDelegate)
+        {
+            var serviceConnectionFactory = new ServiceConnectionFactory(_serviceProtocol, _clientConnectionManager, _loggerFactory, connectionDelegate, _clientConnectionFactory);
+            serviceConnectionFactory.SetEndpoint(endpoint);
+            return new MultiEndpointServiceConnectionContainer(serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _loggerFactory);
+        }
+#endif
 
         private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate)
         {

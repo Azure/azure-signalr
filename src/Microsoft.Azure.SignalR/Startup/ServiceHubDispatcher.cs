@@ -1,8 +1,10 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if NETCOREAPP3_0
 using System;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR.Startup
@@ -18,14 +20,15 @@ namespace Microsoft.Azure.SignalR.Startup
             _serviceProvider = serviceProvider;
         }
 
-        public void Start(Type hubType, ConnectionDelegate app)
+        public void Start(Endpoint endpoint, Type hubType, ConnectionDelegate app)
         {
             var type = _serviceDispatcherType.MakeGenericType(hubType);
-            var startMethod = type.GetMethod("Start");
+            var startMethod = type.GetMethod("Start", new Type[] { typeof(ConnectionDelegate), typeof(Endpoint) });
 
             object dispatcher = _serviceProvider.GetRequiredService(type);
 
-            startMethod.Invoke(dispatcher, new object[] { app });
+            startMethod.Invoke(dispatcher, new object[] { app, endpoint });
         }
     }
 }
+#endif

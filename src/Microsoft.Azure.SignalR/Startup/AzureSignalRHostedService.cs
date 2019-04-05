@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 
@@ -25,18 +26,24 @@ namespace Microsoft.Azure.SignalR.Startup
         {
             var dispatcher = new ServiceHubDispatcher(_serviceProvider);
 
-            var hubTypes = _dataSource.Endpoints.Select(e => e.Metadata.GetMetadata<HubMetadata>()?.HubType)
-                                   .Where(hubType => hubType != null)
-                                   .Distinct()
-                                   .ToList();
-            
-            foreach (var hubType in hubTypes)
+            foreach (var endpoint in _dataSource.Endpoints)
             {
-                var app = new ConnectionBuilder(_serviceProvider)
-                            .UseHub(hubType)
-                            .Build();
+                var hubMetadata = endpoint.Metadata.GetMetadata<HubMetadata>();
+                var negotiateMetadata = endpoint.Metadata.GetMetadata<NegotiateMetadata>();
 
-                dispatcher.Start(hubType, app);
+                // Skip if not a hub nor negotiate endpoint
+                if (hubMetadata == null || negotiateMetadata != null)
+                {
+                    continue;
+                }
+
+                // Start the application for each of the hub types
+                var app = new ConnectionBuilder(_serviceProvider)
+                    .UseHub(hubMetadata.HubType)
+                    .Build();
+
+                // Flow the endpoint to the dispatcher so it can be set on the feature
+                dispatcher.Start(endpoint, hubMetadata.HubType, app);
             }
         }
     }

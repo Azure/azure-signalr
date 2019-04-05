@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
@@ -30,9 +31,22 @@ namespace Microsoft.Azure.SignalR
 
         public IServiceConnection Create(IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
         {
-            return new ServiceConnection(_serviceProtocol, _clientConnectionManager, connectionFactory,
+            var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, connectionFactory,
                 _loggerFactory, _connectionDelegate, _clientConnectionFactory,
                 Guid.NewGuid().ToString(), serviceMessageHandler, type);
+#if NETCOREAPP3_0
+            serviceConnection.SetEndpoint(_endpoint);
+#endif
+            return serviceConnection;
         }
+
+#if NETCOREAPP3_0
+        private Endpoint _endpoint;
+
+        public void SetEndpoint(Endpoint endpoint)
+        {
+            _endpoint = endpoint;
+        }
+#endif
     }
 }
