@@ -18,7 +18,7 @@ Microsoft.Azure.SignalR.Management | .NET Standard 2.0 | [![NuGet](https://img.s
 
 ## Getting Started
 
-Azure SignalR Service Management SDK helps you to manage SignalR clients through Azure SignalR Service directly such as broadcast messages. Therefore, this SDK can be but not limited to be used in [serverless](https://azure.microsoft.com/zh-cn/solutions/serverless/) environments. You can use this SDK to manage SignalR clients connected to your Azure SignalR Service in any environment, such as in a console app, in an Azure function or in an App Server.
+Azure SignalR Service Management SDK helps you to manage SignalR clients through Azure SignalR Service directly such as broadcast messages. Therefore, this SDK can be but not limited to be used in [serverless](https://azure.microsoft.com/zh-cn/solutions/serverless/) environments. You can use this SDK to manage SignalR clients connected to your Azure SignalR Service in any environment, such as in a console app, in an Azure function or in a web server.
 
 ### Features
 
@@ -35,7 +35,7 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 | Send to a group except some clients | `N/A`              | :heavy_check_mark: |
 | Add a user to a group               | :heavy_check_mark: | :heavy_check_mark: |
 | Remove a user from a group          | :heavy_check_mark: | :heavy_check_mark: |
-  
+
 > More details about different modes can be found [here](#Transport-Type).
 
 ## Quick Start
@@ -56,8 +56,12 @@ var serviceManager = new ServiceManagerBuilder()
 
 ```
 
-Usually you don't want to expose your connection string to SignalR clients. In this situation, the SignalR clients connect to a specific endpoint which will return a special negotiation response and redirect clients to your Azure SignalR Service from the connection string.
-
+> In server mode, an endpoint `/<Your Hub Name>/negotiate` is exposed for negotiation by Azure SignalR Service SDK. SignalR clients will reach this endpoint and then redirect to Azure SignalR Service later.
+>
+> Unlike server scenario, there is no web server accepts SignalR clients in serverless scenario. To protect your connection string, you need to redirect SignalR clients from the negotiation endpoint to Azure SignalR Service instead of giving your connection string to all the SignalR clients.
+>
+> The best practice is to host a negotiation endpoint and then you can use SignalR clients to connect your hub: `/<Your Hub Name>`.
+>
 > Read more details about the redirection at SignalR's [Negotiation Protocol](https://github.com/aspnet/SignalR/blob/master/specs/TransportProtocols.md#post-endpoint-basenegotiate-request).
 
 Both of endpoint and access token are useful when you want to redirect SignalR clients to your Azure SignalR Service. 
@@ -67,6 +71,13 @@ You can use the instance of `IServiceManager` generate the endpoint and correspo
 ``` C#
 var clientEndpoint = serviceManager.GetClientEndpoint("<Your Hub Name>");
 var accessToken = serviceManager.GenerateClientAccessToken("<Your Hub Name>", "<Your User ID>");
+```
+
+Suppose your hub endpoint is `http://<Your Host Name>/<Your Hub Name>`, then your negotiation endpoint will be `http://<Your Host Name>/<Your Hub Name>/negotiate`. Once you host the negotiation endpoint, you can use the SignalR clients to connect to your hub like this:
+
+``` c#
+var connection = new HubConnectionBuilder().WithUrl("http://<Your Host Name>/<Your Hub Name>").Build();
+await connection.StartAsync();
 ```
 
 The sample on how to use Management SDK to redirect SignalR clients to Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
@@ -121,6 +132,7 @@ This class contains some utilities for managing SignalR services. For now, Servi
 Set options for service manager.
 
 > Parameters
+>
 >  * `configure`: A callback to configure the `IServiceManager`
 
 #### `ServiceManager Build()`
@@ -157,6 +169,7 @@ Generate access token for client to connect to service directly.
 Generate client endpoint for SignalR clients to connect to service directly.
 
 > Parameters
+>
 > * `hubName`: The hub name
 
 ### `IServiceHubContext`
