@@ -30,10 +30,6 @@ namespace Microsoft.Azure.SignalR
 
         private readonly ConnectionDelegate _connectionDelegate;
 
-#if NETCOREAPP3_0
-        private Endpoint _endpoint;
-#endif
-
         public ServiceConnection(IServiceProtocol serviceProtocol,
                                  IClientConnectionManager clientConnectionManager,
                                  IConnectionFactory connectionFactory, 
@@ -270,6 +266,8 @@ namespace Microsoft.Azure.SignalR
         }
 
 #if NETCOREAPP3_0
+        private Endpoint _endpoint; 
+
         public void SetEndpoint(Endpoint endpoint)
         {
             _endpoint = endpoint;

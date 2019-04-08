@@ -42,7 +42,7 @@ namespace Microsoft.Azure.SignalR.Startup
                     .UseHub(hubMetadata.HubType)
                     .Build();
 
-                // Flow the endpoint to the dispatcher so it can be set on the feature
+                // Flow the endpoint to the dispatcher so it can be set on the HttpContextFeature
                 dispatcher.Start(endpoint, hubMetadata.HubType, app);
             }
         }

@@ -57,7 +57,7 @@ namespace Microsoft.Azure.SignalR
         }
 
 #if NETCOREAPP3_0
-        private Endpoint _endpoint;
+        private readonly Endpoint _endpoint;
 
         public ServiceConnectionContext(OpenConnectionMessage serviceMessage, Endpoint endpoint, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
