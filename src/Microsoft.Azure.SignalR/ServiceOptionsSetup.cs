@@ -10,17 +10,20 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceOptionsSetup : IConfigureOptions<ServiceOptions>
     {
+        private readonly string _appName;
         private readonly string _connectionString;
         private readonly ServiceEndpoint[] _endpoints;
 
         public ServiceOptionsSetup(IConfiguration configuration)
         {
-            var (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringDefaultKey, Constants.ConnectionStringKeyPrefix);
+            _appName = configuration[Constants.ApplicationNameDefaultKeyPrefix];
+
+            var (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringDefaultKey, Constants.ConnectionStringKeyPrefix, _appName);
 
             // Fallback to ConnectionStrings:Azure:SignalR:ConnectionString format when the default one is not available
             if (endpoints.Count == 0)
             {
-                (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringSecondaryKey, Constants.ConnectionStringSecondaryKeyPrefix);
+                (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringSecondaryKey, Constants.ConnectionStringSecondaryKeyPrefix, _appName);
             }
 
             _connectionString = connectionString;
@@ -32,9 +35,10 @@ namespace Microsoft.Azure.SignalR
             // The default setup of ServiceOptions
             options.ConnectionString = _connectionString;
             options.Endpoints = _endpoints;
+            options.ApplicationName = _appName;
         }
 
-        private static (string, List<ServiceEndpoint>) GetEndpoint(IConfiguration configuration, string defaultKey, string keyPrefix)
+        private static (string, List<ServiceEndpoint>) GetEndpoint(IConfiguration configuration, string defaultKey, string keyPrefix, string applicationName)
         {
             var endpoints = new List<ServiceEndpoint>();
             string connectionString = null;

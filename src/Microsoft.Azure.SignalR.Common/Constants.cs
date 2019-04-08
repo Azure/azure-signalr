@@ -8,11 +8,14 @@ namespace Microsoft.Azure.SignalR
     internal static class Constants
     {
         public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
+        public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
 
         public static readonly string ConnectionStringSecondaryKey =
             $"ConnectionStrings:{ConnectionStringDefaultKey}";
 
         public static readonly string ConnectionStringKeyPrefix = $"{ConnectionStringDefaultKey}:";
+
+        public static readonly string ApplicationNameDefaultKeyPrefix = $"{ApplicationNameDefaultKey}:";
 
         public static readonly string ConnectionStringSecondaryKeyPrefix = $"{ConnectionStringSecondaryKey}:";
 

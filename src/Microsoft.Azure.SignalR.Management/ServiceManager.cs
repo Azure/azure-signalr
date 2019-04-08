@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _serviceManagerOptions = serviceManagerOptions;
             _endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString, EndpointType.Secondary);
-            _endpointProvider = new ServiceEndpointProvider(_endpoint);
+            _endpointProvider = new ServiceEndpointProvider(_endpoint, appName: _serviceManagerOptions.ApplicationName);
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
