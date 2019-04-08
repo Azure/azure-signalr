@@ -1,5 +1,9 @@
 # Azure SignalR Service Management SDK 
 
+> **NOTE**
+>
+> Azure SignalR Service only supports this SDK for ASP.NET CORE SignalR applications.
+
 ## Build Status
 
 [![Travis build status](https://img.shields.io/travis/Azure/azure-signalr.svg?label=travis-ci&branch=dev&style=flat-square)](https://travis-ci.org/Azure/azure-signalr/branches)
