@@ -3,8 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Tests;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
@@ -15,7 +18,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
         private const string HubName = "signalrBench";
         private const string UserId = "UserA";
-        private const string _appName = "appName";
         private static readonly string _clientEndpoint = $"{Endpoint}/client/?hub={HubName.ToLower()}";
         private static readonly string _clientEndpointWithAppName = $"{Endpoint}/client/?hub={_appName.ToLower()}_{HubName.ToLower()}";
         private static readonly string _testConnectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0;";
@@ -27,7 +29,27 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         };
         private static readonly ServiceManager _serviceManager = new ServiceManager(_serviceManagerOptions);
         private static readonly Claim[] _defaultClaims = new Claim[] { new Claim("type1", "val1") };
-        public static IEnumerable<object[]> TestGenerateAccessTokenData = new object[][]
+
+        private static readonly ServiceTransportType[] _serviceTransportTypes = new ServiceTransportType[]
+        {
+            ServiceTransportType.Transient,
+            ServiceTransportType.Persistent
+        };
+
+        private static readonly bool[] _useLoggerFatories = new bool[]
+        {
+            false,
+            true
+        };
+      
+        private static readonly string[] _appNames = new string[]
+        {
+            "appName",
+            "",
+            null
+        };
+
+        public static readonly IEnumerable<object[]> TestGenerateAccessTokenData = new object[][]
         {
             new object[]
             {
@@ -51,6 +73,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         };
 
+        public static IEnumerable<object[]> TestServiceOptionData => from transport in _serviceTransportTypes
+                                                                     from useLoggerFactory in _useLoggerFatories
+                                                                     from appName in _appNames
+                                                                     select new object[] { transport, useLoggerFactory, appName};
+
         [Theory]
         [MemberData(nameof(TestGenerateAccessTokenData))]
         internal void GenerateClientAccessTokenTest(string userId, Claim[] claims)
@@ -71,13 +98,23 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.Equal(_clientEndpoint, clientEndpoint);
         }
 
-        [Fact]
-        internal void GenerateClientEndpointWithAppNameTest()
+        [Theory]
+        [MemberData(nameof(TestServiceOptionData))]
+        internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFacory, string appName)
         {
-            var manager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = _testConnectionString, ApplicationName = _appName });
-            var clientEndpoint = manager.GetClientEndpoint(HubName);
+            var serviceManager = new ServiceManager(new ServiceManagerOptions
+            {
+                ConnectionString = _testConnectionString,
+                ServiceTransportType = serviceTransportType,
+                ApplicationName = appName
+            });
 
-            Assert.Equal(_clientEndpointWithAppName, clientEndpoint);
+            LoggerFactory loggerFactory;
+
+            using (loggerFactory = useLoggerFacory ? new LoggerFactory() : null)
+            {
+                var hubContext = await serviceManager.CreateHubContextAsync(HubName, loggerFactory);
+            }
         }
     }
 }
