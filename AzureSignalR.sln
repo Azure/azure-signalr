@@ -62,6 +62,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.Tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChatSample.CoreApp3", "samples\ChatSample\ChatSample.CoreApp3\ChatSample.CoreApp3.csproj", "{1F6D9B7A-36A0-4B71-825B-77F832B425A5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RazorComponentSample", "samples\RazorComponentSample\RazorComponentSample.csproj", "{44181F77-1BD8-421C-B53E-DA7CEC2F319B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -136,6 +138,10 @@ Global
 		{1F6D9B7A-36A0-4B71-825B-77F832B425A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1F6D9B7A-36A0-4B71-825B-77F832B425A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1F6D9B7A-36A0-4B71-825B-77F832B425A5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44181F77-1BD8-421C-B53E-DA7CEC2F319B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44181F77-1BD8-421C-B53E-DA7CEC2F319B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44181F77-1BD8-421C-B53E-DA7CEC2F319B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44181F77-1BD8-421C-B53E-DA7CEC2F319B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -159,6 +165,7 @@ Global
 		{3F9B3FD8-A54F-4AB4-B9D4-D4D55686A0E9} = {C965ED06-6A17-4329-B3C6-811830F4F4ED}
 		{C51AA61E-5210-4545-B49E-61255C136B83} = {C965ED06-6A17-4329-B3C6-811830F4F4ED}
 		{1F6D9B7A-36A0-4B71-825B-77F832B425A5} = {C965ED06-6A17-4329-B3C6-811830F4F4ED}
+		{44181F77-1BD8-421C-B53E-DA7CEC2F319B} = {C4BC9889-B49F-41B6-806B-F84941B2549B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7945A4E4-ACDB-4F6E-95CA-6AC6E7C2CD59}
