@@ -16,6 +16,8 @@ namespace Microsoft.Azure.SignalR
         private readonly ConnectionDelegate _connectionDelegate;
         private readonly IClientConnectionFactory _clientConnectionFactory;
 
+        public Action<HttpContext> ConfigureContext { get; set; }
+
         public ServiceConnectionFactory(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
             ILoggerFactory loggerFactory,
@@ -34,19 +36,8 @@ namespace Microsoft.Azure.SignalR
             var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, connectionFactory,
                 _loggerFactory, _connectionDelegate, _clientConnectionFactory,
                 Guid.NewGuid().ToString(), serviceMessageHandler, type);
-#if NETCOREAPP3_0
-            serviceConnection.SetEndpoint(_endpoint);
-#endif
+            serviceConnection.ConfigureContext = ConfigureContext;
             return serviceConnection;
         }
-
-#if NETCOREAPP3_0
-        private Endpoint _endpoint;
-
-        public void SetEndpoint(Endpoint endpoint)
-        {
-            _endpoint = endpoint;
-        }
-#endif
     }
 }

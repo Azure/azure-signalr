@@ -3,7 +3,6 @@
 
 #if NETCOREAPP3_0
 using System;
-using System.Linq;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Routing;
@@ -31,7 +30,7 @@ namespace Microsoft.Azure.SignalR.Startup
                 var hubMetadata = endpoint.Metadata.GetMetadata<HubMetadata>();
                 var negotiateMetadata = endpoint.Metadata.GetMetadata<NegotiateMetadata>();
 
-                // Skip if not a hub nor negotiate endpoint
+                // Skip if not a hub or is negotiate endpoint
                 if (hubMetadata == null || negotiateMetadata != null)
                 {
                     continue;
@@ -42,7 +41,7 @@ namespace Microsoft.Azure.SignalR.Startup
                     .UseHub(hubMetadata.HubType)
                     .Build();
 
-                // Flow the endpoint to the dispatcher so it can be set on the HttpContextFeature
+                // Flow the endpoint to the dispatcher so it can be set on the HttpContextFeature.
                 dispatcher.Start(endpoint, hubMetadata.HubType, app);
             }
         }

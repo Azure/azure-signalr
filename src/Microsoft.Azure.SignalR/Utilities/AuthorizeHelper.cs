@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
     {
         public static async Task<bool> AuthorizeAsync(HttpContext context, IList<IAuthorizeData> policies)
         {
-            if (policies != null && policies.Count == 0)
+            if (policies == null || policies.Count == 0)
             {
                 return true;
             }

@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR
         private readonly object _heartbeatLock = new object();
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
-        public ServiceConnectionContext(OpenConnectionMessage serviceMessage, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
+        public ServiceConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
             ConnectionId = serviceMessage.ConnectionId;
             User = serviceMessage.GetUserPrincipal();
@@ -52,38 +52,10 @@ namespace Microsoft.Azure.SignalR
             Application = pair.Transport;
 
             HttpContext = BuildHttpContext(serviceMessage);
+            configureContext?.Invoke(HttpContext);
 
             Features = BuildFeatures();
         }
-
-#if NETCOREAPP3_0
-        private readonly Endpoint _endpoint;
-
-        public ServiceConnectionContext(OpenConnectionMessage serviceMessage, Endpoint endpoint, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
-        {
-            _endpoint = endpoint;
-            ConnectionId = serviceMessage.ConnectionId;
-            User = serviceMessage.GetUserPrincipal();
-
-            // Create the Duplix Pipeline for the virtual connection
-            transportPipeOptions = transportPipeOptions ?? DefaultPipeOptions;
-            appPipeOptions = appPipeOptions ?? DefaultPipeOptions;
-
-            var pair = DuplexPipe.CreateConnectionPair(transportPipeOptions, appPipeOptions);
-            Transport = pair.Application;
-            Application = pair.Transport;
-
-            HttpContext = BuildHttpContext(serviceMessage);
-
-            Features = BuildFeatures();
-        }
-
-        private class EndpointFeature : IEndpointFeature
-        {
-            public Endpoint Endpoint { get; set; }
-        }
-#endif
-
 
         public void OnHeartbeat(Action<object> action, object state)
         {
@@ -160,12 +132,6 @@ namespace Microsoft.Azure.SignalR
             {
                 User = User
             });
-#if NETCOREAPP3_0
-            httpContextFeatures.Set<IEndpointFeature>(new EndpointFeature
-            {
-                Endpoint = _endpoint
-            });
-#endif
             if (message.Headers.ContainsKey("X-Forwarded-For") &&
                 IPAddress.TryParse(message.Headers["X-Forwarded-For"][0], out var address))
             {

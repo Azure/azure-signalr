@@ -48,10 +48,10 @@ namespace Microsoft.Azure.SignalR
             _hubName = typeof(THub).Name;
         }
 
-        public void Start(ConnectionDelegate connectionDelegate)
+        public void Start(ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
         {
             // Simply create a couple of connections which connect to Azure SignalR
-            var serviceConnection = GetMultiEndpointServiceConnectionContainer(_hubName, connectionDelegate);
+            var serviceConnection = GetMultiEndpointServiceConnectionContainer(_hubName, connectionDelegate, contextConfig);
 
             _serviceConnectionManager.SetServiceConnection(serviceConnection);
 
@@ -59,29 +59,10 @@ namespace Microsoft.Azure.SignalR
             _ = _serviceConnectionManager.StartAsync();
         }
 
-#if NETCOREAPP3_0
-        public void Start(ConnectionDelegate connectionDelegate, Endpoint endpoint)
-        {
-            // Simply create a couple of connections which connect to Azure SignalR
-            var serviceConnection = GetMultiEndpointServiceConnectionContainer(_hubName, endpoint, connectionDelegate);
-
-            _serviceConnectionManager.SetServiceConnection(serviceConnection);
-
-            Log.StartingConnection(_logger, Name, _options.ConnectionCount);
-            _ = _serviceConnectionManager.StartAsync();
-        }
-
-        private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, Endpoint endpoint, ConnectionDelegate connectionDelegate)
+        private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
         {
             var serviceConnectionFactory = new ServiceConnectionFactory(_serviceProtocol, _clientConnectionManager, _loggerFactory, connectionDelegate, _clientConnectionFactory);
-            serviceConnectionFactory.SetEndpoint(endpoint);
-            return new MultiEndpointServiceConnectionContainer(serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _loggerFactory);
-        }
-#endif
-
-        private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate)
-        {
-            var serviceConnectionFactory = new ServiceConnectionFactory(_serviceProtocol, _clientConnectionManager, _loggerFactory, connectionDelegate,_clientConnectionFactory);
+            serviceConnectionFactory.ConfigureContext = contextConfig;
             return new MultiEndpointServiceConnectionContainer(serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _loggerFactory);
         }
 

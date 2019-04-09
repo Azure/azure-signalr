@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -29,6 +28,8 @@ namespace Microsoft.Azure.SignalR
             new string[4] { ClientConnectionCountInHub, null, ClientConnectionCountInServiceConnection, null };
 
         private readonly ConnectionDelegate _connectionDelegate;
+
+        public Action<HttpContext> ConfigureContext { get; set; }
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
                                  IClientConnectionManager clientConnectionManager,
@@ -148,11 +149,7 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnConnectedAsync(OpenConnectionMessage message)
         {
             ServiceConnectionContext connection;
-#if NETCOREAPP3_0
-            connection = _clientConnectionFactory.CreateConnection(message, _endpoint);
-#else
-            connection = _clientConnectionFactory.CreateConnection(message);
-#endif
+            connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
             AddClientConnection(connection);
             Log.ConnectedStarting(_logger, connection.ConnectionId);
 
@@ -264,14 +261,5 @@ namespace Microsoft.Azure.SignalR
                 Log.ReceivedMessageForNonExistentConnection(_logger, connectionDataMessage.ConnectionId);
             }
         }
-
-#if NETCOREAPP3_0
-        private Endpoint _endpoint; 
-
-        public void SetEndpoint(Endpoint endpoint)
-        {
-            _endpoint = endpoint;
-        }
-#endif
     }
 }

@@ -5,6 +5,7 @@
 using System;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR.Startup
@@ -23,11 +24,21 @@ namespace Microsoft.Azure.SignalR.Startup
         public void Start(Endpoint endpoint, Type hubType, ConnectionDelegate app)
         {
             var type = _serviceDispatcherType.MakeGenericType(hubType);
-            var startMethod = type.GetMethod("Start", new Type[] { typeof(ConnectionDelegate), typeof(Endpoint) });
+            var startMethod = type.GetMethod("Start", new Type[] { typeof(ConnectionDelegate), typeof(Action<HttpContext>) });
+
+            var configureContext = new Action<HttpContext>(c => c.Features.Set<IEndpointFeature>(new EndpointFeature
+            {
+                Endpoint = endpoint
+            }));
 
             object dispatcher = _serviceProvider.GetRequiredService(type);
 
-            startMethod.Invoke(dispatcher, new object[] { app, endpoint });
+            startMethod.Invoke(dispatcher, new object[] { app, configureContext });
+        }
+
+        private class EndpointFeature : IEndpointFeature
+        {
+            public Endpoint Endpoint { get; set; }
         }
     }
 }
