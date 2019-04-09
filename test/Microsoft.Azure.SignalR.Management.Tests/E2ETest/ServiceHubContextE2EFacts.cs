@@ -144,8 +144,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             IList<HubConnection> connections = null;
             try
             {
-                var closed = new StrongBox<bool>(false);
                 connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
+                var closed = new StrongBox<bool>(false);
                 HandleHubConnection(connections, closed);
                 ListenOnMessage(connections, receivedMessageDict);
 
