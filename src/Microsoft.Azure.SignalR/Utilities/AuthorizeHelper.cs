@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
     {
         public static async Task<bool> AuthorizeAsync(HttpContext context, IList<IAuthorizeData> policies)
         {
-            if (policies == null || policies.Count == 0)
+            if (policies.Count == 0)
             {
                 return true;
             }
@@ -70,10 +70,6 @@ namespace Microsoft.Azure.SignalR
 
         public static List<IAuthorizeData> BuildAuthorizePolicy(Type hub)
         {
-#if NETCOREAPP3_0
-            // Core 3.0 is using AuthorizationMiddleware to handle this, no need to do again under Azure SignalR.
-            return null;
-#else
             var authorizeAttributes = hub.GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true);
             var authorizeData = new List<IAuthorizeData>();
             foreach (var attribute in authorizeAttributes)
@@ -81,7 +77,6 @@ namespace Microsoft.Azure.SignalR
                 authorizeData.Add((AuthorizeAttribute)attribute);
             }
             return authorizeData;
-#endif
         }
     }
 }

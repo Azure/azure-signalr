@@ -21,12 +21,10 @@ namespace Microsoft.Azure.SignalR
             var loggerFactory = context.RequestServices.GetService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger<ServiceRouteHelper>();
 
-#if !NETCOREAPP3_0
-            if (!await AuthorizeHelper.AuthorizeAsync(context, authorizationData))
+            if (authorizationData != null && !await AuthorizeHelper.AuthorizeAsync(context, authorizationData))
             {
                 return;
             }
-#endif
 
             NegotiationResponse negotiateResponse = null;
             try
