@@ -115,6 +115,20 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Fact]
+        public void TestRunAzureSignalRWiillUseApplicationNameInOptionsWhenUseHubPrefixIsTrue()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, opts => { opts.ConnectionString = ConnectionString; })))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+                    Assert.Equal(AppName, options.Value.ApplicationName);
+                }
+            }
+        }
+
+        [Fact]
         public void TestRunAzureSignalRWithAppSettings()
         {
             // Prepare the configuration
@@ -175,6 +189,38 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
 
                     Assert.Equal(ConnectionString, options.Value.ConnectionString);
+
+                    Assert.Equal(3, options.Value.Endpoints.Length);
+
+                    var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
+                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    Assert.Equal(4, endpoints.Length);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestRunAzureSignalRWithMultipleAppSettingsAndCustomSettingsIncludingOptionsAppName()
+        {
+            // Prepare the configuration
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
+                {
+                    options.Endpoints = new ServiceEndpoint[]
+                    {
+                        new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
+                        new ServiceEndpoint(ConnectionString3),
+                        new ServiceEndpoint(ConnectionString4)
+                    };
+                })))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+
+                    Assert.Equal(ConnectionString, options.Value.ConnectionString);
+                    Assert.Equal(AppName, options.Value.ApplicationName);
 
                     Assert.Equal(3, options.Value.Endpoints.Length);
 

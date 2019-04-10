@@ -21,10 +21,11 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private readonly string _endpoint;
         private readonly string _accessKey;
+        private readonly string _appName;
         private readonly int? _port;
         private readonly TimeSpan _accessTokenLifetime;
 
-        public ServiceEndpointProvider(ServiceEndpoint endpoint, TimeSpan? ttl = null)
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions options, TimeSpan? ttl = null)
         {
             var connectionString = endpoint.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
@@ -37,7 +38,13 @@ namespace Microsoft.Azure.SignalR.AspNet
             // Version is ignored for aspnet signalr case
             _endpoint = endpoint.Endpoint;
             _accessKey = endpoint.AccessKey;
+            _appName = options.ApplicationName;
             _port = endpoint.Port;
+        }
+
+        private string GetPrefixedHubName(string applicationName, string hubName)
+        {
+            return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
         }
 
         public string GenerateClientAccessToken(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, string requestId = null)
@@ -57,7 +64,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 };
             }
 
-            var audience = $"{_endpoint}/{ServerPath}/?hub={hubName.ToLower()}";
+            var audience = $"{_endpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
 
             return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
         }
@@ -96,8 +103,8 @@ namespace Microsoft.Azure.SignalR.AspNet
         public string GetServerEndpoint(string hubName)
         {
             return _port.HasValue ?
-                $"{_endpoint}:{_port}/{ServerPath}/?hub={hubName.ToLower()}" :
-                $"{_endpoint}/{ServerPath}/?hub={hubName.ToLower()}";
+                $"{_endpoint}:{_port}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}" :
+                $"{_endpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
         }
     }
 }
