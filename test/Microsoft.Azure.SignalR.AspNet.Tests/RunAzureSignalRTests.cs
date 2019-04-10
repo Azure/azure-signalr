@@ -247,6 +247,42 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             }
         }
 
+        [Theory]
+        [InlineData(null, 3)]
+        [InlineData("", 3)]
+        [InlineData(ConnectionString2, 3)]
+        [InlineData(ConnectionString, 4)]
+        public void TestRunAzureSignalRWithMultipleAppSettingsAndBothConnectionStringAndEndpointsCustomized(string customConnectionString, int expectedCount)
+        {
+            // Prepare the configuration
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            using (new AppSettingsConfigScope(ConnectionString, ConnectionString2, ConnectionString3, ConnectionString4))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                using (WebApp.Start(ServiceUrl,
+                    app => app.RunAzureSignalR(AppName, hubConfig, s =>
+                    {
+                        s.ConnectionString = customConnectionString;
+                        s.Endpoints = new[]
+                        {
+                            new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
+                            new ServiceEndpoint(ConnectionString3),
+                            new ServiceEndpoint(ConnectionString4)
+                        };
+                    })))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+
+                    Assert.Equal(customConnectionString, options.Value.ConnectionString);
+
+                    Assert.Equal(3, options.Value.Endpoints.Length);
+
+                    var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
+                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    Assert.Equal(expectedCount, endpoints.Length);
+                }
+            }
+        }
 
         [Fact]
         public void TestRunAzureSignalRWithMultipleAppSettingsAndBothConnectionStringAndEndpointsConfigured()
