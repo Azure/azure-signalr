@@ -53,7 +53,6 @@ var serviceManager = new ServiceManagerBuilder()
                     })
                     .Build();
     
-
 ```
 
 > In server mode, an endpoint `/<Your Hub Name>/negotiate` is exposed for negotiation by Azure SignalR Service SDK. SignalR clients will reach this endpoint and then redirect to Azure SignalR Service later.
@@ -126,7 +125,6 @@ This SDK can communicates to Azure SignalR Service with two transport types:
 
 This class contains some utilities for managing SignalR services. For now, ServiceHubContext is the only utility provided. Other utilities will be added in the future.
 
-
 #### `ServiceManagerBuilder WithOptions(Action<ServiceManagerOptions> configure)`
 
 Set options for service manager.
@@ -155,7 +153,6 @@ If in Persistent mode, IServiceManager also starts a WebSockets connection to Az
 
 #### `string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)`
 
-
 Generate access token for client to connect to service directly.
 
 > Parameters
@@ -175,7 +172,6 @@ Generate client endpoint for SignalR clients to connect to service directly.
 ### `IServiceHubContext`
 
 This interface manages SignalR clients connected to a specific hub in your Azure SignalR service and the interfaces follow the interface of `IHubContext` with extented interfaces. For example, it can broadcast messages to all connections, send messages to a specific user, send messages to a specific group, add or remove a specific user from a specific group.    
-
 
 #### Properties
 
@@ -207,7 +203,4 @@ In this SDK, `IUserGroupManager UserGroups` is newly added. It manages groups me
 
 #### Method
 * `Task DisposeAsync()`
-Stop connection if in the Persistent mode. And then dispose all unmanaged resources. 
-
-
-
+Stop connection if in the Persistent mode. And then dispose all unmanaged resources.
