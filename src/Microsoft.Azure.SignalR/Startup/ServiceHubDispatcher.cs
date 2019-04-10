@@ -8,12 +8,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.Azure.SignalR.Startup
+namespace Microsoft.Azure.SignalR
 {
     internal class ServiceHubDispatcher
     {
         // A late bound version of ServiceHubDispatcher<THub>.
-        private readonly Type _serviceDispatcherType = typeof(ServiceOptions).Assembly.GetType("Microsoft.Azure.SignalR.ServiceHubDispatcher`1");
+        private readonly Type _serviceDispatcherType = typeof(ServiceHubDispatcher<>);
         private readonly IServiceProvider _serviceProvider;
 
         public ServiceHubDispatcher(IServiceProvider serviceProvider)
@@ -26,10 +26,10 @@ namespace Microsoft.Azure.SignalR.Startup
             var type = _serviceDispatcherType.MakeGenericType(hubType);
             var startMethod = type.GetMethod("Start", new Type[] { typeof(ConnectionDelegate), typeof(Action<HttpContext>) });
 
-            var configureContext = new Action<HttpContext>(c => c.Features.Set<IEndpointFeature>(new EndpointFeature
+            Action<HttpContext> configureContext = c => c.Features.Set<IEndpointFeature>(new EndpointFeature
             {
                 Endpoint = endpoint
-            }));
+            });
 
             object dispatcher = _serviceProvider.GetRequiredService(type);
 

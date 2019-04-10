@@ -6,7 +6,7 @@ using System.Reflection;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Microsoft.Azure.SignalR.Startup
+namespace Microsoft.Azure.SignalR
 {
     internal static class AzureSignalRConnectionBuilderExtensions
     {

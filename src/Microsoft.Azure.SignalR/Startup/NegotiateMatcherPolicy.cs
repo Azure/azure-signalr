@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Matching;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Microsoft.Azure.SignalR.Startup
+namespace Microsoft.Azure.SignalR
 {
     internal class NegotiateMatcherPolicy : MatcherPolicy, IEndpointSelectorPolicy
     {

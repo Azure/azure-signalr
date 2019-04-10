@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.Azure.SignalR.Startup
+namespace Microsoft.Azure.SignalR
 {
     internal class AzureSignalRStartupFilter : IStartupFilter
     {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -70,11 +71,11 @@ namespace Microsoft.Azure.SignalR
 
         public static List<IAuthorizeData> BuildAuthorizePolicy(Type hub)
         {
-            var authorizeAttributes = hub.GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true);
+            var authorizeAttributes = hub.GetCustomAttributes<AuthorizeAttribute>(inherit: true);
             var authorizeData = new List<IAuthorizeData>();
             foreach (var attribute in authorizeAttributes)
             {
-                authorizeData.Add((AuthorizeAttribute)attribute);
+                authorizeData.Add(attribute);
             }
             return authorizeData;
         }

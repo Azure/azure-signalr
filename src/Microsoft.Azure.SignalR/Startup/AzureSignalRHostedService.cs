@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Microsoft.Azure.SignalR.Startup
+namespace Microsoft.Azure.SignalR
 {
     internal class AzureSignalRHostedService
     {
