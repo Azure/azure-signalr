@@ -43,7 +43,7 @@ Package [Microsoft.Azure.SignalR.Management](https://www.nuget.org/packages/Micr
 
 More details can be found [here](./docs/management-sdk-guide.md).
 
-The sample on how to use Management SDK to redirect SignalR clients to Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management)
+The sample on how to use Management SDK to redirect SignalR clients to Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
 
 ## Next Steps
 
