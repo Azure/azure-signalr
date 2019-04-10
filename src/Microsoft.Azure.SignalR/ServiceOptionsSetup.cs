@@ -18,16 +18,16 @@ namespace Microsoft.Azure.SignalR
         {
             _appName = configuration[Constants.ApplicationNameDefaultKeyPrefix];
 
-            var (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringDefaultKey, Constants.ConnectionStringKeyPrefix, _appName);
+            var (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringDefaultKey);
 
             // Fallback to ConnectionStrings:Azure:SignalR:ConnectionString format when the default one is not available
-            if (endpoints.Count == 0)
+            if (connectionString == null && endpoints.Length == 0)
             {
-                (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringSecondaryKey, Constants.ConnectionStringSecondaryKeyPrefix, _appName);
+                (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringSecondaryKey);
             }
 
             _connectionString = connectionString;
-            _endpoints = endpoints.ToArray();
+            _endpoints = endpoints;
         }
 
         public void Configure(ServiceOptions options)
@@ -38,26 +38,27 @@ namespace Microsoft.Azure.SignalR
             options.ApplicationName = _appName;
         }
 
-        private static (string, List<ServiceEndpoint>) GetEndpoint(IConfiguration configuration, string defaultKey, string keyPrefix, string applicationName)
+        private static (string, ServiceEndpoint[]) GetEndpoint(IConfiguration configuration, string key)
         {
-            var endpoints = new List<ServiceEndpoint>();
-            string connectionString = null;
-            foreach(var pair in configuration.AsEnumerable())
-            {
-                var key = pair.Key;
-                if (key == defaultKey && !string.IsNullOrEmpty(pair.Value))
-                {
-                    connectionString = pair.Value;
-                    endpoints.Add(new ServiceEndpoint(pair.Value));
-                }
-
-                if (key.StartsWith(keyPrefix) && !string.IsNullOrEmpty(pair.Value))
-                {
-                    endpoints.Add(new ServiceEndpoint(key, pair.Value));
-                }
-            }
+            var section = configuration.GetSection(key);
+            var connectionString = section.Value;
+            var endpoints = GetEndpoints(section.GetChildren()).ToArray();
 
             return (connectionString, endpoints);
+        }
+
+        private static IEnumerable<ServiceEndpoint> GetEndpoints(IEnumerable<IConfigurationSection> sections)
+        {
+            foreach (var section in sections)
+            {
+                foreach (var entry in section.AsEnumerable())
+                {
+                    if (!string.IsNullOrEmpty(entry.Value))
+                    {
+                        yield return new ServiceEndpoint(entry.Key, entry.Value);
+                    }
+                }
+            }
         }
     }
 }
