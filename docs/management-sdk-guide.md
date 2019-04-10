@@ -2,7 +2,7 @@
 
 > **NOTE**
 >
-> Azure SignalR Service only supports this SDK for ASP.NET CORE SignalR applications.
+> Azure SignalR Service only supports this SDK for ASP.NET CORE SignalR clients.
 
 ## Build Status
 
