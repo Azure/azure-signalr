@@ -124,13 +124,22 @@ namespace Microsoft.Azure.SignalR
                     _inner = inner;
                 }
 
+                /// <summary>
+                /// Downgrade error level logs, and also exclude exception details
+                /// Exceptions thrown from inside the HttpConnection are supposed to be handled by the caller and logged with more user-friendly message
+                /// </summary>
+                /// <typeparam name="TState"></typeparam>
+                /// <param name="logLevel"></param>
+                /// <param name="eventId"></param>
+                /// <param name="state"></param>
+                /// <param name="exception"></param>
+                /// <param name="formatter"></param>
                 public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
                 {
                     if (logLevel >= LogLevel.Error)
                     {
                         logLevel = LogLevel.Warning;
                     }
-
                     _inner.Log(logLevel, eventId, state, null, formatter);
                 }
 
