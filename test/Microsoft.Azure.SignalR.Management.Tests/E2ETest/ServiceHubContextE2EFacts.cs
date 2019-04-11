@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -145,16 +146,16 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             try
             {
                 connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
-                var tcs = new TaskCompletionSource<bool>();
-                HandleHubConnection(connections, tcs);
+                var cancellationTokenSource = new CancellationTokenSource();
+                HandleHubConnection(connections, cancellationTokenSource);
                 ListenOnMessage(connections, receivedMessageDict);
 
-                Assert.False(tcs.Task.IsCompleted);
+                Assert.False(cancellationTokenSource.Token.IsCancellationRequested);
 
                 await coreTask();
                 await Task.Delay(_timeout);
 
-                Assert.False(tcs.Task.IsCompleted);
+                Assert.False(cancellationTokenSource.Token.IsCancellationRequested);
 
                 var receivedMessageCount = (from pair in receivedMessageDict
                                             select pair.Value).Sum();
@@ -240,13 +241,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     };
                 }).Build();
 
-        private static void HandleHubConnection(IList<HubConnection> connections, TaskCompletionSource<bool> tcs)
+        private static void HandleHubConnection(IList<HubConnection> connections, CancellationTokenSource cancellationTokenSource)
         {
             foreach (var connection in connections)
             {
                 connection.Closed += ex =>
                 {
-                    tcs.TrySetResult(true);
+                    cancellationTokenSource.Cancel();
                     return Task.CompletedTask;
                 };
             }
