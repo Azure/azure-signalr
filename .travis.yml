@@ -4,7 +4,7 @@ branches:
   - dev
 dist: trusty
 mono: none
-dotnet: 3.0.100-preview3-010431
+dotnet: 2.1.301
 os:
 - linux
 - osx
