@@ -145,15 +145,16 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             try
             {
                 connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
-                var closed = new StrongBox<bool>(false);
-                HandleHubConnection(connections, closed);
+                var tcs = new TaskCompletionSource<bool>();
+                HandleHubConnection(connections, tcs);
                 ListenOnMessage(connections, receivedMessageDict);
 
-                await Task.Delay(_timeout);
-                Assert.False(closed.Value);
+                Assert.False(tcs.Task.IsCompleted);
 
                 await coreTask();
                 await Task.Delay(_timeout);
+
+                Assert.False(tcs.Task.IsCompleted);
 
                 var receivedMessageCount = (from pair in receivedMessageDict
                                             select pair.Value).Sum();
@@ -239,13 +240,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     };
                 }).Build();
 
-        private static void HandleHubConnection(IList<HubConnection> connections, StrongBox<bool> closed)
+        private static void HandleHubConnection(IList<HubConnection> connections, TaskCompletionSource<bool> tcs)
         {
             foreach (var connection in connections)
             {
                 connection.Closed += ex =>
                 {
-                    closed.Value = true;
+                    tcs.TrySetResult(true);
                     return Task.CompletedTask;
                 };
             }
