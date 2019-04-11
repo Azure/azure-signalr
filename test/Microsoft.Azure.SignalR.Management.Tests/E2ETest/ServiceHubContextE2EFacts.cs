@@ -143,10 +143,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private static async Task RunTestCore(string clientEndpoint, IEnumerable<string> clientAccessTokens, Func<Task> coreTask, int expectedReceivedMessageCount, ConcurrentDictionary<int, int> receivedMessageDict)
         {
             IList<HubConnection> connections = null;
+            CancellationTokenSource cancellationTokenSource = null;
             try
             {
                 connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
-                var cancellationTokenSource = new CancellationTokenSource();
+                cancellationTokenSource = new CancellationTokenSource();
                 HandleHubConnection(connections, cancellationTokenSource);
                 ListenOnMessage(connections, receivedMessageDict);
 
@@ -163,6 +164,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
             finally
             {
+                cancellationTokenSource?.Dispose();
                 if (connections != null)
                 {
                     await Task.WhenAll(from connection in connections
