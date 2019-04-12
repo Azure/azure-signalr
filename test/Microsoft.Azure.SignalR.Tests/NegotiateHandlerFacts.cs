@@ -106,6 +106,37 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
+        [InlineData("", "?hub=chat")]
+        [InlineData("appName", "?hub=appname_chat")]
+        public void GenerateNegotiateResponseWithAppName(string appName, string expectedResponse)
+        {
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR(o =>
+                {
+                    o.ConnectionString = DefaultConnectionString;
+                    o.ApplicationName = appName;
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var requestFeature = new HttpRequestFeature
+            {
+            };
+            var features = new FeatureCollection();
+            features.Set<IHttpRequestFeature>(requestFeature);
+            var httpContext = new DefaultHttpContext(features);
+
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            var negotiateResponse = handler.Process(httpContext, "chat");
+
+            Assert.NotNull(negotiateResponse);
+            Assert.EndsWith(expectedResponse, negotiateResponse.Url);
+        }
+
+        [Theory]
         [InlineData(typeof(ConnectionIdUserIdProvider), ServiceHubConnectionContext.ConnectionIdUnavailableError)]
         [InlineData(typeof(ConnectionAbortedTokenUserIdProvider), ServiceHubConnectionContext.ConnectionAbortedUnavailableError)]
         [InlineData(typeof(ItemsUserIdProvider), ServiceHubConnectionContext.ItemsUnavailableError)]
@@ -129,6 +160,45 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var exception = Assert.Throws<InvalidOperationException>(() => handler.Process(httpContext, "hub"));
             Assert.Equal(errorMessage, exception.Message);
+        }
+
+        [Fact]
+        public void TestNegotiateHandlerWithMultipleEndpointsAndCustomerRouterAndAppName()
+        {
+            var config = new ConfigurationBuilder().Build();
+            var router = new TestCustomRouter();
+            var serviceProvider = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR(o =>
+                {
+                    o.ApplicationName = "testprefix";
+                    o.Endpoints = new ServiceEndpoint[]
+                    {
+                        new ServiceEndpoint(ConnectionString2),
+                        new ServiceEndpoint(ConnectionString3, name: "chosen"),
+                        new ServiceEndpoint(ConnectionString4),
+                    };
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IEndpointRouter>(router)
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var requestFeature = new HttpRequestFeature
+            {
+                Path = "/user/path/negotiate/",
+                QueryString = "?endpoint=chosen"
+            };
+
+            var features = new FeatureCollection();
+            features.Set<IHttpRequestFeature>(requestFeature);
+            var httpContext = new DefaultHttpContext(features);
+
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            var negotiateResponse = handler.Process(httpContext, "chat");
+
+            Assert.NotNull(negotiateResponse);
+            Assert.Equal($"http://localhost3/client/?hub=testprefix_chat&asrs.op=%2Fuser%2Fpath&endpoint=chosen", negotiateResponse.Url);
         }
 
         [Fact]

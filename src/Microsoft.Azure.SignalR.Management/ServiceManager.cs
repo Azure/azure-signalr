@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _serviceManagerOptions = serviceManagerOptions;
             _endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString, EndpointType.Secondary);
-            _endpointProvider = new ServiceEndpointProvider(_endpoint);
+            _endpointProvider = new ServiceEndpointProvider(_endpoint, appName: _serviceManagerOptions.ApplicationName);
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
@@ -47,8 +47,12 @@ namespace Microsoft.Azure.SignalR.Management
                         var serviceCollection = new ServiceCollection();
                         serviceCollection.AddSignalRCore();
 
+                        if (loggerFactory != null)
+                        {
+                            serviceCollection.AddSingleton(typeof(ILoggerFactory), loggerFactory);
+                        }
+
                         serviceCollection
-                            .AddSingleton(typeof(ILoggerFactory), loggerFactory)
                             .AddLogging()
                             .AddSingleton(typeof(HubLifetimeManager<>), typeof(WebSocketsHubLifetimeManager<>))
                             .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))

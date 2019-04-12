@@ -5,9 +5,9 @@ namespace Microsoft.Azure.SignalR
 {
     internal interface IServiceEndpointGenerator
     {
-        string GetClientAudience(string hubName);
-        string GetClientEndpoint(string hubName, string originalPath, string queryString);
-        string GetServerAudience(string hubName);
-        string GetServerEndpoint(string hubName);
+        string GetClientAudience(string hubName, string applicationName);
+        string GetClientEndpoint(string hubName, string applicationName, string originalPath, string queryString);
+        string GetServerAudience(string hubName, string applicationName);
+        string GetServerEndpoint(string hubName, string applicationName);
     }
 }

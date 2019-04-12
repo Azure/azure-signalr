@@ -63,7 +63,16 @@ namespace Microsoft.Azure.SignalR
             {
                 foreach (var claim in customerClaims)
                 {
-                    yield return claim;
+                    // Add AzureSignalRUserPrefix if customer's claim name is duplicated with SignalR system claims.
+                    // And split it when return from SignalR Service.
+                    if (SystemClaims.Contains(claim.Type))
+                    {
+                        yield return new Claim(Constants.ClaimType.AzureSignalRUserPrefix + claim.Type, claim.Value);
+                    }
+                    else
+                    {
+                        yield return claim;
+                    }
                 }
             }
         }
@@ -102,6 +111,11 @@ namespace Microsoft.Azure.SignalR
                 else if (claim.Type == Constants.ClaimType.RoleType)
                 {
                     roleType = claim.Value;
+                }
+                else if (claim.Type.StartsWith(Constants.ClaimType.AzureSignalRUserPrefix))
+                {
+                    var claimName = claim.Type.Substring(Constants.ClaimType.AzureSignalRUserPrefix.Length);
+                    claims.Add(new Claim(claimName, claim.Value));
                 }
                 else if (!SystemClaims.Contains(claim.Type) && !claim.Type.StartsWith(Constants.ClaimType.AzureSignalRSysPrefix))
                 {
