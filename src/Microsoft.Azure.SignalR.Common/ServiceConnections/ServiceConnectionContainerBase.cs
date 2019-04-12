@@ -25,8 +25,8 @@ namespace Microsoft.Azure.SignalR
         protected readonly IConnectionFactory ConnectionFactory;
         protected volatile List<IServiceConnection> FixedServiceConnections;
         protected readonly int FixedConnectionCount;
+        protected BackOffPolicy backOffPolicy = new BackOffPolicy();
 
-        private volatile int _defaultConnectionRetry;
         private object _lock = new object();
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
@@ -113,25 +113,17 @@ namespace Microsoft.Azure.SignalR
 
         private async Task RestartServiceConnectionCoreAsync(int index)
         {
-            // multiple concurrent connection attempts can quickly reach long back off delays
-            // so we adjust the effective retry count according to the number of connections
-            await Task.Delay(GetRetryDelay(_defaultConnectionRetry/FixedConnectionCount));
-
-            // Increase retry count after delay, then if a group of connections get disconnected simultaneously,
-            // all of them will delay a similar range of time and reconnect. But if they get disconnected again (when SignalR service down), 
-            // they will all delay for a much longer time.
-            Interlocked.Increment(ref _defaultConnectionRetry);
-
-            var connection = CreateServiceConnectionCore();
-            ReplaceFixedConnections(index, connection);
-
-            _ = StartCoreAsync(connection);
-            await connection.ConnectionInitializedTask;
-
-            if (connection.Status == ServiceConnectionStatus.Connected)
+            Func<Task<bool>> tryNewConnection = async () =>
             {
-                Interlocked.Exchange(ref _defaultConnectionRetry, 0);
-            }
+                var connection = CreateServiceConnectionCore();
+                ReplaceFixedConnections(index, connection);
+                _ = StartCoreAsync(connection);
+                await connection.ConnectionInitializedTask;
+
+                return connection.Status == ServiceConnectionStatus.Connected;
+            };
+
+            await backOffPolicy.CallProbeWithBackOffAsync(tryNewConnection, GetRetryDelay);
         }
 
         internal static TimeSpan GetRetryDelay(int retryCount)
