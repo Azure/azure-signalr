@@ -5,6 +5,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -140,19 +142,35 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private static async Task RunTestCore(string clientEndpoint, IEnumerable<string> clientAccessTokens, Func<Task> coreTask, int expectedReceivedMessageCount, ConcurrentDictionary<int, int> receivedMessageDict)
         {
-            var connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
-            ListenOnMessage(connections, receivedMessageDict);
+            IList<HubConnection> connections = null;
+            CancellationTokenSource cancellationTokenSource = null;
+            try
+            {
+                connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
+                cancellationTokenSource = new CancellationTokenSource();
+                HandleHubConnection(connections, cancellationTokenSource);
+                ListenOnMessage(connections, receivedMessageDict);
 
-            await coreTask();
+                Assert.False(cancellationTokenSource.Token.IsCancellationRequested);
 
-            await Task.Delay(_timeout);
+                await coreTask();
+                await Task.Delay(_timeout);
 
-            var receivedMessageCount = (from pair in receivedMessageDict
-                                        select pair.Value).Sum();
-            Assert.Equal(expectedReceivedMessageCount, receivedMessageCount);
+                Assert.False(cancellationTokenSource.Token.IsCancellationRequested);
 
-            await Task.WhenAll(from connection in connections
-                               select connection.StopAsync());
+                var receivedMessageCount = (from pair in receivedMessageDict
+                                            select pair.Value).Sum();
+                Assert.Equal(expectedReceivedMessageCount, receivedMessageCount);
+            }
+            finally
+            {
+                cancellationTokenSource?.Dispose();
+                if (connections != null)
+                {
+                    await Task.WhenAll(from connection in connections
+                                       select connection.StopAsync());
+                }
+            }
         }
 
         private static string[] GetTestStringList(string prefix, int count)
@@ -224,5 +242,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                         return Task.FromResult(accessToken);
                     };
                 }).Build();
+
+        private static void HandleHubConnection(IList<HubConnection> connections, CancellationTokenSource cancellationTokenSource)
+        {
+            foreach (var connection in connections)
+            {
+                connection.Closed += ex =>
+                {
+                    cancellationTokenSource.Cancel();
+                    return Task.CompletedTask;
+                };
+            }
+        }
     }
 }
