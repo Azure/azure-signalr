@@ -23,6 +23,8 @@ namespace Microsoft.AspNetCore.Builder
         {
             var marker = app.ApplicationServices.GetService<AzureSignalRMarkerService>();
 
+            // Though in core 3.0 it's not required to call AddAzureSignalR() then UseAzureSignalR()
+            // It's not normal behavior to call AddSignalR() with UseAzureSignalR(), so keep the check.
             if (marker == null)
             {
                 throw new InvalidOperationException(
