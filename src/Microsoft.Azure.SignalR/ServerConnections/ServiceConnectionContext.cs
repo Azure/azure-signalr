@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR
         private readonly object _heartbeatLock = new object();
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
-        public ServiceConnectionContext(OpenConnectionMessage serviceMessage, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
+        public ServiceConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
             ConnectionId = serviceMessage.ConnectionId;
             User = serviceMessage.GetUserPrincipal();
@@ -52,6 +52,7 @@ namespace Microsoft.Azure.SignalR
             Application = pair.Transport;
 
             HttpContext = BuildHttpContext(serviceMessage);
+            configureContext?.Invoke(HttpContext);
 
             Features = BuildFeatures();
         }

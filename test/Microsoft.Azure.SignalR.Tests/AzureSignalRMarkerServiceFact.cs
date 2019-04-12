@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -45,7 +46,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void UseSignalRWithAddAzureSignalR()
+        public void UseEndpointsWithAddAzureSignalR()
         {
             var services = new ServiceCollection();
             var config = new ConfigurationBuilder()
@@ -58,15 +59,18 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddSignalR()
                 .AddAzureSignalR()
                 .Services
-                .AddSingleton<IApplicationLifetime>(new EmptyApplicationLifetime())
+                .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
                 .AddSingleton<IConfiguration>(config)
                 .BuildServiceProvider();
-
+        
             var app = new ApplicationBuilder(serviceProvider);
-            app.UseSignalR(routes =>
+            app.UseRouting();
+            app.UseEndpoints(routes =>
             {
-                Assert.Throws<InvalidOperationException>(() => routes.MapHub<TestHub>("/chat"));
+                routes.MapHub<TestHub>("/chat");
             });
+
+            Assert.NotNull(serviceProvider.GetService<HubLifetimeManager<TestHub>>());
         }
 
         [Fact]
@@ -83,7 +87,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddSignalR()
                 .AddMessagePackProtocol()
                 .Services
-                .AddSingleton<IApplicationLifetime>(new EmptyApplicationLifetime())
+                .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
                 .AddSingleton<IConfiguration>(config)
                 .BuildServiceProvider();
 
@@ -109,7 +113,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddAzureSignalR()
                 .AddMessagePackProtocol()
                 .Services
-                .AddSingleton<IApplicationLifetime>(new EmptyApplicationLifetime())
+                .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
                 .AddSingleton<IConfiguration>(config)
                 .BuildServiceProvider();
 
@@ -131,7 +135,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddAzureSignalR()
                 .AddMessagePackProtocol()
                 .Services
-                .AddSingleton<IApplicationLifetime>(new EmptyApplicationLifetime())
+                .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
                 .AddSingleton<IConfiguration>(config)
                 .BuildServiceProvider();
 
@@ -144,7 +148,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
     }
 
-    public class EmptyApplicationLifetime : IApplicationLifetime
+    public class EmptyApplicationLifetime : IHostApplicationLifetime
     {
         public CancellationToken ApplicationStarted => CancellationToken.None;
 
