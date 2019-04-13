@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR
         protected readonly IConnectionFactory ConnectionFactory;
         protected volatile List<IServiceConnection> FixedServiceConnections;
         protected readonly int FixedConnectionCount;
-        protected BackOffPolicy backOffPolicy = new BackOffPolicy();
+        private readonly BackOffPolicy backOffPolicy = new BackOffPolicy();
 
         private object _lock = new object();
 
