@@ -44,5 +44,7 @@ namespace Microsoft.Azure.SignalR
         /// Gets or sets list of endpoints
         /// </summary>
         public ServiceEndpoint[] Endpoints { get; set; }
+
+        public ServerStickyMode ServerStickyMode { get; set; } = ServerStickyMode.Disabled;
     }
 }

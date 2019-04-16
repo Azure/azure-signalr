@@ -45,6 +45,8 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public ServiceEndpoint[] Endpoints { get; set; }
 
+        public ServerStickyMode ServerStickyMode { get; set; }
+
         public ServiceOptions()
         {
             var count = ConfigurationManager.ConnectionStrings.Count;

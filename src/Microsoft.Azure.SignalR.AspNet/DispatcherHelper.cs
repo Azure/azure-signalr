@@ -33,7 +33,14 @@ namespace Microsoft.Azure.SignalR.AspNet
             // Get the one from DI or new a default one
             var router = configuration.Resolver.Resolve<IEndpointRouter>() ?? new DefaultEndpointRouter();
 
-            builder.Use<NegotiateMiddleware>(configuration, applicationName, endpoint, router, options, loggerFactory);
+            var serverNameProvider = configuration.Resolver.Resolve<IServerNameProvider>();
+            if (serverNameProvider == null)
+            {
+                serverNameProvider = new DefaultServerNameProvider();
+                configuration.Resolver.Register(typeof(IServerNameProvider), () => serverNameProvider);
+            }
+
+            builder.Use<NegotiateMiddleware>(configuration, applicationName, endpoint, router, options, serverNameProvider, loggerFactory);
 
             builder.RunSignalR(configuration);
 
@@ -84,7 +91,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             if (hubs?.Count > 0)
             {
-                return new ServiceHubDispatcher(hubs, serviceProtocol, scm, ccm, endpoint, router, serviceOptions, loggerFactory);
+                return new ServiceHubDispatcher(hubs, serviceProtocol, scm, ccm, endpoint, router, serviceOptions, serverNameProvider, loggerFactory);
             }
             else
             {

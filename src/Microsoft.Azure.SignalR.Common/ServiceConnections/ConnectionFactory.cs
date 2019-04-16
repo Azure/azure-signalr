@@ -24,11 +24,11 @@ namespace Microsoft.Azure.SignalR
         private readonly string _userId;
         private readonly string _hubName;
 
-        public ConnectionFactory(string hubName, IServiceEndpointProvider provider, ILoggerFactory loggerFactory)
+        public ConnectionFactory(string hubName, IServiceEndpointProvider provider, IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
         {
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _loggerFactory = loggerFactory;
-            _userId = GenerateServerName();
+            _userId = nameProvider?.GetName();
             _hubName = hubName;
         }
 
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR
             var httpConnection = new HttpConnection(httpConnectionOptions, _loggerFactory);
             try
             {
-                await httpConnection.StartAsync(transferFormat);
+                await httpConnection.StartAsync(transferFormat, cancellationToken);
                 return httpConnection;
             }
             catch
@@ -82,13 +82,6 @@ namespace Microsoft.Azure.SignalR
             }
 
             return ((HttpConnection)connection).DisposeAsync();
-        }
-
-        private static string GenerateServerName()
-        {
-            // Use the machine name for convenient diagnostics, but add a guid to make it unique.
-            // Example: MyServerName_02db60e5fab243b890a847fa5c4dcb29
-            return $"{Environment.MachineName}_{Guid.NewGuid():N}";
         }
     }
 }
