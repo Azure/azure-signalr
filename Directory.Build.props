@@ -26,4 +26,10 @@
     <LangVersion>latest</LangVersion>
     <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>
   </PropertyGroup>
+  
+  <PropertyGroup>
+    <AssemblySigningCertName>Microsoft400</AssemblySigningCertName>
+    <PackageSigningCertName>NuGet</PackageSigningCertName>
+  </PropertyGroup>
+
 </Project>
