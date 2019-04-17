@@ -1,8 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
     <PackageVersion>1.0.0-preview1-$(BuildNumber)</PackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(VisualStudioVersion)' &gt;= '16.0' AND '$(IsPreview)' == 'true'">
+    <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(VisualStudioVersion)' != '16.0' OR '$(IsPreview)' != 'true'">
+    <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
