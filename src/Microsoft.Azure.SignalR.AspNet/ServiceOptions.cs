@@ -50,8 +50,17 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         /// <summary>
         /// Specifies the mode for server sticky, when client is always routed to the server which it first /negotiate with, we call it "server sticky mode".
+        /// By default this mode is disabled
+        /// NOTE: This feature is not available until May 13th when Azure SignalR Service is updateds
         /// </summary>
         public ServerStickyMode ServerStickyMode { get; set; }
+
+        /// <summary>
+        /// Specifies if current app is isolated from others who has a different ApplicationName using the same Azure SignalR Service
+        /// The default value is false.
+        /// NOTE: This feature is not available until May 13th when Azure SignalR Service is updateds
+        /// </summary>
+        public bool IsolateApplication { get; set; }
 
         public ServiceOptions()
         {
