@@ -25,6 +25,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly IEndpointRouter _router;
         private readonly string _hubName;
+        private readonly IServerNameProvider _nameProvider;
 
         public ServiceHubDispatcher(IServiceProtocol serviceProtocol,
             IServiceConnectionManager<THub> serviceConnectionManager,
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.SignalR
             IOptions<ServiceOptions> options,
             ILoggerFactory loggerFactory,
             IEndpointRouter router,
+            IServerNameProvider nameProvider,
             IClientConnectionFactory clientConnectionFactory)
         {
             _serviceProtocol = serviceProtocol;
@@ -45,6 +47,7 @@ namespace Microsoft.Azure.SignalR
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _logger = loggerFactory.CreateLogger<ServiceHubDispatcher<THub>>();
             _clientConnectionFactory = clientConnectionFactory;
+            _nameProvider = nameProvider;
             _hubName = typeof(THub).Name;
         }
 
@@ -63,7 +66,7 @@ namespace Microsoft.Azure.SignalR
         {
             var serviceConnectionFactory = new ServiceConnectionFactory(_serviceProtocol, _clientConnectionManager, _loggerFactory, connectionDelegate, _clientConnectionFactory);
             serviceConnectionFactory.ConfigureContext = contextConfig;
-            return new MultiEndpointServiceConnectionContainer(serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _loggerFactory);
+            return new MultiEndpointServiceConnectionContainer(serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _nameProvider, _loggerFactory);
         }
 
         private static class Log
