@@ -72,6 +72,59 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(expectedUserId, token.Claims.FirstOrDefault(x => x.Type == Constants.ClaimType.UserId)?.Value);
             Assert.Equal("custom", token.Claims.FirstOrDefault(x => x.Type == "custom")?.Value);
             Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
+            Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerName));
+            Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode));
+        }
+
+        [Fact]
+        public void GenerateNegotiateResponseWithUserIdAndServerSticky()
+        {
+            var name = nameof(GenerateNegotiateResponseWithUserIdAndServerSticky);
+            var serverNameProvider = new TestServerNameProvider(name);
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR(
+                o =>
+                {
+                    o.ServerStickyMode = ServerStickyMode.Required;
+                    o.ConnectionString = DefaultConnectionString;
+                    o.AccessTokenLifetime = TimeSpan.FromDays(1);
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IConfiguration>(config)
+                .AddSingleton(typeof(IUserIdProvider), typeof(DefaultUserIdProvider))
+                .AddSingleton(typeof(IServerNameProvider), serverNameProvider)
+                .BuildServiceProvider();
+
+            var httpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                {
+                    new Claim(CustomClaimType, CustomUserId),
+                    new Claim(ClaimTypes.NameIdentifier, DefaultUserId),
+                    new Claim("custom", "custom"),
+                }))
+            };
+
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            var negotiateResponse = handler.Process(httpContext, "hub");
+
+            Assert.NotNull(negotiateResponse);
+            Assert.NotNull(negotiateResponse.Url);
+            Assert.NotNull(negotiateResponse.AccessToken);
+            Assert.Null(negotiateResponse.ConnectionId);
+            Assert.Empty(negotiateResponse.AvailableTransports);
+
+            var token = JwtSecurityTokenHandler.ReadJwtToken(negotiateResponse.AccessToken);
+            Assert.Equal(DefaultUserId, token.Claims.FirstOrDefault(x => x.Type == Constants.ClaimType.UserId)?.Value);
+            Assert.Equal("custom", token.Claims.FirstOrDefault(x => x.Type == "custom")?.Value);
+            Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
+
+            var serverName = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerName)?.Value;
+            Assert.Equal(name, serverName);
+            var mode = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode)?.Value;
+            Assert.Equal("Required", mode);
         }
 
         [Theory]
@@ -267,6 +320,20 @@ namespace Microsoft.Azure.SignalR.Tests
 
             handler = serviceProvider.GetRequiredService<NegotiateHandler>();
             Assert.Throws<InvalidOperationException>(() => handler.Process(httpContext, "chat"));
+        }
+
+        private sealed class TestServerNameProvider : IServerNameProvider
+        {
+            private readonly string _serverName;
+            public TestServerNameProvider(string serverName)
+            {
+                _serverName = serverName;
+            }
+
+            public string GetName()
+            {
+                return _serverName;
+            }
         }
 
         private class TestCustomRouter : EndpointRouterDecorator

@@ -43,7 +43,15 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// </summary>
         public TimeSpan AccessTokenLifetime { get; set; } = Constants.DefaultAccessTokenLifetime;
 
+        /// <summary>
+        /// Customize the multiple endpoints used
+        /// </summary>
         public ServiceEndpoint[] Endpoints { get; set; }
+
+        /// <summary>
+        /// Specifies the mode for server sticky, when client is always routed to the server which it first /negotiate with, we call it "server sticky mode".
+        /// </summary>
+        public ServerStickyMode ServerStickyMode { get; set; }
 
         public ServiceOptions()
         {

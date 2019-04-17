@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
@@ -11,12 +12,18 @@ namespace Microsoft.Azure.SignalR
     internal class ServiceOptionsSetup : IConfigureOptions<ServiceOptions>
     {
         private readonly string _appName;
+        private readonly ServerStickyMode _serverStickyMode;
         private readonly string _connectionString;
         private readonly ServiceEndpoint[] _endpoints;
 
         public ServiceOptionsSetup(IConfiguration configuration)
         {
             _appName = configuration[Constants.ApplicationNameDefaultKeyPrefix];
+            var mode = configuration[Constants.ServerStickyModeDefaultKey];
+            if (!string.IsNullOrEmpty(mode))
+            {
+                Enum.TryParse(mode, true, out _serverStickyMode);
+            }
 
             var (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringDefaultKey, Constants.ConnectionStringKeyPrefix, _appName);
 
@@ -36,6 +43,7 @@ namespace Microsoft.Azure.SignalR
             options.ConnectionString = _connectionString;
             options.Endpoints = _endpoints;
             options.ApplicationName = _appName;
+            options.ServerStickyMode = _serverStickyMode;
         }
 
         private static (string, List<ServiceEndpoint>) GetEndpoint(IConfiguration configuration, string defaultKey, string keyPrefix, string applicationName)
