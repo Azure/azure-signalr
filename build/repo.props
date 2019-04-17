@@ -5,4 +5,15 @@
     <DotNetCoreRuntime Include="$(MicrosoftNETCoreApp20PackageVersion)" />
     <DotNetCoreRuntime Include="$(MicrosoftNETCoreApp21PackageVersion)" />
   </ItemGroup>
+
+  <ItemGroup>
+    <FilesToSign Include="$(RepositoryRoot)src\Microsoft.Azure.SignalR\bin\Release\netcoreapp3.0\Microsoft.Azure.SignalR.dll" Certificate="$(AssemblySigningCertName)" />
+    <FilesToSign Include="$(RepositoryRoot)src\Microsoft.Azure.SignalR\bin\Release\netstandard2.0\Microsoft.Azure.SignalR.dll" Certificate="$(AssemblySigningCertName)" />
+    <FilesToSign Include="$(RepositoryRoot)src\Microsoft.Azure.SignalR.AspNet\bin\Release\net461\Microsoft.Azure.SignalR.AspNet.dll" Certificate="$(AssemblySigningCertName)" />
+    <FilesToSign Include="$(RepositoryRoot)src\Microsoft.Azure.SignalR.Common\bin\Release\netstandard2.0\Microsoft.Azure.SignalR.Common.dll" Certificate="$(AssemblySigningCertName)" />
+    <FilesToSign Include="$(RepositoryRoot)src\Microsoft.Azure.SignalR.Management\bin\Release\netcoreapp3.0\Microsoft.Azure.SignalR.Management.dll" Certificate="$(AssemblySigningCertName)" />
+    <FilesToSign Include="$(RepositoryRoot)src\Microsoft.Azure.SignalR.Management\bin\Release\netstandard2.0\Microsoft.Azure.SignalR.Management.dll" Certificate="$(AssemblySigningCertName)" />
+    <FilesToSign Include="$(RepositoryRoot)src\Microsoft.Azure.SignalR.Protocols\bin\Release\netstandard2.0\Microsoft.Azure.SignalR.Protocols.dll" Certificate="$(AssemblySigningCertName)" />
+  </ItemGroup>
+
 </Project>
