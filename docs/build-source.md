@@ -54,7 +54,6 @@ Common properties include:
 
 Property                 | Description
 -------------------------|-------------------------------------------------------------------------------------------------------------
-BuildNumberSuffix        | (string). A specific build number, typically from a CI counter, which is appended to the pre-release label.
+BuildNumber              | (string). A specific build number, typically from a CI counter, which is appended to the preview1 label.
 Configuration            | `Debug` or `Release`. Default = `Debug`.
-TargetArchitecture       | The CPU architecture to build for (x64, x86, arm, arm64).
-TargetOsName             | The base runtime identifier to build for (win, linux, osx, linux-musl).
+IsTargetMultiFramework   | `true` or `false`. Default = `true`. Configure whether to build projects targeting ASP.NET Core 3.0.
