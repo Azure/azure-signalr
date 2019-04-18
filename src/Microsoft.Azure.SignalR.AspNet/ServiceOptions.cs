@@ -51,7 +51,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// <summary>
         /// Specifies the mode for server sticky, when client is always routed to the server which it first /negotiate with, we call it "server sticky mode".
         /// By default this mode is disabled
-        /// NOTE: This feature is not available until May 13th when Azure SignalR Service is updateds
+        /// NOTE: This feature is not available until May 13th when Azure SignalR Service is updated
         /// </summary>
         public ServerStickyMode ServerStickyMode { get; set; }
 
