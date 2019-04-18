@@ -3,10 +3,10 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -28,6 +28,8 @@ namespace Microsoft.Azure.SignalR
             new string[4] { ClientConnectionCountInHub, null, ClientConnectionCountInServiceConnection, null };
 
         private readonly ConnectionDelegate _connectionDelegate;
+
+        public Action<HttpContext> ConfigureContext { get; set; }
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
                                  IClientConnectionManager clientConnectionManager,
@@ -146,7 +148,7 @@ namespace Microsoft.Azure.SignalR
 
         protected override Task OnConnectedAsync(OpenConnectionMessage message)
         {
-            var connection = _clientConnectionFactory.CreateConnection(message);
+            var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
             AddClientConnection(connection);
             Log.ConnectedStarting(_logger, connection.ConnectionId);
 

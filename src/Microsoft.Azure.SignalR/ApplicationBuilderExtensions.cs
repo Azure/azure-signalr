@@ -22,12 +22,16 @@ namespace Microsoft.AspNetCore.Builder
         public static IApplicationBuilder UseAzureSignalR(this IApplicationBuilder app, Action<ServiceRouteBuilder> configure)
         {
             var marker = app.ApplicationServices.GetService<AzureSignalRMarkerService>();
+
+            // Though in core 3.0 it's not required to call AddAzureSignalR() then UseAzureSignalR()
+            // It's not normal behavior to call AddSignalR() with UseAzureSignalR(), so keep the check.
             if (marker == null)
             {
                 throw new InvalidOperationException(
                     "Unable to find the required services. Please add all the required services by calling " +
                     "'IServiceCollection.AddAzureSignalR' inside the call to 'ConfigureServices(...)' in the application startup code.");
             }
+
             marker.IsConfigured = true;
             var routes = new RouteBuilder(app);
             configure(new ServiceRouteBuilder(routes));
