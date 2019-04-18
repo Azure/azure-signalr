@@ -25,7 +25,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <LangVersion>latest</LangVersion>
     <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>
-    <IsPreview>true</IsPreview>
+    <IsTargetMultiFramework>true</IsTargetMultiFramework>
   </PropertyGroup>
   
   <PropertyGroup>

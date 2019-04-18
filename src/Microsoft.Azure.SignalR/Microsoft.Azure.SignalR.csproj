@@ -6,10 +6,10 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   
-  <PropertyGroup Condition="'$(VisualStudioVersion)' >= '16.0' AND '$(IsPreview)' == 'true'">
+  <PropertyGroup Condition="'$(IsTargetMultiFramework)' == 'true'">
     <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(VisualStudioVersion)' != '16.0' OR '$(IsPreview)' != 'true'">
+  <PropertyGroup Condition="'$(IsTargetMultiFramework)' != 'true'">
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
