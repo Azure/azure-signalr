@@ -25,12 +25,8 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <LangVersion>latest</LangVersion>
     <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>
-    <IsTargetMultiFramework>true</IsTargetMultiFramework>
-  </PropertyGroup>
-  
-  <PropertyGroup>
     <AssemblySigningCertName>Microsoft400</AssemblySigningCertName>
     <PackageSigningCertName>NuGet</PackageSigningCertName>
+    <IsTargetMultiFramework>true</IsTargetMultiFramework>
   </PropertyGroup>
-
 </Project>
