@@ -59,8 +59,7 @@ Contributions are highly welcome. Keep reading if you want to contribute to our 
 
 ### Building from source
 
-Run `build.cmd` or `build.sh` without arguments for a complete build including tests.
-See [Building documents](https://github.com/aspnet/Home/wiki/Building-from-source) for more details.
+See [Building documents](./docs/build-source.md) for more details.
 
 ### Contributing
 
