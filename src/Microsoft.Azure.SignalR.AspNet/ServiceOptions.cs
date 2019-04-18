@@ -56,11 +56,9 @@ namespace Microsoft.Azure.SignalR.AspNet
         public ServerStickyMode ServerStickyMode { get; set; }
 
         /// <summary>
-        /// Specifies if current app is isolated from others who has a different ApplicationName using the same Azure SignalR Service
-        /// The default value is false.
-        /// NOTE: This feature is not available until May 13th when Azure SignalR Service is updateds
+        /// TODO: delete it when runtime is ready, don't expose it to the customer
         /// </summary>
-        public bool IsolateApplication { get; set; }
+        internal bool IsolateApplication { get; set; } = false;
 
         public ServiceOptions()
         {

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class NegotiateMiddleware : OwinMiddleware
     {
-        private static readonly ProtocolResolver ProtocolResolver = new ProtocolResolver();
+        private static readonly string AssemblyVersion = typeof(NegotiateMiddleware).Assembly.GetName().Version.ToString();
 
         private readonly string _appName;
         private readonly Func<IOwinContext, IEnumerable<Claim>> _claimsProvider;
@@ -159,7 +160,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             if (_isolateApp)
             {
-                yield return new Claim(Constants.ClaimType.IsolateApplication, "");
+                yield return new Claim(Constants.ClaimType.Version, AssemblyVersion);
             }
 
             foreach (var claim in claims)

@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR
             public const string ServerStickyMode = AzureSignalRSysPrefix + "ssticky";
             public const string Id = AzureSignalRSysPrefix + "id";
             public const string AppName = AzureSignalRSysPrefix + "apn";
-            public const string IsolateApplication = AzureSignalRSysPrefix + "iapp";
+            public const string Version = AzureSignalRSysPrefix + "vn";
 
             public const string AzureSignalRUserPrefix = "asrs.u.";
         }
