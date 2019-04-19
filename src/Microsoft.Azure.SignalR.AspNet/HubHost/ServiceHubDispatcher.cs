@@ -22,16 +22,13 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IServiceProtocol _protocol;
         private readonly IServiceEndpointManager _serviceEndpointManager;
         private readonly IEndpointRouter _router;
-        private readonly IServerNameProvider _nameProvider;
         private readonly string _name;
 
         public ServiceHubDispatcher(IReadOnlyList<string> hubNames, IServiceProtocol protocol,
             IServiceConnectionManager serviceConnectionManager, IClientConnectionManager clientConnectionManager,
             IServiceEndpointManager serviceEndpointManager,
             IEndpointRouter router,
-            IOptions<ServiceOptions> options, 
-            IServerNameProvider nameProvider,
-            ILoggerFactory loggerFactory)
+            IOptions<ServiceOptions> options, ILoggerFactory loggerFactory)
         {
             _hubNames = hubNames;
             _name = $"{nameof(ServiceHubDispatcher)}[{string.Join(",", hubNames)}]";
@@ -40,7 +37,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             _router = router ?? throw new ArgumentNullException(nameof(router));
             _serviceConnectionManager = serviceConnectionManager ?? throw new ArgumentNullException(nameof(serviceConnectionManager));
             _clientConnectionManager = clientConnectionManager ?? throw new ArgumentNullException(nameof(clientConnectionManager));
-            _nameProvider = nameProvider;
             _options = options?.Value;
             _serviceEndpointManager = serviceEndpointManager ?? throw new ArgumentNullException(nameof(serviceEndpointManager));
             _logger = _loggerFactory.CreateLogger<ServiceHubDispatcher>();
@@ -48,7 +44,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public Task StartAsync()
         {
-            _serviceConnectionManager.Initialize(GetMultiEndpointServiceConnectionContainer);
+            _serviceConnectionManager.Initialize(hub => GetMultiEndpointServiceConnectionContainer(hub));
 
             Log.StartingConnection(_logger, _name, _options.ConnectionCount, _hubNames.Count);
 
@@ -58,7 +54,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub)
         {
             var serviceConnectionFactory = new ServiceConnectionFactory(_protocol, _clientConnectionManager, _loggerFactory);
-            return new MultiEndpointServiceConnectionContainer(serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _nameProvider, _loggerFactory);
+            return new MultiEndpointServiceConnectionContainer(serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _loggerFactory);
         }
 
         private static class Log

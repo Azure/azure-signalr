@@ -96,8 +96,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var config = new ConfigurationBuilder()
                     .AddInMemoryCollection(new Dictionary<string, string>
                     {
-                    {"Azure:SignalR:ConnectionString", DefaultValue},
-                        {"Azure:SignalR:StickyServerMode", "invalid" }
+                    {"Azure:SignalR:ConnectionString", DefaultValue}
                     })
                     .Build();
                 string capturedConnectionString = null;
@@ -112,43 +111,6 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 Assert.Equal(DefaultValue, options.ConnectionString);
                 Assert.Equal(DefaultValue, capturedConnectionString);
-            }
-        }
-
-
-        [Theory]
-        [InlineData(null, ServerStickyMode.Disabled)]
-        [InlineData("invalid", ServerStickyMode.Disabled)]
-        [InlineData("disabled", ServerStickyMode.Disabled)]
-        [InlineData("prefered", ServerStickyMode.Prefered)]
-        [InlineData("Prefered", ServerStickyMode.Prefered)]
-        [InlineData("required", ServerStickyMode.Required)]
-        public void AddAzureReadsSickyServerModeFromConfigurationFirst(string modeFromConfig, ServerStickyMode expected)
-        {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
-            {
-                var services = new ServiceCollection();
-                var config = new ConfigurationBuilder()
-                    .AddInMemoryCollection(new Dictionary<string, string>
-                    {
-                        {"Azure:SignalR:ServerStickyMode", modeFromConfig }
-                    })
-                    .Build();
-                ServerStickyMode capturedMode = ServerStickyMode.Disabled;
-                var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalR(o => 
-                    {
-                        capturedMode = o.ServerStickyMode;
-                    })
-                    .Services
-                    .AddSingleton<IConfiguration>(config)
-                    .AddSingleton(loggerFactory)
-                    .BuildServiceProvider();
-
-                var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
-
-                Assert.Equal(expected, capturedMode);
-                Assert.Equal(expected, options.ServerStickyMode);
             }
         }
 

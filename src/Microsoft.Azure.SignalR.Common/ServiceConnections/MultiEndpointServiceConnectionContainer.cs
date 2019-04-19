@@ -47,16 +47,16 @@ namespace Microsoft.Azure.SignalR
         }
 
         public MultiEndpointServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, string hub,
-            int count, IServiceEndpointManager endpointManager, IMessageRouter router, IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
-        :this(endpoint => CreateContainer(serviceConnectionFactory, endpoint, hub, count, endpointManager, nameProvider, loggerFactory),
+            int count, IServiceEndpointManager endpointManager, IMessageRouter router, ILoggerFactory loggerFactory)
+        :this(endpoint => CreateContainer(serviceConnectionFactory, endpoint, hub, count, endpointManager, loggerFactory),
             endpointManager, router, loggerFactory)
         {
         }
 
-        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, ServiceEndpoint endpoint, string hub, int count, IServiceEndpointManager endpointManager, IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
+        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, ServiceEndpoint endpoint, string hub, int count, IServiceEndpointManager endpointManager, ILoggerFactory loggerFactory)
         {
             var provider = endpointManager.GetEndpointProvider(endpoint);
-            var connectionFactory = new ConnectionFactory(hub, provider, nameProvider, loggerFactory);
+            var connectionFactory = new ConnectionFactory(hub, provider, loggerFactory);
             if (endpoint.EndpointType == EndpointType.Primary)
             {
                 return new StrongServiceConnectionContainer(serviceConnectionFactory, connectionFactory, count, endpoint);
