@@ -59,7 +59,7 @@ Contributions are highly welcome. Keep reading if you want to contribute to our 
 
 ### Building from source
 
-See [Building documents](./docs/build-source.md) for more details.
+See [Building Documents](./docs/build-source.md) for more details.
 
 ### Contributing
 
