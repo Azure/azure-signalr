@@ -4,7 +4,7 @@ branches:
   - dev
 dist: trusty
 mono: none
-dotnet: 2.2.106
+dotnet: 2.1.301
 os:
 - linux
 - osx
@@ -12,5 +12,8 @@ addons:
   apt:
     packages:
     - libunwind8
+before_install:
+- sudo apt-get install apt-transport-https
+- sudo apt-get update
 script:
 - "./build.sh --ci /p:BuildNumber=$((10000+TRAVIS_BUILD_NUMBER))\\;DisableNet461Tests=true"
