@@ -118,7 +118,7 @@ namespace Microsoft.Azure.SignalR
                 return _inner.WriteAsync(partitionKey, serviceMessage);
             }
 
-            // re-evaluate availbale endpoints as they might be offline, however it can not guarantee that all endpoints are online
+            // re-evaluate available endpoints as they might be offline, however it can not guarantee that all endpoints are online
             var routed = GetRoutedEndpoints(serviceMessage, _endpointManager.GetAvailableEndpoints()).ToArray();
 
             if (routed.Length == 0)

@@ -58,56 +58,42 @@ namespace Microsoft.Azure.SignalR.AspNet
             var count = ConfigurationManager.ConnectionStrings.Count;
             string connectionString = null;
             var endpoints = new List<ServiceEndpoint>();
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 var setting = ConfigurationManager.ConnectionStrings[i];
-                var (isDefault, endpoint) = GetEndpoint(setting.Name, this.ApplicationName, () => setting.ConnectionString);
-                if (endpoint != null)
-                {
-                    if (isDefault)
-                    {
-                        connectionString = endpoint.ConnectionString;
-                    }
 
-                    endpoints.Add(endpoint);
+                if (setting.Name == Constants.ConnectionStringDefaultKey)
+                {
+                    connectionString = setting.ConnectionString;
+                }
+                else if (setting.Name.StartsWith(Constants.ConnectionStringKeyPrefix) && !string.IsNullOrEmpty(setting.ConnectionString))
+                {
+                    endpoints.Add(new ServiceEndpoint(setting.Name, setting.ConnectionString));
                 }
             }
 
-            if (endpoints.Count == 0)
+            // Fallback to use AppSettings
+            if (string.IsNullOrEmpty(connectionString) && endpoints.Count == 0)
             {
-                // Fallback to use AppSettings
                 foreach(var key in ConfigurationManager.AppSettings.AllKeys)
                 {
-                    var (isDefault, endpoint) = GetEndpoint(key, this.ApplicationName, () => ConfigurationManager.AppSettings[key]);
-                    if (endpoint != null)
+                    if (key == Constants.ConnectionStringDefaultKey)
                     {
-                        if (isDefault)
+                        connectionString = ConfigurationManager.AppSettings[key];
+                    }
+                    else if (key.StartsWith(Constants.ConnectionStringKeyPrefix))
+                    {
+                        var value = ConfigurationManager.AppSettings[key];
+                        if (!string.IsNullOrEmpty(value))
                         {
-                            connectionString = endpoint.ConnectionString;
+                            endpoints.Add(new ServiceEndpoint(key, value));
                         }
-
-                        endpoints.Add(endpoint);
                     }
                 }
             }
 
             ConnectionString = connectionString;
             Endpoints = endpoints.ToArray();
-        }
-
-        private static (bool isDefault, ServiceEndpoint endpoint) GetEndpoint(string key, string appName, Func<string> valueGetter)
-        {
-            if (key == Constants.ConnectionStringDefaultKey && !string.IsNullOrEmpty(valueGetter()))
-            {
-                return (true, new ServiceEndpoint(valueGetter()));
-            }
-
-            if (key.StartsWith(Constants.ConnectionStringKeyPrefix) && !string.IsNullOrEmpty(valueGetter()))
-            {
-                return (false, new ServiceEndpoint(key, valueGetter()));
-            }
-
-            return (false, null);
         }
     }
 }
