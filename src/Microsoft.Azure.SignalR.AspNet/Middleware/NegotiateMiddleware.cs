@@ -32,7 +32,10 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IUserIdProvider _provider;
         private readonly HubConfiguration _configuration;
 
-        public NegotiateMiddleware(OwinMiddleware next, HubConfiguration configuration, string appName, IServiceEndpointManager endpointManager, IEndpointRouter router, ServiceOptions options, ILoggerFactory loggerFactory)
+        private readonly string _serverName;
+        private readonly ServerStickyMode _mode;
+
+        public NegotiateMiddleware(OwinMiddleware next, HubConfiguration configuration, string appName, IServiceEndpointManager endpointManager, IEndpointRouter router, ServiceOptions options, IServerNameProvider serverNameProvider, ILoggerFactory loggerFactory)
             : base(next)
         {
             _configuration = configuration;
@@ -42,6 +45,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
             _router = router ?? throw new ArgumentNullException(nameof(router));
             _logger = loggerFactory?.CreateLogger<NegotiateMiddleware>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _serverName = serverNameProvider?.GetName();
+            _mode = options.ServerStickyMode;
         }
 
         public override Task Invoke(IOwinContext owinContext)
@@ -148,7 +153,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             var user = owinContext.Authentication?.User;
             var userId = _provider?.GetUserId(request);
 
-            var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext));
+            var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext), _serverName, _mode);
 
             foreach (var claim in claims)
             {
