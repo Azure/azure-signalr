@@ -525,17 +525,17 @@ namespace Microsoft.Azure.SignalR
         private static class Log
         {
             // Category: ServiceConnection
-            private static readonly Action<ILogger, Exception> _failedToWrite =
-                LoggerMessage.Define(LogLevel.Error, new EventId(1, "FailedToWrite"), "Failed to send message to the service.");
+            private static readonly Action<ILogger, string, Exception> _failedToWrite =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(1, "FailedToWrite"), "Failed to send message to the service: {message}");
 
             private static readonly Action<ILogger, string, Exception> _failedToConnect =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, "FailedToConnect"), "Failed to connect to the service: {message}.");
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, "FailedToConnect"), "Failed to connect to the service, will retry after the back off period. Error detail: {message}.");
 
             private static readonly Action<ILogger, Exception> _errorProcessingMessages =
                 LoggerMessage.Define(LogLevel.Error, new EventId(3, "ErrorProcessingMessages"), "Error when processing messages.");
 
             private static readonly Action<ILogger, string, Exception> _connectionDropped =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(4, "ConnectionDropped"), "Connection {ServiceConnectionId} to the service was dropped.");
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(4, "ConnectionDropped"), "Connection to the service was dropped, probably caused by network instability or service restart. Will try to reconnect after the back off period. Id: {ServiceConnectionId}");
 
             private static readonly Action<ILogger, Exception> _failedToCleanupConnections =
                 LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailedToCleanupConnection"), "Failed to clean up client connections.");
@@ -617,19 +617,16 @@ namespace Microsoft.Azure.SignalR
 
             public static void FailedToWrite(ILogger logger, Exception exception)
             {
-                _failedToWrite(logger, exception);
+                _failedToWrite(logger, exception.Message, null);
             }
 
             public static void FailedToConnect(ILogger logger, Exception exception)
             {
                 var message = exception.Message;
                 var baseException = exception.GetBaseException();
-                if (baseException != null)
-                {
-                    message += " " + baseException.Message;
-                }
+                message += ". " + baseException.Message;
 
-                _failedToConnect(logger, message, exception);
+                _failedToConnect(logger, message, null);
             }
 
             public static void ErrorProcessingMessages(ILogger logger, Exception exception)

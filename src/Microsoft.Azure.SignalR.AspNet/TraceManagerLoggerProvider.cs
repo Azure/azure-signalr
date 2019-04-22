@@ -11,17 +11,17 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class TraceManagerLoggerProvider : ILoggerProvider
     {
-        private readonly ITraceManager _traceManager;
+        private readonly TraceSource _traceSource;
 
         public TraceManagerLoggerProvider(ITraceManager traceManager)
         {
-            _traceManager = traceManager;
+            // For all the Azure SignalR traces, share the same trace source for least config requirements
+            _traceSource = traceManager["Microsoft.Azure.SignalR"];
         }
 
         public ILogger CreateLogger(string categoryName)
         {
-            var traceSource = _traceManager[categoryName];
-            return new InternalTraceSourceLogger(traceSource);
+            return new InternalTraceSourceLogger(_traceSource, categoryName);
         }
 
         public void Dispose()
@@ -30,29 +30,76 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         /// <summary>
         /// Use an InternalTraceSourceLogger to get rid of LogicalOperationStack inside the TraceSourceScope
+        /// Slightly different from the TraceSourceLogger in that the message is prefixed with [categoryName]
         /// </summary>
         private class InternalTraceSourceLogger : ILogger
         {
-            private readonly ILogger _inner;
+            private readonly TraceSource _traceSource;
+            private readonly string _categoryName;
 
-            public InternalTraceSourceLogger(TraceSource traceSource)
+            public InternalTraceSourceLogger(TraceSource traceSource, string categoryName)
             {
-                _inner = new TraceSourceLogger(traceSource);
+                _traceSource = traceSource;
+                _categoryName = string.IsNullOrEmpty(categoryName) ? string.Empty : $"[{categoryName}]";
             }
 
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
-                _inner.Log(logLevel, eventId, state, exception, formatter);
+                if (!IsEnabled(logLevel))
+                {
+                    return;
+                }
+                var message = string.Empty;
+                if (formatter != null)
+                {
+                    message = formatter(state, exception);
+                }
+                else
+                {
+                    if (state != null)
+                    {
+                        message += state;
+                    }
+                    if (exception != null)
+                    {
+                        message += Environment.NewLine + exception;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(message))
+                {
+                    // use 0 to keep consistency with ASP.NET SignalR trace pattern
+                    _traceSource.TraceEvent(GetEventType(logLevel), 0, _categoryName + message);
+                }
             }
 
             public bool IsEnabled(LogLevel logLevel)
             {
-                return _inner.IsEnabled(logLevel);
+                if (logLevel == LogLevel.None)
+                {
+                    return false;
+                }
+
+                var traceEventType = GetEventType(logLevel);
+                return _traceSource.Switch.ShouldTrace(traceEventType);
             }
 
             public IDisposable BeginScope<TState>(TState state)
             {
                 return null;
+            }
+
+            private static TraceEventType GetEventType(LogLevel logLevel)
+            {
+                switch (logLevel)
+                {
+                    case LogLevel.Critical: return TraceEventType.Critical;
+                    case LogLevel.Error: return TraceEventType.Error;
+                    case LogLevel.Warning: return TraceEventType.Warning;
+                    case LogLevel.Information: return TraceEventType.Information;
+                    case LogLevel.Trace:
+                    default: return TraceEventType.Verbose;
+                }
             }
         }
     }

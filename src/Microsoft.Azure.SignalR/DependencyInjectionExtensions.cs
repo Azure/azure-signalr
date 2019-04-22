@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
@@ -27,6 +29,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder)
         {
+
             builder.Services.AddSingleton<IConfigureOptions<ServiceOptions>, ServiceOptionsSetup>();
             return builder.AddAzureSignalRCore();
         }
@@ -67,6 +70,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton(typeof(IClientConnectionManager), typeof(ClientConnectionManager))
                 .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
                 .AddSingleton(typeof(IServiceEndpointManager), typeof(ServiceEndpointManager))
+                .AddSingleton(typeof(IServerNameProvider), typeof(DefaultServerNameProvider))
                 .AddSingleton(typeof(ServiceHubDispatcher<>))
                 .AddSingleton(typeof(AzureSignalRMarkerService))
                 .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
@@ -75,6 +79,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
             // If a custom router is added, do not add the default router
             builder.Services.TryAddSingleton(typeof(IEndpointRouter), typeof(DefaultEndpointRouter));
+
+#if NETCOREAPP3_0
+            builder.Services.TryAddSingleton<AzureSignalRHostedService>();
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IStartupFilter, AzureSignalRStartupFilter>());
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<MatcherPolicy, NegotiateMatcherPolicy>());
+#endif
+
             return builder;
         }
     }
