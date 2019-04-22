@@ -14,7 +14,7 @@
     <FilesToSign Include="$(RepositoryRoot)src\Microsoft.Azure.SignalR.Protocols\bin\$(Configuration)\netstandard2.0\Microsoft.Azure.SignalR.Protocols.dll" Certificate="$(AssemblySigningCertName)" />
   </ItemGroup>
 
-  <ItemGroup Condition ="'$(IsTargetMultiFramework)' == 'true'">
+  <ItemGroup Condition ="'$(IsTargetMultiFramework)' != 'false'">
     <FilesToSign Include="$(RepositoryRoot)src\Microsoft.Azure.SignalR.Management\bin\$(Configuration)\netcoreapp3.0\Microsoft.Azure.SignalR.Management.dll" Certificate="$(AssemblySigningCertName)" />
     <FilesToSign Include="$(RepositoryRoot)src\Microsoft.Azure.SignalR\bin\$(Configuration)\netcoreapp3.0\Microsoft.Azure.SignalR.dll" Certificate="$(AssemblySigningCertName)" />
   </ItemGroup>
