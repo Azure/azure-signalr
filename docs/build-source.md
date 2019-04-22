@@ -14,7 +14,7 @@ Building Azure SignalR Service SDK requires:
         ```
 * Git. <https://git-scm.org>
 * AspNetCore 3.0 Preview Runtime (Version >= 3.0.0-preview3-27503-5) <https://dotnet.microsoft.com/download/dotnet-core/3.0>
-* AspNetCore 3.0 SDK (Version >= 3.0.100-preview4-011136), install from AspNetCore code repo before release. <https://github.com/dotnet/core-sdk#installers-and-binaries>
+* AspNetCore 3.0 SDK (Version >= 3.0.100-preview4-011136). Install from AspNetCore code repo before release <https://github.com/dotnet/core-sdk#installers-and-binaries>.
 
 ## Clone the source code
 
