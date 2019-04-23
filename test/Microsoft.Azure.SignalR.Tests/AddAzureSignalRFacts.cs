@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -190,12 +191,11 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [InlineData(CustomValue, null, null, CustomValue, 0)]
-        [InlineData(CustomValue, DefaultValue, SecondaryValue, CustomValue, 2)]
-        [InlineData(null, DefaultValue, SecondaryValue, DefaultValue, 2)]
-        [InlineData(null, null, SecondaryValue, null, 1)]
+        [InlineData(CustomValue, null, null, CustomValue)]
+        [InlineData(CustomValue, DefaultValue, SecondaryValue, CustomValue)]
+        [InlineData(null, DefaultValue, SecondaryValue, DefaultValue)]
         public void AddAzureSignalRReadServiceEndpointsFromConfig(string customValue, string defaultValue,
-            string secondaryValue, string expected, int expectedCount)
+            string secondaryValue, string expected)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
@@ -223,12 +223,43 @@ namespace Microsoft.Azure.SignalR.Tests
                 var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
 
                 Assert.Equal(expected, options.ConnectionString);
-                Assert.Equal(expectedCount, options.Endpoints.Length);
+                if (secondaryValue != null)
+                {
+                    // Endpoints option is always separate from the ConnectionString options
+                    Assert.Single(options.Endpoints);
+                    Assert.Equal(secondaryValue, options.Endpoints[0].ConnectionString);
+                }
+
+                // Endpoints from Endpoints and ConnectionString config are merged inside the EndpointManager
+                var endpoints = serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints;
+                if (secondaryValue == null)
+                {
+                    // When no other connection string is defined, endpoints value is always connection string value
+                    Assert.Single(endpoints);
+                    Assert.Equal(expected, endpoints[0].ConnectionString);
+                }
+                else
+                {
+                    // When default connection string is not specified
+                    if (defaultValue == null && customValue == null)
+                    {
+                        Assert.Single(endpoints);
+                        Assert.Equal(expected, endpoints[0].ConnectionString);
+                    }
+                    else
+                    {
+                        Assert.Equal(2, endpoints.Length);
+                        Assert.Equal(expected, endpoints[0].ConnectionString);
+                        Assert.Equal(secondaryValue, endpoints[1].ConnectionString);
+                    }
+                }
             }
         }
 
-        [Fact]
-        public void AddAzureSignalRCustomizeEndpointsOverridesConfigValue()
+        [Theory]
+        [InlineData(null, null, SecondaryValue, null)]
+        public void AddAzureSignalRWithOnlySecondaryValueThrows(string customValue, string defaultValue,
+            string secondaryValue, string expected)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
@@ -236,18 +267,70 @@ namespace Microsoft.Azure.SignalR.Tests
                 var config = new ConfigurationBuilder()
                     .AddInMemoryCollection(new Dictionary<string, string>
                     {
-                    {"Azure:SignalR:ConnectionString", DefaultValue},
-                    {"Azure:SignalR:ConnectionString:1:secondary", SecondaryValue},
+                    {"Azure:SignalR:ConnectionString", defaultValue},
+                    {"Azure:SignalR:ConnectionString:1:secondary", secondaryValue},
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
                     .AddAzureSignalR(o =>
                     {
-                        o.Endpoints = new ServiceEndpoint[]
+                        if (customValue != null)
                         {
-                        new ServiceEndpoint(CustomValue, EndpointType.Primary),
-                        new ServiceEndpoint(CustomValue, EndpointType.Secondary),
-                        new ServiceEndpoint(SecondaryValue, EndpointType.Secondary),
+                            o.ConnectionString = customValue;
+                        }
+                    })
+                    .Services
+                    .AddSingleton<IConfiguration>(config)
+                    .AddSingleton(loggerFactory)
+                    .BuildServiceProvider();
+
+                var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
+
+                Assert.Equal(expected, options.ConnectionString);
+                if (secondaryValue != null)
+                {
+                    // Endpoints option is always separate from the ConnectionString options
+                    Assert.Single(options.Endpoints);
+                    Assert.Equal(secondaryValue, options.Endpoints[0].ConnectionString);
+                }
+
+                // Endpoints from Endpoints and ConnectionString config are merged inside the EndpointManager
+                Assert.Throws<AzureSignalRNoPrimaryEndpointException>(() =>
+                    serviceProvider.GetRequiredService<IServiceEndpointManager>());
+            }
+        }
+
+        [Theory]
+        [InlineData(DefaultValue, null, DefaultValue, 3)]
+        [InlineData(DefaultValue, CustomValue, CustomValue, 2)]
+        [InlineData(null, CustomValue, CustomValue, 2)]
+        [InlineData(null, null, null, 2)]
+        public void AddAzureSignalRCustomizeEndpointsOverridesConfigValue(string defaultValue, string customValue, string expected, int expectedCount)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var services = new ServiceCollection();
+                var config = new ConfigurationBuilder()
+                    .AddInMemoryCollection(new Dictionary<string, string>
+                    {
+                        {"Azure:SignalR:ConnectionString", defaultValue},
+                        {"Azure:SignalR:ConnectionString:1:secondary", SecondaryValue},
+                    })
+                    .Build();
+                var serviceProvider = services.AddSignalR()
+                    .AddAzureSignalR(o =>
+                    {
+                        if (customValue != null)
+                        {
+                            o.ConnectionString = customValue;
+                        }
+
+                        // The final endpoints merges this customize endpoints and connection string if specified
+                        o.Endpoints = new[]
+                        {
+                            new ServiceEndpoint(CustomValue, EndpointType.Primary),
+                            new ServiceEndpoint(CustomValue, EndpointType.Secondary),
+                            new ServiceEndpoint(SecondaryValue, EndpointType.Secondary),
                         };
                     })
                     .Services
@@ -257,21 +340,33 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
 
-                Assert.Equal(DefaultValue, options.ConnectionString);
+                Assert.Equal(expected, options.ConnectionString);
                 Assert.Equal(3, options.Endpoints.Length);
                 Assert.Equal(EndpointType.Primary, options.Endpoints[0].EndpointType);
                 Assert.Equal(CustomValue, options.Endpoints[0].ConnectionString);
                 Assert.Equal(SecondaryValue, options.Endpoints[2].ConnectionString);
 
                 var endpointManager = serviceProvider.GetRequiredService<IServiceEndpointManager>();
+
                 var endpoints = endpointManager.GetAvailableEndpoints().ToArray();
-                Assert.Equal(3, endpoints.Length);
-                Assert.Equal(EndpointType.Primary, endpoints[0].EndpointType);
-                Assert.Equal(CustomValue, endpoints[0].ConnectionString);
-                Assert.Equal(EndpointType.Secondary, endpoints[1].EndpointType);
-                Assert.Equal(SecondaryValue, endpoints[1].ConnectionString);
-                Assert.Equal(EndpointType.Primary, endpoints[2].EndpointType);
-                Assert.Equal(DefaultValue, endpoints[2].ConnectionString);
+
+                Assert.Equal(expectedCount, endpoints.Length);
+
+                Assert.Contains(endpoints,
+                    s => s.ConnectionString == CustomValue && s.EndpointType == EndpointType.Primary);
+
+                // Secondary is overwritten by primary
+                Assert.DoesNotContain(endpoints,
+                    s => s.ConnectionString == CustomValue && s.EndpointType == EndpointType.Secondary);
+
+                Assert.Contains(endpoints,
+                    s => s.ConnectionString == SecondaryValue && s.EndpointType == EndpointType.Secondary);
+
+                if (expected != null)
+                {
+                    Assert.Contains(endpoints,
+                        s => s.ConnectionString == expected && s.EndpointType == EndpointType.Primary);
+                }
             }
         }
     }
