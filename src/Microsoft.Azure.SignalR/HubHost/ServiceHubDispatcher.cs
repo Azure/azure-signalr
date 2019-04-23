@@ -72,7 +72,7 @@ namespace Microsoft.Azure.SignalR
         private static class Log
         {
             private static readonly Action<ILogger, string, int, Exception> _startingConnection =
-                LoggerMessage.Define<string, int>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Staring {name} with {connectionNumber} connections...");
+                LoggerMessage.Define<string, int>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Starting {name} with {connectionNumber} connections...");
 
             public static void StartingConnection(ILogger logger, string name, int connectionNumber)
             {
