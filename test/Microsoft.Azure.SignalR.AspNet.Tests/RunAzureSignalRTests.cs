@@ -564,6 +564,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal("hello", user);
                     Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerName));
                     Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode));
+                    Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Version));
                     var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
                     Assert.NotNull(requestId);
                     Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
@@ -582,6 +583,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 hubConfiguration.Resolver.Register(typeof(IServerNameProvider), () => serverNameProvider);
                 using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, hubConfiguration, options =>
                 {
+                    options.IsolateApplication = true;
                     options.ServerStickyMode = ServerStickyMode.Prefered;
                     options.ConnectionString = ConnectionString;
                     options.ClaimsProvider = context => new Claim[]
@@ -609,6 +611,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var mode = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode)?.Value;
                     Assert.Equal("Prefered", mode);
                     Assert.NotNull(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode));
+                    var version = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Version)?.Value;
+                    Version.TryParse(version, out var versionResult);
+                    Assert.True(versionResult > new Version(1, 0, 8));
+
                     var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
                     Assert.NotNull(requestId);
                     Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);

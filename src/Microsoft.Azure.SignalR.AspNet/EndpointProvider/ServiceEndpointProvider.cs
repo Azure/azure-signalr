@@ -24,6 +24,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly string _appName;
         private readonly int? _port;
         private readonly TimeSpan _accessTokenLifetime;
+        private readonly bool _isolateApp;
 
         public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions options, TimeSpan? ttl = null)
         {
@@ -39,11 +40,17 @@ namespace Microsoft.Azure.SignalR.AspNet
             _endpoint = endpoint.Endpoint;
             _accessKey = endpoint.AccessKey;
             _appName = options.ApplicationName;
+            _isolateApp = options.IsolateApplication;
             _port = endpoint.Port;
         }
 
         private string GetPrefixedHubName(string applicationName, string hubName)
         {
+            if (!_isolateApp)
+            {
+                return hubName;
+            }
+
             return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
         }
 

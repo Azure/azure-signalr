@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class NegotiateMiddleware : OwinMiddleware
     {
-        private static readonly ProtocolResolver ProtocolResolver = new ProtocolResolver();
+        private static readonly string AssemblyVersion = typeof(NegotiateMiddleware).Assembly.GetName().Version.ToString();
 
         private readonly string _appName;
         private readonly Func<IOwinContext, IEnumerable<Claim>> _claimsProvider;
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private readonly string _serverName;
         private readonly ServerStickyMode _mode;
+        private readonly bool _isolateApp;
 
         public NegotiateMiddleware(OwinMiddleware next, HubConfiguration configuration, string appName, IServiceEndpointManager endpointManager, IEndpointRouter router, ServiceOptions options, IServerNameProvider serverNameProvider, ILoggerFactory loggerFactory)
             : base(next)
@@ -47,6 +49,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _logger = loggerFactory?.CreateLogger<NegotiateMiddleware>() ?? throw new ArgumentNullException(nameof(loggerFactory));
             _serverName = serverNameProvider?.GetName();
             _mode = options.ServerStickyMode;
+            _isolateApp = options.IsolateApplication;
         }
 
         public override Task Invoke(IOwinContext owinContext)
@@ -154,6 +157,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             var userId = _provider?.GetUserId(request);
 
             var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext), _serverName, _mode);
+
+            if (_isolateApp)
+            {
+                yield return new Claim(Constants.ClaimType.Version, AssemblyVersion);
+            }
 
             foreach (var claim in claims)
             {
