@@ -16,10 +16,6 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ConnectionFactory : IConnectionFactory
     {
-        // Fix issue: https://github.com/Azure/azure-signalr/issues/198
-        // .NET Framework has restriction about reserved string as the header name like "User-Agent"
-        private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "Asrs-User-Agent", ProductInfo.GetProductInfo() } };
-
         private readonly IServiceEndpointProvider _provider;
         private readonly ILoggerFactory _loggerFactory;
         private readonly string _userId;
@@ -33,7 +29,7 @@ namespace Microsoft.Azure.SignalR
             _hubName = hubName;
         }
 
-        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken = default)
+        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken = default, IDictionary<string, string> headers = null)
         {
             var httpConnectionOptions = new HttpConnectionOptions
             {
@@ -41,7 +37,7 @@ namespace Microsoft.Azure.SignalR
                 AccessTokenProvider = () => Task.FromResult(_provider.GenerateServerAccessToken(_hubName, _userId)),
                 Transports = HttpTransportType.WebSockets,
                 SkipNegotiation = true,
-                Headers = CustomHeader
+                Headers = headers
             };
             var httpConnection = new HttpConnection(httpConnectionOptions, _loggerFactory);
             try

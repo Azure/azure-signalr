@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -18,6 +19,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal partial class ServiceConnection : ServiceConnectionBase
     {
+        private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "Asrs-User-Agent", ProductInfo.GetProductInfo() } };
         private const string ReconnectMessage = "asrs:reconnect";
         private readonly ConcurrentDictionary<string, ClientContext> _clientConnections = new ConcurrentDictionary<string, ClientContext>(StringComparer.Ordinal);
 
@@ -42,7 +44,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
         {
-            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId, target);
+            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId, target, headers: CustomHeader);
         }
 
         protected override Task DisposeConnection()
