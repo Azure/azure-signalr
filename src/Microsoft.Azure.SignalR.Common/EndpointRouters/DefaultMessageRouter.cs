@@ -3,24 +3,13 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class DefaultEndpointRouter : IEndpointRouter
+    internal class DefaultMessageRouter : IMessageRouter
     {
-        /// <summary>
-        /// Randomly select from the available endpoints
-        /// </summary>
-        /// <param name="endpoints"></param>
-        /// <returns></returns>
-        public ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> endpoints)
-        {
-            // get primary endpoints snapshot
-            var availbaleEndpoints = GetNegotiateEndpoints(endpoints);
-            return availbaleEndpoints[StaticRandom.Next(availbaleEndpoints.Length)];
-        }
-
         /// <summary>
         /// Broadcast to all available endpoints
         /// </summary>
@@ -55,7 +44,8 @@ namespace Microsoft.Azure.SignalR
         }
 
         /// <summary>
-        /// Broadcast to all available endpoints
+        /// Broadcast to all available endpoints, note that this one is only called when the SDK is not able to identify where the connectionId is.
+        /// When the outcoming connectionId happens to be also connected to this app server, SDK can directly send the messages back to that connectionId
         /// </summary>
         /// <param name="connectionId"></param>
         /// <param name="endpoints"></param>

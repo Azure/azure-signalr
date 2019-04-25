@@ -3,13 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.Versioning;
 using System.Threading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Builder.Internal;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -44,8 +45,8 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.NotNull(serviceProvider.GetService<HubLifetimeManager<TestHub>>());
         }
 
-        [Fact]
-        public void UseSignalRWithAddAzureSignalR()
+        [SkipIfTargetNetstandard]
+        public void UseEndpointsWithAddAzureSignalR()
         {
             var services = new ServiceCollection();
             var config = new ConfigurationBuilder()
@@ -58,15 +59,18 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddSignalR()
                 .AddAzureSignalR()
                 .Services
-                .AddSingleton<IApplicationLifetime>(new EmptyApplicationLifetime())
+                .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
                 .AddSingleton<IConfiguration>(config)
                 .BuildServiceProvider();
-
+        
             var app = new ApplicationBuilder(serviceProvider);
-            app.UseSignalR(routes =>
+            app.UseRouting();
+            app.UseEndpoints(routes =>
             {
-                Assert.Throws<InvalidOperationException>(() => routes.MapHub<TestHub>("/chat"));
+                routes.MapHub<TestHub>("/chat");
             });
+
+            Assert.NotNull(serviceProvider.GetService<HubLifetimeManager<TestHub>>());
         }
 
         [Fact]
@@ -83,7 +87,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddSignalR()
                 .AddMessagePackProtocol()
                 .Services
-                .AddSingleton<IApplicationLifetime>(new EmptyApplicationLifetime())
+                .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
                 .AddSingleton<IConfiguration>(config)
                 .BuildServiceProvider();
 
@@ -109,7 +113,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddAzureSignalR()
                 .AddMessagePackProtocol()
                 .Services
-                .AddSingleton<IApplicationLifetime>(new EmptyApplicationLifetime())
+                .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
                 .AddSingleton<IConfiguration>(config)
                 .BuildServiceProvider();
 
@@ -131,7 +135,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddAzureSignalR()
                 .AddMessagePackProtocol()
                 .Services
-                .AddSingleton<IApplicationLifetime>(new EmptyApplicationLifetime())
+                .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
                 .AddSingleton<IConfiguration>(config)
                 .BuildServiceProvider();
 
@@ -142,9 +146,31 @@ namespace Microsoft.Azure.SignalR.Tests
             }));
             Assert.StartsWith("No connection string was specified.", exception.Message);
         }
+
+        private sealed class SkipIfTargetNetstandard : FactAttribute
+        {
+            public SkipIfTargetNetstandard()
+            {
+                if (IsTargetNetStandard())
+                {
+                    Skip = "Not applicable in netstandard 2.0.";
+                }
+            }
+
+            private static bool IsTargetNetStandard()
+            {
+                var attribute = typeof(ServiceOptions).Assembly.GetCustomAttributes(typeof(TargetFrameworkAttribute), inherit: true);
+                var frameworkAttribute = (TargetFrameworkAttribute)attribute.GetValue(0);
+                if (frameworkAttribute.FrameworkName.Contains(".NETStandard", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
     }
 
-    public class EmptyApplicationLifetime : IApplicationLifetime
+    public class EmptyApplicationLifetime : IHostApplicationLifetime
     {
         public CancellationToken ApplicationStarted => CancellationToken.None;
 

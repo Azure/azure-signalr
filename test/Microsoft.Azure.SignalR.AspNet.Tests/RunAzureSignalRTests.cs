@@ -115,6 +115,20 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Fact]
+        public void TestRunAzureSignalRWiillUseApplicationNameInOptionsWhenUseHubPrefixIsTrue()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, opts => { opts.ConnectionString = ConnectionString; })))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+                    Assert.Equal(AppName, options.Value.ApplicationName);
+                }
+            }
+        }
+
+        [Fact]
         public void TestRunAzureSignalRWithAppSettings()
         {
             // Prepare the configuration
@@ -145,7 +159,157 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     Assert.Equal(ConnectionString, options.Value.ConnectionString);
 
-                    Assert.Equal(4, options.Value.Endpoints.Length);
+                    // split the default ConnectionString from Endpoints and merge it in EndpointManager
+                    Assert.Equal(3, options.Value.Endpoints.Length);
+
+                    var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
+                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    Assert.Equal(4, endpoints.Length);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestRunAzureSignalRWithSingleAppSettingsAndConfigureOptions()
+        {
+            // Prepare the configuration
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            using (new AppSettingsConfigScope(ConnectionString))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, s => s.ConnectionString = ConnectionString2)))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+
+                    Assert.Equal(ConnectionString2, options.Value.ConnectionString);
+
+                    // The connection string configured in Configure should override the one defined in app setting
+                    Assert.Empty(options.Value.Endpoints);
+
+                    var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
+                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    Assert.Single(endpoints);
+                    Assert.Equal(ConnectionString2, endpoints[0].ConnectionString);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestRunAzureSignalRWithMultipleAppSettingsAndConnectionStringConfigured()
+        {
+            // Prepare the configuration
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            using (new AppSettingsConfigScope(ConnectionString, ConnectionString2, ConnectionString3, ConnectionString4))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                using (WebApp.Start(ServiceUrl,
+                    app => app.RunAzureSignalR(AppName, hubConfig, s => s.ConnectionString = ConnectionString4)))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+
+                    Assert.Equal(ConnectionString4, options.Value.ConnectionString);
+
+                    Assert.Equal(3, options.Value.Endpoints.Length);
+
+                    var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
+                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    Assert.Equal(3, endpoints.Length);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestRunAzureSignalRWithMultipleAppSettingsAndEndpointsConfigured()
+        {
+            // Prepare the configuration
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            using (new AppSettingsConfigScope(ConnectionString, ConnectionString2, ConnectionString3, ConnectionString4))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                using (WebApp.Start(ServiceUrl,
+                    app => app.RunAzureSignalR(AppName, hubConfig, s => s.Endpoints = new[]
+                    {
+                        new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
+                        new ServiceEndpoint(ConnectionString3),
+                        new ServiceEndpoint(ConnectionString4)
+                    })))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+
+                    Assert.Equal(ConnectionString, options.Value.ConnectionString);
+
+                    Assert.Equal(3, options.Value.Endpoints.Length);
+
+                    var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
+                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    Assert.Equal(4, endpoints.Length);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(null, 3)]
+        [InlineData("", 3)]
+        [InlineData(ConnectionString2, 3)]
+        [InlineData(ConnectionString, 4)]
+        public void TestRunAzureSignalRWithMultipleAppSettingsAndBothConnectionStringAndEndpointsCustomized(string customConnectionString, int expectedCount)
+        {
+            // Prepare the configuration
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            using (new AppSettingsConfigScope(ConnectionString, ConnectionString2, ConnectionString3, ConnectionString4))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                using (WebApp.Start(ServiceUrl,
+                    app => app.RunAzureSignalR(AppName, hubConfig, s =>
+                    {
+                        s.ConnectionString = customConnectionString;
+                        s.Endpoints = new[]
+                        {
+                            new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
+                            new ServiceEndpoint(ConnectionString3),
+                            new ServiceEndpoint(ConnectionString4)
+                        };
+                    })))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+
+                    Assert.Equal(customConnectionString, options.Value.ConnectionString);
+
+                    Assert.Equal(3, options.Value.Endpoints.Length);
+
+                    var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
+                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    Assert.Equal(expectedCount, endpoints.Length);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestRunAzureSignalRWithMultipleAppSettingsAndBothConnectionStringAndEndpointsConfigured()
+        {
+            // Prepare the configuration
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            using (new AppSettingsConfigScope(ConnectionString, ConnectionString2, ConnectionString3, ConnectionString4))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                using (WebApp.Start(ServiceUrl,
+                    app => app.RunAzureSignalR(AppName, hubConfig, 
+                        s =>
+                        {
+                            s.ConnectionString = ConnectionString;
+                            s.Endpoints = new[]
+                            {
+                                new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
+                                new ServiceEndpoint(ConnectionString3),
+                                new ServiceEndpoint(ConnectionString4)
+                            };
+                        })))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+
+                    Assert.Equal(ConnectionString, options.Value.ConnectionString);
+
+                    Assert.Equal(3, options.Value.Endpoints.Length);
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
                     var endpoints = manager.GetAvailableEndpoints().ToArray();
@@ -186,6 +350,38 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Fact]
+        public void TestRunAzureSignalRWithMultipleAppSettingsAndCustomSettingsIncludingOptionsAppName()
+        {
+            // Prepare the configuration
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
+                {
+                    options.Endpoints = new ServiceEndpoint[]
+                    {
+                        new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
+                        new ServiceEndpoint(ConnectionString3),
+                        new ServiceEndpoint(ConnectionString4)
+                    };
+                })))
+                {
+                    var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+
+                    Assert.Equal(ConnectionString, options.Value.ConnectionString);
+                    Assert.Equal(AppName, options.Value.ApplicationName);
+
+                    Assert.Equal(3, options.Value.Endpoints.Length);
+
+                    var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
+                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    Assert.Equal(4, endpoints.Length);
+                }
+            }
+        }
+
+        [Fact]
         public async Task TestRunAzureSignalRWithMultipleAppSettingsAndCustomSettingsAndCustomRouter()
         {
             // Prepare the configuration
@@ -193,14 +389,14 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (new AppSettingsConfigScope(ConnectionString, ConnectionString2))
             {
                 var hubConfig = Utility.GetTestHubConfig(loggerFactory);
-                var router = new TestEndpointRouter(ConnectionString3);
+                var router = new TestEndpointRouter();
                 hubConfig.Resolver.Register(typeof(IEndpointRouter), () => router);
                 using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
                 {
                     options.Endpoints = new ServiceEndpoint[]
                     {
                         new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
-                        new ServiceEndpoint(ConnectionString3),
+                        new ServiceEndpoint(ConnectionString3, name: "chosen"),
                         new ServiceEndpoint(ConnectionString4)
                     };
                 })))
@@ -216,7 +412,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(4, endpoints.Length);
 
                     var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
-                    var response = await client.GetAsync("/negotiate");
+                    var response = await client.GetAsync("/negotiate?endpoint=chosen");
 
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     var message = await response.Content.ReadAsStringAsync();
@@ -225,6 +421,16 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     // with custome router, always goes to connection string 3 as passed into the router
                     Assert.Equal("http://localhost3/aspnetclient", responseObject.RedirectUrl);
+
+                    // Invalid request
+                    response = await client.GetAsync("/negotiate");
+
+                    Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+                    // Invalid request
+                    response = await client.GetAsync("/negotiate?endpoint=notexists");
+
+                    Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
                 }
             }
         }
@@ -356,6 +562,59 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(AppName, token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.AppName).Value);
                     var user = token.Claims.FirstOrDefault(s => s.Type == "user")?.Value;
                     Assert.Equal("hello", user);
+                    Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerName));
+                    Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode));
+                    Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Version));
+                    var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
+                    Assert.NotNull(requestId);
+                    Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestStickyServerInServiceOptionsTakeEffect()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var name = nameof(TestStickyServerInServiceOptionsTakeEffect);
+                var hubConfiguration = Utility.GetTestHubConfig(loggerFactory);
+                var serverNameProvider = new TestServerNameProvider(name);
+                hubConfiguration.Resolver.Register(typeof(IServerNameProvider), () => serverNameProvider);
+                using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, hubConfiguration, options =>
+                {
+                    options.IsolateApplication = true;
+                    options.ServerStickyMode = ServerStickyMode.Prefered;
+                    options.ConnectionString = ConnectionString;
+                    options.ClaimsProvider = context => new Claim[]
+                    {
+                    new Claim("user", "hello"),
+                    };
+                    options.AccessTokenLifetime = TimeSpan.FromDays(1);
+                })))
+                {
+                    var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
+                    var response = await client.GetAsync("/negotiate");
+
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    var message = await response.Content.ReadAsStringAsync();
+                    var responseObject = JsonConvert.DeserializeObject<ResponseMessage>(message);
+                    Assert.Equal("2.0", responseObject.ProtocolVersion);
+                    Assert.Equal("http://localhost/aspnetclient", responseObject.RedirectUrl);
+                    Assert.NotNull(responseObject.AccessToken);
+                    var token = JwtSecurityTokenHandler.ReadJwtToken(responseObject.AccessToken);
+                    Assert.Equal(AppName, token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.AppName).Value);
+                    var user = token.Claims.FirstOrDefault(s => s.Type == "user")?.Value;
+                    Assert.Equal("hello", user);
+                    var serverName = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerName)?.Value;
+                    Assert.Equal(name, serverName);
+                    var mode = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode)?.Value;
+                    Assert.Equal("Prefered", mode);
+                    Assert.NotNull(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode));
+                    var version = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Version)?.Value;
+                    Version.TryParse(version, out var versionResult);
+                    Assert.True(versionResult > new Version(1, 0, 8));
+
                     var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
                     Assert.NotNull(requestId);
                     Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
@@ -376,6 +635,20 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var response = await client.GetAsync("/negotiate?connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
                     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
                 }
+            }
+        }
+
+        private sealed class TestServerNameProvider : IServerNameProvider
+        {
+            private readonly string _serverName;
+            public TestServerNameProvider(string serverName)
+            {
+                _serverName = serverName;
+            }
+
+            public string GetName()
+            {
+                return _serverName;
             }
         }
 

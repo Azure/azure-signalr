@@ -18,13 +18,17 @@ namespace Microsoft.Azure.SignalR
         private readonly Func<HttpContext, IEnumerable<Claim>> _claimsProvider;
         private readonly IServiceEndpointManager _endpointManager;
         private readonly IEndpointRouter _router;
+        private readonly string _serverName;
+        private readonly ServerStickyMode _mode;
 
-        public NegotiateHandler(IServiceEndpointManager endpointManager, IEndpointRouter router, IUserIdProvider userIdProvider, IOptions<ServiceOptions> options)
+        public NegotiateHandler(IServiceEndpointManager endpointManager, IEndpointRouter router, IUserIdProvider userIdProvider, IServerNameProvider nameProvider, IOptions<ServiceOptions> options)
         {
             _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
             _router = router ?? throw new ArgumentNullException(nameof(router));
+            _serverName = nameProvider?.GetName();
             _userIdProvider = userIdProvider ?? throw new ArgumentNullException(nameof(userIdProvider));
             _claimsProvider = options?.Value?.ClaimsProvider;
+            _mode = options.Value.ServerStickyMode;
         }
 
         public NegotiationResponse Process(HttpContext context, string hubName)
@@ -32,11 +36,11 @@ namespace Microsoft.Azure.SignalR
             var claims = BuildClaims(context);
             var request = context.Request;
             var originalPath = GetOriginalPath(request.Path);
-            var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(_endpointManager.GetAvailableEndpoints()));
+            var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(context, _endpointManager.Endpoints));
 
             if (provider == null)
             {
-                throw new InvalidOperationException("No endpoint available.");
+                return null;
             }
 
             return new NegotiationResponse
@@ -52,7 +56,7 @@ namespace Microsoft.Azure.SignalR
         private IEnumerable<Claim> BuildClaims(HttpContext context)
         {
             var userId = _userIdProvider.GetUserId(new ServiceHubConnectionContext(context));
-            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context)).ToList();
+            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, _mode).ToList();
         }
 
         private Func<IEnumerable<Claim>> GetClaimsProvider(HttpContext context)

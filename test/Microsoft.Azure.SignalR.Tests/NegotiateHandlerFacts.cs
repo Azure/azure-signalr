@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.SignalR;
@@ -71,6 +72,59 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(expectedUserId, token.Claims.FirstOrDefault(x => x.Type == Constants.ClaimType.UserId)?.Value);
             Assert.Equal("custom", token.Claims.FirstOrDefault(x => x.Type == "custom")?.Value);
             Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
+            Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerName));
+            Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode));
+        }
+
+        [Fact]
+        public void GenerateNegotiateResponseWithUserIdAndServerSticky()
+        {
+            var name = nameof(GenerateNegotiateResponseWithUserIdAndServerSticky);
+            var serverNameProvider = new TestServerNameProvider(name);
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR(
+                o =>
+                {
+                    o.ServerStickyMode = ServerStickyMode.Required;
+                    o.ConnectionString = DefaultConnectionString;
+                    o.AccessTokenLifetime = TimeSpan.FromDays(1);
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IConfiguration>(config)
+                .AddSingleton(typeof(IUserIdProvider), typeof(DefaultUserIdProvider))
+                .AddSingleton(typeof(IServerNameProvider), serverNameProvider)
+                .BuildServiceProvider();
+
+            var httpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                {
+                    new Claim(CustomClaimType, CustomUserId),
+                    new Claim(ClaimTypes.NameIdentifier, DefaultUserId),
+                    new Claim("custom", "custom"),
+                }))
+            };
+
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            var negotiateResponse = handler.Process(httpContext, "hub");
+
+            Assert.NotNull(negotiateResponse);
+            Assert.NotNull(negotiateResponse.Url);
+            Assert.NotNull(negotiateResponse.AccessToken);
+            Assert.Null(negotiateResponse.ConnectionId);
+            Assert.Empty(negotiateResponse.AvailableTransports);
+
+            var token = JwtSecurityTokenHandler.ReadJwtToken(negotiateResponse.AccessToken);
+            Assert.Equal(DefaultUserId, token.Claims.FirstOrDefault(x => x.Type == Constants.ClaimType.UserId)?.Value);
+            Assert.Equal("custom", token.Claims.FirstOrDefault(x => x.Type == "custom")?.Value);
+            Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
+
+            var serverName = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerName)?.Value;
+            Assert.Equal(name, serverName);
+            var mode = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode)?.Value;
+            Assert.Equal("Required", mode);
         }
 
         [Theory]
@@ -105,6 +159,37 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
+        [InlineData("", "?hub=chat")]
+        [InlineData("appName", "?hub=appname_chat")]
+        public void GenerateNegotiateResponseWithAppName(string appName, string expectedResponse)
+        {
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR(o =>
+                {
+                    o.ConnectionString = DefaultConnectionString;
+                    o.ApplicationName = appName;
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var requestFeature = new HttpRequestFeature
+            {
+            };
+            var features = new FeatureCollection();
+            features.Set<IHttpRequestFeature>(requestFeature);
+            var httpContext = new DefaultHttpContext(features);
+
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            var negotiateResponse = handler.Process(httpContext, "chat");
+
+            Assert.NotNull(negotiateResponse);
+            Assert.EndsWith(expectedResponse, negotiateResponse.Url);
+        }
+
+        [Theory]
         [InlineData(typeof(ConnectionIdUserIdProvider), ServiceHubConnectionContext.ConnectionIdUnavailableError)]
         [InlineData(typeof(ConnectionAbortedTokenUserIdProvider), ServiceHubConnectionContext.ConnectionAbortedUnavailableError)]
         [InlineData(typeof(ItemsUserIdProvider), ServiceHubConnectionContext.ItemsUnavailableError)]
@@ -131,16 +216,55 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        public void TestNegotiateHandlerWithMultipleEndpointsAndCustomerRouterAndAppName()
+        {
+            var config = new ConfigurationBuilder().Build();
+            var router = new TestCustomRouter();
+            var serviceProvider = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR(o =>
+                {
+                    o.ApplicationName = "testprefix";
+                    o.Endpoints = new ServiceEndpoint[]
+                    {
+                        new ServiceEndpoint(ConnectionString2),
+                        new ServiceEndpoint(ConnectionString3, name: "chosen"),
+                        new ServiceEndpoint(ConnectionString4),
+                    };
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IEndpointRouter>(router)
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var requestFeature = new HttpRequestFeature
+            {
+                Path = "/user/path/negotiate/",
+                QueryString = "?endpoint=chosen"
+            };
+
+            var features = new FeatureCollection();
+            features.Set<IHttpRequestFeature>(requestFeature);
+            var httpContext = new DefaultHttpContext(features);
+
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            var negotiateResponse = handler.Process(httpContext, "chat");
+
+            Assert.NotNull(negotiateResponse);
+            Assert.Equal($"http://localhost3/client/?hub=testprefix_chat&asrs.op=%2Fuser%2Fpath&endpoint=chosen", negotiateResponse.Url);
+        }
+
+        [Fact]
         public void TestNegotiateHandlerWithMultipleEndpointsAndCustomRouter()
         {
             var config = new ConfigurationBuilder().Build();
-            var router = new TestCustomRouter(ConnectionString3);
+            var router = new TestCustomRouter();
             var serviceProvider = new ServiceCollection().AddSignalR()
                 .AddAzureSignalR(
                 o => o.Endpoints = new ServiceEndpoint[]
                 {
                     new ServiceEndpoint(ConnectionString2),
-                    new ServiceEndpoint(ConnectionString3),
+                    new ServiceEndpoint(ConnectionString3, name: "chosen"),
                     new ServiceEndpoint(ConnectionString4),
                 })
                 .Services
@@ -152,8 +276,8 @@ namespace Microsoft.Azure.SignalR.Tests
             var requestFeature = new HttpRequestFeature
             {
                 Path = "/user/path/negotiate/",
+                QueryString = "?endpoint=chosen"
             };
-
             var features = new FeatureCollection();
             features.Set<IHttpRequestFeature>(requestFeature);
             var httpContext = new DefaultHttpContext(features);
@@ -162,51 +286,70 @@ namespace Microsoft.Azure.SignalR.Tests
             var negotiateResponse = handler.Process(httpContext, "chat");
 
             Assert.NotNull(negotiateResponse);
-            Assert.Equal($"http://localhost3/client/?hub=chat&asrs.op=%2Fuser%2Fpath", negotiateResponse.Url);
+            Assert.Equal($"http://localhost3/client/?hub=chat&asrs.op=%2Fuser%2Fpath&endpoint=chosen", negotiateResponse.Url);
+
+            // With no query string should return 400
+            requestFeature = new HttpRequestFeature
+            {
+                Path = "/user/path/negotiate/",
+            };
+
+            var responseFeature = new HttpResponseFeature();
+            features.Set<IHttpRequestFeature>(requestFeature);
+            features.Set<IHttpResponseFeature>(responseFeature);
+            httpContext = new DefaultHttpContext(features);
+
+            handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            negotiateResponse = handler.Process(httpContext, "chat");
+
+            Assert.Null(negotiateResponse);
+
+            Assert.Equal(400, responseFeature.StatusCode);
+
+            // With no query string should return 400
+            requestFeature = new HttpRequestFeature
+            {
+                Path = "/user/path/negotiate/",
+                QueryString = "?endpoint=notexists"
+            };
+
+            responseFeature = new HttpResponseFeature();
+            features.Set<IHttpRequestFeature>(requestFeature);
+            features.Set<IHttpResponseFeature>(responseFeature);
+            httpContext = new DefaultHttpContext(features);
+
+            handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            Assert.Throws<InvalidOperationException>(() => handler.Process(httpContext, "chat"));
         }
 
-        private class TestCustomRouter : IEndpointRouter
+        private sealed class TestServerNameProvider : IServerNameProvider
         {
-            private readonly string _negotiateEndpoint;
-
-            public TestCustomRouter(string negotiateEndpoint)
+            private readonly string _serverName;
+            public TestServerNameProvider(string serverName)
             {
-                _negotiateEndpoint = negotiateEndpoint;
+                _serverName = serverName;
             }
 
-            public IEnumerable<ServiceEndpoint> GetEndpointsForBroadcast(IEnumerable<ServiceEndpoint> availableEnpoints)
+            public string GetName()
             {
-                return availableEnpoints;
+                return _serverName;
             }
+        }
 
-            public IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> availableEnpoints)
+        private class TestCustomRouter : EndpointRouterDecorator
+        {
+            public override ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
             {
-                return availableEnpoints;
-            }
+                var endpointName = context.Request.Query["endpoint"];
+                if (endpointName.Count == 0)
+                {
+                    context.Response.StatusCode = 400;
+                    var response = Encoding.UTF8.GetBytes("Invalid request");
+                    context.Response.Body.Write(response, 0, response.Length);
+                    return null;
+                }
 
-            public IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForGroups(IReadOnlyList<string> groupList, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForUser(string userId, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public IEnumerable<ServiceEndpoint> GetEndpointsForUsers(IReadOnlyList<string> userList, IEnumerable<ServiceEndpoint> availableEnpoints)
-            {
-                return availableEnpoints;
-            }
-
-            public ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> primaryEndpoints)
-            {
-                return primaryEndpoints.First(e => e.ConnectionString == _negotiateEndpoint);
+                return endpoints.First(s => s.Name == endpointName && s.Online);
             }
         }
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
@@ -14,6 +15,8 @@ namespace Microsoft.Azure.SignalR
         private readonly ILoggerFactory _loggerFactory;
         private readonly ConnectionDelegate _connectionDelegate;
         private readonly IClientConnectionFactory _clientConnectionFactory;
+
+        public Action<HttpContext> ConfigureContext { get; set; }
 
         public ServiceConnectionFactory(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
@@ -30,9 +33,11 @@ namespace Microsoft.Azure.SignalR
 
         public IServiceConnection Create(IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
         {
-            return new ServiceConnection(_serviceProtocol, _clientConnectionManager, connectionFactory,
+            var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, connectionFactory,
                 _loggerFactory, _connectionDelegate, _clientConnectionFactory,
                 Guid.NewGuid().ToString(), serviceMessageHandler, type);
+            serviceConnection.ConfigureContext = ConfigureContext;
+            return serviceConnection;
         }
     }
 }

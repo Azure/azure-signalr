@@ -10,9 +10,15 @@ namespace AspNet.ChatSample.SelfHostServer
     {
         static void Main(string[] args)
         {
-            using (WebApp.Start<Startup>("http://localhost:8009"))
+            if (!(args.Length > 0 && int.TryParse(args[0], out var port)))
             {
-                Console.WriteLine("Server running at http://localhost:8009/");
+                port = 8009;
+            }
+
+            var url = $"http://localhost:{port}";
+            using (WebApp.Start<Startup>(url))
+            {
+                Console.WriteLine($"Server running at {url}");
                 Console.ReadLine();
             }
         }

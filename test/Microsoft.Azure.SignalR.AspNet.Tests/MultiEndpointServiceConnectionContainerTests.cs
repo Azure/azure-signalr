@@ -13,9 +13,10 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
+using Microsoft.Owin;
 using Xunit;
 
-namespace Microsoft.Azure.SignalR.Tests
+namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
     public class MultiEndpointServiceConnectionContainerTests
     {
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var router = new TestEndpointRouter(false);
             var container = new MultiEndpointServiceConnectionContainer(
-                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
             }, e), sem, router, null);
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var router = new TestEndpointRouter(false);
             var container = new MultiEndpointServiceConnectionContainer(
-                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
             }, e), sem, router, null);
@@ -95,7 +96,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var router = new TestEndpointRouter(false);
             var container = new MultiEndpointServiceConnectionContainer(
-                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
             }, e), sem, router, null);
@@ -133,7 +134,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
             var router = new TestEndpointRouter(true);
             var container = new MultiEndpointServiceConnectionContainer(
-                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -154,7 +155,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
             var router = new TestEndpointRouter(true);
             var container = new MultiEndpointServiceConnectionContainer(
-                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -182,7 +183,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var router = new TestEndpointRouter(true);
             var container = new MultiEndpointServiceConnectionContainer(
-                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -209,7 +210,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var router = new TestEndpointRouter(false);
             var container = new MultiEndpointServiceConnectionContainer(
-                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -232,7 +233,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var router = new TestEndpointRouter(false);
             var container = new MultiEndpointServiceConnectionContainer(
-                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -260,7 +261,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var router = new TestEndpointRouter(false);
             var container = new MultiEndpointServiceConnectionContainer(
-                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -294,7 +295,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 if (string.IsNullOrEmpty(e.Name))
                 {
-                    return new TestServiceConnectionContainer(new List<IServiceConnection> {
+                    return new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -304,7 +305,7 @@ namespace Microsoft.Azure.SignalR.Tests
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                     }, e);
                 }
-                return new TestServiceConnectionContainer(new List<IServiceConnection> {
+                return new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                         new TestServiceConnection(),
                         new TestServiceConnection(),
                         new TestServiceConnection(),
@@ -336,7 +337,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 if (string.IsNullOrEmpty(e.Name))
                 {
-                    return new TestServiceConnectionContainer(new List<IServiceConnection> {
+                    return new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -346,7 +347,7 @@ namespace Microsoft.Azure.SignalR.Tests
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                     }, e);
                 }
-                return new TestServiceConnectionContainer(new List<IServiceConnection> {
+                return new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                         new TestServiceConnection(),
                         new TestServiceConnection(),
                         new TestServiceConnection(),
@@ -376,7 +377,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 if (string.IsNullOrEmpty(e.Name))
                 {
-                    return new TestServiceConnectionContainer(new List<IServiceConnection> {
+                    return new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -386,7 +387,7 @@ namespace Microsoft.Azure.SignalR.Tests
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                     }, e);
                 }
-                return new TestServiceConnectionContainer(new List<IServiceConnection> {
+                return new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                         new TestServiceConnection(),
                         new TestServiceConnection(),
                         new TestServiceConnection(),
@@ -478,48 +479,14 @@ namespace Microsoft.Azure.SignalR.Tests
                 return base.GetEndpointsForUser(userId, endpoints);
             }
 
-            public override ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> endpoints)
+            public override ServiceEndpoint GetNegotiateEndpoint(IOwinContext context, IEnumerable<ServiceEndpoint> endpoints)
             {
                 if (_broken)
                 {
                     throw new InvalidOperationException();
                 }
 
-                return base.GetNegotiateEndpoint(endpoints);
-            }
-        }
-
-        private sealed class TestServiceConnection : IServiceConnection
-        {
-            public ServiceConnectionStatus Status { get; }
-
-            public Task ConnectionInitializedTask => Task.CompletedTask;
-
-            private readonly bool _throws;
-            public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false)
-            {
-                Status = status;
-                _throws = throws;
-            }
-
-            public Task StartAsync(string target = null)
-            {
-                return Task.CompletedTask;
-            }
-
-            public Task StopAsync()
-            {
-                return Task.CompletedTask;
-            }
-
-            public Task WriteAsync(ServiceMessage serviceMessage)
-            {
-                if (_throws)
-                {
-                    throw new ServiceConnectionNotActiveException();
-                }
-
-                return Task.CompletedTask;
+                return base.GetNegotiateEndpoint(context, endpoints);
             }
         }
     }

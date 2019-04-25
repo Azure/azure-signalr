@@ -5,6 +5,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -26,80 +28,101 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(1);
         private static readonly string[] _userNames = GetTestStringList("User", ClientConnectionCount);
         private static readonly string[] _groupNames = GetTestStringList("Group", GroupCount);
+        private static readonly ServiceTransportType[] _serviceTransportType = new ServiceTransportType[] { ServiceTransportType.Transient, ServiceTransportType.Persistent };
+        private static readonly string[] _appNames = new string[] { "appName", "", null };
 
         public ServiceHubContextE2EFacts(ITestOutputHelper output) : base(output)
         {
         }
 
+        public static IEnumerable<object[]> TestData => from serviceTransportType in _serviceTransportType
+                                                        from appName in _appNames
+                                                        select new object[] { serviceTransportType, appName };
+
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
-        [InlineData(ServiceTransportType.Transient)]
-        [InlineData(ServiceTransportType.Persistent)]
-        internal async Task BroadcastTest(ServiceTransportType serviceTransportType)
+        [MemberData(nameof(TestData))]
+        internal async Task BroadcastTest(ServiceTransportType serviceTransportType, string appName)
         {
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
-            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
-            using (serviceHubContext)
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            try
             {
                 await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.All.SendAsync(MethodName, Message), ClientConnectionCount, receivedMessageDict);
             }
+            finally
+            {
+                await serviceHubContext.DisposeAsync();
+            }
         }
 
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
-        [InlineData(ServiceTransportType.Transient)]
-        [InlineData(ServiceTransportType.Persistent)]
-        internal async Task SendToUserTest(ServiceTransportType serviceTransportType)
+        [MemberData(nameof(TestData))]
+        internal async Task SendToUserTest(ServiceTransportType serviceTransportType, string appName)
         {
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
-            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
-            using (serviceHubContext)
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            try
             {
                 await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.User(_userNames[0]).SendAsync(MethodName, Message), 1, receivedMessageDict);
             }
-        }
-
-        [ConditionalTheory]
-        [SkipIfConnectionStringNotPresent]
-        [InlineData(ServiceTransportType.Transient)]
-        [InlineData(ServiceTransportType.Persistent)]
-        internal async Task SendToUsersTest(ServiceTransportType serviceTransportType)
-        {
-            var receivedMessageDict = new ConcurrentDictionary<int, int>();
-            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
-            using (serviceHubContext)
+            finally
             {
-                await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.Users(_userNames).SendAsync(MethodName, Message), ClientConnectionCount, receivedMessageDict);
+                await serviceHubContext.DisposeAsync();
             }
         }
 
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
-        [InlineData(ServiceTransportType.Transient)]
-        [InlineData(ServiceTransportType.Persistent)]
-        internal async Task SendToGroupTest(ServiceTransportType serviceTransportType)
+        [MemberData(nameof(TestData))]
+        internal async Task SendToUsersTest(ServiceTransportType serviceTransportType, string appName)
         {
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
-            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
-            using (serviceHubContext)
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            try
+            {
+                await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.Users(_userNames).SendAsync(MethodName, Message), ClientConnectionCount, receivedMessageDict);
+            }
+            finally
+            {
+                await serviceHubContext.DisposeAsync();
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [MemberData(nameof(TestData))]
+        internal async Task SendToGroupTest(ServiceTransportType serviceTransportType, string appName)
+        {
+            var receivedMessageDict = new ConcurrentDictionary<int, int>();
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            try
             {
                 Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
                 await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), _userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length, receivedMessageDict);
             }
+            finally
+            {
+                await serviceHubContext.DisposeAsync();
+            }
         }
 
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
-        [InlineData(ServiceTransportType.Transient)]
-        [InlineData(ServiceTransportType.Persistent)]
-        internal async Task SendToGroupsTest(ServiceTransportType serviceTransportType)
+        [MemberData(nameof(TestData))]
+        internal async Task SendToGroupsTest(ServiceTransportType serviceTransportType, string appName)
         {
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
-            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType);
-            using (serviceHubContext)
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            try
             {
                 Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(_groupNames).SendAsync(MethodName, Message);
                 await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), ClientConnectionCount, receivedMessageDict);
+            }
+            finally
+            {
+                await serviceHubContext.DisposeAsync();
             }
         }
 
@@ -119,19 +142,35 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private static async Task RunTestCore(string clientEndpoint, IEnumerable<string> clientAccessTokens, Func<Task> coreTask, int expectedReceivedMessageCount, ConcurrentDictionary<int, int> receivedMessageDict)
         {
-            var connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
-            ListenOnMessage(connections, receivedMessageDict);
+            IList<HubConnection> connections = null;
+            CancellationTokenSource cancellationTokenSource = null;
+            try
+            {
+                connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
+                cancellationTokenSource = new CancellationTokenSource();
+                HandleHubConnection(connections, cancellationTokenSource);
+                ListenOnMessage(connections, receivedMessageDict);
 
-            await coreTask();
+                Assert.False(cancellationTokenSource.Token.IsCancellationRequested);
 
-            await Task.Delay(_timeout);
+                await coreTask();
+                await Task.Delay(_timeout);
 
-            var receivedMessageCount = (from pair in receivedMessageDict
-                                        select pair.Value).Sum();
-            Assert.Equal(expectedReceivedMessageCount, receivedMessageCount);
+                Assert.False(cancellationTokenSource.Token.IsCancellationRequested);
 
-            await Task.WhenAll(from connection in connections
-                               select connection.StopAsync());
+                var receivedMessageCount = (from pair in receivedMessageDict
+                                            select pair.Value).Sum();
+                Assert.Equal(expectedReceivedMessageCount, receivedMessageCount);
+            }
+            finally
+            {
+                cancellationTokenSource?.Dispose();
+                if (connections != null)
+                {
+                    await Task.WhenAll(from connection in connections
+                                       select connection.StopAsync());
+                }
+            }
         }
 
         private static string[] GetTestStringList(string prefix, int count)
@@ -140,12 +179,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     select $"{prefix}{i}").ToArray();
         }
 
-        private async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType)
+        private async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType, string appName)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
 
-                var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType);
+                var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType, appName);
                 var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName, loggerFactory);
 
                 var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
@@ -182,12 +221,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        private static IServiceManager GenerateServiceManager(string connectionString, ServiceTransportType serviceTransportType = ServiceTransportType.Transient)
+        private static IServiceManager GenerateServiceManager(string connectionString, ServiceTransportType serviceTransportType = ServiceTransportType.Transient, string appName = null)
         {
             var serviceManagerOptions = new ServiceManagerOptions
             {
                 ConnectionString = connectionString,
-                ServiceTransportType = serviceTransportType
+                ServiceTransportType = serviceTransportType,
+                ApplicationName = appName
             };
 
             return new ServiceManager(serviceManagerOptions);
@@ -202,5 +242,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                         return Task.FromResult(accessToken);
                     };
                 }).Build();
+
+        private static void HandleHubConnection(IList<HubConnection> connections, CancellationTokenSource cancellationTokenSource)
+        {
+            foreach (var connection in connections)
+            {
+                connection.Closed += ex =>
+                {
+                    cancellationTokenSource.Cancel();
+                    return Task.CompletedTask;
+                };
+            }
+        }
     }
 }

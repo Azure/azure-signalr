@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -24,11 +25,11 @@ namespace Microsoft.Azure.SignalR
         private readonly string _userId;
         private readonly string _hubName;
 
-        public ConnectionFactory(string hubName, IServiceEndpointProvider provider, ILoggerFactory loggerFactory)
+        public ConnectionFactory(string hubName, IServiceEndpointProvider provider, IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
         {
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
-            _loggerFactory = loggerFactory;
-            _userId = GenerateServerName();
+            _loggerFactory = loggerFactory == null ? (ILoggerFactory)NullLoggerFactory.Instance : new GracefulLoggerFactory(loggerFactory);
+            _userId = nameProvider?.GetName();
             _hubName = hubName;
         }
 
@@ -45,7 +46,7 @@ namespace Microsoft.Azure.SignalR
             var httpConnection = new HttpConnection(httpConnectionOptions, _loggerFactory);
             try
             {
-                await httpConnection.StartAsync(transferFormat);
+                await httpConnection.StartAsync(transferFormat, cancellationToken);
                 return httpConnection;
             }
             catch
@@ -84,11 +85,67 @@ namespace Microsoft.Azure.SignalR
             return ((HttpConnection)connection).DisposeAsync();
         }
 
-        private static string GenerateServerName()
+        private sealed class GracefulLoggerFactory : ILoggerFactory
         {
-            // Use the machine name for convenient diagnostics, but add a guid to make it unique.
-            // Example: MyServerName_02db60e5fab243b890a847fa5c4dcb29
-            return $"{Environment.MachineName}_{Guid.NewGuid():N}";
+            private readonly ILoggerFactory _inner;
+            public GracefulLoggerFactory(ILoggerFactory inner)
+            {
+                _inner = inner;
+            }
+
+            public void Dispose()
+            {
+                _inner.Dispose();
+            }
+
+            public ILogger CreateLogger(string categoryName)
+            {
+                var innerLogger = _inner.CreateLogger(categoryName);
+                return new GracefulLogger(innerLogger);
+            }
+
+            public void AddProvider(ILoggerProvider provider)
+            {
+                _inner.AddProvider(provider);
+            }
+
+            private sealed class GracefulLogger : ILogger
+            {
+                private readonly ILogger _inner;
+                public GracefulLogger(ILogger inner)
+                {
+                    _inner = inner;
+                }
+
+                /// <summary>
+                /// Downgrade error level logs, and also exclude exception details
+                /// Exceptions thrown from inside the HttpConnection are supposed to be handled by the caller and logged with more user-friendly message
+                /// </summary>
+                /// <typeparam name="TState"></typeparam>
+                /// <param name="logLevel"></param>
+                /// <param name="eventId"></param>
+                /// <param name="state"></param>
+                /// <param name="exception"></param>
+                /// <param name="formatter"></param>
+                public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+                {
+                    if (logLevel >= LogLevel.Error)
+                    {
+                        logLevel = LogLevel.Warning;
+                    }
+                    _inner.Log(logLevel, eventId, state, null, formatter);
+                }
+
+                public bool IsEnabled(LogLevel logLevel)
+                {
+                    return _inner.IsEnabled(logLevel);
+                }
+
+                public IDisposable BeginScope<TState>(TState state)
+                {
+                    return _inner.BeginScope(state);
+                }
+            }
         }
     }
 }

@@ -56,7 +56,7 @@ services.AddSignalR()
 ### How to customize endpoint router
 <a name="customize-router"></a>
 
-By default, the SDK uses the [DefaultEndpointRouter](../src/Microsoft.Azure.SignalR.Common/Endpoints/DefaultEndpointRouter.cs) to pick up endpoints.
+By default, the SDK uses the [DefaultEndpointRouter](../src/Microsoft.Azure.SignalR/EndpointRouters/DefaultEndpointRouter.cs) to pick up endpoints.
 
 #### Default behavior 
 1. Client request routing
@@ -94,16 +94,20 @@ Below is another example, that overrides the default negotiate behavior, to sele
 ```cs
 private class CustomRouter : EndpointRouterDecorator
 {
-    public override ServiceEndpoint GetNegotiateEndpoint(IEnumerable<ServiceEndpoint> endpoints)
+    public override ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
     {
-        // Override the negotiate behavior that read the region from Environment
-        var region = Environment.GetEnvironmentVariable("SERVER_REGION");
-        if (!string.IsNullOrEmpty(region))
+        // Override the negotiate behavior to get the endpoint from query string
+        var endpointName = context.Request.Query["endpoint"];
+        if (endpointName.Count == 0)
         {
-            return base.GetNegotiateEndpoint(endpoints.Where(s => s.Name.StartsWith(region)));
+            context.Response.StatusCode = 400;
+            var response = Encoding.UTF8.GetBytes("Invalid request");
+            context.Response.Body.Write(response, 0, response.Length);
+            return null;
         }
 
-        return base.GetNegotiateEndpoint(endpoints);
+        return endpoints.FirstOrDefault(s => s.Name == endpointName && s.Online) // Get the endpoint with name matching the incoming request
+               ?? base.GetNegotiateEndpoint(context, endpoints); // Or fallback to the default behavior to randomly select one from primary endpoints, or fallback to secondary when no primary ones are online
     }
 }
 ```
@@ -175,8 +179,29 @@ app.MapAzureSignalR(
 ### How to customize router
 <a name="aspnet-customize-router"></a>
 
-Please refer to [How to customize router](#customize-router) for detailed information about creating a custom router.
+The only difference between ASP.NET SignalR and [the Core one](#customize-router) is the http context type for [GetNegotiateEndpoint]. For ASP.NET SignalR, it is of [IOwinContext](../src/Microsoft.Azure.SignalR.AspNet/EndpointRouters/DefaultEndpointRouter.cs#L19) type.
 
+Below is the custom negotiate example for AspNet SignalR:
+
+```cs
+private class CustomRouter : EndpointRouterDecorator
+{
+    public override ServiceEndpoint GetNegotiateEndpoint(IOwinContext context, IEnumerable<ServiceEndpoint> endpoints)
+    {
+        // Override the negotiate behavior to get the endpoint from query string
+        var endpointName = context.Request.Query["endpoint"];
+        if (string.IsNullOrEmpty(endpointName))
+        {
+            context.Response.StatusCode = 400;
+            context.Response.Write("Invalid request.");
+            return null;
+        }
+
+        return endpoints.FirstOrDefault(s => s.Name == endpointName && s.Online) // Get the endpoint with name matching the incoming request
+               ?? base.GetNegotiateEndpoint(context, endpoints); // Or fallback to the default behavior to randomly select one from primary endpoints, or fallback to secondary when no primary ones are online
+    }
+}
+```
 And don't forget to register the router to DI container using:
 
 ```cs

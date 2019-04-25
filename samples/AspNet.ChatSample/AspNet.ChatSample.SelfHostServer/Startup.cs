@@ -18,7 +18,6 @@ namespace AspNet.ChatSample.SelfHostServer
             // app.MapSignalR();
             app.UseCors(CorsOptions.AllowAll);
             app.MapAzureSignalR(GetType().FullName);
-            GlobalHost.TraceManager.Switch.Level = SourceLevels.Information;
         }
     }
 }

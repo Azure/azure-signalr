@@ -16,13 +16,13 @@ namespace Microsoft.Azure.SignalR
     internal class MultiEndpointServiceConnectionContainer : IServiceConnectionContainer
     {
         private readonly IServiceEndpointManager _endpointManager;
-        private readonly IEndpointRouter _router;
+        private readonly IMessageRouter _router;
         private readonly ILogger _logger;
         private readonly IServiceConnectionContainer _inner;
 
         public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
 
-        public MultiEndpointServiceConnectionContainer(Func<ServiceEndpoint, IServiceConnectionContainer> generator, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
+        public MultiEndpointServiceConnectionContainer(Func<ServiceEndpoint, IServiceConnectionContainer> generator, IServiceEndpointManager endpointManager, IMessageRouter router, ILoggerFactory loggerFactory)
         {
             if (generator == null)
             {
@@ -47,16 +47,16 @@ namespace Microsoft.Azure.SignalR
         }
 
         public MultiEndpointServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, string hub,
-            int count, IServiceEndpointManager endpointManager, IEndpointRouter router, ILoggerFactory loggerFactory)
-        :this(endpoint => CreateContainer(serviceConnectionFactory, endpoint, hub, count, endpointManager, loggerFactory),
+            int count, IServiceEndpointManager endpointManager, IMessageRouter router, IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
+        :this(endpoint => CreateContainer(serviceConnectionFactory, endpoint, hub, count, endpointManager, nameProvider, loggerFactory),
             endpointManager, router, loggerFactory)
         {
         }
 
-        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, ServiceEndpoint endpoint, string hub, int count, IServiceEndpointManager endpointManager, ILoggerFactory loggerFactory)
+        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, ServiceEndpoint endpoint, string hub, int count, IServiceEndpointManager endpointManager, IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
         {
             var provider = endpointManager.GetEndpointProvider(endpoint);
-            var connectionFactory = new ConnectionFactory(hub, provider, loggerFactory);
+            var connectionFactory = new ConnectionFactory(hub, provider, nameProvider, loggerFactory);
             if (endpoint.EndpointType == EndpointType.Primary)
             {
                 return new StrongServiceConnectionContainer(serviceConnectionFactory, connectionFactory, count, endpoint);
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.SignalR
                 return _inner.WriteAsync(partitionKey, serviceMessage);
             }
 
-            // re-evaluate availbale endpoints as they might be offline, however it can not guarantee that all endpoints are online
+            // re-evaluate available endpoints as they might be offline, however it can not guarantee that all endpoints are online
             var routed = GetRoutedEndpoints(serviceMessage, _endpointManager.GetAvailableEndpoints()).ToArray();
 
             if (routed.Length == 0)
