@@ -31,9 +31,9 @@ namespace Microsoft.Azure.SignalR.Common
         {
             bool calledProbeOnce = false;
             bool probeSuccess = false;
+            var myTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             do
             {
-                var myTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 // ensure only one caller will be selected to call probing func
                 var ongoingProbeTcs = Interlocked.CompareExchange(ref _currentProbeTcs, myTcs, null);
                 if (ongoingProbeTcs == null)
@@ -49,8 +49,7 @@ namespace Microsoft.Azure.SignalR.Common
 
                         using (CancellationTokenSource delayCts = new CancellationTokenSource())
                         {
-                            var d = getRetryDelay(_currentRetryCount++);
-                            var delayTask = Task.Delay(d, delayCts.Token);
+                            var delayTask = Task.Delay(getRetryDelay(_currentRetryCount++), delayCts.Token);
                             await Task.WhenAny(delayTask, probeTask);
 
                             // Handle success, timeout, and failure appropriately
