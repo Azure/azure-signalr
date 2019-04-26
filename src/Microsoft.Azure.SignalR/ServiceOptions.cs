@@ -24,6 +24,11 @@ namespace Microsoft.Azure.SignalR
         public int ConnectionCount { get; set; } = 5;
 
         /// <summary>
+        /// Gets or sets the prefix to apply to each hub name
+        /// </summary>
+        public string ApplicationName { get; set; }
+
+        /// <summary>
         /// Gets or sets the func to generate claims from <see cref="HttpContext" />.
         /// The claims will be included in the auto-generated token for clients.
         /// </summary>
@@ -39,5 +44,12 @@ namespace Microsoft.Azure.SignalR
         /// Gets or sets list of endpoints
         /// </summary>
         public ServiceEndpoint[] Endpoints { get; set; }
+
+        /// <summary>
+        /// TODO: Enable this option when the runtime is ready
+        /// Specifies the mode for server sticky, when client is always routed to the server which it first /negotiate with, we call it "server sticky mode".
+        /// By default it is disabled
+        /// </summary>
+        internal ServerStickyMode ServerStickyMode { get; set; } = ServerStickyMode.Disabled;
     }
 }

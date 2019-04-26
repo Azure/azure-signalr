@@ -114,7 +114,7 @@ services.AddSignalR()
 Install SignalR Service SDK to your ASP.NET project with **Package Manager Console**:
 
 ```powershell
-Install-Package Microsoft.Azure.SignalR.AspNet -IncludePrerelease
+Install-Package Microsoft.Azure.SignalR.AspNet
 ```
 
 In your `Startup` class, use SignalR Service SDK as the following code snippet, replace `MapSignalR()` to `MapAzureSignalR({your_applicationName})`. Replace `{YourApplicationName}` to the name of your application, this is the unique name to distinguish this application with your other applications. You can use `this.GetType().FullName` as the value.

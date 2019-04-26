@@ -12,10 +12,7 @@
 <a name="production-use"></a>
 ## Is Azure SignalR Service ready for production use?
 
-Yes if you are using [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) with Azure SignalR Service.
-The generally-available announcement is at [here](https://azure.microsoft.com/en-us/blog/azure-signalr-service-now-generally-available/).
-
-The support of [ASP.NET SignalR](https://github.com/SignalR/SignalR) is still in *public preview*.
+Yes, both the support for [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) and [ASP.NET SignalR](https://github.com/SignalR/SignalR) are all generally available.
 
 <a name="no-server-available"></a>
 ## Client connection is closed with error message "No server available". What does that mean?

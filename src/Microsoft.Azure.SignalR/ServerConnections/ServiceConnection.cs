@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -15,6 +16,10 @@ namespace Microsoft.Azure.SignalR
 {
     internal partial class ServiceConnection : ServiceConnectionBase
     {
+        // Fix issue: https://github.com/Azure/azure-signalr/issues/198
+        // .NET Framework has restriction about reserved string as the header name like "User-Agent"
+        private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "Asrs-User-Agent", ProductInfo.GetProductInfo() } };
+
         private const string ClientConnectionCountInHub = "#clientInHub";
         private const string ClientConnectionCountInServiceConnection = "#client";
 
@@ -28,6 +33,8 @@ namespace Microsoft.Azure.SignalR
             new string[4] { ClientConnectionCountInHub, null, ClientConnectionCountInServiceConnection, null };
 
         private readonly ConnectionDelegate _connectionDelegate;
+
+        public Action<HttpContext> ConfigureContext { get; set; }
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
                                  IClientConnectionManager clientConnectionManager,
@@ -49,7 +56,7 @@ namespace Microsoft.Azure.SignalR
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
         {
-            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId, target);
+            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId, target, headers: CustomHeader);
         }
 
         protected override Task DisposeConnection()
@@ -146,7 +153,7 @@ namespace Microsoft.Azure.SignalR
 
         protected override Task OnConnectedAsync(OpenConnectionMessage message)
         {
-            var connection = _clientConnectionFactory.CreateConnection(message);
+            var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
             AddClientConnection(connection);
             Log.ConnectedStarting(_logger, connection.ConnectionId);
 

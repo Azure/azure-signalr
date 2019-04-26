@@ -181,6 +181,8 @@ namespace Owin
                 throw new ArgumentException(nameof(applicationName), "Empty application name is not allowed.");
             }
 
+            options.ApplicationName = applicationName;
+
             if (configuration == null)
             {
                 // Keep the same as SignalR's exception
