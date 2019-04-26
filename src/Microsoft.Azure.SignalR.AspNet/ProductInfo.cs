@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             var packageId = assembly.GetName().Name;
             var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
             
-            return $"{packageId}/{version}(Asp.Net SignalR)";
+            return $"{packageId}/{version}";
         }
     }
 }
