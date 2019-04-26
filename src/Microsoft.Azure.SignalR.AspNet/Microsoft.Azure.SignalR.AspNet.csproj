@@ -8,10 +8,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- For ASP.NET sticky to 1.0.0 until 1.1.0 is ready -->
-    <VersionPrefix>1.0.0</VersionPrefix>
-    <PackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' == 'rtm' ">$(VersionPrefix)</PackageVersion>
-    <PackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' != 'rtm' ">$(VersionPrefix)-$(VersionSuffix)-final</PackageVersion>
+    <!-- For ASP.NET package version, sticky to 1.0.0 until 1.1.0 is ready -->
+    <AspNetVersionPrefix>1.0.0</AspNetVersionPrefix>
+    <PackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' == 'rtm' ">$(AspNetVersionPrefix)</PackageVersion>
+    <PackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' != 'rtm' ">$(AspNetVersionPrefix)-$(VersionSuffix)-final</PackageVersion>
   </PropertyGroup>
   
   <ItemGroup>
