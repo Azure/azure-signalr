@@ -71,9 +71,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-        public Task StartAsync()
+        public Task StartAsync(string productInfo = null)
         {
-            return Task.WhenAll(GetConnections().Select(s => s.StartAsync()));
+            return Task.WhenAll(GetConnections().Select(s => s.StartAsync(productInfo: productInfo)));
         }
 
         public Task StopAsync()

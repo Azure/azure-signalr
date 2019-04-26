@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal interface IServiceConnection
     {
-        Task StartAsync(string target = null);
+        Task StartAsync(string target = null, string productInfo = null);
 
         Task WriteAsync(ServiceMessage serviceMessage);
 

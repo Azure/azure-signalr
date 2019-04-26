@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,8 +33,11 @@ namespace Microsoft.Azure.SignalR.Management
             _serverNameProvider = new DefaultServerNameProvider();
         }
 
-        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
+        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default, string callerInfo = null)
         {
+            var curInfo = ProductInfo.GetProductInfo(Assembly.GetExecutingAssembly());
+            var productInfo = callerInfo == null ? curInfo : $"{callerInfo}, {curInfo}";
+
             switch (_serviceManagerOptions.ServiceTransportType)
             {
                 case ServiceTransportType.Persistent:
@@ -68,7 +72,7 @@ namespace Microsoft.Azure.SignalR.Management
 
                             var serviceConnectionManager = serviceProvider.GetRequiredService<IServiceConnectionManager<Hub>>();
                             serviceConnectionManager.SetServiceConnection(weakConnectionContainer);
-                            _ = serviceConnectionManager.StartAsync();
+                            _ = serviceConnectionManager.StartAsync(productInfo: productInfo);
 
                             // wait until service connection established
                             await weakConnectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
@@ -98,7 +102,7 @@ namespace Microsoft.Azure.SignalR.Management
                         serviceCollection.Remove(serviceDescriptor);
 
                         // add rest hub lifetime manager
-                        var restHubLifetimeManager = new RestHubLifetimeManager(_serviceManagerOptions, hubName);
+                        var restHubLifetimeManager = new RestHubLifetimeManager(_serviceManagerOptions, hubName, productInfo: productInfo);
                         serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), sp => restHubLifetimeManager);
 
                         var serviceProvider = serviceCollection.BuildServiceProvider();

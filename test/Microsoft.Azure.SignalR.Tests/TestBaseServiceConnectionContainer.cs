@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Tests
             throw new NotImplementedException();
         }
 
-        protected override Task OnConnectionComplete(IServiceConnection connection)
+        protected override Task OnConnectionComplete(IServiceConnection connection, string productInfo = null)
         {
             throw new NotImplementedException();
         }

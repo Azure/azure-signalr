@@ -83,17 +83,17 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public Task StartAsync()
+        public Task StartAsync(string productInfo = null)
         {
             if (_inner != null)
             {
-                return _inner.StartAsync();
+                return _inner.StartAsync(productInfo: productInfo);
             }
 
             return Task.WhenAll(Connections.Select(s =>
             {
                 Log.StartingConnection(_logger, s.Key.Endpoint);
-                return s.Value.StartAsync();
+                return s.Value.StartAsync(productInfo: productInfo);
             }));
         }
 

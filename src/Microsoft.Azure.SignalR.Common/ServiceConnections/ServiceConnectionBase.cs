@@ -76,14 +76,15 @@ namespace Microsoft.Azure.SignalR
         /// To get full lifetime management including dispose or restart, use <see cref="ServiceConnectionContainerBase"/>
         /// </summary>
         /// <param name="target">The target instance Id</param>
+        /// <param name="productInfo">Product information</param>
         /// <returns>The task of StartAsync</returns>
-        public async Task StartAsync(string target = null)
+        public async Task StartAsync(string target = null, string productInfo = null)
         {
             // Codes in try block should catch and log exceptions separately.
             // The catch here should be very rare to reach.
             try
             {
-                if (await StartAsyncCore(target))
+                if (await StartAsyncCore(target, productInfo: productInfo))
                 {
                     _serviceConnectionStartTcs.TrySetResult(true);
                     _isConnected = true;
@@ -157,7 +158,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        protected abstract Task<ConnectionContext> CreateConnection(string target = null);
+        protected abstract Task<ConnectionContext> CreateConnection(string target = null, string productInfo = null);
 
         protected abstract Task DisposeConnection();
 
@@ -189,7 +190,7 @@ namespace Microsoft.Azure.SignalR
             return _serviceMessageHandler.HandlePingAsync(pingMessage);
         }
 
-        private async Task<bool> StartAsyncCore(string target)
+        private async Task<bool> StartAsyncCore(string target, string productInfo = null)
         {
             // Lock here in case somebody tries to send before the connection is assigned
             await _serviceConnectionLock.WaitAsync();
@@ -197,7 +198,7 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 Status = ServiceConnectionStatus.Connecting;
-                ConnectionContext = await CreateConnection(target);
+                ConnectionContext = await CreateConnection(target, productInfo: productInfo);
                 ErrorMessage = null;
 
                 if (await HandshakeAsync())

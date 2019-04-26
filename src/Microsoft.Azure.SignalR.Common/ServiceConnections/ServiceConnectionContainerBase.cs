@@ -50,9 +50,9 @@ namespace Microsoft.Azure.SignalR
             _endpoint = endpoint;
         }
 
-        public async Task StartAsync()
+        public async Task StartAsync(string productInfo)
         {
-            var task = Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
+            var task = Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c, productInfo: productInfo)));
             await Task.WhenAny(FixedServiceConnections.Select(s => s.ConnectionInitializedTask));
 
             // Set the endpoint connection after one connection is initialized
@@ -70,15 +70,15 @@ namespace Microsoft.Azure.SignalR
         /// Start and manage the whole connection lifetime
         /// </summary>
         /// <returns></returns>
-        protected async Task StartCoreAsync(IServiceConnection connection, string target = null)
+        protected async Task StartCoreAsync(IServiceConnection connection, string target = null, string productInfo = null)
         {
             try
             {
-                await connection.StartAsync(target);
+                await connection.StartAsync(target, productInfo: productInfo);
             }
             finally
             {
-                await OnConnectionComplete(connection);
+                await OnConnectionComplete(connection, productInfo: productInfo);
             }
         }
 
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.SignalR
             return ServiceConnectionFactory.Create(ConnectionFactory, this, type);
         }
 
-        protected virtual async Task OnConnectionComplete(IServiceConnection serviceConnection)
+        protected virtual async Task OnConnectionComplete(IServiceConnection serviceConnection, string productInfo = null)
         {
             if (serviceConnection == null)
             {
@@ -107,11 +107,11 @@ namespace Microsoft.Azure.SignalR
             var index = FixedServiceConnections.IndexOf(serviceConnection);
             if (index != -1)
             {
-                await RestartServiceConnectionCoreAsync(index);
+                await RestartServiceConnectionCoreAsync(index, productInfo: productInfo);
             }
         }
 
-        private async Task RestartServiceConnectionCoreAsync(int index)
+        private async Task RestartServiceConnectionCoreAsync(int index, string productInfo = null)
         {
             await Task.Delay(GetRetryDelay(_defaultConnectionRetry));
 

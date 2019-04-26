@@ -39,9 +39,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             await ConnectionInitializedTask;
         }
 
-        protected override async Task<ConnectionContext> CreateConnection(string target = null)
+        protected override async Task<ConnectionContext> CreateConnection(string target = null, string productInfo = null)
         {
-            _connectionContext = await base.CreateConnection() as TestConnectionContext;
+            _connectionContext = await base.CreateConnection(productInfo: productInfo) as TestConnectionContext;
 
             await WriteMessageAsync(new HandshakeResponseMessage());
             return _connectionContext;

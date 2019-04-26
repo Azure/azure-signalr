@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR
 
         public override Task StopAsync()
         {
-            var stopOndemandConnectionsTask =  Task.WhenAll(_onDemandServiceConnections.Select(c => c.StopAsync()));
+            var stopOndemandConnectionsTask = Task.WhenAll(_onDemandServiceConnections.Select(c => c.StopAsync()));
             return Task.WhenAll(stopOndemandConnectionsTask, base.StopAsync());
         }
 
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.SignalR
             return CreateServiceConnectionCore(ServerConnectionType.Default);
         }
 
-        protected override async Task OnConnectionComplete(IServiceConnection connection)
+        protected override async Task OnConnectionComplete(IServiceConnection connection, string productInfo = null)
         {
             if (connection == null)
             {
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.SignalR
                 }
 
                 // Restart a default connection.
-                await base.OnConnectionComplete(connection);
+                await base.OnConnectionComplete(connection, productInfo: productInfo);
             }
         }
 

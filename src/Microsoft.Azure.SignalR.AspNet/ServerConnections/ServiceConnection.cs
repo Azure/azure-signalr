@@ -42,9 +42,16 @@ namespace Microsoft.Azure.SignalR.AspNet
             _logger = loggerFactory?.CreateLogger<ServiceConnection>() ?? NullLogger<ServiceConnection>.Instance;
         }
 
-        protected override Task<ConnectionContext> CreateConnection(string target = null)
+        protected override Task<ConnectionContext> CreateConnection(string target = null, string productInfo = null)
         {
-            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId, target, headers: CustomHeader);
+            if (string.IsNullOrEmpty(productInfo))
+            {
+                return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId, target, headers: CustomHeader);
+            }
+            else
+            {
+                return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId, target, headers: new Dictionary<string, string> { { "Asrs-User-Agent", productInfo } });
+            }
         }
 
         protected override Task DisposeConnection()

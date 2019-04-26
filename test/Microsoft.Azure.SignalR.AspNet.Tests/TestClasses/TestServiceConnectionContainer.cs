@@ -28,12 +28,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             HubName = name;
         }
 
-        public Task StartAsync()
+        public Task StartAsync(string productInfo = null)
         {
             return Task.CompletedTask;
         }
 
-        public Task StartAsync(string target)
+        public Task StartAsync(string target, string productInfo = null)
         {
             return Task.CompletedTask;
         }

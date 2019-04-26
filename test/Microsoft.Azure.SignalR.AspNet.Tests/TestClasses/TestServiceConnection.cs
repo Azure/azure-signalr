@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             _throws = throws;
         }
 
-        public Task StartAsync(string target = null)
+        public Task StartAsync(string target = null, string productInfo = null)
         {
             return Task.CompletedTask;
         }
