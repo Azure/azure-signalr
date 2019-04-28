@@ -11,6 +11,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class ProductInfo
     {
+        private const int MaxProductInfoLength = 256;
         public static string GetProductInfo()
         {
             var allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -32,10 +33,11 @@ namespace Microsoft.Azure.SignalR
                                where assem.Attr.Priority == maxPriority
                                select GetProductInfoCore(assem.Assem);
 
-            return string.Join("; ", productInfos).Substring(0, 256);
+            var productInfoStr = string.Join("; ", productInfos);
+            return productInfoStr.Length <= MaxProductInfoLength ? productInfoStr : productInfoStr.Substring(0, MaxProductInfoLength);
         }
 
-        private static string GetProductInfoCore(Assembly assembly)
+        public static string GetProductInfoCore(Assembly assembly)
         {
             var packageId = assembly.GetName().Name;
             var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;

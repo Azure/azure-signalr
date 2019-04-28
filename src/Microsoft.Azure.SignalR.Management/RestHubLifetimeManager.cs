@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,8 +19,9 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestHubLifetimeManager : HubLifetimeManager<Hub>, IHubLifetimeManagerForUserGroup
     {
-        private readonly RestApiProvider _restApiProvider;
         private const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
+        private static readonly string _productInfo = ProductInfo.GetProductInfo();
+        private readonly RestApiProvider _restApiProvider;
 
         public RestHubLifetimeManager(ServiceManagerOptions serviceManagerOptions, string hubName)
         {
@@ -165,6 +167,7 @@ namespace Microsoft.Azure.SignalR.Management
             var request = new HttpRequestMessage(httpMethod, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Add("Asrs-User-Agent", _productInfo);
             request.Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
             return request;
         }
