@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <VersionPrefix>1.0.9</VersionPrefix>
+    <VersionPrefix>1.0.10</VersionPrefix>
     <VersionSuffix>preview1</VersionSuffix>
     <VersionPrefix Condition ="'$(IsTargetMultiFramework)' != 'false'">1.1.0</VersionPrefix>
     <PackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' == 'rtm' ">$(VersionPrefix)</PackageVersion>
