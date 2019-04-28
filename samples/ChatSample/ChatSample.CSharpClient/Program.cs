@@ -42,8 +42,6 @@ namespace ChatSample.CSharpClient
             }
         }
 
-        private static readonly SemaphoreSlim _connectionLock = new SemaphoreSlim(1);
-
         private static async Task<HubConnection> ConnectAsync(string url, TextWriter output, CancellationToken cancellationToken = default)
         {
             var connection = new HubConnectionBuilder().WithUrl(url).Build();
@@ -65,31 +63,18 @@ namespace ChatSample.CSharpClient
 
         private static async Task StartAsyncWithRetry(HubConnection connection, TextWriter output, CancellationToken cancellationToken)
         {
-            await _connectionLock.WaitAsync();
-            try
+            while (!cancellationToken.IsCancellationRequested)
             {
-                if (connection.State == HubConnectionState.Connected)
+                try
                 {
+                    await connection.StartAsync(cancellationToken);
                     return;
                 }
-
-                while (!cancellationToken.IsCancellationRequested)
+                catch (Exception e)
                 {
-                    try
-                    {
-                        await connection.StartAsync(cancellationToken);
-                        return;
-                    }
-                    catch (Exception e)
-                    {
-                        output.WriteLine($"Error starting: {e.Message}, retry...");
-                        await DelayRandom(200, 1000);
-                    }
+                    output.WriteLine($"Error starting: {e.Message}, retry...");
+                    await DelayRandom(200, 1000);
                 }
-            }
-            finally
-            {
-                _connectionLock.Release();
             }
         }
 
