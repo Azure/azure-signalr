@@ -1,6 +1,9 @@
 ﻿using System;
+using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Azure.SignalR;
 
 namespace ChatSample.CSharpClient
 {
@@ -9,7 +12,7 @@ namespace ChatSample.CSharpClient
         static async Task Main(string[] args)
         {
             var url = "http://localhost:5050";
-            var proxy = await ConnectAsync(url);
+            var proxy = await ConnectAsync(url + "/chat", Console.Out);
             var currentUser = Guid.NewGuid().ToString("N");
 
             Mode mode = Mode.Broadcast;
@@ -39,30 +42,66 @@ namespace ChatSample.CSharpClient
             }
         }
 
-        private enum Mode
-        {
-            Broadcast,
-            Echo,
-        }
+        private static readonly SemaphoreSlim _connectionLock = new SemaphoreSlim(1);
 
-        private static async Task<HubConnection> ConnectAsync(string url)
+        private static async Task<HubConnection> ConnectAsync(string url, TextWriter output, CancellationToken cancellationToken = default)
         {
-            var writer = Console.Out;
-            var connection = new HubConnectionBuilder().WithUrl(url + "/chat").Build();
-
-            connection.Closed += async (e) =>
-            {
-                Console.WriteLine(e);
-                await Task.Delay(new Random().Next(0, 5) * 1000);
-                await connection.StartAsync();
-            };
+            var connection = new HubConnectionBuilder().WithUrl(url).Build();
 
             connection.On<string, string>("BroadcastMessage", BroadcastMessage);
             connection.On<string>("Echo", Echo);
 
-            await connection.StartAsync();
+            connection.Closed += async (e) =>
+            {
+                output.WriteLine(e);
+                await DelayRandom(200, 1000);
+                await StartAsyncWithRetry(connection, output, cancellationToken);
+            };
+
+            await StartAsyncWithRetry(connection, output, cancellationToken);
 
             return connection;
+        }
+
+        private static async Task StartAsyncWithRetry(HubConnection connection, TextWriter output, CancellationToken cancellationToken)
+        {
+            await _connectionLock.WaitAsync();
+            try
+            {
+                if (connection.State == HubConnectionState.Connected)
+                {
+                    return;
+                }
+
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    try
+                    {
+                        await connection.StartAsync(cancellationToken);
+                        return;
+                    }
+                    catch (Exception e)
+                    {
+                        output.WriteLine($"Error starting: {e.Message}, retry...");
+                        await DelayRandom(200, 1000);
+                    }
+                }
+            }
+            finally
+            {
+                _connectionLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// Delay random milliseconds
+        /// </summary>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        private static Task DelayRandom(int min, int max)
+        {
+            return Task.Delay(StaticRandom.Next(min, max));
         }
 
         private static void BroadcastMessage(string name, string message)
@@ -73,6 +112,12 @@ namespace ChatSample.CSharpClient
         private static void Echo(string message)
         {
             Console.WriteLine(message);
+        }
+
+        private enum Mode
+        {
+            Broadcast,
+            Echo,
         }
     }
 }
