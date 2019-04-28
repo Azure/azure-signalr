@@ -654,7 +654,7 @@ namespace Microsoft.Azure.SignalR
                 _sendLoopStopped(logger, connectionId, exception);
             }
 
-            public static void ApplicaitonTaskFailed(ILogger logger, Exception exception)
+            public static void ApplicationTaskFailed(ILogger logger, Exception exception)
             {
                 _applicationTaskFailed(logger, exception);
             }
