@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="HandshakeResponseMessage"/> class.
         /// </summary>
-        /// <param name="errorMessage">An optional response error message. A <c>null</c> or empty error message indicates a succesful handshake.</param>
+        /// <param name="errorMessage">An optional response error message. A <c>null</c> or empty error message indicates a successful handshake.</param>
         public HandshakeResponseMessage(string errorMessage)
         {
             ErrorMessage = errorMessage;
