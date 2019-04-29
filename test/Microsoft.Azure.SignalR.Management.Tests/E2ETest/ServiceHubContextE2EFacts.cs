@@ -230,7 +230,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ApplicationName = appName
             };
 
-            return new ServiceManager(serviceManagerOptions);
+            return new ServiceManager(serviceManagerOptions, $"{nameof(ServiceHubContextE2EFacts)} productInfo");
         }
 
         private static HubConnection CreateHubConnection(string endpoint, string accessToken) =>

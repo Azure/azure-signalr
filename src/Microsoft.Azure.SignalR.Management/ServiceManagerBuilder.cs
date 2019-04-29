@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.ComponentModel;
+using System.Reflection;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -11,6 +13,7 @@ namespace Microsoft.Azure.SignalR.Management
     public class ServiceManagerBuilder : IServiceManagerBuilder
     {
         private readonly ServiceManagerOptions _options = new ServiceManagerOptions();
+        private Assembly _assembly = Assembly.GetExecutingAssembly();
 
         /// <summary>
         /// Configures the <see cref="IServiceManager"/> instances.
@@ -23,6 +26,13 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public ServiceManagerBuilder WithCallingAssembly()
+        {
+            _assembly = Assembly.GetCallingAssembly();
+            return this;
+        }
+
         /// <summary>
         /// Builds <see cref="IServiceManager"/> instances.
         /// </summary>
@@ -30,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Management
         public IServiceManager Build()
         {
             _options.ValidateOptions();
-            return new ServiceManager(_options);
+            return new ServiceManager(_options, ProductInfo.GetProductInfo(_assembly));
         }
     }
 }
