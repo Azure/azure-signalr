@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 case ServiceTransportType.Persistent:
                     {
-                        var connectionFactory = new ConnectionFactory(_productInfo, hubName, _endpointProvider, _serverNameProvider, loggerFactory);
+                        var connectionFactory = new ManagementConnectionFactory(_productInfo, new ConnectionFactory(hubName, _endpointProvider, _serverNameProvider, loggerFactory));
                         var serviceProtocol = new ServiceProtocol();
                         var clientConnectionManager = new ClientConnectionManager();
                         var clientConnectionFactory = new ClientConnectionFactory();

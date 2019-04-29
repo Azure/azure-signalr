@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR
             _hubName = hubName;
         }
 
-        public virtual async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken = default, IDictionary<string, string> headers = null)
+        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken = default, IDictionary<string, string> headers = null)
         {
             var httpConnectionOptions = new HttpConnectionOptions
             {
