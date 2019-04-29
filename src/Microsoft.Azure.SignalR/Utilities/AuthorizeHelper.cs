@@ -1,7 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -65,6 +67,17 @@ namespace Microsoft.Azure.SignalR
                 return false;
             }
             return false;
+        }
+
+        public static List<IAuthorizeData> BuildAuthorizePolicy(Type hub)
+        {
+            var authorizeAttributes = hub.GetCustomAttributes<AuthorizeAttribute>(inherit: true);
+            var authorizeData = new List<IAuthorizeData>();
+            foreach (var attribute in authorizeAttributes)
+            {
+                authorizeData.Add(attribute);
+            }
+            return authorizeData;
         }
     }
 }

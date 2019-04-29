@@ -114,7 +114,7 @@ Below claims are required to be included in the JWT token.
 
 Claim Type | Is Required | Description
 ---|---|---
-`aud` | true | Should be the **SAME** as your HTTP request url, trailing slash and query paramters not included. For example, a broadcast request's audience should look like: `https://example.service.signalr.net/api/v1/hubs/myhub`.
+`aud` | true | Should be the **SAME** as your HTTP request url, trailing slash and query parameters not included. For example, a broadcast request's audience should look like: `https://example.service.signalr.net/api/v1/hubs/myhub`.
 `exp` | true | Epoch time when this token will be expired.
 
 ### Implement Negotiate Endpoint

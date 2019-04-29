@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
         
         public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, string target,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default, IDictionary<string, string> headers = null)
         {
             Times.Add(DateTime.Now);
 

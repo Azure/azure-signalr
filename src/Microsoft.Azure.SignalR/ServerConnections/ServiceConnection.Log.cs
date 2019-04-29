@@ -14,8 +14,8 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, Exception> _failedToCleanupConnections =
                 LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailedToCleanupConnection"), "Failed to clean up client connections.");
 
-            private static readonly Action<ILogger, Exception> _errorSendingMessage =
-                LoggerMessage.Define(LogLevel.Error, new EventId(6, "ErrorSendingMessage"), "Error while sending message to the service.");
+            private static readonly Action<ILogger, string, Exception> _errorSendingMessage =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(6, "ErrorSendingMessage"), "Error while sending message to the service, the connection carrying the traffic is dropped. Error detail: {message}");
 
             private static readonly Action<ILogger, string, Exception> _sendLoopStopped =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, "SendLoopStopped"), "Error while processing messages from {TransportConnectionId}.");
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.SignalR
 
             public static void ErrorSendingMessage(ILogger logger, Exception exception)
             {
-                _errorSendingMessage(logger, exception);
+                _errorSendingMessage(logger, exception.Message, exception);
             }
 
             public static void SendLoopStopped(ILogger logger, string connectionId, Exception exception)
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR
                 _sendLoopStopped(logger, connectionId, exception);
             }
 
-            public static void ApplicaitonTaskFailed(ILogger logger, Exception exception)
+            public static void ApplicationTaskFailed(ILogger logger, Exception exception)
             {
                 _applicationTaskFailed(logger, exception);
             }

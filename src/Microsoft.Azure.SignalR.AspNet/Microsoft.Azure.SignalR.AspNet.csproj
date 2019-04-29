@@ -4,8 +4,14 @@
     <TargetFramework>net461</TargetFramework>
     <RootNamespace>Microsoft.Azure.SignalR.AspNet</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Fix AspNet version to preview1 -->
-    <PackageVersion>1.0.0-preview1-$(BuildNumber)</PackageVersion>
+    
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- For ASP.NET package version, sticky to 1.0.0 until 1.1.0 is ready -->
+    <AspNetVersionPrefix>1.0.0</AspNetVersionPrefix>
+    <PackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' == 'rtm' ">$(AspNetVersionPrefix)</PackageVersion>
+    <PackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' != 'rtm' ">$(AspNetVersionPrefix)-$(VersionSuffix)-final</PackageVersion>
   </PropertyGroup>
   
   <ItemGroup>

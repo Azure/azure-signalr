@@ -10,18 +10,25 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly RestApiAccessTokenGenerator _restApiAccessTokenGenerator;
         private readonly string _baseEndpoint;
         private readonly string _hubName;
+        private readonly string _appName;
         private readonly string _requestPrefix;
         private readonly string _audiencePrefix;
         private readonly int? _port;
 
-        public RestApiProvider(string connectionString, string hubName)
+        public RestApiProvider(string connectionString, string hubName, string appName)
         {
             string accessKey;
             (_baseEndpoint, accessKey, _, _port) = ConnectionStringParser.Parse(connectionString);
             _hubName = hubName;
+            _appName = appName;
             _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(accessKey);
-            _requestPrefix = _port == null ? $"{_baseEndpoint}/api/v1/hubs/{_hubName}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{_hubName}";
-            _audiencePrefix = $"{_baseEndpoint}/api/v1/hubs/{_hubName}";
+            _requestPrefix = _port == null ? $"{_baseEndpoint}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}";
+            _audiencePrefix = $"{_baseEndpoint}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}";
+        }
+
+        private string GetPrefixedHubName(string applicationName, string hubName)
+        {
+            return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
         }
 
         public RestApiEndpoint GetBroadcastEndpoint(TimeSpan? lifetime = null)

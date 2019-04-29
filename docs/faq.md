@@ -12,10 +12,7 @@
 <a name="production-use"></a>
 ## Is Azure SignalR Service ready for production use?
 
-Yes if you are using [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) with Azure SignalR Service.
-The generally-available announcement is at [here](https://azure.microsoft.com/en-us/blog/azure-signalr-service-now-generally-available/).
-
-The support of [ASP.NET SignalR](https://github.com/SignalR/SignalR) is still in *public preview*.
+Yes, both the support for [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) and [ASP.NET SignalR](https://github.com/SignalR/SignalR) are all generally available.
 
 <a name="no-server-available"></a>
 ## Client connection is closed with error message "No server available". What does that mean?
@@ -81,7 +78,7 @@ But you can still configure allowed transports at client side as documented [her
 
 You can find the details about how do we calculate these metrics [here](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-messages).
 
-In the overview blade of Azure SignalR Service resources, we have already chosen the approperate aggregation type for you. And if you go to the Metrics blade, you can
+In the overview blade of Azure SignalR Service resources, we have already chosen the appropriate aggregation type for you. And if you go to the Metrics blade, you can
 take the aggregation type [here](https://docs.microsoft.com/en-us/azure/azure-monitor/platform/metrics-supported#microsoftsignalrservicesignalr) as a reference.
 
 <a name="service-mode"></a>

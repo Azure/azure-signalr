@@ -3,7 +3,7 @@
 
 using Xunit;
 
-namespace Microsoft.Azure.SignalR.Common.Tests
+namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
     public class ProductInfoFacts
     {
