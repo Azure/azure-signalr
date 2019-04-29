@@ -19,11 +19,6 @@ namespace Microsoft.Azure.SignalR
         public string ConnectionString { get; set; }
 
         /// <summary>
-        /// Gets or sets the flag if Azure SignalR Service is enabled.
-        /// </summary>
-        public bool IsEnabled { get; set; }
-
-        /// <summary>
         /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 5.
         /// </summary>
         public int ConnectionCount { get; set; } = 5;

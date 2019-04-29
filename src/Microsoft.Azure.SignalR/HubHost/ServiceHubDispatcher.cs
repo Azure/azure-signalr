@@ -4,6 +4,7 @@
 using System;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

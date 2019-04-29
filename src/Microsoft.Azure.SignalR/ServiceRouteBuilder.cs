@@ -3,12 +3,18 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -18,9 +24,9 @@ namespace Microsoft.Azure.SignalR
     public class ServiceRouteBuilder
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger _logger;
         private readonly RouteBuilder _routes;
-
-        public readonly List<HubMapping> Hubs;
+        private readonly NegotiateHandler _negotiateHandler;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceRouteBuilder"/> class.
@@ -30,7 +36,10 @@ namespace Microsoft.Azure.SignalR
         {
             _routes = routes;
             _serviceProvider = _routes.ServiceProvider;
-            Hubs = new List<HubMapping>();
+            _negotiateHandler = _serviceProvider.GetRequiredService<NegotiateHandler>();
+
+            var loggerFactory = _serviceProvider.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance;
+            _logger = loggerFactory.CreateLogger<ServiceRouteBuilder>(); 
         }
 
         /// <summary>
@@ -48,19 +57,73 @@ namespace Microsoft.Azure.SignalR
         /// <param name="path">The request path.</param>
         public void MapHub<THub>(PathString path) where THub: Hub
         {
-            var isEnabled = _serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value.IsEnabled;
-            if (isEnabled)
+            // find auth attributes
+            var authorizeAttributes = typeof(THub).GetCustomAttributes<AuthorizeAttribute>(inherit: true);
+            var authorizationData = new List<IAuthorizeData>();
+            foreach (var attribute in authorizeAttributes)
             {
-                // Get auth attributes
-                var authorizationData = AuthorizeHelper.BuildAuthorizePolicy(typeof(THub));
-                _routes.MapRoute(path + Constants.Path.Negotiate, c => ServiceRouteHelper.RedirectToService(c, typeof(THub).Name, authorizationData));
-
-                Start<THub>();
+                authorizationData.Add(attribute);
             }
-            else
+            _routes.MapRoute(path + Constants.Path.Negotiate, c => RedirectToService(c, typeof(THub).Name, authorizationData));
+
+            Start<THub>();
+        }
+
+        private async Task RedirectToService(HttpContext context, string hubName, IList<IAuthorizeData> authorizationData)
+        {
+            if (!await AuthorizeHelper.AuthorizeAsync(context, authorizationData))
             {
-                // Build hub mappings to fallback UseSignalR()
-                Hubs.Add(new HubMapping(typeof(THub), path));
+                return;
+            }
+
+            NegotiationResponse negotiateResponse = null;
+            try
+            {
+                negotiateResponse = _negotiateHandler.Process(context, hubName);
+
+                if (context.Response.HasStarted)
+                {
+                    // Inner handler already write to context.Response, no need to continue with error case
+                    return;
+                }
+
+                // Consider it as internal server error when we don't successfully get negotiate response
+                if (negotiateResponse == null)
+                {
+                    var message = "Unable to get the negotiate endpoint";
+                    Log.NegotiateFailed(_logger, message);
+                    context.Response.StatusCode = 500;
+                    await context.Response.WriteAsync(message);
+                    return;
+                }
+            }
+            catch (AzureSignalRAccessTokenTooLongException ex)
+            {
+                Log.NegotiateFailed(_logger, ex.Message);
+                context.Response.StatusCode = 413;
+                await context.Response.WriteAsync(ex.Message);
+                return;
+            }
+            catch (AzureSignalRNotConnectedException e)
+            {
+                Log.NegotiateFailed(_logger, e.Message);
+                context.Response.StatusCode = 500;
+                await context.Response.WriteAsync(e.Message);
+                return;
+            }
+
+            var writer = new MemoryBufferWriter();
+            try
+            {
+                context.Response.ContentType = "application/json";
+                NegotiateProtocol.WriteResponse(negotiateResponse, writer);
+                // Write it out to the response with the right content length
+                context.Response.ContentLength = writer.Length;
+                await writer.CopyToAsync(context.Response.Body);
+            }
+            finally
+            {
+                writer.Reset();
             }
         }
 
@@ -72,6 +135,17 @@ namespace Microsoft.Azure.SignalR
 
             var dispatcher = _serviceProvider.GetRequiredService<ServiceHubDispatcher<THub>>();
             dispatcher.Start(app);
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, string, Exception> _negotiateFailed =
+                LoggerMessage.Define<string>(LogLevel.Critical, new EventId(1, "NegotiateFailed"), "Client negotiate failed: {Error}");
+
+            public static void NegotiateFailed(ILogger logger, string error)
+            {
+                _negotiateFailed(logger, error, null);
+            }
         }
     }
 }
