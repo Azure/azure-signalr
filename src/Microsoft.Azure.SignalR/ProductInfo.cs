@@ -8,8 +8,6 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class ProductInfo
     {
-        private const int MaxLength = 128;
-
         public static string GetProductInfo(Assembly assembly = null)
         {
             assembly = assembly ?? Assembly.GetCallingAssembly();
@@ -18,13 +16,7 @@ namespace Microsoft.Azure.SignalR
             var runtime = RuntimeInformation.FrameworkDescription?.Trim();
             var operatingSystem = RuntimeInformation.OSDescription?.Trim();
             var processorArchitecture = RuntimeInformation.ProcessArchitecture.ToString().Trim();
-            var packageInfo = $"{packageId}/{version}";
-            return $"{TruncateString(packageInfo)} ({runtime}; {operatingSystem}; {processorArchitecture})";
-        }
-
-        private static string TruncateString(string str, int maxLen = MaxLength)
-        {
-            return str.Length < maxLen ? str : $"{str.Substring(0, maxLen)}...";
+            return $"{packageId}/{version} ({runtime}; {operatingSystem}; {processorArchitecture})";
         }
     }
 }

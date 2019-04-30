@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Management
         public IServiceManager Build()
         {
             _options.ValidateOptions();
-            return new ServiceManager(_options, ProductInfo.GetProductInfo(_assembly ?? Assembly.GetExecutingAssembly()));
+            return new ServiceManager(_options, ProductInfo.GetProductInfo(_assembly));
         }
     }
 }
