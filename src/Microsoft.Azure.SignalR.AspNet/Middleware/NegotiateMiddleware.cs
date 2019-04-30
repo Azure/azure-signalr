@@ -109,7 +109,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(owinContext, _endpointManager.Endpoints));
 
-                // When status code changes, we consider the inner router changed the repsonse, then we stop here
+                // When status code changes, we consider the inner router changed the response, then we stop here
                 if (context.Response.StatusCode != 200)
                 {
                     // Inner handler already write to context.Response, no need to continue with error case

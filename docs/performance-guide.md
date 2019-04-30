@@ -192,7 +192,7 @@ then for 20K message size, the max outbound connections should be 400M \* 5 / 20
 
 * Mixed use cases
 
-The real use case typically mixes the 4 basic use cases together: **echo**, **broadcast**, **send to group**, or **send to connection**. The methodology used to evaluate the capacity is to divide the mixed use cases into 4 basic use cases, **calculate the maximum inbound and outbound message bandwidth** using the above formulas separetely, and sum them to get the total maximum inbound/outbound bandwidth. Then pick up the proper tier from the maximum inbound/outbound bandwidth tables.
+The real use case typically mixes the 4 basic use cases together: **echo**, **broadcast**, **send to group**, or **send to connection**. The methodology used to evaluate the capacity is to divide the mixed use cases into 4 basic use cases, **calculate the maximum inbound and outbound message bandwidth** using the above formulas separately, and sum them to get the total maximum inbound/outbound bandwidth. Then pick up the proper tier from the maximum inbound/outbound bandwidth tables.
 
 Meanwhile, for sending message to hundreds or thousand small groups, or thousands of clients sending message to each other, the routing cost will become dominant. This impact should be taken into account. More details is covered in the following "Case study" sections.
 

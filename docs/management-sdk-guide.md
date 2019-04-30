@@ -189,7 +189,7 @@ In this SDK, `IUserGroupManager UserGroups` is newly added. It manages groups me
   * `IClientProxy All`
     Get proxy for all clients
 * `IGroupManager Groups`
-  Get manager for groups, manage groups with conenction ID
+  Get manager for groups, manage groups with connection ID
   * `Task AddToGroupAsync (string connectionId, string groupName, CancellationToken cancellationToken = null)`
     Add client with connection ID to some group with group Name 
   * `Task RemoveFromGroupAsync (string connectionId, string groupName, CancellationToken cancellationToken = null)`
