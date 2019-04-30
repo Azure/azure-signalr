@@ -40,7 +40,7 @@ services.AddSignalR()
 * How to view the outgoing request from client? 
     1. From browser:
 
-        Take chrome for example, **F12** to open the consile window, and switch to **Netork** tab. You might need to refresh the page using **F5** to capture the network from the very beginning.
+        Take chrome for example, **F12** to open the console window, and switch to **Network** tab. You might need to refresh the page using **F5** to capture the network from the very beginning.
         
         ![Chrome View Network](./images/chrome_network.gif)
     

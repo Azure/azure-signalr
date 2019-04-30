@@ -13,13 +13,20 @@ This repository contains the open source subset of the .NET SDK.
 
 Azure SignalR Service SDK is supporting ASP.NET Core 3.0 preview from version `1.1.0-preview1-*`. And version `1.0.*` targets .NET Standard 2.0 only. Please find package information below.
 
-Package Name | Target Frameworks | NuGet | MyGet
+### Framework .NET Standard 2.0
+
+Package Name | Target Framework | NuGet | MyGet
 ---|---|---|---
-Microsoft.Azure.SignalR | .NET Standard 2.0, .NET Core App 3.0 | [![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/Microsoft.Azure.SignalR.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR/1.1.0-preview1-10384) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR)
 Microsoft.Azure.SignalR | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR)
 Microsoft.Azure.SignalR.Protocols | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/vpre/Microsoft.Azure.SignalR.Protocols.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Protocols/1.1.0-preview1-10384) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Protocols.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Protocols)
 Microsoft.Azure.SignalR.AspNet | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.AspNet.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.AspNet) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.AspNet.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.AspNet)
-Microsoft.Azure.SignalR.Management | .NET Standard 2.0, .NET Core App 3.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Management.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Management.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Management)
+Microsoft.Azure.SignalR.Management | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Management.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Management.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Management)
+
+### Framework .NET Standard 2.0 and .NET Core App 3.0
+
+Package Name | Target Frameworks | NuGet | MyGet
+---|---|---|---
+Microsoft.Azure.SignalR | .NET Standard 2.0, .NET Core App 3.0 | [![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/Microsoft.Azure.SignalR.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR/) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR)
 
 ## Getting Started
 
