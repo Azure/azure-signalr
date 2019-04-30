@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Management
     public class ServiceManagerBuilder : IServiceManagerBuilder
     {
         private readonly ServiceManagerOptions _options = new ServiceManagerOptions();
-        private Assembly _assembly = Assembly.GetExecutingAssembly();
+        private Assembly _assembly;
 
         /// <summary>
         /// Configures the <see cref="IServiceManager"/> instances.
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Management
         public IServiceManager Build()
         {
             _options.ValidateOptions();
-            return new ServiceManager(_options, ProductInfo.GetProductInfo(_assembly));
+            return new ServiceManager(_options, ProductInfo.GetProductInfo(_assembly ?? Assembly.GetExecutingAssembly()));
         }
     }
 }

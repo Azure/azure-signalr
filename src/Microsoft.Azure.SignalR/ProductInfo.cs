@@ -10,13 +10,9 @@ namespace Microsoft.Azure.SignalR
     {
         private const int MaxLength = 128;
 
-        public static string GetProductInfo()
+        public static string GetProductInfo(Assembly assembly = null)
         {
-            return GetProductInfo(Assembly.GetCallingAssembly());
-        }
-
-        public static string GetProductInfo(Assembly assembly)
-        {
+            assembly = assembly ?? Assembly.GetCallingAssembly();
             var packageId = assembly.GetName().Name;
             var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
             var runtime = RuntimeInformation.FrameworkDescription?.Trim();
@@ -28,7 +24,7 @@ namespace Microsoft.Azure.SignalR
 
         private static string TruncateString(string str, int maxLen = MaxLength)
         {
-            return str.Length < maxLen ? str : str.Substring(0, maxLen);
+            return str.Length < maxLen ? str : $"{str.Substring(0, maxLen)}...";
         }
     }
 }
