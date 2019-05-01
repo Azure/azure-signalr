@@ -44,7 +44,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestGenerateAccessTokenData))]
         internal void GenerateClientAccessTokenTest(string userId, Claim[] claims, string appName)
         {
-            var manager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = _testConnectionString, ApplicationName = appName });
+            var manager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = _testConnectionString, ApplicationName = appName }, null);
             var tokenString = manager.GenerateClientAccessToken(HubName, userId, claims, _tokenLifeTime);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestGenerateClientEndpointData))]
         internal void GenerateClientEndpointTest(string appName, string expectedClientEndpoint)
         {
-            var manager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = _testConnectionString, ApplicationName = appName });
+            var manager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = _testConnectionString, ApplicationName = appName }, null);
             var clientEndpoint = manager.GetClientEndpoint(HubName);
 
             Assert.Equal(expectedClientEndpoint, clientEndpoint);
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ConnectionString = _testConnectionString,
                 ServiceTransportType = serviceTransportType,
                 ApplicationName = appName
-            });
+            }, null);
 
             LoggerFactory loggerFactory;
 
