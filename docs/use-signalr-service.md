@@ -92,6 +92,14 @@ By default, all claims from `HttpContext.User` of the negotiate request will be 
 They can be accessed at [`Hub.Context.User`](https://github.com/aspnet/SignalR/blob/release/2.2/src/Microsoft.AspNetCore.SignalR.Core/HubCallerContext.cs#L29).
 - Normally you should leave this option as is. Make sure you understand what will happen before customizing it.
 
+#### `ServerStickyMode`
+- Default value is `Disabled`.
+- This option specifies the mode for **server sticky**. When the client is always routed to the server which it first `/negotiate` with, we call it **server sticky**. This options can be useful when you want to store some client context when `/negotaite` for `hub` to use.
+- In distributed scenarios, there can be multiple app servers connecting to one Azure SignalR instance. Inside one Azure SignalR instance, there are many running pods, each of them take some server connections from some app server. When the client comes in, Azure SignalR chooses the server connection for the client traffic to route to based on the routing strategy. 
+    - When `ServerStickyMode` is `Disabled`, the strategy is to route to a local server connection with least burdon. 
+    - When `Prefered`, the strategy is to route to a local server connection which connects to the specified server if exists, or fallback to a local server connection with least burdon.
+    - When `Required`, the service is always trying find the specified server to route to no matter if it is local or global connections. This option can have performance issues if the client is globally routed. It means that all the traffics from client to the globally routed sticky server always go through back plane (which is Redis in Azure SignalR), including ping messages.
+
 #### Sample
 You can configure above options like the following sample code.
 
@@ -167,6 +175,14 @@ By default, all claims from `IOwinContext.Authentication.User` of the negotiate 
 #### `ConnectionString`
 - Default value is the `Azure:SignalR:ConnectionString` `connectionString` or `appSetting` in `web.config` file.
 - It can be reconfigured, but please make sure the value is **NOT** hard coded.
+
+#### `ServerStickyMode`
+- Default value is `Disabled`.
+- This option specifies the mode for **server sticky**. When the client is always routed to the server which it first `/negotiate` with, we call it **server sticky**. This options can be useful when you want to store some client context when `/negotaite` for `hub` to use.
+- In distributed scenarios, there can be multiple app servers connecting to one Azure SignalR instance. Inside one Azure SignalR instance, there are many running pods, each of them take some server connections from some app server. When the client comes in, Azure SignalR chooses the server connection for the client traffic to route to based on the routing strategy. 
+    - When `ServerStickyMode` is `Disabled`, the strategy is to route to a local server connection with least burdon. 
+    - When `Prefered`, the strategy is to route to a local server connection which connects to the specified server if exists, or fallback to a local server connection with least burdon.
+    - When `Required`, the service is always trying find the specified server to route to no matter if it is local or global connections. This option can have performance issues if the client is globally routed. It means that all the traffics from client to the globally routed sticky server always go through back plane (which is Redis in Azure SignalR), including ping messages.
 
 #### Sample
 You can configure above options like the following sample code.
