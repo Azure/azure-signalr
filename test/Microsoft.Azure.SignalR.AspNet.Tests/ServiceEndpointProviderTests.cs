@@ -80,7 +80,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             Assert.Equal("user1", principal.FindFirst(ClaimTypes.NameIdentifier).Value);
         }
 
-        [Theory(Skip = "Enable when runtime is ready to accept prefix")]
+        [Theory]
         [InlineData("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost/aspnetserver/?hub=prefix_hub1")]
         [InlineData("Endpoint=http://localhost/;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost/aspnetserver/?hub=prefix_hub1")]
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=prefix_hub1")]
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             Assert.Equal(expectedEndpoint, clientEndpoint);
         }
 
-        [Theory(Skip = "Enable when runtime is ready to accept prefix")]
+        [Theory]
         [InlineData("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost:8080/aspnetserver/?hub=prefix_hub1")]
         [InlineData("Endpoint=http://localhost/;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost:8080/aspnetserver/?hub=prefix_hub1")]
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=prefix_hub1")]

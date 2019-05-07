@@ -35,7 +35,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private readonly string _serverName;
         private readonly ServerStickyMode _mode;
-        private readonly bool _isolateApp;
 
         public NegotiateMiddleware(OwinMiddleware next, HubConfiguration configuration, string appName, IServiceEndpointManager endpointManager, IEndpointRouter router, ServiceOptions options, IServerNameProvider serverNameProvider, ILoggerFactory loggerFactory)
             : base(next)
@@ -49,7 +48,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             _logger = loggerFactory?.CreateLogger<NegotiateMiddleware>() ?? throw new ArgumentNullException(nameof(loggerFactory));
             _serverName = serverNameProvider?.GetName();
             _mode = options.ServerStickyMode;
-            _isolateApp = options.IsolateApplication;
         }
 
         public override Task Invoke(IOwinContext owinContext)
@@ -158,10 +156,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext), _serverName, _mode);
 
-            if (_isolateApp)
-            {
-                yield return new Claim(Constants.ClaimType.Version, AssemblyVersion);
-            }
+            yield return new Claim(Constants.ClaimType.Version, AssemblyVersion);
 
             foreach (var claim in claims)
             {

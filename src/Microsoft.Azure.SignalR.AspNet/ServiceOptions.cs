@@ -55,11 +55,6 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// </summary>
         internal ServerStickyMode ServerStickyMode { get; set; }
 
-        /// <summary>
-        /// TODO: delete it when runtime is ready, don't expose it to the customer
-        /// </summary>
-        internal bool IsolateApplication { get; set; } = false;
-
         public ServiceOptions()
         {
             var count = ConfigurationManager.ConnectionStrings.Count;
