@@ -92,13 +92,15 @@ By default, all claims from `HttpContext.User` of the negotiate request will be 
 They can be accessed at [`Hub.Context.User`](https://github.com/aspnet/SignalR/blob/release/2.2/src/Microsoft.AspNetCore.SignalR.Core/HubCallerContext.cs#L29).
 - Normally you should leave this option as is. Make sure you understand what will happen before customizing it.
 
+<a name="server-sticky-mode"></a>
+
 #### `ServerStickyMode` 
 - Default value is `Disabled`.
-- This option specifies the mode for **server sticky**. When the client is routed to the server which it first `/negotiate` with, we call it **server sticky**. This options can be useful when some client context is fetched from `/negotaite` and to be used inside `Hub`s.
-- In distributed scenarios, there can be multiple app servers connected to one Azure SignalR instance. As [internals of client connections](../internal.md#client-connections) explains, client first negotiates with the app server, then is redirected to Azure SignalR to establish the real persistent connection. Azure SignalR then finds one app server to serve the client, as [Transport Data between client and server](../internal.md#transport-data-between-client-and-server) explains.
-    - When `Disabled`, the client routes to a random app server. In general, app servers have balanced client connections. If your scenarios are *broadcast* or *group send*, use this default option is enough.
-    - When `Prefered`, Azure SignalR tries to find the app server which the client first negotiate with in a way that no additional cost or global scan is needed. This one can be useful when your scenario is *send to connection*. *Send to connection* can have better performance and lower latency when the sender and the receiver are routed to the same app server.
-    - When `Required`, Azure SignalR always tries to find the app server which the client first negotiate with. This option may have performance drawbacks because it requires additional efforts to find this particular app server globally, and to route traffics from client to server globally.
+- This option specifies the mode for **server sticky**. When the client is routed to the server which it first negotiates with, we call it **server sticky**.
+- In distributed scenarios, there can be multiple app servers connected to one Azure SignalR instance. As [internals of client connections](../internal.md#client-connections) explains, client first negotiates with the app server, and then redirects to Azure SignalR to establish the persistent connection. Azure SignalR then finds one app server to serve the client, as [Transport Data between client and server](../internal.md#transport-data-between-client-and-server) explains.
+    - When `Disabled`, the client routes to a random app server. In general, app servers have balanced client connections with this mode. If your scenarios are *broadcast* or *group send*, use this default option is enough.
+    - When `Prefered`, Azure SignalR tries to find the app server which the client first negotiate with in a way that no additional cost or global routing is needed. This one can be useful when your scenario is *send to connection*. *Send to connection* can have better performance and lower latency when the sender and the receiver are routed to the same app server.
+    - When `Required`, Azure SignalR always tries to find the app server which the client first negotiate with. This options can be useful when some client context is fetched from `negotaite` step and stored in memory, and then to be used inside `Hub`s. However, this option may have performance drawbacks because it requires Azure SignalR to take additional efforts to find this particular app server globally, and to keep globally routing traffics between client and server.
 
 #### Sample
 You can configure above options like the following sample code.
@@ -178,11 +180,7 @@ By default, all claims from `IOwinContext.Authentication.User` of the negotiate 
 
 #### `ServerStickyMode`
 - Default value is `Disabled`.
-- This option specifies the mode for **server sticky**. When the client is routed to the server which it first `/negotiate` with, we call it **server sticky**. This options can be useful when some client context is fetched from `/negotaite` and to be used inside `Hub`s.
-- In distributed scenarios, there can be multiple app servers connected to one Azure SignalR instance. As [internals of client connections](../internal.md#client-connections) explains, client first negotiates with the app server, then is redirected to Azure SignalR to establish the real persistent connection. Azure SignalR then finds one app server to serve the client, as [Transport Data between client and server](../internal.md#transport-data-between-client-and-server) explains.
-    - When `Disabled`, the client routes to a random app server. In general, app servers have balanced client connections. If your scenarios are *broadcast* or *group send*, use this default option is enough.
-    - When `Prefered`, Azure SignalR tries to find the app server which the client first negotiate with in a way that no additional cost or global scan is needed. This one can be useful when your scenario is *send to connection*. *Send to connection* can have better performance and lower latency when the sender and the receiver are routed to the same app server.
-    - When `Required`, Azure SignalR always tries to find the app server which the client first negotiate with. This option may have performance drawbacks because it requires additional efforts to find this particular app server globally, and to route traffics from client to server globally.
+- Refer to [ServerStickyMode](#server-sticky-mode) for details.
 
 #### Sample
 You can configure above options like the following sample code.
