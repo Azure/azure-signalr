@@ -121,8 +121,8 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(null, ServerStickyMode.Disabled)]
         [InlineData("invalid", ServerStickyMode.Disabled)]
         [InlineData("disabled", ServerStickyMode.Disabled)]
-        [InlineData("prefered", ServerStickyMode.Prefered)]
-        [InlineData("Prefered", ServerStickyMode.Prefered)]
+        [InlineData("preferred", ServerStickyMode.Preferred)]
+        [InlineData("Preferred", ServerStickyMode.Preferred)]
         [InlineData("required", ServerStickyMode.Required)]
         public void AddAzureReadsSickyServerModeFromConfigurationFirst(string modeFromConfig, ServerStickyMode expected)
         {
