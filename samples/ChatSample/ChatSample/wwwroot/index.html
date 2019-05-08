@@ -72,6 +72,14 @@
                     entry.innerHTML = encodedMsg;
                     entry.classList.add("text-center");
                     entry.classList.add("system-message");
+                } else if (encodedName === "_Error_") {
+                    entry.innerHTML = encodedMsg;
+                    entry.classList.add("text-center");
+                    entry.classList.add("system-error");
+                } else if (encodedName === "_Warning_") {
+                    entry.innerHTML = encodedMsg;
+                    entry.classList.add("text-center");
+                    entry.classList.add("system-warning");
                 } else if (encodedName === "_BROADCAST_") {
                     entry.classList.add("text-center");
                     entry.innerHTML = '<div class="text-center broadcast-message">' + encodedMsg + '</div>';
@@ -85,17 +93,20 @@
                 return entry;
             }
 
+            function displayMessage(name, message) {
+                var encodedMsg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                var messageEntry = createMessageEntry(name, encodedMsg);
+
+                var messageBox = document.getElementById('messages');
+                messageBox.appendChild(messageEntry);
+                messageBox.scrollTop = messageBox.scrollHeight;
+            }
+
             function bindConnectionMessage(connection) {
                 var messageCallback = function (name, message) {
                     if (!message) return;
                     // Html encode display name and message.
-                    var encodedName = name;
-                    var encodedMsg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                    var messageEntry = createMessageEntry(encodedName, encodedMsg);
-
-                    var messageBox = document.getElementById('messages');
-                    messageBox.appendChild(messageEntry);
-                    messageBox.scrollTop = messageBox.scrollHeight;
+                    displayMessage(name, message);
                 };
                 // Create a function that the hub can call to broadcast messages.
                 connection.on('broadcastMessage', messageCallback);
@@ -135,13 +146,33 @@
                 });
             }
 
+            function getRandom(min, max) {
+                return Math.floor(Math.random() * (max - min + 1) + min);
+            }
+
             function onConnectionError(error) {
                 if (error && error.message) {
                     console.error(error.message);
                 }
-                var modal = document.getElementById('myModal');
-                modal.classList.add('in');
-                modal.style = 'display: block;';
+                displayMessage("_Error_", error.message);
+                displayMessage("_Warning_", "Reconnecting...");
+                setTimeout(function () {
+                            startConnectionWithRetry(connection)
+                        }, getRandom(200, 2000));
+            }
+
+            function startConnectionWithRetry(hubConnection) {
+                hubConnection.start()
+                    .then(function () {
+                        onConnected(hubConnection);
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        console.warn("reconnect..");
+                        setTimeout(function () {
+                            startConnectionWithRetry(hubConnection)
+                        }, getRandom(200, 2000));
+                    });
             }
 
             var connection = new signalR.HubConnectionBuilder()
@@ -149,13 +180,7 @@
                         .build();
                             
             bindConnectionMessage(connection);
-            connection.start()
-                .then(function () {
-                    onConnected(connection);
-                })
-                .catch(function (error) {
-                    console.error(error.message);
-                });
+            startConnectionWithRetry(connection);
         });
     </script>
 </body>
