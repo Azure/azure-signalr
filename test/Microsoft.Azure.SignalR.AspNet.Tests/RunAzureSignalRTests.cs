@@ -584,7 +584,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, hubConfiguration, options =>
                 {
                     options.IsolateApplication = true;
-                    options.ServerStickyMode = ServerStickyMode.Preferred;
+                    options.ServerStickyMode = ServerStickyMode.Required;
                     options.ConnectionString = ConnectionString;
                     options.ClaimsProvider = context => new Claim[]
                     {
