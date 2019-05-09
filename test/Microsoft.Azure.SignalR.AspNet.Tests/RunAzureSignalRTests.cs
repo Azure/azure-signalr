@@ -28,6 +28,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
     public class RunAzureSignalRTests : VerifiableLoggedTest
     {
+        private static readonly Version VersionSupportingApplicationNamePrefix = new Version(1, 0, 9);
+
         private const string ServiceUrl = "http://localhost:8086";
         private const string ConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
@@ -564,7 +566,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal("hello", user);
                     Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerName));
                     Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode));
-                    Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Version));
+
+                    var version = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Version)?.Value;
+                    Assert.True(Version.TryParse(version, out var vs));
+                    Assert.True(vs >= VersionSupportingApplicationNamePrefix);
                     var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
                     Assert.NotNull(requestId);
                     Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
@@ -583,7 +588,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 hubConfiguration.Resolver.Register(typeof(IServerNameProvider), () => serverNameProvider);
                 using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, hubConfiguration, options =>
                 {
-                    options.IsolateApplication = true;
                     options.ServerStickyMode = ServerStickyMode.Required;
                     options.ConnectionString = ConnectionString;
                     options.ClaimsProvider = context => new Claim[]
