@@ -166,13 +166,7 @@
                     .then(function () {
                         onConnected(hubConnection);
                     })
-                    .catch(error => {
-                        console.error(error);
-                        console.warn("reconnect..");
-                        setTimeout(function () {
-                            startConnectionWithRetry(hubConnection)
-                        }, getRandom(200, 2000));
-                    });
+                    .catch(onConnectionError);
             }
 
             var connection = new signalR.HubConnectionBuilder()
