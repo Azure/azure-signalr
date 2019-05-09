@@ -31,11 +31,6 @@ textarea:focus {
     background: #87CEFA;
 }
 
-#status {
-    border: #808080;
-    text-align: center;
-}
-
 .error {
     color: red
 }
