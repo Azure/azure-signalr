@@ -11,6 +11,7 @@
 </head>
 <body>
     <h2 class="text-center" style="margin-top: 0; padding-top: 30px; padding-bottom: 30px;">Azure SignalR Group Chat</h2>
+    <div id="status"></div>
     <div class="container" style="height: calc(100% - 110px);">
         <div id="messages" style="background-color: whitesmoke; "></div>
         <div style="width: 100%; border-left-style: ridge; border-right-style: ridge;">
@@ -72,14 +73,6 @@
                     entry.innerHTML = encodedMsg;
                     entry.classList.add("text-center");
                     entry.classList.add("system-message");
-                } else if (encodedName === "_Error_") {
-                    entry.innerHTML = encodedMsg;
-                    entry.classList.add("text-center");
-                    entry.classList.add("system-error");
-                } else if (encodedName === "_Warning_") {
-                    entry.innerHTML = encodedMsg;
-                    entry.classList.add("text-center");
-                    entry.classList.add("system-warning");
                 } else if (encodedName === "_BROADCAST_") {
                     entry.classList.add("text-center");
                     entry.innerHTML = '<div class="text-center broadcast-message">' + encodedMsg + '</div>';
@@ -93,8 +86,13 @@
                 return entry;
             }
 
+            function encodeMessage(message) {
+                if (!message) return '';
+                return message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            }
+
             function displayMessage(name, message) {
-                var encodedMsg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                var encodedMsg = encodeMessage(message);
                 var messageEntry = createMessageEntry(name, encodedMsg);
 
                 var messageBox = document.getElementById('messages');
@@ -151,28 +149,31 @@
             }
 
             function onConnectionError(error) {
+                var errorMessage = '';
                 if (error && error.message) {
+                    errorMessage = error.message;
                     console.error(error.message);
                 }
-                displayMessage("_Error_", error.message);
-                displayMessage("_Warning_", "Reconnecting...");
+
+                $('#status').html("<h5 class='error'>Connect error: " + encodeMessage(errorMessage) + ". Reconnecting...</h5>")
                 setTimeout(function () {
-                            startConnectionWithRetry(connection)
-                        }, getRandom(200, 2000));
+                    startConnectionWithRetry(connection)
+                }, getRandom(200, 2000));
             }
 
             function startConnectionWithRetry(hubConnection) {
                 hubConnection.start()
                     .then(function () {
+                        $('#status').html("<h5 class='success' >Connected.</h5>")
                         onConnected(hubConnection);
                     })
                     .catch(onConnectionError);
             }
 
             var connection = new signalR.HubConnectionBuilder()
-                        .withUrl('/chat')
-                        .build();
-                            
+                .withUrl('/chat')
+                .build();
+
             bindConnectionMessage(connection);
             startConnectionWithRetry(connection);
         });

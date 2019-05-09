@@ -31,12 +31,17 @@ textarea:focus {
     background: #87CEFA;
 }
 
-.system-error {
-    background: red
+#status {
+    border: #808080;
+    text-align: center;
 }
 
-.system-warning {
-    background: yellow;
+.error {
+    color: red
+}
+
+.success {
+    color: green
 }
 
 .broadcast-message {
