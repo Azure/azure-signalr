@@ -13,16 +13,19 @@ namespace Microsoft.Azure.SignalR
         /// In general, local server connection first
         /// least client connections routed server connection first
         /// </summary>
-        Disabled,
-        /// <summary>
-        /// We will try to find the server it /neogitate with from local, if that server is connected to this runtime instance, we choose that server
-        /// Otherwise, we fallback to local existed server
-        /// </summary>
-        Prefered,
+        Disabled = 0,
+
+        ///// <summary>
+        ///// We will try to find the server it /neogitate with from local, if that server is connected to this runtime instance, we choose that server
+        ///// Otherwise, we fallback to local existed server
+        ///// TODO: Add back preferred when the runtime is ready
+        ///// </summary>
+        // Preferred = 1,
+
         /// <summary>
         /// We will try to find the server it /negotiate with from both local and global route table, it the server is not connected, throw,
         /// If it is globally routed, this request will be always globally routed
         /// </summary>
-        Required,
+        Required = 2,
     }
 }
