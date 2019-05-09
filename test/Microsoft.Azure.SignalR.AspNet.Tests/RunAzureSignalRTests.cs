@@ -584,7 +584,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, hubConfiguration, options =>
                 {
                     options.IsolateApplication = true;
-                    options.ServerStickyMode = ServerStickyMode.Prefered;
+                    options.ServerStickyMode = ServerStickyMode.Required;
                     options.ConnectionString = ConnectionString;
                     options.ClaimsProvider = context => new Claim[]
                     {
@@ -609,7 +609,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var serverName = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerName)?.Value;
                     Assert.Equal(name, serverName);
                     var mode = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode)?.Value;
-                    Assert.Equal("Prefered", mode);
+                    Assert.Equal("Required", mode);
                     Assert.NotNull(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode));
                     var version = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Version)?.Value;
                     Version.TryParse(version, out var versionResult);
