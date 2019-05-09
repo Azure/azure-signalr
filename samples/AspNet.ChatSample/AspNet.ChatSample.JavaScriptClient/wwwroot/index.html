@@ -61,10 +61,12 @@
             $('#message').focus();
             // Start the connection.
             var connection = $.connection.hub;
-            startConnectionWithRetry(connection);
+
             connection.disconnected(function () {
-                onFail("Disconnected.");
+                reconnectOnFail("Disconnected.");
             });
+
+            startConnectionWithRetry(connection);
 
             function startConnectionWithRetry(hubConnection) {
                 hubConnection.start()
@@ -77,17 +79,15 @@
                             // Clear text box and reset focus for next comment.
                             $('#message').val('').focus();
                         });
-                    })
-                    .fail(function () {
-                        onFail("Failed.");
                     });
             }
 
-            function onFail(message) {
+            function reconnectOnFail(message) {
                 $('#status').html("<h5 class='error'>" + message + " Reconnecting...</h5>");
+                var delay = getRandom(200, 2000);
                 setTimeout(function () {
                     startConnectionWithRetry(connection)
-                }, getRandom(200, 2000));
+                }, delay);
             }
 
             function getRandom(min, max) {
