@@ -9,14 +9,8 @@
             padding: 20px;
             margin: 20px;
         }
-        #status{
-            border: #808080
-        }
         .error {
             color: red
-        }
-        .warning {
-            color: yellow
         }
         .success {
             color: green
@@ -69,10 +63,7 @@
             var connection = $.connection.hub;
             startConnectionWithRetry(connection);
             connection.disconnected(function () {
-                $('#status').html("<h5 class='error'>Disconnected. Reconnecting...</h5>")
-                setTimeout(function () {
-                    startConnectionWithRetry(connection)
-                }, getRandom(200, 2000));
+                onFail("Disconnected.");
             });
 
             function startConnectionWithRetry(hubConnection) {
@@ -88,11 +79,15 @@
                         });
                     })
                     .fail(function () {
-                        $('#status').html("<h5 class='error'>Failed. Reconnecting...</h5>")
-                        setTimeout(function () {
-                            startConnectionWithRetry(connection)
-                        }, getRandom(200, 2000));
+                        onFail("Failed.");
                     });
+            }
+
+            function onFail(message) {
+                $('#status').html("<h5 class='error'>" + message + " Reconnecting...</h5>");
+                setTimeout(function () {
+                    startConnectionWithRetry(connection)
+                }, getRandom(200, 2000));
             }
 
             function getRandom(min, max) {
