@@ -28,5 +28,13 @@ namespace Microsoft.Azure.SignalR.Management
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is System.Threading.CancellationToken.None.</param>
         /// <returns>A System.Threading.Tasks.Task that represents the asynchronous remove.</returns>
         Task RemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Removes a user from all groups.
+        /// </summary>
+        /// <param name="userId">The user ID to remove from a group.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is System.Threading.CancellationToken.None.</param>
+        /// <returns>A System.Threading.Tasks.Task that represents the asynchronous remove.</returns>
+        Task RemoveFromAllGroupsAsync(string userId, CancellationToken cancellationToken = default);
     }
 }
