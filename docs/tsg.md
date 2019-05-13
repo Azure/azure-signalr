@@ -121,25 +121,15 @@ For ASP.NET SignalR, the client sends a `/ping` KeepAlive request to the service
 
 For security concerns, extend TTL is not encouraged. We suggest adding reconnect logic from client to restart the connection when such 401 occurs. When client restarts the connection, it will negotiate with app server to get the JWT token again and get a renewed token.
 
-Sample code for ASP.NET Core supporting restarting the connection is:
+[Sample code](../samples/) contains restarting connection logic with *ALWAYS RETRY* strategy:
 
-```cs
-connection.Closed += async (error) =>
-            {
-                await Task.Delay(new Random().Next(0,5) * 1000);
-                await connection.StartAsync();
-            };
-```
+* [ASP.NET Core C# Client](../samples/ChatSample/ChatSample.CSharpClient/Program.cs#L64)
 
-Sample code for ASP.NET JavaScript Client is:
+* [ASP.NET Core JavaScript Client](../samples/ChatSample/ChatSample/wwwroot/index.html#L164)
 
-```js
-$.connection.hub.disconnected(function() {
-   setTimeout(function() {
-       $.connection.hub.start();
-   }, 5000); // Restart connection after 5 seconds.
-});
-```
+* [ASP.NET Core C# Client](../samples/AspNet.ChatSample/AspNet.ChatSample.CSharpClient/Program.cs#L78)
+
+* [ASP.NET Core JavaScript Client](../samples/AspNet.ChatSample/AspNet.ChatSample.JavaScriptClient/wwwroot/index.html#L71)
 
 ## ⌛️[TODO]Client connection drop
 
