@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -243,9 +244,9 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        public ServiceConnectionContext CreateConnection(OpenConnectionMessage message)
+        public ServiceConnectionContext CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)
         {
-            return new ServiceConnectionContext(message, _clientPipeOptions, _clientPipeOptions);
+            return new ServiceConnectionContext(message, configureContext, _clientPipeOptions, _clientPipeOptions);
         }
 
         private void AddApplicationMessage(Type type, ServiceMessage message)

@@ -26,6 +26,7 @@ The generated access token are passed through network, and for websocket/SSE con
 
 There is a `ClaimsProvider` for you to customize the claims passing to **ASRS** inside the access token.
 
+For ASP.NET Core:
 ```cs
 services.AddSignalR()
         .AddAzureSignalR(options =>
@@ -35,12 +36,22 @@ services.AddSignalR()
             });
 ```
 
+For ASP.NET:
+```cs
+services.MapAzureSignalR(GetType().FullName, options =>
+            {
+                // pick up neccessory claims
+                options.ClaimsProvider = context.Authentication?.User.Claims.Where(...);
+            });
+```
+
 ### Tips:
 <a name="view_request"></a>
-* How to view the outgoing request from client? 
+* How to view the outgoing request from client?
+Take ASP.NET Core one for example (ASP.NET one is similar):
     1. From browser:
 
-        Take chrome for example, **F12** to open the consile window, and switch to **Netork** tab. You might need to refresh the page using **F5** to capture the network from the very beginning.
+        Take chrome for example, **F12** to open the console window, and switch to **Network** tab. You might need to refresh the page using **F5** to capture the network from the very beginning.
         
         ![Chrome View Network](./images/chrome_network.gif)
     

@@ -21,6 +21,11 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public string ConnectionString { get; set; } = null;
 
+        /// <summary>
+        /// Gets or sets the ApplicationName which will be prefixed to each hub name
+        /// </summary>
+        public string ApplicationName { get; set; }
+
         internal void ValidateOptions()
         {
             ValidateConnectionString();

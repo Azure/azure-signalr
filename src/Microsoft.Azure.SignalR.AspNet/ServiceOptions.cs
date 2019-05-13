@@ -26,6 +26,12 @@ namespace Microsoft.Azure.SignalR.AspNet
         public int ConnectionCount { get; set; } = 5;
 
         /// <summary>
+        /// Gets applicationName, which will be used as a prefix to apply to each hub name
+        /// </summary>
+        internal string ApplicationName{ get; set; }
+        string IServiceEndpointOptions.ApplicationName => ApplicationName;
+
+        /// <summary>
         /// Gets or sets the func to generate claims from <see cref="IOwinContext" />.
         /// The claims will be included in the auto-generated token for clients.
         /// </summary>
@@ -37,63 +43,58 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// </summary>
         public TimeSpan AccessTokenLifetime { get; set; } = Constants.DefaultAccessTokenLifetime;
 
+        /// <summary>
+        /// Customize the multiple endpoints used
+        /// </summary>
         public ServiceEndpoint[] Endpoints { get; set; }
+
+        /// <summary>
+        /// Specifies the mode for server sticky, when client is always routed to the server which it first /negotiate with, we call it "server sticky mode".
+        /// By default this mode is disabled
+        /// </summary>
+        public ServerStickyMode ServerStickyMode { get; set; }
 
         public ServiceOptions()
         {
             var count = ConfigurationManager.ConnectionStrings.Count;
             string connectionString = null;
             var endpoints = new List<ServiceEndpoint>();
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 var setting = ConfigurationManager.ConnectionStrings[i];
-                var (isDefault, endpoint) = GetEndpoint(setting.Name, () => setting.ConnectionString);
-                if (endpoint != null)
-                {
-                    if (isDefault)
-                    {
-                        connectionString = endpoint.ConnectionString;
-                    }
 
-                    endpoints.Add(endpoint);
+                if (setting.Name == Constants.ConnectionStringDefaultKey)
+                {
+                    connectionString = setting.ConnectionString;
+                }
+                else if (setting.Name.StartsWith(Constants.ConnectionStringKeyPrefix) && !string.IsNullOrEmpty(setting.ConnectionString))
+                {
+                    endpoints.Add(new ServiceEndpoint(setting.Name, setting.ConnectionString));
                 }
             }
 
-            if (endpoints.Count == 0)
+            // Fallback to use AppSettings
+            if (string.IsNullOrEmpty(connectionString) && endpoints.Count == 0)
             {
-                // Fallback to use AppSettings
                 foreach(var key in ConfigurationManager.AppSettings.AllKeys)
                 {
-                    var (isDefault, endpoint) = GetEndpoint(key, () => ConfigurationManager.AppSettings[key]);
-                    if (endpoint != null)
+                    if (key == Constants.ConnectionStringDefaultKey)
                     {
-                        if (isDefault)
+                        connectionString = ConfigurationManager.AppSettings[key];
+                    }
+                    else if (key.StartsWith(Constants.ConnectionStringKeyPrefix))
+                    {
+                        var value = ConfigurationManager.AppSettings[key];
+                        if (!string.IsNullOrEmpty(value))
                         {
-                            connectionString = endpoint.ConnectionString;
+                            endpoints.Add(new ServiceEndpoint(key, value));
                         }
-
-                        endpoints.Add(endpoint);
                     }
                 }
             }
 
             ConnectionString = connectionString;
             Endpoints = endpoints.ToArray();
-        }
-
-        private static (bool isDefault, ServiceEndpoint endpoint) GetEndpoint(string key, Func<string> valueGetter)
-        {
-            if (key == Constants.ConnectionStringDefaultKey && !string.IsNullOrEmpty(valueGetter()))
-            {
-                return (true, new ServiceEndpoint(valueGetter()));
-            }
-
-            if (key.StartsWith(Constants.ConnectionStringKeyPrefix) && !string.IsNullOrEmpty(valueGetter()))
-            {
-                return (false, new ServiceEndpoint(key, valueGetter()));
-            }
-
-            return (false, null);
         }
     }
 }

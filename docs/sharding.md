@@ -34,7 +34,7 @@ dotnet user-secrets set Azure:SignalR:ConnectionString:backup:secondary <Connect
 ### How to add multiple endpoints from code
 <a name="aspnetcore-code"></a>
 
-A `ServicEndpoint` class is introduced in to describe the properties of an Azure SignalR Service endpoint.
+A `ServiceEndpoint` class is introduced in to describe the properties of an Azure SignalR Service endpoint.
 You can configure multiple instance endpoints when using Azure SignalR Service SDK through:
 ```cs
 services.AddSignalR()
@@ -157,7 +157,7 @@ You can add multiple instance connection strings to `web.config`:
 ### How to add multiple endpoints from code
 <a name="aspnet-code"></a>
 
-A `ServicEndpoint` class is introduced in to describe the properties of an Azure SignalR Service endpoint.
+A `ServiceEndpoint` class is introduced in to describe the properties of an Azure SignalR Service endpoint.
 You can configure multiple instance endpoints when using Azure SignalR Service SDK through:
 
 ```cs
@@ -229,9 +229,9 @@ In cross-geo cases, cross-geo network can be comparatively unstable. For one app
 
 ![Cross-Geo Infra](./images/cross_geo_infra.png)
 
-When a client `/negotiate` with the app server, with the default router, SDK **randomly select** one endpoint from the set of available `primary` endpoints. When none of the `primary` endpoints are available, SDK then **randmonly select** from the set of all available `secondary` endpoints. The endpoint is **available** when the connection between server and this service endpoint is connected. 
+When a client `/negotiate` with the app server, with the default router, SDK **randomly select** one endpoint from the set of available `primary` endpoints. When none of the `primary` endpoints are available, SDK then **randomly select** from the set of all available `secondary` endpoints. The endpoint is **available** when the connection between server and this service endpoint is connected. 
 
-In cross-geo senario, when a client `/negotiate` with the app server hosted in East US, by default it always returns the `primary` endpoint located in East US for the client to establish persistent connection with. When all East US endpoints are not available, the client will then be redirected to endpoints in other regions, such as West US. [Failover](#failover) describes it in detail.
+In cross-geo scenario, when a client `/negotiate` with the app server hosted in East US, by default it always returns the `primary` endpoint located in East US for the client to establish persistent connection with. When all East US endpoints are not available, the client will then be redirected to endpoints in other regions, such as West US. [Failover](#failover) describes it in detail.
 
 ![Normal Negotiate](./images/normal_negotiate.png)
 

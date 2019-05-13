@@ -25,11 +25,17 @@ namespace Microsoft.Azure.SignalR
         private static readonly string DefaultNameClaimType = DefaultClaimsIdentity.NameClaimType;
         private static readonly string DefaultRoleClaimType = DefaultClaimsIdentity.RoleClaimType;
 
-        public static IEnumerable<Claim> BuildJwtClaims(ClaimsPrincipal user, string userId, Func<IEnumerable<Claim>> claimsProvider)
+        public static IEnumerable<Claim> BuildJwtClaims(ClaimsPrincipal user, string userId, Func<IEnumerable<Claim>> claimsProvider, string serverName = null, ServerStickyMode mode = ServerStickyMode.Disabled)
         {
             if (userId != null)
             {
                 yield return new Claim(Constants.ClaimType.UserId, userId);
+            }
+
+            if (serverName != null && mode != ServerStickyMode.Disabled)
+            {
+                yield return new Claim(Constants.ClaimType.ServerName, serverName);
+                yield return new Claim(Constants.ClaimType.ServerStickyMode, mode.ToString());
             }
 
             var authenticationType = user?.Identity?.AuthenticationType;
