@@ -11,6 +11,7 @@
 </head>
 <body>
     <h2 class="text-center" style="margin-top: 0; padding-top: 30px; padding-bottom: 30px;">Azure SignalR Group Chat</h2>
+    <div class="text-center" id="status"></div>
     <div class="container" style="height: calc(100% - 110px);">
         <div id="messages" style="background-color: whitesmoke; "></div>
         <div style="width: 100%; border-left-style: ridge; border-right-style: ridge;">
@@ -85,17 +86,25 @@
                 return entry;
             }
 
+            function encodeMessage(message) {
+                if (!message) return '';
+                return message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            }
+
+            function displayMessage(name, message) {
+                var encodedMsg = encodeMessage(message);
+                var messageEntry = createMessageEntry(name, encodedMsg);
+
+                var messageBox = document.getElementById('messages');
+                messageBox.appendChild(messageEntry);
+                messageBox.scrollTop = messageBox.scrollHeight;
+            }
+
             function bindConnectionMessage(connection) {
                 var messageCallback = function (name, message) {
                     if (!message) return;
                     // Html encode display name and message.
-                    var encodedName = name;
-                    var encodedMsg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                    var messageEntry = createMessageEntry(encodedName, encodedMsg);
-
-                    var messageBox = document.getElementById('messages');
-                    messageBox.appendChild(messageEntry);
-                    messageBox.scrollTop = messageBox.scrollHeight;
+                    displayMessage(name, message);
                 };
                 // Create a function that the hub can call to broadcast messages.
                 connection.on('broadcastMessage', messageCallback);
@@ -135,27 +144,38 @@
                 });
             }
 
+            function getRandom(min, max) {
+                return Math.floor(Math.random() * (max - min + 1) + min);
+            }
+
             function onConnectionError(error) {
+                var errorMessage = '';
                 if (error && error.message) {
+                    errorMessage = error.message;
                     console.error(error.message);
                 }
-                var modal = document.getElementById('myModal');
-                modal.classList.add('in');
-                modal.style = 'display: block;';
+
+                $('#status').html("<h5 class='error'>Connect error: " + encodeMessage(errorMessage) + ". Reconnecting...</h5>")
+                setTimeout(function () {
+                    startConnectionWithRetry(connection)
+                }, getRandom(200, 2000));
+            }
+
+            function startConnectionWithRetry(hubConnection) {
+                hubConnection.start()
+                    .then(function () {
+                        $('#status').html("<h5 class='success' >Connected.</h5>")
+                        onConnected(hubConnection);
+                    })
+                    .catch(onConnectionError);
             }
 
             var connection = new signalR.HubConnectionBuilder()
-                        .withUrl('/chat')
-                        .build();
-                            
+                .withUrl('/chat')
+                .build();
+
             bindConnectionMessage(connection);
-            connection.start()
-                .then(function () {
-                    onConnected(connection);
-                })
-                .catch(function (error) {
-                    console.error(error.message);
-                });
+            startConnectionWithRetry(connection);
         });
     </script>
 </body>
