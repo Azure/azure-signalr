@@ -20,6 +20,11 @@ namespace Microsoft.Azure.SignalR.Management
             return _lifetimeManager.UserAddToGroupAsync(userId, groupName, cancellationToken);
         }
 
+        public Task RemoveFromAllGroupsAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            return _lifetimeManager.UserRemoveFromAllGroupsAsync(userId, cancellationToken);
+        }
+
         public Task RemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
             return _lifetimeManager.UserRemoveFromGroupAsync(userId, groupName, cancellationToken);
