@@ -101,10 +101,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             try
             {
                 Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
-                var userGroupDict = (from i in Enumerable.Range(0, _userNames.Length)
-                                     select (User: _userNames[i], Group: _groupNames[i % _groupNames.Length])).ToDictionary(t => t.User, t => new List<string> { t.Group });
-                await RunTestCore(clientEndpoint, clientAccessTokens, 
-                    () => SendToGroupCore(serviceHubContext, userGroupDict, sendTaskFunc, AddUserToGroupAsync, UserRemoveFromGroupsOneByOneAsync), 
+                var userGroupDict = GenerateUserGroupDict(_userNames, _groupNames);
+                await RunTestCore(clientEndpoint, clientAccessTokens,
+                    () => SendToGroupCore(serviceHubContext, userGroupDict, sendTaskFunc, AddUserToGroupAsync, UserRemoveFromGroupsOneByOneAsync),
                     _userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length, receivedMessageDict);
             }
             finally
@@ -123,10 +122,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             try
             {
                 Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(_groupNames).SendAsync(MethodName, Message);
-                var userGroupDict = (from i in Enumerable.Range(0, _userNames.Length)
-                                     select (User: _userNames[i], Group: _groupNames[i % _groupNames.Length])).ToDictionary(t => t.User, t => new List<string> { t.Group });
-                await RunTestCore(clientEndpoint, clientAccessTokens, 
-                    () => SendToGroupCore(serviceHubContext, userGroupDict, sendTaskFunc, AddUserToGroupAsync, UserRemoveFromGroupsOneByOneAsync), 
+                var userGroupDict = GenerateUserGroupDict(_userNames, _groupNames);
+                await RunTestCore(clientEndpoint, clientAccessTokens,
+                    () => SendToGroupCore(serviceHubContext, userGroupDict, sendTaskFunc, AddUserToGroupAsync, UserRemoveFromGroupsOneByOneAsync),
                     ClientConnectionCount, receivedMessageDict);
             }
             finally
@@ -146,14 +144,21 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(_groupNames).SendAsync(MethodName, Message);
                 var userGroupDict = new Dictionary<string, List<string>> { { _userNames[0], _groupNames.ToList() } };
-                await RunTestCore(clientEndpoint, clientAccessTokens, 
-                    () => SendToGroupCore(serviceHubContext, userGroupDict, sendTaskFunc, AddUserToGroupAsync, UserRemoveFromAllGroupsAsync), 
+                await RunTestCore(clientEndpoint, clientAccessTokens,
+                    () => SendToGroupCore(serviceHubContext, userGroupDict, sendTaskFunc, AddUserToGroupAsync, UserRemoveFromAllGroupsAsync),
                     _groupNames.Length, receivedMessageDict);
             }
             finally
             {
                 await serviceHubContext.DisposeAsync();
             }
+        }
+
+        private static IDictionary<string, List<string>> GenerateUserGroupDict(IList<string> userNames, IList<string> groupNames)
+        {
+            return (from i in Enumerable.Range(0, userNames.Count)
+                    select (User: userNames[i], Group: groupNames[i % groupNames.Count]))
+                    .ToDictionary(t => t.User, t => new List<string> { t.Group });
         }
 
         private static Task AddUserToGroupAsync(IServiceHubContext serviceHubContext, IDictionary<string, List<string>> userGroupDict)
@@ -177,9 +182,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         private static async Task SendToGroupCore(
-            IServiceHubContext serviceHubContext, 
-            IDictionary<string, List<string>> userGroupDict, 
-            Func<Task> sendTask, Func<IServiceHubContext, IDictionary<string, List<string>>, Task> userAddToGroupTask, 
+            IServiceHubContext serviceHubContext,
+            IDictionary<string, List<string>> userGroupDict,
+            Func<Task> sendTask, Func<IServiceHubContext, IDictionary<string, List<string>>, Task> userAddToGroupTask,
             Func<IServiceHubContext, IDictionary<string, List<string>>, Task> userRemoveFromGroupTask)
         {
             await userAddToGroupTask(serviceHubContext, userGroupDict);

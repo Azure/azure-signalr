@@ -104,7 +104,7 @@ API Version | HTTP Method | Request URL
 
 | API Version | HTTP Method | Request URL                                                  |
 | ----------- | ----------- | ------------------------------------------------------------ |
-| `1.0`       | `DELETE`    | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/<user-id>/groups` |
+| `1.0`       | `DELETE`    | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups` |
 
 
 
