@@ -46,10 +46,9 @@ namespace Microsoft.Azure.SignalR
         public ServiceEndpoint[] Endpoints { get; set; }
 
         /// <summary>
-        /// TODO: Enable this option when the runtime is ready
         /// Specifies the mode for server sticky, when client is always routed to the server which it first /negotiate with, we call it "server sticky mode".
         /// By default it is disabled
         /// </summary>
-        internal ServerStickyMode ServerStickyMode { get; set; } = ServerStickyMode.Disabled;
+        public ServerStickyMode ServerStickyMode { get; set; } = ServerStickyMode.Disabled;
     }
 }

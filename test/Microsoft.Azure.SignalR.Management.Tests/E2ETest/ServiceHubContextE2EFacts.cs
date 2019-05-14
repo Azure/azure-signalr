@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -223,14 +224,16 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private static IServiceManager GenerateServiceManager(string connectionString, ServiceTransportType serviceTransportType = ServiceTransportType.Transient, string appName = null)
         {
-            var serviceManagerOptions = new ServiceManagerOptions
-            {
-                ConnectionString = connectionString,
-                ServiceTransportType = serviceTransportType,
-                ApplicationName = appName
-            };
-
-            return new ServiceManager(serviceManagerOptions);
+            var serviceManager = new ServiceManagerBuilder()
+                .WithOptions(opt =>
+                {
+                    opt.ConnectionString = connectionString;
+                    opt.ServiceTransportType = serviceTransportType;
+                    opt.ApplicationName = appName;
+                })
+                .WithCallingAssembly()
+                .Build();
+            return serviceManager;
         }
 
         private static HubConnection CreateHubConnection(string endpoint, string accessToken) =>

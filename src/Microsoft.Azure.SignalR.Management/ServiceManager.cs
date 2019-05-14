@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,13 +24,15 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IServerNameProvider _serverNameProvider;
         private readonly ServiceEndpoint _endpoint;
         private const int ServerConnectionCount = 1;
+        private readonly string _productInfo;
 
-        internal ServiceManager(ServiceManagerOptions serviceManagerOptions)
+        internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo)
         {
             _serviceManagerOptions = serviceManagerOptions;
             _endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString, EndpointType.Secondary);
             _endpointProvider = new ServiceEndpointProvider(_endpoint, appName: _serviceManagerOptions.ApplicationName);
             _serverNameProvider = new DefaultServerNameProvider();
+            _productInfo = productInfo;
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
@@ -38,7 +41,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 case ServiceTransportType.Persistent:
                     {
-                        var connectionFactory = new ConnectionFactory(hubName, _endpointProvider, _serverNameProvider, loggerFactory);
+                        var connectionFactory = new ManagementConnectionFactory(_productInfo, new ConnectionFactory(hubName, _endpointProvider, _serverNameProvider, loggerFactory));
                         var serviceProtocol = new ServiceProtocol();
                         var clientConnectionManager = new ClientConnectionManager();
                         var clientConnectionFactory = new ClientConnectionFactory();
@@ -56,6 +59,7 @@ namespace Microsoft.Azure.SignalR.Management
 
                         serviceCollection
                             .AddLogging()
+                            .AddSingleton(typeof(IConnectionFactory), sp => connectionFactory)
                             .AddSingleton(typeof(HubLifetimeManager<>), typeof(WebSocketsHubLifetimeManager<>))
                             .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
                             .AddSingleton(typeof(IServiceConnectionContainer), sp => weakConnectionContainer);
@@ -98,7 +102,7 @@ namespace Microsoft.Azure.SignalR.Management
                         serviceCollection.Remove(serviceDescriptor);
 
                         // add rest hub lifetime manager
-                        var restHubLifetimeManager = new RestHubLifetimeManager(_serviceManagerOptions, hubName);
+                        var restHubLifetimeManager = new RestHubLifetimeManager(_serviceManagerOptions, hubName, _productInfo);
                         serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), sp => restHubLifetimeManager);
 
                         var serviceProvider = serviceCollection.BuildServiceProvider();
