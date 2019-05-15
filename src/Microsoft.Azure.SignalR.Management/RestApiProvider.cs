@@ -51,6 +51,11 @@ namespace Microsoft.Azure.SignalR.Management
             return GenerateRestApiEndpoint($"/groups/{groupName}", lifetime);
         }
 
+        public RestApiEndpoint GetRemoveUserFromAllGroups(string userId, TimeSpan? lifetime = null)
+        {
+            return GenerateRestApiEndpoint($"/users/{userId}/groups", lifetime);
+        }
+
         private RestApiEndpoint GenerateRestApiEndpoint(string path, TimeSpan? lifetime = null)
         {
             var token = _restApiAccessTokenGenerator.Generate($"{_audiencePrefix}{path}", lifetime);
