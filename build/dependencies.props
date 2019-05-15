@@ -28,7 +28,7 @@
     <MicrosoftConfigurationUserSecretVersion>2.2.0</MicrosoftConfigurationUserSecretVersion>
     <MicrosoftConfigurationEnvironmentVariablesVersion>2.2.0</MicrosoftConfigurationEnvironmentVariablesVersion>
     <MicrosoftExtensionHttpVersion>2.2.0</MicrosoftExtensionHttpVersion>
-    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.0.0</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
+    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.0.11</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
 
     <!-- Signing -->
     <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>
