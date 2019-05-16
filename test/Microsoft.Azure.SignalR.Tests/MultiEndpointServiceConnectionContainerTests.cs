@@ -13,12 +13,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    public class MultiEndpointServiceConnectionContainerTests
+    public class MultiEndpointServiceConnectionContainerTests : VerifiableLoggedTest
     {
         private const string ConnectionStringFormatter = "Endpoint={0};AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string Url1 = "http://url1";
@@ -26,6 +29,10 @@ namespace Microsoft.Azure.SignalR.Tests
         private readonly string ConnectionString1 = string.Format(ConnectionStringFormatter, Url1);
         private readonly string ConnectionString2 = string.Format(ConnectionStringFormatter, Url2);
         private static readonly JoinGroupMessage DefaultGroupMessage = new JoinGroupMessage("a", "a");
+
+        public MultiEndpointServiceConnectionContainerTests(ITestOutputHelper output) : base(output)
+        {
+        }
 
         [Fact]
         public void TestGetRoutedEndpointsReturnDistinctResultForMultiMessages()
@@ -47,11 +54,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(),
             }, e), sem, router, null);
 
-            var result = container.GetRoutedEndpoints(new MultiGroupBroadcastDataMessage(new[] { "group1", "group2" }, null), endpoints).ToList();
+            var result = container.GetRoutedEndpoints(new MultiGroupBroadcastDataMessage(new[] { "group1", "group2" }, null)).ToList();
 
             Assert.Equal(2, result.Count);
 
-            result = container.GetRoutedEndpoints(new MultiUserDataMessage(new[] { "user1", "user2" }, null), endpoints).ToList();
+            result = container.GetRoutedEndpoints(new MultiUserDataMessage(new[] { "user1", "user2" }, null)).ToList();
 
             Assert.Equal(2, result.Count);
         }
@@ -408,6 +415,62 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Single(endpoints);
 
             Assert.Equal("online", endpoints.First().Name);
+        }
+
+        [Fact]
+        public async Task TestMultiEndpointConnectionWithNotExistEndpointRouter()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
+            {
+                var sem = new TestServiceEndpointManager(
+                    new ServiceEndpoint(ConnectionString1),
+                    new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "online"));
+
+                var router = new NotExistEndpointRouter();
+                var container = new MultiEndpointServiceConnectionContainer(e =>
+                {
+                    if (string.IsNullOrEmpty(e.Name))
+                    {
+                        return new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                    }, e);
+                    }
+                    return new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                        new TestServiceConnection(),
+                        new TestServiceConnection(),
+                        new TestServiceConnection(),
+                        new TestServiceConnection(),
+                        new TestServiceConnection(),
+                        new TestServiceConnection(),
+                        new TestServiceConnection(),
+                    }, e);
+                }, sem, router, loggerFactory);
+
+                _ = container.StartAsync();
+
+                await container.WriteAsync(DefaultGroupMessage);
+
+                await container.WriteAsync("1", DefaultGroupMessage);
+            }
+        }
+
+        private class NotExistEndpointRouter : EndpointRouterDecorator
+        {
+            public override IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints)
+            {
+                return null;
+            }
+
+            public override IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> endpoints)
+            {
+                return null;
+            }
         }
 
         private IServiceConnection CreateServiceConnection(ServerConnectionType type, IConnectionFactory factory)

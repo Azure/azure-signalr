@@ -47,11 +47,57 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new TestServiceConnection(),
             }, e), sem, router, null);
 
-            var result = container.GetRoutedEndpoints(new MultiGroupBroadcastDataMessage(new[] { "group1", "group2" }, null), endpoints).ToList();
+            var result = container.GetRoutedEndpoints(new MultiGroupBroadcastDataMessage(new[] { "group1", "group2" }, null)).ToList();
 
             Assert.Equal(2, result.Count);
 
-            result = container.GetRoutedEndpoints(new MultiUserDataMessage(new[] { "user1", "user2" }, null), endpoints).ToList();
+            result = container.GetRoutedEndpoints(new MultiUserDataMessage(new[] { "user1", "user2" }, null)).ToList();
+
+            Assert.Equal(2, result.Count);
+        }
+
+        [Fact]
+        public async Task TestEndpointsForDifferentContainersHaveDifferentStatus()
+        {
+            var endpoints = new[]
+            {
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "2"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
+            };
+
+            var sem = new TestServiceEndpointManager(endpoints);
+
+            var router = new TestEndpointRouter(false);
+            var container1 = new MultiEndpointServiceConnectionContainer(
+                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
+            }, e), sem, router, null);
+
+            var container2 = new MultiEndpointServiceConnectionContainer(
+                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+            }, e), sem, router, null);
+
+            // Start the container for it to disconnect
+            await container1.StartAsync();
+
+            var result = container1.GetRoutedEndpoints(new MultiGroupBroadcastDataMessage(new[] { "group1", "group2" }, null)).ToList();
+
+            Assert.Empty(result);
+
+            result = container1.GetRoutedEndpoints(new MultiUserDataMessage(new[] { "user1", "user2" }, null)).ToList();
+
+            Assert.Empty(result);
+
+            result = container2.GetRoutedEndpoints(new MultiGroupBroadcastDataMessage(new[] { "group1", "group2" }, null)).ToList();
+
+            Assert.Equal(2, result.Count);
+
+            result = container2.GetRoutedEndpoints(new MultiUserDataMessage(new[] { "user1", "user2" }, null)).ToList();
 
             Assert.Equal(2, result.Count);
         }
