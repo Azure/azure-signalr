@@ -111,7 +111,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
                 );
-            var endpoints = sem.GetAvailableEndpoints().ToArray();
+            var endpoints = sem.Endpoints;
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
@@ -122,8 +122,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new TestServiceConnection(),
                 new TestServiceConnection(),
             }, e), sem, router, null);
-
-            Assert.Equal(2, container.Connections.Count);
+            endpoints = container.GetOnlineEndpoints().ToArray();
+            Assert.Equal(2, endpoints.Length);
         }
 
         [Fact]
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
                 );
-            var endpoints = sem.GetAvailableEndpoints().ToArray();
+            var endpoints = sem.Endpoints.ToArray();
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             // All the connections started
             _ = container.StartAsync();
 
-            endpoints = sem.GetAvailableEndpoints().ToArray();
+            endpoints = container.GetOnlineEndpoints().ToArray();
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestContainerWithNoEndpointDontThrowFromBaseClass()
         {
             var manager = new TestServiceEndpointManager();
-            var endpoints = manager.GetAvailableEndpoints();
+            var endpoints = manager.Endpoints;
             Assert.Empty(endpoints);
         }
 
@@ -319,14 +319,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             _ = container.StartAsync();
 
-            // Instead of NotActiveException, throws NotConnectedException
-            await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(
-                () => container.WriteAsync(DefaultGroupMessage)
-                );
-
-            await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(
-                () => container.WriteAsync("1", DefaultGroupMessage)
-                );
+            // Instead of throw, just log warning, because endpoint router can indeed returns no endpoint
+            // If user wants to throw, user can had the check and throw from the router
+            await container.WriteAsync(DefaultGroupMessage);
+            await container.WriteAsync("1", DefaultGroupMessage);
         }
 
         [Fact]
@@ -450,15 +446,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             await container.WriteAsync("1", DefaultGroupMessage);
 
-            var endpoints = sem.GetAvailableEndpoints();
+            var endpoints = container.GetOnlineEndpoints().ToArray();
             Assert.Single(endpoints);
 
             Assert.Equal("online", endpoints.First().Name);
-        }
-
-        private IServiceConnection CreateServiceConnection(ServerConnectionType type, IConnectionFactory factory)
-        {
-            return new TestServiceConnection();
         }
 
         private class TestServiceEndpointManager : ServiceEndpointManagerBase

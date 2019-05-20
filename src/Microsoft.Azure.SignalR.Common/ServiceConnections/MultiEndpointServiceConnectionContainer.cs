@@ -54,6 +54,11 @@ namespace Microsoft.Azure.SignalR
         {
         }
 
+        public IEnumerable<ServiceEndpoint> GetOnlineEndpoints()
+        {
+            return Connections.Keys.Where(s => s.Online);
+        }
+
         private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, ServiceEndpoint endpoint, string hub, int count, IServiceEndpointManager endpointManager, IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
         {
             var provider = endpointManager.GetEndpointProvider(endpoint);

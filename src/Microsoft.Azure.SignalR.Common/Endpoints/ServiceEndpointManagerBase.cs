@@ -40,20 +40,16 @@ namespace Microsoft.Azure.SignalR
                 return item;
             });
 
-            if (!groupedEndpoints.Any(s => s.EndpointType == EndpointType.Primary))
+            Endpoints = groupedEndpoints.ToArray();
+
+            if (Endpoints.Length > 0 && Endpoints.All(s => s.EndpointType != EndpointType.Primary))
             {
+                // Only throws when endpoint count > 0
                 throw new AzureSignalRNoPrimaryEndpointException();
             }
-
-            Endpoints = groupedEndpoints.ToArray();
         }
 
         public abstract IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
-
-        public IEnumerable<ServiceEndpoint> GetAvailableEndpoints()
-        {
-            return Endpoints.Where(s => s.Online);
-        }
 
         private static IEnumerable<ServiceEndpoint> GetEndpoints(IServiceEndpointOptions options)
         {
