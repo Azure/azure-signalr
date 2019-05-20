@@ -15,15 +15,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         private IList<HubConnection> _connections;
         private IList<IHubProxy> _proxies;
 
-        public int Count {
-            get
-            {
-                if (_connections == null)
-                {
-                    throw new ArgumentNullException(nameof(_connections));
-                }
-                return _connections.Count;
-            }
+        public int Count
+        {
+            get => _connections?.Count ?? 0;
         }
 
         public TestClientSet(string serverUrl, int count)
