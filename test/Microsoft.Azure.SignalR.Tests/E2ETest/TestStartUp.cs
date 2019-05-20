@@ -25,7 +25,6 @@ namespace Microsoft.Azure.SignalR.Tests
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
             services.AddMvc(option => option.EnableEndpointRouting = false);
-
             services.AddSignalR(options =>
             {
                 options.EnableDetailedErrors = true;

@@ -16,17 +16,10 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public int Count
         {
-            get
-            {
-                if (_connections == null)
-                {
-                    throw new ArgumentNullException(nameof(_connections));
-                }
-                return _connections.Count;
-            }
+            get => _connections?.Count ?? 0;
         }
 
-        public ITestClientSet Create(string serverUrl, int count)
+        public TestClientSet(string serverUrl, int count)
         {
             if (serverUrl == null)
             {
@@ -35,7 +28,6 @@ namespace Microsoft.Azure.SignalR.Tests
 
             _connections = (from i in Enumerable.Range(0, count)
                             select new HubConnectionBuilder().WithUrl($"{serverUrl}/{nameof(TestHub)}").Build()).ToList();
-            return this;
         }
 
         public Task StartAsync()

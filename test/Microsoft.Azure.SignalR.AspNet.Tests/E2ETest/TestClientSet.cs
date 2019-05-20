@@ -26,6 +26,15 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             }
         }
 
+        public TestClientSet(string serverUrl, int count)
+        {
+            _connections = (from i in Enumerable.Range(0, count)
+                            select new HubConnection(serverUrl)).ToList();
+
+            _proxies = (from conn in _connections
+                        select conn.CreateHubProxy(nameof(TestHub))).ToList();
+        }
+
         public void AddListener(string methodName, Action<string> handler)
         {
             foreach (var p in _proxies)
@@ -38,17 +47,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             return Task.WhenAll(from p in _proxies
                                 select p.Invoke(methodName, message));
-        }
-
-        public ITestClientSet Create(string serverUrl, int count)
-        {
-            _connections = (from i in Enumerable.Range(0, count)
-                            select new HubConnection(serverUrl)).ToList();
-
-            _proxies = (from conn in _connections
-                        select conn.CreateHubProxy(nameof(TestHub))).ToList();
-
-            return this;
         }
 
         public Task StartAsync()

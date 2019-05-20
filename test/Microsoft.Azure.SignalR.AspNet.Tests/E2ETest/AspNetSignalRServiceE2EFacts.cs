@@ -4,11 +4,11 @@
 using Microsoft.Azure.SignalR.Tests.Common;
 using Xunit.Abstractions;
 
-namespace Microsoft.Azure.SignalR.Tests
+namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
-    public class SignalRServiceE2EFacts : ServiceE2EFactsBase
+    public class AspNetSignalRServiceE2EFacts : ServiceE2EFactsBase
     {
-        public SignalRServiceE2EFacts(ITestOutputHelper output)
+        public AspNetSignalRServiceE2EFacts(ITestOutputHelper output)
             : base(new TestServer(), (string serverUrl, int count) => new TestClientSet(serverUrl, count), output)
         {
         }

@@ -1,39 +1,38 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.IO;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
 {
     public abstract class TestServerBase : ITestServer
     {
-        private static readonly Random _rnd = new Random();
         private static readonly int _maxRetry = 10;
-        private readonly ILogger _logger;
 
-        public TestServerBase(ILoggerFactory loggerFactory)
+        public async Task<string> StartAsync(ILoggerFactory loggerFactory)
         {
-            _logger = loggerFactory.CreateLogger<TestServerBase>();
-        }
+            var logger = loggerFactory.CreateLogger<TestServerBase>();
 
-        public string Start()
-        {
             for (int retry = 0; retry < _maxRetry; retry++)
             {
                 try
                 {
                     var serverUrl = GetRandomPortUrl();
-                    StartCore(serverUrl);
+                    await StartCoreAsync(serverUrl, loggerFactory);
                     return serverUrl;
                 }
                 catch (IOException ex)
                 {
                     if (ex.Message.Contains("address already in use") || ex.Message.Contains("Failed to bind to address"))
                     {
-                        _logger.LogWarning($"Retry: {retry + 1} times. Warning: {ex.Message}");
+                        logger.LogWarning($"Retry: {retry + 1} times. Warning: {ex.Message}");
                         retry++;
+                    }
+                    else
+                    {
+                        throw;
                     }
                 }
             }
@@ -43,11 +42,11 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         private static string GetRandomPortUrl()
         {
-            return $"http://localhost:{_rnd.Next(49152, 65535)}";
+            return $"http://localhost:{StaticRandom.Next(49152, 65535)}";
         }
 
-        public abstract void Stop();
+        public abstract Task StopAsync();
 
-        protected abstract void StartCore(string serverUrl);
+        protected abstract Task StartCoreAsync(string serverUrl, ILoggerFactory loggerFactory);
     }
 }

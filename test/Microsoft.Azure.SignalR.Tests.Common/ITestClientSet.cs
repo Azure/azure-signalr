@@ -10,7 +10,6 @@ namespace Microsoft.Azure.SignalR.Tests.Common
     {
         Task StartAsync();
         Task StopAsync();
-        ITestClientSet Create(string serverUrl, int count);
         int Count { get; }
         void AddListener(string methodName, Action<string> handler);
         Task AllSendAsync(string methodName, string message);

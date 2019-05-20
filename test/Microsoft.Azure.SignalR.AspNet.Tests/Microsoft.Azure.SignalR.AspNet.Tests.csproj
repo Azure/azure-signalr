@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Microsoft.Azure.SignalR.Tests\E2ETest\SignalRServiceE2EFacts.cs" Link="E2ETest\SignalRServiceE2EFacts.cs" />
     <Compile Include="..\Microsoft.Azure.SignalR.Tests\Infrastructure\TaskExtensions.cs" Link="Infrastructure\TaskExtensions.cs" />
   </ItemGroup>
 

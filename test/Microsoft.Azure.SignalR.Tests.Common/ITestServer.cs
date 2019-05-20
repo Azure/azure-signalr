@@ -1,11 +1,14 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+
 namespace Microsoft.Azure.SignalR.Tests.Common
 {
     public interface ITestServer
     {
-        string Start();
-        void Stop();
+        Task<string> StartAsync(ILoggerFactory loggerFactory);
+        Task StopAsync();
     }
 }
