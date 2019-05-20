@@ -40,7 +40,10 @@ namespace Microsoft.Azure.SignalR.AspNet
             _accessKey = endpoint.AccessKey;
             _appName = options.ApplicationName;
             _port = endpoint.Port;
+            Proxy = options?.Proxy;
         }
+
+        public IWebProxy Proxy { get; }
 
         private string GetPrefixedHubName(string applicationName, string hubName)
         {

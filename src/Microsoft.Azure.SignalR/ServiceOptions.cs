@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 
@@ -50,5 +51,10 @@ namespace Microsoft.Azure.SignalR
         /// By default it is disabled
         /// </summary>
         public ServerStickyMode ServerStickyMode { get; set; } = ServerStickyMode.Disabled;
+
+        /// <summary>
+        /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
+        /// </summary>
+        public IWebProxy Proxy { get; set; }
     }
 }
