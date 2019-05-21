@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 return null;
             }
 
-            return new ServiceEndpointProvider(endpoint, _options, _ttl);
+            return new ServiceEndpointProvider(endpoint, _options.ApplicationName, _ttl);
         }
     }
 }

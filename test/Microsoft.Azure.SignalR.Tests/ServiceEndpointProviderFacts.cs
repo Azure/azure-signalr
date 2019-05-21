@@ -14,8 +14,8 @@ namespace Microsoft.Azure.SignalR.Tests
     {
         private const string Endpoint = "https://myendpoint";
         private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
+        private const string AppName = "testapp";
         private static readonly string HubName = nameof(TestHub).ToLower();
-        private static readonly string AppName = "testapp";
 
         private static readonly string ConnectionStringWithoutVersion =
             $"Endpoint={Endpoint};AccessKey={AccessKey};";
@@ -25,21 +25,18 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private static readonly string ConnectionStringWithV1Version = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0";
 
-        private static readonly OptionsWrapper<ServiceOptions> _serviceOptions = new OptionsWrapper<ServiceOptions>(new ServiceOptions());
-        private static readonly OptionsWrapper<ServiceOptions> _serviceOptionsWithPrefix = new OptionsWrapper<ServiceOptions>(new ServiceOptions { ApplicationName = AppName });
-
         private static readonly ServiceEndpointProvider[] EndpointProviderArray =
         {
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), _serviceOptions),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _serviceOptions),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), _serviceOptions)
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion)),
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion)),
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version))
         };
 
         private static readonly ServiceEndpointProvider[] EndpointProviderArrayWithPrefix =
 {
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), _serviceOptionsWithPrefix),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _serviceOptionsWithPrefix),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), _serviceOptionsWithPrefix)
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), AppName),
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), AppName),
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), AppName)
         };
 
         private static readonly (string path, string queryString, string expectedQuery)[] PathAndQueryArray =
@@ -110,7 +107,7 @@ namespace Microsoft.Azure.SignalR.Tests
         internal void GenerateMutlipleAccessTokenShouldBeUnique()
         {
             var count = 1000;
-            var sep = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _serviceOptions);
+            var sep = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion));
             var userId = Guid.NewGuid().ToString();
             var tokens = new List<string>();
             for (int i = 0; i < count; i++)

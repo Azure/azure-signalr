@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR
                 return null;
             }
 
-            return new ServiceEndpointProvider(endpoint, serviceOptions: _options, ttl: _ttl);
+            return new ServiceEndpointProvider(endpoint, applicationName: _options.Value.ApplicationName, ttl: _ttl);
         }
     }
 }

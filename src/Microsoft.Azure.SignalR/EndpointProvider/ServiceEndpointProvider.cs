@@ -15,14 +15,12 @@ namespace Microsoft.Azure.SignalR
             $"Please specify a configuration entry for {Constants.ConnectionStringDefaultKey}, " +
             "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
-        private readonly string _endpoint;
         private readonly string _accessKey;
-        private readonly IOptions<ServiceOptions> _serviceOptions;
         private readonly string _appName;
         private readonly TimeSpan _accessTokenLifetime;
         private readonly IServiceEndpointGenerator _generator;
 
-        public ServiceEndpointProvider(ServiceEndpoint endpoint, IOptions<ServiceOptions> serviceOptions, TimeSpan? ttl = null)
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, string applicationName = null, TimeSpan? ttl = null)
         {
             var connectionString = endpoint.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
@@ -32,15 +30,13 @@ namespace Microsoft.Azure.SignalR
 
             _accessTokenLifetime = ttl ?? Constants.DefaultAccessTokenLifetime;
 
-            _endpoint = endpoint.Endpoint;
             _accessKey = endpoint.AccessKey;
-            _serviceOptions = serviceOptions;
-            _appName = serviceOptions.Value.ApplicationName;
+            _appName = applicationName;
 
             var port = endpoint.Port;
             var version = endpoint.Version;
 
-            _generator = new DefaultServiceEndpointGenerator(_endpoint, _accessKey, version, port);
+            _generator = new DefaultServiceEndpointGenerator(endpoint.Endpoint, _accessKey, version, port);
         }
 
         public string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, string requestId = null)
