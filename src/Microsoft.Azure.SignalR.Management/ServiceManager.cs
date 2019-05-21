@@ -14,6 +14,7 @@ using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -30,7 +31,13 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _serviceManagerOptions = serviceManagerOptions;
             _endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString, EndpointType.Secondary);
-            _endpointProvider = new ServiceEndpointProvider(_endpoint, appName: _serviceManagerOptions.ApplicationName);
+            var optionWrapper = new OptionsWrapper<ServiceOptions>(new ServiceOptions
+            {
+                ApplicationName = _serviceManagerOptions.ApplicationName,
+                ConnectionString = _serviceManagerOptions.ConnectionString,
+                Endpoints = new[] { _endpoint }
+            });
+            _endpointProvider = new ServiceEndpointProvider(_endpoint, optionWrapper);
             _serverNameProvider = new DefaultServerNameProvider();
             _productInfo = productInfo;
         }
