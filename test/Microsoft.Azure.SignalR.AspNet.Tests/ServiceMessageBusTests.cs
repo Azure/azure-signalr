@@ -243,17 +243,30 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             }
         }
 
+        private class TestServiceConnectionContainerFactory : IServiceConnectionContainerFactory
+        {
+            private readonly SortedList<string, ServiceMessage> _messages;
+            public TestServiceConnectionContainerFactory(SortedList<string, ServiceMessage> output)
+            {
+                _messages = output;
+            }
+            public IServiceConnectionContainer Create(string hub)
+            {
+                return new TestServiceConnectionContainer(hub,
+                    m =>
+                    {
+                        lock (_messages)
+                        {
+                            _messages.Add(hub, m.Item1);
+                        }
+                    });
+            }
+        }
+
         private static void PrepareConnection(IServiceConnectionManager scm, out SortedList<string, ServiceMessage> output)
         {
             var result = new SortedList<string, ServiceMessage>();
-            scm.Initialize(hub => new TestServiceConnectionContainer(hub,
-                    m =>
-                    {
-                        lock (result)
-                        {
-                            result.Add(hub, m.Item1);
-                        }
-                    }));
+            scm.Initialize(new TestServiceConnectionContainerFactory(result));
             output = result;
         }
 

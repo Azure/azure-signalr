@@ -37,11 +37,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             _appName = appName;
         }
 
-        public void Initialize(Func<string, IServiceConnectionContainer> connectionGenerator)
+        public void Initialize(IServiceConnectionContainerFactory connectionFactory)
         {
-            if (connectionGenerator == null)
+            if (connectionFactory == null)
             {
-                throw new ArgumentNullException(nameof(connectionGenerator));
+                throw new ArgumentNullException(nameof(connectionFactory));
             }
 
             if (_serviceConnections != null)
@@ -59,11 +59,11 @@ namespace Microsoft.Azure.SignalR.AspNet
 
                 var connections = new Dictionary<string, IServiceConnectionContainer>();
 
-                _appConnection = connectionGenerator(_appName);
+                _appConnection = connectionFactory.Create(_appName);
 
                 foreach (var hub in _hubs)
                 {
-                    var connection = connectionGenerator(hub);
+                    var connection = connectionFactory.Create(hub);
                     connections.Add(hub, connection);
                 }
 

@@ -18,47 +18,31 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly ILogger<ServiceHubDispatcher> _logger;
         private readonly IReadOnlyList<string> _hubNames;
         private readonly IServiceConnectionManager _serviceConnectionManager;
-        private readonly IClientConnectionManager _clientConnectionManager;
-        private readonly IServiceProtocol _protocol;
-        private readonly IServiceEndpointManager _serviceEndpointManager;
-        private readonly IEndpointRouter _router;
-        private readonly IServerNameProvider _nameProvider;
+        private readonly IServiceConnectionContainerFactory _serviceConnectionContainerFactory;
         private readonly string _name;
 
-        public ServiceHubDispatcher(IReadOnlyList<string> hubNames, IServiceProtocol protocol,
-            IServiceConnectionManager serviceConnectionManager, IClientConnectionManager clientConnectionManager,
-            IServiceEndpointManager serviceEndpointManager,
-            IEndpointRouter router,
+        public ServiceHubDispatcher(IReadOnlyList<string> hubNames,
+            IServiceConnectionManager serviceConnectionManager, 
+            IServiceConnectionContainerFactory serviceConnectionContainerFactory,
             IOptions<ServiceOptions> options, 
-            IServerNameProvider nameProvider,
             ILoggerFactory loggerFactory)
         {
             _hubNames = hubNames;
             _name = $"{nameof(ServiceHubDispatcher)}[{string.Join(",", hubNames)}]";
             _loggerFactory = loggerFactory;
-            _protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
-            _router = router ?? throw new ArgumentNullException(nameof(router));
             _serviceConnectionManager = serviceConnectionManager ?? throw new ArgumentNullException(nameof(serviceConnectionManager));
-            _clientConnectionManager = clientConnectionManager ?? throw new ArgumentNullException(nameof(clientConnectionManager));
-            _nameProvider = nameProvider;
+            _serviceConnectionContainerFactory = serviceConnectionContainerFactory;
             _options = options?.Value;
-            _serviceEndpointManager = serviceEndpointManager ?? throw new ArgumentNullException(nameof(serviceEndpointManager));
             _logger = _loggerFactory.CreateLogger<ServiceHubDispatcher>();
         }
 
         public Task StartAsync()
         {
-            _serviceConnectionManager.Initialize(GetMultiEndpointServiceConnectionContainer);
+            _serviceConnectionManager.Initialize(_serviceConnectionContainerFactory);
 
             Log.StartingConnection(_logger, _name, _options.ConnectionCount, _hubNames.Count);
 
             return _serviceConnectionManager.StartAsync();
-        }
-
-        private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub)
-        {
-            var serviceConnectionFactory = new ServiceConnectionFactory(_protocol, _clientConnectionManager, _loggerFactory);
-            return new MultiEndpointServiceConnectionContainer(serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _nameProvider, _loggerFactory);
         }
 
         private static class Log
