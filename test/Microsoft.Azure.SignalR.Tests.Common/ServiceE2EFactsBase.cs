@@ -49,5 +49,40 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             await clients.StopAsync();
             Assert.Equal(clients.Count, count);
         }
+
+        // ...
+
+        public static object[][] TestData =
+        {
+            new object[] { "Echo", DefaultClientCount, DefaultClientCount, new Func<ITestClientSet, Task>(clients => clients.AllSendAsync("Echo", _defaultMessage))},
+            new object[] { "Broadcast", 1, DefaultClientCount, new Func<ITestClientSet, Task>(clients => clients.AllSendAsync("Broadcast", _defaultMessage))},
+            new object[] { "SendToGroup", DefaultClientCount - 1, DefaultClientCount, new Func<ITestClientSet, Task>(GroupTask)}
+        };
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [MemberData(nameof(TestData))]
+        public async Task RunE2ETests(string methodName, int sendCount, int expectedMessageCount, Func<ITestClientSet, Task> coreTask)
+        {
+            var clients = _testClientSetFactory(_serverUrl, DefaultClientCount);
+            clients.AddListener(methodName, message => Interlocked.Increment(ref expectedMessageCount));
+            await clients.StartAsync();
+            await coreTask(clients);
+            await Task.Delay(DefaultDelayMilliseconds);
+            await clients.StopAsync();
+            Assert.Equal(clients.Count, expectedMessageCount);
+        }
+
+        private static async Task GroupTask(ITestClientSet clients)
+        {
+            await clients.AllSendAsync("JoinGroup", "groups"); // which group to join? connection - group map?
+            await Task.Delay(DefaultDelayMilliseconds);
+            await clients.AllSendAsync("SendToGroup", _defaultMessage);
+            await Task.Delay(DefaultDelayMilliseconds);
+            await clients.AllSendAsync("LeaveGroup", null); // which group to leave? connection - group map?
+            await Task.Delay(DefaultDelayMilliseconds);
+            await clients.AllSendAsync("SendToGroup", _defaultMessage);
+            await Task.Delay(DefaultDelayMilliseconds);
+        }
     }
 }
