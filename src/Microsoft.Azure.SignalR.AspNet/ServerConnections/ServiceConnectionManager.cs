@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class ServiceConnectionManager : IServiceConnectionManager
     {
-        private IReadOnlyDictionary<string, IServiceConnectionContainer> _serviceConnections = null;
+        private IReadOnlyDictionary<string, IServiceConnectionContainer> _hubConnections = null;
 
         private readonly object _lock = new object();
 
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 throw new ArgumentNullException(nameof(connectionFactory));
             }
 
-            if (_serviceConnections != null)
+            if (_hubConnections != null)
             {
                 // TODO: log something to indicate the connection is already initialized.
                 return;
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             lock (_lock)
             {
-                if (_serviceConnections != null)
+                if (_hubConnections != null)
                 {
                     return;
                 }
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                     connections.Add(hub, connection);
                 }
 
-                _serviceConnections = connections;
+                _hubConnections = connections;
             }
         }
 
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public IServiceConnectionContainer WithHub(string hubName)
         {
-            if (_serviceConnections == null ||!_serviceConnections.TryGetValue(hubName, out var connection))
+            if (_hubConnections == null ||!_hubConnections.TryGetValue(hubName, out var connection))
             {
                 throw new KeyNotFoundException($"Service connection with Hub {hubName} does not exist");
             }
@@ -118,9 +118,9 @@ namespace Microsoft.Azure.SignalR.AspNet
                 yield return _appConnection;
             }
 
-            if (_serviceConnections != null)
+            if (_hubConnections != null)
             {
-                foreach (var conn in _serviceConnections)
+                foreach (var conn in _hubConnections)
                 {
                     yield return conn.Value;
                 }
