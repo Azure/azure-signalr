@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>Microsoft.Azure.SignalR.Management</RootNamespace>
-    <Description>Provides communication management capabilities for Azure SignalR.</Description>
+    <Description>Provides communication capabilities with ASP.NET Core SignalR clients through Azure SignalR Service directly. The capabilities include sending messages to all/clients/users/groups and managing group membership. For more information, see https://github.com/Azure/azure-signalr/blob/dev/docs/management-sdk-guide.md</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageVersion>1.0.0-preview1-$(BuildNumber)</PackageVersion>
   </PropertyGroup>
