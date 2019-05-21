@@ -1,6 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <RootNamespace>Microsoft.Azure.SignalR.Management</RootNamespace>
+    <Description>Provides communication management capabilities for Azure SignalR.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageVersion>1.0.0-preview1-$(BuildNumber)</PackageVersion>
   </PropertyGroup>
 
