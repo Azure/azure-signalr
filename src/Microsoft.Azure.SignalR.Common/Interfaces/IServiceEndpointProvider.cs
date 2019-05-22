@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Security.Claims;
 
 namespace Microsoft.Azure.SignalR
@@ -16,5 +17,8 @@ namespace Microsoft.Azure.SignalR
         string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null, string requestId = null);
 
         string GetServerEndpoint(string hubName);
+
+        IWebProxy Proxy { get; }
+
     }
 }

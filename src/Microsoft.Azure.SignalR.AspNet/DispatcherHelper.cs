@@ -89,9 +89,12 @@ namespace Microsoft.Azure.SignalR.AspNet
             var smb = new ServiceMessageBus(configuration.Resolver);
             configuration.Resolver.Register(typeof(IMessageBus), () => smb);
 
+            var scf = new ServiceConnectionFactory(serviceProtocol, ccm, loggerFactory);
+            var sccf = new MultiEndpointServiceConnectionContainerFactory(scf, endpoint, router, serviceOptions, serverNameProvider, loggerFactory);
+
             if (hubs?.Count > 0)
             {
-                return new ServiceHubDispatcher(hubs, serviceProtocol, scm, ccm, endpoint, router, serviceOptions, serverNameProvider, loggerFactory);
+                return new ServiceHubDispatcher(hubs, scm, sccf, serviceOptions, loggerFactory);
             }
             else
             {
