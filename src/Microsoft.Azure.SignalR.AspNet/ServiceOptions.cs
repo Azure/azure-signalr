@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using Microsoft.Owin;
 
@@ -53,6 +54,11 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// By default this mode is disabled
         /// </summary>
         public ServerStickyMode ServerStickyMode { get; set; }
+
+        /// <summary>
+        /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
+        /// </summary>
+        public IWebProxy Proxy { get; set; }
 
         public ServiceOptions()
         {

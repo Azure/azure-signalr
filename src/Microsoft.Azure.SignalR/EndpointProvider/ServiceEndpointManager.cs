@@ -13,8 +13,7 @@ namespace Microsoft.Azure.SignalR
         private readonly TimeSpan? _ttl;
 
         public ServiceEndpointManager(IOptions<ServiceOptions> options, ILoggerFactory loggerFactory) :
-            base(options.Value,
-                loggerFactory.CreateLogger<ServiceEndpointManager>())
+            base(options.Value, loggerFactory.CreateLogger<ServiceEndpointManager>())
         {
             if (Endpoints.Length == 0)
             {

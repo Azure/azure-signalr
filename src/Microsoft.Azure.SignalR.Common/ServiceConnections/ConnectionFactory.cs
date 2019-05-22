@@ -37,7 +37,8 @@ namespace Microsoft.Azure.SignalR
                 AccessTokenProvider = () => Task.FromResult(_provider.GenerateServerAccessToken(_hubName, _userId)),
                 Transports = HttpTransportType.WebSockets,
                 SkipNegotiation = true,
-                Headers = headers
+                Headers = headers,
+                Proxy = _provider.Proxy,
             };
             var httpConnection = new HttpConnection(httpConnectionOptions, _loggerFactory);
             try

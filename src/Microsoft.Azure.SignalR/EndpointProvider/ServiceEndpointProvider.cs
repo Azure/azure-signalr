@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Security.Claims;
 
 namespace Microsoft.Azure.SignalR
@@ -36,12 +37,15 @@ namespace Microsoft.Azure.SignalR
             _accessKey = endpoint.AccessKey;
             _serviceOptions = serviceOptions;
             _appName = appName;
+            Proxy = serviceOptions?.Value?.Proxy;
 
             var port = endpoint.Port;
             var version = endpoint.Version;
 
             _generator = new DefaultServiceEndpointGenerator(_endpoint, _accessKey, version, port);
         }
+
+        public IWebProxy Proxy { get; }
 
         internal string ApplicationName
         {
