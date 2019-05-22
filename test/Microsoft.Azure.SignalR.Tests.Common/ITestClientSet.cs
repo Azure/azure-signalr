@@ -14,6 +14,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         int Count { get; }
         void AddListener(string methodName, Action<string> handler);
         Task SendAsync(string methodName, int sendCount = -1, params string[] messages);
+        Task SendAsync(string methodName, int [] sendInds, params string[] messages);
         Task ManageGroupAsync(string methodName, IDictionary<int, string> connectionGroupMap);
     }
 }

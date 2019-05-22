@@ -36,14 +36,16 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         public Task SendAsync(string methodName, int sendCount, params string[] messages)
         {
-            return Task.WhenAll(_proxies.Select((p, i) =>
-            {
-                if (sendCount == -1 || i < sendCount)
-                {
-                    return p.Invoke(methodName, messages);
-                }
-                return Task.CompletedTask;
-            }));
+            return Task.WhenAll(_proxies
+                .Where((_, i) => sendCount == -1 || i < sendCount)
+                .Select(p => p.Invoke(methodName, messages)));
+        }
+
+        public Task SendAsync(string methodName, int[] sendInds, params string[] messages)
+        {
+            return Task.WhenAll(_proxies
+                .Where((_, i) => sendInds.Contains(i))
+                .Select(p => p.Invoke(methodName, messages)));
         }
 
         public Task StartAsync()
