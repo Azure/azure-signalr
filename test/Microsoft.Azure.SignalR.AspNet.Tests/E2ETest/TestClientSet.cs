@@ -12,13 +12,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
     public class TestClientSet : ITestClientSet
     {
-        private IList<HubConnection> _connections;
-        private IList<IHubProxy> _proxies;
+        private readonly IList<HubConnection> _connections;
+        private readonly IList<IHubProxy> _proxies;
 
-        public int Count
-        {
-            get => _connections?.Count ?? 0;
-        }
+        public int Count => _connections?.Count ?? 0;
 
         public TestClientSet(string serverUrl, int count)
         {
@@ -37,10 +34,16 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             }
         }
 
-        public Task AllSendAsync(string methodName, string message)
+        public Task SendAsync(string methodName, int sendCount, params string[] messages)
         {
-            return Task.WhenAll(from p in _proxies
-                                select p.Invoke(methodName, message));
+            return Task.WhenAll(_proxies.Select((p, i) =>
+            {
+                if (sendCount == -1 || i < sendCount)
+                {
+                    return p.Invoke(methodName, messages);
+                }
+                return Task.CompletedTask;
+            }));
         }
 
         public Task StartAsync()
@@ -57,6 +60,15 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             }
 
             return Task.CompletedTask;
+        }
+
+        public Task ManageGroupAsync(string methodName, IDictionary<int, string> connectionGroupMap)
+        {
+            return Task.WhenAll(from entry in connectionGroupMap
+                let proxyInd = entry.Key
+                let groupName = entry.Value
+                where connectionGroupMap.ContainsKey(proxyInd)
+                select _proxies[proxyInd].Invoke(methodName, groupName));
         }
     }
 }
