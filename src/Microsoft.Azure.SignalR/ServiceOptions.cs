@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 
@@ -19,9 +20,9 @@ namespace Microsoft.Azure.SignalR
         public string ConnectionString { get; set; }
 
         /// <summary>
-        /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 5.
+        /// Gets or sets the initial number of connections from SDK to Azure SignalR Service per hub. Default value is 2.
         /// </summary>
-        public int ConnectionCount { get; set; } = 5;
+        public int ConnectionCount { get; set; } = Constants.DefaultInitConnectionCountPerHub;
 
         /// <summary>
         /// Gets or sets the prefix to apply to each hub name
@@ -50,5 +51,10 @@ namespace Microsoft.Azure.SignalR
         /// By default it is disabled
         /// </summary>
         public ServerStickyMode ServerStickyMode { get; set; } = ServerStickyMode.Disabled;
+
+        /// <summary>
+        /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
+        /// </summary>
+        public IWebProxy Proxy { get; set; }
     }
 }
