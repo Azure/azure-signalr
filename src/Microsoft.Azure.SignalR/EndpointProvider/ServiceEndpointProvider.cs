@@ -11,19 +11,19 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceEndpointProvider : IServiceEndpointProvider
     {
-        internal static readonly string ConnectionStringNotFound =
+        public static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
             $"Please specify a configuration entry for {Constants.ConnectionStringDefaultKey}, " +
             "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
-        private readonly string _endpoint;
         private readonly string _accessKey;
-        private readonly IOptions<ServiceOptions> _serviceOptions;
         private readonly string _appName;
         private readonly TimeSpan _accessTokenLifetime;
         private readonly IServiceEndpointGenerator _generator;
 
-        public ServiceEndpointProvider(ServiceEndpoint endpoint, string appName = "", IOptions<ServiceOptions> serviceOptions = null, TimeSpan? ttl = null)
+        public IWebProxy Proxy { get; }
+
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, IOptions<ServiceOptions> serviceOptions)
         {
             var connectionString = endpoint.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
@@ -31,28 +31,17 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(ConnectionStringNotFound);
             }
 
-            _accessTokenLifetime = ttl ?? Constants.DefaultAccessTokenLifetime;
+            _accessTokenLifetime = serviceOptions.Value.AccessTokenLifetime;
 
-            _endpoint = endpoint.Endpoint;
+            var endpointStr = endpoint.Endpoint;
             _accessKey = endpoint.AccessKey;
-            _serviceOptions = serviceOptions;
-            _appName = appName;
-            Proxy = serviceOptions?.Value?.Proxy;
+            _appName = serviceOptions.Value.ApplicationName;
+            Proxy = serviceOptions.Value.Proxy;
 
             var port = endpoint.Port;
             var version = endpoint.Version;
 
-            _generator = new DefaultServiceEndpointGenerator(_endpoint, _accessKey, version, port);
-        }
-
-        public IWebProxy Proxy { get; }
-
-        internal string ApplicationName
-        {
-            get
-            {
-                return _serviceOptions != null ? _serviceOptions.Value.ApplicationName : _appName;
-            }
+            _generator = new DefaultServiceEndpointGenerator(endpointStr, _accessKey, version, port);
         }
 
         public string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, string requestId = null)
@@ -62,7 +51,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            var audience = _generator.GetClientAudience(hubName, ApplicationName);
+            var audience = _generator.GetClientAudience(hubName, _appName);
 
             return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
         }
@@ -74,8 +63,8 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            var audience = _generator.GetServerAudience(hubName, ApplicationName);
-            var claims = userId != null ? new[] {new Claim(ClaimTypes.NameIdentifier, userId)} : null;
+            var audience = _generator.GetServerAudience(hubName, _appName);
+            var claims = userId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, userId) } : null;
 
             return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, requestId);
         }
@@ -87,7 +76,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            return _generator.GetClientEndpoint(hubName, ApplicationName, originalPath, queryString);
+            return _generator.GetClientEndpoint(hubName, _appName, originalPath, queryString);
         }
 
         public string GetServerEndpoint(string hubName)
@@ -97,7 +86,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(hubName));
             }
 
-            return _generator.GetServerEndpoint(hubName, ApplicationName);
+            return _generator.GetServerEndpoint(hubName, _appName);
         }
     }
 }

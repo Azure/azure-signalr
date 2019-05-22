@@ -8,7 +8,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class ServiceEndpointManager : ServiceEndpointManagerBase
     {
-        private readonly TimeSpan? _ttl;
         private readonly ServiceOptions _options;
 
         public ServiceEndpointManager(ServiceOptions options, ILoggerFactory loggerFactory) : 
@@ -20,7 +19,6 @@ namespace Microsoft.Azure.SignalR.AspNet
                 throw new ArgumentException(ServiceEndpointProvider.ConnectionStringNotFound);
             }
 
-            _ttl = options.AccessTokenLifetime;
             _options = options;
         }
 
@@ -31,7 +29,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 return null;
             }
 
-            return new ServiceEndpointProvider(endpoint, _options, _ttl);
+            return new ServiceEndpointProvider(endpoint, _options);
         }
     }
 }
