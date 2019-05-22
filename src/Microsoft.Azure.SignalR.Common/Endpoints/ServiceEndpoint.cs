@@ -52,6 +52,17 @@ namespace Microsoft.Azure.SignalR
             Name = name;
         }
 
+        public ServiceEndpoint(ServiceEndpoint endpoint)
+        {
+            ConnectionString = endpoint.ConnectionString;
+            EndpointType = endpoint.EndpointType;
+            Name = endpoint.Name;
+            Endpoint = endpoint.Endpoint;
+            Version = endpoint.Version;
+            AccessKey = endpoint.AccessKey;
+            Port = endpoint.Port;
+        }
+
         public override string ToString()
         {
             if (string.IsNullOrEmpty(Name))
