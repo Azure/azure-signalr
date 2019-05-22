@@ -613,7 +613,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var serverName = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerName)?.Value;
                     Assert.Equal(name, serverName);
                     var mode = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode)?.Value;
-                    Assert.Equal("Required", mode);
+                    Assert.Equal("Preferred", mode);
                     Assert.NotNull(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode));
                     var version = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Version)?.Value;
                     Version.TryParse(version, out var versionResult);
