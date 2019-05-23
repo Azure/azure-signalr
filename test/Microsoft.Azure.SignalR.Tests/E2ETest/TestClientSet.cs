@@ -58,10 +58,9 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public Task SendAsync(string methodName, int sendCount, params string[] messages)
         {
-            return Task.WhenAll(from conn in _connections select conn.SendAsync(methodName, "xxx"));
-            //return Task.WhenAll(_connections
-            //    .Where((_, i) => sendCount == -1 || i < sendCount)
-            //    .Select(conn => conn.SendAsync(methodName, messages[0])));
+            return Task.WhenAll(_connections
+                .Where((_, i) => sendCount == -1 || i < sendCount)
+                .Select(conn => conn.SendAsync(methodName, messages[0])));
         }
 
         public Task SendAsync(string methodName, int[] sendInds, params string[] messages)
