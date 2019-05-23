@@ -348,7 +348,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var endpointManager = serviceProvider.GetRequiredService<IServiceEndpointManager>();
 
-                var endpoints = endpointManager.GetAvailableEndpoints().ToArray();
+                var endpoints = endpointManager.Endpoints;
 
                 Assert.Equal(expectedCount, endpoints.Length);
 

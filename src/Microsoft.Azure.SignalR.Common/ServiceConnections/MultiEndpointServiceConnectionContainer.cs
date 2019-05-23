@@ -15,10 +15,11 @@ namespace Microsoft.Azure.SignalR
 {
     internal class MultiEndpointServiceConnectionContainer : IServiceConnectionContainer
     {
-        private readonly IServiceEndpointManager _endpointManager;
         private readonly IMessageRouter _router;
         private readonly ILogger _logger;
         private readonly IServiceConnectionContainer _inner;
+
+        private IReadOnlyList<ServiceEndpoint> _endpoints;
 
         public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
 
@@ -29,20 +30,20 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(generator));
             }
 
-            _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? NullLogger<MultiEndpointServiceConnectionContainer>.Instance;
 
-            var endpoints = endpointManager.Endpoints;
+            // provides a copy to the endpoint per container
+            _endpoints = endpointManager.Endpoints.Select(s => new ServiceEndpoint(s)).ToArray();
 
-            if (endpoints.Length == 1)
+            if (_endpoints.Count == 1)
             {
-                _inner = generator(endpoints[0]);
+                _inner = generator(_endpoints[0]);
             }
             else
             {
                 // router is required when endpoints > 1
                 _router = router ?? throw new ArgumentNullException(nameof(router));
-                Connections = endpoints.ToDictionary(s => s, s => generator(s));
+                Connections = _endpoints.ToDictionary(s => s, s => generator(s));
             }
         }
 
@@ -51,6 +52,11 @@ namespace Microsoft.Azure.SignalR
         :this(endpoint => CreateContainer(serviceConnectionFactory, endpoint, hub, count, endpointManager, nameProvider, loggerFactory),
             endpointManager, router, loggerFactory)
         {
+        }
+
+        public IEnumerable<ServiceEndpoint> GetOnlineEndpoints()
+        {
+            return Connections.Keys.Where(s => s.Online);
         }
 
         private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, ServiceEndpoint endpoint, string hub, int count, IServiceEndpointManager endpointManager, IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
@@ -119,14 +125,29 @@ namespace Microsoft.Azure.SignalR
             }
 
             // re-evaluate available endpoints as they might be offline, however it can not guarantee that all endpoints are online
-            var routed = GetRoutedEndpoints(serviceMessage, _endpointManager.GetAvailableEndpoints()).ToArray();
+            var routed = GetRoutedEndpoints(serviceMessage)?
+                .Select(endpoint =>
+                {
+                    if (Connections.TryGetValue(endpoint, out var connection))
+                    {
+                        return connection.WriteAsync(partitionKey, serviceMessage);
+                    }
+                    Log.EndpointNotExists(_logger, endpoint.ToString());
+                    return null;
+                }).Where(s => s != null).ToArray();
 
-            if (routed.Length == 0)
+            if (routed == null || routed.Length == 0)
             {
-                throw new AzureSignalRNotConnectedException();
+                Log.NoEndpointRouted(_logger, serviceMessage.GetType().Name);
+                return Task.CompletedTask;
             }
 
-            return Task.WhenAll(routed.Select(s => Connections[s]).Select(s => s.WriteAsync(partitionKey, serviceMessage)));
+            if (routed.Length == 1)
+            {
+                return routed[0];
+            }
+
+            return Task.WhenAll(routed);
         }
 
         public Task WriteAsync(ServiceMessage serviceMessage)
@@ -136,38 +157,53 @@ namespace Microsoft.Azure.SignalR
                 return _inner.WriteAsync(serviceMessage);
             }
 
-            var routed = GetRoutedEndpoints(serviceMessage, _endpointManager.GetAvailableEndpoints()).ToArray();
-
-            if (routed.Length == 0)
+            var routed = GetRoutedEndpoints(serviceMessage)?
+                .Select(endpoint =>
+                {
+                    if (Connections.TryGetValue(endpoint, out var connection))
+                    {
+                        return connection.WriteAsync(serviceMessage);
+                    }
+                    Log.EndpointNotExists(_logger, endpoint.ToString());
+                    return null;
+                }).Where(s => s != null).ToArray();
+            if (routed == null || routed.Length == 0)
             {
-                throw new AzureSignalRNotConnectedException();
+                Log.NoEndpointRouted(_logger, serviceMessage.GetType().Name);
+                return Task.CompletedTask;
             }
 
-            return Task.WhenAll(routed.Select(s => Connections[s]).Select(s => s.WriteAsync(serviceMessage)));
+            if (routed.Length == 1)
+            {
+                return routed[0];
+            }
+
+            return Task.WhenAll(routed);
         }
 
-        internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message, IEnumerable<ServiceEndpoint> availableEndpoints)
+        internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
         {
+            var endpoints = _endpoints;
             switch (message)
             {
                 case BroadcastDataMessage bdm:
-                    return _router.GetEndpointsForBroadcast(availableEndpoints);
+                    return _router.GetEndpointsForBroadcast(endpoints);
                 case GroupBroadcastDataMessage gbdm:
-                    return _router.GetEndpointsForGroup(gbdm.GroupName, availableEndpoints);
+                    return _router.GetEndpointsForGroup(gbdm.GroupName, endpoints);
                 case JoinGroupMessage jgm:
-                    return _router.GetEndpointsForGroup(jgm.GroupName, availableEndpoints);
+                    return _router.GetEndpointsForGroup(jgm.GroupName, endpoints);
                 case LeaveGroupMessage lgm:
-                    return _router.GetEndpointsForGroup(lgm.GroupName, availableEndpoints);
+                    return _router.GetEndpointsForGroup(lgm.GroupName, endpoints);
                 case MultiGroupBroadcastDataMessage mgbdm:
-                    return mgbdm.GroupList.SelectMany(g => _router.GetEndpointsForGroup(g, availableEndpoints)).Distinct();
+                    return mgbdm.GroupList.SelectMany(g => _router.GetEndpointsForGroup(g, endpoints)).Distinct();
                 case ConnectionDataMessage cdm:
-                    return _router.GetEndpointsForConnection(cdm.ConnectionId, availableEndpoints);
+                    return _router.GetEndpointsForConnection(cdm.ConnectionId, endpoints);
                 case MultiConnectionDataMessage mcd:
-                    return mcd.ConnectionList.SelectMany(c => _router.GetEndpointsForConnection(c, availableEndpoints)).Distinct();
+                    return mcd.ConnectionList.SelectMany(c => _router.GetEndpointsForConnection(c, endpoints)).Distinct();
                 case UserDataMessage udm:
-                    return _router.GetEndpointsForUser(udm.UserId, availableEndpoints);
+                    return _router.GetEndpointsForUser(udm.UserId, endpoints);
                 case MultiUserDataMessage mudm:
-                    return mudm.UserList.SelectMany(g => _router.GetEndpointsForUser(g, availableEndpoints)).Distinct();
+                    return mudm.UserList.SelectMany(g => _router.GetEndpointsForUser(g, endpoints)).Distinct();
                 default:
                     throw new NotSupportedException(message.GetType().Name);
             }
@@ -179,7 +215,13 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Staring connections for endpoint {endpoint}");
 
             private static readonly Action<ILogger, string, Exception> _stoppingConnection =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(1, "StoppingConnection"), "Stopping connections for endpoint {endpoint}");
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(2, "StoppingConnection"), "Stopping connections for endpoint {endpoint}");
+
+            private static readonly Action<ILogger, string, Exception> _endpointNotExists =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "EndpointNotExists"), "Endpoint {endpoint} from the router does not exists");
+
+            private static readonly Action<ILogger, string, Exception> _noEndpointRouted =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(4, "NoEndpointRouted"), "The endpoint router returns no online endpoint for message {messageType} to route to. The message will not be sent.");
 
             public static void StartingConnection(ILogger logger, string endpoint)
             {
@@ -189,6 +231,16 @@ namespace Microsoft.Azure.SignalR
             public static void StoppingConnection(ILogger logger, string endpoint)
             {
                 _stoppingConnection(logger, endpoint, null);
+            }
+
+            public static void EndpointNotExists(ILogger logger, string endpoint)
+            {
+                _endpointNotExists(logger, endpoint, null);
+            }
+
+            public static void NoEndpointRouted(ILogger logger, string messageType)
+            {
+                _noEndpointRouted(logger, messageType, null);
             }
         }
     }
