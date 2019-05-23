@@ -56,8 +56,10 @@ Broadcast to a few groups | :heavy_check_mark: (Deprecated) | `N/A`
 Send to a few users | :heavy_check_mark: (Deprecated) | `N/A`
 [Add a user to a group](#add-user-to-group) | `N/A` | :heavy_check_mark:
 [Remove a user from a group](#remove-user-from-group) | `N/A` | :heavy_check_mark:
+[Remove a user from all groups](#remove-user-from-all-groups) | `N/A` | :heavy_check_mark: 
 
 <a name="broadcast"></a>
+
 ### Broadcast message to all clients
 
 API Version | HTTP Method | Request URL | Request Body
@@ -89,11 +91,22 @@ API Version | HTTP Method | Request URL
 `1.0` | `PUT` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/users/<user-id>`
 
 <a name="remove-user-from-group"></a>
+
 ### Remove a user from a group
 
 API Version | HTTP Method | Request URL
 ---|---|---
 `1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/users/<user-id>`
+
+<a name="remove-user-from-all-groups"></a>
+
+### Remove a user from all groups
+
+| API Version | HTTP Method | Request URL                                                  |
+| ----------- | ----------- | ------------------------------------------------------------ |
+| `1.0`       | `DELETE`    | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups` |
+
+
 
 ## Using REST API
 
@@ -136,6 +149,7 @@ You should host your negotiate API in `https://<hub_url>/negotiate` so you can s
 Read more about redirecting client to Azure SignalR Service at [here](./internal.md#client-connections).
 
 <a name="user-api"></a>
+
 ### User-related REST API
 
 In order to call user-related REST API, each of your clients should identify itself to Azure SignalR Service.
@@ -146,4 +160,6 @@ Then SignalR Service will use the value of `nameid` claim as the user id of each
 
 ### Sample
 
-You can find a complete console app to demonstrate how to use REST API in Azure SignalR Service at [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Serverless).
+You can find a complete console app to demonstrate how to manually build REST API HTTP request in Azure SignalR Service [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Serverless).
+
+You can also use [Microsoft.Azure.SignalR.Management](<https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management>) to publish messages to Azure SignalR Service using the similar interfaces of `IHubContext`. Samples can be found [here](<https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management>). For more information, see [here](management-sdk-guide.md>).

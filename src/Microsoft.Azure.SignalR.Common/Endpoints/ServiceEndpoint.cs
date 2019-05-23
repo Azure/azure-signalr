@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Net;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -49,6 +50,17 @@ namespace Microsoft.Azure.SignalR
             EndpointType = type;
             ConnectionString = connectionString;
             Name = name;
+        }
+
+        public ServiceEndpoint(ServiceEndpoint endpoint)
+        {
+            ConnectionString = endpoint.ConnectionString;
+            EndpointType = endpoint.EndpointType;
+            Name = endpoint.Name;
+            Endpoint = endpoint.Endpoint;
+            Version = endpoint.Version;
+            AccessKey = endpoint.AccessKey;
+            Port = endpoint.Port;
         }
 
         public override string ToString()

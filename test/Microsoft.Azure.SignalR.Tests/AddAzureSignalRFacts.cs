@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
 
                 Assert.Equal(DefaultValue, options.ConnectionString);
-                Assert.Equal(5, options.ConnectionCount);
+                Assert.Equal(Constants.DefaultInitConnectionCountPerHub, options.ConnectionCount);
                 Assert.Equal(TimeSpan.FromHours(1), options.AccessTokenLifetime);
                 Assert.Null(options.ClaimsProvider);
             }
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var endpointManager = serviceProvider.GetRequiredService<IServiceEndpointManager>();
 
-                var endpoints = endpointManager.GetAvailableEndpoints().ToArray();
+                var endpoints = endpointManager.Endpoints;
 
                 Assert.Equal(expectedCount, endpoints.Length);
 

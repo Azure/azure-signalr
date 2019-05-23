@@ -162,6 +162,13 @@ namespace Microsoft.Azure.SignalR.Management
             return CallRestApiAsync(request, cancellationToken);
         }
 
+        public Task UserRemoveFromAllGroupsAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            var api = _restApiProvider.GetRemoveUserFromAllGroups(userId);
+            var request = BuildRequest(api, HttpMethod.Delete);
+            return CallRestApiAsync(request, cancellationToken);
+        }
+
         private HttpRequestMessage GenerateHttpRequest(string url, PayloadMessage payload, string tokenString, HttpMethod httpMethod)
         {
             var request = new HttpRequestMessage(httpMethod, url);

@@ -165,7 +165,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(3, options.Value.Endpoints.Length);
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
-                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    var endpoints = manager.Endpoints;
                     Assert.Equal(4, endpoints.Length);
                 }
             }
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Empty(options.Value.Endpoints);
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
-                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    var endpoints = manager.Endpoints;
                     Assert.Single(endpoints);
                     Assert.Equal(ConnectionString2, endpoints[0].ConnectionString);
                 }
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(3, options.Value.Endpoints.Length);
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
-                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    var endpoints = manager.Endpoints;
                     Assert.Equal(3, endpoints.Length);
                 }
             }
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(3, options.Value.Endpoints.Length);
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
-                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    var endpoints = manager.Endpoints;
                     Assert.Equal(4, endpoints.Length);
                 }
             }
@@ -280,7 +280,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(3, options.Value.Endpoints.Length);
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
-                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    var endpoints = manager.Endpoints;
                     Assert.Equal(expectedCount, endpoints.Length);
                 }
             }
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(3, options.Value.Endpoints.Length);
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
-                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    var endpoints = manager.Endpoints;
                     Assert.Equal(4, endpoints.Length);
                 }
             }
@@ -345,7 +345,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(3, options.Value.Endpoints.Length);
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
-                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    var endpoints = manager.Endpoints;
                     Assert.Equal(4, endpoints.Length);
                 }
             }
@@ -377,7 +377,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(3, options.Value.Endpoints.Length);
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
-                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    var endpoints = manager.Endpoints;
                     Assert.Equal(4, endpoints.Length);
                 }
             }
@@ -410,7 +410,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Equal(3, options.Value.Endpoints.Length);
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
-                    var endpoints = manager.GetAvailableEndpoints().ToArray();
+                    var endpoints = manager.Endpoints;
                     Assert.Equal(4, endpoints.Length);
 
                     var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
