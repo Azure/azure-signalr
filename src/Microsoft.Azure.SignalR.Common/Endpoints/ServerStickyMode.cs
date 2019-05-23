@@ -18,9 +18,8 @@ namespace Microsoft.Azure.SignalR
         ///// <summary>
         ///// We will try to find the server it /neogitate with from local, if that server is connected to this runtime instance, we choose that server
         ///// Otherwise, we fallback to local existed server
-        ///// TODO: Add back preferred when the runtime is ready
         ///// </summary>
-        // Preferred = 1,
+        Preferred = 1,
 
         /// <summary>
         /// We will try to find the server it /negotiate with from both local and global route table, it the server is not connected, throw,
