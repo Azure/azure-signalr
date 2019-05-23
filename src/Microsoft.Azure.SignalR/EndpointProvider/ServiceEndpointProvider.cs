@@ -32,8 +32,6 @@ namespace Microsoft.Azure.SignalR
             }
 
             _accessTokenLifetime = serviceOptions.Value.AccessTokenLifetime;
-
-            var endpointStr = endpoint.Endpoint;
             _accessKey = endpoint.AccessKey;
             _appName = serviceOptions.Value.ApplicationName;
             Proxy = serviceOptions.Value.Proxy;
@@ -41,7 +39,7 @@ namespace Microsoft.Azure.SignalR
             var port = endpoint.Port;
             var version = endpoint.Version;
 
-            _generator = new DefaultServiceEndpointGenerator(endpointStr, _accessKey, version, port);
+            _generator = new DefaultServiceEndpointGenerator(endpoint.Endpoint, _accessKey, version, port);
         }
 
         public string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, string requestId = null)
