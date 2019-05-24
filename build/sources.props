@@ -15,5 +15,9 @@
       $(LocalFeed);
       https://api.nuget.org/v3/index.json;
     </RestoreSources>
+    <RestoreSources Condition="'$(AzureSignalRSDKE2ETest)' == 'true'">
+      https://www.myget.org/F/azure-signalr-dev/api/v3/index.json;
+      https://api.nuget.org/v3/index.json;
+    </RestoreSources>
   </PropertyGroup>
 </Project>
