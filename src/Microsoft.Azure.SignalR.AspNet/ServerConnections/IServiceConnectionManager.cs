@@ -7,7 +7,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal interface IServiceConnectionManager : IServiceConnectionContainer
     {
-        void Initialize(Func<string, IServiceConnectionContainer> connectionGenerator);
+        void Initialize(IServiceConnectionContainerFactory connectionFactory);
 
         IServiceConnectionContainer WithHub(string hubName);
     }

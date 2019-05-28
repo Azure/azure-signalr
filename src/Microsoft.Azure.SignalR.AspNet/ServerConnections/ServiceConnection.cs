@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal partial class ServiceConnection : ServiceConnectionBase
     {
-        private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "Asrs-User-Agent", ProductInfo.GetProductInfo() } };
+        private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
         private const string ReconnectMessage = "asrs:reconnect";
         private readonly ConcurrentDictionary<string, ClientContext> _clientConnections = new ConcurrentDictionary<string, ClientContext>(StringComparer.Ordinal);
 

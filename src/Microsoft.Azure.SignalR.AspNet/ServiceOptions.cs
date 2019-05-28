@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using Microsoft.Owin;
 
@@ -21,9 +22,9 @@ namespace Microsoft.Azure.SignalR.AspNet
         public string ConnectionString { get; set; }
 
         /// <summary>
-        /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 5.
+        /// Gets or sets the initial number of connections from SDK to Azure SignalR Service for the application and each hub. Default value is 2.
         /// </summary>
-        public int ConnectionCount { get; set; } = 5;
+        public int ConnectionCount { get; set; } = Constants.DefaultInitConnectionCountPerHub;
 
         /// <summary>
         /// Gets applicationName, which will be used as a prefix to apply to each hub name
@@ -49,16 +50,15 @@ namespace Microsoft.Azure.SignalR.AspNet
         public ServiceEndpoint[] Endpoints { get; set; }
 
         /// <summary>
-        /// TODO: Enable this option when the runtime is ready
         /// Specifies the mode for server sticky, when client is always routed to the server which it first /negotiate with, we call it "server sticky mode".
         /// By default this mode is disabled
         /// </summary>
-        internal ServerStickyMode ServerStickyMode { get; set; }
+        public ServerStickyMode ServerStickyMode { get; set; }
 
         /// <summary>
-        /// TODO: delete it when runtime is ready, don't expose it to the customer
+        /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
         /// </summary>
-        internal bool IsolateApplication { get; set; } = false;
+        public IWebProxy Proxy { get; set; }
 
         public ServiceOptions()
         {

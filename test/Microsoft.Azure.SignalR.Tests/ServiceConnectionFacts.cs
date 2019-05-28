@@ -275,8 +275,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
-            // fail 3 times, 1~2 + 2~3 + 4~5 = 7~10
-            await serverTask.OrTimeout(11 * 1000);
+            // fail 3 times, 0~1 + 1~2 + 2~3 = 3~6
+            await serverTask.OrTimeout(7 * 1000);
 
             var connectionId = Guid.NewGuid().ToString("N");
 
@@ -285,12 +285,13 @@ namespace Microsoft.Azure.SignalR.Tests
             await connectionTask.OrTimeout();
 
             var list = proxy.ConnectionFactory.Times;
-            Assert.True(TimeSpan.FromSeconds(0.9) < list[1] - list[0]);
-            Assert.True(TimeSpan.FromSeconds(2.1) > list[1] - list[0]);
-            Assert.True(TimeSpan.FromSeconds(1.9) < list[2] - list[1]);
-            Assert.True(TimeSpan.FromSeconds(3.1) > list[2] - list[1]);
-            Assert.True(TimeSpan.FromSeconds(3.9) < list[3] - list[2]);
-            Assert.True(TimeSpan.FromSeconds(5.1) > list[3] - list[2]);
+            // no delay before first retry
+            Assert.True(TimeSpan.FromSeconds(0.9) > list[1] - list[0]);
+            
+            Assert.True(TimeSpan.FromSeconds(0.9) < list[2] - list[1]);
+            Assert.True(TimeSpan.FromSeconds(2.1) > list[2] - list[1]);
+            Assert.True(TimeSpan.FromSeconds(1.9) < list[3] - list[2]);
+            Assert.True(TimeSpan.FromSeconds(3.1) > list[3] - list[2]);
         }
 
         /// <summary>
@@ -310,12 +311,12 @@ namespace Microsoft.Azure.SignalR.Tests
             AssertTimeout(serverTask);
 
             var list = proxy.ConnectionFactory.Times;
-            Assert.True(TimeSpan.FromSeconds(0.9) < list[1] - list[0]);
-            Assert.True(TimeSpan.FromSeconds(2.1) > list[1] - list[0]);
-            Assert.True(TimeSpan.FromSeconds(1.9) < list[2] - list[1]);
-            Assert.True(TimeSpan.FromSeconds(3.1) > list[2] - list[1]);
-            Assert.True(TimeSpan.FromSeconds(3.9) < list[3] - list[2]);
-            Assert.True(TimeSpan.FromSeconds(5.1) > list[3] - list[2]);
+            Assert.True(TimeSpan.FromSeconds(0.9) > list[1] - list[0]);
+
+            Assert.True(TimeSpan.FromSeconds(0.9) < list[2] - list[1]);
+            Assert.True(TimeSpan.FromSeconds(2.1) > list[2] - list[1]);
+            Assert.True(TimeSpan.FromSeconds(1.9) < list[3] - list[2]);
+            Assert.True(TimeSpan.FromSeconds(3.1) > list[3] - list[2]);
         }
 
         /// <summary>
@@ -329,8 +330,8 @@ namespace Microsoft.Azure.SignalR.Tests
             // Throw exception for 3 times and will be success in the 4th retry
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
-            // fail 3 times, 1~2 + 2~3 + 4~5 = 7~10
-            await serverTask.OrTimeout(11 * 1000);
+            // fail 3 times, 0~1 + 1~2 + 2~3 = 3~6
+            await serverTask.OrTimeout(7 * 1000);
 
             var connectionId = Guid.NewGuid().ToString("N");
 
@@ -339,13 +340,12 @@ namespace Microsoft.Azure.SignalR.Tests
             await connectionTask.OrTimeout();
 
             var list = proxy.ConnectionFactory.Times;
-            Assert.True(TimeSpan.FromSeconds(0.9) < list[1] - list[0]);
-            Assert.True(TimeSpan.FromSeconds(2.1) > list[1] - list[0]);
-            Assert.True(TimeSpan.FromSeconds(1.9) < list[2] - list[1]);
-            Assert.True(TimeSpan.FromSeconds(3.1) > list[2] - list[1]);
-            Assert.True(TimeSpan.FromSeconds(3.9) < list[3] - list[2]);
-            Assert.True(TimeSpan.FromSeconds(5.1) > list[3] - list[2]);
+            Assert.True(TimeSpan.FromSeconds(0.9) > list[1] - list[0]);
 
+            Assert.True(TimeSpan.FromSeconds(0.9) < list[2] - list[1]);
+            Assert.True(TimeSpan.FromSeconds(2.1) > list[2] - list[1]);
+            Assert.True(TimeSpan.FromSeconds(1.9) < list[3] - list[2]);
+            Assert.True(TimeSpan.FromSeconds(3.1) > list[3] - list[2]);
         }
 
         /// <summary>

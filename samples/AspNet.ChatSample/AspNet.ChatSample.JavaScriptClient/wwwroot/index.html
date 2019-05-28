@@ -9,6 +9,12 @@
             padding: 20px;
             margin: 20px;
         }
+        .error {
+            color: red
+        }
+        .success {
+            color: green
+        }
     </style>
 </head>
 <body>
@@ -16,6 +22,7 @@
         <input type="text" id="message" />
         <input type="button" id="sendmessage" value="Send" />
         <input type="hidden" id="displayname" />
+        <div id="status"></div>
         <ul id="discussion"></ul>
     </div>
     <!--Script references. -->
@@ -53,15 +60,39 @@
             // Set initial focus to message input box.
             $('#message').focus();
             // Start the connection.
-            $.connection.hub.start().done(function () {
-                chat.server.echo($('#message').val() + " connected.");
-                $('#sendmessage').click(function () {
-                    // Call the Send method on the hub.
-                    chat.server.broadcastMessage($('#displayname').val(), $('#message').val());
-                    // Clear text box and reset focus for next comment.
-                    $('#message').val('').focus();
-                });
+            var connection = $.connection.hub;
+
+            connection.disconnected(function () {
+                reconnectOnFail("Disconnected.");
             });
+
+            startConnectionWithRetry(connection);
+
+            function startConnectionWithRetry(hubConnection) {
+                hubConnection.start()
+                    .done(function () {
+                        $('#status').html("<h5 class='success' >Connected.</h5>")
+                        chat.server.echo($('#message').val() + " connected.");
+                        $('#sendmessage').click(function () {
+                            // Call the Send method on the hub.
+                            chat.server.broadcastMessage($('#displayname').val(), $('#message').val());
+                            // Clear text box and reset focus for next comment.
+                            $('#message').val('').focus();
+                        });
+                    });
+            }
+
+            function reconnectOnFail(message) {
+                $('#status').html("<h5 class='error'>" + message + " Reconnecting...</h5>");
+                var delay = getRandom(200, 2000);
+                setTimeout(function () {
+                    startConnectionWithRetry(connection)
+                }, delay);
+            }
+
+            function getRandom(min, max) {
+                return Math.floor(Math.random() * (max - min + 1) + min);
+            }
         });
     </script>
 </body>

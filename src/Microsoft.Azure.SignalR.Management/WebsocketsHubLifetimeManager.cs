@@ -46,5 +46,16 @@ namespace Microsoft.Azure.SignalR.Management
             var message = new UserLeaveGroupMessage(userId, groupName);
             return ServiceConnectionContainer.WriteAsync(message);
         }
+
+        public Task UserRemoveFromAllGroupsAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
+            }
+
+            var message = new UserLeaveGroupMessage(userId, null);
+            return ServiceConnectionContainer.WriteAsync(message);
+        }
     }
 }

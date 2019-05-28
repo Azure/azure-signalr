@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR
     {
         // Fix issue: https://github.com/Azure/azure-signalr/issues/198
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
-        private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { "Asrs-User-Agent", ProductInfo.GetProductInfo() } };
+        private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
 
         private const string ClientConnectionCountInHub = "#clientInHub";
         private const string ClientConnectionCountInServiceConnection = "#client";
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.SignalR
             }
             catch (Exception ex)
             {
-                // The exception means applicaion fail to process input anymore
+                // The exception means application fail to process input anymore
                 // Cancel any pending flush so that we can quit and perform disconnect
                 // Here is abort close and WaitOnApplicationTask will send close message to notify client to disconnect
                 Log.SendLoopStopped(_logger, connection.ConnectionId, ex);
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.SignalR
                 }
                 catch (Exception ex)
                 {
-                    Log.ApplicaitonTaskFailed(_logger, ex);
+                    Log.ApplicationTaskFailed(_logger, ex);
                 }
             }
             // Close this connection gracefully then remove it from the list,

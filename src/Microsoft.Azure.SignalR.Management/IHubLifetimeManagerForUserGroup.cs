@@ -11,5 +11,7 @@ namespace Microsoft.Azure.SignalR.Management
         Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default);
 
         Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default);
+
+        Task UserRemoveFromAllGroupsAsync(string userId, CancellationToken cancellationToken = default);
     }
 }

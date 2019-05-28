@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -24,18 +25,21 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private static readonly string ConnectionStringWithV1Version = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0";
 
+        private static readonly IOptions<ServiceOptions> _optionsWithoutAppName = Options.Create(new ServiceOptions());
+        private static readonly IOptions<ServiceOptions> _optionsWithAppName = Options.Create(new ServiceOptions { ApplicationName = AppName });
+
         private static readonly ServiceEndpointProvider[] EndpointProviderArray =
         {
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion)),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion)),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version))
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithoutAppName),
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName),
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithoutAppName)
         };
 
         private static readonly ServiceEndpointProvider[] EndpointProviderArrayWithPrefix =
-{
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), AppName),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), AppName),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), AppName)
+        {
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithAppName),
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithAppName),
+            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithAppName)
         };
 
         private static readonly (string path, string queryString, string expectedQuery)[] PathAndQueryArray =
@@ -48,15 +52,15 @@ namespace Microsoft.Azure.SignalR.Tests
         };
 
         public static IEnumerable<object[]> DefaultEndpointProviders =>
-            EndpointProviderArray.Select(provider => new object[] {provider});
+            EndpointProviderArray.Select(provider => new object[] { provider });
 
         public static IEnumerable<object[]> PathAndQueries =>
-            PathAndQueryArray.Select(t => new object[] {t.path, t.queryString, t.expectedQuery});
+            PathAndQueryArray.Select(t => new object[] { t.path, t.queryString, t.expectedQuery });
 
         public static IEnumerable<object[]> DefaultEndpointProvidersWithPath =>
             from provider in EndpointProviderArray
             from t in PathAndQueryArray
-            select new object[] { provider, t.path, t.queryString, t.expectedQuery} ;
+            select new object[] { provider, t.path, t.queryString, t.expectedQuery };
 
         public static IEnumerable<object[]> DefaultEndpointProvidersWithPathPlusPrefix =>
             from provider in EndpointProviderArrayWithPrefix
@@ -106,7 +110,7 @@ namespace Microsoft.Azure.SignalR.Tests
         internal void GenerateMutlipleAccessTokenShouldBeUnique()
         {
             var count = 1000;
-            var sep = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion));
+            var sep = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName);
             var userId = Guid.NewGuid().ToString();
             var tokens = new List<string>();
             for (int i = 0; i < count; i++)
