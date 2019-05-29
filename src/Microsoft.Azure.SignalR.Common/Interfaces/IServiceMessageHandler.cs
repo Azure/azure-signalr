@@ -9,5 +9,7 @@ namespace Microsoft.Azure.SignalR
     interface IServiceMessageHandler
     {
         Task HandlePingAsync(PingMessage pingMessage);
+
+        void HandleAck(AckMessage ackMessage);
     }
 }
