@@ -26,6 +26,11 @@ namespace Microsoft.Azure.SignalR
             return _serviceConnection.StartAsync();
         }
 
+        public Task StopAsync()
+        {
+            return _serviceConnection.StopAsync();
+        }
+
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
             if (_serviceConnection == null)

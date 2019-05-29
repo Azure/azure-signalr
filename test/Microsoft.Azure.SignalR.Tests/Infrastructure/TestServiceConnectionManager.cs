@@ -51,5 +51,10 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             return _partitionedWriteAsyncCallCount.TryGetValue(type, out var count) ? count : 0;
         }
+
+        public Task StopAsync()
+        {
+            return Task.CompletedTask;
+        }
     }
 }

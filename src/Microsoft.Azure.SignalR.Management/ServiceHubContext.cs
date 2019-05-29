@@ -33,18 +33,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         private Task StopConnectionAsync()
         {
-            var serviceContainer = _serviceProvider.GetService<IServiceConnectionContainer>();
-            if (serviceContainer == null)
-            {
-                return Task.CompletedTask;
-            }
-
-            if (serviceContainer.Status != ServiceConnectionStatus.Disconnected)
-            {
-                return serviceContainer.StopAsync();
-            }
-
-            return Task.CompletedTask;
+            return _serviceProvider.GetService<IServiceConnectionManager<Hub>>().StopAsync();
         }
     }
 }
