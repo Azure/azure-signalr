@@ -21,6 +21,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
                 {
                     var serverUrl = GetRandomPortUrl();
                     await StartCoreAsync(serverUrl, loggerFactory);
+                    logger.LogInformation($"Server started: {serverUrl}");
                     return serverUrl;
                 }
                 catch (IOException ex)

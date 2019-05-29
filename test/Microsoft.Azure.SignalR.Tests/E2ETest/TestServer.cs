@@ -31,7 +31,19 @@ namespace Microsoft.Azure.SignalR.Tests
         public override async Task StopAsync()
         {
             await _host.StopAsync();
-            _host.Dispose();
+
+            // stop server connections
+            var serviceContainer = _host.Services.GetRequiredService<IServiceConnectionContainer>();
+            if (serviceContainer == null)
+            {
+                return;
+            }
+
+            if (serviceContainer.Status != ServiceConnectionStatus.Disconnected)
+            {
+                await serviceContainer.StopAsync();
+                return;
+            }
         }
     }
 }
