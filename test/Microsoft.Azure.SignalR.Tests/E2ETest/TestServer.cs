@@ -32,6 +32,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             await _host.StopAsync();
 
+            // IServiceConnectionContainer is not available
             // stop server connections
             var serviceContainer = _host.Services.GetRequiredService<IServiceConnectionContainer>();
             if (serviceContainer == null)
