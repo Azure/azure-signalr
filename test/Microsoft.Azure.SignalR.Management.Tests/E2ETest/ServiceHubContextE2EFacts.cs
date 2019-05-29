@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -100,7 +101,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             try
             {
                 Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
-                await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), _userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length, receivedMessageDict);
+                var userGroupDict = GenerateUserGroupDict(_userNames, _groupNames);
+                await RunTestCore(clientEndpoint, clientAccessTokens,
+                    () => SendToGroupCore(serviceHubContext, userGroupDict, sendTaskFunc, AddUserToGroupAsync, UserRemoveFromGroupsOneByOneAsync),
+                    _userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length, receivedMessageDict);
             }
             finally
             {
@@ -118,7 +122,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             try
             {
                 Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(_groupNames).SendAsync(MethodName, Message);
-                await RunTestCore(clientEndpoint, clientAccessTokens, () => SendToGroupCore(serviceHubContext, sendTaskFunc), ClientConnectionCount, receivedMessageDict);
+                var userGroupDict = GenerateUserGroupDict(_userNames, _groupNames);
+                await RunTestCore(clientEndpoint, clientAccessTokens,
+                    () => SendToGroupCore(serviceHubContext, userGroupDict, sendTaskFunc, AddUserToGroupAsync, UserRemoveFromGroupsOneByOneAsync),
+                    ClientConnectionCount, receivedMessageDict);
             }
             finally
             {
@@ -126,15 +133,65 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        private static async Task SendToGroupCore(IServiceHubContext serviceHubContext, Func<Task> sendTask)
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [MemberData(nameof(TestData))]
+        internal async Task RemoveUserFromAllGroupsTest(ServiceTransportType serviceTransportType, string appName)
         {
-            await Task.WhenAll(from i in Enumerable.Range(0, _userNames.Length)
-                               select serviceHubContext.UserGroups.AddToGroupAsync(_userNames[i], _groupNames[i % _groupNames.Length]));
+            var receivedMessageDict = new ConcurrentDictionary<int, int>();
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            try
+            {
+                Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(_groupNames).SendAsync(MethodName, Message);
+                var userGroupDict = new Dictionary<string, List<string>> { { _userNames[0], _groupNames.ToList() } };
+                await RunTestCore(clientEndpoint, clientAccessTokens,
+                    () => SendToGroupCore(serviceHubContext, userGroupDict, sendTaskFunc, AddUserToGroupAsync, UserRemoveFromAllGroupsAsync),
+                    _groupNames.Length, receivedMessageDict);
+            }
+            finally
+            {
+                await serviceHubContext.DisposeAsync();
+            }
+        }
+
+        private static IDictionary<string, List<string>> GenerateUserGroupDict(IList<string> userNames, IList<string> groupNames)
+        {
+            return (from i in Enumerable.Range(0, userNames.Count)
+                    select (User: userNames[i], Group: groupNames[i % groupNames.Count]))
+                    .ToDictionary(t => t.User, t => new List<string> { t.Group });
+        }
+
+        private static Task AddUserToGroupAsync(IServiceHubContext serviceHubContext, IDictionary<string, List<string>> userGroupDict)
+        {
+            return Task.WhenAll(from usergroup in userGroupDict
+                                select Task.WhenAll(from grp in usergroup.Value
+                                                    select serviceHubContext.UserGroups.AddToGroupAsync(usergroup.Key, grp)));
+        }
+
+        private static Task UserRemoveFromGroupsOneByOneAsync(IServiceHubContext serviceHubContext, IDictionary<string, List<string>> userGroupDict)
+        {
+            return Task.WhenAll(from usergroup in userGroupDict
+                                select Task.WhenAll(from grp in usergroup.Value
+                                                    select serviceHubContext.UserGroups.RemoveFromGroupAsync(usergroup.Key, grp)));
+        }
+
+        private static Task UserRemoveFromAllGroupsAsync(IServiceHubContext serviceHubContext, IDictionary<string, List<string>> userGroupDict)
+        {
+            return Task.WhenAll(from user in userGroupDict.Keys
+                                select serviceHubContext.UserGroups.RemoveFromAllGroupsAsync(user));
+        }
+
+        private static async Task SendToGroupCore(
+            IServiceHubContext serviceHubContext,
+            IDictionary<string, List<string>> userGroupDict,
+            Func<Task> sendTask, Func<IServiceHubContext, IDictionary<string, List<string>>, Task> userAddToGroupTask,
+            Func<IServiceHubContext, IDictionary<string, List<string>>, Task> userRemoveFromGroupTask)
+        {
+            await userAddToGroupTask(serviceHubContext, userGroupDict);
             await Task.Delay(_timeout);
             await sendTask();
             await Task.Delay(_timeout);
-            await Task.WhenAll(from i in Enumerable.Range(0, _userNames.Length)
-                               select serviceHubContext.UserGroups.RemoveFromGroupAsync(_userNames[i], _groupNames[i % _groupNames.Length]));
+            await userRemoveFromGroupTask(serviceHubContext, userGroupDict);
             await Task.Delay(_timeout);
             await sendTask();
             await Task.Delay(_timeout);
@@ -223,14 +280,16 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private static IServiceManager GenerateServiceManager(string connectionString, ServiceTransportType serviceTransportType = ServiceTransportType.Transient, string appName = null)
         {
-            var serviceManagerOptions = new ServiceManagerOptions
-            {
-                ConnectionString = connectionString,
-                ServiceTransportType = serviceTransportType,
-                ApplicationName = appName
-            };
-
-            return new ServiceManager(serviceManagerOptions);
+            var serviceManager = new ServiceManagerBuilder()
+                .WithOptions(opt =>
+                {
+                    opt.ConnectionString = connectionString;
+                    opt.ServiceTransportType = serviceTransportType;
+                    opt.ApplicationName = appName;
+                })
+                .WithCallingAssembly()
+                .Build();
+            return serviceManager;
         }
 
         private static HubConnection CreateHubConnection(string endpoint, string accessToken) =>

@@ -2,7 +2,8 @@ language: csharp
 branches:
   only:
   - dev
-dist: trusty
+  - master
+dist: xenial
 mono: none
 dotnet: 2.1.301
 os:

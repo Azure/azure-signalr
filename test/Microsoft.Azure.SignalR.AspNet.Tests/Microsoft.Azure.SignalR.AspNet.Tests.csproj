@@ -20,6 +20,7 @@
     <PackageReference Include="xunit" Version="$(XunitPackageVersion)" Condition=" '$(DisableNet461Tests)'!='true'" />
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualStudioPackageVersion)" Condition=" '$(DisableNet461Tests)'!='true'" />
     <PackageReference Include="Moq" Version="$(MoqPackageVersion)" />
+    <PackageReference Include="Microsoft.AspNet.SignalR.Client" Version="$(MicrosoftAspNetSignalRClientVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="$(MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsDependencyInjectionPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingPackageVersion)" />

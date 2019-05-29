@@ -71,9 +71,9 @@ There are two approaches to configure SignalR Service's connection string in you
 There are a few options you can customize when using Azure SignalR Service SDK.
 
 #### `ConnectionCount`
-- Default value is `5`.
-- This option controls the count of connections between application server and Azure SignalR Service.
-The default value will be performant enough most of the time.
+- Default value is `2`.
+- This option controls the count of connections initially established between application server and Azure SignalR Service.
+The actual server connection count will be optimized during the app server's lifecycle based on the count of app servers and the unit count of the Azure SignalR service.
 You can increase it for better performance if the total client count is too big.
 For example, if you have 100,000 clients in total, the connection count can be increased to `10` or `15` for better throughput.
 
@@ -91,6 +91,16 @@ It will be used when Service SDK generates access token for client in client's n
 By default, all claims from `HttpContext.User` of the negotiate request will be reserved.
 They can be accessed at [`Hub.Context.User`](https://github.com/aspnet/SignalR/blob/release/2.2/src/Microsoft.AspNetCore.SignalR.Core/HubCallerContext.cs#L29).
 - Normally you should leave this option as is. Make sure you understand what will happen before customizing it.
+
+<a name="server-sticky-mode"></a>
+
+#### `ServerStickyMode` 
+- Default value is `Disabled`.
+- This option specifies the mode for **server sticky**. When the client is routed to the server which it first negotiates with, we call it **server sticky**.
+- In distributed scenarios, there can be multiple app servers connected to one Azure SignalR instance. As [internals of client connections](internal.md#client-connections) explains, client first negotiates with the app server, and then redirects to Azure SignalR to establish the persistent connection. Azure SignalR then finds one app server to serve the client, as [Transport Data between client and server](internal.md#transport-data-between-client-and-server) explains.
+    - When `Disabled`, the client routes to a random app server. In general, app servers have balanced client connections with this mode. If your scenarios are *broadcast* or *group send*, use this default option is enough.
+    - When `Preferred`, Azure SignalR tries to find the app server which the client first negotiates with in a way that no additional cost or global routing is needed. This one can be useful when your scenario is *send to connection*. *Send to connection* can have better performance and lower latency when the sender and the receiver are routed to the same app server.
+    - When `Required`, Azure SignalR always tries to find the app server which the client first negotiates with. This options can be useful when some client context is fetched from `negotiate` step and stored in memory, and then to be used inside `Hub`s. However, this option may have performance drawbacks because it requires Azure SignalR to take additional efforts to find this particular app server globally, and to keep globally routing traffics between client and server.
 
 #### Sample
 You can configure above options like the following sample code.
@@ -114,7 +124,7 @@ services.AddSignalR()
 Install SignalR Service SDK to your ASP.NET project with **Package Manager Console**:
 
 ```powershell
-Install-Package Microsoft.Azure.SignalR.AspNet -IncludePrerelease
+Install-Package Microsoft.Azure.SignalR.AspNet
 ```
 
 In your `Startup` class, use SignalR Service SDK as the following code snippet, replace `MapSignalR()` to `MapAzureSignalR({your_applicationName})`. Replace `{YourApplicationName}` to the name of your application, this is the unique name to distinguish this application with your other applications. You can use `this.GetType().FullName` as the value.
@@ -167,6 +177,14 @@ By default, all claims from `IOwinContext.Authentication.User` of the negotiate 
 #### `ConnectionString`
 - Default value is the `Azure:SignalR:ConnectionString` `connectionString` or `appSetting` in `web.config` file.
 - It can be reconfigured, but please make sure the value is **NOT** hard coded.
+
+#### `ApplicationName`
+- Default value is `null`.
+- This option can be useful when you want to share the same Azure SignalR instance for different app servers containing the same hub names. If not set, all the connected app servers are considered to be instances of the same application.
+
+#### `ServerStickyMode`
+- Default value is `Disabled`.
+- Refer to [ServerStickyMode](#server-sticky-mode) for details.
 
 #### Sample
 You can configure above options like the following sample code.

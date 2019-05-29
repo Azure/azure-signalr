@@ -9,12 +9,12 @@ namespace Microsoft.Azure.SignalR.Management
     public enum ServiceTransportType
     {
         /// <summary>
-        /// The SDK will call REST API to send each message to Azure SignalR Serivce.
+        /// The SDK will call REST API to send each message to Azure SignalR Service.
         /// </summary>
         Transient,
         
         /// <summary>
-        /// The SDK will establish one or more Websockets connection(s) to send all messages in the connection(s) to Azure SignalR Serivce.
+        /// The SDK will establish one or more Websockets connection(s) to send all messages in the connection(s) to Azure SignalR Service.
         /// </summary>
         Persistent
     }

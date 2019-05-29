@@ -4,8 +4,6 @@
     <TargetFramework>net461</TargetFramework>
     <RootNamespace>Microsoft.Azure.SignalR.AspNet</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Fix AspNet version to preview1 -->
-    <PackageVersion>1.0.0-preview1-$(BuildNumber)</PackageVersion>
   </PropertyGroup>
   
   <ItemGroup>

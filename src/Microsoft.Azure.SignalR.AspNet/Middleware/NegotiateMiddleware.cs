@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class NegotiateMiddleware : OwinMiddleware
     {
-        private static readonly ProtocolResolver ProtocolResolver = new ProtocolResolver();
+        private static readonly string AssemblyVersion = typeof(NegotiateMiddleware).Assembly.GetName().Version.ToString();
 
         private readonly string _appName;
         private readonly Func<IOwinContext, IEnumerable<Claim>> _claimsProvider;
@@ -106,7 +107,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(owinContext, _endpointManager.Endpoints));
 
-                // When status code changes, we consider the inner router changed the repsonse, then we stop here
+                // When status code changes, we consider the inner router changed the response, then we stop here
                 if (context.Response.StatusCode != 200)
                 {
                     // Inner handler already write to context.Response, no need to continue with error case
@@ -154,6 +155,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             var userId = _provider?.GetUserId(request);
 
             var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext), _serverName, _mode);
+
+            yield return new Claim(Constants.ClaimType.Version, AssemblyVersion);
 
             foreach (var claim in claims)
             {

@@ -7,9 +7,12 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class Constants
     {
+        public const int DefaultInitConnectionCountPerHub = 2;
         public const string ServerStickyModeDefaultKey = "Azure:SignalR:ServerStickyMode";
         public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
         public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
+
+        public const string AsrsUserAgent = "Asrs-User-Agent";
 
         public const string AzureSignalREnabledKey = "Azure:SignalR:Enabled";
 
@@ -36,6 +39,7 @@ namespace Microsoft.Azure.SignalR
             public const string ServerStickyMode = AzureSignalRSysPrefix + "ssticky";
             public const string Id = AzureSignalRSysPrefix + "id";
             public const string AppName = AzureSignalRSysPrefix + "apn";
+            public const string Version = AzureSignalRSysPrefix + "vn";
 
             public const string AzureSignalRUserPrefix = "asrs.u.";
         }

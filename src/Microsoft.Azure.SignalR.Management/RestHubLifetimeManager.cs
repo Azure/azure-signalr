@@ -20,10 +20,12 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private readonly RestApiProvider _restApiProvider;
         private const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
+        private readonly string _productInfo;
 
-        public RestHubLifetimeManager(ServiceManagerOptions serviceManagerOptions, string hubName)
+        public RestHubLifetimeManager(ServiceManagerOptions serviceManagerOptions, string hubName, string productInfo)
         {
             _restApiProvider = new RestApiProvider(serviceManagerOptions.ConnectionString, hubName, serviceManagerOptions.ApplicationName);
+            _productInfo = productInfo;
         }
 
         public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -160,11 +162,19 @@ namespace Microsoft.Azure.SignalR.Management
             return CallRestApiAsync(request, cancellationToken);
         }
 
-        private static HttpRequestMessage GenerateHttpRequest(string url, PayloadMessage payload, string tokenString, HttpMethod httpMethod)
+        public Task UserRemoveFromAllGroupsAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            var api = _restApiProvider.GetRemoveUserFromAllGroups(userId);
+            var request = BuildRequest(api, HttpMethod.Delete);
+            return CallRestApiAsync(request, cancellationToken);
+        }
+
+        private HttpRequestMessage GenerateHttpRequest(string url, PayloadMessage payload, string tokenString, HttpMethod httpMethod)
         {
             var request = new HttpRequestMessage(httpMethod, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Add(Constants.AsrsUserAgent, _productInfo);
             request.Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
             return request;
         }
@@ -192,7 +202,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
-        private static HttpRequestMessage BuildRequest(RestApiEndpoint endpoint, HttpMethod httpMethod, string methodName = null, object[] args = null)
+        private HttpRequestMessage BuildRequest(RestApiEndpoint endpoint, HttpMethod httpMethod, string methodName = null, object[] args = null)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
             return GenerateHttpRequest(endpoint.Audience, payload, endpoint.Token, httpMethod);

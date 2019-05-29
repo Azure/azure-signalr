@@ -25,8 +25,8 @@ namespace Microsoft.Azure.SignalR
         protected readonly IConnectionFactory ConnectionFactory;
         protected volatile List<IServiceConnection> FixedServiceConnections;
         protected readonly int FixedConnectionCount;
+        private readonly BackOffPolicy backOffPolicy = new BackOffPolicy();
 
-        private volatile int _defaultConnectionRetry;
         private object _lock = new object();
 
         private readonly AckHandler _ackHandler;
@@ -129,23 +129,17 @@ namespace Microsoft.Azure.SignalR
 
         private async Task RestartServiceConnectionCoreAsync(int index)
         {
-            await Task.Delay(GetRetryDelay(_defaultConnectionRetry));
-
-            // Increase retry count after delay, then if a group of connections get disconnected simultaneously,
-            // all of them will delay a similar range of time and reconnect. But if they get disconnected again (when SignalR service down), 
-            // they will all delay for a much longer time.
-            Interlocked.Increment(ref _defaultConnectionRetry);
-
-            var connection = CreateServiceConnectionCore();
-            ReplaceFixedConnections(index, connection);
-
-            _ = StartCoreAsync(connection);
-            await connection.ConnectionInitializedTask;
-
-            if (connection.Status == ServiceConnectionStatus.Connected)
+            Func<Task<bool>> tryNewConnection = async () =>
             {
-                Interlocked.Exchange(ref _defaultConnectionRetry, 0);
-            }
+                var connection = CreateServiceConnectionCore();
+                ReplaceFixedConnections(index, connection);
+                _ = StartCoreAsync(connection);
+                await connection.ConnectionInitializedTask;
+
+                return connection.Status == ServiceConnectionStatus.Connected;
+            };
+
+            await backOffPolicy.CallProbeWithBackOffAsync(tryNewConnection, GetRetryDelay);
         }
 
         internal static TimeSpan GetRetryDelay(int retryCount)

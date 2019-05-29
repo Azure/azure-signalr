@@ -193,6 +193,41 @@
                     }
                 }
             }
+        },
+        "/api/v1/hubs/{hub}/users/{id}/groups": {
+            "delete": {
+                "description": "Remove a user from all groups.",
+                "tags": [],
+                "operationId": "RemoveUserFromAllGroups",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [],
+                "parameters": [
+                    {
+                        "name": "hub",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Target user Id."
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "200": {
+                        "description": "Ok"
+                    }
+                }
+            }
         }
     },
     "definitions": {

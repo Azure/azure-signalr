@@ -6,10 +6,10 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   
-  <PropertyGroup Condition="'$(IsTargetMultiFramework)' == 'true'">
+  <PropertyGroup Condition="'$(IsTargetMultiFramework)' != 'false'">
     <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(IsTargetMultiFramework)' != 'true'">
+  <PropertyGroup Condition="'$(IsTargetMultiFramework)' == 'false'">
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 

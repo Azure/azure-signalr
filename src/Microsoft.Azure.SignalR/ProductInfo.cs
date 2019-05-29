@@ -8,15 +8,14 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class ProductInfo
     {
-        public static string GetProductInfo()
+        public static string GetProductInfo(Assembly assembly = null)
         {
-            var assembly = Assembly.GetCallingAssembly();
+            assembly = assembly ?? Assembly.GetCallingAssembly();
             var packageId = assembly.GetName().Name;
             var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
             var runtime = RuntimeInformation.FrameworkDescription?.Trim();
             var operatingSystem = RuntimeInformation.OSDescription?.Trim();
             var processorArchitecture = RuntimeInformation.ProcessArchitecture.ToString().Trim();
-            
             return $"{packageId}/{version} ({runtime}; {operatingSystem}; {processorArchitecture})";
         }
     }

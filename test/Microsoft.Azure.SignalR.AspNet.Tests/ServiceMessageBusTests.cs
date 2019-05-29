@@ -247,14 +247,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         private static void PrepareConnection(IServiceConnectionManager scm, out SortedList<string, ServiceMessage> output)
         {
             var result = new SortedList<string, ServiceMessage>();
-            scm.Initialize(hub => new TestServiceConnectionContainer(hub,
-                    m =>
-                    {
-                        lock (result)
-                        {
-                            result.Add(hub, m.Item1);
-                        }
-                    }));
+            scm.Initialize(new TestServiceConnectionContainerFactory(result));
             output = result;
         }
 
