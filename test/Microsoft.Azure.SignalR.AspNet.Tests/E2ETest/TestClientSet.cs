@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Client;
 using Microsoft.Azure.SignalR.Tests.Common;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
@@ -14,16 +15,27 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
     {
         private readonly IList<HubConnection> _connections;
         private readonly IList<IHubProxy> _proxies;
+        private readonly ITestOutputHelper _output;
 
         public int Count => _connections?.Count ?? 0;
 
-        public TestClientSet(string serverUrl, int count)
+        public TestClientSet(string serverUrl, int count, ITestOutputHelper output)
         {
             _connections = (from i in Enumerable.Range(0, count)
                             select new HubConnection(serverUrl)).ToList();
 
+            foreach (var conn in _connections)
+            {
+                conn.Closed += () =>
+                {
+                    _output.WriteLine($"Client connection closed.");
+                };
+            }
+
             _proxies = (from conn in _connections
                         select conn.CreateHubProxy(nameof(TestHub))).ToList();
+
+            _output = output;
         }
 
         public void AddListener(string methodName, Action<string> handler)

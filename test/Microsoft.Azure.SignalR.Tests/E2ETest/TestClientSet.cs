@@ -27,13 +27,17 @@ namespace Microsoft.Azure.SignalR.Tests
                 throw new ArgumentNullException(nameof(serverUrl));
             }
 
-            _connections = (from i in Enumerable.Range(0, count) select new HubConnectionBuilder().WithUrl($"{serverUrl}/{nameof(TestHub)}?user=user_{i}").Build()).ToList();
+            _connections = (from i in Enumerable.Range(0, count)
+                            select new HubConnectionBuilder().WithUrl($"{serverUrl}/{nameof(TestHub)}?user=user_{i}").Build()).ToList();
 
             foreach (var conn in _connections)
             {
                 conn.Closed += ex =>
                 {
-                    _output.WriteLine($"Client connection closed: {ex}");
+                    if (ex != null)
+                    {
+                        _output.WriteLine($"Client connection closed: {ex}");
+                    }
                     return Task.CompletedTask;
                 };
             }
