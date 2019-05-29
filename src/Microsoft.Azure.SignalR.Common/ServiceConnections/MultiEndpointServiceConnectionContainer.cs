@@ -131,7 +131,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     if (Connections.TryGetValue(endpoint, out var connection))
                     {
-                        return connection.WriteAsync(partitionKey, serviceMessage);
+                        return connection.WriteAsync(serviceMessage);
                     }
                     Log.EndpointNotExists(_logger, endpoint.ToString());
                     return null;
@@ -151,7 +151,6 @@ namespace Microsoft.Azure.SignalR
             return Task.WhenAll(routed);
         }
 
-        public Task WriteAsync(ServiceMessage serviceMessage)
         public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
             if (_inner != null)
@@ -159,41 +158,30 @@ namespace Microsoft.Azure.SignalR
                 return await _inner.WriteAckableMessageAsync(serviceMessage, cancellationToken);
             }
 
+            // If we have multiple endpoints, we should wait to one of the following conditions hit
+            // 1. One endpoint responses "OK" state
+            // 2. All the endpoints response failed state including "NotFound", "Timeout" and waiting response to timeout
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
             var routed = GetRoutedEndpoints(serviceMessage)?
                 .Select(endpoint =>
                 {
                     if (Connections.TryGetValue(endpoint, out var connection))
                     {
-                        return connection.WriteAsync(serviceMessage);
+                        return WriteAndVerifyAckableMessageAsync(connection, serviceMessage, tcs, cancellationToken);
                     }
                     Log.EndpointNotExists(_logger, endpoint.ToString());
                     return null;
                 }).Where(s => s != null).ToArray();
+
             if (routed == null || routed.Length == 0)
             {
                 Log.NoEndpointRouted(_logger, serviceMessage.GetType().Name);
-                return Task.CompletedTask;
-            }
-
-            if (routed.Length == 1)
-            {
-                return routed[0];
-            }
-
-            // If we have multiple endpoints, we should wait to one of the following conditions hit
-            // 1. One endpoint responses "OK" state
-            // 2. All the endpoints response failed state including "NotFound", "Timeout" and waiting response to timeout
-            var tasks = new List<Task>();
-            var containers = routed.Select(s => Connections[s]);
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            foreach (var container in containers)
-            {
-                tasks.Add(WriteAndVerifyAckableMessageAsync(container, serviceMessage, tcs, cancellationToken));
+                return false;
             }
 
             // If tcs.Task completes, one Endpoint responses "OK" state.
-            var task = await Task.WhenAny(tcs.Task, Task.WhenAll(tasks));
+            var task = await Task.WhenAny(tcs.Task, Task.WhenAll(routed));
 
             // This will throw exceptions in tasks if exceptions exist
             await task;
