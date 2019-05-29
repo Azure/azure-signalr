@@ -31,12 +31,12 @@
     <Reference Include="System.Configuration" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' != 'true' ">
+  <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' != 'true' OR '$(DisableNet461Tests)' == 'true' ">
     <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.AspNet\Microsoft.Azure.SignalR.AspNet.csproj" />
     <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' == 'true' ">
-    <PackageReference Include="Microsoft.Azure.SignalR.AspNet" Version="1.0.10-*" />
+  <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' == 'true' AND '$(DisableNet461Tests)' != 'true' ">
+    <PackageReference Include="Microsoft.Azure.SignalR.AspNet" Version="$(VersionPrefix)-*" />
   </ItemGroup>
 </Project>
