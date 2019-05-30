@@ -131,6 +131,46 @@ For security concerns, extend TTL is not encouraged. We suggest adding reconnect
 
 * [ASP.NET Core JavaScript Client](../samples/AspNet.ChatSample/AspNet.ChatSample.JavaScriptClient/wwwroot/index.html#L71)
 
+## 500 Error when negotiate: Azure SignalR Service is not connected yet, please try again later.
+### Root cause
+This error is reported when there is no server connection to Azure SignalR Service connected. 
+
+### Troubleshooting Guide
+Please enable server side trace to find out the error details when server tries to connect to Azure SignalR Service.
+
+#### Enable server side logging for ASP.NET Core SignalR
+Server side logging for ASP.NET Core SignalR integrates with the `ILogger`-based [logging](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-2.1&tabs=aspnetcore2x) provided in the ASP.NET Core framework. You can enable server side logging by using `ConfigureLogging`, a sample usage as follows:
+```cs
+.ConfigureLogging((hostingContext, logging) =>
+        {
+            logging.AddConsole();
+            logging.AddDebug();
+        })
+```
+
+#### Enable server side traces for ASP.NET SignalR
+When using SDK version > 1.0.0, you can enable traces by adding the following to `web.config`: ([Details](https://github.com/Azure/azure-signalr/issues/452#issuecomment-478858102))
+```xml
+<system.diagnostics>
+    <sources>
+      <source name="Microsoft.Azure.SignalR" switchName="SignalRSwitch">
+        <listeners>
+          <add name="ASRS" />
+        </listeners>
+      </source>
+    </sources>
+    <!-- Sets the trace verbosity level -->
+    <switches>
+      <add name="SignalRSwitch" value="Information" />
+    </switches>
+    <!-- Specifies the trace writer for output -->
+    <sharedListeners>
+      <add name="ASRS" type="System.Diagnostics.TextWriterTraceListener" initializeData="asrs.log.txt" />
+    </sharedListeners>
+    <trace autoflush="true" />
+  </system.diagnostics>
+```
+
 ## ⌛️[TODO]Client connection drop
 
 When client is connected to the Azure SignalR, the persistent connection between client and Azure SignalR can sometimes drop for different reasons. This section describes several possibilities causing such connection drop, and provides some guidance to how to identify the root cause.
@@ -154,6 +194,7 @@ Client connections can drop under various circumstances:
 3. Create an issue to us providing time frame, and email the resource name to us
 
 <a id="server-conn-drop"/>
+
 ## ⌛️[TODO]Server connection drop
 
 When app server starts, in the background, the Azure SDK starts to initiate server connections to the remote Azure SignalR. As described in [Internals of Azure SignalR Service](internal.md), Azure SignalR routes incoming client traffics to these server connections. Once a server connection is dropped, all the client connections it serves will be closed too.
