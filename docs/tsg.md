@@ -139,7 +139,7 @@ This error is reported when there is no server connection to Azure SignalR Servi
 Please enable server side trace to find out the error details when server tries to connect to Azure SignalR Service.
 
 #### Enable server side logging for ASP.NET Core SignalR
-Server side logging for ASP.NET Core SignalR integrates with the `ILogger`-based [logging](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-2.1&tabs=aspnetcore2x) provided in the ASP.NET Core framework. You can enable server side logging by using `ConfigureLogging`, a sample usage as follows:
+Server side logging for ASP.NET Core SignalR integrates with the `ILogger` based [logging](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-2.1&tabs=aspnetcore2x) provided in the ASP.NET Core framework. You can enable server side logging by using `ConfigureLogging`, a sample usage as follows:
 ```cs
 .ConfigureLogging((hostingContext, logging) =>
         {
@@ -149,7 +149,7 @@ Server side logging for ASP.NET Core SignalR integrates with the `ILogger`-based
 ```
 
 #### Enable server side traces for ASP.NET SignalR
-When using SDK version > 1.0.0, you can enable traces by adding the following to `web.config`: ([Details](https://github.com/Azure/azure-signalr/issues/452#issuecomment-478858102))
+When using SDK version >= `1.0.0`, you can enable traces by adding the following to `web.config`: ([Details](https://github.com/Azure/azure-signalr/issues/452#issuecomment-478858102))
 ```xml
 <system.diagnostics>
     <sources>
