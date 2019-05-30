@@ -79,10 +79,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public Task ManageGroupAsync(string methodName, IDictionary<int, string> connectionGroupMap)
         {
             return Task.WhenAll(from entry in connectionGroupMap
-                let proxyInd = entry.Key
-                let groupName = entry.Value
-                where connectionGroupMap.ContainsKey(proxyInd)
-                select _proxies[proxyInd].Invoke(methodName, groupName));
+                                let proxyInd = entry.Key
+                                let groupName = entry.Value
+                                select _proxies[proxyInd].Invoke(methodName, groupName));
         }
     }
 }

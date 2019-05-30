@@ -6,11 +6,11 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
-    //public class AspNetSignalRServiceE2EFacts : ServiceE2EFactsBase
-    //{
-    //    public AspNetSignalRServiceE2EFacts(ITestOutputHelper output)
-    //        : base(new TestServerFactory(), new TestClientSetFactory(), output)
-    //    {
-    //    }
-    //}
+    public class AspNetSignalRServiceE2EFacts : ServiceE2EFactsBase
+    {
+        public AspNetSignalRServiceE2EFacts(ITestOutputHelper output)
+            : base(new TestServerFactory(), new TestClientSetFactory(), output)
+        {
+        }
+    }
 }

@@ -80,7 +80,6 @@ namespace Microsoft.Azure.SignalR.Tests
             return Task.WhenAll(from entry in connectionGroupMap
                                 let connInd = entry.Key
                                 let groupName = entry.Value
-                                where connectionGroupMap.ContainsKey(connInd)
                                 select _connections[connInd].SendAsync(methodName, groupName));
         }
     }
