@@ -1,11 +1,11 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
@@ -15,6 +15,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         protected override Task StartCoreAsync(string serverUrl, ILoggerFactory loggerFactory)
         {
+            TestHub.ClearConnectedConnectionAndUser();
+
             _host = new WebHostBuilder()
                 .UseStartup<TestStartup>()
                 .UseUrls(serverUrl)
@@ -30,21 +32,17 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public override async Task StopAsync()
         {
+
             await _host.StopAsync();
 
-            // IServiceConnectionContainer is not available
-            // stop server connections
-            var serviceContainer = _host.Services.GetRequiredService<IServiceConnectionContainer>();
-            if (serviceContainer == null)
-            {
-                return;
-            }
+            // dispose client connections
+            var clientConnections = _host.Services.GetRequiredService<IClientConnectionManager>().ClientConnections;
+            clientConnections.Clear();
 
-            if (serviceContainer.Status != ServiceConnectionStatus.Disconnected)
-            {
-                await serviceContainer.StopAsync();
-                return;
-            }
+            // stop server connections
+            await _host.Services.GetRequiredService<IServiceConnectionManager<TestHub>>().StopAsync();
+
+            _host.Dispose();
         }
     }
 }
