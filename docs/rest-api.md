@@ -11,6 +11,7 @@
     - [Send message to a user](#send-user)
     - [Add a user to a group](#add-user-to-group)
     - [Remove a user from a group](#remove-user-from-group)
+    - [Remove a user from all groups](#remove-user-from-all-groups)
 - [Using REST API](#using-rest-api)
     - [Authentication](#authentication)
         - [Signing Algorithm and Signature](#signing)

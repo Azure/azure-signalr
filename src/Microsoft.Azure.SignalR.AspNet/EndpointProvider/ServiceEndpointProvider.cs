@@ -11,13 +11,13 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class ServiceEndpointProvider : IServiceEndpointProvider
     {
-        private const string ClientPath = "aspnetclient";
-        private const string ServerPath = "aspnetserver";
-
-        internal static readonly string ConnectionStringNotFound =
+        public static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
             $"Please specify a configuration entry for {Constants.ConnectionStringDefaultKey}, " +
             "or explicitly pass one using IAppBuilder.RunAzureSignalR(connectionString) in Startup.ConfigureServices.";
+
+        private const string ClientPath = "aspnetclient";
+        private const string ServerPath = "aspnetserver";
 
         private readonly string _endpoint;
         private readonly string _accessKey;
@@ -25,7 +25,9 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly int? _port;
         private readonly TimeSpan _accessTokenLifetime;
 
-        public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions options, TimeSpan? ttl = null)
+        public IWebProxy Proxy { get; }
+
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions options)
         {
             var connectionString = endpoint.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
@@ -33,17 +35,16 @@ namespace Microsoft.Azure.SignalR.AspNet
                 throw new ArgumentException(ConnectionStringNotFound);
             }
 
-            _accessTokenLifetime = ttl ?? Constants.DefaultAccessTokenLifetime;
+            _accessTokenLifetime = options.AccessTokenLifetime;
 
             // Version is ignored for aspnet signalr case
             _endpoint = endpoint.Endpoint;
             _accessKey = endpoint.AccessKey;
             _appName = options.ApplicationName;
             _port = endpoint.Port;
-            Proxy = options?.Proxy;
+            Proxy = options.Proxy;
         }
 
-        public IWebProxy Proxy { get; }
 
         private string GetPrefixedHubName(string applicationName, string hubName)
         {

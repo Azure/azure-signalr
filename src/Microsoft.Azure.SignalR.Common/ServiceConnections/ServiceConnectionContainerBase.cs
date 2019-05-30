@@ -13,7 +13,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler
+    internal abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler, IDisposable
     {
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
         private static TimeSpan ReconnectInterval =>
@@ -29,6 +29,8 @@ namespace Microsoft.Azure.SignalR
 
         private object _lock = new object();
 
+        private readonly AckHandler _ackHandler;
+
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory,
             int fixedConnectionCount, ServiceEndpoint endpoint)
@@ -38,6 +40,7 @@ namespace Microsoft.Azure.SignalR
             FixedServiceConnections = CreateFixedServiceConnection(fixedConnectionCount);
             FixedConnectionCount = fixedConnectionCount;
             _endpoint = endpoint;
+            _ackHandler = new AckHandler();
         }
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
@@ -48,6 +51,7 @@ namespace Microsoft.Azure.SignalR
             FixedServiceConnections = initialConnections;
             FixedConnectionCount = initialConnections.Count;
             _endpoint = endpoint;
+            _ackHandler = new AckHandler();
         }
 
         public async Task StartAsync()
@@ -83,6 +87,18 @@ namespace Microsoft.Azure.SignalR
         }
 
         public abstract Task HandlePingAsync(PingMessage pingMessage);
+
+        public void HandleAck(AckMessage ackMessage)
+        {
+            if (ackMessage.Status == AckStatus.Ok)
+            {
+                _ackHandler.TriggerAck(ackMessage.AckId, true);
+            }
+            else
+            {
+                _ackHandler.TriggerAck(ackMessage.AckId, false);
+            }
+        }
 
         /// <summary>
         /// Create a connection in initialization and reconnection
@@ -157,15 +173,34 @@ namespace Microsoft.Azure.SignalR
             return WriteToRandomAvailableConnection(serviceMessage);
         }
 
-        public virtual Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+        public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            // If we hit this check, it is a code bug.
-            if (string.IsNullOrEmpty(partitionKey))
+            if (!(serviceMessage is IAckableMessage ackableMessage))
             {
-                throw new ArgumentNullException(nameof(partitionKey));
+                throw new ArgumentException($"{nameof(serviceMessage)} is not {nameof(IAckableMessage)}");
             }
 
-            return WriteToPartitionedConnection(partitionKey, serviceMessage);
+            var task = _ackHandler.CreateAck(out var id, cancellationToken);
+            ackableMessage.AckId = id;
+
+            await WriteToRandomAvailableConnection(serviceMessage);
+
+            return await task;
+        }
+
+        // Ready for scalable containers
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _ackHandler.Dispose();
+            }
         }
 
         protected virtual ServiceConnectionStatus GetStatus()
@@ -173,11 +208,6 @@ namespace Microsoft.Azure.SignalR
             return FixedServiceConnections.Any(s => s.Status == ServiceConnectionStatus.Connected)
                 ? ServiceConnectionStatus.Connected
                 : ServiceConnectionStatus.Disconnected;
-        }
-
-        private Task WriteToPartitionedConnection(string partitionKey, ServiceMessage serviceMessage)
-        {
-            return WriteWithRetry(serviceMessage, partitionKey.GetHashCode(), FixedConnectionCount);
         }
 
         private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)

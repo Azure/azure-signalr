@@ -189,6 +189,12 @@ namespace Microsoft.Azure.SignalR
             return _serviceMessageHandler.HandlePingAsync(pingMessage);
         }
 
+        protected Task OnAckMessageAsync(AckMessage ackMessage)
+        {
+            _serviceMessageHandler.HandleAck(ackMessage);
+            return Task.CompletedTask;
+        }
+
         private async Task<bool> StartAsyncCore(string target)
         {
             // Lock here in case somebody tries to send before the connection is assigned
@@ -430,6 +436,8 @@ namespace Microsoft.Azure.SignalR
                     return OnServiceErrorAsync(serviceErrorMessage);
                 case PingMessage pingMessage:
                     return OnPingMessageAsync(pingMessage);
+                case AckMessage ackMessage:
+                    return OnAckMessageAsync(ackMessage);
             }
             return Task.CompletedTask;
         }

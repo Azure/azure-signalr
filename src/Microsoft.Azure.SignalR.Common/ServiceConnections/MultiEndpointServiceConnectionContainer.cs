@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Common.ServiceConnections;
@@ -117,11 +118,11 @@ namespace Microsoft.Azure.SignalR
             }));
         }
 
-        public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+        public Task WriteAsync(ServiceMessage serviceMessage)
         {
             if (_inner != null)
             {
-                return _inner.WriteAsync(partitionKey, serviceMessage);
+                return _inner.WriteAsync(serviceMessage);
             }
 
             // re-evaluate available endpoints as they might be offline, however it can not guarantee that all endpoints are online
@@ -130,7 +131,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     if (Connections.TryGetValue(endpoint, out var connection))
                     {
-                        return connection.WriteAsync(partitionKey, serviceMessage);
+                        return connection.WriteAsync(serviceMessage);
                     }
                     Log.EndpointNotExists(_logger, endpoint.ToString());
                     return null;
@@ -150,35 +151,52 @@ namespace Microsoft.Azure.SignalR
             return Task.WhenAll(routed);
         }
 
-        public Task WriteAsync(ServiceMessage serviceMessage)
+        public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
             if (_inner != null)
             {
-                return _inner.WriteAsync(serviceMessage);
+                return await _inner.WriteAckableMessageAsync(serviceMessage, cancellationToken);
             }
+
+            // If we have multiple endpoints, we should wait to one of the following conditions hit
+            // 1. One endpoint responses "OK" state
+            // 2. All the endpoints response failed state including "NotFound", "Timeout" and waiting response to timeout
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             var routed = GetRoutedEndpoints(serviceMessage)?
                 .Select(endpoint =>
                 {
                     if (Connections.TryGetValue(endpoint, out var connection))
                     {
-                        return connection.WriteAsync(serviceMessage);
+                        return WriteAndVerifyAckableMessageAsync(connection, serviceMessage, tcs, cancellationToken);
                     }
                     Log.EndpointNotExists(_logger, endpoint.ToString());
                     return null;
                 }).Where(s => s != null).ToArray();
+
             if (routed == null || routed.Length == 0)
             {
                 Log.NoEndpointRouted(_logger, serviceMessage.GetType().Name);
-                return Task.CompletedTask;
+                return false;
             }
 
-            if (routed.Length == 1)
+            // If tcs.Task completes, one Endpoint responses "OK" state.
+            var task = await Task.WhenAny(tcs.Task, Task.WhenAll(routed));
+
+            // This will throw exceptions in tasks if exceptions exist
+            await task;
+
+            return tcs.Task.IsCompleted;
+        }
+
+        private async Task WriteAndVerifyAckableMessageAsync(IServiceConnectionContainer container, ServiceMessage serviceMessage,
+            TaskCompletionSource<bool> tcs, CancellationToken cancellationToken)
+        {
+            var succeeded = await container.WriteAckableMessageAsync(serviceMessage, cancellationToken);
+            if (succeeded)
             {
-                return routed[0];
+                tcs.TrySetResult(true);
             }
-
-            return Task.WhenAll(routed);
         }
 
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
@@ -190,9 +208,9 @@ namespace Microsoft.Azure.SignalR
                     return _router.GetEndpointsForBroadcast(endpoints);
                 case GroupBroadcastDataMessage gbdm:
                     return _router.GetEndpointsForGroup(gbdm.GroupName, endpoints);
-                case JoinGroupMessage jgm:
+                case JoinGroupWithAckMessage jgm:
                     return _router.GetEndpointsForGroup(jgm.GroupName, endpoints);
-                case LeaveGroupMessage lgm:
+                case LeaveGroupWithAckMessage lgm:
                     return _router.GetEndpointsForGroup(lgm.GroupName, endpoints);
                 case MultiGroupBroadcastDataMessage mgbdm:
                     return mgbdm.GroupList.SelectMany(g => _router.GetEndpointsForGroup(g, endpoints)).Distinct();
