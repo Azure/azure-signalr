@@ -444,24 +444,30 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
                 // Prepare the configuration
-                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory, "chat");
 
                 hubConfig.Resolver.Register(typeof(ILoggerFactory), () => loggerFactory);
                 var router = new DefaultEndpointRouter();
                 hubConfig.Resolver.Register(typeof(IEndpointRouter), () => router);
+
+                var scf = new TestServiceConnectionFactory(endpoint =>
+                {
+                    if (endpoint.EndpointType == EndpointType.Primary)
+                    {
+                        return new TestServiceConnection(ServiceConnectionStatus.Disconnected);
+                    };
+
+                    return new TestServiceConnection();
+                });
+                hubConfig.Resolver.Register(typeof(IServiceConnectionFactory), () => scf);
+
                 using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
                 {
                     options.Endpoints = new ServiceEndpoint[]
                     {
                         new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
-                        new ServiceEndpoint(ConnectionString3)
-                        {
-                            Connection = new TestServiceConnectionContainer(ServiceConnectionStatus.Disconnected)
-                        },
-                        new ServiceEndpoint(ConnectionString4)
-                        {
-                            Connection = new TestServiceConnectionContainer(ServiceConnectionStatus.Disconnected)
-                        },
+                        new ServiceEndpoint(ConnectionString3),
+                        new ServiceEndpoint(ConnectionString4),
                     };
                 })))
                 {

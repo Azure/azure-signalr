@@ -7,6 +7,6 @@ namespace Microsoft.Azure.SignalR
 {
     interface IServiceConnectionFactory
     {
-        IServiceConnection Create(IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type);
+        IServiceConnection Create(ServiceEndpoint endpoint, IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type);
     }
 }

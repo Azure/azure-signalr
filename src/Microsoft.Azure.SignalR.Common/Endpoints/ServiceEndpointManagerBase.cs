@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Azure.SignalR.Common;
@@ -12,6 +13,8 @@ namespace Microsoft.Azure.SignalR
 {
     internal abstract class ServiceEndpointManagerBase : IServiceEndpointManager
     {
+        private readonly ConcurrentDictionary<string, IReadOnlyList<ServiceEndpoint>> _endpointsPerHub = new ConcurrentDictionary<string, IReadOnlyList<ServiceEndpoint>>();
+
         private readonly ILogger _logger;
 
         public ServiceEndpoint[] Endpoints { get; }
@@ -50,6 +53,11 @@ namespace Microsoft.Azure.SignalR
         }
 
         public abstract IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
+
+        public IReadOnlyList<ServiceEndpoint> GetEndpoints(string hub)
+        {
+            return _endpointsPerHub.GetOrAdd(hub, s => Endpoints.Select(e => new ServiceEndpoint(e)).ToArray());
+        }
 
         private static IEnumerable<ServiceEndpoint> GetEndpoints(IServiceEndpointOptions options)
         {
