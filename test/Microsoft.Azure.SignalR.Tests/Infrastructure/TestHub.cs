@@ -70,14 +70,14 @@ namespace Microsoft.Azure.SignalR.Tests
             Clients.All.SendAsync(nameof(Broadcast), message);
         }
 
-        public void JoinGroup(string groupName)
+        public Task JoinGroup(string groupName)
         {
-            Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+            return Groups.AddToGroupAsync(Context.ConnectionId, groupName);
         }
 
-        public void LeaveGroup(string groupName)
+        public Task LeaveGroup(string groupName)
         {
-            Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
+            return Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
         }
 
         public void SendToGroup(string groupName, string message)

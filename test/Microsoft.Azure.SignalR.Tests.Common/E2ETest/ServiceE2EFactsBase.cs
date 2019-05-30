@@ -78,11 +78,9 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         private static async Task GroupTask(string methodName, ITestClientSet clients)
         {
             await clients.ManageGroupAsync("JoinGroup", ConnectionGroupMap);
-            await Task.Delay(DefaultDelayMilliseconds);
             await clients.SendAsync(methodName, sendCount: 1, messages: new[] { GetGroupName(DefaultSendGroupIndex), _defaultMessage });
             await Task.Delay(DefaultDelayMilliseconds);
             await clients.ManageGroupAsync("LeaveGroup", ConnectionGroupMap);
-            await Task.Delay(DefaultDelayMilliseconds);
             await clients.SendAsync(methodName, messages: new[] { GetGroupName(DefaultSendGroupIndex), _defaultMessage });
             await Task.Delay(DefaultDelayMilliseconds);
         }
