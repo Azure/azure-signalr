@@ -47,7 +47,8 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             _output = output;
         }
 
-        [Theory(Skip = "Not ready for Asp.Net")]
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
         [MemberData(nameof(TestData))]
         public async Task RunE2ETests(string methodName, int expectedMessageCount, Func<string, ITestClientSet, Task> coreTask)
         {

@@ -41,8 +41,6 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // stop server connections
             await _host.Services.GetRequiredService<IServiceConnectionManager<TestHub>>().StopAsync();
-
-            _host.Dispose();
         }
     }
 }
