@@ -127,9 +127,9 @@ For security concerns, extend TTL is not encouraged. We suggest adding reconnect
 
 * [ASP.NET Core JavaScript Client](../samples/ChatSample/ChatSample/wwwroot/index.html#L164)
 
-* [ASP.NET Core C# Client](../samples/AspNet.ChatSample/AspNet.ChatSample.CSharpClient/Program.cs#L78)
+* [ASP.NET C# Client](../samples/AspNet.ChatSample/AspNet.ChatSample.CSharpClient/Program.cs#L78)
 
-* [ASP.NET Core JavaScript Client](../samples/AspNet.ChatSample/AspNet.ChatSample.JavaScriptClient/wwwroot/index.html#L71)
+* [ASP.NET JavaScript Client](../samples/AspNet.ChatSample/AspNet.ChatSample.JavaScriptClient/wwwroot/index.html#L71)
 
 ## 500 Error when negotiate: Azure SignalR Service is not connected yet, please try again later.
 ### Root cause
