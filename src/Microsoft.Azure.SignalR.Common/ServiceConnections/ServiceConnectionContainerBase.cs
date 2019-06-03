@@ -37,10 +37,12 @@ namespace Microsoft.Azure.SignalR
         {
             ServiceConnectionFactory = serviceConnectionFactory;
             ConnectionFactory = connectionFactory;
-            FixedServiceConnections = CreateFixedServiceConnection(fixedConnectionCount);
             FixedConnectionCount = fixedConnectionCount;
             _endpoint = endpoint;
             _ackHandler = new AckHandler();
+
+            // make sure it is after _endpoint is set
+            FixedServiceConnections = CreateFixedServiceConnection(fixedConnectionCount);
         }
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
@@ -110,7 +112,7 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         protected IServiceConnection CreateServiceConnectionCore(ServerConnectionType type)
         {
-            return ServiceConnectionFactory.Create(ConnectionFactory, this, type);
+            return ServiceConnectionFactory.Create(_endpoint, ConnectionFactory, this, type);
         }
 
         protected virtual async Task OnConnectionComplete(IServiceConnection serviceConnection)
@@ -118,6 +120,11 @@ namespace Microsoft.Azure.SignalR
             if (serviceConnection == null)
             {
                 throw new ArgumentNullException(nameof(serviceConnection));
+            }
+
+            if (serviceConnection.Status == ServiceConnectionStatus.Connected)
+            {
+                return;
             }
 
             var index = FixedServiceConnections.IndexOf(serviceConnection);
