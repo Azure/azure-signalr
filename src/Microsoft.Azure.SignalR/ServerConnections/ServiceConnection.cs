@@ -181,6 +181,7 @@ namespace Microsoft.Azure.SignalR
             {
                 // Capture the exception to communicate it to the transport (this isn't strictly required)
                 exception = ex;
+                Log.ApplicationTaskFailed(_logger, ex);
             }
             finally
             {
@@ -193,7 +194,7 @@ namespace Microsoft.Azure.SignalR
             if (connection.AbortOnClose)
             {
                 // Inform the Service that we will remove the client because SignalR told us it is disconnected.
-                var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, errorMessage: "");
+                var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, errorMessage: "Web application error.");
                 await WriteAsync(serviceMessage);
                 Log.CloseConnection(_logger, connection.ConnectionId);
             }
