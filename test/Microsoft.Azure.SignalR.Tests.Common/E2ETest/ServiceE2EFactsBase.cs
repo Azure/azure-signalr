@@ -53,10 +53,10 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         public async Task RunE2ETests(string methodName, int expectedMessageCount, Func<string, ITestClientSet, Task> coreTask)
         {
             ITestServer server = null;
-            IDisposable verifiableLog = null;
+            //IDisposable verifiableLog = null;
             try
             {
-                verifiableLog = StartVerifiableLog(out var loggerFactory);
+                var verifiableLog = StartVerifiableLog(out var loggerFactory);
                 server = _testServerFactory.Create();
                 var serverUrl = await server.StartAsync(loggerFactory);
                 var count = 0;
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             finally
             {
                 await server?.StopAsync();
-                verifiableLog?.Dispose();
+                //verifiableLog?.Dispose();
             }
 
         }

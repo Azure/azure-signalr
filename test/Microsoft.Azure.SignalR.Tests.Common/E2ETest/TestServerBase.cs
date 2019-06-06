@@ -29,7 +29,6 @@ namespace Microsoft.Azure.SignalR.Tests.Common
                     if (ex.Message.Contains("address already in use") || ex.Message.Contains("Failed to bind to address"))
                     {
                         logger.LogWarning($"Retry: {retry + 1} times. Warning: {ex.Message}");
-                        retry++;
                     }
                     else
                     {

@@ -21,11 +21,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 .UseStartup<TestStartup>()
                 .UseUrls(serverUrl)
                 .UseKestrel()
-                .ConfigureLogging((ILoggingBuilder logging) =>
-                {
-                    logging.Services.AddSingleton(typeof(ILoggerFactory), loggerFactory);
-                    logging.Services.AddLogging();
-                })
+                .ConfigureServices(c => c.AddSingleton<ILoggerFactory>(loggerFactory))
                 .Build();
             return _host.StartAsync();
         }
@@ -35,12 +31,12 @@ namespace Microsoft.Azure.SignalR.Tests
 
             await _host.StopAsync();
 
-            // dispose client connections
-            var clientConnections = _host.Services.GetRequiredService<IClientConnectionManager>().ClientConnections;
-            clientConnections.Clear();
+            //// dispose client connections
+            //var clientConnections = _host.Services.GetRequiredService<IClientConnectionManager>().ClientConnections;
+            //clientConnections.Clear();
 
-            // stop server connections
-            await _host.Services.GetRequiredService<IServiceConnectionManager<TestHub>>().StopAsync();
+            //// stop server connections
+            //await _host.Services.GetRequiredService<IServiceConnectionManager<TestHub>>().StopAsync();
 
             _host.Dispose();
         }
