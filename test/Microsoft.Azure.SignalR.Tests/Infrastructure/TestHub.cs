@@ -31,6 +31,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 throw new InvalidOperationException($"Failed to add connection {Context.ConnectionId} as user {Context.UserIdentifier}. Connected users: {string.Join(", ", _connectedUsers.Keys)}");
             }
+
             return Task.CompletedTask;
         }
 
@@ -45,6 +46,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 throw new InvalidOperationException($"Failed to remove a client connection {Context.ConnectionId} for as user {Context.UserIdentifier}. Connected users: {string.Join(", ", _connectedUsers.Keys)}");
             }
+
             return Task.CompletedTask;
         }
 

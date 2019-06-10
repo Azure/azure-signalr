@@ -4,9 +4,12 @@
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web.UI.WebControls;
 using Microsoft.AspNet.SignalR;
+using Serilog;
+using Serilog.Core;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
@@ -23,9 +26,15 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         public override Task OnConnected()
         {
+            var userId = Context.Request.QueryString["user"];
             if (!_connectedConnections.TryAdd(Context.ConnectionId, false))
             {
                 throw new InvalidOperationException($"Failed to add a client connection {Context.ConnectionId}. Connected connections {string.Join(",", _connectedConnections.Keys)}.");
+            }
+
+            if (!_connectedUsers.TryAdd(userId, false))
+            {
+                throw new InvalidOperationException($"Failed to add connection {Context.ConnectionId} as user {userId}. Connected users: {string.Join(", ", _connectedUsers.Keys)}");
             }
 
             return base.OnConnected();
@@ -33,10 +42,17 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         public override Task OnDisconnected(bool stopCalled)
         {
+            var userId = Context.Request.QueryString["user"];
             if (!_connectedConnections.TryRemove(Context.ConnectionId, out _))
             {
                 throw new InvalidOperationException($"Failed to remove a client connection {Context.ConnectionId}. Connected connections {string.Join(",", _connectedConnections.Keys)}.");
             }
+
+            if (!_connectedUsers.TryRemove(userId, out _))
+            {
+                throw new InvalidOperationException($"Failed to remove a client connection {Context.ConnectionId} for as user {userId}. Connected users: {string.Join(", ", _connectedUsers.Keys)}");
+            }
+
             return base.OnDisconnected(stopCalled);
         }
 
