@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
                 try
                 {
                     var serverUrl = GetRandomPortUrl();
-                    await StartCoreAsync(serverUrl, loggerFactory);
+                    await StartCoreAsync(serverUrl);
                     logger.LogInformation($"Server started: {serverUrl}");
                     return serverUrl;
                 }
@@ -47,6 +47,6 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public abstract Task StopAsync();
 
-        protected abstract Task StartCoreAsync(string serverUrl, ILoggerFactory loggerFactory);
+        protected abstract Task StartCoreAsync(string serverUrl);
     }
 }

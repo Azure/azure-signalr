@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Microsoft.AspNetCore.Testing.xunit;
-using Microsoft.Azure.SignalR.Tests.Common;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
 {
@@ -53,10 +52,10 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         public async Task RunE2ETests(string methodName, int expectedMessageCount, Func<string, ITestClientSet, Task> coreTask)
         {
             ITestServer server = null;
-            //IDisposable verifiableLog = null;
+            IDisposable verifiableLog = null;
             try
             {
-                var verifiableLog = StartVerifiableLog(out var loggerFactory);
+                verifiableLog = StartVerifiableLog(out var loggerFactory);
                 server = _testServerFactory.Create();
                 var serverUrl = await server.StartAsync(loggerFactory);
                 var count = 0;
@@ -66,12 +65,13 @@ namespace Microsoft.Azure.SignalR.Tests.Common
                 await coreTask(methodName, clients);
                 await Task.Delay(DefaultDelayMilliseconds);
                 await clients.StopAsync();
+                await Task.Delay(DefaultDelayMilliseconds);
                 Assert.Equal(expectedMessageCount, count);
             }
             finally
             {
                 await server?.StopAsync();
-                //verifiableLog?.Dispose();
+                verifiableLog?.Dispose();
             }
 
         }
