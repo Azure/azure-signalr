@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public TestClientSet(string serverUrl, int count, ITestOutputHelper output)
         {
             _connections = (from i in Enumerable.Range(0, count)
-                            select new HubConnection(serverUrl)).ToList();
+                            select new HubConnection(serverUrl, $"user=user_{i}")).ToList();
 
             foreach (var conn in _connections)
             {

@@ -4,31 +4,36 @@
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
 {
     public abstract class TestServerBase : ITestServer
     {
         private static readonly int _maxRetry = 10;
+        private ITestOutputHelper _output;
 
-        public async Task<string> StartAsync(ILoggerFactory loggerFactory)
+        public TestServerBase(ITestOutputHelper output)
         {
-            var logger = loggerFactory.CreateLogger<TestServerBase>();
+            _output = output;
+        }
 
+        public async Task<string> StartAsync()
+        {
             for (int retry = 0; retry < _maxRetry; retry++)
             {
                 try
                 {
                     var serverUrl = GetRandomPortUrl();
-                    await StartCoreAsync(serverUrl);
-                    logger.LogInformation($"Server started: {serverUrl}");
+                    await StartCoreAsync(serverUrl, _output);
+                    _output.WriteLine($"Server started: {serverUrl}");
                     return serverUrl;
                 }
                 catch (IOException ex)
                 {
                     if (ex.Message.Contains("address already in use") || ex.Message.Contains("Failed to bind to address"))
                     {
-                        logger.LogWarning($"Retry: {retry + 1} times. Warning: {ex.Message}");
+                        _output.WriteLine($"Retry: {retry + 1} times. Warning: {ex.Message}");
                     }
                     else
                     {
@@ -47,6 +52,6 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public abstract Task StopAsync();
 
-        protected abstract Task StartCoreAsync(string serverUrl);
+        protected abstract Task StartCoreAsync(string serverUrl, ITestOutputHelper output);
     }
 }

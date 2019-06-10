@@ -3,9 +3,11 @@
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.SignalR.Tests.Common;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Configuration;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
@@ -13,12 +15,16 @@ namespace Microsoft.Azure.SignalR.Tests
     {
         private IWebHost _host;
 
-        protected override Task StartCoreAsync(string serverUrl)
+        public TestServer(ITestOutputHelper output): base(output)
+        {
+        }
+
+        protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output)
         {
             TestHub.ClearConnectedConnectionAndUser();
 
             _host = new WebHostBuilder()
-                .ConfigureLogging(lb => lb.AddConsole())
+                .ConfigureLogging(logging => logging.AddXunit(output))
                 .UseStartup<TestStartup>()
                 .UseUrls(serverUrl)
                 .UseKestrel()
