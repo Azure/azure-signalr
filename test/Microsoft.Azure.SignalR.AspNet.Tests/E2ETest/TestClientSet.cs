@@ -66,12 +66,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         public Task StopAsync()
         {
-            foreach (var conn in _connections)
-            {
-                conn.Stop();
-            }
-
-            return Task.CompletedTask;
+            return Task.WhenAll(from conn in _connections
+                                select Task.Run(() =>
+                                {
+                                    conn.Stop();
+                                    return Task.CompletedTask;
+                                }));
         }
 
         public Task ManageGroupAsync(string methodName, IDictionary<int, string> connectionGroupMap)
