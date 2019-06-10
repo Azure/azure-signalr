@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
     {
         private IDisposable _webApp;
 
-        protected override Task StartCoreAsync(string serverUrl, ILoggerFactory loggerFactory)
+        protected override Task StartCoreAsync(string serverUrl)
         {
             var startOpts = new StartOptions(serverUrl);
             _webApp = WebApp.Start<TestStartup>(startOpts);
