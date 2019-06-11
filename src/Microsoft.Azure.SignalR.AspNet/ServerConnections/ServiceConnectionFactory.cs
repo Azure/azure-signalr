@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _logger = logger;
         }
 
-        public IServiceConnection Create(IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
+        public IServiceConnection Create(ServiceEndpoint endpoint, IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
         {
             return new ServiceConnection(Guid.NewGuid().ToString(), _serviceProtocol, connectionFactory, _clientConnectionManager, _logger, serviceMessageHandler, type);
         }

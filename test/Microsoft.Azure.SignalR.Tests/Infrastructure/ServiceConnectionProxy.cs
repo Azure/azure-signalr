@@ -55,7 +55,7 @@ namespace Microsoft.Azure.SignalR.Tests
             ServiceMessageHandler = (StrongServiceConnectionContainer) ServiceConnectionContainer;
         }
 
-        public IServiceConnection Create(IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler,
+        public IServiceConnection Create(ServiceEndpoint endpoint, IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler,
             ServerConnectionType type)
         {
             var connectionId = Guid.NewGuid().ToString("N");

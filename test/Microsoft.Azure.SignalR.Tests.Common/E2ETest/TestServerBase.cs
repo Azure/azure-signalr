@@ -20,7 +20,8 @@ namespace Microsoft.Azure.SignalR.Tests.Common
                 try
                 {
                     var serverUrl = GetRandomPortUrl();
-                    await StartCoreAsync(serverUrl, loggerFactory);
+                    await StartCoreAsync(serverUrl);
+                    logger.LogInformation($"Server started: {serverUrl}");
                     return serverUrl;
                 }
                 catch (IOException ex)
@@ -28,7 +29,6 @@ namespace Microsoft.Azure.SignalR.Tests.Common
                     if (ex.Message.Contains("address already in use") || ex.Message.Contains("Failed to bind to address"))
                     {
                         logger.LogWarning($"Retry: {retry + 1} times. Warning: {ex.Message}");
-                        retry++;
                     }
                     else
                     {
@@ -47,6 +47,6 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public abstract Task StopAsync();
 
-        protected abstract Task StartCoreAsync(string serverUrl, ILoggerFactory loggerFactory);
+        protected abstract Task StartCoreAsync(string serverUrl);
     }
 }

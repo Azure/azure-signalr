@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var sem = new TestServiceEndpointManager(endpoints);
 
             var router = new TestEndpointRouter(false);
-            var container = new MultiEndpointServiceConnectionContainer(
+            var container = new MultiEndpointServiceConnectionContainer("hub",
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -70,13 +70,19 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var sem = new TestServiceEndpointManager(endpoints);
 
             var router = new TestEndpointRouter(false);
-            var container1 = new MultiEndpointServiceConnectionContainer(
+            var container1 = new MultiEndpointServiceConnectionContainer("hub",
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
             }, e), sem, router, null);
 
-            var container2 = new MultiEndpointServiceConnectionContainer(
+            var container2 = new MultiEndpointServiceConnectionContainer("hub",
+                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                new TestServiceConnection(),
+                new TestServiceConnection(),
+            }, e), sem, router, null);
+
+            var container3 = new MultiEndpointServiceConnectionContainer("hub-another",
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -93,11 +99,21 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             Assert.Empty(result);
 
+            // The same hub shares the same endpoints
             result = container2.GetRoutedEndpoints(new MultiGroupBroadcastDataMessage(new[] { "group1", "group2" }, null)).ToList();
+
+            Assert.Empty(result);
+
+            result = container2.GetRoutedEndpoints(new MultiUserDataMessage(new[] { "user1", "user2" }, null)).ToList();
+
+            Assert.Empty(result);
+
+            // different hubs have different endpoint status
+            result = container3.GetRoutedEndpoints(new MultiGroupBroadcastDataMessage(new[] { "group1", "group2" }, null)).ToList();
 
             Assert.Equal(2, result.Count);
 
-            result = container2.GetRoutedEndpoints(new MultiUserDataMessage(new[] { "user1", "user2" }, null)).ToList();
+            result = container3.GetRoutedEndpoints(new MultiUserDataMessage(new[] { "user1", "user2" }, null)).ToList();
 
             Assert.Equal(2, result.Count);
         }
@@ -117,7 +133,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             Assert.Equal("11", endpoints[1].Name);
 
             var router = new TestEndpointRouter(false);
-            var container = new MultiEndpointServiceConnectionContainer(
+            var container = new MultiEndpointServiceConnectionContainer("hub",
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -141,7 +157,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             Assert.Equal("11", endpoints[1].Name);
 
             var router = new TestEndpointRouter(false);
-            var container = new MultiEndpointServiceConnectionContainer(
+            var container = new MultiEndpointServiceConnectionContainer("hub",
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -179,7 +195,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
             var router = new TestEndpointRouter(true);
-            var container = new MultiEndpointServiceConnectionContainer(
+            var container = new MultiEndpointServiceConnectionContainer("hub",
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -198,7 +214,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
             var router = new TestEndpointRouter(true);
-            var container = new MultiEndpointServiceConnectionContainer(
+            var container = new MultiEndpointServiceConnectionContainer("hub",
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -222,7 +238,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new ServiceEndpoint(ConnectionString2));
 
             var router = new TestEndpointRouter(true);
-            var container = new MultiEndpointServiceConnectionContainer(
+            var container = new MultiEndpointServiceConnectionContainer("hub",
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -245,7 +261,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new ServiceEndpoint(ConnectionString2));
 
             var router = new TestEndpointRouter(false);
-            var container = new MultiEndpointServiceConnectionContainer(
+            var container = new MultiEndpointServiceConnectionContainer("hub",
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
@@ -266,7 +282,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new ServiceEndpoint(ConnectionString2));
 
             var router = new TestEndpointRouter(false);
-            var container = new MultiEndpointServiceConnectionContainer(
+            var container = new MultiEndpointServiceConnectionContainer("hub",
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -290,7 +306,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new ServiceEndpoint(ConnectionString2));
 
             var router = new TestEndpointRouter(false);
-            var container = new MultiEndpointServiceConnectionContainer(
+            var container = new MultiEndpointServiceConnectionContainer("hub",
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -316,7 +332,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new ServiceEndpoint(ConnectionString2, name: "online"));
 
             var router = new TestEndpointRouter(false);
-            var container = new MultiEndpointServiceConnectionContainer(e =>
+            var container = new MultiEndpointServiceConnectionContainer("hub", e =>
             {
                 if (string.IsNullOrEmpty(e.Name))
                 {
@@ -354,7 +370,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new ServiceEndpoint(ConnectionString2, name: "online"));
 
             var router = new TestEndpointRouter(false);
-            var container = new MultiEndpointServiceConnectionContainer(e =>
+            var container = new MultiEndpointServiceConnectionContainer("hub", e =>
             {
                 if (string.IsNullOrEmpty(e.Name))
                 {
@@ -392,7 +408,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "online"));
 
             var router = new TestEndpointRouter(false);
-            var container = new MultiEndpointServiceConnectionContainer(e =>
+            var container = new MultiEndpointServiceConnectionContainer("hub", e =>
             {
                 if (string.IsNullOrEmpty(e.Name))
                 {

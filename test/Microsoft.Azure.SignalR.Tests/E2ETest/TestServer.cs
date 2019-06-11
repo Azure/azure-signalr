@@ -1,11 +1,11 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
@@ -13,17 +13,15 @@ namespace Microsoft.Azure.SignalR.Tests
     {
         private IWebHost _host;
 
-        protected override Task StartCoreAsync(string serverUrl, ILoggerFactory loggerFactory)
+        protected override Task StartCoreAsync(string serverUrl)
         {
+            TestHub.ClearConnectedConnectionAndUser();
+
             _host = new WebHostBuilder()
+                .ConfigureLogging(lb => lb.AddConsole())
                 .UseStartup<TestStartup>()
                 .UseUrls(serverUrl)
                 .UseKestrel()
-                .ConfigureLogging((ILoggingBuilder logging) =>
-                {
-                    logging.Services.AddSingleton(typeof(ILoggerFactory), loggerFactory);
-                    logging.Services.AddLogging();
-                })
                 .Build();
             return _host.StartAsync();
         }
@@ -31,7 +29,6 @@ namespace Microsoft.Azure.SignalR.Tests
         public override async Task StopAsync()
         {
             await _host.StopAsync();
-            _host.Dispose();
         }
     }
 }

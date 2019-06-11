@@ -105,7 +105,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             IServiceEndpointProvider provider;
             try
             {
-                provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(owinContext, _endpointManager.Endpoints));
+                // Take the service endpoints for the app
+                provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(owinContext, _endpointManager.GetEndpoints(_appName)));
 
                 // When status code changes, we consider the inner router changed the response, then we stop here
                 if (context.Response.StatusCode != 200)
