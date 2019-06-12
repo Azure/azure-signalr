@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR
             return false;
         }
 
-        public Task ApplyAsync(HttpContext httpContext, EndpointSelectorContext context, CandidateSet candidates)
+        public Task ApplyAsync(HttpContext httpContext, CandidateSet candidates)
         {
             for (var i = 0; i < candidates.Count; i++)
             {
