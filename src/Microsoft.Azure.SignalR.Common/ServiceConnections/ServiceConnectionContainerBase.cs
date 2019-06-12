@@ -32,21 +32,17 @@ namespace Microsoft.Azure.SignalR
 
         protected IServiceConnectionFactory ServiceConnectionFactory { get; }
 
-        protected IConnectionFactory ConnectionFactory { get; }
-
         protected int FixedConnectionCount { get; }
 
         protected virtual ServerConnectionType InitialConnectionType { get; } = ServerConnectionType.Default;
 
-        public ServiceEndpoint Endpoint { get; }
+        public HubServiceEndpoint Endpoint { get; }
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory,
-            int minConnectionCount, ServiceEndpoint endpoint,
+            int minConnectionCount, HubServiceEndpoint endpoint,
             IReadOnlyList<IServiceConnection> initialConnections = null)
         {
             ServiceConnectionFactory = serviceConnectionFactory;
-            ConnectionFactory = connectionFactory;
             Endpoint = endpoint;
             _ackHandler = new AckHandler();
 
@@ -117,7 +113,7 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         protected IServiceConnection CreateServiceConnectionCore(ServerConnectionType type)
         {
-            return ServiceConnectionFactory.Create(Endpoint, ConnectionFactory, this, type);
+            return ServiceConnectionFactory.Create(Endpoint, this, type);
         }
 
         protected virtual async Task OnConnectionComplete(IServiceConnection serviceConnection)

@@ -25,6 +25,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionFactory _clientConnectionFactory;
+        private readonly HubServiceEndpoint _endpoint;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly ILogger _logger;
         private readonly ConcurrentDictionary<string, string> _connectionIds =
@@ -43,6 +44,7 @@ namespace Microsoft.Azure.SignalR
                                  ConnectionDelegate connectionDelegate,
                                  IClientConnectionFactory clientConnectionFactory,
                                  string connectionId,
+                                 HubServiceEndpoint endpoint,
                                  IServiceMessageHandler serviceMessageHandler,
                                  ServerConnectionType connectionType = ServerConnectionType.Default) :
             base(serviceProtocol, loggerFactory, connectionId, serviceMessageHandler, connectionType)
@@ -51,12 +53,13 @@ namespace Microsoft.Azure.SignalR
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
+            _endpoint = endpoint;
             _logger = loggerFactory?.CreateLogger<ServiceConnection>() ?? NullLogger<ServiceConnection>.Instance;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
         {
-            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId, target, headers: CustomHeader);
+            return _connectionFactory.ConnectAsync(_endpoint, TransferFormat.Binary, ConnectionId, target, headers: CustomHeader);
         }
 
         protected override Task DisposeConnection()

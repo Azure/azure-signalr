@@ -22,13 +22,14 @@ namespace Microsoft.Azure.SignalR.AspNet
         private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
         private const string ReconnectMessage = "asrs:reconnect";
         private readonly ConcurrentDictionary<string, ClientContext> _clientConnections = new ConcurrentDictionary<string, ClientContext>(StringComparer.Ordinal);
-
+        private readonly HubServiceEndpoint _endpoint;
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly ILogger _logger;
 
         public ServiceConnection(
             string connectionId,
+            HubServiceEndpoint endpoint,
             IServiceProtocol serviceProtocol,
             IConnectionFactory connectionFactory,
             IClientConnectionManager clientConnectionManager,
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             ServerConnectionType connectionType = ServerConnectionType.Default)
             : base(serviceProtocol, loggerFactory, connectionId, serviceMessageHandler, connectionType)
         {
+            _endpoint = endpoint;
             _connectionFactory = connectionFactory;
             _clientConnectionManager = clientConnectionManager;
             _logger = loggerFactory?.CreateLogger<ServiceConnection>() ?? NullLogger<ServiceConnection>.Instance;
@@ -44,7 +46,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
         {
-            return _connectionFactory.ConnectAsync(TransferFormat.Binary, ConnectionId, target, headers: CustomHeader);
+            return _connectionFactory.ConnectAsync(_endpoint, TransferFormat.Binary, ConnectionId, target, headers: CustomHeader);
         }
 
         protected override Task DisposeConnection()

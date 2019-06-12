@@ -51,22 +51,23 @@ namespace Microsoft.Azure.SignalR.Tests
             _clientPipeOptions = clientPipeOptions;
             ConnectionDelegateCallback = callback ?? OnConnectionAsync;
 
-            ServiceConnectionContainer = new StrongServiceConnectionContainer(this, ConnectionFactory, connectionCount, new ServiceEndpoint("", ""));
+            ServiceConnectionContainer = new StrongServiceConnectionContainer(this, connectionCount, new HubServiceEndpoint("", null, null));
             ServiceMessageHandler = (StrongServiceConnectionContainer) ServiceConnectionContainer;
         }
 
-        public IServiceConnection Create(ServiceEndpoint endpoint, IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler,
+        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler,
             ServerConnectionType type)
         {
             var connectionId = Guid.NewGuid().ToString("N");
             var connection = new ServiceConnection(
                 SharedServiceProtocol,
                 this,
-                connectionFactory,
+                ConnectionFactory,
                 NullLoggerFactory.Instance,
                 ConnectionDelegateCallback,
                 this,
                 connectionId,
+                endpoint,
                 serviceMessageHandler,
                 type);
             ServiceConnections.TryAdd(connectionId, connection);
