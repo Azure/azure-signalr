@@ -265,7 +265,7 @@ namespace Microsoft.Azure.SignalR
         {
             for (int i = 0; i < count; i++)
             {
-                yield return ServiceConnectionFactory.Create(Endpoint, ConnectionFactory, this, InitialConnectionType);
+                yield return CreateServiceConnectionCore(InitialConnectionType);
             }
         }
     }
