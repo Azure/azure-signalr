@@ -2,10 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
@@ -19,41 +17,53 @@ namespace Microsoft.Azure.SignalR
         private static TimeSpan ReconnectInterval =>
             TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackOffInternalInMilliseconds));
 
-        private readonly ServiceEndpoint _endpoint;
+        private readonly BackOffPolicy _backOffPolicy = new BackOffPolicy();
 
-        protected readonly IServiceConnectionFactory ServiceConnectionFactory;
-        protected readonly IConnectionFactory ConnectionFactory;
-        protected volatile List<IServiceConnection> FixedServiceConnections;
-        protected readonly int FixedConnectionCount;
-        private readonly BackOffPolicy backOffPolicy = new BackOffPolicy();
-
-        private object _lock = new object();
+        private readonly object _lock = new object();
 
         private readonly AckHandler _ackHandler;
+        private volatile List<IServiceConnection> _fixedServiceConnections;
+
+        protected List<IServiceConnection> FixedServiceConnections
+        {
+            get { return _fixedServiceConnections; }
+            set { _fixedServiceConnections = value; }
+        }
+
+        protected IServiceConnectionFactory ServiceConnectionFactory { get; }
+
+        protected IConnectionFactory ConnectionFactory { get; }
+
+        protected int FixedConnectionCount { get; }
+
+        protected virtual ServerConnectionType InitialConnectionType { get; } = ServerConnectionType.Default;
+
+        public ServiceEndpoint Endpoint { get; }
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory,
-            int fixedConnectionCount, ServiceEndpoint endpoint)
+            int minConnectionCount, ServiceEndpoint endpoint,
+            IReadOnlyList<IServiceConnection> initialConnections = null)
         {
             ServiceConnectionFactory = serviceConnectionFactory;
             ConnectionFactory = connectionFactory;
-            FixedConnectionCount = fixedConnectionCount;
-            _endpoint = endpoint;
+            Endpoint = endpoint;
             _ackHandler = new AckHandler();
 
             // make sure it is after _endpoint is set
-            FixedServiceConnections = CreateFixedServiceConnection(fixedConnectionCount);
-        }
+            // init initial connections
+            var initial = initialConnections == null ? new List<IServiceConnection>() : new List<IServiceConnection>(initialConnections);
 
-        protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections, ServiceEndpoint endpoint)
-        {
-            ServiceConnectionFactory = serviceConnectionFactory;
-            ConnectionFactory = connectionFactory;
-            FixedServiceConnections = initialConnections;
-            FixedConnectionCount = initialConnections.Count;
-            _endpoint = endpoint;
-            _ackHandler = new AckHandler();
+            var remainingCount = minConnectionCount - (initialConnections?.Count ?? 0);
+            if (remainingCount > 0)
+            {
+                // if still not match or greater than minConnectionCount, create more
+                var remaining = CreateFixedServiceConnection(remainingCount);
+                initial.AddRange(remaining);
+            }
+
+            FixedServiceConnections = initial;
+            FixedConnectionCount = initial.Count;
         }
 
         public async Task StartAsync()
@@ -62,9 +72,9 @@ namespace Microsoft.Azure.SignalR
             await Task.WhenAny(FixedServiceConnections.Select(s => s.ConnectionInitializedTask));
 
             // Set the endpoint connection after one connection is initialized
-            if (_endpoint != null)
+            if (Endpoint != null)
             {
-                _endpoint.Connection = this;
+                Endpoint.Connection = this;
             }
 
             await task;
@@ -103,16 +113,11 @@ namespace Microsoft.Azure.SignalR
         }
 
         /// <summary>
-        /// Create a connection in initialization and reconnection
-        /// </summary>
-        protected abstract IServiceConnection CreateServiceConnectionCore();
-
-        /// <summary>
         /// Create a connection for a specific service connection type
         /// </summary>
         protected IServiceConnection CreateServiceConnectionCore(ServerConnectionType type)
         {
-            return ServiceConnectionFactory.Create(_endpoint, ConnectionFactory, this, type);
+            return ServiceConnectionFactory.Create(Endpoint, ConnectionFactory, this, type);
         }
 
         protected virtual async Task OnConnectionComplete(IServiceConnection serviceConnection)
@@ -138,7 +143,7 @@ namespace Microsoft.Azure.SignalR
         {
             Func<Task<bool>> tryNewConnection = async () =>
             {
-                var connection = CreateServiceConnectionCore();
+                var connection = CreateServiceConnectionCore(InitialConnectionType);
                 ReplaceFixedConnections(index, connection);
                 _ = StartCoreAsync(connection);
                 await connection.ConnectionInitializedTask;
@@ -146,7 +151,7 @@ namespace Microsoft.Azure.SignalR
                 return connection.Status == ServiceConnectionStatus.Connected;
             };
 
-            await backOffPolicy.CallProbeWithBackOffAsync(tryNewConnection, GetRetryDelay);
+            await _backOffPolicy.CallProbeWithBackOffAsync(tryNewConnection, GetRetryDelay);
         }
 
         internal static TimeSpan GetRetryDelay(int retryCount)
@@ -256,16 +261,12 @@ namespace Microsoft.Azure.SignalR
             throw new ServiceConnectionNotActiveException();
         }
 
-        private List<IServiceConnection> CreateFixedServiceConnection(int count)
+        private IEnumerable<IServiceConnection> CreateFixedServiceConnection(int count)
         {
-            var connections = new List<IServiceConnection>();
             for (int i = 0; i < count; i++)
             {
-                var connection = CreateServiceConnectionCore();
-                connections.Add(connection);
+                yield return CreateServiceConnectionCore(InitialConnectionType);
             }
-
-            return connections;
         }
     }
 }

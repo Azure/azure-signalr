@@ -9,22 +9,12 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 {
     internal class WeakServiceConnectionContainer : ServiceConnectionContainerBase
     {
+        protected override ServerConnectionType InitialConnectionType => ServerConnectionType.Weak;
+
         public WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
             IConnectionFactory connectionFactory, int fixedConnectionCount, ServiceEndpoint endpoint)
             : base(serviceConnectionFactory, connectionFactory, fixedConnectionCount, endpoint)
         {
-        }
-
-        // For test purpose only
-        internal WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections, ServiceEndpoint endpoint)
-            : base(serviceConnectionFactory, connectionFactory, initialConnections, endpoint)
-        {
-        }
-
-        protected override IServiceConnection CreateServiceConnectionCore()
-        {
-            return CreateServiceConnectionCore(ServerConnectionType.Weak);
         }
 
         public override Task HandlePingAsync(PingMessage pingMessage)
