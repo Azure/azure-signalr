@@ -16,29 +16,27 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ConnectionFactory : IConnectionFactory
     {
-        private readonly IServiceEndpointProvider _provider;
         private readonly ILoggerFactory _loggerFactory;
         private readonly string _userId;
-        private readonly string _hubName;
 
-        public ConnectionFactory(string hubName, IServiceEndpointProvider provider, IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
+        public ConnectionFactory(IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
         {
-            _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _loggerFactory = loggerFactory == null ? (ILoggerFactory)NullLoggerFactory.Instance : new GracefulLoggerFactory(loggerFactory);
             _userId = nameProvider?.GetName();
-            _hubName = hubName;
         }
 
-        public async Task<ConnectionContext> ConnectAsync(TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken = default, IDictionary<string, string> headers = null)
+        public async Task<ConnectionContext> ConnectAsync(HubServiceEndpoint endpoint, TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken = default, IDictionary<string, string> headers = null)
         {
+            var provider = endpoint.Provider;
+            var hubName = endpoint.Hub;
             var httpConnectionOptions = new HttpConnectionOptions
             {
-                Url = GetServiceUrl(connectionId, target),
-                AccessTokenProvider = () => Task.FromResult(_provider.GenerateServerAccessToken(_hubName, _userId)),
+                Url = GetServiceUrl(provider, hubName, connectionId, target),
+                AccessTokenProvider = () => Task.FromResult(provider.GenerateServerAccessToken(hubName, _userId)),
                 Transports = HttpTransportType.WebSockets,
                 SkipNegotiation = true,
                 Headers = headers,
-                Proxy = _provider.Proxy,
+                Proxy = provider.Proxy,
             };
             var httpConnection = new HttpConnection(httpConnectionOptions, _loggerFactory);
             try
@@ -53,9 +51,9 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private Uri GetServiceUrl(string connectionId, string target)
+        private Uri GetServiceUrl(IServiceEndpointProvider provider, string hubName, string connectionId, string target)
         {
-            var baseUri = new UriBuilder(_provider.GetServerEndpoint(_hubName));
+            var baseUri = new UriBuilder(provider.GetServerEndpoint(hubName));
             var query = "cid=" + connectionId;
             if (target != null)
             {

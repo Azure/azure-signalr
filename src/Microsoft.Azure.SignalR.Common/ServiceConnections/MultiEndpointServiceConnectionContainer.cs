@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -20,11 +19,11 @@ namespace Microsoft.Azure.SignalR
         private readonly ILogger _logger;
         private readonly IServiceConnectionContainer _inner;
 
-        private IReadOnlyList<ServiceEndpoint> _endpoints;
+        private IReadOnlyList<HubServiceEndpoint> _endpoints;
 
         public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
 
-        public MultiEndpointServiceConnectionContainer(string hub, Func<ServiceEndpoint, IServiceConnectionContainer> generator, IServiceEndpointManager endpointManager, IMessageRouter router, ILoggerFactory loggerFactory)
+        public MultiEndpointServiceConnectionContainer(string hub, Func<HubServiceEndpoint, IServiceConnectionContainer> generator, IServiceEndpointManager endpointManager, IMessageRouter router, ILoggerFactory loggerFactory)
         {
             if (generator == null)
             {
@@ -44,13 +43,13 @@ namespace Microsoft.Azure.SignalR
             {
                 // router is required when endpoints > 1
                 _router = router ?? throw new ArgumentNullException(nameof(router));
-                Connections = _endpoints.ToDictionary(s => s, s => generator(s));
+                Connections = _endpoints.ToDictionary(s => (ServiceEndpoint)s, s => generator(s));
             }
         }
 
         public MultiEndpointServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, string hub,
             int count, IServiceEndpointManager endpointManager, IMessageRouter router, IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
-        :this(hub, endpoint => CreateContainer(serviceConnectionFactory, endpoint, hub, count, endpointManager, nameProvider, loggerFactory),
+        :this(hub, endpoint => CreateContainer(serviceConnectionFactory, endpoint, count),
             endpointManager, router, loggerFactory)
         {
         }
@@ -60,17 +59,15 @@ namespace Microsoft.Azure.SignalR
             return Connections.Keys.Where(s => s.Online);
         }
 
-        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, ServiceEndpoint endpoint, string hub, int count, IServiceEndpointManager endpointManager, IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
+        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, HubServiceEndpoint endpoint, int count)
         {
-            var provider = endpointManager.GetEndpointProvider(endpoint);
-            var connectionFactory = new ConnectionFactory(hub, provider, nameProvider, loggerFactory);
             if (endpoint.EndpointType == EndpointType.Primary)
             {
-                return new StrongServiceConnectionContainer(serviceConnectionFactory, connectionFactory, count, endpoint);
+                return new StrongServiceConnectionContainer(serviceConnectionFactory, count, endpoint);
             }
             else
             {
-                return new WeakServiceConnectionContainer(serviceConnectionFactory, connectionFactory, count, endpoint);
+                return new WeakServiceConnectionContainer(serviceConnectionFactory, count, endpoint);
             }
         }
 

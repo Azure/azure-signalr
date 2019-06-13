@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             _generator = generator;
         }
 
-        public IServiceConnection Create(ServiceEndpoint endpoint, IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
+        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
         {
             return _generator?.Invoke(endpoint) ?? new TestServiceConnection();
         }

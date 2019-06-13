@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal abstract class ServiceEndpointManagerBase : IServiceEndpointManager
     {
-        private readonly ConcurrentDictionary<string, IReadOnlyList<ServiceEndpoint>> _endpointsPerHub = new ConcurrentDictionary<string, IReadOnlyList<ServiceEndpoint>>();
+        private readonly ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>> _endpointsPerHub = new ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>>();
 
         private readonly ILogger _logger;
 
@@ -54,9 +54,13 @@ namespace Microsoft.Azure.SignalR
 
         public abstract IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
 
-        public IReadOnlyList<ServiceEndpoint> GetEndpoints(string hub)
+        public IReadOnlyList<HubServiceEndpoint> GetEndpoints(string hub)
         {
-            return _endpointsPerHub.GetOrAdd(hub, s => Endpoints.Select(e => new ServiceEndpoint(e)).ToArray());
+            return _endpointsPerHub.GetOrAdd(hub, s => Endpoints.Select(e =>
+            {
+                var provider = GetEndpointProvider(e);
+                return new HubServiceEndpoint(hub, provider, e);
+            }).ToArray());
         }
 
         private static IEnumerable<ServiceEndpoint> GetEndpoints(IServiceEndpointOptions options)

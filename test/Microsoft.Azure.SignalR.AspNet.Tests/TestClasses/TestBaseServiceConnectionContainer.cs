@@ -9,8 +9,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
     internal sealed class TestBaseServiceConnectionContainer : ServiceConnectionContainerBase
     {
-        public TestBaseServiceConnectionContainer(List<IServiceConnection> serviceConnections, ServiceEndpoint endpoint = null)
-            : base(null, null, 0, endpoint, serviceConnections)
+        public TestBaseServiceConnectionContainer(List<IServiceConnection> serviceConnections, HubServiceEndpoint endpoint = null)
+            : base(null, 0, endpoint, serviceConnections)
         {
         }
 

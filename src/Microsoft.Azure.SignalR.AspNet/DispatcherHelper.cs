@@ -92,7 +92,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             var scf = configuration.Resolver.Resolve<IServiceConnectionFactory>();
             if (scf == null)
             {
-                scf = new ServiceConnectionFactory(serviceProtocol, ccm, loggerFactory);
+                var connectionFactory = new ConnectionFactory(serverNameProvider, loggerFactory);
+                scf = new ServiceConnectionFactory(serviceProtocol, ccm, connectionFactory, loggerFactory);
                 configuration.Resolver.Register(typeof(IServiceConnectionFactory), () => scf);
             }
 
