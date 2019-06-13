@@ -7,14 +7,14 @@ Building Azure SignalR Service SDK from source allows you tweak and customize th
 
 Building Azure SignalR Service SDK requires:
 
-* Visual Studio **2019 Preview**. <https://visualstudio.com>
+* Visual Studio **2019 (Preview)**. <https://visualstudio.com>
     * To install the exact required components, run [eng/scripts/InstallVisualStudio.ps1](/eng/scripts/InstallVisualStudio.ps1).
         ```ps1
         PS> ./eng/scripts/InstallVisualStudio.ps1
         ```
 * Git. <https://git-scm.org>
 * AspNetCore 3.0 Preview Runtime (Version >= 3.0.0-preview3-27503-5) <https://dotnet.microsoft.com/download/dotnet-core/3.0>
-* AspNetCore 3.0 SDK (Version >= 3.0.100-preview4-011136). Install from AspNetCore code repo before release <https://github.com/dotnet/core-sdk#installers-and-binaries>.
+* AspNetCore 3.0 SDK (Version >= 3.0.100-preview6-012264). Install from AspNetCore code repo before release <https://github.com/dotnet/core-sdk#installers-and-binaries>.
 
 ## Clone the source code
 
