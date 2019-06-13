@@ -3,7 +3,6 @@
 
 using System.IO;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
@@ -31,7 +30,8 @@ namespace Microsoft.Azure.SignalR.Tests.Common
                 }
                 catch (IOException ex)
                 {
-                    if (ex.Message.Contains("address already in use") || ex.Message.Contains("Failed to bind to address"))
+                    if (ex.Message.Contains("address already in use") ||
+                        ex.Message.Contains("Failed to bind to address"))
                     {
                         _output.WriteLine($"Retry: {retry + 1} times. Warning: {ex.Message}");
                     }

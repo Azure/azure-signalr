@@ -3,10 +3,9 @@
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.SignalR.Tests.Common;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Configuration;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -21,9 +20,10 @@ namespace Microsoft.Azure.SignalR.Tests
 
         protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output)
         {
-            TestHub.ClearConnectedConnectionAndUser();
+            var testHubConnectionManager = new TestHubConnectionManager();
 
             _host = new WebHostBuilder()
+                .ConfigureServices(services => services.AddSingleton<TestHubConnectionManager>(testHubConnectionManager))
                 .ConfigureLogging(logging => logging.AddXunit(output))
                 .UseStartup<TestStartup>()
                 .UseUrls(serverUrl)

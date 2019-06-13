@@ -1,18 +1,15 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Net;
-using System.Reflection;
-using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Owin.Hosting;
 using Owin;
+using System;
+using System.Diagnostics;
+using System.Net;
+using System.Threading.Tasks;
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
@@ -36,14 +33,15 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output)
         {
-            TestHub.ClearConnectedConnectionAndUser();
-
+            var testHubConnectionManager = new TestHubConnectionManager();
+            var userIdProvider = new UserIdProvider();
             _loggerFactory = new LoggerFactory().AddXunit(output);
 
             _webApp = WebApp.Start(new StartOptions(serverUrl), app =>
             {
                 var hubConfiguration = Utility.GetActualHubConfig(_loggerFactory);
-                hubConfiguration.Resolver.Register(typeof(IUserIdProvider), () => Activator.CreateInstance(typeof(UserIdProvider)));
+                hubConfiguration.Resolver.Register(typeof(TestHub), () => new TestHub(testHubConnectionManager));
+                hubConfiguration.Resolver.Register(typeof(IUserIdProvider), () => userIdProvider);
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                 app.MapAzureSignalR("/signalr", GetType().FullName, hubConfiguration, options => options.ConnectionString = TestConfiguration.Instance.ConnectionString);
                 GlobalHost.TraceManager.Switch.Level = SourceLevels.Information;
@@ -54,7 +52,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public override Task StopAsync()
         {
             _webApp?.Dispose();
-            _loggerFactory.Dispose();
+            _loggerFactory?.Dispose();
             return Task.CompletedTask;
         }
     }
