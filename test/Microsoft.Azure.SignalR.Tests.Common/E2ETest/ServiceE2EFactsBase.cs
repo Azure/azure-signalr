@@ -52,12 +52,10 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         public async Task RunE2ETests(string methodName, int expectedMessageCount, Func<string, ITestClientSet, Task> coreTask)
         {
             ITestServer server = null;
-            IDisposable verifiableLog = null;
             try
             {
-                verifiableLog = StartVerifiableLog(out var loggerFactory);
-                server = _testServerFactory.Create();
-                var serverUrl = await server.StartAsync(loggerFactory);
+                server = _testServerFactory.Create(_output);
+                var serverUrl = await server.StartAsync();
                 var count = 0;
                 var clients = _testClientSetFactory.Create(serverUrl, DefaultClientCount, _output);
                 clients.AddListener(methodName, message => Interlocked.Increment(ref count));
@@ -71,7 +69,6 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             finally
             {
                 await server?.StopAsync();
-                verifiableLog?.Dispose();
             }
 
         }

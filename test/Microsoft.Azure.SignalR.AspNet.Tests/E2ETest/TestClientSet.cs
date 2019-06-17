@@ -1,12 +1,12 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.AspNet.SignalR.Client;
+using Microsoft.Azure.SignalR.Tests.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNet.SignalR.Client;
-using Microsoft.Azure.SignalR.Tests.Common;
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
@@ -22,13 +22,17 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public TestClientSet(string serverUrl, int count, ITestOutputHelper output)
         {
             _connections = (from i in Enumerable.Range(0, count)
-                            select new HubConnection(serverUrl)).ToList();
+                            select new HubConnection(serverUrl, $"user=user_{i}")).ToList();
 
             foreach (var conn in _connections)
             {
                 conn.Closed += () =>
                 {
                     _output.WriteLine($"Client connection closed.");
+                };
+                conn.Error += ex =>
+                {
+                    _output.WriteLine($"Client error: {ex}");
                 };
             }
 
@@ -68,12 +72,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         public Task StopAsync()
         {
-            foreach (var conn in _connections)
-            {
-                conn.Stop();
-            }
-
-            return Task.CompletedTask;
+            return Task.WhenAll(from conn in _connections
+                                select Task.Run(() =>
+                                {
+                                    conn.Stop();
+                                    return Task.CompletedTask;
+                                }));
         }
 
         public Task ManageGroupAsync(string methodName, IDictionary<int, string> connectionGroupMap)

@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 {
     public interface ITestServer
     {
-        Task<string> StartAsync(ILoggerFactory loggerFactory);
+        Task<string> StartAsync();
         Task StopAsync();
     }
 }
