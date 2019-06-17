@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 
@@ -12,14 +10,16 @@ namespace Microsoft.Azure.SignalR.Tests.Common
     {
         private readonly IDisposable _wrappedDisposable;
         private readonly Func<WriteContext, bool> _expectedErrors;
+        private readonly Func<IList<LogRecord>, bool> _logChecker;
         private readonly LogSinkProvider _sink;
 
         public ILoggerFactory LoggerFactory { get; }
 
-        public VerifyLogScope(ILoggerFactory loggerFactory = null, IDisposable wrappedDisposable = null, Func<WriteContext, bool> expectedErrors = null)
+        public VerifyLogScope(ILoggerFactory loggerFactory = null, IDisposable wrappedDisposable = null, Func<WriteContext, bool> expectedErrors = null, Func<IList<LogRecord>, bool> logChecker = null)
         {
             _wrappedDisposable = wrappedDisposable;
             _expectedErrors = expectedErrors;
+            _logChecker = logChecker;
             _sink = new LogSinkProvider();
 
             LoggerFactory = loggerFactory ?? new LoggerFactory();
@@ -29,6 +29,12 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         public void Dispose()
         {
             _wrappedDisposable?.Dispose();
+
+            var logs = _sink.GetLogs();
+            if (_logChecker?.Invoke(logs) == false)
+            {
+                throw new Exception("Failed checking log");
+            }
 
             var results = _sink.GetLogs().Where(w => w.Write.LogLevel >= LogLevel.Error).ToList();
 
