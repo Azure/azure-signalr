@@ -76,8 +76,11 @@ namespace Microsoft.Azure.SignalR
             {
                 return Task.CompletedTask;
             }
-
+#if !NETCOREAPP3_0
             return ((HttpConnection)connection).DisposeAsync();
+#else
+            return ((HttpConnection)connection).DisposeAsync().AsTask();
+#endif
         }
 
         private sealed class GracefulLoggerFactory : ILoggerFactory

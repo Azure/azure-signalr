@@ -6,6 +6,7 @@
     <!-- Azure ASP.NET Core SignalR -->
     <MessagePackPackageVersion>1.7.3.4</MessagePackPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
+    <MicrosoftAspNetCoreHttpConnectionsClientPackage3_0PreviewVersion>3.0.0-preview6.19307.2</MicrosoftAspNetCoreHttpConnectionsClientPackage3_0PreviewVersion>
     <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0</MicrosoftAspNetCoreSignalRPackageVersion>
     <MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>3.19.1</MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>
     <MicrosoftAzureKeyVaultPackageVersion>2.3.2</MicrosoftAzureKeyVaultPackageVersion>
@@ -43,8 +44,8 @@
     <OwinPackageVersion>1.0.0</OwinPackageVersion>
 
     <!--Testing -->
-    <MicrosoftAspNetCoreSignalRProtocolsMessagePackTestPackageVersion>3.0.0-preview3-19153-02</MicrosoftAspNetCoreSignalRProtocolsMessagePackTestPackageVersion>
-    <MicrosoftAspNetCoreSignalRClientTest>3.0.0-preview3-19153-02</MicrosoftAspNetCoreSignalRClientTest>
+    <MicrosoftAspNetCoreSignalRProtocolsMessagePackTestPackageVersion>3.0.0-preview6.19307.2</MicrosoftAspNetCoreSignalRProtocolsMessagePackTestPackageVersion>
+    <MicrosoftAspNetCoreSignalRClientTest>3.0.0-preview6.19307.2</MicrosoftAspNetCoreSignalRClientTest>
     <MicrosoftNETTestSdkPackageVersion>15.6.1</MicrosoftNETTestSdkPackageVersion>
     <MoqPackageVersion>4.7.49</MoqPackageVersion>
     <XunitPackageVersion>2.4.0</XunitPackageVersion>

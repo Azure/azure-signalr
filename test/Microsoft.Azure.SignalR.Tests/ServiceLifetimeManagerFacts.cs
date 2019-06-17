@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private static readonly IHubProtocolResolver HubProtocolResolver =
             new DefaultHubProtocolResolver(new IHubProtocol[]
                 {
-                    new NewtonsoftJsonHubProtocol(),
+                    new JsonHubProtocol(),
                     new MessagePackHubProtocol()
                 },
                 NullLogger<DefaultHubProtocolResolver>.Instance);
