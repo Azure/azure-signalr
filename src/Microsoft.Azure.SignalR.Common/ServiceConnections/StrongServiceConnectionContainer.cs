@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.SignalR
         private readonly object _lock = new object();
 
         public StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
-            int fixedConnectionCount, HubServiceEndpoint endpoint) : base(serviceConnectionFactory, fixedConnectionCount, endpoint)
+            int fixedConnectionCount, HubServiceEndpoint endpoint, ILogger logger = null) : base(serviceConnectionFactory, fixedConnectionCount, endpoint, logger: logger)
         {
             _onDemandServiceConnections = new List<IServiceConnection>();
         }

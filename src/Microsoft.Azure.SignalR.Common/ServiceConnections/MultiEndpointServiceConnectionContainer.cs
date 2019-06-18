@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR
 
         public MultiEndpointServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, string hub,
             int count, IServiceEndpointManager endpointManager, IMessageRouter router, IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
-        :this(hub, endpoint => CreateContainer(serviceConnectionFactory, endpoint, count),
+        :this(hub, endpoint => CreateContainer(serviceConnectionFactory, endpoint, count, loggerFactory),
             endpointManager, router, loggerFactory)
         {
         }
@@ -60,15 +60,15 @@ namespace Microsoft.Azure.SignalR
             return Connections.Keys.Where(s => s.Online);
         }
 
-        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, HubServiceEndpoint endpoint, int count)
+        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, HubServiceEndpoint endpoint, int count, ILoggerFactory loggerFactory)
         {
             if (endpoint.EndpointType == EndpointType.Primary)
             {
-                return new StrongServiceConnectionContainer(serviceConnectionFactory, count, endpoint);
+                return new StrongServiceConnectionContainer(serviceConnectionFactory, count, endpoint, loggerFactory.CreateLogger<StrongServiceConnectionContainer>());
             }
             else
             {
-                return new WeakServiceConnectionContainer(serviceConnectionFactory, count, endpoint);
+                return new WeakServiceConnectionContainer(serviceConnectionFactory, count, endpoint, loggerFactory.CreateLogger<WeakServiceConnectionContainer>());
             }
         }
 
