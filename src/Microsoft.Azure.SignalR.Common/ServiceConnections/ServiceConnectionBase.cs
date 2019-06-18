@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly ILogger _logger;
 
-        private ServiceConnectionStatus _status;
+        private volatile ServiceConnectionStatus _status;
 
         protected string ConnectionId { get; }
 
@@ -70,8 +70,9 @@ namespace Microsoft.Azure.SignalR
                     {
                         if (_status != value)
                         {
+                            var prev = _status;
                             _status = value;
-                            ConnectionStatusChanged?.Invoke(new StatusChange(_status, value));
+                            ConnectionStatusChanged?.Invoke(new StatusChange(prev, value));
                         }
                     }
                 }
