@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public Task StartAsync(string target = null)
         {
-            ConnectionStatusChanged?.Invoke(new StatusChange(ServiceConnectionStatus.Inited, Status));
+            ConnectionStatusChanged?.Invoke(new StatusChange(ServiceConnectionStatus.Connecting, Status));
 
             return Task.CompletedTask;
         }
