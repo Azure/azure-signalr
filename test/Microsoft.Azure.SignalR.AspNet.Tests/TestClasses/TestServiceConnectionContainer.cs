@@ -12,6 +12,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
     {
         private readonly Action<(ServiceMessage, IServiceConnectionContainer)> _validator;
 
+        public event Action<StatusChange> ConnectionStatusChanged;
+
         public string HubName { get; }
 
         public ServiceConnectionStatus Status { get; }

@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void TestEndpointManagerWithDuplicateEndpointsAndConnectionStarted()
+        public async Task TestEndpointManagerWithDuplicateEndpointsAndConnectionStarted()
         {
             var sem = new TestServiceEndpointManager(
                 new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
@@ -110,6 +110,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // All the connections started
             _ = container.StartAsync();
+            await container.ConnectionInitializedTask;
 
             endpoints = container.GetOnlineEndpoints().ToArray();
             Assert.Equal(2, endpoints.Length);
@@ -155,6 +156,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(writeAsyncTcs: writeTcs),
             }, e), sem, router, null);
 
+            // All the connections started
+            _ = container.StartAsync();
+            await container.ConnectionInitializedTask;
+
             var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
             await writeTcs.Task.OrTimeout();
             innerContainer.HandleAck(new AckMessage(1, AckStatus.Ok));
@@ -163,7 +168,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
 
         [Fact]
-        public async Task TestContainerWithOneEndpointWithAllDisconnectedAndConnectionStartedThrows()
+        public async Task TestContainerWithBadRouterThrows()
         {
             var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
             var throws = new ServiceConnectionNotActiveException();
@@ -179,13 +184,17 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
             }, e), sem, router, null);
 
+            // All the connections started
+            _ = container.StartAsync();
+            await container.ConnectionInitializedTask;
+
             await Assert.ThrowsAsync(throws.GetType(),
                 () => container.WriteAsync(DefaultGroupMessage)
                 );
         }
 
         [Fact]
-        public async Task TestContainerWithTwoEndpointWithAllConnectedFailsWithBadRouter()
+        public async Task TestContainerWithTwoConnectedEndpointAndBadRouterThrows()
         {
             var sem = new TestServiceEndpointManager(
                 new ServiceEndpoint(ConnectionString1), 
@@ -202,6 +211,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(),
                 new TestServiceConnection(),
             }, e), sem, router, null);
+
+            // All the connections started
+            _ = container.StartAsync();
+            await container.ConnectionInitializedTask;
+
             await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
                 () => container.WriteAsync(DefaultGroupMessage)
                 );
@@ -228,6 +242,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(writeAsyncTcs: writeTcs),
             }, e), sem, router, null);
 
+            // All the connections started
+            _ = container.StartAsync();
+            await container.ConnectionInitializedTask;
+
             var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
             await writeTcs.Task.OrTimeout();
             containers.First().Value.HandleAck(new AckMessage(1, AckStatus.Ok));
@@ -235,37 +253,19 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async Task TestContainerWithTwoEndpointWithAllOfflineThrows()
+        public async Task TestContainerWithTwoEndpointWithAllOfflineSucceedsWithWarning()
         {
-            var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1),
-                new ServiceEndpoint(ConnectionString2));
-
-            var router = new TestEndpointRouter();
-            var container = new MultiEndpointServiceConnectionContainer("hub",
-                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
-                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-                new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-            }, e), sem, router, null);
-
-            await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
-                () => container.WriteAckableMessageAsync(DefaultGroupMessage)
-                );
-        }
-
-        [Fact]
-        public async Task TestContainerWithTwoEndpointWithAllOfflineAndConnectionStartedThrows()
-        {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
+            {
+                var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
+                Assert.Equal(2, warns.Count);
+                Assert.Contains(warns, s => s.Write.Message.Contains("Message JoinGroupWithAckMessage is not sent to endpoint http://url1 because all connections to this endpoint are offline."));
+                return true;
+            }))
             {
                 var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1),
-                new ServiceEndpoint(ConnectionString2));
+                    new ServiceEndpoint(ConnectionString1),
+                    new ServiceEndpoint(ConnectionString2));
 
                 var router = new TestEndpointRouter();
                 var container = new MultiEndpointServiceConnectionContainer("hub",
@@ -279,25 +279,30 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 }, e), sem, router, loggerFactory);
 
+                // All the connections started
                 _ = container.StartAsync();
-
-                // Instead of throws, it logs a warning instead, because the endpoint router can indeed filter out all the available endpoints
-                // So this message not sent can be expected. Users can throw inside the router if they want
-                await container.WriteAsync(DefaultGroupMessage);
+                await container.ConnectionInitializedTask;
+                await container.WriteAckableMessageAsync(DefaultGroupMessage);
             }
         }
 
         [Fact]
-        public async Task TestContainerWithTwoEndpointWithOneOfflineThrows()
+        public async Task TestContainerWithTwoOfflineEndpointWriteAckableMessageSucceedsWithWarning()
         {
-            var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1),
-                new ServiceEndpoint(ConnectionString2, name: "online"));
-
-            var router = new TestEndpointRouter();
-            var container = new MultiEndpointServiceConnectionContainer("hub", e =>
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
             {
-                if (string.IsNullOrEmpty(e.Name))
+                var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
+                Assert.Equal(2, warns.Count);
+                Assert.Contains(warns, s => s.Write.Message.Contains("Message JoinGroupWithAckMessage is not sent to endpoint http://url1 because all connections to this endpoint are offline."));
+                return true;
+            }))
+            {
+                var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1),
+                new ServiceEndpoint(ConnectionString2));
+
+                var router = new TestEndpointRouter();
+                var container = new MultiEndpointServiceConnectionContainer("hub", e =>
                 {
                     return new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -308,48 +313,42 @@ namespace Microsoft.Azure.SignalR.Tests
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                         new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                     }, e);
-                }
-                return new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
-                        new TestServiceConnection(),
-                        new TestServiceConnection(),
-                        new TestServiceConnection(),
-                        new TestServiceConnection(),
-                        new TestServiceConnection(),
-                        new TestServiceConnection(),
-                        new TestServiceConnection(),
-                    }, e);
-            }, sem, router, null);
+                }, sem, router, loggerFactory);
 
-            await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
-                () => container.WriteAckableMessageAsync(DefaultGroupMessage)
-                );
+                _ = container.StartAsync();
+                await container.ConnectionInitializedTask;
+
+                await container.WriteAckableMessageAsync(DefaultGroupMessage);
+            }
         }
 
         [Fact]
-        public async Task TestContainerWithTwoEndpointWithOneOfflineAndConnectionStartedSucceeds()
+        public async Task TestContainerWithTwoEndpointWithOneOfflineSucceeds()
         {
-            var sem = new TestServiceEndpointManager(
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
+            {
+                var sem = new TestServiceEndpointManager(
                 new ServiceEndpoint(ConnectionString1),
                 new ServiceEndpoint(ConnectionString2, name: "online"));
 
-            var router = new TestEndpointRouter();
-            var writeTcs = new TaskCompletionSource<object>();
-            var containers = new Dictionary<ServiceEndpoint, TestBaseServiceConnectionContainer>();
-            var container = new MultiEndpointServiceConnectionContainer("hub", e =>
-            {
-                if (string.IsNullOrEmpty(e.Name))
+                var router = new TestEndpointRouter();
+                var writeTcs = new TaskCompletionSource<object>();
+                var containers = new Dictionary<ServiceEndpoint, TestBaseServiceConnectionContainer>();
+                var container = new MultiEndpointServiceConnectionContainer("hub", e =>
                 {
+                    if (string.IsNullOrEmpty(e.Name))
+                    {
+                        return containers[e] = new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
+                        }, e);
+                    }
                     return containers[e] = new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
-                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
-                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
-                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
-                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
-                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
-                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
-                        new TestServiceConnection(ServiceConnectionStatus.Disconnected, writeAsyncTcs: writeTcs),
-                    }, e);
-                }
-                return containers[e] = new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                         new TestServiceConnection(writeAsyncTcs: writeTcs),
                         new TestServiceConnection(writeAsyncTcs: writeTcs),
                         new TestServiceConnection(writeAsyncTcs: writeTcs),
@@ -357,14 +356,15 @@ namespace Microsoft.Azure.SignalR.Tests
                         new TestServiceConnection(writeAsyncTcs: writeTcs),
                         new TestServiceConnection(writeAsyncTcs: writeTcs),
                         new TestServiceConnection(writeAsyncTcs: writeTcs),
-                    }, e);
-            }, sem, router, null);
+                        }, e);
+                }, sem, router, loggerFactory);
 
-            _ = container.StartAsync();
-            var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
-            await writeTcs.Task.OrTimeout();
-            containers.First(p => !string.IsNullOrEmpty(p.Key.Name)).Value.HandleAck(new AckMessage(1, AckStatus.Ok));  
-            await task.OrTimeout();
+                _ = container.StartAsync();
+                var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
+                await writeTcs.Task.OrTimeout();
+                containers.First(p => !string.IsNullOrEmpty(p.Key.Name)).Value.HandleAck(new AckMessage(1, AckStatus.Ok));
+                await task.OrTimeout();
+            }
         }
 
         [Fact]
@@ -547,44 +547,6 @@ namespace Microsoft.Azure.SignalR.Tests
                 }
 
                 return base.GetNegotiateEndpoint(context, endpoints);
-            }
-        }
-
-        private sealed class TestServiceConnection : IServiceConnection
-        {
-            public ServiceConnectionStatus Status { get; }
-
-            public Task ConnectionInitializedTask => Task.CompletedTask;
-
-            private readonly bool _throws;
-
-            private readonly TaskCompletionSource<object> _writeAsyncTcs = null;
-            public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false, TaskCompletionSource<object> writeAsyncTcs = null)
-            {
-                Status = status;
-                _throws = throws;
-                _writeAsyncTcs = writeAsyncTcs;
-            }
-
-            public Task StartAsync(string target = null)
-            {
-                return Task.CompletedTask;
-            }
-
-            public Task StopAsync()
-            {
-                return Task.CompletedTask;
-            }
-
-            public Task WriteAsync(ServiceMessage serviceMessage)
-            {
-                if (_throws)
-                {
-                    throw new ServiceConnectionNotActiveException();
-                }
-
-                _writeAsyncTcs?.TrySetResult(null);
-                return Task.CompletedTask;
             }
         }
     }

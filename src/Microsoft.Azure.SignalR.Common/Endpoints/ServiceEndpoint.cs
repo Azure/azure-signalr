@@ -14,11 +14,9 @@ namespace Microsoft.Azure.SignalR
         public string Name { get; }
 
         /// <summary>
-        /// Connection == null means no service connection to this endpoint is yet initialized
-        /// When no connection is yet initialized, we consider the endpoint as Online for now, for compatable with current /negotiate behavior
-        /// TODO: improve /negotiate behavior when the server-connection is being established
+        /// Initial status as Online so that when the app server first starts, it can accept incoming negotiate requests, as for backward compatability
         /// </summary>
-        public bool Online => Connection == null || Connection.Status == ServiceConnectionStatus.Connected;
+        public bool Online { get; internal set; } = true;
 
         public string Endpoint { get; }
 
@@ -27,8 +25,6 @@ namespace Microsoft.Azure.SignalR
         internal string AccessKey { get; }
 
         internal int? Port { get; }
-
-        internal IServiceConnectionContainer Connection { get; set; }
 
         public ServiceEndpoint(string key, string connectionString) : this(connectionString)
         {

@@ -37,6 +37,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ServerConnectionType _connectionType;
 
         private readonly IServiceMessageHandler _serviceMessageHandler;
+        private readonly object _statusLock = new object();
 
         // Check service timeout
         private long _lastReceiveTimestamp;
@@ -46,6 +47,8 @@ namespace Microsoft.Azure.SignalR
 
         private readonly ILogger _logger;
 
+        private volatile ServiceConnectionStatus _status;
+
         protected string ConnectionId { get; }
 
         protected IServiceProtocol ServiceProtocol { get; }
@@ -54,7 +57,27 @@ namespace Microsoft.Azure.SignalR
 
         protected string ErrorMessage { get; private set; }
 
-        public ServiceConnectionStatus Status { get; private set; }
+        public event Action<StatusChange> ConnectionStatusChanged;
+
+        public ServiceConnectionStatus Status
+        {
+            get => _status;
+            private set
+            {
+                if (_status != value)
+                {
+                    lock (_statusLock)
+                    {
+                        if (_status != value)
+                        {
+                            var prev = _status;
+                            _status = value;
+                            ConnectionStatusChanged?.Invoke(new StatusChange(prev, value));
+                        }
+                    }
+                }
+            }
+        }
 
         public Task ConnectionInitializedTask => _serviceConnectionStartTcs.Task;
 
@@ -65,8 +88,12 @@ namespace Microsoft.Azure.SignalR
 
             _connectionType = connectionType;
 
-            _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
-            _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
+            if (serviceProtocol != null)
+            {
+                _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
+                _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
+            }
+
             _logger = loggerFactory?.CreateLogger<ServiceConnectionBase>() ?? NullLogger<ServiceConnectionBase>.Instance;
             _serviceMessageHandler = serviceMessageHandler;
         }
@@ -237,7 +264,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task<bool> HandshakeAsync()
+        protected virtual async Task<bool> HandshakeAsync()
         {
             await SendHandshakeRequestAsync(ConnectionContext.Transport.Output);
 

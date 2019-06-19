@@ -6,6 +6,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal enum ServiceConnectionStatus
     {
+        Inited,
         Disconnected,
         Connecting,
         Connected
