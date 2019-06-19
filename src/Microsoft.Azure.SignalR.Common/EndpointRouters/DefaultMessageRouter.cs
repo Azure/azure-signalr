@@ -9,7 +9,7 @@ namespace Microsoft.Azure.SignalR
     internal class DefaultMessageRouter : IMessageRouter
     {
         /// <summary>
-        /// Broadcast to all available endpoints including online and offline, when the endpoint is offline, there is a need to notify user about it because there is potential message lose
+        /// Broadcast to all available endpoints including online and offline, when the endpoint is offline, there is a need to notify user about it because there is potential message loss
         /// </summary>
         /// <param name="endpoints"></param>
         /// <returns></returns>
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         /// <summary>
-        /// Broadcast to all available endpoints including online and offline, when the endpoint is offline, there is a need to notify user about it because there is potential message lose
+        /// Broadcast to all available endpoints including online and offline, when the endpoint is offline, there is a need to notify user about it because there is potential message loss
         /// </summary>
         /// <param name="userId"></param>
         /// <param name="endpoints"></param>
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         /// <summary>
-        /// Broadcast to all available endpoints including online and offline, when the endpoint is offline, there is a need to notify user about it because there is potential message lose
+        /// Broadcast to all available endpoints including online and offline, when the endpoint is offline, there is a need to notify user about it because there is potential message loss
         /// </summary>
         /// <param name="groupName"></param>
         /// <param name="endpoints"></param>
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         /// <summary>
-        /// Broadcast to all available endpoints including online and offline, when the endpoint is offline, there is a need to notify user about it because there is potential message lose
+        /// Broadcast to all available endpoints including online and offline, when the endpoint is offline, there is a need to notify user about it because there is potential message loss
         /// Note that this one is only called when the SDK is not able to identify where the connectionId is.
         /// When the outcoming connectionId happens to be also connected to this app server, SDK can directly send the messages back to that connectionId
         /// </summary>
