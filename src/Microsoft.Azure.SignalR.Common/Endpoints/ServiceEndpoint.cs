@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Globalization;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -63,20 +64,14 @@ namespace Microsoft.Azure.SignalR
 
         public override string ToString()
         {
-            if (string.IsNullOrEmpty(Name))
-            {
-                return Endpoint;
-            }
-            else
-            {
-                return $"[{Name}]{Endpoint}";
-            }
+            var prefix = string.IsNullOrEmpty(Name) ? "" : $"[{Name}]";
+            return $"{prefix}({EndpointType}){Endpoint}";
         }
 
         public override int GetHashCode()
         {
             // We consider ServiceEndpoint with the same Endpoint (https://{signalr.endpoint}) as the unique identity
-            return Endpoint?.GetHashCode() ?? 0;
+            return (Endpoint, EndpointType, Name).GetHashCode();
         }
 
         public override bool Equals(object obj)
@@ -96,7 +91,7 @@ namespace Microsoft.Azure.SignalR
                 return false;
             }
 
-            return Endpoint == that.Endpoint;
+            return Endpoint == that.Endpoint && EndpointType == that.EndpointType && Name == that.Name;
         }
 
         internal static (string, EndpointType) ParseKey(string key)
