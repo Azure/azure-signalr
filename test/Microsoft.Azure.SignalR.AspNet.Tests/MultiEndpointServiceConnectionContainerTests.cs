@@ -315,7 +315,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             {
                 var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
                 Assert.Equal(2, warns.Count);
-                Assert.Contains(warns, s => s.Write.Message.Contains("Message JoinGroupWithAckMessage is not sent to endpoint http://url1 because all connections to this endpoint are offline."));
+                Assert.Contains(warns, s => s.Write.Message.Contains("Message JoinGroupWithAckMessage is not sent to endpoint (Primary)http://url1 because all connections to this endpoint are offline."));
                 return true;
             }))
             {
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             {
                 var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
                 Assert.Equal(1, warns.Count);
-                Assert.Contains(warns, s => s.Write.Message.Contains("Message JoinGroupWithAckMessage is not sent to endpoint http://url1 because all connections to this endpoint are offline."));
+                Assert.Contains(warns, s => s.Write.Message.Contains("Message JoinGroupWithAckMessage is not sent to endpoint (Primary)http://url1 because all connections to this endpoint are offline."));
                 return true;
             }))
             {
