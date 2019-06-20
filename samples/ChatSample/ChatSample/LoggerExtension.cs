@@ -55,7 +55,6 @@ namespace ChatSample
 
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
-                // Console.WriteLine($"[{DateTime.UtcNow:HH:mm:ss.fff}]: {formatter(state, exception)}");
                 _logger.Log(logLevel, eventId, state, exception, (s, ex) => $"[{DateTime.UtcNow:HH:mm:ss.fff}]: {formatter(s, ex)}");
             }
 
