@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using Xunit;
@@ -47,43 +48,61 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             {
                 new ServiceEndpoint("Azure:SignalR:ConnectionString:a", "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0"),
                 new ServiceEndpoint("Azure:SignalR:ConnectionString", "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0"),
-                true,
+                false,
             },
             new object[]
             {
                 new ServiceEndpoint("Azure:SignalR:ConnectionString:a", "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0"),
                 new ServiceEndpoint("Azure:SignalR:ConnectionString::primary", "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080"),
-                true,
+                false,
             },
             new object[]
             {
                 new ServiceEndpoint("Azure:SignalR:ConnectionString:a", "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0"),
                 new ServiceEndpoint("Azure:SignalR:ConnectionString:a:secondary", "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"),
-                true,
+                false,
             },
             new object[]
             {
                 new ServiceEndpoint("Azure:SignalR:ConnectionString:a", "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0"),
                 new ServiceEndpoint("Azure:SignalR:ConnectionString:b", "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456780"),
-                true,
+                false,
             },
             new object[]
             {
                 new ServiceEndpoint("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0"),
                 new ServiceEndpoint("Azure:SignalR:ConnectionString::secondary", "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456780"),
-                true,
+                false,
             },
             new object[]
             {
                 new ServiceEndpoint("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", EndpointType.Secondary),
                 new ServiceEndpoint("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456780", name: "Name1"),
-                true,
+                false,
             },
             new object[]
             {
                 new ServiceEndpoint("Azure:SignalR:ConnectionString", "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0"),
                 new ServiceEndpoint("Azure:SignalR:ConnectionString", "Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456780"),
                 false,
+            },
+            new object[]
+            {
+                new ServiceEndpoint("Azure:SignalR:ConnectionString", "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0"),
+                new ServiceEndpoint("Azure:SignalR:ConnectionString", "Endpoint=http://localhost;AccessKey=OPQRSTUVWXYZ0123456780ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456780"),
+                true,
+            },
+            new object[]
+            {
+                new ServiceEndpoint("Azure:SignalR:ConnectionString", "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0"),
+                new ServiceEndpoint("Azure:SignalR:ConnectionString::primary", "Endpoint=http://localhost;AccessKey=OPQRSTUVWXYZ0123456780ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456780"),
+                true,
+            },
+            new object[]
+            {
+                new ServiceEndpoint("Azure:SignalR:ConnectionString::secondary", "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0"),
+                new ServiceEndpoint("Endpoint=http://localhost;AccessKey=OPQRSTUVWXYZ0123456780ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456780", EndpointType.Secondary),
+                true,
             }
         };
     }

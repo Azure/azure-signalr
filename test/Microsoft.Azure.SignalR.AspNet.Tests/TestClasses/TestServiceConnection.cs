@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         private readonly ServiceConnectionStatus _status;
         private readonly bool _throws;
 
-        public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false) : base(null, null, null, null, ServerConnectionType.Default)
+        public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false) : base(null, null, null, null, ServerConnectionType.Default, null)
         {
             _status = status;
             _throws = throws;

@@ -332,10 +332,10 @@ namespace Microsoft.Azure.SignalR
         private static class Log
         {
             private static readonly Action<ILogger, string, string, Exception> _endpointOnline =
-                LoggerMessage.Define<string, string>(LogLevel.Information, new EventId(1, "EndpointOnline"), "Server connections for hub '{hub}' to endpoint {endpoint} are now online.");
+                LoggerMessage.Define<string, string>(LogLevel.Information, new EventId(1, "EndpointOnline"), "Hub '{hub}' is now connected to '{endpoint}'.");
 
             private static readonly Action<ILogger, string, string, Exception> _endpointOffline =
-                LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(2, "EndpointOffline"), "Server connections for hub '{hub}' to endpoint {endpoint} are now offline.");
+                LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(2, "EndpointOffline"), "Hub '{hub}' is now disconnected from '{endpoint}'. Please check log for detailed info.");
 
             public static void EndpointOnline(ILogger logger, HubServiceEndpoint endpoint)
             {

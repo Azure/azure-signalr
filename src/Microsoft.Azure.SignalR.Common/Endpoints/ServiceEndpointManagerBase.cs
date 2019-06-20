@@ -29,7 +29,8 @@ namespace Microsoft.Azure.SignalR
         {
             _logger = logger ?? NullLogger.Instance;
 
-            var groupedEndpoints = endpoints.GroupBy(s => s.Endpoint).Select(s =>
+            // select the most valuable endpoint with the same endpoint address
+            var groupedEndpoints = endpoints.Distinct().GroupBy(s => s.Endpoint).Select(s =>
             {
                 var items = s.ToList();
                 if (items.Count == 1)
@@ -92,7 +93,7 @@ namespace Microsoft.Azure.SignalR
         private static class Log
         {
             private static readonly Action<ILogger, int, string, string, Exception> _duplicateEndpointFound =
-                LoggerMessage.Define<int, string, string>(LogLevel.Warning, new EventId(1, "DuplicateEndpointFound"), "{count} endpoints to {endpoint} found, use the one {name}");
+                LoggerMessage.Define<int, string, string>(LogLevel.Warning, new EventId(1, "DuplicateEndpointFound"), "{count} endpoint configurations to '{endpoint}' found, use '{name}'.");
 
             public static void DuplicateEndpointFound(ILogger logger, int count, string endpoint, string name)
             {
