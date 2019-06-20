@@ -21,8 +21,7 @@ namespace ChatSample
                 {
                     logging.AddTimedConsole();
                     logging.AddDebug();
-                }
-                )
+                })
                 .UseStartup<Startup>();
     }
 }
