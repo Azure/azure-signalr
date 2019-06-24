@@ -567,8 +567,8 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _errorProcessingMessages =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "ErrorProcessingMessages"), "Error when processing messages. Id: {ServiceConnectionId}");
 
-            private static readonly Action<ILogger, string, string, Exception> _connectionDropped =
-                LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(4, "ConnectionDropped"), "Connection to '{endpoint}' was dropped, probably caused by network instability or service restart. Will try to reconnect after the back off period. Id: {ServiceConnectionId}");
+            private static readonly Action<ILogger, string, string, string, Exception> _connectionDropped =
+                LoggerMessage.Define<string, string, string>(LogLevel.Error, new EventId(4, "ConnectionDropped"), "Connection to '{endpoint}' was dropped, probably caused by network instability or service restart. Will try to reconnect after the back off period. Error detail: {message}. Id: {ServiceConnectionId}.");
 
             private static readonly Action<ILogger, string, Exception> _serviceConnectionClosed =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(14, "serviceConnectionClose"), "Service connection {ServiceConnectionId} closed.");
@@ -642,7 +642,11 @@ namespace Microsoft.Azure.SignalR
 
             public static void ConnectionDropped(ILogger logger, string endpoint, string serviceConnectionId, Exception exception)
             {
-                _connectionDropped(logger, endpoint, serviceConnectionId, exception);
+                var message = exception.Message;
+                var baseException = exception.GetBaseException();
+                message += ". " + baseException.Message;
+
+                _connectionDropped(logger, endpoint, serviceConnectionId, message, null);
             }
 
             public static void ServiceConnectionClosed(ILogger logger, string serviceConnectionId)
