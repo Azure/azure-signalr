@@ -51,6 +51,7 @@ namespace Microsoft.Azure.SignalR
         public static class QueryParameter
         {
             public const string OriginalPath = "asrs.op";
+            public const string ConnectionRequestId = "asrs_request_id";
         }
 
         public static class Config
