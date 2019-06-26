@@ -62,6 +62,9 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        // test only
+        internal ServiceEndpoint() { }
+
         public override string ToString()
         {
             var prefix = string.IsNullOrEmpty(Name) ? "" : $"[{Name}]";

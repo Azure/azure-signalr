@@ -11,6 +11,8 @@ namespace Microsoft.Azure.SignalR
             Provider = provider;
         }
 
+        internal HubServiceEndpoint() : base() { }
+
         public string Hub { get; }
 
         public IServiceEndpointProvider Provider { get; }

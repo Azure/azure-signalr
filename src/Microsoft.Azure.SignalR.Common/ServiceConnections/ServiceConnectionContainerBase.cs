@@ -26,10 +26,11 @@ namespace Microsoft.Azure.SignalR
         private readonly object _statusLock = new object();
 
         private readonly AckHandler _ackHandler;
-        private readonly ILogger _logger;
         private volatile List<IServiceConnection> _fixedServiceConnections;
 
         private volatile ServiceConnectionStatus _status;
+
+        protected ILogger Logger { get; }
 
         protected List<IServiceConnection> FixedServiceConnections
         {
@@ -103,7 +104,7 @@ namespace Microsoft.Azure.SignalR
             FixedServiceConnections = initial;
             FixedConnectionCount = initial.Count;
             ConnectionStatusChanged += OnStatusChanged;
-            _logger = logger ?? NullLogger<ServiceConnectionBase>.Instance;
+            Logger = logger ?? NullLogger<ServiceConnectionBase>.Instance;
         }
 
         public Task StartAsync()
@@ -181,11 +182,11 @@ namespace Microsoft.Azure.SignalR
             Endpoint.Online = online;
             if (!online)
             {
-                Log.EndpointOffline(_logger, Endpoint);
+                Log.EndpointOffline(Logger, Endpoint);
             }
             else
             {
-                Log.EndpointOnline(_logger, Endpoint);
+                Log.EndpointOnline(Logger, Endpoint);
             }
         }
 
