@@ -15,17 +15,17 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
         private const int CheckWindow = 5;
         private static readonly TimeSpan DefaultGetServiceStatusInterval = TimeSpan.FromSeconds(10);
         private static readonly long DefaultGetServiceStatusTicks = DefaultGetServiceStatusInterval.Seconds * Stopwatch.Frequency;
+        private static readonly TimeSpan CheckTimeSpan = TimeSpan.FromMinutes(10);
 
-        private readonly TimeSpan CheckTimeSpan = TimeSpan.FromMinutes(10);
         private readonly object _lock = new object();
         private int _inactiveCount;
         private DateTime? _firstInactiveTime;
         private long _lastSendTimestamp;
 
-        // active ones are those who client connections connected to the whole endpoint
+        // active ones are those whose client connections connected to the whole endpoint
         private volatile bool _active = true;
 
-        private TimerAwaitable _timer;
+        private readonly TimerAwaitable _timer;
 
         protected override ServerConnectionType InitialConnectionType => ServerConnectionType.Weak;
 
@@ -149,17 +149,11 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             private static readonly Action<ILogger, Exception> _failedSendingServiceStatusPing =
                 LoggerMessage.Define(LogLevel.Warning, new EventId(2, "FailedSendingServiceStatusPing"), "Failed sending a service status ping message to service.");
 
-            private static readonly Action<ILogger, ServiceEndpoint, string, Exception> _endpointInactive =
-                LoggerMessage.Define<ServiceEndpoint, string>(LogLevel.Debug, new EventId(3, "EndpointInactive"), "Endpoint {endpoint} for hub {hub} is now inactive.");
-
-            private static readonly Action<ILogger, ServiceEndpoint, string, Exception> _endpointActive =
-                LoggerMessage.Define<ServiceEndpoint, string>(LogLevel.Debug, new EventId(4, "EndpointActive"), "Endpoint {endpoint} for hub {hub} is now active.");
-
             private static readonly Action<ILogger, string, ServiceEndpoint, string, Exception> _ignoreSendingMessageToInactiveEndpoint =
-                LoggerMessage.Define<string, ServiceEndpoint, string>(LogLevel.Debug, new EventId(5, "IgnoreSendingMessageToInactiveEndpoint"), "Message {type} sending to {endpoint} for hub {hub} is ignored because the endpoint is inactive.");
+                LoggerMessage.Define<string, ServiceEndpoint, string>(LogLevel.Debug, new EventId(3, "IgnoreSendingMessageToInactiveEndpoint"), "Message {type} sending to {endpoint} for hub {hub} is ignored because the endpoint is inactive.");
 
             private static readonly Action<ILogger, bool, ServiceEndpoint, string, Exception> _receivedServiceStatusPing =
-                LoggerMessage.Define<bool, ServiceEndpoint, string>(LogLevel.Debug, new EventId(6, "ReceivedServiceStatusPing"), "Received a service status active={isActive} from {endpoint} for hub {hub}.");
+                LoggerMessage.Define<bool, ServiceEndpoint, string>(LogLevel.Debug, new EventId(4, "ReceivedServiceStatusPing"), "Received a service status active={isActive} from {endpoint} for hub {hub}.");
 
             public static void StartingServiceStatusPingTimer(ILogger logger, TimeSpan keepAliveInterval)
             {
@@ -174,16 +168,6 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             public static void FailedSendingServiceStatusPing(ILogger logger, Exception exception)
             {
                 _failedSendingServiceStatusPing(logger, exception);
-            }
-
-            public static void EndpointInactive(ILogger logger, HubServiceEndpoint endpoint)
-            {
-                _endpointInactive(logger, endpoint, endpoint.Hub, null);
-            }
-
-            public static void EndpointActive(ILogger logger, HubServiceEndpoint endpoint)
-            {
-                _endpointActive(logger, endpoint, endpoint.Hub, null);
             }
 
             public static void IgnoreSendingMessageToInactiveEndpoint(ILogger logger, Type messageType, HubServiceEndpoint endpoint)
