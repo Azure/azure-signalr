@@ -87,12 +87,12 @@ namespace Microsoft.Azure.SignalR.AspNet
                 case GroupBroadcastDataMessage groupBroadcastMessage:
                     if (GlobalOptions.EnableAckableMessage)
                     {
-                        await connection.WriteAsync(groupBroadcastMessage.GroupName, groupBroadcastMessage);
+                        await connection.WriteAsync(groupBroadcastMessage);
                     }
                     else
                     {
                         // For group related messages, make sure messages are written to the same partition
-                        await connection.WriteAsync(groupBroadcastMessage);
+                        await connection.WriteAsync(groupBroadcastMessage.GroupName, groupBroadcastMessage);
                     }
 
                     break;
