@@ -20,9 +20,9 @@ namespace Microsoft.Azure.SignalR
         public string ConnectionString { get; set; }
 
         /// <summary>
-        /// Gets or sets the initial number of connections from SDK to Azure SignalR Service per hub. Default value is 2.
+        /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 5.
         /// </summary>
-        public int ConnectionCount { get; set; } = Constants.DefaultInitConnectionCountPerHub;
+        public int ConnectionCount { get; set; } = 5;
 
         /// <summary>
         /// Gets or sets the prefix to apply to each hub name
