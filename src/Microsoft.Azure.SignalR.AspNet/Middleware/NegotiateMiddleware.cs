@@ -145,15 +145,9 @@ namespace Microsoft.Azure.SignalR.AspNet
                 var clientRequestId = _connectionRequestIdProvider.GetRequestId();
 
                 originalPath = GetOriginalPath(context.Request.LocalPath);
-                var query = owinContext.Request.QueryString;
-                if (query.HasValue)
-                {
-                    queryString = $"{query}&{Constants.QueryParameter.ConnectionRequestId}={clientRequestId}";
-                }
-                else
-                {
-                    queryString = $"{Constants.QueryParameter.ConnectionRequestId}={clientRequestId}";
-                }
+
+                // always ignore the query string from client as for ASP.NET client, it appends the query string itself
+                queryString = $"?{Constants.QueryParameter.ConnectionRequestId}={clientRequestId}";
             }
             else
             {
