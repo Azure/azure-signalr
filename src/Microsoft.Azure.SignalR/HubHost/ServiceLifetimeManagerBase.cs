@@ -103,7 +103,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args));
 
-            return ServiceConnectionContainer.WriteAsync(message);
+            return WriteGroupMessageAsync(message);
         }
 
         public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args));
 
-            return ServiceConnectionContainer.WriteAsync(message);
+            return WriteGroupMessageAsync(message);
         }
 
         public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -186,9 +186,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new JoinGroupWithAckMessage(connectionId, groupName);
-
-            return ServiceConnectionContainer.WriteAckableMessageAsync(message, cancellationToken);
+            return AddToGroupCoreAsync(connectionId, groupName, cancellationToken);
         }
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -203,9 +201,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new LeaveGroupWithAckMessage(connectionId, groupName);
-
-            return ServiceConnectionContainer.WriteAckableMessageAsync(message, cancellationToken);
+            return LeaveGroupCoreAsync(connectionId, groupName, cancellationToken);
         }
 
         protected static bool IsInvalidArgument(string value)
@@ -227,6 +223,50 @@ namespace Microsoft.Azure.SignalR
                 payloads.Add(hubProtocol.Name, hubProtocol.GetMessageBytes(message));
             }
             return payloads;
+        }
+
+        private Task WriteGroupMessageAsync(GroupBroadcastDataMessage message)
+        {
+            if (GlobalOptions.EnableAckableMessage)
+            {
+                return ServiceConnectionContainer.WriteAsync(message);
+            }
+            else
+            {
+                return ServiceConnectionContainer.WriteAsync(message.GroupName, message);
+            }
+        }
+
+        private Task AddToGroupCoreAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
+        {
+            if (GlobalOptions.EnableAckableMessage)
+            {
+                var message = new JoinGroupWithAckMessage(connectionId, groupName);
+
+                return ServiceConnectionContainer.WriteAckableMessageAsync(message, cancellationToken);
+            }
+            else
+            {
+                var message = new JoinGroupMessage(connectionId, groupName);
+                // Send this message from a fixed service connection, so that message order can be reserved.
+                return ServiceConnectionContainer.WriteAsync(groupName, message);
+            }
+        }
+
+        private Task LeaveGroupCoreAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
+        {
+            if (GlobalOptions.EnableAckableMessage)
+            {
+                var message = new LeaveGroupWithAckMessage(connectionId, groupName);
+
+                return ServiceConnectionContainer.WriteAckableMessageAsync(message, cancellationToken);
+            }
+            else
+            {
+                var message = new LeaveGroupMessage(connectionId, groupName);
+                // Send this message from a fixed service connection, so that message order can be reserved.
+                return ServiceConnectionContainer.WriteAsync(groupName, message);
+            }
         }
     }
 }

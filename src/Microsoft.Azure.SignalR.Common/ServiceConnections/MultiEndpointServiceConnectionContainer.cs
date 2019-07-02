@@ -126,6 +126,16 @@ namespace Microsoft.Azure.SignalR
             return WriteMultiEndpointMessageAsync(serviceMessage, connection => connection.WriteAsync(serviceMessage));
         }
 
+        public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+        {
+            if (_inner != null)
+            {
+                return _inner.WriteAsync(partitionKey, serviceMessage);
+            }
+
+            return WriteMultiEndpointMessageAsync(serviceMessage, connection => connection.WriteAsync(partitionKey, serviceMessage));
+        }
+
         public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
             if (_inner != null)

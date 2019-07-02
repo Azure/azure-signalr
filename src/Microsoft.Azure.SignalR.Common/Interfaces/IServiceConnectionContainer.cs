@@ -16,6 +16,8 @@ namespace Microsoft.Azure.SignalR
 
         Task WriteAsync(ServiceMessage serviceMessage);
 
+        Task WriteAsync(string partitionKey, ServiceMessage serviceMessage);
+
         Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default);
 
         ServiceConnectionStatus Status { get; }

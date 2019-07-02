@@ -41,6 +41,22 @@ namespace Microsoft.Azure.SignalR
             return _serviceConnection.WriteAsync(serviceMessage);
         }
 
+        public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+        {
+            // If we hit this check, it is a code bug.
+            if (string.IsNullOrEmpty(partitionKey))
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            if (_serviceConnection == null)
+            {
+                throw new AzureSignalRNotConnectedException();
+            }
+
+            return _serviceConnection.WriteAsync(partitionKey, serviceMessage);
+        }
+
         public Task WriteAckableMessageAsync(ServiceMessage seviceMessage, CancellationToken cancellationToken = default)
         {
             if (_serviceConnection == null)
