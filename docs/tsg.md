@@ -23,7 +23,7 @@ By default, claims from `context.User.Claims` are included when generating JWT a
 
 In some cases, `context.User.Claims` are leveraged to store lots of information for app server, most of which are not used by `Hub`s but by other components. 
 
-The generated access token are passed through network, and for websocket/SSE connections, access tokens are passed through query strings. So as the best practice, we suggest only passing **neccessory** claims from client through **ASRS** to your app server when the Hub needs.
+The generated access token are passed through network, and for websocket/SSE connections, access tokens are passed through query strings. So as the best practice, we suggest only passing **necessary** claims from client through **ASRS** to your app server when the Hub needs.
 
 There is a `ClaimsProvider` for you to customize the claims passing to **ASRS** inside the access token.
 
@@ -32,7 +32,7 @@ For ASP.NET Core:
 services.AddSignalR()
         .AddAzureSignalR(options =>
             {
-                // pick up neccessory claims
+                // pick up necessary claims
                 options.ClaimsProvider = context => context.User.Claims.Where(...);
             });
 ```
@@ -41,7 +41,7 @@ For ASP.NET:
 ```cs
 services.MapAzureSignalR(GetType().FullName, options =>
             {
-                // pick up neccessory claims
+                // pick up necessary claims
                 options.ClaimsProvider = context.Authentication?.User.Claims.Where(...);
             });
 ```
