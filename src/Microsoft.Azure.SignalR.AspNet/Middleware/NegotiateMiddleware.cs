@@ -4,14 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.NetworkInformation;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
-using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Json;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
@@ -136,23 +135,20 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             // Redirect to Service
             var clientProtocol = context.Request.QueryString["clientProtocol"];
-            string originalPath;
-            string queryString;
+            string originalPath = null;
+            string queryString = null;
 
             // add OriginalPath and QueryString when the clients protocol is higher than 2.0, earlier ASP.NET SignalR clients does not support redirect URL with query parameters
             if (!string.IsNullOrEmpty(clientProtocol) && Version.TryParse(clientProtocol, out var version) && version >= ClientSupportQueryStringVersion)
             {
                 var clientRequestId = _connectionRequestIdProvider.GetRequestId();
+                if (clientRequestId != null)
+                {
+                    // always ignore the query string from client as for ASP.NET client, it appends the query string itself
+                    queryString = $"?{Constants.QueryParameter.ConnectionRequestId}={WebUtility.UrlEncode(clientRequestId)}";
+                }
 
                 originalPath = GetOriginalPath(context.Request.LocalPath);
-
-                // always ignore the query string from client as for ASP.NET client, it appends the query string itself
-                queryString = $"?{Constants.QueryParameter.ConnectionRequestId}={clientRequestId}";
-            }
-            else
-            {
-                originalPath = null;
-                queryString = null;
             }
 
             var url = provider.GetClientEndpoint(null, originalPath, queryString);
