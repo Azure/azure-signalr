@@ -99,6 +99,10 @@ namespace Microsoft.Azure.SignalR
                 while (true)
                 {
                     var result = await connection.Application.Input.ReadAsync();
+                    if (result.IsCanceled)
+                    {
+                        break;
+                    }
                     var buffer = result.Buffer;
                     if (!buffer.IsEmpty)
                     {
@@ -213,7 +217,7 @@ namespace Microsoft.Azure.SignalR
 
                 // We're done writing to the application output
                 connection.Application.Output.Complete();
-
+                connection.Application.Input.CancelPendingRead();
                 // Wait on the application task to complete
                 try
                 {
