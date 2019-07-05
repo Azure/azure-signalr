@@ -34,4 +34,19 @@ namespace Microsoft.Azure.SignalR.Tests
             Application = pair.Application;
         }
     }
+
+    public class TestRequestIdProvider : IConnectionRequestIdProvider
+    {
+        private readonly string _id;
+
+        public TestRequestIdProvider(string id)
+        {
+            _id = id;
+        }
+
+        public string GetRequestId()
+        {
+            return _id;
+        }
+    }
 }
