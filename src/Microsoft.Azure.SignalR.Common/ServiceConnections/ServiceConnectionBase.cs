@@ -151,7 +151,7 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        public async Task WriteAsync(ServiceMessage serviceMessage)
+        public virtual async Task WriteAsync(ServiceMessage serviceMessage)
         {
             // We have to lock around outgoing sends since the pipe is single writer.
             // The lock is per serviceConnection
