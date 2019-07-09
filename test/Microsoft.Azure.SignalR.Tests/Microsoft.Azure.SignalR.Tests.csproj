@@ -27,4 +27,8 @@
   <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' == 'true' ">
     <PackageReference Include="Microsoft.Azure.SignalR" Version="$(VersionPrefix)-*" />
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(IsTargetMultiFramework)' != 'false'">
+    <DefineConstants>MULTIFRAMEWORK</DefineConstants>
+  </PropertyGroup>
 </Project>

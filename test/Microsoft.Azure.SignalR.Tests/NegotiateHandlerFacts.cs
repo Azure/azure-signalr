@@ -1,6 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+// From AspNetCore 3.0 preview7, there's a break change in HubConnectionContext
+// which will break cross reference bettwen NETCOREAPP3.0 to NETStandard2.0 SDK
+// So skip this part of UT when target 2.0 only
+#if (MULTIFRAMEWORK)
+
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -25,7 +30,6 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
-        private const string UserPath = "/user/path";
 
         private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
 
@@ -395,3 +399,5 @@ namespace Microsoft.Azure.SignalR.Tests
         }
     }
 }
+
+#endif
