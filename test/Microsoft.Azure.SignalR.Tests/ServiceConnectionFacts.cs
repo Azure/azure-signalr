@@ -159,9 +159,9 @@ namespace Microsoft.Azure.SignalR.Tests
             await Task.Delay(200);
 
             var serviceConnection = proxy.ServiceConnections.First().Value;
-            var excption = await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(() =>
+            var exception = await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(() =>
                 serviceConnection.WriteAsync(new ConnectionDataMessage("1", null)));
-            Assert.Equal(errorMessage, excption.Message);
+            Assert.Equal(errorMessage, exception.Message);
         }
 
         [Fact]

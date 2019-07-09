@@ -12,11 +12,11 @@ namespace Microsoft.Azure.SignalR.Common
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceConnectionNotActiveException"/> class.
         /// </summary>
-        public ServiceConnectionNotActiveException() : base("The connection is not active, data cannot be sent to the service.")
+        public ServiceConnectionNotActiveException() : this("The connection is not active, data cannot be sent to the service.")
         {
         }
 
-        public ServiceConnectionNotActiveException(string message) : base($"The connection is not active, data cannot be sent to the service: {message}.")
+        public ServiceConnectionNotActiveException(string message) : base(message)
         {
 
         }
