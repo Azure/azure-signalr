@@ -35,7 +35,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public ConcurrentDictionary<string, ServiceConnection> ServiceConnections { get; } = new ConcurrentDictionary<string, ServiceConnection>();
 
-        public ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
+        public IReadOnlyDictionary<string, ServiceConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
 
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
@@ -238,14 +238,16 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        public void RemoveClientConnection(string connectionId)
+        public ServiceConnectionContext RemoveClientConnection(string connectionId)
         {
-            ClientConnectionManager.RemoveClientConnection(connectionId);
+            var connection = ClientConnectionManager.RemoveClientConnection(connectionId);
 
             if (_waitForConnectionClose.TryGetValue(connectionId, out var tcs))
             {
                 tcs.TrySetResult(null);
             }
+
+            return connection;
         }
 
         public ServiceConnectionContext CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)

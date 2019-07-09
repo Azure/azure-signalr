@@ -34,6 +34,8 @@ namespace Microsoft.Azure.SignalR
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
 
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> _waitForConnectionStopTcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+
         private readonly ServerConnectionType _connectionType;
 
         private readonly IServiceMessageHandler _serviceMessageHandler;
@@ -82,6 +84,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         public Task ConnectionInitializedTask => _serviceConnectionStartTcs.Task;
+        public Task WaitForStopTask => _waitForConnectionStopTcs.Task;
 
         public ServiceConnectionBase(IServiceProtocol serviceProtocol, string connectionId, HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType connectionType, ILogger logger)
         {
@@ -129,6 +132,7 @@ namespace Microsoft.Azure.SignalR
             }
             finally
             {
+                _waitForConnectionStopTcs.SetResult(true);
                 await StopAsync();
             }
         }
@@ -147,7 +151,7 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        public async virtual Task WriteAsync(ServiceMessage serviceMessage)
+        public async Task WriteAsync(ServiceMessage serviceMessage)
         {
             // We have to lock around outgoing sends since the pipe is single writer.
             // The lock is per serviceConnection
@@ -157,7 +161,7 @@ namespace Microsoft.Azure.SignalR
             if (!string.IsNullOrEmpty(errorMessage))
             {
                 _serviceConnectionLock.Release();
-                throw new InvalidOperationException(errorMessage);
+                throw new ServiceConnectionNotActiveException(errorMessage);
             }
 
             if (ConnectionContext == null)

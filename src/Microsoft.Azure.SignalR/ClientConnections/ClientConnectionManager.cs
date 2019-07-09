@@ -3,26 +3,30 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
     internal class ClientConnectionManager : IClientConnectionManager
     {
+        private  readonly ConcurrentDictionary<string, ServiceConnectionContext> _clientConnections = new ConcurrentDictionary<string, ServiceConnectionContext>();
+
         public ClientConnectionManager()
         {
-            ClientConnections = new ConcurrentDictionary<string, ServiceConnectionContext>();
         }
 
         public void AddClientConnection(ServiceConnectionContext clientConnection)
         {
-            ClientConnections[clientConnection.ConnectionId] = clientConnection;
+            _clientConnections[clientConnection.ConnectionId] = clientConnection;
         }
 
-        public void RemoveClientConnection(string connectionId)
+        public ServiceConnectionContext RemoveClientConnection(string connectionId)
         {
-            ClientConnections.TryRemove(connectionId, out _);
+            _clientConnections.TryRemove(connectionId, out var connection);
+            return connection;
         }
 
-        public ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections { get; }
+        public IReadOnlyDictionary<string, ServiceConnectionContext> ClientConnections => _clientConnections;
     }
 }
