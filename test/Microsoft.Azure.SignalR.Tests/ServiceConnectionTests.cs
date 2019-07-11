@@ -22,9 +22,6 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class ServiceConnectionTests : VerifiableLoggedTest
     {
-        private static readonly ServiceProtocol Protocol = new ServiceProtocol();
-        private const int DefaultTimeoutInMilliSeconds = 1000;
-
         public ServiceConnectionTests(ITestOutputHelper output) : base(output)
         {
         }
@@ -50,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                     Guid.NewGuid().ToString("N"), null, null);
 
-                _ = connection.StartAsync();
+                var connectionTask = connection.StartAsync();
 
                 // completed handshake
                 await connection.ConnectionInitializedTask.OrTimeout();
@@ -79,7 +76,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
 
-                await connection.WaitForStopTask.OrTimeout();
+                await connectionTask.OrTimeout();
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
                 Assert.Empty(ccm.ClientConnections);
             }
@@ -118,7 +115,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                     Guid.NewGuid().ToString("N"), null, null);
 
-                _ = connection.StartAsync();
+                var connectionTask = connection.StartAsync();
 
                 // completed handshake
                 await connection.ConnectionInitializedTask.OrTimeout();
@@ -141,7 +138,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
 
-                await connection.WaitForStopTask.OrTimeout();
+                await connectionTask.OrTimeout();
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
                 Assert.Empty(ccm.ClientConnections);
             }
@@ -176,7 +173,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                     Guid.NewGuid().ToString("N"), null, null);
 
-                _ = connection.StartAsync();
+                var connectionTask = connection.StartAsync();
 
                 // completed handshake
                 await connection.ConnectionInitializedTask.OrTimeout();
@@ -191,7 +188,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
 
-                await connection.WaitForStopTask.OrTimeout(10000);
+                // 5 seconds for application task to timeout
+                await connectionTask.OrTimeout(10000);
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
                 Assert.Empty(ccm.ClientConnections);
 

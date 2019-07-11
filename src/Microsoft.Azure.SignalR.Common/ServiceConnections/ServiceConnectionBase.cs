@@ -84,7 +84,6 @@ namespace Microsoft.Azure.SignalR
         }
 
         public Task ConnectionInitializedTask => _serviceConnectionStartTcs.Task;
-        public Task WaitForStopTask => _waitForConnectionStopTcs.Task;
 
         public ServiceConnectionBase(IServiceProtocol serviceProtocol, string connectionId, HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType connectionType, ILogger logger)
         {
@@ -132,7 +131,6 @@ namespace Microsoft.Azure.SignalR
             }
             finally
             {
-                _waitForConnectionStopTcs.SetResult(true);
                 await StopAsync();
             }
         }
