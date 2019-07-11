@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
@@ -18,6 +19,7 @@ namespace Microsoft.Azure.SignalR
         // Fix issue: https://github.com/Azure/azure-signalr/issues/198
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
         private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
+        private static readonly TimeSpan CloseApplicationTimeout = TimeSpan.FromSeconds(5);
 
         private const string ClientConnectionCountInHub = "#clientInHub";
         private const string ClientConnectionCountInServiceConnection = "#client";
@@ -99,6 +101,11 @@ namespace Microsoft.Azure.SignalR
                 while (true)
                 {
                     var result = await connection.Application.Input.ReadAsync();
+                    if (result.IsCanceled)
+                    {
+                        break;
+                    }
+
                     var buffer = result.Buffer;
                     if (!buffer.IsEmpty)
                     {
@@ -141,12 +148,6 @@ namespace Microsoft.Azure.SignalR
         {
             _clientConnectionManager.AddClientConnection(connection);
             _connectionIds.TryAdd(connection.ConnectionId, connection.ConnectionId);
-        }
-
-        private void RemoveClientConnection(string connectionId)
-        {
-            _clientConnectionManager.RemoveClientConnection(connectionId);
-            _connectionIds.TryRemove(connectionId, out _);
         }
 
         protected override Task OnConnectedAsync(OpenConnectionMessage message)
@@ -206,28 +207,49 @@ namespace Microsoft.Azure.SignalR
 
         private async Task PerformDisconnectAsyncCore(string connectionId, bool abortOnClose)
         {
-            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var connection))
+            var connection = _clientConnectionManager.RemoveClientConnection(connectionId);
+            if (connection != null)
             {
+                // remove it from the list to prevent it from called multiple times
+                _connectionIds.TryRemove(connectionId, out _);
+
                 // In normal close, service already knows the client is closed, no need to be informed.
                 connection.AbortOnClose = abortOnClose;
 
                 // We're done writing to the application output
                 connection.Application.Output.Complete();
 
+                var app = connection.ApplicationTask;
+
                 // Wait on the application task to complete
-                try
+                if (!app.IsCompleted)
                 {
-                    await connection.ApplicationTask;
+                    try
+                    {
+                        using (var delayCts = new CancellationTokenSource())
+                        {
+                            var resultTask =
+                                await Task.WhenAny(app, Task.Delay(CloseApplicationTimeout, delayCts.Token));
+                            if (resultTask != app)
+                            {
+                                // Application task timed out and it might never end writing to Transport.Output, cancel reading the pipe so that our ProcessOutgoing ends
+                                connection.Application.Input.CancelPendingRead();
+                                Log.ApplicationTaskTimedOut(Logger);
+                            }
+                            else
+                            {
+                                delayCts.Cancel();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.ApplicationTaskFailed(Logger, ex);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    Log.ApplicationTaskFailed(Logger, ex);
-                }
+
+                Log.ConnectedEnding(Logger, connectionId);
             }
-            // Close this connection gracefully then remove it from the list,
-            // this will trigger the hub shutdown logic appropriately
-            RemoveClientConnection(connectionId);
-            Log.ConnectedEnding(Logger, connectionId);
         }
 
         protected override async Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)

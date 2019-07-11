@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -34,6 +33,7 @@ namespace Microsoft.Azure.SignalR
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
 
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+
         private readonly ServerConnectionType _connectionType;
 
         private readonly IServiceMessageHandler _serviceMessageHandler;
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        public async virtual Task WriteAsync(ServiceMessage serviceMessage)
+        public virtual async Task WriteAsync(ServiceMessage serviceMessage)
         {
             // We have to lock around outgoing sends since the pipe is single writer.
             // The lock is per serviceConnection
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.SignalR
             if (!string.IsNullOrEmpty(errorMessage))
             {
                 _serviceConnectionLock.Release();
-                throw new InvalidOperationException(errorMessage);
+                throw new ServiceConnectionNotActiveException(errorMessage);
             }
 
             if (ConnectionContext == null)
