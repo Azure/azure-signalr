@@ -96,7 +96,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     // Application layer sends OpenConnectionMessage
                     var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null, $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
                     await proxy.WriteMessageAsync(openConnectionMessage);
-                    await proxy.WaitForClientConnectAsync(clientConnection).OrTimeout();
 
                     var connectMessage = (await connectTask) as GroupBroadcastDataMessage;
                     Assert.NotNull(connectMessage);
@@ -160,14 +159,15 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c=>true, logChecker:
                 logs =>
                 {
-                    Assert.Single(logs);
-                    Assert.Equal("ConnectedStartingFailed", logs[0].Write.EventId.Name);
+                    Assert.Equal(2, logs.Count);
+                    Assert.Equal("ErrorExecuteConnected", logs[0].Write.EventId.Name);
+                    Assert.Equal("ConnectedStartingFailed", logs[1].Write.EventId.Name);
                     return true;
                 }))
             {
                 var hubConfig = Utility.GetActualHubConfig(loggerFactory);
                 var appName = "app1";
-                var hub = "ec"; // error connect hub
+                var hub = "ErrorConnect"; // error connect hub
                 var scm = new TestServiceConnectionHandler();
                 hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
                 var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
@@ -197,6 +197,65 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var message = await connectTask;
 
                     Assert.True(message is CloseConnectionMessage);
+
+                    // cleaned up clearly
+                    Assert.Empty(ccm.ClientConnections);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ServiceConnectionWithErrorDisconnectHub()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: c => true, logChecker:
+                logs => true))
+            {
+                var hubConfig = Utility.GetActualHubConfig(loggerFactory);
+                var appName = "app1";
+                var hub = "ErrorDisconnect"; // error connect hub
+                var scm = new TestServiceConnectionHandler();
+                hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
+                var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
+                hubConfig.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
+                DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig,
+                    new ServiceOptions {ConnectionString = ConnectionString}, appName, loggerFactory);
+                using (var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory))
+                {
+                    // start the server connection
+                    await proxy.StartServiceAsync().OrTimeout();
+
+                    var clientConnection = Guid.NewGuid().ToString("N");
+
+                    var connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage))
+                        .OrTimeout();
+                    // Application layer sends OpenConnectionMessage
+                    var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null,
+                        $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
+                    await proxy.WriteMessageAsync(openConnectionMessage);
+
+                    var connectMessage = (await connectTask) as GroupBroadcastDataMessage;
+                    Assert.NotNull(connectMessage);
+                    Assert.Equal($"hg-{hub}.note", connectMessage.GroupName);
+
+                    var message = connectMessage.Payloads["json"]
+                        .GetJsonMessageFromSingleFramePayload<HubResponseItem>();
+
+                    Assert.Equal("Connected", message.A[0]);
+
+                    var disconnectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage))
+                        .OrTimeout();
+
+                    await proxy.WriteMessageAsync(new CloseConnectionMessage(clientConnection));
+
+                    var disconnectMessage = (await disconnectTask) as GroupBroadcastDataMessage;
+
+                    Assert.NotNull(disconnectMessage);
+                    Assert.Equal($"hg-{hub}.note", disconnectMessage.GroupName);
+
+                    message = disconnectMessage.Payloads["json"]
+                        .GetJsonMessageFromSingleFramePayload<HubResponseItem>();
+
+                    Assert.Equal("Disconnected", message.A[0]);
 
                     // cleaned up clearly
                     Assert.Empty(ccm.ClientConnections);

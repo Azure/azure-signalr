@@ -12,12 +12,13 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs
 {
-    [HubName("ec")]
-    public class ErrorConnectHub : Hub
+    [HubName("ErrorDisconnect")]
+    public class ErrorDisconnectHub : Hub
     {
         public override Task OnConnected()
         {
-            throw new InvalidOperationException("error connecting");
+            Clients.Group("note").echo("Connected");
+            return Task.CompletedTask;
         }
 
         public override Task OnReconnected()
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs
         public override Task OnDisconnected(bool stopCalled)
         {
             Clients.Group("note").echo("Disconnected");
-            return Task.CompletedTask;
+            throw new InvalidOperationException("error disconnecting");
         }
 
         public void BroadcastMessage(string name, string message)
