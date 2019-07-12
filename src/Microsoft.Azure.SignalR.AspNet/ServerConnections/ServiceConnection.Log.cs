@@ -12,28 +12,28 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             // Category: ServiceConnection
             private static readonly Action<ILogger, Exception> _failedToCleanupConnections =
-                LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailedToCleanupConnection"), "Failed to clean up client connections.");
+                LoggerMessage.Define(LogLevel.Error, new EventId(1, "FailedToCleanupConnection"), "Failed to clean up client connections.");
 
             private static readonly Action<ILogger, string, Exception> _sendLoopStopped =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, "SendLoopStopped"), "Error while processing messages from {TransportConnectionId}.");
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, "SendLoopStopped"), "Error while processing messages from {TransportConnectionId}.");
 
             private static readonly Action<ILogger, string, Exception> _failToWriteMessageToApplication =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(9, "FailToWriteMessageToApplication"), "Failed to write message to {TransportConnectionId}.");
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "FailToWriteMessageToApplication"), "Failed to write message to {TransportConnectionId}.");
 
             private static readonly Action<ILogger, string, Exception> _connectedStarting =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(11, "ConnectedStarting"), "Connection {TransportConnectionId} started.");
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(4, "ConnectedStarting"), "Connection {TransportConnectionId} started.");
 
             private static readonly Action<ILogger, string, Exception> _connectedStartingFailed =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(11, "ConnectedStartingFailed"), "Connection {TransportConnectionId} failed to start.");
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(5, "ConnectedStartingFailed"), "Connection {TransportConnectionId} failed to start.");
 
             private static readonly Action<ILogger, string, Exception> _duplicateConnectionId =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(11, "DuplicateConnectionId"), "Failed to create connection due to duplicate connection Id {TransportConnectionId}.");
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(6, "DuplicateConnectionId"), "Duplicate OpenConnectionMessage for connection Id {TransportConnectionId}, ignored.");
 
             private static readonly Action<ILogger, string, Exception> _connectedEnding =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(12, "ConnectedEnding"), "Connection {TransportConnectionId} ended.");
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(7, "ConnectedEnding"), "Connection {TransportConnectionId} ended.");
 
             private static readonly Action<ILogger, long, string, Exception> _writeMessageToApplication =
-                LoggerMessage.Define<long, string>(LogLevel.Trace, new EventId(19, "WriteMessageToApplication"), "Writing {ReceivedBytes} to connection {TransportConnectionId}.");
+                LoggerMessage.Define<long, string>(LogLevel.Trace, new EventId(8, "WriteMessageToApplication"), "Writing {ReceivedBytes} to connection {TransportConnectionId}.");
 
             public static void FailedToCleanupConnections(ILogger logger, Exception exception)
             {

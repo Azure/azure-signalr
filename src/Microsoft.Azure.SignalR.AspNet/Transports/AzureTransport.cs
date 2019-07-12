@@ -15,6 +15,7 @@ namespace Microsoft.Azure.SignalR.AspNet
     internal class AzureTransport : IServiceTransport
     {
         private readonly TaskCompletionSource<object> _lifetimeTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<object> _connectedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly HostContext _context;
         private readonly IMemoryPool _pool;
         private readonly JsonSerializer _serializer;
@@ -44,12 +45,30 @@ namespace Microsoft.Azure.SignalR.AspNet
             return Task.FromResult<string>(null);
         }
 
-        public async Task ProcessRequest(ITransportConnection connection)
+        public Task WaitForConnected => _connectedTcs.Task;
+
+        public Task ProcessRequest(ITransportConnection connection)
         {
-            var connected = Connected;
-            if (connected != null)
+            _ = LifetimeExecute();
+            return WaitForConnected;
+        }
+
+        private async Task LifetimeExecute()
+        {
+            try
             {
-                await connected();
+                var connected = Connected;
+                if (connected != null)
+                {
+                    await connected();
+                }
+
+                _connectedTcs.TrySetResult(null);
+            }
+            catch (Exception e)
+            {
+                _connectedTcs.TrySetException(e);
+                throw;
             }
 
             await _lifetimeTcs.Task;

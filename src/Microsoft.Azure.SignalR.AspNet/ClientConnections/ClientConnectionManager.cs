@@ -3,8 +3,10 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -28,7 +30,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _logger = loggerFactory?.CreateLogger<ClientConnectionManager>() ?? NullLogger<ClientConnectionManager>.Instance;
         }
 
-        public IServiceTransport CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
+        public async Task<IServiceTransport> CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
         {
             var dispatcher = new ClientConnectionHubDispatcher(_configuration, message.ConnectionId);
             dispatcher.Initialize(_configuration.Resolver);
@@ -39,7 +41,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             if (dispatcher.Authorize(hostContext.Request))
             {
                 // ProcessRequest checks if the connectionToken matches "{connectionid}:{userName}" format with context.User
-                _ = dispatcher.ProcessRequest(hostContext);
+                await dispatcher.ProcessRequest(hostContext);
 
                 // TODO: check for errors written to the response
                 if (hostContext.Response.StatusCode != 200)
@@ -61,6 +63,13 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             return _clientConnections.TryGetValue(key, out serviceConnection);
         }
+
+        public bool TryRemoveServiceConnection(string connectionId, out IServiceConnection connection)
+        {
+            return _clientConnections.TryRemove(connectionId, out connection);
+        }
+
+        public IReadOnlyDictionary<string, IServiceConnection> ClientConnections => _clientConnections;
 
         internal HostContext GetHostContext(OpenConnectionMessage message, Stream responseStream, IServiceConnection serviceConnection)
         {
