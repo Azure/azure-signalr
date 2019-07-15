@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -338,6 +339,176 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     // Verify client connection is not created due to authorized failure.
                     ccm.TryGetServiceConnection(clientConnection, out var serviceConnection);
                     Assert.Null(serviceConnection);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("chat")]
+        [InlineData("ErrorDisconnect")]
+        public async Task ServiceConnectionWithTransportLayerClosedShouldCleanupNormalClientConnections(string hub)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: c => true))
+            {
+                var hubConfig = Utility.GetActualHubConfig(loggerFactory);
+                var appName = "app1";
+                var scm = new TestServiceConnectionHandler();
+                hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
+                var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
+                hubConfig.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
+                DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig,
+                    new ServiceOptions { ConnectionString = ConnectionString }, appName, loggerFactory);
+                using (var proxy = new TestServiceConnectionProxy(ccm, loggerFactory))
+                {
+                    // start the server connection
+                    var connectionTask = proxy.StartAsync();
+                    await proxy.ConnectionInitializedTask.OrTimeout();
+
+                    var clientConnection = Guid.NewGuid().ToString("N");
+
+                    var connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage))
+                        .OrTimeout();
+                    // Application layer sends OpenConnectionMessage
+                    var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null,
+                        $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
+                    await proxy.WriteMessageAsync(openConnectionMessage);
+
+                    var connectMessage = (await connectTask) as GroupBroadcastDataMessage;
+                    Assert.NotNull(connectMessage);
+                    Assert.Equal($"hg-{hub}.note", connectMessage.GroupName);
+
+                    var message = connectMessage.Payloads["json"]
+                        .GetJsonMessageFromSingleFramePayload<HubResponseItem>();
+
+                    Assert.Equal("Connected", message.A[0]);
+
+                    // close transport layer
+                    proxy.TestConnectionContext.Application.Output.Complete();
+
+                    await connectionTask.OrTimeout();
+                    Assert.Equal(ServiceConnectionStatus.Disconnected, proxy.Status);
+
+                    // cleaned up clearly
+                    Assert.Empty(ccm.ClientConnections);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ServiceConnectionWithTransportLayerClosedShouldCleanupEndlessConnectClientConnections()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: c => true, logChecker:
+                logs =>
+                {
+                    var errorLogs = logs.Where(s => s.Write.LogLevel == LogLevel.Error).ToList();
+                    Assert.Single(errorLogs);
+                    Assert.Equal("ApplicationTaskTimedOut", errorLogs[0].Write.EventId.Name);
+
+                    return true;
+                }))
+            {
+                var hubConfig = Utility.GetActualHubConfig(loggerFactory);
+                var appName = "app1";
+                var hub = "EndlessConnect";
+                var scm = new TestServiceConnectionHandler();
+                hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
+                var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
+                hubConfig.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
+                DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig,
+                    new ServiceOptions { ConnectionString = ConnectionString }, appName, loggerFactory);
+                using (var proxy = new TestServiceConnectionProxy(ccm, loggerFactory))
+                {
+                    // start the server connection
+                    var connectionTask = proxy.StartAsync();
+                    await proxy.ConnectionInitializedTask.OrTimeout();
+
+                    var clientConnection = Guid.NewGuid().ToString("N");
+
+                    var connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage))
+                        .OrTimeout();
+                    // Application layer sends OpenConnectionMessage
+                    var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null,
+                        $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
+                    await proxy.WriteMessageAsync(openConnectionMessage);
+
+                    var connectMessage = (await connectTask) as GroupBroadcastDataMessage;
+                    Assert.NotNull(connectMessage);
+                    Assert.Equal($"hg-{hub}.note", connectMessage.GroupName);
+
+                    var message = connectMessage.Payloads["json"]
+                        .GetJsonMessageFromSingleFramePayload<HubResponseItem>();
+
+                    Assert.Equal("Connected", message.A[0]);
+
+                    // close transport layer
+                    proxy.TestConnectionContext.Application.Output.Complete();
+
+                    // wait for application task to timeout
+                    await connectionTask.OrTimeout(10000);
+                    Assert.Equal(ServiceConnectionStatus.Disconnected, proxy.Status);
+
+                    // cleaned up clearly
+                    Assert.Empty(ccm.ClientConnections);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ServiceConnectionWithTransportLayerClosedShouldCleanupEndlessInvokeClientConnections()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: c => true))
+            {
+                var hubConfig = Utility.GetActualHubConfig(loggerFactory);
+                var appName = "app1";
+                var hub = "EndlessInvoke";
+                var scm = new TestServiceConnectionHandler();
+                hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
+                var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
+                hubConfig.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
+                DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig,
+                    new ServiceOptions { ConnectionString = ConnectionString }, appName, loggerFactory);
+                using (var proxy = new TestServiceConnectionProxy(ccm, loggerFactory))
+                {
+                    // start the server connection
+                    var connectionTask = proxy.StartAsync();
+                    await proxy.ConnectionInitializedTask.OrTimeout();
+
+                    var clientConnection = Guid.NewGuid().ToString("N");
+
+                    var connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage))
+                        .OrTimeout();
+                    // Application layer sends OpenConnectionMessage
+                    var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null,
+                        $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
+                    await proxy.WriteMessageAsync(openConnectionMessage);
+
+                    var connectMessage = (await connectTask) as GroupBroadcastDataMessage;
+                    Assert.NotNull(connectMessage);
+                    Assert.Equal($"hg-{hub}.note", connectMessage.GroupName);
+
+                    var message = connectMessage.Payloads["json"]
+                        .GetJsonMessageFromSingleFramePayload<HubResponseItem>();
+
+                    Assert.Equal("Connected", message.A[0]);
+
+                    // group message goes into the manager
+                    // make sure the tcs is called before writing message
+                    var gbTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
+
+                    await proxy.WriteMessageAsync(new ConnectionDataMessage(clientConnection, Encoding.UTF8.GetBytes($"{{\"H\":\"{hub}\",\"M\":\"JoinGroup\",\"A\":[\"user1\",\"group1\"],\"I\":1}}")));
+
+                    var broadcastMessage = (await gbTask) as GroupBroadcastDataMessage;
+                    Assert.NotNull(broadcastMessage);
+                    Assert.Equal($"hg-{hub}.group1", broadcastMessage.GroupName);
+
+                    // close transport layer
+                    proxy.TestConnectionContext.Application.Output.Complete();
+
+                    await connectionTask.OrTimeout();
+                    Assert.Equal(ServiceConnectionStatus.Disconnected, proxy.Status);
+
+                    // cleaned up clearly
+                    Assert.Empty(ccm.ClientConnections);
                 }
             }
         }

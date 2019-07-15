@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
@@ -31,6 +32,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             CurrentTransports.TryAdd(message.ConnectionId, transport);
 
             return Task.FromResult<IServiceTransport>(transport);
+        }
+
+        public bool TryAdd(string connectionId, IServiceConnection serviceConnection)
+        {
+            return true;
         }
 
         public bool TryGetServiceConnection(string key, out IServiceConnection serviceConnection)

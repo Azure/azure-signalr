@@ -17,8 +17,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             private static readonly Action<ILogger, string, Exception> _sendLoopStopped =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, "SendLoopStopped"), "Error while processing messages from {TransportConnectionId}.");
 
-            private static readonly Action<ILogger, string, Exception> _failToWriteMessageToApplication =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "FailToWriteMessageToApplication"), "Failed to write message to {TransportConnectionId}.");
+            private static readonly Action<ILogger, string, string, Exception> _failToWriteMessageToApplication =
+                LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(3, "FailToWriteMessageToApplication"), "Failed to write message {messageType} to {TransportConnectionId}.");
 
             private static readonly Action<ILogger, string, Exception> _connectedStarting =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(4, "ConnectedStarting"), "Connection {TransportConnectionId} started.");
@@ -35,6 +35,12 @@ namespace Microsoft.Azure.SignalR.AspNet
             private static readonly Action<ILogger, long, string, Exception> _writeMessageToApplication =
                 LoggerMessage.Define<long, string>(LogLevel.Trace, new EventId(8, "WriteMessageToApplication"), "Writing {ReceivedBytes} to connection {TransportConnectionId}.");
 
+            private static readonly Action<ILogger, Exception> _applicationTaskFailed =
+                LoggerMessage.Define(LogLevel.Error, new EventId(9, "ApplicationTaskFailed"), "Application task failed.");
+
+            private static readonly Action<ILogger, Exception> _applicationTaskTimedOut =
+                LoggerMessage.Define(LogLevel.Error, new EventId(10, "ApplicationTaskTimedOut"), "Timed out waiting for the application task to complete.");
+
             public static void FailedToCleanupConnections(ILogger logger, Exception exception)
             {
                 _failedToCleanupConnections(logger, exception);
@@ -45,9 +51,9 @@ namespace Microsoft.Azure.SignalR.AspNet
                 _sendLoopStopped(logger, connectionId, exception);
             }
 
-            public static void FailToWriteMessageToApplication(ILogger logger, string connectionId, Exception exception)
+            public static void FailToWriteMessageToApplication(ILogger logger, string messageType, string connectionId, Exception exception)
             {
-                _failToWriteMessageToApplication(logger, connectionId, exception);
+                _failToWriteMessageToApplication(logger, messageType, connectionId, exception);
             }
 
             public static void ConnectedStarting(ILogger logger, string connectionId)
@@ -73,6 +79,16 @@ namespace Microsoft.Azure.SignalR.AspNet
             public static void WriteMessageToApplication(ILogger logger, long count, string connectionId)
             {
                 _writeMessageToApplication(logger, count, connectionId, null);
+            }
+
+            public static void ApplicationTaskFailed(ILogger logger, Exception exception)
+            {
+                _applicationTaskFailed(logger, exception);
+            }
+
+            public static void ApplicationTaskTimedOut(ILogger logger)
+            {
+                _applicationTaskTimedOut(logger, null);
             }
         }
     }

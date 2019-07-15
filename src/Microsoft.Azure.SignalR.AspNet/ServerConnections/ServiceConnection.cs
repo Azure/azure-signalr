@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -20,6 +21,9 @@ namespace Microsoft.Azure.SignalR.AspNet
     {
         private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
         private const string ReconnectMessage = "asrs:reconnect";
+
+        private static readonly TimeSpan CloseApplicationTimeout = TimeSpan.FromSeconds(5);
+
         private readonly ConcurrentDictionary<string, ClientContext> _clientConnections = new ConcurrentDictionary<string, ClientContext>(StringComparer.Ordinal);
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionManager _clientConnectionManager;
@@ -51,20 +55,16 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _connectionFactory.DisposeAsync(connection);
         }
 
-        protected override Task CleanupConnections()
+        protected override async Task CleanupConnections()
         {
             try
             {
-                foreach(var connection in _clientConnections)
-                {
-                    PerformDisconnectCore(connection.Key);
-                }
+                await Task.WhenAll(_clientConnections.Select(s => PerformDisconnectCore(s.Key, true)));
             }
             catch (Exception ex)
             {
                 Log.FailedToCleanupConnections(Logger, ex);
             }
-            return Task.CompletedTask;
         }
 
         protected override Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage)
@@ -73,9 +73,10 @@ namespace Microsoft.Azure.SignalR.AspNet
             var connectionId = openConnectionMessage.ConnectionId;
             var clientContext = new ClientContext(connectionId);
 
-            if (_clientConnections.TryAdd(connectionId, clientContext))
+            if (_clientConnections.TryAdd(connectionId, clientContext) &&
+                _clientConnectionManager.TryAdd(connectionId, this))
             {
-                _ = ProcessMessageAsync(clientContext);
+                clientContext.ApplicationTask = ProcessMessageAsync(clientContext, clientContext.CancellationToken);
                 return ForwardMessageToApplication(connectionId, openConnectionMessage);
             }
             else
@@ -105,19 +106,57 @@ namespace Microsoft.Azure.SignalR.AspNet
                 }
                 catch (Exception e)
                 {
-                    Log.FailToWriteMessageToApplication(Logger, connectionId, e);
-                    PerformDisconnectCore(connectionId);
-                    await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
+                    Log.FailToWriteMessageToApplication(Logger, message.GetType().Name, connectionId, e);
+                    await PerformDisconnectCore(connectionId, true);
+
+                    await SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
                 }
             }
         }
 
-        private void PerformDisconnectCore(string connectionId)
+
+        private async Task WaitForApplicationTask(ClientContext clientContext)
+        {
+            var app = clientContext.ApplicationTask;
+            if (!app.IsCompleted)
+            {
+                try
+                {
+                    using (var delayCts = new CancellationTokenSource())
+                    {
+                        var resultTask =
+                            await Task.WhenAny(app, Task.Delay(CloseApplicationTimeout, delayCts.Token));
+                        if (resultTask != app)
+                        {
+                            // Application task timed out and it might never end writing to Transport.Output, cancel reading the pipe so that our ProcessOutgoing ends
+                            clientContext.CancelPendingRead();
+                            Log.ApplicationTaskTimedOut(Logger);
+                        }
+                        else
+                        {
+                            delayCts.Cancel();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.ApplicationTaskFailed(Logger, ex);
+                }
+            }
+        }
+
+        private async Task PerformDisconnectCore(string connectionId, bool waitForApplicationTask)
         {
             if (_clientConnections.TryRemove(connectionId, out var clientContext))
             {
-                _clientConnectionManager.TryRemoveServiceConnection(connectionId, out _);
                 clientContext.Output.TryComplete();
+                if (waitForApplicationTask)
+                {
+                    await WaitForApplicationTask(clientContext);
+                }
+
+                // remove the connection after application task completes
+                _clientConnectionManager.TryRemoveServiceConnection(connectionId, out _);
                 clientContext.Transport?.OnDisconnected();
 
                 Log.ConnectedEnding(Logger, connectionId);
@@ -129,14 +168,16 @@ namespace Microsoft.Azure.SignalR.AspNet
             var connectionId = message.ConnectionId;
             try
             {
-                clientContext.Transport = await _clientConnectionManager.CreateConnection(message, this);
+                clientContext.Transport =
+                    await _clientConnectionManager.CreateConnection(message, this);
                 Log.ConnectedStarting(Logger, connectionId);
             }
             catch (Exception e)
             {
                 Log.ConnectedStartingFailed(Logger, connectionId, e);
-                PerformDisconnectCore(connectionId);
-                await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
+                // Should not wait for application task inside the application task
+                await PerformDisconnectCore(connectionId, false);
+                await SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
             }
         }
 
@@ -159,27 +200,31 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
             catch (Exception e)
             {
-                Log.FailToWriteMessageToApplication(Logger, connectionDataMessage.ConnectionId, e);
+                Log.FailToWriteMessageToApplication(Logger, nameof(ConnectionDataMessage), connectionDataMessage.ConnectionId, e);
             }
         }
 
-        private async Task ProcessMessageAsync(ClientContext clientContext)
+        private async Task ProcessMessageAsync(ClientContext clientContext, CancellationToken cancellation)
         {
-            // Check if channel is created.
+            var connectionId = clientContext.ConnectionId;
             try
             {
                 // Check if channel is closed.
-                while (await clientContext.Input.WaitToReadAsync())
+                while (await clientContext.Input.WaitToReadAsync(cancellation))
                 {
                     while (clientContext.Input.TryRead(out var serviceMessage))
                     {
+                        cancellation.ThrowIfCancellationRequested();
+
                         switch (serviceMessage)
                         {
                             case OpenConnectionMessage openConnectionMessage:
                                 await OnConnectedAsyncCore(clientContext, openConnectionMessage);
                                 break;
                             case CloseConnectionMessage closeConnectionMessage:
-                                PerformDisconnectCore(closeConnectionMessage.ConnectionId);
+                                // should not wait for application task when inside the application task
+                                // As the messages are in a queue, close message should be after all the other messages
+                                await PerformDisconnectCore(closeConnectionMessage.ConnectionId, false);
                                 return;
                             case ConnectionDataMessage connectionDataMessage:
                                 ProcessOutgoingMessages(clientContext, connectionDataMessage);
@@ -190,15 +235,27 @@ namespace Microsoft.Azure.SignalR.AspNet
                     }
                 }
             }
+            catch (OperationCanceledException e)
+            {
+                Log.SendLoopStopped(Logger, connectionId, e);
+            }
             catch (Exception e)
             {
                 // Internal exception is already caught and here only for channel exception.
                 // Notify client to disconnect.
-                var connectionId = clientContext.ConnectionId;
                 Log.SendLoopStopped(Logger, connectionId, e);
-                PerformDisconnectCore(connectionId);
-                await WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
+                await PerformDisconnectCore(connectionId, false);
+                await SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
             }
+        }
+
+        private async Task SafeWriteAsync(ServiceMessage message)
+        {
+            try
+            {
+                await WriteAsync(message);
+            }
+            catch { }
         }
 
         private static string GetString(ReadOnlySequence<byte> buffer)
@@ -214,12 +271,23 @@ namespace Microsoft.Azure.SignalR.AspNet
         
         private sealed class ClientContext
         {
+            private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+
             public ClientContext(string connectionId)
             {
                 ConnectionId = connectionId;
                 var channel = Channel.CreateUnbounded<ServiceMessage>();
                 Input = channel.Reader;
                 Output = channel.Writer;
+            }
+
+            public Task ApplicationTask { get; set; }
+
+            public CancellationToken CancellationToken => _cancellationTokenSource.Token;
+
+            public void CancelPendingRead()
+            {
+                _cancellationTokenSource.Cancel();
             }
 
             public string ConnectionId { get; }

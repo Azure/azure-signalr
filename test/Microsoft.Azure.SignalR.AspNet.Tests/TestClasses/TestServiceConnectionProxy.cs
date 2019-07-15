@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>> _waitForOutgoingMessage = new ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>>();
 
-        private TestConnectionContext _connectionContext;
+        public TestConnectionContext TestConnectionContext { get; private set; }
 
         public TestServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null, IServiceMessageHandler serviceMessageHandler = null) :
             base(
@@ -43,10 +43,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         protected override async Task<ConnectionContext> CreateConnection(string target = null)
         {
-            _connectionContext = await base.CreateConnection() as TestConnectionContext;
+            TestConnectionContext = await base.CreateConnection() as TestConnectionContext;
 
             await WriteMessageAsync(new HandshakeResponseMessage());
-            return _connectionContext;
+            return TestConnectionContext;
         }
 
         public override Task WriteAsync(ServiceMessage serviceMessage)
@@ -122,13 +122,13 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         public async Task WriteMessageAsync(ServiceMessage message)
         {
-            if (_connectionContext == null)
+            if (TestConnectionContext == null)
             {
                 throw new InvalidOperationException("Server connection is not yet established.");
             }
 
-            ServiceProtocol.WriteMessage(message, _connectionContext.Application.Output);
-            await _connectionContext.Application.Output.FlushAsync();
+            ServiceProtocol.WriteMessage(message, TestConnectionContext.Application.Output);
+            await TestConnectionContext.Application.Output.FlushAsync();
         }
 
         public void Dispose()
