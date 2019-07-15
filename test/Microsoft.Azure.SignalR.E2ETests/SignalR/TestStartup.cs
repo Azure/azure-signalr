@@ -12,6 +12,13 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     internal class TestStartup : IStartup
     {
+        private readonly ParameterDelegator _parameterDelegator;
+
+        public TestStartup(ParameterDelegator parameterDelegator)
+        {
+            _parameterDelegator = parameterDelegator;
+        }
+
         public void Configure(IApplicationBuilder app)
         {
             app.UseAzureSignalR(configure =>
@@ -23,6 +30,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
+            var applicationName = _parameterDelegator?.Parameter[ParameterDelegator.ApplicationName] as string;
+
             services.AddMvc(option => option.EnableEndpointRouting = false);
             services
                 .AddSignalR(options =>
@@ -33,6 +42,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 {
                     o.ConnectionString = TestConfiguration.Instance.ConnectionString;
                     o.ClaimsProvider = context => new[] { new Claim(ClaimTypes.NameIdentifier, context.Request.Query["user"]) };
+                    o.ApplicationName = applicationName;
                 });
 
             return services.BuildServiceProvider();

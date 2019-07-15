@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
         }
 
-        protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output)
+        protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output, ParameterDelegator parameterDelegator = null)
         {
             var testHubConnectionManager = new TestHubConnectionManager();
             var userIdProvider = new UserIdProvider();

@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.Testing.xunit;
+using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Xunit;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 {
     public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     {
-        private const string HubName = "signalrBench";
+        private const string HubName = "TestHub";
         private const string MethodName = "SendMessage";
         private const string Message = "Hello client, have a nice day!";
         private const int ClientConnectionCount = 4;
@@ -31,9 +32,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private static readonly string[] _groupNames = GetTestStringList("Group", GroupCount);
         private static readonly ServiceTransportType[] _serviceTransportType = new ServiceTransportType[] { ServiceTransportType.Transient, ServiceTransportType.Persistent };
         private static readonly string[] _appNames = new string[] { "appName", "", null };
+        private readonly ITestServerFactory _testServerFactory;
 
         public ServiceHubContextE2EFacts(ITestOutputHelper output) : base(output)
         {
+            _testServerFactory = new TestServerFactory();
         }
 
         public static IEnumerable<object[]> TestData => from serviceTransportType in _serviceTransportType
@@ -147,6 +150,67 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 await RunTestCore(clientEndpoint, clientAccessTokens,
                     () => SendToGroupCore(serviceHubContext, userGroupDict, sendTaskFunc, AddUserToGroupAsync, UserRemoveFromAllGroupsAsync),
                     _groupNames.Length, receivedMessageDict);
+            }
+            finally
+            {
+                await serviceHubContext.DisposeAsync();
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [MemberData(nameof(TestData))]
+        internal async Task SendToConnectionTest(ServiceTransportType serviceTransportType, string appName)
+        {
+            var testServer = (TestServer) _testServerFactory.Create(TestOutputHelper);
+            await testServer.StartAsync(new ParameterDelegator().ConfigApplicationName(appName));
+
+            var task = testServer.HubConnectionManager.WaitForConnectionCount(1);
+
+            var receivedMessageDict = new ConcurrentDictionary<int, int>();
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            try
+            {
+                await RunTestCore(clientEndpoint, clientAccessTokens,
+                    async () => 
+                    {
+                        var connectionId = await task.OrTimeout();
+                        await serviceHubContext.Clients.Client(connectionId).SendAsync(MethodName, Message);
+                    },
+                    1, receivedMessageDict);
+            }
+            finally
+            {
+                await serviceHubContext.DisposeAsync();
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [MemberData(nameof(TestData))]
+        internal async Task ConnectionJoinLeaveGroupTest(ServiceTransportType serviceTransportType, string appName)
+        {
+            var testServer = (TestServer)_testServerFactory.Create(TestOutputHelper);
+            await testServer.StartAsync(new ParameterDelegator().ConfigApplicationName(appName));
+
+            var task = testServer.HubConnectionManager.WaitForConnectionCount(1);
+
+            var receivedMessageDict = new ConcurrentDictionary<int, int>();
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            try
+            {
+                await RunTestCore(clientEndpoint, clientAccessTokens,
+                    async () =>
+                    {
+                        var connectionId = await task.OrTimeout();
+                        await serviceHubContext.Groups.AddToGroupAsync(connectionId, _groupNames[0]);
+                        await serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
+                        // We can't guarantee the order between the send group and the following leave group
+                        await Task.Delay(_timeout);
+                        await serviceHubContext.Groups.RemoveFromGroupAsync(connectionId, _groupNames[0]);
+                        await serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
+                    },
+                    1, receivedMessageDict);
             }
             finally
             {

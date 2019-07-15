@@ -2,8 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
-using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace System.Threading.Tasks
 {
