@@ -15,9 +15,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
     {
         private static readonly ServiceProtocol SharedServiceProtocol = new ServiceProtocol();
 
-        private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
-        private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
-        private readonly ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>> _waitForApplicationMessage = new ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>> _waitForOutgoingMessage = new ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>>();
 
         public TestConnectionContext TestConnectionContext { get; private set; }
@@ -66,56 +63,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             return Task.CompletedTask;
         }
 
-        protected override async Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage)
-        {
-            await base.OnConnectedAsync(openConnectionMessage);
-
-            var tcs = _waitForConnectionOpen.GetOrAdd(openConnectionMessage.ConnectionId, i => new TaskCompletionSource<ConnectionContext>(TaskCreationOptions.RunContinuationsAsynchronously));
-
-            tcs.TrySetResult(null);
-        }
-
-        protected override async Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
-        {
-            await base.OnDisconnectedAsync(closeConnectionMessage);
-            var tcs = _waitForConnectionClose.GetOrAdd(closeConnectionMessage.ConnectionId, i => new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously));
-
-            tcs.TrySetResult(null);
-        }
-
-        protected override async Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)
-        {
-            await base.OnMessageAsync(connectionDataMessage);
-
-            var tcs = _waitForApplicationMessage.GetOrAdd(connectionDataMessage.ConnectionId, i => new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
-
-            tcs.TrySetResult(connectionDataMessage);
-        }
-
-        public Task WaitForClientConnectAsync(string connectionId)
-        {
-            var tcs = _waitForConnectionOpen.GetOrAdd(connectionId, i => new TaskCompletionSource<ConnectionContext>(TaskCreationOptions.RunContinuationsAsynchronously));
-
-            return tcs.Task;
-        }
-
-        public Task WaitForApplicationMessageAsync(string connectionId)
-        {
-            var tcs = _waitForApplicationMessage.GetOrAdd(connectionId, i => new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
-
-            return tcs.Task;
-        }
-
         public Task<ServiceMessage> WaitForOutgoingMessageAsync(string connectionId)
         {
             var tcs = _waitForOutgoingMessage.GetOrAdd(connectionId, i => new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
-
-            return tcs.Task;
-        }
-
-        public Task WaitForClientDisconnectAsync(string connectionId)
-        {
-            var tcs = _waitForConnectionClose.GetOrAdd(connectionId, i => new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously));
 
             return tcs.Task;
         }

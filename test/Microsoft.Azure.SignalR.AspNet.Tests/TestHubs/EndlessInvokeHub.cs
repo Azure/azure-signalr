@@ -15,9 +15,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs
     [HubName("EndlessInvoke")]
     public class EndlessInvokeHub : Hub
     {
-        public override async Task OnConnected()
+        public override Task OnConnected()
         {
             Clients.Group("note").echo("Connected");
+            return Task.CompletedTask;
         }
 
         public override Task OnReconnected()
@@ -57,9 +58,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs
             Clients.Group(groupName).echo("_SYSTEM_", $"{name} leaved {groupName}");
         }
 
-        public async Task SendGroup(string name, string groupName, string message)
+        public Task SendGroup(string name, string groupName, string message)
         {
             Clients.Group(groupName).echo(name, message);
+            return Task.CompletedTask;
         }
 
         public void SendGroups(string name, IList<string> groups, string message)

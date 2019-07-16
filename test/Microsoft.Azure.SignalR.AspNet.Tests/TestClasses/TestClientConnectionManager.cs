@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
@@ -14,6 +15,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         private readonly IServiceConnection _serverConnection;
 
         private readonly bool _contains;
+
+        private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
 
         public ConcurrentDictionary<string, TestTransport> CurrentTransports = new ConcurrentDictionary<string, TestTransport>();
 
@@ -30,6 +33,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 ConnectionId = message.ConnectionId
             };
             CurrentTransports.TryAdd(message.ConnectionId, transport);
+
+            var tcs = _waitForConnectionOpen.GetOrAdd(message.ConnectionId, i => new TaskCompletionSource<ConnectionContext>(TaskCreationOptions.RunContinuationsAsynchronously));
+
+            tcs.TrySetResult(null);
 
             return Task.FromResult<IServiceTransport>(transport);
         }
@@ -49,6 +56,13 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             connection = null;
             return CurrentTransports.TryRemove(connectionId, out _);
+        }
+
+        public Task WaitForClientConnectAsync(string connectionId)
+        {
+            var tcs = _waitForConnectionOpen.GetOrAdd(connectionId, i => new TaskCompletionSource<ConnectionContext>(TaskCreationOptions.RunContinuationsAsynchronously));
+
+            return tcs.Task;
         }
     }
 }

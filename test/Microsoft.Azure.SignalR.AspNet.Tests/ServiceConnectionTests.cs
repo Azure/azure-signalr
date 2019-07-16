@@ -20,7 +20,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
-    public partial class ServiceConnectionTests : VerifiableLoggedTest
+    public class ServiceConnectionTests : VerifiableLoggedTest
     {
         private const string ConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
 
@@ -48,27 +48,28 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     // Application layer sends OpenConnectionMessage
                     var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null, "?transport=webSockets");
-                    var task = proxy.WaitForClientConnectAsync(clientConnection).OrTimeout();
+                    var task = clientConnectionManager.WaitForClientConnectAsync(clientConnection).OrTimeout();
                     await proxy.WriteMessageAsync(openConnectionMessage);
-                    await task;
-                    
-                    while (count < 1000)
-                    {
-                        task = proxy.WaitForApplicationMessageAsync(clientConnection).OrTimeout();
-                        await proxy.WriteMessageAsync(new ConnectionDataMessage(clientConnection, "Hello World".GenerateSingleFrameBuffer()));
-                        await task;
-                        count++;
-                    }
-
-                    task = proxy.WaitForClientDisconnectAsync(clientConnection).OrTimeout();
-                    await proxy.WriteMessageAsync(new CloseConnectionMessage(clientConnection));
                     await task;
 
                     // Validate in transport for 1000 data messages.
                     clientConnectionManager.CurrentTransports.TryGetValue(clientConnection, out var transport);
                     Assert.NotNull(transport);
+
+                    while (count < 1000)
+                    {
+                        await proxy.WriteMessageAsync(new ConnectionDataMessage(clientConnection, "Hello World".GenerateSingleFrameBuffer()));
+                        count++;
+                    }
+
+                    await proxy.WriteMessageAsync(new CloseConnectionMessage(clientConnection));
+
                     await transport.WaitOnDisconnected().OrTimeout();
+
+                    // Validate in transport for 1000 data messages.
                     Assert.Equal(transport.MessageCount, count);
+
+                    Assert.Empty(clientConnectionManager.CurrentTransports);
                 }
             }
         }
@@ -186,7 +187,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     // Application layer sends OpenConnectionMessage
                     var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null, $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
                     await proxy.WriteMessageAsync(openConnectionMessage);
-                    await proxy.WaitForClientConnectAsync(clientConnection).OrTimeout();
 
                     // other messages are just ignored because OnConnected failed
                     await proxy.WriteMessageAsync(new ConnectionDataMessage(clientConnection, Encoding.UTF8.GetBytes($"{{\"H\":\"{hub}\",\"M\":\"JoinGroup\",\"A\":[\"user1\",\"group1\"],\"I\":1}}")));
@@ -290,7 +290,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     // Application layer sends OpenConnectionMessage to an authorized hub from anonymous user
                     var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null, "?transport=webSockets&connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
                     await proxy.WriteMessageAsync(openConnectionMessage);
-                    await proxy.WaitForClientConnectAsync(clientConnection).OrTimeout();
 
                     var message = await connectTask;
 
@@ -330,7 +329,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     // Application layer sends OpenConnectionMessage to an authorized hub from anonymous user
                     var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null, "?transport=webSockets&connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
                     await proxy.WriteMessageAsync(openConnectionMessage);
-                    await proxy.WaitForClientConnectAsync(clientConnection).OrTimeout();
 
                     var message = await connectTask;
 
