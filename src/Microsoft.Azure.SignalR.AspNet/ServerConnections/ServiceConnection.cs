@@ -83,7 +83,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 // the manager still contains this connectionId, probably this connection is not yet cleaned up 
                 Log.DuplicateConnectionId(Logger, connectionId, null);
-                return SafeWriteAsync(
+                return WriteAsync(
                     new CloseConnectionMessage(connectionId, $"Duplicate connection ID {connectionId}"));
             }
         }
@@ -121,9 +121,9 @@ namespace Microsoft.Azure.SignalR.AspNet
                 catch (Exception e)
                 {
                     Log.FailToWriteMessageToApplication(Logger, message.GetType().Name, connectionId, e);
-                    await PerformDisconnectCore(connectionId, true);
+                    _ = PerformDisconnectCore(connectionId, true);
 
-                    await SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
+                    _ = WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
                 }
             }
         }
@@ -134,13 +134,13 @@ namespace Microsoft.Azure.SignalR.AspNet
             var app = clientContext.ApplicationTask;
             if (!app.IsCompleted)
             {
-                if (!closeGracefully)
-                {
-                    clientContext.CancelPendingRead();
-                }
-
                 try
                 {
+                    if (!closeGracefully)
+                    {
+                        clientContext.CancelPendingRead();
+                    }
+
                     using (var delayCts = new CancellationTokenSource())
                     {
                         var resultTask =
@@ -195,8 +195,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 Log.ConnectedStartingFailed(Logger, connectionId, e);
                 // Should not wait for application task inside the application task
-                await PerformDisconnectCore(connectionId, false);
-                await SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
+                _ = PerformDisconnectCore(connectionId, false);
+                _ = WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
             }
         }
 
@@ -263,18 +263,9 @@ namespace Microsoft.Azure.SignalR.AspNet
                 // Internal exception is already caught and here only for channel exception.
                 // Notify client to disconnect.
                 Log.SendLoopStopped(Logger, connectionId, e);
-                await PerformDisconnectCore(connectionId, false);
-                await SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
+                _ = PerformDisconnectCore(connectionId, false);
+                _ = WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
             }
-        }
-
-        private async Task SafeWriteAsync(ServiceMessage message)
-        {
-            try
-            {
-                await WriteAsync(message);
-            }
-            catch { }
         }
 
         private static string GetString(ReadOnlySequence<byte> buffer)
