@@ -33,6 +33,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             _connectedConnections.Clear();
             _connectedUsers.Clear();
             _connectionCountTcs.Clear();
+            Interlocked.Exchange(ref _count, 0);
         }
 
         public void AddClient(string client)
