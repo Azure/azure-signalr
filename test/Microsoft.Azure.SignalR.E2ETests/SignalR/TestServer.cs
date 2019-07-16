@@ -6,7 +6,9 @@ using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Xunit.Abstractions;
+using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
@@ -20,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
         }
 
-        protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output, ParameterDelegator parameterDelegator = null)
+        protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output, Dictionary<string, string> configuration)
         {
             HubConnectionManager = new TestHubConnectionManager();
 
@@ -28,9 +30,9 @@ namespace Microsoft.Azure.SignalR.Tests
                 .ConfigureServices(services =>
                 {
                     services.AddSingleton<TestHubConnectionManager>(HubConnectionManager);
-                    services.AddSingleton(parameterDelegator);
                 })
                 .ConfigureLogging(logging => logging.AddXunit(output))
+                .ConfigureAppConfiguration(builder =>  builder.AddInMemoryCollection(configuration))
                 .UseStartup<TestStartup>()
                 .UseUrls(serverUrl)
                 .UseKestrel()

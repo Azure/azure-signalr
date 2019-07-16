@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Owin.Hosting;
 using Owin;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Threading.Tasks;
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
         }
 
-        protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output, ParameterDelegator parameterDelegator = null)
+        protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output, Dictionary<string, string> configuration)
         {
             var testHubConnectionManager = new TestHubConnectionManager();
             var userIdProvider = new UserIdProvider();

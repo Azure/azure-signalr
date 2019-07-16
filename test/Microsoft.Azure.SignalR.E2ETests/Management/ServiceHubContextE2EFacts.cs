@@ -163,9 +163,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         internal async Task SendToConnectionTest(ServiceTransportType serviceTransportType, string appName)
         {
             var testServer = (TestServer) _testServerFactory.Create(TestOutputHelper);
-            await testServer.StartAsync(new ParameterDelegator().ConfigApplicationName(appName));
+            await testServer.StartAsync(new Dictionary<string, string>{ [TestStartup.ApplicationName] = appName });
 
-            var task = testServer.HubConnectionManager.WaitForConnectionCount(1);
+            var task = testServer.HubConnectionManager.WaitForConnectionCountAsync(1);
 
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
@@ -191,9 +191,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         internal async Task ConnectionJoinLeaveGroupTest(ServiceTransportType serviceTransportType, string appName)
         {
             var testServer = (TestServer)_testServerFactory.Create(TestOutputHelper);
-            await testServer.StartAsync(new ParameterDelegator().ConfigApplicationName(appName));
+            await testServer.StartAsync(new Dictionary<string, string> { [TestStartup.ApplicationName] = appName });
 
-            var task = testServer.HubConnectionManager.WaitForConnectionCount(1);
+            var task = testServer.HubConnectionManager.WaitForConnectionCountAsync(1);
 
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);

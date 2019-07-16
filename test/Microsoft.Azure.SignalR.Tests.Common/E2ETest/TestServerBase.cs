@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Threading.Tasks;
@@ -18,14 +19,14 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             _output = output;
         }
 
-        public async Task<string> StartAsync(ParameterDelegator parameterDelegator = null)
+        public async Task<string> StartAsync(Dictionary<string, string> configuration = null)
         {
             for (int retry = 0; retry < _maxRetry; retry++)
             {
                 try
                 {
                     var serverUrl = GetRandomPortUrl();
-                    await StartCoreAsync(serverUrl, _output, parameterDelegator);
+                    await StartCoreAsync(serverUrl, _output, configuration);
                     _output.WriteLine($"Server started: {serverUrl}");
                     return serverUrl;
                 }
@@ -53,6 +54,6 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public abstract Task StopAsync();
 
-        protected abstract Task StartCoreAsync(string serverUrl, ITestOutputHelper output, ParameterDelegator parameterDelegator = null);
+        protected abstract Task StartCoreAsync(string serverUrl, ITestOutputHelper output, Dictionary<string, string> configuration);
     }
 }

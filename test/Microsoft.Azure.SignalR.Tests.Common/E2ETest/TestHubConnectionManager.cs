@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             }
         }
 
-        public Task<string> WaitForConnectionCount(int n)
+        public Task<string> WaitForConnectionCountAsync(int n)
         {
             return _connectionCountTcs.GetOrAdd(n,
                 k => new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously)).Task;

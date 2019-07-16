@@ -6,17 +6,20 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
     internal class TestStartup : IStartup
     {
-        private readonly ParameterDelegator _parameterDelegator;
+        public const string ApplicationName = "AppName";
 
-        public TestStartup(ParameterDelegator parameterDelegator)
+        private readonly IConfiguration _configuration;
+
+        public TestStartup(IConfiguration configuration)
         {
-            _parameterDelegator = parameterDelegator;
+            _configuration = configuration;
         }
 
         public void Configure(IApplicationBuilder app)
@@ -30,7 +33,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            var applicationName = _parameterDelegator?.Parameter[ParameterDelegator.ApplicationName] as string;
+            var applicationName = _configuration[ApplicationName];
 
             services.AddMvc(option => option.EnableEndpointRouting = false);
             services
