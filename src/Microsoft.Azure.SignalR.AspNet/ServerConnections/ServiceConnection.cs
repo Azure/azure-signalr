@@ -19,12 +19,16 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal partial class ServiceConnection : ServiceConnectionBase
     {
-        private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
+        private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string>
+            {{Constants.AsrsUserAgent, ProductInfo.GetProductInfo()}};
+
         private const string ReconnectMessage = "asrs:reconnect";
 
         private static readonly TimeSpan CloseApplicationTimeout = TimeSpan.FromSeconds(5);
 
-        private readonly ConcurrentDictionary<string, ClientContext> _clientConnections = new ConcurrentDictionary<string, ClientContext>(StringComparer.Ordinal);
+        private readonly ConcurrentDictionary<string, ClientContext> _clientConnections =
+            new ConcurrentDictionary<string, ClientContext>(StringComparer.Ordinal);
+
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionManager _clientConnectionManager;
 
@@ -37,7 +41,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             ILoggerFactory loggerFactory,
             IServiceMessageHandler serviceMessageHandler,
             ServerConnectionType connectionType = ServerConnectionType.Default)
-            : base(serviceProtocol, connectionId, endpoint, serviceMessageHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>())
+            : base(serviceProtocol, connectionId, endpoint, serviceMessageHandler, connectionType,
+                loggerFactory?.CreateLogger<ServiceConnection>())
         {
             _connectionFactory = connectionFactory;
             _clientConnectionManager = clientConnectionManager;
@@ -45,7 +50,8 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
         {
-            return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target, headers: CustomHeader);
+            return _connectionFactory.ConnectAsync(HubEndpoint, TransferFormat.Binary, ConnectionId, target,
+                headers: CustomHeader);
         }
 
         protected override Task DisposeConnection()
@@ -55,16 +61,10 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _connectionFactory.DisposeAsync(connection);
         }
 
-        protected override async Task CleanupConnections()
+        protected override Task CleanupConnections()
         {
-            try
-            {
-                await Task.WhenAll(_clientConnections.Select(s => PerformDisconnectCore(s.Key, true)));
-            }
-            catch (Exception ex)
-            {
-                Log.FailedToCleanupConnections(Logger, ex);
-            }
+            _ = CleanupConnectionsAsyncCore();
+            return Task.CompletedTask;
         }
 
         protected override Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage)
@@ -73,16 +73,18 @@ namespace Microsoft.Azure.SignalR.AspNet
             var connectionId = openConnectionMessage.ConnectionId;
             var clientContext = new ClientContext(connectionId);
 
-            if (_clientConnections.TryAdd(connectionId, clientContext) &&
-                _clientConnectionManager.TryAdd(connectionId, this))
+            if (_clientConnectionManager.TryAdd(connectionId, this))
             {
+                _clientConnections.TryAdd(connectionId, clientContext);
                 clientContext.ApplicationTask = ProcessMessageAsync(clientContext, clientContext.CancellationToken);
                 return ForwardMessageToApplication(connectionId, openConnectionMessage);
             }
             else
             {
+                // the manager still contains this connectionId, probably this connection is not yet cleaned up 
                 Log.DuplicateConnectionId(Logger, connectionId, null);
-                return Task.CompletedTask;
+                return SafeWriteAsync(
+                    new CloseConnectionMessage(connectionId, $"Duplicate connection ID {connectionId}"));
             }
         }
 
@@ -94,6 +96,18 @@ namespace Microsoft.Azure.SignalR.AspNet
         protected override Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)
         {
             return ForwardMessageToApplication(connectionDataMessage.ConnectionId, connectionDataMessage);
+        }
+
+        protected virtual async Task CleanupConnectionsAsyncCore()
+        {
+            try
+            {
+                await Task.WhenAll(_clientConnections.Select(s => PerformDisconnectCore(s.Key, true, false)));
+            }
+            catch (Exception ex)
+            {
+                Log.FailedToCleanupConnections(Logger, ex);
+            }
         }
 
         private async Task ForwardMessageToApplication(string connectionId, ServiceMessage message)
@@ -114,12 +128,17 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-
-        private async Task WaitForApplicationTask(ClientContext clientContext)
+        private async Task WaitForApplicationTask(ClientContext clientContext, bool closeGracefully)
         {
+            clientContext.Output.TryComplete();
             var app = clientContext.ApplicationTask;
             if (!app.IsCompleted)
             {
+                if (!closeGracefully)
+                {
+                    clientContext.CancelPendingRead();
+                }
+
                 try
                 {
                     using (var delayCts = new CancellationTokenSource())
@@ -145,21 +164,21 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-        private async Task PerformDisconnectCore(string connectionId, bool waitForApplicationTask)
+        private async Task PerformDisconnectCore(string connectionId, bool waitForApplicationTask, bool closeGracefully = true)
         {
-            if (_clientConnections.TryRemove(connectionId, out var clientContext))
+            // remove the connection from the global store so that a connection with the same connectionId can be added from elsewhere
+            if (_clientConnectionManager.TryRemoveServiceConnection(connectionId, out _))
             {
-                clientContext.Output.TryComplete();
-                if (waitForApplicationTask)
+                if (_clientConnections.TryRemove(connectionId, out var clientContext))
                 {
-                    await WaitForApplicationTask(clientContext);
+                    if (waitForApplicationTask)
+                    {
+                        await WaitForApplicationTask(clientContext, closeGracefully);
+                    }
+
+                    clientContext.Transport?.OnDisconnected();
+                    Log.ConnectedEnding(Logger, connectionId);
                 }
-
-                // remove the connection after application task completes
-                _clientConnectionManager.TryRemoveServiceConnection(connectionId, out _);
-                clientContext.Transport?.OnDisconnected();
-
-                Log.ConnectedEnding(Logger, connectionId);
             }
         }
 

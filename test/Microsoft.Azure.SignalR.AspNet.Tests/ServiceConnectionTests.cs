@@ -442,7 +442,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     proxy.TestConnectionContext.Application.Output.Complete();
 
                     // wait for application task to timeout
-                    await connectionTask.OrTimeout(10000);
+                    await proxy.WaitForConnectionClose.OrTimeout(10000);
                     Assert.Equal(ServiceConnectionStatus.Disconnected, proxy.Status);
 
                     // cleaned up clearly
@@ -503,6 +503,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     proxy.TestConnectionContext.Application.Output.Complete();
 
                     await connectionTask.OrTimeout();
+                    await proxy.WaitForConnectionClose.OrTimeout();
                     Assert.Equal(ServiceConnectionStatus.Disconnected, proxy.Status);
 
                     // cleaned up clearly

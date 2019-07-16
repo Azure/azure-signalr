@@ -17,7 +17,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>> _waitForOutgoingMessage = new ConcurrentDictionary<string, TaskCompletionSource<ServiceMessage>>();
 
+        private  readonly  TaskCompletionSource<object> _connectionClosedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         public TestConnectionContext TestConnectionContext { get; private set; }
+        public Task WaitForConnectionClose => _connectionClosedTcs.Task;
 
         public TestServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null, IServiceMessageHandler serviceMessageHandler = null) :
             base(
@@ -44,6 +46,19 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             await WriteMessageAsync(new HandshakeResponseMessage());
             return TestConnectionContext;
+        }
+
+        protected override async Task CleanupConnectionsAsyncCore()
+        {
+            try
+            {
+                await base.CleanupConnectionsAsyncCore();
+                _connectionClosedTcs.SetResult(null);
+            }
+            catch (Exception e)
+            {
+                _connectionClosedTcs.SetException(e);
+            } 
         }
 
         public override Task WriteAsync(ServiceMessage serviceMessage)
