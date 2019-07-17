@@ -134,7 +134,7 @@ For a SignalR persistent connection, it first `/negotiate` to Azure SignalR serv
 
     The above code means the client first sends negotiation request to ASRS together with *access_token1*, then it connects ASRS with another access token *access_token2*. That is why 404 error occurs.
 
-    The recommended way is to setup a negotiation web app to generate the access token and service url. Please refer to [the sample of build negotiation server](#https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management/NegotiationServer). The code is simple and correct:
+    The recommended way is to setup a negotiation web app to generate the access token and service url. Please refer to the sample of [build negotiation server](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management/NegotiationServer). The code is simple and correct:
 
     ```c#
     var url = getNegotiationServerUrl(); // return the negotiation server's endpoint
