@@ -10,6 +10,7 @@ using System.Net.Mime;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -158,7 +159,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                                             Constants.QueryParameter.ConnectionRequestId,
                                             clientRequestId)
                                     })
-                                .Select(s => $"{s.Key}={WebUtility.UrlEncode(s.Value)}"));
+                                .Select(s => $"{Uri.EscapeDataString(s.Key)}={Uri.EscapeDataString(s.Value)}"));
                 }
 
                 originalPath = GetOriginalPath(context.Request.LocalPath);
