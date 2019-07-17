@@ -30,10 +30,10 @@ Microsoft.Azure.SignalR | .NET Standard 2.0, .NET Core App 3.0 | [![Nuget (with 
 
 ## Getting Started
 
-Azure SignalR Service is based on [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) framework, and it supports both [ASP.NET Core SignalR](https://github.com/aspnet/SignalR) and [ASP.NET SignalR](https://github.com/SignalR/SignalR) applications. Both support are generally available. Please note that different frameworks require different Azure SignalR SDK, for ASP.NET Core SignalR, it is package `Microsoft.Azure.SignalR` to install, for ASP.NET SignalR, it is package `Microsoft.Azure.SignalR.AspNet`.
+Azure SignalR Service is based on [ASP.NET Core SignalR](https://github.com/aspnet/AspNetCore/tree/master/src/SignalR) framework, and it supports both [ASP.NET Core SignalR](https://github.com/aspnet/AspNetCore/tree/master/src/SignalR) and [ASP.NET SignalR](https://github.com/SignalR/SignalR) applications. Both support are generally available. Please note that different frameworks require different Azure SignalR SDK, for ASP.NET Core SignalR, it is package `Microsoft.Azure.SignalR` to install, for ASP.NET SignalR, it is package `Microsoft.Azure.SignalR.AspNet`.
 
 ### ASP.NET Core SignalR
-Package [Microsoft.Azure.SignalR](https://www.nuget.org/packages/Microsoft.Azure.SignalR) is the one to use when you are using [ASP.NET Core SignalR](https://github.com/aspnet/SignalR). If you are not familiar with ASP.NET Core SignalR yet, we recommend you to read [ASP.NET Core SignalR's documentation](https://docs.microsoft.com/en-us/aspnet/core/signalr/) first.
+Package [Microsoft.Azure.SignalR](https://www.nuget.org/packages/Microsoft.Azure.SignalR) is the one to use when you are using [ASP.NET Core SignalR](https://github.com/aspnet/SignalR). If you are not familiar with ASP.NET Core SignalR yet, we recommend you to read [ASP.NET Core SignalR's documentation](https://docs.microsoft.com/aspnet/core/signalr/) first.
 
 Follow the tutorial at [here](https://aka.ms/signalr_service_doc) to get started with Azure SignalR Service.
 
@@ -54,7 +54,7 @@ Samples on how to use Azure SignalR Service can be found [here](https://github.c
 > 
 > Management API only supports **ASP.NET Core SignalR**.
 
-Package [Microsoft.Azure.SignalR.Management](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) is the one to use when you want to manage SignalR clients through Azure SignalR Service directly such as broadcast messages. This SDK can be but not limited to be used in [serverless](https://azure.microsoft.com/zh-cn/solutions/serverless/) environments. You can use this SDK to manage SignalR clients connected to your Azure SignalR Service in any environment, such as in a console app, in an Azure function or in an App Server.
+Package [Microsoft.Azure.SignalR.Management](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) is the one to use when you want to manage SignalR clients through Azure SignalR Service directly such as broadcast messages. This SDK can be but not limited to be used in [serverless](https://azure.microsoft.com/solutions/serverless/) environments. You can use this SDK to manage SignalR clients connected to your Azure SignalR Service in any environment, such as in a console app, in an Azure function or in an App Server.
 
 More details can be found [here](./docs/management-sdk-guide.md).
 

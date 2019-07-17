@@ -5,11 +5,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    public class TestHub : Hub
+    internal class TestHub : Hub
     {
-        public void Echo(string message)
-        {
-            Clients.Client(Context.ConnectionId).SendAsync(nameof(Echo), message);
-        }
     }
 }

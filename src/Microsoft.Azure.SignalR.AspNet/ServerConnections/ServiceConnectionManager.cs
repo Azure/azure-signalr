@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
@@ -101,14 +102,14 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _appConnection.WriteAsync(serviceMessage);
         }
 
-        public virtual Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+        public virtual Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
             if (_appConnection == null)
             {
                 throw new InvalidOperationException("App connection is not yet initialized.");
             }
 
-            return _appConnection.WriteAsync(partitionKey, serviceMessage);
+            return _appConnection.WriteAckableMessageAsync(serviceMessage, cancellationToken);
         }
 
         private IEnumerable<IServiceConnectionContainer> GetConnections()

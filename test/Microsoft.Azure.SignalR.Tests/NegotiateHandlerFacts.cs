@@ -1,6 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+// From AspNetCore 3.0 preview7, there's a break change in HubConnectionContext
+// which will break cross reference bettwen NETCOREAPP3.0 to NETStandard2.0 SDK
+// So skip this part of UT when target 2.0 only
+#if (MULTIFRAMEWORK)
+
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -25,7 +30,6 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
-        private const string UserPath = "/user/path";
 
         private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
 
@@ -128,18 +132,20 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [InlineData("/user/path/negotiate", "", "asrs.op=%2Fuser%2Fpath")]
-        [InlineData("/user/path/negotiate/", "", "asrs.op=%2Fuser%2Fpath")]
-        [InlineData("", "?customKey=customeValue", "customKey=customeValue")]
-        [InlineData("/user/path/negotiate", "?customKey=customeValue", "asrs.op=%2Fuser%2Fpath&customKey=customeValue")]
-        public void GenerateNegotiateResponseWithPathAndQuery(string path, string queryString, string expectedQueryString)
+        [InlineData("/user/path/negotiate", "", "", "asrs.op=%2Fuser%2Fpath&asrs_request_id=")]
+        [InlineData("/user/path/negotiate/", "", "a", "asrs.op=%2Fuser%2Fpath&asrs_request_id=a")]
+        [InlineData("", "?customKey=customeValue", "?a=c", "customKey=customeValue&asrs_request_id=%3Fa%3Dc")]
+        [InlineData("/user/path/negotiate", "?customKey=customeValue", "&", "asrs.op=%2Fuser%2Fpath&customKey=customeValue&asrs_request_id=%26")]
+        public void GenerateNegotiateResponseWithPathAndQuery(string path, string queryString, string id, string expectedQueryString)
         {
+            var requestIdProvider = new TestRequestIdProvider(id);
             var config = new ConfigurationBuilder().Build();
             var serviceProvider = new ServiceCollection().AddSignalR()
                 .AddAzureSignalR(o => o.ConnectionString = DefaultConnectionString)
                 .Services
                 .AddLogging()
                 .AddSingleton<IConfiguration>(config)
+                .AddSingleton<IConnectionRequestIdProvider>(requestIdProvider)
                 .BuildServiceProvider();
 
             var requestFeature = new HttpRequestFeature
@@ -159,10 +165,11 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [InlineData("", "?hub=chat")]
-        [InlineData("appName", "?hub=appname_chat")]
-        public void GenerateNegotiateResponseWithAppName(string appName, string expectedResponse)
+        [InlineData("", "&", "?hub=chat&asrs_request_id=%26")]
+        [InlineData("appName", "abc", "?hub=appname_chat&asrs_request_id=abc")]
+        public void GenerateNegotiateResponseWithAppName(string appName, string id, string expectedResponse)
         {
+            var requestIdProvider = new TestRequestIdProvider(id);
             var config = new ConfigurationBuilder().Build();
             var serviceProvider = new ServiceCollection().AddSignalR()
                 .AddAzureSignalR(o =>
@@ -173,6 +180,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 .Services
                 .AddLogging()
                 .AddSingleton<IConfiguration>(config)
+                .AddSingleton<IConnectionRequestIdProvider>(requestIdProvider)
                 .BuildServiceProvider();
 
             var requestFeature = new HttpRequestFeature
@@ -218,6 +226,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public void TestNegotiateHandlerWithMultipleEndpointsAndCustomerRouterAndAppName()
         {
+            var requestIdProvider = new TestRequestIdProvider("a");
             var config = new ConfigurationBuilder().Build();
             var router = new TestCustomRouter();
             var serviceProvider = new ServiceCollection().AddSignalR()
@@ -235,6 +244,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddLogging()
                 .AddSingleton<IEndpointRouter>(router)
                 .AddSingleton<IConfiguration>(config)
+                .AddSingleton<IConnectionRequestIdProvider>(requestIdProvider)
                 .BuildServiceProvider();
 
             var requestFeature = new HttpRequestFeature
@@ -251,12 +261,13 @@ namespace Microsoft.Azure.SignalR.Tests
             var negotiateResponse = handler.Process(httpContext, "chat");
 
             Assert.NotNull(negotiateResponse);
-            Assert.Equal($"http://localhost3/client/?hub=testprefix_chat&asrs.op=%2Fuser%2Fpath&endpoint=chosen", negotiateResponse.Url);
+            Assert.Equal($"http://localhost3/client/?hub=testprefix_chat&asrs.op=%2Fuser%2Fpath&endpoint=chosen&asrs_request_id=a", negotiateResponse.Url);
         }
 
         [Fact]
         public void TestNegotiateHandlerWithMultipleEndpointsAndCustomRouter()
         {
+            var requestIdProvider = new TestRequestIdProvider("a");
             var config = new ConfigurationBuilder().Build();
             var router = new TestCustomRouter();
             var serviceProvider = new ServiceCollection().AddSignalR()
@@ -271,6 +282,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddLogging()
                 .AddSingleton<IEndpointRouter>(router)
                 .AddSingleton<IConfiguration>(config)
+                .AddSingleton<IConnectionRequestIdProvider>(requestIdProvider)
                 .BuildServiceProvider();
 
             var requestFeature = new HttpRequestFeature
@@ -286,7 +298,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var negotiateResponse = handler.Process(httpContext, "chat");
 
             Assert.NotNull(negotiateResponse);
-            Assert.Equal($"http://localhost3/client/?hub=chat&asrs.op=%2Fuser%2Fpath&endpoint=chosen", negotiateResponse.Url);
+            Assert.Equal($"http://localhost3/client/?hub=chat&asrs.op=%2Fuser%2Fpath&endpoint=chosen&asrs_request_id=a", negotiateResponse.Url);
 
             // With no query string should return 400
             requestFeature = new HttpRequestFeature
@@ -387,3 +399,5 @@ namespace Microsoft.Azure.SignalR.Tests
         }
     }
 }
+
+#endif

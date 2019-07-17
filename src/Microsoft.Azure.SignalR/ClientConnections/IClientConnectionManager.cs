@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -9,8 +10,8 @@ namespace Microsoft.Azure.SignalR
     {
         void AddClientConnection(ServiceConnectionContext clientConnection);
 
-        void RemoveClientConnection(string connectionId);
+        ServiceConnectionContext RemoveClientConnection(string connectionId);
 
-        ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections { get; }
+        IReadOnlyDictionary<string, ServiceConnectionContext> ClientConnections { get; }
     }
 }

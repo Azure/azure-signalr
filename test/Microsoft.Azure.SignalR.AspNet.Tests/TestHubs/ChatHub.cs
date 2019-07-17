@@ -17,7 +17,20 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs
     {
         public override Task OnConnected()
         {
-            return base.OnConnected();
+            Clients.Group("note").echo("Connected");
+            return Task.CompletedTask;
+        }
+
+        public override Task OnReconnected()
+        {
+            Clients.Group("note").echo("Reconnected");
+            return Task.CompletedTask;
+        }
+
+        public override Task OnDisconnected(bool stopCalled)
+        {
+            Clients.Group("note").echo("Disconnected");
+            return Task.CompletedTask;
         }
 
         public void BroadcastMessage(string name, string message)
@@ -65,11 +78,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs
         public void SendUsers(string name, IList<string> userIds, string message)
         {
             Clients.Users(userIds).echo(name, message);
-        }
-
-        public override Task OnDisconnected(bool stopCalled)
-        {
-            return base.OnDisconnected(stopCalled);
         }
     }
 }

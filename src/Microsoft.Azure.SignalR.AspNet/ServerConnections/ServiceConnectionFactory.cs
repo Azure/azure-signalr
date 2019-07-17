@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
@@ -12,20 +8,23 @@ namespace Microsoft.Azure.SignalR.AspNet
     {
         private readonly IServiceProtocol _serviceProtocol;
         private readonly IClientConnectionManager _clientConnectionManager;
+        private readonly IConnectionFactory _connectionFactory;
         private readonly ILoggerFactory _logger;
 
         public ServiceConnectionFactory(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
+            IConnectionFactory connectionFactory,
             ILoggerFactory logger)
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
+            _connectionFactory = connectionFactory;
             _logger = logger;
         }
 
-        public IServiceConnection Create(IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
+        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
         {
-            return new ServiceConnection(Guid.NewGuid().ToString(), _serviceProtocol, connectionFactory, _clientConnectionManager, _logger, serviceMessageHandler, type);
+            return new ServiceConnection(Guid.NewGuid().ToString(), endpoint, _serviceProtocol, _connectionFactory, _clientConnectionManager, _logger, serviceMessageHandler, type);
         }
     }
 }

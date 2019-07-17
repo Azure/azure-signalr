@@ -7,7 +7,6 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class Constants
     {
-        public const int DefaultInitConnectionCountPerHub = 2;
         public const string ServerStickyModeDefaultKey = "Azure:SignalR:ServerStickyMode";
         public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
         public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
@@ -52,6 +51,7 @@ namespace Microsoft.Azure.SignalR
         public static class QueryParameter
         {
             public const string OriginalPath = "asrs.op";
+            public const string ConnectionRequestId = "asrs_request_id";
         }
 
         public static class Config

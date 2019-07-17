@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
@@ -32,10 +33,12 @@ namespace Microsoft.Azure.SignalR.Tests
             return Task.CompletedTask;
         }
 
-        public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+        public Task WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            _partitionedWriteAsyncCallCount.AddOrUpdate(serviceMessage.GetType(), 1, (_, value) => value + 1);
-            ServiceMessage = serviceMessage;
+            if (serviceMessage is IAckableMessage)
+            {
+                return WriteAsync(serviceMessage);
+            }
             return Task.CompletedTask;
         }
 
@@ -47,6 +50,11 @@ namespace Microsoft.Azure.SignalR.Tests
         public int GetPartitionedCallCount(Type type)
         {
             return _partitionedWriteAsyncCallCount.TryGetValue(type, out var count) ? count : 0;
+        }
+
+        public Task StopAsync()
+        {
+            return Task.CompletedTask;
         }
     }
 }

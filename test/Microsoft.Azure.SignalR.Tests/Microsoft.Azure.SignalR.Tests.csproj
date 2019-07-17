@@ -2,13 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
-
     <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR\Microsoft.Azure.SignalR.csproj" />
-    <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" />
     <ProjectReference Include="..\Microsoft.Azure.SignalR.Tests.Common\Microsoft.Azure.SignalR.Tests.Common.csproj" />
   </ItemGroup>
 
@@ -18,7 +16,19 @@
     <PackageReference Include="Moq" Version="$(MoqPackageVersion)" />
     <PackageReference Include="xunit" Version="$(XunitPackageVersion)" />
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualStudioPackageVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="$(MicrosoftAspNetCoreSignalRClientTest)" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="$(MicrosoftAspNetCoreSignalRProtocolsMessagePackTestPackageVersion)" />
   </ItemGroup>
+
+  <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' != 'true' ">
+    <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR\Microsoft.Azure.SignalR.csproj" />
+    <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' == 'true' ">
+    <PackageReference Include="Microsoft.Azure.SignalR" Version="$(VersionPrefix)-*" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(IsTargetMultiFramework)' != 'false'">
+    <DefineConstants>MULTIFRAMEWORK</DefineConstants>
+  </PropertyGroup>
 </Project>

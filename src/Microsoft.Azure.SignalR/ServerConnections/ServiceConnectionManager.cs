@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
@@ -25,6 +26,11 @@ namespace Microsoft.Azure.SignalR
             return _serviceConnection.StartAsync();
         }
 
+        public Task StopAsync()
+        {
+            return _serviceConnection.StopAsync();
+        }
+
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
             if (_serviceConnection == null)
@@ -35,20 +41,14 @@ namespace Microsoft.Azure.SignalR
             return _serviceConnection.WriteAsync(serviceMessage);
         }
 
-        public Task WriteAsync(string partitionKey, ServiceMessage serviceMessage)
+        public Task WriteAckableMessageAsync(ServiceMessage seviceMessage, CancellationToken cancellationToken = default)
         {
-            // If we hit this check, it is a code bug.
-            if (string.IsNullOrEmpty(partitionKey))
-            {
-                throw new ArgumentNullException(nameof(partitionKey));
-            }
-
             if (_serviceConnection == null)
             {
                 throw new AzureSignalRNotConnectedException();
             }
 
-            return _serviceConnection.WriteAsync(partitionKey, serviceMessage);
+            return _serviceConnection.WriteAckableMessageAsync(seviceMessage, cancellationToken);
         }
     }
 }

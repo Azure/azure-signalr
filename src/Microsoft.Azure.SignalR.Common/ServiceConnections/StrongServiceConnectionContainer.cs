@@ -2,11 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -19,16 +19,7 @@ namespace Microsoft.Azure.SignalR
         private readonly object _lock = new object();
 
         public StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory,
-            int fixedConnectionCount, ServiceEndpoint endpoint) : base(serviceConnectionFactory, connectionFactory, fixedConnectionCount, endpoint)
-        {
-            _onDemandServiceConnections = new List<IServiceConnection>();
-        }
-
-        // For test purpose only
-        internal StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
-            IConnectionFactory connectionFactory, List<IServiceConnection> initialConnections, ServiceEndpoint endpoint) : base(
-            serviceConnectionFactory, connectionFactory, initialConnections, endpoint)
+            int fixedConnectionCount, HubServiceEndpoint endpoint, ILogger logger = null) : base(serviceConnectionFactory, fixedConnectionCount, endpoint, logger: logger)
         {
             _onDemandServiceConnections = new List<IServiceConnection>();
         }
@@ -74,11 +65,6 @@ namespace Microsoft.Azure.SignalR
             }
 
             return ServiceConnectionStatus.Disconnected;
-        }
-
-        protected override IServiceConnection CreateServiceConnectionCore()
-        {
-            return CreateServiceConnectionCore(ServerConnectionType.Default);
         }
 
         protected override async Task OnConnectionComplete(IServiceConnection connection)

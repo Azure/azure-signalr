@@ -8,10 +8,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    class ServiceConnectionFactory : IServiceConnectionFactory
+    internal class ServiceConnectionFactory : IServiceConnectionFactory
     {
         private readonly IServiceProtocol _serviceProtocol;
         private readonly IClientConnectionManager _clientConnectionManager;
+        private readonly IConnectionFactory _connectionFactory;
         private readonly ILoggerFactory _loggerFactory;
         private readonly ConnectionDelegate _connectionDelegate;
         private readonly IClientConnectionFactory _clientConnectionFactory;
@@ -20,22 +21,24 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceConnectionFactory(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
+            IConnectionFactory connectionFactory,
             ILoggerFactory loggerFactory,
             ConnectionDelegate connectionDelegate,
             IClientConnectionFactory clientConnectionFactory)
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
+            _connectionFactory = connectionFactory;
             _loggerFactory = loggerFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
         }
 
-        public IServiceConnection Create(IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
+        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
         {
-            var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, connectionFactory,
+            var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, _connectionFactory,
                 _loggerFactory, _connectionDelegate, _clientConnectionFactory,
-                Guid.NewGuid().ToString(), serviceMessageHandler, type);
+                Guid.NewGuid().ToString(), endpoint, serviceMessageHandler, type);
             serviceConnection.ConfigureContext = ConfigureContext;
             return serviceConnection;
         }

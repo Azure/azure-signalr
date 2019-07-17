@@ -8,6 +8,8 @@ using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.AspNet
@@ -15,10 +17,12 @@ namespace Microsoft.Azure.SignalR.AspNet
     internal class AzureTransport : IServiceTransport
     {
         private readonly TaskCompletionSource<object> _lifetimeTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<object> _connectedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly HostContext _context;
         private readonly IMemoryPool _pool;
         private readonly JsonSerializer _serializer;
         private readonly IServiceProtocol _serviceProtocol;
+        private readonly ILogger _logger;
 
         public AzureTransport(HostContext context, IDependencyResolver resolver)
         {
@@ -27,6 +31,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             _pool = resolver.Resolve<IMemoryPool>();
             _serializer = resolver.Resolve<JsonSerializer>();
             _serviceProtocol = resolver.Resolve<IServiceProtocol>();
+            _logger = resolver.Resolve<ILoggerFactory>()?.CreateLogger<AzureTransport>() ??
+                      NullLogger<AzureTransport>.Instance;
         }
 
         public Func<string, Task> Received { get; set; }
@@ -44,12 +50,31 @@ namespace Microsoft.Azure.SignalR.AspNet
             return Task.FromResult<string>(null);
         }
 
-        public async Task ProcessRequest(ITransportConnection connection)
+        public Task WaitForConnected => _connectedTcs.Task;
+
+        public Task ProcessRequest(ITransportConnection connection)
         {
-            var connected = Connected;
-            if (connected != null)
+            _ = LifetimeExecute();
+            return WaitForConnected;
+        }
+
+        private async Task LifetimeExecute()
+        {
+            try
             {
-                await connected();
+                var connected = Connected;
+                if (connected != null)
+                {
+                    await connected();
+                }
+
+                _connectedTcs.TrySetResult(null);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorExecuteConnected(_logger, ConnectionId, e);
+                _connectedTcs.TrySetException(e);
+                throw;
             }
 
             await _lifetimeTcs.Task;
@@ -57,7 +82,15 @@ namespace Microsoft.Azure.SignalR.AspNet
             var disconnected = Disconnected;
             if (disconnected != null)
             {
-                await disconnected(true);
+                try
+                {
+                    await disconnected(true);
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorExecuteDisconnected(_logger, ConnectionId, e);
+                    throw;
+                }
             }
         }
 
@@ -83,5 +116,24 @@ namespace Microsoft.Azure.SignalR.AspNet
         }
 
         public void OnDisconnected() => _lifetimeTcs.TrySetResult(null);
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, string, Exception> _errorExecuteConnected =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(1, "ErrorExecuteConnected"), "Error executing OnConnected in Hub for connection {TransportConnectionId}.");
+
+            // Category: ServiceConnection
+            private static readonly Action<ILogger, string, Exception> _errorExecuteDisconnected =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, "ErrorExecuteDisconnected"), "Error executing OnDisconnected in Hub for connection {TransportConnectionId}.");
+
+            public static void ErrorExecuteConnected(ILogger logger, string connectionId, Exception exception)
+            {
+                _errorExecuteConnected(logger, connectionId, exception);
+            }
+            public static void ErrorExecuteDisconnected(ILogger logger, string connectionId, Exception exception)
+            {
+                _errorExecuteDisconnected(logger, connectionId, exception);
+            }
+        }
     }
 }

@@ -1,7 +1,7 @@
 /* jquery.signalR.core.js */
 /*global window:false */
 /*!
- * ASP.NET SignalR JavaScript Library 2.4.0
+ * ASP.NET SignalR JavaScript Library 2.4.1
  * http://signalr.net/
  *
  * Copyright (c) .NET Foundation. All rights reserved.
@@ -356,7 +356,8 @@
                 lastActiveAt: new Date().getTime(),
                 beatInterval: 5000, // Default value, will only be overridden if keep alive is enabled,
                 beatHandle: null,
-                totalTransportConnectTimeout: 0 // This will be the sum of the TransportConnectTimeout sent in response to negotiate and connection.transportConnectTimeout
+                totalTransportConnectTimeout: 0, // This will be the sum of the TransportConnectTimeout sent in response to negotiate and connection.transportConnectTimeout
+                redirectQs: null
             };
             if (typeof (logging) === "boolean") {
                 this.logging = logging;
@@ -412,12 +413,16 @@
 
         state: signalR.connectionState.disconnected,
 
-        clientProtocol: "2.0",
+        clientProtocol: "2.1",
 
         // We want to support older servers since the 2.0 change is to support redirection results, which isn't
         // really breaking in the protocol. So if a user updates their client to 2.0 protocol version there's
-        // no reason they can't still connect to a 1.5 server.
-        supportedProtocols: ["1.5", "2.0"],
+        // no reason they can't still connect to a 1.5 server. The 2.1 protocol is sent by the client so the SignalR
+        // service knows the client will use they query string returned via the RedirectUrl for subsequent requests.
+        // It doesn't matter whether the server reflects back 2.1 or continues using 2.0 as the protocol version.
+        supportedProtocols: ["1.5", "2.0", "2.1"],
+
+        negotiateRedirectSupportedProtocols: ["2.0", "2.1"],
 
         reconnectDelay: 2000,
 
@@ -561,12 +566,12 @@
 
             connection.withCredentials = config.withCredentials;
 
-            setConnectionUrl(connection, connection.url);
-
             // Save the original url so that we can reset it when we stop and restart the connection
             connection._originalUrl = connection.url;
 
             connection.ajaxDataType = config.jsonp ? "jsonp" : "text";
+
+            setConnectionUrl(connection, connection.url);
 
             $(connection).bind(events.onStart, function (e, data) {
                 if ($.type(callback) === "function") {
@@ -738,8 +743,10 @@
                             return;
                         }
 
-                        // Check for a redirect response (which must have a ProtocolVersion of 2.0)
-                        if (res.ProtocolVersion === "2.0") {
+                        // Check for a redirect response (which must have a ProtocolVersion of 2.0 or greater)
+                        // ProtocolVersion 2.1 is the highest supported by the client, so we can just check for 2.0 or 2.1 for now
+                        // instead of trying to do proper version string comparison in JavaScript.
+                        if (connection.negotiateRedirectSupportedProtocols.indexOf(res.ProtocolVersion) !== -1) {
                             if (res.Error) {
                                 protocolError = signalR._.error(signalR._.format(resources.errorFromServer, res.Error));
                                 $(connection).triggerHandler(events.onError, [protocolError]);
@@ -760,7 +767,11 @@
                                 connection.log("Received redirect to: " + res.RedirectUrl);
                                 connection.accessToken = res.AccessToken;
 
-                                setConnectionUrl(connection, res.RedirectUrl);
+                                var splitUrlAndQs = res.RedirectUrl.split("?", 2);
+                                setConnectionUrl(connection, splitUrlAndQs[0]);
+
+                                // Update redirectQs with query string from only the most recent RedirectUrl.
+                                connection._.redirectQs = splitUrlAndQs.length === 2 ? splitUrlAndQs[1] : null;
 
                                 if (connection.ajaxDataType === "jsonp" && connection.accessToken) {
                                     onFailed(signalR._.error(resources.jsonpNotSupportedWithAccessToken), connection);
@@ -1034,7 +1045,13 @@
 
             // Reset the URL and clear the access token
             delete connection.accessToken;
+            delete connection.protocol;
+            delete connection.host;
+            delete connection.baseUrl;
+            delete connection.wsProtocol;
+            delete connection.contentType;
             connection.url = connection._originalUrl;
+            connection._.redirectQs = null;
 
             // Trigger the disconnect event
             changeState(connection, connection.state, signalR.connectionState.disconnected);
@@ -1347,8 +1364,13 @@
             // Use addQs to start since it handles the ?/& prefix for us
             preparedUrl = transportLogic.addQs(url, "clientProtocol=" + connection.clientProtocol);
 
-            // Add the user-specified query string params if any
-            preparedUrl = transportLogic.addQs(preparedUrl, connection.qs);
+            if (typeof (connection._.redirectQs) === "string") {
+                // Add the redirect-specified query string params if any
+                preparedUrl = transportLogic.addQs(preparedUrl, connection._.redirectQs);
+            } else {
+                // Otherwise, add the user-specified query string params if any
+                preparedUrl = transportLogic.addQs(preparedUrl, connection.qs);
+            }
 
             if (connection.token) {
                 preparedUrl += "&connectionToken=" + window.encodeURIComponent(connection.token);
@@ -1616,11 +1638,12 @@
                 // This is a message send directly to the client
                 data = transportLogic.maximizePersistentResponse(minData);
 
-                if(data.Error) {
+                if (data.Error) {
                     // This is a global error, stop the connection.
                     connection.log("Received an error message from the server: " + minData.E);
                     $(connection).triggerHandler(signalR.events.onError, [signalR._.error(minData.E, /* source */ "ServerError")]);
                     connection.stop(/* async */ false, /* notifyServer */ false);
+                    return;
                 }
 
                 transportLogic.updateGroups(connection, data.GroupsToken);
@@ -2706,6 +2729,13 @@
         }
     }
 
+    function isCallbackFromGeneratedHubProxy(callback) {
+        // https://github.com/SignalR/SignalR/issues/4310
+        // The stringified callback from the old generated hub proxy is 137 characters in Edge, Firefox and Chrome.
+        // We slice to avoid wasting too many cycles searching through the text of a long large function.
+        return $.isFunction(callback) && callback.toString().slice(0, 256).indexOf("// Call the client hub method") >= 0;
+    }
+
     // hubProxy
     function hubProxy(hubConnection, hubName) {
         /// <summary>
@@ -2737,7 +2767,8 @@
             /// <param name="callback" type="Function">The callback to be invoked.</param>
             /// <param name="callbackIdentity" type="Object">An optional object to use as the "identity" for the callback when checking if the handler has already been registered. Defaults to the value of 'callback' if not provided.</param>
             var that = this,
-                callbackMap = that._.callbackMap;
+                callbackMap = that._.callbackMap,
+                isFromOldGeneratedHubProxy = !callbackIdentity && isCallbackFromGeneratedHubProxy(callback);
 
             // We need the third "identity" argument because the registerHubProxies call made by signalr/js wraps the user-provided callback in a custom wrapper which breaks the identity comparison.
             // callbackIdentity allows the caller of `on` to provide a separate object to use as the "identity". `registerHubProxies` uses the original user callback as this identity object.
@@ -2761,7 +2792,7 @@
             // Check if there's already a registration
             var registration;
             for (var i = 0; i < callbackSpace.length; i++) {
-                if (callbackSpace[i].guid === callbackIdentity._signalRGuid) {
+                if (callbackSpace[i].guid === callbackIdentity._signalRGuid || (isFromOldGeneratedHubProxy && callbackSpace[i].isFromOldGeneratedHubProxy)) {
                     registration = callbackSpace[i];
                 }
             }
@@ -2770,7 +2801,8 @@
             if (!registration) {
                 registration = {
                     guid: callbackIdentity._signalRGuid,
-                    eventHandlers: []
+                    eventHandlers: [],
+                    isFromOldGeneratedHubProxy: isFromOldGeneratedHubProxy
                 };
                 callbackMap[eventName].push(registration);
             }
@@ -2792,7 +2824,8 @@
             /// <param name="callbackIdentity" type="Object">An optional object to use as the "identity" when looking up the callback. Corresponds to the same parameter provided to 'on'. Defaults to the value of 'callback' if not provided.</param>
             var that = this,
                 callbackMap = that._.callbackMap,
-                callbackSpace;
+                callbackSpace,
+                isFromOldGeneratedHubProxy = !callbackIdentity && isCallbackFromGeneratedHubProxy(callback);
 
             callbackIdentity = callbackIdentity || callback;
 
@@ -2809,7 +2842,7 @@
                     var callbackRegistration;
                     var callbackIndex;
                     for (var i = 0; i < callbackSpace.length; i++) {
-                        if (callbackSpace[i].guid === callbackIdentity._signalRGuid) {
+                        if (callbackSpace[i].guid === callbackIdentity._signalRGuid || (isFromOldGeneratedHubProxy && callbackSpace[i].isFromOldGeneratedHubProxy)) {
                             callbackIndex = i;
                             callbackRegistration = callbackSpace[i];
                         }
@@ -3115,5 +3148,5 @@
 /// <reference path="jquery.signalR.core.js" />
 (function ($, undefined) {
     // This will be modified by the build script
-    $.signalR.version = "2.4.0";
+    $.signalR.version = "2.4.1";
 }(window.jQuery));

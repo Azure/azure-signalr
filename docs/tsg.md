@@ -9,6 +9,7 @@ This guidence is to provide useful troubleshooting guide based on the common iss
 1. Client side `ERR_CONNECTION_`
 2. 414 URI Too Long
 3. 413 Payload Too Large
+4. Access Token must not be longer than 4K. 413 Request Entity Too Large
 
 ### Root cause:
 For HTTP/2, the max length for a single header is **4K**, so if you are using browser to access Azure service, you will encounter this limitation with `ERR_CONNECTION_` error.
@@ -22,7 +23,7 @@ By default, claims from `context.User.Claims` are included when generating JWT a
 
 In some cases, `context.User.Claims` are leveraged to store lots of information for app server, most of which are not used by `Hub`s but by other components. 
 
-The generated access token are passed through network, and for websocket/SSE connections, access tokens are passed through query strings. So as the best practice, we suggest only passing **neccessory** claims from client through **ASRS** to your app server.
+The generated access token are passed through network, and for websocket/SSE connections, access tokens are passed through query strings. So as the best practice, we suggest only passing **necessary** claims from client through **ASRS** to your app server when the Hub needs.
 
 There is a `ClaimsProvider` for you to customize the claims passing to **ASRS** inside the access token.
 
@@ -31,7 +32,7 @@ For ASP.NET Core:
 services.AddSignalR()
         .AddAzureSignalR(options =>
             {
-                // pick up neccessory claims
+                // pick up necessary claims
                 options.ClaimsProvider = context => context.User.Claims.Where(...);
             });
 ```
@@ -40,7 +41,7 @@ For ASP.NET:
 ```cs
 services.MapAzureSignalR(GetType().FullName, options =>
             {
-                // pick up neccessory claims
+                // pick up necessary claims
                 options.ClaimsProvider = context.Authentication?.User.Claims.Where(...);
             });
 ```
@@ -127,9 +128,49 @@ For security concerns, extend TTL is not encouraged. We suggest adding reconnect
 
 * [ASP.NET Core JavaScript Client](../samples/ChatSample/ChatSample/wwwroot/index.html#L164)
 
-* [ASP.NET Core C# Client](../samples/AspNet.ChatSample/AspNet.ChatSample.CSharpClient/Program.cs#L78)
+* [ASP.NET C# Client](../samples/AspNet.ChatSample/AspNet.ChatSample.CSharpClient/Program.cs#L78)
 
-* [ASP.NET Core JavaScript Client](../samples/AspNet.ChatSample/AspNet.ChatSample.JavaScriptClient/wwwroot/index.html#L71)
+* [ASP.NET JavaScript Client](../samples/AspNet.ChatSample/AspNet.ChatSample.JavaScriptClient/wwwroot/index.html#L71)
+
+## 500 Error when negotiate: Azure SignalR Service is not connected yet, please try again later.
+### Root cause
+This error is reported when there is no server connection to Azure SignalR Service connected. 
+
+### Troubleshooting Guide
+Please enable server side trace to find out the error details when server tries to connect to Azure SignalR Service.
+
+#### Enable server side logging for ASP.NET Core SignalR
+Server side logging for ASP.NET Core SignalR integrates with the `ILogger` based [logging](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-2.1&tabs=aspnetcore2x) provided in the ASP.NET Core framework. You can enable server side logging by using `ConfigureLogging`, a sample usage as follows:
+```cs
+.ConfigureLogging((hostingContext, logging) =>
+        {
+            logging.AddConsole();
+            logging.AddDebug();
+        })
+```
+
+#### Enable server side traces for ASP.NET SignalR
+When using SDK version >= `1.0.0`, you can enable traces by adding the following to `web.config`: ([Details](https://github.com/Azure/azure-signalr/issues/452#issuecomment-478858102))
+```xml
+<system.diagnostics>
+    <sources>
+      <source name="Microsoft.Azure.SignalR" switchName="SignalRSwitch">
+        <listeners>
+          <add name="ASRS" />
+        </listeners>
+      </source>
+    </sources>
+    <!-- Sets the trace verbosity level -->
+    <switches>
+      <add name="SignalRSwitch" value="Information" />
+    </switches>
+    <!-- Specifies the trace writer for output -->
+    <sharedListeners>
+      <add name="ASRS" type="System.Diagnostics.TextWriterTraceListener" initializeData="asrs.log.txt" />
+    </sharedListeners>
+    <trace autoflush="true" />
+  </system.diagnostics>
+```
 
 ## ⌛️[TODO]Client connection drop
 
@@ -154,6 +195,7 @@ Client connections can drop under various circumstances:
 3. Create an issue to us providing time frame, and email the resource name to us
 
 <a id="server-conn-drop"/>
+
 ## ⌛️[TODO]Server connection drop
 
 When app server starts, in the background, the Azure SDK starts to initiate server connections to the remote Azure SignalR. As described in [Internals of Azure SignalR Service](internal.md), Azure SignalR routes incoming client traffics to these server connections. Once a server connection is dropped, all the client connections it serves will be closed too.

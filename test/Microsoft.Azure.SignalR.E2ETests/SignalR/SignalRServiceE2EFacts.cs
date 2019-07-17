@@ -8,8 +8,7 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class SignalRServiceE2EFacts : ServiceE2EFactsBase
     {
-        public SignalRServiceE2EFacts(ITestOutputHelper output)
-            : base(new TestServer(), (string serverUrl, int count) => new TestClientSet(serverUrl, count), output)
+        public SignalRServiceE2EFacts(ITestOutputHelper output) : base(new TestServerFactory(), new TestClientSetFactory(), output)
         {
         }
     }
