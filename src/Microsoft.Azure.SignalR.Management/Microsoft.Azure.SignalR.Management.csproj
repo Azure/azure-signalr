@@ -12,6 +12,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsTargetMultiFramework)' == 'false'">
     <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageVersion>1.0.0-preview1-$(BuildNumber)</PackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
