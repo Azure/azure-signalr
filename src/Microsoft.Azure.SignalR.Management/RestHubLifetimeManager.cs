@@ -30,7 +30,19 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException();
+            if (string.IsNullOrEmpty(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
+            if (string.IsNullOrEmpty(groupName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
+            }
+
+            var api = _restApiProvider.GetConnectionGroupManagementEndpoint(connectionId, groupName);
+            var request = BuildRequest(api, HttpMethod.Put, null, null);
+            return CallRestApiAsync(request, cancellationToken);
         }
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
@@ -45,7 +57,19 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException();
+            if (string.IsNullOrEmpty(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
+            if (string.IsNullOrEmpty(groupName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
+            }
+
+            var api = _restApiProvider.GetConnectionGroupManagementEndpoint(connectionId, groupName);
+            var request = BuildRequest(api, HttpMethod.Delete, null, null);
+            return CallRestApiAsync(request, cancellationToken);
         }
 
         public override Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -67,12 +91,24 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException();
+            if (string.IsNullOrEmpty(methodName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
+            }
+
+            if (string.IsNullOrEmpty(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
+            var api = _restApiProvider.GetSendToConnectionEndpoint(connectionId);
+            var request = BuildRequest(api, HttpMethod.Post, methodName, args);
+            return CallRestApiAsync(request, cancellationToken);
         }
 
-        public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args, CancellationToken cancellationToken = default)
+        public override async Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException();
+            await Task.WhenAll(connectionIds.Select(id => SendConnectionAsync(id, methodName, args, cancellationToken)));
         }
 
         public override Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)

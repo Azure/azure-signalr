@@ -10,6 +10,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
 using Xunit;
@@ -158,9 +159,9 @@ namespace Microsoft.Azure.SignalR.Tests
             await Task.Delay(200);
 
             var serviceConnection = proxy.ServiceConnections.First().Value;
-            var excption = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            var exception = await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(() =>
                 serviceConnection.WriteAsync(new ConnectionDataMessage("1", null)));
-            Assert.Equal(errorMessage, excption.Message);
+            Assert.Equal(errorMessage, exception.Message);
         }
 
         [Fact]

@@ -5,6 +5,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
 {
@@ -18,13 +20,20 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public IList<string> Users => _connectedUsers.Keys.ToList();
 
-        private static ConcurrentDictionary<string, bool> _connectedConnections = new ConcurrentDictionary<string, bool>();
-        private static ConcurrentDictionary<string, bool> _connectedUsers = new ConcurrentDictionary<string, bool>();
+        private ConcurrentDictionary<string, bool> _connectedConnections = new ConcurrentDictionary<string, bool>();
+        private ConcurrentDictionary<string, bool> _connectedUsers = new ConcurrentDictionary<string, bool>();
+
+        private ConcurrentDictionary<int, TaskCompletionSource<string>> _connectionCountTcs =
+            new ConcurrentDictionary<int, TaskCompletionSource<string>>();
+
+        private int _count = 0;
 
         public void ClearAll()
         {
             _connectedConnections.Clear();
             _connectedUsers.Clear();
+            _connectionCountTcs.Clear();
+            Interlocked.Exchange(ref _count, 0);
         }
 
         public void AddClient(string client)
@@ -32,6 +41,12 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             if (!_connectedConnections.TryAdd(client, false))
             {
                 throw new InvalidOperationException($"Failed to add client connection {client}. Connected connections {string.Join(",", _connectedConnections.Keys)}.");
+            }
+
+            var count = Interlocked.Increment(ref _count);
+            if (_connectionCountTcs.TryGetValue(count, out var tcs))
+            {
+                tcs.TrySetResult(client);
             }
         }
 
@@ -57,6 +72,12 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             {
                 throw new InvalidOperationException($"Failed to remove user {user}. Connected users: {string.Join(", ", _connectedUsers.Keys)}");
             }
+        }
+
+        public Task<string> WaitForConnectionCountAsync(int n)
+        {
+            return _connectionCountTcs.GetOrAdd(n,
+                k => new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously)).Task;
         }
     }
 }

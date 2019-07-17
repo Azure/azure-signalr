@@ -494,6 +494,38 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             }
         }
 
+        [Theory]
+        [InlineData("/user/path/negotiate", "", "", "")]
+        [InlineData("/user/path/negotiate", "?clientProtocol=1.89", "a", "")]
+        [InlineData("/user/path/negotiate", "?clientProtocol=1.0", "a", "")]
+        [InlineData("/user/path/negotiate", "?clientProtocol=2.1", "a", "?asrs_request_id=a&asrs.op=%2Fuser%2Fpath")]
+        [InlineData("/negotiate", "?%3DKey=%3Fa%3Dc&clientProtocol=2.1", "?a=c", "?%3DKey=%3Fa%3Dc&asrs_request_id=%3Fa%3Dc")]
+        [InlineData("/user/negotiate", "?clientProtocol=2.2&customKey=customeValue", "&", "?customKey=customeValue&asrs_request_id=%26&asrs.op=%2Fuser")]
+        public async Task TestNegotiateRedirectUrl(string path, string query, string id, string expectedQuery)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
+            {
+                var requestIdProvider = new TestRequestIdProvider(id);
+                // Prepare the configuration
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                hubConfig.Resolver.Register(typeof(IConnectionRequestIdProvider), () => requestIdProvider);
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, ConnectionString, hubConfig)))
+                {
+                    var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
+                    var response = await client.GetAsync(path + query);
+
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    var message = await response.Content.ReadAsStringAsync();
+                    var responseObject = JsonConvert.DeserializeObject<ResponseMessage>(message);
+                    Assert.Equal("2.0", responseObject.ProtocolVersion);
+
+                    var uri = new Uri(responseObject.RedirectUrl);
+                    // The default router fallbacks to the secondary
+                    Assert.Equal("http://localhost/aspnetclient" + expectedQuery, uri.AbsoluteUri);
+                }
+            }
+        }
+
         [Fact]
         public void TestRunAzureSignalRWithOptions()
         {
@@ -655,6 +687,21 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var response = await client.GetAsync("/negotiate?connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
                     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
                 }
+            }
+        }
+
+        private sealed class TestRequestIdProvider : IConnectionRequestIdProvider
+        {
+            private readonly string _id;
+
+            public TestRequestIdProvider(string id)
+            {
+                _id = id;
+            }
+
+            public string GetRequestId()
+            {
+                return _id;
             }
         }
 

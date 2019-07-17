@@ -28,10 +28,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             {
                 tcs.SetResult(serviceMessage);
             }
-            else
-            {
-                throw new InvalidOperationException("Not expected to write before tcs is inited");
-            }
 
             return Task.CompletedTask;
         }
@@ -50,7 +46,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             return Task.FromResult(true);
         }
 
-        public Task WaitForTransportOutputMessageAsync(Type messageType)
+        public Task<ServiceMessage> WaitForTransportOutputMessageAsync(Type messageType)
         {
             if (_waitForTransportOutputMessage.TryGetValue(messageType, out var tcs))
             {
@@ -58,7 +54,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             }
 
             // re-init the tcs
-            tcs = _waitForTransportOutputMessage[messageType] = new TaskCompletionSource<ServiceMessage>();
+            tcs = _waitForTransportOutputMessage[messageType] = new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             return tcs.Task;
         }

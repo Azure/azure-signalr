@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
             if (_expectedErrors != null)
             {
-                if (!results.Any(w => _expectedErrors(w.Write)))
+                if (results.Any(w => !_expectedErrors(w.Write)))
                 {
                     throw new Exception("Fail to match expected error(s).");
                 }

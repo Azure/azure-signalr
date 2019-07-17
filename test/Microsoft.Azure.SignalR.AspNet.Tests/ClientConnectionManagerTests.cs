@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
@@ -34,10 +35,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("?connectionToken=invalidOne", "a")]
         [InlineData("?connectionToken=conn2:user1%32c", "conn1")]
         [InlineData("connectionToken=conn2:user1%32c", "conn3")]
-        public void TestCreateConnectionAlwaysUsesConnectionIdInOpenConnectionMessage(string queryString, string expectedConnectionId)
+        public async Task TestCreateConnectionAlwaysUsesConnectionIdInOpenConnectionMessage(string queryString, string expectedConnectionId)
         {
             var message = new OpenConnectionMessage(expectedConnectionId, new Claim[0], null, queryString);
-            var connection = _clientConnectionManager.CreateConnection(message, null);
+            var connection = await _clientConnectionManager.CreateConnection(message, null);
             Assert.Equal(expectedConnectionId, connection.ConnectionId);
         }
 
@@ -45,10 +46,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("?transport=webSockets")]
         [InlineData("transport=webSockets")]
         [InlineData("connectionToken=")]
-        public void TestCreateConnectionWithInvalidQueryStringThrows(string queryString)
+        public async Task TestCreateConnectionWithInvalidQueryStringThrows(string queryString)
         {
             var message = new OpenConnectionMessage(Guid.NewGuid().ToString("N"), new Claim[0], null, queryString);
-            Assert.Throws<InvalidOperationException>(() => _clientConnectionManager.CreateConnection(message, null));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _clientConnectionManager.CreateConnection(message, null));
         }
 
         [Theory]

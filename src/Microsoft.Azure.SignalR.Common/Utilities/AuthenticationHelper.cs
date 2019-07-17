@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR
             return jwtToken;
         }
 
-        private static string GenerateRequestId()
+        public static string GenerateRequestId()
         {
             return Convert.ToBase64String(BitConverter.GetBytes(Stopwatch.GetTimestamp()));
         }

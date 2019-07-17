@@ -40,7 +40,14 @@ namespace Microsoft.Azure.SignalR.AspNet
                 configuration.Resolver.Register(typeof(IServerNameProvider), () => serverNameProvider);
             }
 
-            builder.Use<NegotiateMiddleware>(configuration, applicationName, endpoint, router, options, serverNameProvider, loggerFactory);
+            var requestIdProvider = configuration.Resolver.Resolve<IConnectionRequestIdProvider>();
+            if (requestIdProvider == null)
+            {
+                requestIdProvider = new DefaultConnectionRequestIdProvider();
+                configuration.Resolver.Register(typeof(IConnectionRequestIdProvider), () => requestIdProvider);
+            }
+
+            builder.Use<NegotiateMiddleware>(configuration, applicationName, endpoint, router, options, serverNameProvider, requestIdProvider, loggerFactory);
 
             builder.RunSignalR(configuration);
 
