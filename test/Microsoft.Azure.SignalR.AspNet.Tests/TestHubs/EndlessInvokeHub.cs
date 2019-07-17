@@ -12,8 +12,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs
 {
-    [HubName("chat")]
-    public class ChatHub : Hub
+    [HubName("EndlessInvoke")]
+    public class EndlessInvokeHub : Hub
     {
         public override Task OnConnected()
         {
@@ -45,8 +45,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs
 
         public async Task JoinGroup(string name, string groupName)
         {
-            await Groups.Add(Context.ConnectionId, groupName);
             Clients.Group(groupName).echo("_SYSTEM_", $"{name} joined {groupName} with connectionId {Context.ConnectionId}");
+            while (true)
+            {
+                await Task.Delay(1000);
+            }
         }
 
         public async Task LeaveGroup(string name, string groupName)
@@ -55,9 +58,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs
             Clients.Group(groupName).echo("_SYSTEM_", $"{name} leaved {groupName}");
         }
 
-        public void SendGroup(string name, string groupName, string message)
+        public Task SendGroup(string name, string groupName, string message)
         {
             Clients.Group(groupName).echo(name, message);
+            return Task.CompletedTask;
         }
 
         public void SendGroups(string name, IList<string> groups, string message)

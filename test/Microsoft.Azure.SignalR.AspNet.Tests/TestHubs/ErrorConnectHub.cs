@@ -12,13 +12,12 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs
 {
-    [HubName("chat")]
-    public class ChatHub : Hub
+    [HubName("ErrorConnect")]
+    public class ErrorConnectHub : Hub
     {
         public override Task OnConnected()
         {
-            Clients.Group("note").echo("Connected");
-            return Task.CompletedTask;
+            throw new InvalidOperationException("error connecting");
         }
 
         public override Task OnReconnected()
