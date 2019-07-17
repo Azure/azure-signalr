@@ -55,5 +55,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         public abstract Task StopAsync();
 
         protected abstract Task StartCoreAsync(string serverUrl, ITestOutputHelper output, Dictionary<string, string> configuration);
+
+        public abstract TestHubConnectionManager HubConnectionManager { get; }
     }
 }

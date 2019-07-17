@@ -162,7 +162,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestData))]
         internal async Task SendToConnectionTest(ServiceTransportType serviceTransportType, string appName)
         {
-            var testServer = (TestServer) _testServerFactory.Create(TestOutputHelper);
+            var testServer = _testServerFactory.Create(TestOutputHelper);
             await testServer.StartAsync(new Dictionary<string, string>{ [TestStartup.ApplicationName] = appName });
 
             var task = testServer.HubConnectionManager.WaitForConnectionCountAsync(1);
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestData))]
         internal async Task ConnectionJoinLeaveGroupTest(ServiceTransportType serviceTransportType, string appName)
         {
-            var testServer = (TestServer)_testServerFactory.Create(TestOutputHelper);
+            var testServer = _testServerFactory.Create(TestOutputHelper);
             await testServer.StartAsync(new Dictionary<string, string> { [TestStartup.ApplicationName] = appName });
 
             var task = testServer.HubConnectionManager.WaitForConnectionCountAsync(1);

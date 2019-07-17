@@ -9,6 +9,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 {
     public interface ITestServer
     {
+        TestHubConnectionManager HubConnectionManager { get; }
         Task<string> StartAsync(Dictionary<string, string> configuration = null);
         Task StopAsync();
     }

@@ -16,16 +16,15 @@ namespace Microsoft.Azure.SignalR.Tests
     {
         private IWebHost _host;
 
-        public TestHubConnectionManager HubConnectionManager { get; private set; }
+        public override TestHubConnectionManager HubConnectionManager { get; }
 
         public TestServer(ITestOutputHelper output): base(output)
         {
+            HubConnectionManager = new TestHubConnectionManager();
         }
 
         protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output, Dictionary<string, string> configuration)
         {
-            HubConnectionManager = new TestHubConnectionManager();
-
             _host = new WebHostBuilder()
                 .ConfigureServices(services =>
                 {
