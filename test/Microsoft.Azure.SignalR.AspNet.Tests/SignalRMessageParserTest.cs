@@ -160,7 +160,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var msg = msgs[0].Message as BroadcastDataMessage;
             Assert.NotNull(msg);
             Assert.Equal<string>(excludedConnectionIds, msg.ExcludedList);
-            Assert.Equal(input, msg.Payloads["json"].GetSingleFramePayload());
+            Assert.Equal(input, msg.Payloads["json"].GetJsonMessageFromSingleFramePayload<string>());
         }
 
         [Theory]
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var msg = msgs[0].Message as ConnectionDataMessage;
             Assert.NotNull(msg);
             Assert.Equal(expectedId, msg.ConnectionId);
-            Assert.Equal(input, msg.Payload.First.GetSingleFramePayload());
+            Assert.Equal(input, msg.Payload.First.GetJsonMessageFromSingleFramePayload<string>());
         }
 
         [Theory]
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             // For group message, it is the full name as the group, e.g. hg-hub.hub1.h.hub2.abcde
             Assert.Equal(fullName, msg.GroupName);
             Assert.Equal<string>(excludedConnectionIds, msg.ExcludedList);
-            Assert.Equal(input, msg.Payloads["json"].GetSingleFramePayload());
+            Assert.Equal(input, msg.Payloads["json"].GetJsonMessageFromSingleFramePayload<string>());
         }
 
         [Theory]
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var msg = msgs[0].Message as UserDataMessage;
             Assert.NotNull(msg);
             Assert.Equal(userName, msg.UserId);
-            Assert.Equal(input, msg.Payloads["json"].GetSingleFramePayload());
+            Assert.Equal(input, msg.Payloads["json"].GetJsonMessageFromSingleFramePayload<string>());
         }
 
         [Fact]

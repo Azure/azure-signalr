@@ -12,13 +12,16 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs
 {
-    [HubName("chat")]
-    public class ChatHub : Hub
+    [HubName("EndlessConnect")]
+    public class EndlessConnectHub : Hub
     {
-        public override Task OnConnected()
+        public override async Task OnConnected()
         {
             Clients.Group("note").echo("Connected");
-            return Task.CompletedTask;
+            while (true)
+            {
+                await Task.Delay(1000);
+            }
         }
 
         public override Task OnReconnected()

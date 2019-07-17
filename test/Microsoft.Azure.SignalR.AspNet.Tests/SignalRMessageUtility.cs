@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             return DefaultServiceProtocol.GetMessageBytes(singleFrameMessage);
         }
 
-        public static string GetSingleFramePayload(this ReadOnlyMemory<byte> payload)
+        public static T GetJsonMessageFromSingleFramePayload<T>(this ReadOnlyMemory<byte> payload) where T : class
         {
             var buffer = new ReadOnlySequence<byte>(payload);
             DefaultServiceProtocol.TryParseMessage(ref buffer, out var message);
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             Assert.NotNull(frame);
             var msg = Encoding.UTF8.GetString(frame.Payload.First.ToArray());
             Assert.NotNull(msg);
-            var response = JsonConvert.DeserializeObject<Response>(msg);
+            var response = JsonConvert.DeserializeObject<Response<T>>(msg);
             Assert.NotNull(response);
             Assert.Equal("0", response.C);
             Assert.Single(response.M);
@@ -109,10 +109,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             }
         }
 
-        private sealed class Response
+        private sealed class Response<T>
         {
             public string C { get; set; }
-            public List<string> M { get; set; }
+            public List<T> M { get; set; }
         }
     }
 }
