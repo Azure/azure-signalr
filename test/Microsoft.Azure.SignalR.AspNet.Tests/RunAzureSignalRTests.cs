@@ -499,8 +499,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("/user/path/negotiate", "?clientProtocol=1.89", "a", "")]
         [InlineData("/user/path/negotiate", "?clientProtocol=1.0", "a", "")]
         [InlineData("/user/path/negotiate", "?clientProtocol=2.1", "a", "?asrs_request_id=a&asrs.op=%2Fuser%2Fpath")]
-        [InlineData("/negotiate", "?customKey=customeValue&clientProtocol=2.1", "?a=c", "?asrs_request_id=%3Fa%3Dc")]
-        [InlineData("/user/negotiate", "?clientProtocol=2.2&customKey=customeValue", "&", "?asrs_request_id=%26&asrs.op=%2Fuser")]
+        [InlineData("/negotiate", "?%3DKey=%3Fa%3Dc&clientProtocol=2.1", "?a=c", "?%3DKey=%3Fa%3Dc&asrs_request_id=%3Fa%3Dc")]
+        [InlineData("/user/negotiate", "?clientProtocol=2.2&customKey=customeValue", "&", "?customKey=customeValue&asrs_request_id=%26&asrs.op=%2Fuser")]
         public async Task TestNegotiateRedirectUrl(string path, string query, string id, string expectedQuery)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))

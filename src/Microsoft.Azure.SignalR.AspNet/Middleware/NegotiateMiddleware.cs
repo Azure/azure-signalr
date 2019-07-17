@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Net.Mime;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,6 +23,8 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class NegotiateMiddleware : OwinMiddleware
     {
+        private static readonly HashSet<string> PreservedQueryParameters =
+            new HashSet<string>(new[] {"clientProtocol", "connectionToken", "connectionData"});
         private static readonly Version ClientSupportQueryStringVersion = new Version(2, 1);
         private static readonly string AssemblyVersion = typeof(NegotiateMiddleware).Assembly.GetName().Version.ToString();
 
@@ -144,8 +148,17 @@ namespace Microsoft.Azure.SignalR.AspNet
                 var clientRequestId = _connectionRequestIdProvider.GetRequestId();
                 if (clientRequestId != null)
                 {
-                    // always ignore the query string from client as for ASP.NET client, it appends the query string itself
-                    queryString = $"?{Constants.QueryParameter.ConnectionRequestId}={WebUtility.UrlEncode(clientRequestId)}";
+                    // remove system preserved query strings
+                    queryString = "?" +
+                        string.Join("&",
+                            context.Request.QueryString.Where(s => !PreservedQueryParameters.Contains(s.Key)).Concat(
+                                    new[]
+                                    {
+                                        new KeyValuePair<string, string>(
+                                            Constants.QueryParameter.ConnectionRequestId,
+                                            clientRequestId)
+                                    })
+                                .Select(s => $"{s.Key}={WebUtility.UrlEncode(s.Value)}"));
                 }
 
                 originalPath = GetOriginalPath(context.Request.LocalPath);
