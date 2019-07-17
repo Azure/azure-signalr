@@ -186,7 +186,7 @@ namespace Microsoft.Azure.SignalR
 
         protected abstract Task DisposeConnection();
 
-        protected abstract Task CleanupConnections();
+        protected abstract Task CleanupConnections(string instanceId = null);
 
         protected abstract Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage);
 

@@ -41,6 +41,7 @@ namespace Microsoft.Azure.SignalR
         public ServiceConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
             ConnectionId = serviceMessage.ConnectionId;
+            InstanceId = GetInstanceId(serviceMessage);
             User = serviceMessage.GetUserPrincipal();
 
             // Create the Duplix Pipeline for the virtual connection
@@ -89,6 +90,8 @@ namespace Microsoft.Azure.SignalR
         public bool AbortOnClose { get; set; } = true;
 
         public override string ConnectionId { get; set; }
+
+        public string InstanceId { get; }
 
         public override IFeatureCollection Features { get; }
 
@@ -147,6 +150,11 @@ namespace Microsoft.Azure.SignalR
             return query?.TryGetValue(Constants.QueryParameter.OriginalPath, out var originalPath) == true
                 ? originalPath.FirstOrDefault()
                 : string.Empty;
+        }
+
+        private static string GetInstanceId(OpenConnectionMessage message)
+        {
+            return message.Headers.Where(x => x.Key == Constants.AsrsInstanceId).FirstOrDefault().Value;
         }
     }
 }

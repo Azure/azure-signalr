@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
@@ -64,15 +65,20 @@ namespace Microsoft.Azure.SignalR
             return _connectionFactory.DisposeAsync(connection);
         }
 
-        protected override async Task CleanupConnections()
+        protected override async Task CleanupConnections(string instanceId = null)
         {
             try
             {
+                var connections = _connectionIds.Select(s => s.Key);
                 if (_connectionIds.Count == 0)
                 {
                     return;
                 }
-                await Task.WhenAll(_connectionIds.Select(s => PerformDisconnectAsyncCore(s.Key, false)));
+                if (instanceId != null)
+                {
+                    connections = _connectionIds.Where(s => s.Value == instanceId).Select(s => s.Key);
+                }
+                await Task.WhenAll(connections.Select(s => PerformDisconnectAsyncCore(s, false)));
             }
             catch (Exception ex)
             {
@@ -140,7 +146,7 @@ namespace Microsoft.Azure.SignalR
         private void AddClientConnection(ServiceConnectionContext connection)
         {
             _clientConnectionManager.AddClientConnection(connection);
-            _connectionIds.TryAdd(connection.ConnectionId, connection.ConnectionId);
+            _connectionIds.TryAdd(connection.ConnectionId, connection.InstanceId);
         }
 
         private void RemoveClientConnection(string connectionId)

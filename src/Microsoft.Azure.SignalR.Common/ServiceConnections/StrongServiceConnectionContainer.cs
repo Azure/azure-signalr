@@ -13,6 +13,7 @@ namespace Microsoft.Azure.SignalR
     internal class StrongServiceConnectionContainer : ServiceConnectionContainerBase
     {
         private const string PingTargetKey = "target";
+        private const string PingOfflineKey = "offline";
         private readonly List<IServiceConnection> _onDemandServiceConnections;
 
         // The lock is only used to lock the on-demand part
@@ -36,9 +37,14 @@ namespace Microsoft.Azure.SignalR
                     return StartCoreAsync(connection, pingMessage.Messages[index + 1]);
                 }
 
+                if (pingMessage.Messages[index] == PingOfflineKey &&
+                   !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
+                {
+                    Console.WriteLine($"Received offline instance id: {pingMessage.Messages[index + 1]}");
+                }
+
                 index += 2;
             }
-
             return Task.CompletedTask;
         }
 
