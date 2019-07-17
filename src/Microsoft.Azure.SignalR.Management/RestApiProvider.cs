@@ -56,6 +56,16 @@ namespace Microsoft.Azure.SignalR.Management
             return GenerateRestApiEndpoint($"/users/{userId}/groups", lifetime);
         }
 
+        public RestApiEndpoint GetSendToConnectionEndpoint(string connectionId, TimeSpan? lifetime = null)
+        {
+            return GenerateRestApiEndpoint($"/connections/{connectionId}", lifetime);
+        }
+
+        public RestApiEndpoint GetConnectionGroupManagementEndpoint(string connectionId, string groupName, TimeSpan? lifetime = null)
+        {
+            return GenerateRestApiEndpoint($"/groups/{groupName}/connections/{connectionId}", lifetime);
+        }
+
         private RestApiEndpoint GenerateRestApiEndpoint(string path, TimeSpan? lifetime = null)
         {
             var token = _restApiAccessTokenGenerator.Generate($"{_audiencePrefix}{path}", lifetime);
