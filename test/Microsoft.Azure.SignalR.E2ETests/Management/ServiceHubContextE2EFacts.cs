@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 {
     public class ServiceHubContextE2EFacts : VerifiableLoggedTest
     {
-        private const string HubName = "TestHub";
+        private const string HubName = "ManagemnetTestHub";
         private const string MethodName = "SendMessage";
         private const string Message = "Hello client, have a nice day!";
         private const int ClientConnectionCount = 4;
@@ -157,8 +157,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        [ConditionalTheory]
-        [SkipIfConnectionStringNotPresent]
+        [Theory(Skip = "Not Ready")]
         [MemberData(nameof(TestData))]
         internal async Task SendToConnectionTest(ServiceTransportType serviceTransportType, string appName)
         {
@@ -185,7 +184,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory(Skip = "Not Ready")]
         [SkipIfConnectionStringNotPresent]
         [MemberData(nameof(TestData))]
         internal async Task ConnectionJoinLeaveGroupTest(ServiceTransportType serviceTransportType, string appName)
