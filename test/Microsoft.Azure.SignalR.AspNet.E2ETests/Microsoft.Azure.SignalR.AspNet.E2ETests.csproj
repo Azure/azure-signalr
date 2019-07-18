@@ -9,7 +9,6 @@
   <ItemGroup>
     <Compile Include="..\Microsoft.Azure.SignalR.AspNet.Tests\TestClasses\TestHubManager.cs" Link="TestHubManager.cs" />
     <Compile Include="..\Microsoft.Azure.SignalR.AspNet.Tests\Utility.cs" Link="Utility.cs" />
-    <Compile Include="..\Microsoft.Azure.SignalR.Tests\Infrastructure\TaskExtensions.cs" Link="Infrastructure\TaskExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>
