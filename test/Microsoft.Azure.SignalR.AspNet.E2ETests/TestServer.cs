@@ -54,12 +54,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             return Task.CompletedTask;
         }
 
-        public override Task StopAsync()
+        public override async Task StopAsync()
         {
-            _scm.StopAsync();
+            await _scm.StopAsync();
             _webApp?.Dispose();
             _loggerFactory?.Dispose();
-            return Task.CompletedTask;
         }
     }
 }
