@@ -2,6 +2,15 @@
 
 This guidence is to provide useful troubleshooting guide based on the common issues customers encountered and resolved in the past years.
 
+- [Access token too long](#access_token_too_long)
+- [TLS 1.2 required](#tls_1.2_required)
+- [Random 404 returned for client requests](#random_404_returned_for_client_requests)
+- [401 Unauthorized returned for client requests](#401_unauthorized_returned_for_client_requests)
+- [500 Error when negotiate](#500_error_when_negotiate)
+- [Client connection drop](#client_connection_drop)
+- [Server connection drop](#server_connection_drop)
+
+<a name="access_token_too_long"></a>
 ## Access token too long
 
 ### Possible errors:
@@ -62,6 +71,7 @@ Take ASP.NET Core one for example (ASP.NET one is similar):
         
         ![Fiddler View Network](./images/fiddler_view_network.png)
 
+<a name="tls_1.2_required"></a>
 ## TLS 1.2 required
 
 ### Possible errors:
@@ -99,6 +109,7 @@ Add following code to your Startup:
 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 ```
 
+<a name="random_404_returned_for_client_requests"></a>
 ## Random 404 returned for client requests
 
 For a SignalR persistent connection, it first `/negotiate` to Azure SignalR service and then establish the real connection to Azure SignalR service. Our load balancer must ensure that the `/negotiate` request and the following connect request goes to the similar instance of the Service otherwise 404 occurs. Our load balancer now relies on the *signature* part of the generated `access_token` to keep the session sticky.
@@ -107,7 +118,31 @@ For a SignalR persistent connection, it first `/negotiate` to Azure SignalR serv
 1. Following [How to view outgoing requests](#view_request) to get the request from client the the service.
 2. Check if there are multiple `access_token` inside the outgoing request. Our load balancer is not able to handle duplicate `access_token` correctly, as described in [#346](https://github.com/Azure/azure-signalr/issues/346).
 3. Another 404 can happen when the connect request is handled more than **5** seconds after `/negotiate` is called. Check the timestamp of client request, and open an issue to us if the request to the service has very slow response.
+4. If you find the `/negotiate` request and the following connect request carry different access token through the above steps, the most possible reason is using HttpConnectionOptions.AccessTokenProvider in a **WRONG** way:
 
+    ```c#
+    var url = ...
+    var hubConnectionBuilder = new HubConnectionBuilder().WithUrl(url, httpConnectionOptions =>
+    {
+        httpConnectionOptions.AccessTokenProvider = () =>
+        {
+            return Task.FromResult(generateAccessToken());
+        };
+    });
+    var hubConnection = hubConnectionBuilder.build();
+    ```
+
+    The above code means the client first sends negotiation request to ASRS together with *access_token1*, then it connects ASRS with another access token *access_token2*. That is why 404 error occurs.
+
+    The recommended way is to setup a negotiation web app to generate the access token and service url. Please refer to the sample of [build negotiation server](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management/NegotiationServer). The code is simple and correct:
+
+    ```c#
+    var url = getNegotiationServerUrl(); // return the negotiation server's endpoint
+    var hubConnectionBuilder = new HubConnectionBuilder().WithUrl(url);
+    var hubConnection = hubConnectionBuilder.build();
+    ```
+
+<a name="401_unauthorized_returned_for_client_requests"></a>
 ## 401 Unauthorized returned for client requests
 ### Root cause
 Currently the default value of JWT token's lifetime is 1 hour.
@@ -132,6 +167,7 @@ For security concerns, extend TTL is not encouraged. We suggest adding reconnect
 
 * [ASP.NET JavaScript Client](../samples/AspNet.ChatSample/AspNet.ChatSample.JavaScriptClient/wwwroot/index.html#L71)
 
+<a name="500_error_when_negotiate"></a>
 ## 500 Error when negotiate: Azure SignalR Service is not connected yet, please try again later.
 ### Root cause
 This error is reported when there is no server connection to Azure SignalR Service connected. 
@@ -171,8 +207,8 @@ When using SDK version >= `1.0.0`, you can enable traces by adding the following
     <trace autoflush="true" />
   </system.diagnostics>
 ```
-
-## ⌛️[TODO]Client connection drop
+<a name="client_connection_drop"></a>
+## Client connection drop
 
 When client is connected to the Azure SignalR, the persistent connection between client and Azure SignalR can sometimes drop for different reasons. This section describes several possibilities causing such connection drop, and provides some guidance to how to identify the root cause.
 
@@ -185,7 +221,7 @@ When client is connected to the Azure SignalR, the persistent connection between
 ### Root cause:
 Client connections can drop under various circumstances:
 1. When `Hub` throws exceptions with the incoming request.
-2. When the server connection it routed to drops, see below section for details on [server connection drops](#server-conn-drop).
+2. When the server connection it routed to drops, see below section for details on [server connection drops](#server_connection_drop).
 3. When network connectivity issue happens between client and SignalR Service.
 4. When SignalR Service has some internal errors such as instance restart, failover, deployment, and so on.
 
@@ -194,9 +230,8 @@ Client connections can drop under various circumstances:
 2. Check app server side event log to see if the app server restarted
 3. Create an issue to us providing time frame, and email the resource name to us
 
-<a id="server-conn-drop"/>
-
-## ⌛️[TODO]Server connection drop
+<a name="server_connection_drop"></a>
+## Server connection drop
 
 When app server starts, in the background, the Azure SDK starts to initiate server connections to the remote Azure SignalR. As described in [Internals of Azure SignalR Service](internal.md), Azure SignalR routes incoming client traffics to these server connections. Once a server connection is dropped, all the client connections it serves will be closed too.
 
