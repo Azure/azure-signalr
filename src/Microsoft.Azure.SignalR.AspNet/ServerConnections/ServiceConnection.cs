@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             // Create empty transport with only channel for async processing messages
             var connectionId = openConnectionMessage.ConnectionId;
-            var clientContext = new ClientContext(connectionId, openConnectionMessage.Headers[Constants.AsrsInstanceId]);
+            var clientContext = new ClientContext(connectionId, GetInstanceId(openConnectionMessage.Headers));
 
             if (_clientConnectionManager.TryAdd(connectionId, this))
             {
@@ -301,6 +302,15 @@ namespace Microsoft.Azure.SignalR.AspNet
                 Log.FailedToCleanupConnections(Logger, ex);
             }
             return Task.CompletedTask;
+        }
+
+        private string GetInstanceId(IDictionary<string, StringValues> header)
+        {
+            if (header.ContainsKey(Constants.AsrsInstanceId))
+            {
+                return header[Constants.AsrsInstanceId];
+            }
+            return null;
         }
 
         private sealed class ClientContext

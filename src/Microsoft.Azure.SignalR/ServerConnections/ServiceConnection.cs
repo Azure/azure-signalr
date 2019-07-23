@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -176,7 +177,7 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnConnectedAsync(OpenConnectionMessage message)
         {
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
-            AddClientConnection(connection, message.Headers[Constants.AsrsInstanceId]);
+            AddClientConnection(connection, GetInstanceId(message.Headers));
             Log.ConnectedStarting(Logger, connection.ConnectionId);
 
             // Execute the application code
@@ -287,6 +288,15 @@ namespace Microsoft.Azure.SignalR
                 // Unexpected error
                 Log.ReceivedMessageForNonExistentConnection(Logger, connectionDataMessage.ConnectionId);
             }
+        }
+
+        private string GetInstanceId(IDictionary<string, StringValues> header)
+        {
+            if (header.ContainsKey(Constants.AsrsInstanceId))
+            {
+                return header[Constants.AsrsInstanceId];
+            }
+            return string.Empty;
         }
     }
 }
