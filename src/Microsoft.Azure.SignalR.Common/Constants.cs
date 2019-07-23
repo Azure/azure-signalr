@@ -59,5 +59,11 @@ namespace Microsoft.Azure.SignalR
         {
             public static readonly string ConnectionStringKey = "Azure:SignalR:ConnectionString";
         }
+
+        public static class ServicePingMessageKey
+        {
+            public const string RebalanceKey = "target";
+            public const string OfflineKey = "offline";
+        }
     }
 }

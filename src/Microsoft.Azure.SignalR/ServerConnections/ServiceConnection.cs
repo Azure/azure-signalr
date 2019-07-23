@@ -5,7 +5,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
@@ -65,25 +64,44 @@ namespace Microsoft.Azure.SignalR
             return _connectionFactory.DisposeAsync(connection);
         }
 
-        protected override async Task CleanupConnections(string instanceId = null)
+        protected override async Task CleanupConnections()
         {
             try
             {
-                var connections = _connectionIds.Select(s => s.Key);
                 if (_connectionIds.Count == 0)
                 {
                     return;
                 }
-                if (instanceId != null)
-                {
-                    connections = _connectionIds.Where(s => s.Value == instanceId).Select(s => s.Key);
-                }
-                await Task.WhenAll(connections.Select(s => PerformDisconnectAsyncCore(s, false)));
+                await Task.WhenAll(_connectionIds.Select(s => PerformDisconnectAsyncCore(s.Key, false)));
             }
             catch (Exception ex)
             {
                 Log.FailedToCleanupConnections(Logger, ex);
             }
+        }
+
+        protected override Task DisconnectClientConnections(string instanceId)
+        {
+            if (string.IsNullOrEmpty(instanceId) || _connectionIds.Count == 0)
+            {
+                return Task.CompletedTask;
+            }
+            try
+            {
+                // Connected service instance is down, close client gracefully
+                var connections = _connectionIds.Where(c => c.Value == instanceId);
+                foreach (var connection in connections)
+                {
+                    var serviceMessage = new CloseConnectionMessage(connection.Key, errorMessage: "Service transient error.");
+                    _ = PerformDisconnectAsyncCore(connection.Key, false);
+                    _ = WriteAsync(serviceMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.FailedToCleanupConnections(Logger, ex);
+            }
+            return Task.CompletedTask;
         }
 
         protected override ReadOnlyMemory<byte> GetPingMessage()
@@ -143,10 +161,10 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private void AddClientConnection(ServiceConnectionContext connection)
+        private void AddClientConnection(ServiceConnectionContext connection, string instanceId)
         {
             _clientConnectionManager.AddClientConnection(connection);
-            _connectionIds.TryAdd(connection.ConnectionId, connection.InstanceId);
+            _connectionIds.TryAdd(connection.ConnectionId, instanceId);
         }
 
         private void RemoveClientConnection(string connectionId)
@@ -158,7 +176,7 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnConnectedAsync(OpenConnectionMessage message)
         {
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
-            AddClientConnection(connection);
+            AddClientConnection(connection, message.Headers[Constants.AsrsInstanceId]);
             Log.ConnectedStarting(Logger, connection.ConnectionId);
 
             // Execute the application code

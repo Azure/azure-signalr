@@ -27,23 +27,10 @@ namespace Microsoft.Azure.SignalR
 
         public override Task HandlePingAsync(PingMessage pingMessage)
         {
-            int index = 0;
-            while (index < pingMessage.Messages.Length - 1)
+            if (pingMessage.TryGetValue(PingTargetKey, out string connectionId) && !string.IsNullOrEmpty(connectionId))
             {
-                if (pingMessage.Messages[index] == PingTargetKey &&
-                    !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
-                {
-                    var connection = CreateOnDemandServiceConnection();
-                    return StartCoreAsync(connection, pingMessage.Messages[index + 1]);
-                }
-
-                if (pingMessage.Messages[index] == PingOfflineKey &&
-                   !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
-                {
-                    Console.WriteLine($"Received offline instance id: {pingMessage.Messages[index + 1]}");
-                }
-
-                index += 2;
+                var connection = CreateOnDemandServiceConnection();
+                return StartCoreAsync(connection, connectionId);
             }
             return Task.CompletedTask;
         }

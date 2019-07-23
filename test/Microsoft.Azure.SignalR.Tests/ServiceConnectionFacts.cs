@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
@@ -449,6 +450,52 @@ namespace Microsoft.Azure.SignalR.Tests
             // on-demand connection has been promoted. Try to dispose and another connection will be created
             onDemandConnection.Transport.Input.CancelPendingRead();
             await serverTask3.OrTimeout();
+        }
+
+        /// <summary>
+        /// If receive offline ping message and will trigger close connection
+        /// connection to default.
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task CloseClientsWhenReceiveInstanceOfflinePing()
+        {
+            // Prepare clients
+            var instanceId1 = Guid.NewGuid().ToString();
+            var connectionId1 = Guid.NewGuid().ToString("N");
+            var header1 = new HeaderDictionary() { { Constants.AsrsInstanceId, instanceId1 } };
+
+            var instanceId2 = Guid.NewGuid().ToString();
+            var connectionId2 = Guid.NewGuid().ToString("N");
+            var header2 = new HeaderDictionary() { { Constants.AsrsInstanceId, instanceId2 } };
+
+            var proxy = new ServiceConnectionProxy();
+
+            var connectionTask = proxy.WaitForServerConnectionAsync(1);
+            _ = proxy.StartAsync();
+
+            await connectionTask.OrTimeout();
+
+            // 2 client connects with different instanceIds
+            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId1, null, header1, null));
+            connectionTask = proxy.WaitForConnectionAsync(connectionId1);
+            await connectionTask.OrTimeout();
+
+            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId2, null, header2, null));
+            connectionTask = proxy.WaitForConnectionAsync(connectionId2);
+            await connectionTask.OrTimeout();
+
+            // Server received instance offline ping on instanceId1 and trigger cleanup related client1
+            await proxy.WriteMessageAsync(new PingMessage()
+            {
+                Messages = new[] { "offline", instanceId1 }
+            });
+            var messageTask = proxy.WaitForApplicationMessageAsync(typeof(CloseConnectionMessage));
+            await messageTask.OrTimeout();
+
+            // Check client2 is still connected
+            Assert.Single(proxy.ClientConnections);
+            Assert.Equal(connectionId2, proxy.ClientConnections.FirstOrDefault().Key);
         }
 
         private static void AssertTimeout(params Task[] task)

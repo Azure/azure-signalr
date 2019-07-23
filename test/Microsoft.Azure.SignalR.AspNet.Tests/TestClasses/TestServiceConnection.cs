@@ -70,5 +70,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             return Task.CompletedTask;
         }
+
+        protected override Task DisconnectClientConnections(string instanceId)
+        {
+            return Task.CompletedTask;
+        }
     }
 }

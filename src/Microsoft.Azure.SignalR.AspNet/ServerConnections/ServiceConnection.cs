@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             // Create empty transport with only channel for async processing messages
             var connectionId = openConnectionMessage.ConnectionId;
-            var clientContext = new ClientContext(connectionId);
+            var clientContext = new ClientContext(connectionId, openConnectionMessage.Headers[Constants.AsrsInstanceId]);
 
             if (_clientConnectionManager.TryAdd(connectionId, this))
             {
@@ -278,14 +278,39 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             return Encoding.UTF8.GetString(buffer.ToArray());
         }
-        
+
+        protected override Task DisconnectClientConnections(string instanceId)
+        {
+            if (_clientConnections.Count() == 0 || string.IsNullOrEmpty(instanceId))
+            {
+                return Task.CompletedTask;
+            }
+            try
+            {
+                // Connected service instance is down, close client gracefully
+                var connections = _clientConnections.Where(c => c.Value.InstanceId == instanceId);
+                foreach (var connection in connections)
+                {
+                    var serviceMessage = new CloseConnectionMessage(connection.Value.ConnectionId, errorMessage: "Service transient error");
+                    _ = PerformDisconnectCore(connection.Value.ConnectionId, true, true);
+                    _ = WriteAsync(serviceMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.FailedToCleanupConnections(Logger, ex);
+            }
+            return Task.CompletedTask;
+        }
+
         private sealed class ClientContext
         {
             private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
-            public ClientContext(string connectionId)
+            public ClientContext(string connectionId, string instanceId = null)
             {
                 ConnectionId = connectionId;
+                InstanceId = instanceId;
                 var channel = Channel.CreateUnbounded<ServiceMessage>();
                 Input = channel.Reader;
                 Output = channel.Writer;
@@ -301,6 +326,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             public string ConnectionId { get; }
+
+            public string InstanceId { get; }
 
             public ChannelReader<ServiceMessage> Input { get; }
             

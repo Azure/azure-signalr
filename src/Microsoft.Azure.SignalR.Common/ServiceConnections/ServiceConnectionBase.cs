@@ -182,11 +182,13 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        protected abstract Task DisconnectClientConnections(string instanceId);
+
         protected abstract Task<ConnectionContext> CreateConnection(string target = null);
 
         protected abstract Task DisposeConnection();
 
-        protected abstract Task CleanupConnections(string instanceId = null);
+        protected abstract Task CleanupConnections();
 
         protected abstract Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage);
 
@@ -211,6 +213,10 @@ namespace Microsoft.Azure.SignalR
 
         protected Task OnPingMessageAsync(PingMessage pingMessage)
         {
+            if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.OfflineKey, out var instanceId) && !string.IsNullOrEmpty(instanceId))
+            {
+                return DisconnectClientConnections(instanceId);
+            }
             return _serviceMessageHandler.HandlePingAsync(pingMessage);
         }
 

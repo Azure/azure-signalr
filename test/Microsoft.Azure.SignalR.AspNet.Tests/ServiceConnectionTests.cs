@@ -15,6 +15,7 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
+using Microsoft.Extensions.Primitives;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -508,6 +509,59 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     // cleaned up clearly
                     Assert.Empty(ccm.ClientConnections);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ServiceConnectionWithOfflinePingWillTriggerDisconnectClients()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                var atm = new AzureTransportManager(hubConfig.Resolver);
+                hubConfig.Resolver.Register(typeof(ITransportManager), () => atm);
+
+                var clientConnectionManager = new TestClientConnectionManager();
+                using (var proxy = new TestServiceConnectionProxy(clientConnectionManager, loggerFactory: loggerFactory))
+                {
+                    // prepare 2 clients with different instancesId connected
+                    var instanceId1 = Guid.NewGuid().ToString();
+                    var connectionId1 = Guid.NewGuid().ToString("N");
+                    var header1 = new Dictionary<string, StringValues>() { {Constants.AsrsInstanceId, instanceId1 } };
+                    var instanceId2 = Guid.NewGuid().ToString();
+                    var connectionId2 = Guid.NewGuid().ToString("N");
+                    var header2 = new Dictionary<string, StringValues>() { { Constants.AsrsInstanceId, instanceId2 } };
+
+                    // start the server connection
+                    await proxy.StartServiceAsync().OrTimeout();
+
+                    // Application layer sends OpenConnectionMessage
+                    var openConnectionMessage = new OpenConnectionMessage(connectionId1, new Claim[0], header1, "?transport=webSockets");
+                    var task = clientConnectionManager.WaitForClientConnectAsync(connectionId1);
+                    await proxy.WriteMessageAsync(openConnectionMessage);
+                    await task.OrTimeout();
+                    openConnectionMessage = new OpenConnectionMessage(connectionId2, new Claim[0], header2, "?transport=webSockets");
+                    task = clientConnectionManager.WaitForClientConnectAsync(connectionId2);
+                    await proxy.WriteMessageAsync(openConnectionMessage);
+                    await task.OrTimeout();
+
+                    // 2 clients are connected
+                    clientConnectionManager.CurrentTransports.TryGetValue(connectionId1, out var transport1);
+                    Assert.NotNull(transport1);
+                    clientConnectionManager.CurrentTransports.TryGetValue(connectionId2, out var transport2);
+                    Assert.NotNull(transport2);
+
+                    // server received offline ping on instance1 and trigger cleanup related client1
+                    await proxy.WriteMessageAsync(new PingMessage()
+                    {
+                        Messages = new[] { "offline", instanceId1 }
+                    });
+
+                    // Validate client1 disconnect and client2 is still connected
+                    await transport1.WaitOnDisconnected().OrTimeout();
+                    Assert.Single(clientConnectionManager.CurrentTransports);
+                    Assert.Equal(connectionId2, clientConnectionManager.CurrentTransports.FirstOrDefault().Key);
                 }
             }
         }
