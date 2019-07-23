@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Microsoft.Azure.SignalR.AspNet.Tests\TestClasses\TestHubManager.cs" Link="TestHubManager.cs" />
+    <Compile Include="..\Microsoft.Azure.SignalR.AspNet.Tests\Utility.cs" Link="Utility.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Azure.SignalR.Tests.Common\Microsoft.Azure.SignalR.Tests.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkPackageVersion)" Condition=" '$(DisableNet461Tests)'!='true'" />
+    <PackageReference Include="xunit" Version="$(XunitPackageVersion)" Condition=" '$(DisableNet461Tests)'!='true'" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualStudioPackageVersion)" Condition=" '$(DisableNet461Tests)'!='true'" />
+    <PackageReference Include="Microsoft.AspNet.SignalR.Client" Version="$(MicrosoftAspNetSignalRClientVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="$(MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion)" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsDependencyInjectionPackageVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingPackageVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Testing" Version="$(MicrosoftExtensionsLoggingPackageVersion)" />
+    <PackageReference Include="Microsoft.Owin.Testing" Version="$(MicrosoftOwinTestingPackageVersion)" />
+    <PackageReference Include="Microsoft.Owin.Host.HttpListener" Version="$(MicrosoftOwinTestingPackageVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Configuration" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' != 'true' OR '$(DisableNet461Tests)' == 'true' ">
+    <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.AspNet\Microsoft.Azure.SignalR.AspNet.csproj" />
+    <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' == 'true' AND '$(DisableNet461Tests)' != 'true' ">
+    <PackageReference Include="Microsoft.Azure.SignalR.AspNet" Version="$(VersionPrefix)-*" />
+  </ItemGroup>
+</Project>
