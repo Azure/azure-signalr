@@ -490,10 +490,10 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 Messages = new[] { "offline", instanceId1 }
             });
-            var messageTask = proxy.WaitForApplicationMessageAsync(typeof(CloseConnectionMessage));
-            await messageTask.OrTimeout();
 
-            // Check client2 is still connected
+            // Validate client1 is closed and client2 is still connected
+            var disconnectTask = proxy.WaitForConnectionCloseAsync(connectionId1);
+            await disconnectTask.OrTimeout();
             Assert.Single(proxy.ClientConnections);
             Assert.Equal(connectionId2, proxy.ClientConnections.FirstOrDefault().Key);
         }
