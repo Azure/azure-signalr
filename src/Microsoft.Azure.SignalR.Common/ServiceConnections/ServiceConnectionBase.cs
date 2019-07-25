@@ -737,6 +737,7 @@ namespace Microsoft.Azure.SignalR
             {
                 _unexpectedExceptionInStop(logger, connectionId, exception);
             }
+
             public static void ReceivedInstanceOfflinePing(ILogger logger, string instanceId)
             {
                 _receivedInstanceOfflinePing(logger, instanceId, null);
