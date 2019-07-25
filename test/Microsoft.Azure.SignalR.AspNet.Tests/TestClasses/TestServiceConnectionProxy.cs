@@ -48,11 +48,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             return TestConnectionContext;
         }
 
-        protected override async Task CleanupConnectionsAsyncCore()
+        protected override async Task CleanupConnectionsAsyncCore(string instanceId = null)
         {
             try
             {
-                await base.CleanupConnectionsAsyncCore();
+                await base.CleanupConnectionsAsyncCore(instanceId);
                 _connectionClosedTcs.SetResult(null);
             }
             catch (Exception e)

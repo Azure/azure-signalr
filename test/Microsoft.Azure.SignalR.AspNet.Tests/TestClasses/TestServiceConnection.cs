@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             _throws = throws;
         }
 
-        protected override Task CleanupConnections()
+        protected override Task CleanupConnections(string instanceId = null)
         {
             return Task.CompletedTask;
         }
@@ -68,11 +68,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 throw new ServiceConnectionNotActiveException();
             }
 
-            return Task.CompletedTask;
-        }
-
-        protected override Task DisconnectClientConnections(string instanceId)
-        {
             return Task.CompletedTask;
         }
     }

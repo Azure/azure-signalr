@@ -67,7 +67,7 @@ namespace Microsoft.Azure.SignalR
             return _connectionFactory.DisposeAsync(connection);
         }
 
-        protected override async Task CleanupConnections()
+        protected override async Task CleanupConnections(string instanceId = null)
         {
             try
             {
@@ -75,36 +75,17 @@ namespace Microsoft.Azure.SignalR
                 {
                     return;
                 }
-                await Task.WhenAll(_connectionIds.Select(s => PerformDisconnectAsyncCore(s.Key, false)));
-            }
-            catch (Exception ex)
-            {
-                Log.FailedToCleanupConnections(Logger, ex);
-            }
-        }
-
-        protected override Task DisconnectClientConnections(string instanceId)
-        {
-            if (string.IsNullOrEmpty(instanceId) || _connectionIds.Count == 0)
-            {
-                return Task.CompletedTask;
-            }
-            try
-            {
-                // Connected service instance is down, close client gracefully
-                var connections = _connectionIds.Where(c => c.Value == instanceId);
-                foreach (var connection in connections)
+                var connectionIds = _connectionIds.Select(s => s.Key);
+                if (!string.IsNullOrEmpty(instanceId))
                 {
-                    var serviceMessage = new CloseConnectionMessage(connection.Key, errorMessage: "Service transient error.");
-                    _ = PerformDisconnectAsyncCore(connection.Key, false);
-                    _ = WriteAsync(serviceMessage);
+                    connectionIds = _connectionIds.Where(s => s.Value == instanceId).Select(s => s.Key);
                 }
+                await Task.WhenAll(connectionIds.Select(s => PerformDisconnectAsyncCore(s, false)));
             }
             catch (Exception ex)
             {
                 Log.FailedToCleanupConnections(Logger, ex);
             }
-            return Task.CompletedTask;
         }
 
         protected override ReadOnlyMemory<byte> GetPingMessage()
@@ -314,9 +295,9 @@ namespace Microsoft.Azure.SignalR
 
         private string GetInstanceId(IDictionary<string, StringValues> header)
         {
-            if (header.ContainsKey(Constants.AsrsInstanceId))
+            if (header.TryGetValue(Constants.AsrsInstanceId, out var instanceId))
             {
-                return header[Constants.AsrsInstanceId];
+                return instanceId;
             }
             return string.Empty;
         }

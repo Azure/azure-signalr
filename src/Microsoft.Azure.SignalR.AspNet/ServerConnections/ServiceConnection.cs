@@ -62,9 +62,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _connectionFactory.DisposeAsync(connection);
         }
 
-        protected override Task CleanupConnections()
+        protected override Task CleanupConnections(string instanceId = null)
         {
-            _ = CleanupConnectionsAsyncCore();
+            _ = CleanupConnectionsAsyncCore(instanceId);
             return Task.CompletedTask;
         }
 
@@ -99,11 +99,16 @@ namespace Microsoft.Azure.SignalR.AspNet
             return ForwardMessageToApplication(connectionDataMessage.ConnectionId, connectionDataMessage);
         }
 
-        protected virtual async Task CleanupConnectionsAsyncCore()
+        protected virtual async Task CleanupConnectionsAsyncCore(string instanceId = null)
         {
             try
             {
-                await Task.WhenAll(_clientConnections.Select(s => PerformDisconnectCore(s.Key, true, false)));
+                var connectionIds = _clientConnections.Select(s => s.Key);
+                if (!string.IsNullOrEmpty(instanceId))
+                {
+                    connectionIds = _clientConnections.Where(s => s.Value.InstanceId == instanceId).Select(s => s.Key);
+                }
+                await Task.WhenAll(connectionIds.Select(s => PerformDisconnectCore(s, true, false)));
             }
             catch (Exception ex)
             {
@@ -280,35 +285,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             return Encoding.UTF8.GetString(buffer.ToArray());
         }
 
-        protected override Task DisconnectClientConnections(string instanceId)
-        {
-            if (_clientConnections.Count() == 0 || string.IsNullOrEmpty(instanceId))
-            {
-                return Task.CompletedTask;
-            }
-            try
-            {
-                // Connected service instance is down, close client gracefully
-                var connections = _clientConnections.Where(c => c.Value.InstanceId == instanceId);
-                foreach (var connection in connections)
-                {
-                    var serviceMessage = new CloseConnectionMessage(connection.Value.ConnectionId, errorMessage: "Service transient error");
-                    _ = PerformDisconnectCore(connection.Value.ConnectionId, true, true);
-                    _ = WriteAsync(serviceMessage);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.FailedToCleanupConnections(Logger, ex);
-            }
-            return Task.CompletedTask;
-        }
-
         private string GetInstanceId(IDictionary<string, StringValues> header)
         {
-            if (header.ContainsKey(Constants.AsrsInstanceId))
+            if (header.TryGetValue(Constants.AsrsInstanceId, out var instanceId))
             {
-                return header[Constants.AsrsInstanceId];
+                return instanceId;
             }
             return null;
         }
