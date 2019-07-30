@@ -347,7 +347,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
             {
                 var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
-                Assert.Equal(1, warns.Count);
+                Assert.Single(warns);
                 Assert.Contains(warns, s => s.Write.Message.Contains("Message JoinGroupWithAckMessage is not sent to endpoint (Primary)http://url1 because all connections to this endpoint are offline."));
                 return true;
             }))
