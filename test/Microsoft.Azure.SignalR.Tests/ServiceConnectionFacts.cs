@@ -453,8 +453,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         /// <summary>
-        /// If receive offline ping message and will trigger close connection
-        /// connection to default.
+        /// If receive offline ping message from service and will trigger close connection
         /// </summary>
         /// <returns></returns>
         [Fact]
