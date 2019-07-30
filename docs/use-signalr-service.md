@@ -178,10 +178,6 @@ By default, all claims from `IOwinContext.Authentication.User` of the negotiate 
 - Default value is the `Azure:SignalR:ConnectionString` `connectionString` or `appSetting` in `web.config` file.
 - It can be reconfigured, but please make sure the value is **NOT** hard coded.
 
-#### `ApplicationName`
-- Default value is `null`.
-- This option can be useful when you want to share the same Azure SignalR instance for different app servers containing the same hub names. If not set, all the connected app servers are considered to be instances of the same application.
-
 #### `ServerStickyMode`
 - Default value is `Disabled`.
 - Refer to [ServerStickyMode](#server-sticky-mode) for details.
