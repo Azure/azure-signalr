@@ -236,6 +236,27 @@ Client connections can drop under various circumstances:
 2. Check app server-side event log to see if the app server restarted
 3. Create an issue to us providing the time frame, and email the resource name to us
 
+<a name="client_connection_increases_constantly"></a>
+## Client connection increase constanly
+It might caused by improper usage of client connection. 
+
+This might caused by using SignalR clients in Azure Function. If the SignalR client is created and starts in a function method and never stops, then each request will establish SignalR client connection and keep it open. All this connections drops only after the Azure Function or Azure SignalR service  restarts.
+
+### Possible errors seen from the SignalR's metrics portal
+Client connections rise constantly for a long time in SignalR's metrics portal blade.
+![client_connection_increasing_constantly](./images/client_connection_increasing_constantly.jpg)
+
+### Root cause:
+This might caused by improperly using SignalR clients in Azure Function. You might create and start **one** SignalR client connection, and you expect only one client will be open, but actually each request will establish SignalR client connection, and if you forget to stop a connection, the connection count will increase as the incoming requests increase, the connections keep open until you restart Azure Function or Azure SignalR.
+
+### Troubleshooting Guide
+1. Check if SignalR client used in Azure Function.
+1. Check if the SignalR client **never** stop. 
+
+### Solution
+1. Decide whether you design a proper serverless architecture. [Real-time serverless applications with the SignalR Service bindings in Azure Functions](https://azure.microsoft.com/en-us/blog/real-time-serverless-applications-with-the-signalr-service-bindings-in-azure-functions/)
+1. Use [Azure Functions Bindings for Azure SignalR Service](https://github.com/Azure/azure-functions-signalrservice-extension) instead of SignalR client.
+
 <a name="server_connection_drop"></a>
 ## Server connection drop
 
