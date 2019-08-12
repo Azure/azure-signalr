@@ -122,10 +122,9 @@ namespace Microsoft.Azure.SignalR
         private HttpContext BuildHttpContext(OpenConnectionMessage message)
         {
             var httpContextFeatures = new FeatureCollection();
-
             var requestFeature = new HttpRequestFeature
             {
-                Headers = new HeaderDictionary((Dictionary<string, StringValues>) message.Headers),
+                Headers = new HeaderDictionary((Dictionary<string, StringValues>)message.Headers),
                 QueryString = message.QueryString,
                 Path = GetOriginalPath(message.QueryString)
             };
