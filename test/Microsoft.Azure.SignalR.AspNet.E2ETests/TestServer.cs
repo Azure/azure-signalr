@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Owin.Hosting;
 using Owin;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Threading.Tasks;
@@ -26,34 +27,38 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
     {
         private IDisposable _webApp;
         private ILoggerFactory _loggerFactory;
+        private IServiceConnectionManager _scm;
+
+        public override TestHubConnectionManager HubConnectionManager { get; }
 
         public TestServer(ITestOutputHelper output) : base(output)
         {
+            HubConnectionManager = new TestHubConnectionManager();
         }
 
-        protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output)
+        protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output, Dictionary<string, string> configuration)
         {
-            var testHubConnectionManager = new TestHubConnectionManager();
             var userIdProvider = new UserIdProvider();
             _loggerFactory = new LoggerFactory().AddXunit(output);
 
             _webApp = WebApp.Start(new StartOptions(serverUrl), app =>
             {
                 var hubConfiguration = Utility.GetActualHubConfig(_loggerFactory);
-                hubConfiguration.Resolver.Register(typeof(TestHub), () => new TestHub(testHubConnectionManager));
+                hubConfiguration.Resolver.Register(typeof(TestHub), () => new TestHub(HubConnectionManager));
                 hubConfiguration.Resolver.Register(typeof(IUserIdProvider), () => userIdProvider);
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                 app.MapAzureSignalR("/signalr", GetType().FullName, hubConfiguration, options => options.ConnectionString = TestConfiguration.Instance.ConnectionString);
+                _scm = hubConfiguration.Resolver.Resolve<IServiceConnectionManager>();
                 GlobalHost.TraceManager.Switch.Level = SourceLevels.Information;
             });
             return Task.CompletedTask;
         }
 
-        public override Task StopAsync()
+        public override async Task StopAsync()
         {
+            await _scm.StopAsync();
             _webApp?.Dispose();
             _loggerFactory?.Dispose();
-            return Task.CompletedTask;
         }
     }
 }

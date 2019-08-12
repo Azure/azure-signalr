@@ -15,6 +15,7 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
+using Microsoft.Extensions.Primitives;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -508,6 +509,83 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     // cleaned up clearly
                     Assert.Empty(ccm.ClientConnections);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ServiceConnectionWithOfflinePingWillTriggerDisconnectClients()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var hubConfig = Utility.GetActualHubConfig(loggerFactory);
+                var appName = "app1";
+                var hub = "chat";
+                var scm = new TestServiceConnectionHandler();
+                hubConfig.Resolver.Register(typeof(IServiceConnectionManager), () => scm);
+                var ccm = new ClientConnectionManager(hubConfig, loggerFactory);
+                hubConfig.Resolver.Register(typeof(IClientConnectionManager), () => ccm);
+                DispatcherHelper.PrepareAndGetDispatcher(new TestAppBuilder(), hubConfig, new ServiceOptions { ConnectionString = ConnectionString }, appName, loggerFactory);
+                using (var proxy = new TestServiceConnectionProxy(ccm, loggerFactory: loggerFactory))
+                {
+                    // prepare 2 clients with different instancesId connected
+                    var instanceId1 = Guid.NewGuid().ToString();
+                    var connectionId1 = Guid.NewGuid().ToString("N");
+                    var header1 = new Dictionary<string, StringValues>() { { Constants.AsrsInstanceId, instanceId1 } };
+                    var instanceId2 = Guid.NewGuid().ToString();
+                    var connectionId2 = Guid.NewGuid().ToString("N");
+                    var header2 = new Dictionary<string, StringValues>() { { Constants.AsrsInstanceId, instanceId2 } };
+
+                    // start the server connection
+                    await proxy.StartServiceAsync().OrTimeout();
+
+                    // Application layer sends OpenConnectionMessage for client1
+                    var connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
+                    var openConnectionMessage = new OpenConnectionMessage(connectionId1, new Claim[0], header1, $"?transport=webSockets&connectionToken=conn1&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
+                    await proxy.WriteMessageAsync(openConnectionMessage);
+
+                    // client1 is connected
+                    var connectMessage = (await connectTask) as GroupBroadcastDataMessage;
+                    Assert.NotNull(connectMessage);
+                    Assert.Equal($"hg-{hub}.note", connectMessage.GroupName);
+                    var message = connectMessage.Payloads["json"].GetJsonMessageFromSingleFramePayload<HubResponseItem>();
+                    Assert.Equal("Connected", message.A[0]);
+
+                    ccm.ClientConnections.TryGetValue(connectionId1, out var transport1);
+                    Assert.NotNull(transport1);
+
+                    // Application layer sends OpenConnectionMessage for client2
+                    connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
+                    openConnectionMessage = new OpenConnectionMessage(connectionId2, new Claim[0], header2, $"?transport=webSockets&connectionToken=conn2&connectionData=%5B%7B%22name%22%3A%22{hub}%22%7D%5D");
+                    await proxy.WriteMessageAsync(openConnectionMessage);
+
+                    // client2 is connected
+                    connectMessage = (await connectTask) as GroupBroadcastDataMessage;
+                    Assert.NotNull(connectMessage);
+                    Assert.Equal($"hg-{hub}.note", connectMessage.GroupName);
+                    message = connectMessage.Payloads["json"].GetJsonMessageFromSingleFramePayload<HubResponseItem>();
+                    Assert.Equal("Connected", message.A[0]);
+                    ccm.ClientConnections.TryGetValue(connectionId2, out var transport2);
+                    Assert.NotNull(transport2);
+
+                    // Send ServerOfflinePing on instance1 and will trigger cleanup related client1
+                    connectTask = scm.WaitForTransportOutputMessageAsync(typeof(GroupBroadcastDataMessage)).OrTimeout();
+                    await proxy.WriteMessageAsync(new PingMessage()
+                    {
+                        Messages = new[] { "offline", instanceId1 }
+                    });
+
+                    // Validate client1 disconnect 
+                    connectMessage = (await connectTask) as GroupBroadcastDataMessage;
+                    Assert.NotNull(connectMessage);
+                    Assert.Equal($"hg-{hub}.note", connectMessage.GroupName);
+                    message = connectMessage.Payloads["json"]
+                        .GetJsonMessageFromSingleFramePayload<HubResponseItem>();
+                    Assert.Equal("Disconnected", message.A[0]);
+
+                    // Validate client2 is still connected
+                    Assert.Single(ccm.ClientConnections);
+                    Assert.Equal(connectionId2, ccm.ClientConnections.FirstOrDefault().Key);
                 }
             }
         }

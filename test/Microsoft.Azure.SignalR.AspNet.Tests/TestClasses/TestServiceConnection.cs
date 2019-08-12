@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             _throws = throws;
         }
 
-        protected override Task CleanupConnections()
+        protected override Task CleanupConnections(string instanceId = null)
         {
             return Task.CompletedTask;
         }

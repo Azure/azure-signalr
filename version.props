@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <VersionPrefix>1.0.11</VersionPrefix>
+    <VersionPrefix>1.0.12</VersionPrefix>
     <VersionSuffix>preview1</VersionSuffix>
     <VersionPrefix Condition ="'$(IsTargetMultiFramework)' != 'false'">1.1.0</VersionPrefix>
     <PackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' == 'rtm' ">$(VersionPrefix)</PackageVersion>
@@ -8,5 +8,11 @@
     <BuildNumber Condition="'$(BuildNumber)' == ''">t000</BuildNumber>
     <VersionSuffix Condition="'$(VersionSuffix)' != '' And '$(FeatureBranchVersionSuffix)' != ''">$(VersionSuffix)-$([System.Text.RegularExpressions.Regex]::Replace('$(FeatureBranchVersionSuffix)', '[^\w-]', '-'))</VersionSuffix>
     <VersionSuffix Condition="'$(VersionSuffix)' != '' And '$(BuildNumber)' != ''">$(VersionSuffix)-$(BuildNumber)</VersionSuffix>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ManagementSDKPackageVersionPrefix>1.0.0</ManagementSDKPackageVersionPrefix>
+    <ManagementSDKPackageVersion>$(ManagementSDKPackageVersionPrefix)-preview1-$(BuildNumber)</ManagementSDKPackageVersion>
+    <ManagementSDKPackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' == 'rtm' ">$(ManagementSDKPackageVersionPrefix)</ManagementSDKPackageVersion>
   </PropertyGroup>
 </Project>

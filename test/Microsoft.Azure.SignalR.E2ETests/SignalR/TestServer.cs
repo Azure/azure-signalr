@@ -3,8 +3,10 @@
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
 
@@ -13,28 +15,38 @@ namespace Microsoft.Azure.SignalR.Tests
     internal class TestServer : TestServerBase
     {
         private IWebHost _host;
+        private IServiceConnectionManager<TestHub> _scm;
+
+        public override TestHubConnectionManager HubConnectionManager { get; }
 
         public TestServer(ITestOutputHelper output): base(output)
         {
+            HubConnectionManager = new TestHubConnectionManager();
         }
 
-        protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output)
+        protected override Task StartCoreAsync(string serverUrl, ITestOutputHelper output, Dictionary<string, string> configuration)
         {
-            var testHubConnectionManager = new TestHubConnectionManager();
-
             _host = new WebHostBuilder()
-                .ConfigureServices(services => services.AddSingleton<TestHubConnectionManager>(testHubConnectionManager))
+                .ConfigureServices(services =>
+                {
+                    services.AddSingleton<TestHubConnectionManager>(HubConnectionManager);
+                })
                 .ConfigureLogging(logging => logging.AddXunit(output))
+                .ConfigureAppConfiguration(builder =>  builder.AddInMemoryCollection(configuration))
                 .UseStartup<TestStartup>()
                 .UseUrls(serverUrl)
                 .UseKestrel()
                 .Build();
+
+            _scm = _host.Services.GetRequiredService<IServiceConnectionManager<TestHub>>();
+
             return _host.StartAsync();
         }
 
         public override async Task StopAsync()
         {
             await _host.StopAsync();
+            await _scm.StopAsync();
         }
     }
 }

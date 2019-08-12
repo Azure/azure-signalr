@@ -9,7 +9,7 @@ namespace Microsoft.Azure.SignalR
     {
         public static bool TryGetServiceStatusPingMessage(this ServicePingMessage message, out ServiceStatusPingMessage serviceStatus)
         {
-            if (TryGetValue(message, ServiceStatusPingMessage.Key, out var value))
+            if (message.TryGetValue(ServiceStatusPingMessage.Key, out var value))
             {
                 serviceStatus = new ServiceStatusPingMessage(value);
                 return true;
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR
             return false;
         }
 
-        private static bool TryGetValue(ServicePingMessage pingMessage, string key, out string value)
+        public static bool TryGetValue(this ServicePingMessage pingMessage, string key, out string value)
         {
             if (pingMessage == null)
             {
