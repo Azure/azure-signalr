@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR.Tests
         // Verify whether 'get client IP' is working or not
         public void TestClientIPEcho(string message)
         {
-            if (!string.IsNullOrEmpty(Context.GetHttpContext().Connection.RemoteIpAddress))
+            if (!string.IsNullOrEmpty(Context.GetHttpContext().Connection.RemoteIpAddress.ToString()))
             {
                 Clients.Caller.SendAsync(nameof(TestClientIPEcho), message);
             }
