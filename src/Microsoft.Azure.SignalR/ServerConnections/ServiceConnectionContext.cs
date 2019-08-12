@@ -135,13 +135,23 @@ namespace Microsoft.Azure.SignalR
                 User = User
             });
 
-            var forwardedFor = requestFeature.Headers.GetCommaSeparatedValues("X-Forwarded-For");
-            if (forwardedFor.Length > 0 && IPAddress.TryParse(forwardedFor[0], out var address))
+            if (TryGetRemoteIpAddress(requestFeature.Headers, out var address))
             {
                 httpContextFeatures.Set<IHttpConnectionFeature>(new HttpConnectionFeature { RemoteIpAddress = address });
             }
 
             return new DefaultHttpContext(httpContextFeatures);
+        }
+
+        internal static bool TryGetRemoteIpAddress(IHeaderDictionary headers, out IPAddress address)
+        {
+            var forwardedFor = headers.GetCommaSeparatedValues("X-Forwarded-For");
+            if (forwardedFor.Length > 0 && IPAddress.TryParse(forwardedFor[0], out address))
+            {
+                return true;
+            }
+            address = null;
+            return false;
         }
 
         private static string GetOriginalPath(string queryString)
