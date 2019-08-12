@@ -19,7 +19,8 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             new object[] { "Broadcast", DefaultClientCount, new Func<string, ITestClientSet, Task>((methodName, clients) => clients.SendAsync(methodName, sendCount : 1, messages : _defaultMessage)) },
             new object[] { "SendToClient", DefaultClientCount, new Func<string, ITestClientSet, Task>((methodName, clients) => clients.SendAsync(methodName, sendCount : DefaultClientCount, messages : _defaultMessage)) },
             new object[] { "SendToUser", DefaultClientCount, new Func<string, ITestClientSet, Task>((methodName, clients) => clients.SendAsync(methodName, sendCount : DefaultClientCount, messages : _defaultMessage)) },
-            new object[] { "SendToGroup", GetGroupSize(DefaultSendGroupIndex), new Func<string, ITestClientSet, Task>(GroupTask) }
+            new object[] { "SendToGroup", GetGroupSize(DefaultSendGroupIndex), new Func<string, ITestClientSet, Task>(GroupTask) },
+            new object[] { "TestClientIPEcho", DefaultClientCount, new Func<string, ITestClientSet, Task>((methodName, clients) => clients.SendAsync(methodName, sendCount : DefaultClientCount, messages : _defaultMessage)) },
         };
 
         private const int DefaultClientCount = 3;
