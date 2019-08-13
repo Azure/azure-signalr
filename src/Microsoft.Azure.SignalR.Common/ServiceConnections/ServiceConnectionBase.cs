@@ -186,7 +186,7 @@ namespace Microsoft.Azure.SignalR
 
         protected abstract Task DisposeConnection();
 
-        protected abstract Task CleanupConnections();
+        protected abstract Task CleanupConnections(string instanceId = null);
 
         protected abstract Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage);
 
@@ -211,6 +211,11 @@ namespace Microsoft.Azure.SignalR
 
         protected Task OnPingMessageAsync(PingMessage pingMessage)
         {
+            if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.OfflineKey, out var instanceId) && !string.IsNullOrEmpty(instanceId))
+            {
+                Log.ReceivedInstanceOfflinePing(Logger, instanceId);
+                return CleanupConnections(instanceId);
+            }
             return _serviceMessageHandler.HandlePingAsync(pingMessage);
         }
 
@@ -621,6 +626,10 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _onDemandConnectionHandshakeResponse =
                 LoggerMessage.Define<string>(LogLevel.Information, new EventId(30, "OnDemandConnectionHandshakeResponse"), "Service returned handshake response: {Message}");
 
+            private static readonly Action<ILogger, string, Exception> _receivedInstanceOfflinePing =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(31, "ReceivedInstanceOfflinePing"), "Received instance offline service ping: {InstanceId}");
+
+
             public static void FailedToWrite(ILogger logger, string serviceConnectionId, Exception exception)
             {
                 _failedToWrite(logger, exception.Message, serviceConnectionId, null);
@@ -727,6 +736,11 @@ namespace Microsoft.Azure.SignalR
             public static void UnexpectedExceptionInStop(ILogger logger, string connectionId, Exception exception)
             {
                 _unexpectedExceptionInStop(logger, connectionId, exception);
+            }
+
+            public static void ReceivedInstanceOfflinePing(ILogger logger, string instanceId)
+            {
+                _receivedInstanceOfflinePing(logger, instanceId, null);
             }
         }
     }

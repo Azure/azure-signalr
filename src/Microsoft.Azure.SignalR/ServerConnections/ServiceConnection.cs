@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -66,7 +67,7 @@ namespace Microsoft.Azure.SignalR
             return _connectionFactory.DisposeAsync(connection);
         }
 
-        protected override async Task CleanupConnections()
+        protected override async Task CleanupConnections(string instanceId = null)
         {
             try
             {
@@ -74,7 +75,12 @@ namespace Microsoft.Azure.SignalR
                 {
                     return;
                 }
-                await Task.WhenAll(_connectionIds.Select(s => PerformDisconnectAsyncCore(s.Key, false)));
+                var connectionIds = _connectionIds.Select(s => s.Key);
+                if (!string.IsNullOrEmpty(instanceId))
+                {
+                    connectionIds = _connectionIds.Where(s => s.Value == instanceId).Select(s => s.Key);
+                }
+                await Task.WhenAll(connectionIds.Select(s => PerformDisconnectAsyncCore(s, false)));
             }
             catch (Exception ex)
             {
@@ -144,16 +150,16 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private void AddClientConnection(ServiceConnectionContext connection)
+        private void AddClientConnection(ServiceConnectionContext connection, string instanceId)
         {
             _clientConnectionManager.AddClientConnection(connection);
-            _connectionIds.TryAdd(connection.ConnectionId, connection.ConnectionId);
+            _connectionIds.TryAdd(connection.ConnectionId, instanceId);
         }
 
         protected override Task OnConnectedAsync(OpenConnectionMessage message)
         {
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
-            AddClientConnection(connection);
+            AddClientConnection(connection, GetInstanceId(message.Headers));
             Log.ConnectedStarting(Logger, connection.ConnectionId);
 
             // Execute the application code
@@ -285,6 +291,15 @@ namespace Microsoft.Azure.SignalR
                 // Unexpected error
                 Log.ReceivedMessageForNonExistentConnection(Logger, connectionDataMessage.ConnectionId);
             }
+        }
+
+        private string GetInstanceId(IDictionary<string, StringValues> header)
+        {
+            if (header.TryGetValue(Constants.AsrsInstanceId, out var instanceId))
+            {
+                return instanceId;
+            }
+            return string.Empty;
         }
     }
 }

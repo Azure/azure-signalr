@@ -12,6 +12,7 @@ namespace Microsoft.Azure.SignalR
         public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
 
         public const string AsrsUserAgent = "Asrs-User-Agent";
+        public const string AsrsInstanceId = "Asrs-Instance-Id";
 
         public const string AzureSignalREnabledKey = "Azure:SignalR:Enabled";
 
@@ -57,6 +58,12 @@ namespace Microsoft.Azure.SignalR
         public static class Config
         {
             public static readonly string ConnectionStringKey = "Azure:SignalR:ConnectionString";
+        }
+
+        public static class ServicePingMessageKey
+        {
+            public const string RebalanceKey = "target";
+            public const string OfflineKey = "offline";
         }
     }
 }
