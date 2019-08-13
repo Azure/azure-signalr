@@ -4,7 +4,7 @@ This guidence is to provide useful troubleshooting guide based on the common iss
 
 - [Access token too long](#access_token_too_long)
 - [TLS 1.2 required](#tls_1.2_required)
-- [Random 404 returned for client requests](#random_404_returned_for_client_requests)
+- [404 returned for client requests](#random_404_returned_for_client_requests)
 - [401 Unauthorized returned for client requests](#401_unauthorized_returned_for_client_requests)
 - [500 Error when negotiate](#500_error_when_negotiate)
 - [Client connection drop](#client_connection_drop)
@@ -110,15 +110,16 @@ ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 ```
 
 <a name="random_404_returned_for_client_requests"></a>
-## Random 404 returned for client requests
+## 404 returned for client requests
 
 For a SignalR persistent connection, it first `/negotiate` to Azure SignalR service and then establish the real connection to Azure SignalR service. Our load balancer must ensure that the `/negotiate` request and the following connect request goes to the similar instance of the Service otherwise 404 occurs. Our load balancer now relies on the *signature* part of the generated `access_token` to keep the session sticky.
 
 ### Troubleshooting Guide
 1. Following [How to view outgoing requests](#view_request) to get the request from client the the service.
-2. Check if there are multiple `access_token` inside the outgoing request. Our load balancer is not able to handle duplicate `access_token` correctly, as described in [#346](https://github.com/Azure/azure-signalr/issues/346).
-3. Another 404 can happen when the connect request is handled more than **5** seconds after `/negotiate` is called. Check the timestamp of client request, and open an issue to us if the request to the service has very slow response.
-4. If you find the `/negotiate` request and the following connect request carry different access token through the above steps, the most possible reason is using HttpConnectionOptions.AccessTokenProvider in a **WRONG** way:
+1. Check the url of the request when 404 occurs. If the url is targeting to your web app, and similar to `{your_web_app}/hubs/{hubName}`, check if the client `SkipNegotiation` is `true`. When using Azure SignalR, client receives redirect url when it first negotiates with the app server. Client should **NOT** skip negotiation when using Azure SignalR.
+1. Check if there are multiple `access_token` inside the outgoing request. Our load balancer is not able to handle duplicate `access_token` correctly, as described in [#346](https://github.com/Azure/azure-signalr/issues/346).
+1. Another 404 can happen when the connect request is handled more than **5** seconds after `/negotiate` is called. Check the timestamp of client request, and open an issue to us if the request to the service has very slow response.
+1. If you find the `/negotiate` request and the following connect request carry different access token through the above steps, the most possible reason is using HttpConnectionOptions.AccessTokenProvider in a **WRONG** way:
 
     ```c#
     var url = ...

@@ -12,7 +12,6 @@ namespace Microsoft.Azure.SignalR
 {
     internal class StrongServiceConnectionContainer : ServiceConnectionContainerBase
     {
-        private const string PingTargetKey = "target";
         private readonly List<IServiceConnection> _onDemandServiceConnections;
 
         // The lock is only used to lock the on-demand part
@@ -26,19 +25,11 @@ namespace Microsoft.Azure.SignalR
 
         public override Task HandlePingAsync(PingMessage pingMessage)
         {
-            int index = 0;
-            while (index < pingMessage.Messages.Length - 1)
+            if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.RebalanceKey, out string target) && !string.IsNullOrEmpty(target))
             {
-                if (pingMessage.Messages[index] == PingTargetKey &&
-                    !string.IsNullOrEmpty(pingMessage.Messages[index + 1]))
-                {
-                    var connection = CreateOnDemandServiceConnection();
-                    return StartCoreAsync(connection, pingMessage.Messages[index + 1]);
-                }
-
-                index += 2;
+                var connection = CreateOnDemandServiceConnection();
+                return StartCoreAsync(connection, target);
             }
-
             return Task.CompletedTask;
         }
 

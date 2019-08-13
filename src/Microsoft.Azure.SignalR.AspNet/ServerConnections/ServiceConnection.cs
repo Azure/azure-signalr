@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
@@ -61,9 +62,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _connectionFactory.DisposeAsync(connection);
         }
 
-        protected override Task CleanupConnections()
+        protected override Task CleanupConnections(string instanceId = null)
         {
-            _ = CleanupConnectionsAsyncCore();
+            _ = CleanupConnectionsAsyncCore(instanceId);
             return Task.CompletedTask;
         }
 
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             // Create empty transport with only channel for async processing messages
             var connectionId = openConnectionMessage.ConnectionId;
-            var clientContext = new ClientContext(connectionId);
+            var clientContext = new ClientContext(connectionId, GetInstanceId(openConnectionMessage.Headers));
 
             if (_clientConnectionManager.TryAdd(connectionId, this))
             {
@@ -98,11 +99,16 @@ namespace Microsoft.Azure.SignalR.AspNet
             return ForwardMessageToApplication(connectionDataMessage.ConnectionId, connectionDataMessage);
         }
 
-        protected virtual async Task CleanupConnectionsAsyncCore()
+        protected virtual async Task CleanupConnectionsAsyncCore(string instanceId = null)
         {
             try
             {
-                await Task.WhenAll(_clientConnections.Select(s => PerformDisconnectCore(s.Key, true, false)));
+                var connectionIds = _clientConnections.Select(s => s.Key);
+                if (!string.IsNullOrEmpty(instanceId))
+                {
+                    connectionIds = _clientConnections.Where(s => s.Value.InstanceId == instanceId).Select(s => s.Key);
+                }
+                await Task.WhenAll(connectionIds.Select(s => PerformDisconnectCore(s, true, false)));
             }
             catch (Exception ex)
             {
@@ -278,14 +284,24 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             return Encoding.UTF8.GetString(buffer.ToArray());
         }
-        
+
+        private string GetInstanceId(IDictionary<string, StringValues> header)
+        {
+            if (header.TryGetValue(Constants.AsrsInstanceId, out var instanceId))
+            {
+                return instanceId;
+            }
+            return null;
+        }
+
         private sealed class ClientContext
         {
             private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
-            public ClientContext(string connectionId)
+            public ClientContext(string connectionId, string instanceId = null)
             {
                 ConnectionId = connectionId;
+                InstanceId = instanceId;
                 var channel = Channel.CreateUnbounded<ServiceMessage>();
                 Input = channel.Reader;
                 Output = channel.Writer;
@@ -301,6 +317,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             public string ConnectionId { get; }
+
+            public string InstanceId { get; }
 
             public ChannelReader<ServiceMessage> Input { get; }
             

@@ -122,23 +122,36 @@ namespace Microsoft.Azure.SignalR
         private HttpContext BuildHttpContext(OpenConnectionMessage message)
         {
             var httpContextFeatures = new FeatureCollection();
-            httpContextFeatures.Set<IHttpRequestFeature>(new HttpRequestFeature
+            var requestFeature = new HttpRequestFeature
             {
                 Headers = new HeaderDictionary((Dictionary<string, StringValues>)message.Headers),
                 QueryString = message.QueryString,
                 Path = GetOriginalPath(message.QueryString)
-            });
+            };
+
+            httpContextFeatures.Set<IHttpRequestFeature>(requestFeature);
             httpContextFeatures.Set<IHttpAuthenticationFeature>(new HttpAuthenticationFeature
             {
                 User = User
             });
-            if (message.Headers.ContainsKey("X-Forwarded-For") &&
-                IPAddress.TryParse(message.Headers["X-Forwarded-For"][0], out var address))
+
+            if (TryGetRemoteIpAddress(requestFeature.Headers, out var address))
             {
                 httpContextFeatures.Set<IHttpConnectionFeature>(new HttpConnectionFeature { RemoteIpAddress = address });
             }
 
             return new DefaultHttpContext(httpContextFeatures);
+        }
+
+        internal static bool TryGetRemoteIpAddress(IHeaderDictionary headers, out IPAddress address)
+        {
+            var forwardedFor = headers.GetCommaSeparatedValues("X-Forwarded-For");
+            if (forwardedFor.Length > 0 && IPAddress.TryParse(forwardedFor[0], out address))
+            {
+                return true;
+            }
+            address = null;
+            return false;
         }
 
         private static string GetOriginalPath(string queryString)
