@@ -149,7 +149,7 @@ For a SignalR persistent connection, it first `/negotiate` to Azure SignalR serv
 
     During service deployment, the running instances are upgraded one by one and this is currently impacting the load balancer routing strategy and route the incoming requests to another instance.
 
-    For ASP.NET Core SignalR, WebSocket connections are not affected after the WebSocket connection between the client and the instance established, connections using SSE or long-polling are tend to be affected during the period. For ASP.NET SignalR, all the transport will be impacted. 
+    For ASP.NET Core SignalR, WebSocket connections are not affected after the WebSocket connection between the client and the instance established, connections using SSE or long-polling tend to be affected during the period. For ASP.NET SignalR, all the transports will be impacted. 
 
     Having [restart the connection](#restart_connection) logic in the client-side can minimize the impact of the issue.
 
