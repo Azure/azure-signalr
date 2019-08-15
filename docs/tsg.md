@@ -147,7 +147,7 @@ For a SignalR persistent connection, it first `/negotiate` to Azure SignalR serv
         
     The sympton of such 404 is that the 404 can happen for clients not using WebSocket transport type of ASP.NET Core SignalR within a short period, and can be recovered in a short period.
 
-    As described above, inside Azure SignalR, the load balancer leverages the `asrs_request_id`(or `signature`) of all requests from one connection to the same running instance. The strategy the load balancer uses is **consistent hashing**. During service deployment, the running instances are upgraded one by one. As a result, the upstream instances for the load balancer are changing during this period, which means the **consistent hashing** for the `asrs_request_id` might change. So it is possible that the on-going requests from one connection are therefore routed to another instance, and thus 404 occurs to these requests. 
+    During service deployment, the running instances are upgraded one by one and this is currently impacting the load balancer routing strategy and route the incoming requests to another instance.
 
     For ASP.NET Core SignalR, websocket connections are not affected after the websocket connection between the client and the instance established, connections using SSE or longpolling are tend to be affected during the period. For ASP.NET SignalR, all the transport will be impacted. 
 
