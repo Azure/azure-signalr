@@ -112,12 +112,12 @@ ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 <a name="random_404_returned_for_client_requests"></a>
 ## 404 returned for client requests
 
-For a SignalR persistent connection, it first `/negotiate` to Azure SignalR service and then establish the real connection to Azure SignalR service. Our load balancer must ensure that the `/negotiate` request and the following connect request goes to the similar instance of the Service otherwise 404 occurs. Our load balancer now relies on the *signature* part of the generated `access_token` to keep the session sticky.
+For a SignalR persistent connection, it first `/negotiate` to Azure SignalR service and then establish the real connection to Azure SignalR service. Our load balancer must ensure that the `/negotiate` request and the following connect request goes to the same instance of the Service otherwise 404 occurs. Our load balancer relies on the *asrs_request_id* query string (added in SDK version 1.0.11) or *signature* part of the generated `access_token`(if `asrs_request_id` query string does not exist) to keep the session sticky.
 
 ### Troubleshooting Guide
 1. Following [How to view outgoing requests](#view_request) to get the request from client the the service.
 1. Check the url of the request when 404 occurs. If the url is targeting to your web app, and similar to `{your_web_app}/hubs/{hubName}`, check if the client `SkipNegotiation` is `true`. When using Azure SignalR, client receives redirect url when it first negotiates with the app server. Client should **NOT** skip negotiation when using Azure SignalR.
-1. Check if there are multiple `access_token` inside the outgoing request. Our load balancer is not able to handle duplicate `access_token` correctly, as described in [#346](https://github.com/Azure/azure-signalr/issues/346).
+1. For SDK older than 1.0.11, check if there are multiple `access_token` inside the outgoing request. With old SDK which does not contain `asrs_request_id` in the query string, the load balancer of the service is not able to handle duplicate `access_token` correctly, as described in [#346](https://github.com/Azure/azure-signalr/issues/346).
 1. Another 404 can happen when the connect request is handled more than **5** seconds after `/negotiate` is called. Check the timestamp of client request, and open an issue to us if the request to the service has very slow response.
 1. If you find the `/negotiate` request and the following connect request carry different access token through the above steps, the most possible reason is using HttpConnectionOptions.AccessTokenProvider in a **WRONG** way:
 
@@ -142,6 +142,16 @@ For a SignalR persistent connection, it first `/negotiate` to Azure SignalR serv
     var hubConnectionBuilder = new HubConnectionBuilder().WithUrl(url);
     var hubConnection = hubConnectionBuilder.build();
     ```
+    
+1. Another possibility for 404 is during the period of Azure SignalR maintainness or upgrade. 
+        
+    The sympton of such 404 is that the 404 can happen for clients not using WebSocket transport type of ASP.NET Core SignalR within a short period, and can be recovered in a short period.
+
+    As described above, inside Azure SignalR, the load balancer leverages the `asrs_request_id`(or `signature`) of all requests from one connection to the same running instance. The strategy the load balancer uses is **consistent hashing**. During service deployment, the running instances are upgraded one by one. As a result, the upstream instances for the load balancer are changing during this period, which means the **consistent hashing** for the `asrs_request_id` might change. So it is possible that the on-going requests from one connection are therefore routed to another instance, and thus 404 occurs to these requests. 
+
+    For ASP.NET Core SignalR, websocket connections are not affected after the websocket connection between the client and the instance established, connections using SSE or longpolling are tend to be affected during the period. For ASP.NET SignalR, all the transport will be impacted. 
+
+    Having [restart the connection](#restart_connection) logic in the client side can minimize the impact of such issue.
 
 <a name="401_unauthorized_returned_for_client_requests"></a>
 ## 401 Unauthorized returned for client requests
@@ -158,6 +168,7 @@ For ASP.NET SignalR, the client sends a `/ping` KeepAlive request to the service
 
 For security concerns, extend TTL is not encouraged. We suggest adding reconnect logic from client to restart the connection when such 401 occurs. When client restarts the connection, it will negotiate with app server to get the JWT token again and get a renewed token.
 
+<a name="restart_connection"></a>
 [Sample code](../samples/) contains restarting connection logic with *ALWAYS RETRY* strategy:
 
 * [ASP.NET Core C# Client](../samples/ChatSample/ChatSample.CSharpClient/Program.cs#L64)
