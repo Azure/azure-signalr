@@ -7,8 +7,9 @@ This guidance is to provide useful troubleshooting guide based on the common iss
 - [404 returned for client requests](#random_404_returned_for_client_requests)
 - [401 Unauthorized returned for client requests](#401_unauthorized_returned_for_client_requests)
 - [500 Error when negotiate](#500_error_when_negotiate)
-- [Client connection drop](#client_connection_drop)
-- [Server connection drop](#server_connection_drop)
+- [Client connection drops](#client_connection_drop)
+- [Client connection increases constantly](#client_connection_increases_constantly)
+- [Server connection drops](#server_connection_drop)
 
 <a name="access_token_too_long"></a>
 ## Access token too long
@@ -30,7 +31,7 @@ With SDK version **1.0.6** or higher, `/negotiate` will throw `413 Payload Too L
 ### Solution:
 By default, claims from `context.User.Claims` are included when generating JWT access token to **ASRS**(**A**zure **S**ignal**R** **S**ervice), so that the claims are preserved and can be passed from **ASRS** to the `Hub` when the client connects to the `Hub`.
 
-In some cases, `context.User.Claims` are leveraged to store lots of information for app server, most of which are not used by `Hub`s but by other components. 
+In some cases, `context.User.Claims` are leveraged to store lots of information for app server, most of which are not used by `Hub`s but by other components.
 
 The generated access token is passed through the network, and for WebSocket/SSE connections, access tokens are passed through query strings. So as the best practice, we suggest only passing **necessary** claims from the client through **ASRS** to your app server when the Hub needs.
 
@@ -64,11 +65,11 @@ Take ASP.NET Core one for example (ASP.NET one is similar):
         Take Chrome as an example, you can use **F12** to open the console window, and switch to **Network** tab. You might need to refresh the page using **F5** to capture the network from the very beginning.
         
         ![Chrome View Network](./images/chrome_network.gif)
-    
+
     2. From C# client:
 
         You can view local web traffics using [Fiddler](https://www.telerik.com/fiddler). WebSocket traffics are supported since Fiddler 4.5.
-        
+
         ![Fiddler View Network](./images/fiddler_view_network.png)
 
 <a name="tls_1.2_required"></a>
@@ -79,20 +80,20 @@ Take ASP.NET Core one for example (ASP.NET one is similar):
 1. ASP.Net "No server available" error [#279](https://github.com/Azure/azure-signalr/issues/279)
 2. ASP.Net "The connection is not active, data cannot be sent to the service." error [#324](https://github.com/Azure/azure-signalr/issues/324)
 3. "An error occurred while making the HTTP request to https://<API endpoint>. This could be due to the fact that the server certificate is not configured properly with HTTP.SYS in the HTTPS case. This could also be caused by a mismatch of the security binding between the client and the server."
-        
+
 ### Root cause:
 Azure Service only supports TLS1.2 for security concerns. With .NET framework, it is possible that TLS1.2 is not the default protocol. As a result, the server connections to ASRS can not be successfully established.
 
 ### Troubleshooting Guide
 1. If this error can be repro-ed locally, uncheck *Just My Code* and throw all CLR exceptions and debug the app server locally to see what exception throws.
     * Uncheck *Just My Code*
-    
+
         ![Uncheck Just My Code](./images/uncheck_just_my_code.png)
     * Throw CLR exceptions
-    
+
         ![Throw CLR exceptions](./images/throw_clr_exceptions.png)
     * See the exceptions throw when debugging the app server side code:
-    
+
         ![Exception throws](./images/tls_throws.png)
 
 2. For ASP.NET ones, you can also add following code to your `Startup.cs` to enable detailed trace and see the errors from the log.
@@ -176,7 +177,7 @@ For security concerns, extend TTL is not encouraged. We suggest adding reconnect
 <a name="500_error_when_negotiate"></a>
 ## 500 Error when negotiate: Azure SignalR Service is not connected yet, please try again later.
 ### Root cause
-This error is reported when there is no server connection to Azure SignalR Service connected. 
+This error is reported when there is no server connection to Azure SignalR Service connected.
 
 ### Troubleshooting Guide
 Please enable server-side trace to find out the error details when the server tries to connect to Azure SignalR Service.
@@ -214,7 +215,7 @@ When using SDK version >= `1.0.0`, you can enable traces by adding the following
   </system.diagnostics>
 ```
 <a name="client_connection_drop"></a>
-## Client connection drop
+## Client connection drops
 
 When the client is connected to the Azure SignalR, the persistent connection between the client and Azure SignalR can sometimes drop for different reasons. This section describes several possibilities causing such connection drop and provides some guidance on how to identify the root cause.
 
@@ -237,10 +238,10 @@ Client connections can drop under various circumstances:
 3. Create an issue to us providing the time frame, and email the resource name to us
 
 <a name="client_connection_increases_constantly"></a>
-## Client connection increase constanly
-It might caused by improper usage of client connection. 
+## Client connection increases constantly
+It might be caused by improper usage of client connection.
 
-This might caused by using SignalR clients in Azure Function. If the SignalR client is created and starts in a function method and never stops, then each request will establish SignalR client connection and keep it open. All this connections drops only after the Azure Function or Azure SignalR service  restarts.
+Usually, this issue is caused by SignalR client remains open. If the SignalR client is created and starts in a function method and never stops, then each request will establish SignalR client connection and keep it open. All this connections drops only after the Azure Function or Azure SignalR service restarts.
 
 ### Possible errors seen from the SignalR's metrics portal
 Client connections rise constantly for a long time in SignalR's metrics portal blade.
@@ -251,14 +252,14 @@ This might caused by improperly using SignalR clients in Azure Function. You mig
 
 ### Troubleshooting Guide
 1. Check if SignalR client used in Azure Function.
-1. Check if the SignalR client **never** stop. 
+1. Check if the SignalR client **never** stop.
 
 ### Solution
-1. Decide whether you design a proper serverless architecture. [Real-time serverless applications with the SignalR Service bindings in Azure Functions](https://azure.microsoft.com/en-us/blog/real-time-serverless-applications-with-the-signalr-service-bindings-in-azure-functions/)
+1. Check if you design a proper serverless architecture. [Real-time serverless applications with the SignalR Service bindings in Azure Functions](https://azure.microsoft.com/en-us/blog/real-time-serverless-applications-with-the-signalr-service-bindings-in-azure-functions/)
 1. Use [Azure Functions Bindings for Azure SignalR Service](https://github.com/Azure/azure-functions-signalrservice-extension) instead of SignalR client.
 
 <a name="server_connection_drop"></a>
-## Server connection drop
+## Server connection drops
 
 When the app server starts, in the background, the Azure SDK starts to initiate server connections to the remote Azure SignalR. As described in [Internals of Azure SignalR Service](internal.md), Azure SignalR routes incoming client traffics to these server connections. Once a server connection is dropped, all the client connections it serves will be closed too.
 
