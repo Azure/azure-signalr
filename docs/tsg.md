@@ -21,9 +21,9 @@ This guidance is to provide useful troubleshooting guide based on the common iss
 4. Access Token must not be longer than 4K. 413 Request Entity Too Large
 
 ### Root cause:
-For HTTP/2, the max length for a single header is **4K**, so if you are using the browser to access Azure service, you will encounter this limitation with `ERR_CONNECTION_` error.
+For HTTP/2, the max length for a single header is **4K**, so if you are using browser to access Azure service, you will encounter this limitation with `ERR_CONNECTION_` error.
 
-For HTTP/1.1, or c# clients, the max URI length is **12K**, the max header length is **16K**.
+For HTTP/1.1, or C# clients, the max URI length is **12K**, the max header length is **16K**.
 
 With SDK version **1.0.6** or higher, `/negotiate` will throw `413 Payload Too Large` when the generated access token is larger than **4K**.
 
@@ -61,7 +61,7 @@ services.MapAzureSignalR(GetType().FullName, options =>
 Take ASP.NET Core one for example (ASP.NET one is similar):
     1. From browser:
 
-        Take chrome, for example, **F12** to open the console window, and switch to **Network** tab. You might need to refresh the page using **F5** to capture the network from the very beginning.
+        Take Chrome as an example, you can use **F12** to open the console window, and switch to **Network** tab. You might need to refresh the page using **F5** to capture the network from the very beginning.
         
         ![Chrome View Network](./images/chrome_network.gif)
     
@@ -81,7 +81,7 @@ Take ASP.NET Core one for example (ASP.NET one is similar):
 3. "An error occurred while making the HTTP request to https://<API endpoint>. This could be due to the fact that the server certificate is not configured properly with HTTP.SYS in the HTTPS case. This could also be caused by a mismatch of the security binding between the client and the server."
         
 ### Root cause:
-Azure Service only supports TLS1.2 for security concerns. With the .NET framework, it is possible that TLS1.2 is not the default protocol. As a result, the server connections to ASRS can not be successfully established.
+Azure Service only supports TLS1.2 for security concerns. With .NET framework, it is possible that TLS1.2 is not the default protocol. As a result, the server connections to ASRS can not be successfully established.
 
 ### Troubleshooting Guide
 1. If this error can be repro-ed locally, uncheck *Just My Code* and throw all CLR exceptions and debug the app server locally to see what exception throws.
@@ -115,11 +115,13 @@ ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 For a SignalR persistent connection, it first `/negotiate` to Azure SignalR service and then establishes the real connection to Azure SignalR service. Our load balancer must ensure that the `/negotiate` request and the following connect request goes to the same instance of the Service otherwise 404 occurs. Our load balancer relies on the *asrs_request_id* query string (added in SDK version 1.0.11) or the *signature* part of the generated `access_token`(if `asrs_request_id` query string does not exist) to keep the session sticky.
 
 ### Troubleshooting Guide
-1. Following [How to view outgoing requests](#view_request) to get the request from the client to the service.
-1. Check the URL of the request when 404 occurs. If the URL is targeting to your web app, and similar to `{your_web_app}/hubs/{hubName}`, check if the client `SkipNegotiation` is `true`. When using Azure SignalR, the client receives redirect URL when it first negotiates with the app server. The client should **NOT** skip negotiation when using Azure SignalR.
-1. For SDK older than 1.0.11, check if there are multiple `access_token` inside the outgoing request. With old SDK which does not contain `asrs_request_id` in the query string, the load balancer of the service is not able to handle duplicate `access_token` correctly, as described in [#346](https://github.com/Azure/azure-signalr/issues/346).
-1. Another 404 can happen when the connect request is handled more than **5** seconds after `/negotiate` is called. Check the timestamp of the client request, and open an issue to us if the request to the service has a very slow response.
-1. If you find the `/negotiate` request and the following connect request carry different access token through the above steps, the most possible reason is using HttpConnectionOptions.AccessTokenProvider in a **WRONG** way:
+There are two kind of 404 errors with different symptoms.
+1. One symptom is that the 404 errors appear from time to time randomly. For this kind of 404, please check:
+    1. Following [How to view outgoing requests](#view_request) to get the request from the client to the service.
+    1. Check the URL of the request when 404 occurs. If the URL is targeting to your web app, and similar to `{your_web_app}/hubs/{hubName}`, check if the client `SkipNegotiation` is `true`. When using Azure SignalR, the client receives redirect URL when it first negotiates with the app server. The client should **NOT** skip negotiation when using Azure SignalR.
+    1. For SDK older than 1.0.11, check if there are multiple `access_token` inside the outgoing request. With old SDK which does not contain `asrs_request_id` in the query string, the load balancer of the service is not able to handle duplicate `access_token` correctly, as described in [#346](https://github.com/Azure/azure-signalr/issues/346).
+    1. Another 404 can happen when the connect request is handled more than **5** seconds after `/negotiate` is called. Check the timestamp of the client request, and open an issue to us if the request to the service has a very slow response.
+    1. If you find the `/negotiate` request and the following connect request carry different access token through the above steps, the most possible reason is using HttpConnectionOptions.AccessTokenProvider in a **WRONG** way:
 
     ```c#
     var url = ...
@@ -133,7 +135,7 @@ For a SignalR persistent connection, it first `/negotiate` to Azure SignalR serv
     var hubConnection = hubConnectionBuilder.build();
     ```
 
-    The above code means the client first sends negotiation request to ASRS together with *access_token1*, then it connects ASRS with another access token *access_token2*. That is why the 404 error occurs.
+    The above code means the client first sends negotiation request to ASRS together with *access_token1*, then it connects ASRS with another access token *access_token2*. That is why 404 error occurs.
 
     The recommended way is to setup a negotiation web app to generate the access token and service url. Please refer to the sample of [build negotiation server](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management/NegotiationServer). The code is simple and correct:
 
@@ -143,22 +145,14 @@ For a SignalR persistent connection, it first `/negotiate` to Azure SignalR serv
     var hubConnection = hubConnectionBuilder.build();
     ```
     
-1. Another possibility for 404 is during the period of Azure SignalR maintenance or upgrade. 
-        
-    The symptom of such 404 is that the 404 can happen for clients not using WebSocket transport type of ASP.NET Core SignalR within a short period, and can be recovered in a short period.
-
-    During service deployment, the running instances are upgraded one by one and this is currently impacting the load balancer routing strategy and route the incoming requests to another instance.
-
-    For ASP.NET Core SignalR, WebSocket connections are not affected after the WebSocket connection between the client and the instance established, connections using SSE or long-polling tend to be affected during the period. For ASP.NET SignalR, all the transports will be impacted. 
-
-    Having [restart the connection](#restart_connection) logic in the client-side can minimize the impact of the issue.
+2. Another kind of 404 is always transient. It happens within a short period and disappears after that period. This kind of 404 can happen to clients using SSE or LongPolling for ASP.NET Core SignalR, and to clients with ASP.NET SignalR. This kind of 404 can happen during the period of Azure SignalR maintenance or upgrade when the connection is disconnected from the service. Having [restart the connection](#restart_connection) logic in the client-side can minimize the impact of the issue.
 
 <a name="401_unauthorized_returned_for_client_requests"></a>
 ## 401 Unauthorized returned for client requests
 ### Root cause
 Currently the default value of JWT token's lifetime is 1 hour.
 
-For ASP.NET Core SignalR, when it is using the WebSocket transport type, it is OK.
+For ASP.NET Core SignalR, when it is using WebSocket transport type, it is OK.
 
 For ASP.NET Core SignalR's other transport type, SSE and long-polling, this means by default the connection can at most persist for 1 hour.
 
