@@ -239,24 +239,22 @@ Client connections can drop under various circumstances:
 
 <a name="client_connection_increases_constantly"></a>
 ## Client connection increases constantly
-It might be caused by improper usage of client connection.
+It might be caused by improper usage of client connection. If someone forgets to stop/dispose SignalR client, the connection remains open. This issue often occurs when someone establishs SignalR client connection in Azure Function method instead of making it a static member to your Function class. You might expect only one client connection is established, but you see client connection count increases constantly in metrics blade, all this connections drop only after the Azure Function or Azure SignalR service restarts. This is because for **each** request, Azure Function creates **one** client connection, if you don't stop client connection in function method, the client keeps the connections to Azure SignalR service.
 
-Usually, this issue is caused by SignalR client remains open. If the SignalR client is created and starts in a function method and never stops, then each request will establish SignalR client connection and keep it open. All this connections drops only after the Azure Function or Azure SignalR service restarts.
-
-### Possible errors seen from the SignalR's metrics portal
-Client connections rise constantly for a long time in SignalR's metrics portal blade.
+### Possible errors seen from the SignalR's metrics blade
+Client connections rise constantly for a long time in Azure SignalR's metrics blade.
 ![client_connection_increasing_constantly](./images/client_connection_increasing_constantly.jpg)
 
 ### Root cause:
-This might caused by improperly using SignalR clients in Azure Function. You might create and start **one** SignalR client connection, and you expect only one client will be open, but actually each request will establish SignalR client connection, and if you forget to stop a connection, the connection count will increase as the incoming requests increase, the connections keep open until you restart Azure Function or Azure SignalR.
+SignalR client connection's `StopAsync` or `DisposeAsync` never be called, the connection keeps open.
 
 ### Troubleshooting Guide
 1. Check if SignalR client used in Azure Function.
 1. Check if the SignalR client **never** stop.
 
 ### Solution
-1. Check if you design a proper serverless architecture. [Real-time serverless applications with the SignalR Service bindings in Azure Functions](https://azure.microsoft.com/en-us/blog/real-time-serverless-applications-with-the-signalr-service-bindings-in-azure-functions/)
-1. Use [Azure Functions Bindings for Azure SignalR Service](https://github.com/Azure/azure-functions-signalrservice-extension) instead of SignalR client.
+1. Check if you design a proper serverless architecture. You can refer to [Real-time serverless applications with the SignalR Service bindings in Azure Functions](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.SignalRService).
+1. You can create SignalR client anywhere and use [Azure Functions Bindings for Azure SignalR Service](https://github.com/Azure/azure-functions-signalrservice-extension) to [negotiate](https://github.com/Azure/azure-functions-signalrservice-extension/blob/dev/samples/simple-chat/csharp/FunctionApp/Functions.cs#L22) the client to Azure SignalR. And you can also utilize the binding to [send messages](https://github.com/Azure/azure-functions-signalrservice-extension/blob/dev/samples/simple-chat/csharp/FunctionApp/Functions.cs#L40). Samples to negotiate client and send messages can be found [here](https://github.com/Azure/azure-functions-signalrservice-extension/tree/dev/samples). Further information can be found [here](https://github.com/Azure/azure-functions-signalrservice-extension).
 
 <a name="server_connection_drop"></a>
 ## Server connection drops
