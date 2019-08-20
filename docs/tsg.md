@@ -239,7 +239,7 @@ Client connections can drop under various circumstances:
 
 <a name="client_connection_increases_constantly"></a>
 ## Client connection increases constantly
-It might be caused by improper usage of client connection. If someone forgets to stop/dispose SignalR client, the connection remains open. This issue often occurs when someone establishs SignalR client connection in Azure Function method instead of making it a static member to your Function class. You might expect only one client connection is established, but you see client connection count increases constantly in metrics blade, all this connections drop only after the Azure Function or Azure SignalR service restarts. This is because for **each** request, Azure Function creates **one** client connection, if you don't stop client connection in function method, the client keeps the connections to Azure SignalR service.
+It might be caused by improper usage of client connection. If someone forgets to stop/dispose SignalR client, the connection remains open. This issue often occurs when someone establishs SignalR client connection in Azure Function method instead of making it a static member to your Function class. You might expect only one client connection is established, but you see client connection count increases constantly in metrics blade, all this connections drop only after the Azure Function or Azure SignalR service restarts. This is because for **each** request, Azure Function creates **one** client connection, if you don't stop client connection in Function method, the client keeps the connections alive to Azure SignalR service.
 
 ### Possible errors seen from the SignalR's metrics blade
 Client connections rise constantly for a long time in Azure SignalR's metrics blade.
