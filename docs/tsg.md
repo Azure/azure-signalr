@@ -116,7 +116,7 @@ For a SignalR persistent connection, it first `/negotiate` to Azure SignalR serv
 
 ### Troubleshooting Guide
 There are two kind of 404 errors with different symptoms.
-1. The symptom for one kind of 404 is that the 404 errors happens **randomly** and **consistently**. For this kind of 404, please check:
+1. The symptom for one kind of 404 is that the 404 errors happens **consistently**. For this kind of 404, please check:
     1. Following [How to view outgoing requests](#view_request) to get the request from the client to the service.
     1. Check the URL of the request when 404 occurs. If the URL is targeting to your web app, and similar to `{your_web_app}/hubs/{hubName}`, check if the client `SkipNegotiation` is `true`. When using Azure SignalR, the client receives redirect URL when it first negotiates with the app server. The client should **NOT** skip negotiation when using Azure SignalR.
     1. For SDK older than 1.0.11, check if there are multiple `access_token` inside the outgoing request. With old SDK which does not contain `asrs_request_id` in the query string, the load balancer of the service is not able to handle duplicate `access_token` correctly, as described in [#346](https://github.com/Azure/azure-signalr/issues/346).
