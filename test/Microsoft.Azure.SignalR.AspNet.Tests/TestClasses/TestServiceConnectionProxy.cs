@@ -7,6 +7,7 @@ using System.IO.Pipelines;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
