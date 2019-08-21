@@ -190,6 +190,18 @@ Server side logging for ASP.NET Core SignalR integrates with the `ILogger` based
             logging.AddDebug();
         })
 ```
+Logger categories Azure SignalR always starts with `Microsoft.Azure.SignalR`. To enable detailed logs from Azure SignalR, configure the precedding prefixes to `Debug` level in your appsettings.json file by adding the following items to the `LogLevel` sub-section in `Logging`:
+```JSON
+{
+    "Logging": {
+        "LogLevel": {
+            ...
+            "Microsoft.Azure.SignalR": "Debug",
+            ...
+        }
+    }
+}
+```
 
 #### Enable server side traces for ASP.NET SignalR
 When using SDK version >= `1.0.0`, you can enable traces by adding the following to `web.config`: ([Details](https://github.com/Azure/azure-signalr/issues/452#issuecomment-478858102))
