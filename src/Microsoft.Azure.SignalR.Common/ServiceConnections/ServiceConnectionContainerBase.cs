@@ -71,11 +71,11 @@ namespace Microsoft.Azure.SignalR
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
             int minConnectionCount, HubServiceEndpoint endpoint,
-            IReadOnlyList<IServiceConnection> initialConnections = null, ILogger logger = null)
+            IReadOnlyList<IServiceConnection> initialConnections = null, ILogger logger = null, AckHandler ackHandler = null)
         {
             ServiceConnectionFactory = serviceConnectionFactory;
             Endpoint = endpoint;
-            _ackHandler = new AckHandler();
+            _ackHandler = ackHandler ?? new AckHandler();
 
             // make sure it is after _endpoint is set
             // init initial connections 
@@ -134,14 +134,7 @@ namespace Microsoft.Azure.SignalR
 
         public void HandleAck(AckMessage ackMessage)
         {
-            if (ackMessage.Status == AckStatus.Ok)
-            {
-                _ackHandler.TriggerAck(ackMessage.AckId, true);
-            }
-            else
-            {
-                _ackHandler.TriggerAck(ackMessage.AckId, false);
-            }
+            _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status);
         }
 
         /// <summary>
