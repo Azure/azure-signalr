@@ -199,7 +199,7 @@ namespace Microsoft.Azure.SignalR
             if (connection.AbortOnClose)
             {
                 // Inform the Service that we will remove the client because SignalR told us it is disconnected.
-                var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, errorMessage: "Web application error.");
+                var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, errorMessage: "Web application task completed, close the client.");
                 await WriteAsync(serviceMessage);
                 Log.CloseConnection(Logger, connection.ConnectionId);
             }
