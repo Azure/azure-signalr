@@ -5,7 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR.AspNet.Tests
+namespace Microsoft.Azure.SignalR.Tests.Common
 {
     internal sealed class TestServiceMessageHandler : IServiceMessageHandler
     {
