@@ -36,9 +36,10 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             });
         }
 
-        protected override Task<bool> HandshakeAsync()
+        protected override async Task<bool> HandshakeAsync()
         {
-            return Task.FromResult(_status == ServiceConnectionStatus.Connected);
+            await Task.Yield();
+            return _status == ServiceConnectionStatus.Connected;
         }
 
         protected override Task DisposeConnection()
