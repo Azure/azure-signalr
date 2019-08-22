@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR.AspNet.Tests
+namespace Microsoft.Azure.SignalR.Tests.Common
 {
     internal sealed class TestServiceConnectionContainer : IServiceConnectionContainer, IServiceConnection
     {
@@ -33,6 +33,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         public Task StartAsync()
         {
+            ConnectionStatusChanged?.Invoke(new StatusChange(ServiceConnectionStatus.Connecting, Status));
             return Task.CompletedTask;
         }
 

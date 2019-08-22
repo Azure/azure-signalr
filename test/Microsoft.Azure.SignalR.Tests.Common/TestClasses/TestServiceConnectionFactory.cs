@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Microsoft.Azure.SignalR.AspNet.Tests
+namespace Microsoft.Azure.SignalR.Tests.Common
 {
     internal sealed class TestServiceConnectionFactory : IServiceConnectionFactory
     {
