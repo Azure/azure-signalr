@@ -8,6 +8,7 @@ using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
@@ -495,6 +496,30 @@ namespace Microsoft.Azure.SignalR.Tests
             await disconnectTask.OrTimeout();
             Assert.Single(proxy.ClientConnections);
             Assert.Equal(connectionId2, proxy.ClientConnections.FirstOrDefault().Key);
+        }
+
+        /// <summary>
+        /// Test if there's a deadlock in server connection initialization
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task ServiceConnectionInitializationDeadlockTest()
+        {
+            SynchronizationContext.SetSynchronizationContext(null);
+            var conn = new Common.TestServiceConnection();
+            var initTask = conn.StartAsync();
+            await conn.ConnectionInitializedTask;
+            await conn.StopAsync();
+            var count = 0;
+            while (true)
+            {
+                Thread.Sleep(100);
+                if (initTask.IsCompleted)
+                {
+                    break;
+                }
+                Assert.NotEqual(10, count++);
+            }
         }
 
         private static void AssertTimeout(params Task[] task)
