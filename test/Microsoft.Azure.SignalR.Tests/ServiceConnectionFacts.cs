@@ -505,20 +505,28 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task ServiceConnectionInitializationDeadlockTest()
         {
+            var context = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(null);
             var conn = new Common.TestServiceConnection();
             var initTask = conn.StartAsync();
             await conn.ConnectionInitializedTask;
             await conn.StopAsync();
             var count = 0;
-            while (true)
+            try
             {
-                Thread.Sleep(100);
-                if (initTask.IsCompleted)
+                while (true)
                 {
-                    break;
+                    Thread.Sleep(100);
+                    if (initTask.IsCompleted)
+                    {
+                        break;
+                    }
+                    Assert.NotEqual(10, count++);
                 }
-                Assert.NotEqual(10, count++);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
             }
         }
 
