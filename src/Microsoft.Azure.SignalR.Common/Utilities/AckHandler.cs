@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR
         private readonly TimeSpan _ackTtl;
         private int _currentId = 0;
 
-        public AckHandler(int ackIntervalInMilliseconds = 5000, int ackTtlInMilliseconds = 10000)
+        public AckHandler(int ackIntervalInMilliseconds = 3000, int ackTtlInMilliseconds = 10000)
         {
             _ackInterval = TimeSpan.FromMilliseconds(ackIntervalInMilliseconds);
             _ackTtl = TimeSpan.FromMilliseconds(ackTtlInMilliseconds);
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public Task<bool> CreateAck(out int id, CancellationToken cancellationToken = default)
+        public Task<AckStatus> CreateAck(out int id, CancellationToken cancellationToken = default)
         {
             id = Interlocked.Increment(ref _currentId);
             var tcs = _acks.GetOrAdd(id, _ => new AckInfo(_ackTtl)).Tcs;
@@ -53,18 +53,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (_acks.TryRemove(id, out var ack))
             {
-                switch (ackStatus)
-                {
-                    case AckStatus.Ok:
-                        ack.Tcs.TrySetResult(true);
-                        break;
-                    case AckStatus.NotFound:
-                        ack.Tcs.TrySetResult(false);
-                        break;
-                    case AckStatus.Timeout:
-                        ack.Tcs.TrySetCanceled();
-                        break;
-                }
+                ack.Tcs.TrySetResult(ackStatus);
             }
         }
 
@@ -78,7 +67,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     if (_acks.TryRemove(pair.Key, out var ack))
                     {
-                        ack.Tcs.TrySetCanceled();
+                        ack.Tcs.TrySetResult(AckStatus.Timeout);
                     }
                 }
             }
@@ -99,14 +88,14 @@ namespace Microsoft.Azure.SignalR
 
         private class AckInfo
         {
-            public TaskCompletionSource<bool> Tcs { get; private set; }
+            public TaskCompletionSource<AckStatus> Tcs { get; private set; }
 
             public DateTime Expired { get; private set; }
 
             public AckInfo(TimeSpan ttl)
             {
                 Expired = DateTime.UtcNow.Add(ttl);
-                Tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                Tcs = new TaskCompletionSource<AckStatus>(TaskCreationOptions.RunContinuationsAsynchronously);
             }
         }
     }

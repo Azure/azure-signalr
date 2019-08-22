@@ -8,6 +8,7 @@ using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
@@ -552,7 +553,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 c.Value.HandleAck(new AckMessage(1, (int)AckStatus.Timeout));
             }
-            await Assert.ThrowsAnyAsync<TaskCanceledException>(async() => await task.OrTimeout());
+            await Assert.ThrowsAnyAsync<TimeoutException>(async() => await task.OrTimeout());
         }
 
         [Fact]
@@ -601,7 +602,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 c.Value.HandleAck(new AckMessage(1, (int)AckStatus.Timeout));
             }
-            await Assert.ThrowsAnyAsync<TaskCanceledException>(async () => await task).OrTimeout();
+            await Assert.ThrowsAnyAsync<TimeoutException>(async () => await task).OrTimeout();
         }
 
         [Fact]
@@ -649,6 +650,55 @@ namespace Microsoft.Azure.SignalR.Tests
             containers.First().Value.HandleAck(new AckMessage(1, (int)AckStatus.Ok));
             var result = await task.OrTimeout();
             Assert.True(result);
+        }
+
+        [Fact]
+        public async Task TestTwoEndpointsWithCancellationToken()
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1),
+                new ServiceEndpoint(ConnectionString2, name: "online"));
+
+            var router = new TestEndpointRouter();
+            var writeTcs = new TaskCompletionSource<object>();
+            TestBaseServiceConnectionContainer innerContainer = null;
+            var containers = new Dictionary<ServiceEndpoint, TestBaseServiceConnectionContainer>();
+            var container = new MultiEndpointServiceConnectionContainer("hub", e =>
+            {
+                if (string.IsNullOrEmpty(e.Name))
+                {
+                    return containers[e] = new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                        new TestServiceConnection(writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(writeAsyncTcs: writeTcs),
+                        new TestServiceConnection(writeAsyncTcs: writeTcs),
+                    }, e, new AckHandler(100, 200));
+                }
+                return containers[e] = new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                    new TestServiceConnection(writeAsyncTcs: writeTcs),
+                    new TestServiceConnection(writeAsyncTcs: writeTcs),
+                    new TestServiceConnection(writeAsyncTcs: writeTcs),
+                    new TestServiceConnection(writeAsyncTcs: writeTcs),
+                    new TestServiceConnection(writeAsyncTcs: writeTcs),
+                    new TestServiceConnection(writeAsyncTcs: writeTcs),
+                    new TestServiceConnection(writeAsyncTcs: writeTcs),
+                }, e, new AckHandler(100, 200));
+            }, sem, router, null);
+
+            // All the connections started
+            _ = container.StartAsync();
+            await container.ConnectionInitializedTask;
+
+            var task = container.WriteAckableMessageAsync(DefaultGroupMessage, new CancellationToken(true));
+            await writeTcs.Task.OrTimeout();
+            foreach (var c in containers)
+            {
+                c.Value.HandleAck(new AckMessage(1, (int)AckStatus.Timeout));
+            }
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task).OrTimeout();
         }
 
         private class NotExistEndpointRouter : EndpointRouterDecorator

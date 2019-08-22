@@ -251,7 +251,19 @@ namespace Microsoft.Azure.SignalR
 
             await WriteToRandomAvailableConnection(serviceMessage);
 
-            return await task;
+            var status = await task;
+            switch (status)
+            {
+                case AckStatus.Ok:
+                    return true;
+                case AckStatus.NotFound:
+                    return false;
+                case AckStatus.Timeout:
+                    throw new TimeoutException($"Ack-able message {serviceMessage.GetType()} waiting for ack timed out.");
+                default:
+                    // should not be hit.
+                    return false;
+            }
         }
 
         // Ready for scalable containers
