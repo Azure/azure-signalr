@@ -11,11 +11,15 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly ConcurrentDictionary<int, AckInfo> _acks = new ConcurrentDictionary<int, AckInfo>();
         private readonly Timer _timer;
-        private readonly TimeSpan _ackInterval = TimeSpan.FromSeconds(5);
+        private readonly TimeSpan _ackInterval;
+        private readonly TimeSpan _ackTtl;
         private int _currentId = 0;
 
-        public AckHandler()
+        public AckHandler(int ackIntervalInMilliseconds = 3000, int ackTtlInMilliseconds = 10000)
         {
+            _ackInterval = TimeSpan.FromMilliseconds(ackIntervalInMilliseconds);
+            _ackTtl = TimeSpan.FromMilliseconds(ackTtlInMilliseconds);
+
             bool restoreFlow = false;
             try
             {
@@ -37,19 +41,19 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public Task<bool> CreateAck(out int id, CancellationToken cancellationToken = default)
+        public Task<AckStatus> CreateAck(out int id, CancellationToken cancellationToken = default)
         {
             id = Interlocked.Increment(ref _currentId);
-            var tcs = _acks.GetOrAdd(id, _ => new AckInfo()).Tcs;
+            var tcs = _acks.GetOrAdd(id, _ => new AckInfo(_ackTtl)).Tcs;
             cancellationToken.Register(() => tcs.TrySetCanceled());
             return tcs.Task;
         }
 
-        public void TriggerAck(int id, bool isSuccess)
+        public void TriggerAck(int id, AckStatus ackStatus)
         {
             if (_acks.TryRemove(id, out var ack))
             {
-                ack.Tcs.TrySetResult(isSuccess);
+                ack.Tcs.TrySetResult(ackStatus);
             }
         }
 
@@ -63,8 +67,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     if (_acks.TryRemove(pair.Key, out var ack))
                     {
-                        // If acks not coming back in time, do not throw an exception
-                        ack.Tcs.TrySetResult(false);
+                        ack.Tcs.TrySetResult(AckStatus.Timeout);
                     }
                 }
             }
@@ -85,16 +88,14 @@ namespace Microsoft.Azure.SignalR
 
         private class AckInfo
         {
-            private readonly TimeSpan _ttl = TimeSpan.FromSeconds(10);
-
-            public TaskCompletionSource<bool> Tcs { get; private set; }
+            public TaskCompletionSource<AckStatus> Tcs { get; private set; }
 
             public DateTime Expired { get; private set; }
 
-            public AckInfo()
+            public AckInfo(TimeSpan ttl)
             {
-                Expired = DateTime.UtcNow.Add(_ttl);
-                Tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                Expired = DateTime.UtcNow.Add(ttl);
+                Tcs = new TaskCompletionSource<AckStatus>(TaskCreationOptions.RunContinuationsAsynchronously);
             }
         }
     }

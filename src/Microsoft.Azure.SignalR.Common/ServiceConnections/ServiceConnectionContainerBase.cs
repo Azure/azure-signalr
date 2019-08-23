@@ -71,11 +71,11 @@ namespace Microsoft.Azure.SignalR
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
             int minConnectionCount, HubServiceEndpoint endpoint,
-            IReadOnlyList<IServiceConnection> initialConnections = null, ILogger logger = null)
+            IReadOnlyList<IServiceConnection> initialConnections = null, ILogger logger = null, AckHandler ackHandler = null)
         {
             ServiceConnectionFactory = serviceConnectionFactory;
             Endpoint = endpoint;
-            _ackHandler = new AckHandler();
+            _ackHandler = ackHandler ?? new AckHandler();
 
             // make sure it is after _endpoint is set
             // init initial connections 
@@ -134,14 +134,7 @@ namespace Microsoft.Azure.SignalR
 
         public void HandleAck(AckMessage ackMessage)
         {
-            if (ackMessage.Status == AckStatus.Ok)
-            {
-                _ackHandler.TriggerAck(ackMessage.AckId, true);
-            }
-            else
-            {
-                _ackHandler.TriggerAck(ackMessage.AckId, false);
-            }
+            _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status);
         }
 
         /// <summary>
@@ -258,7 +251,19 @@ namespace Microsoft.Azure.SignalR
 
             await WriteToRandomAvailableConnection(serviceMessage);
 
-            return await task;
+            var status = await task;
+            switch (status)
+            {
+                case AckStatus.Ok:
+                    return true;
+                case AckStatus.NotFound:
+                    return false;
+                case AckStatus.Timeout:
+                    throw new TimeoutException($"Ack-able message {serviceMessage.GetType()} waiting for ack timed out.");
+                default:
+                    // should not be hit.
+                    return false;
+            }
         }
 
         // Ready for scalable containers
