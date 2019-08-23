@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR.AspNet.Tests
+namespace Microsoft.Azure.SignalR.Tests.Common
 {
     internal sealed class TestServiceConnection : ServiceConnectionBase
     {
