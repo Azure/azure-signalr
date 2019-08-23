@@ -26,6 +26,11 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public string ApplicationName { get; set; }
 
+        /// <summary>
+        /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 1.
+        /// </summary>
+        public int ConnectionCount { get; set; } = 1;
+
         internal void ValidateOptions()
         {
             ValidateConnectionString();
