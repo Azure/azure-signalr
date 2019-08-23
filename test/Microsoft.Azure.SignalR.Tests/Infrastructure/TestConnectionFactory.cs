@@ -12,11 +12,11 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     internal class TestConnectionFactory : IConnectionFactory
     {
-        private readonly Func<TestConnection, Task> _connectCallback;
+        private readonly Func<TestConnectionContext, Task> _connectCallback;
 
         public List<DateTime> Times { get; } = new List<DateTime>();
 
-        public TestConnectionFactory(Func<TestConnection, Task> connectCallback)
+        public TestConnectionFactory(Func<TestConnectionContext, Task> connectCallback)
         {
             _connectCallback = connectCallback;
         }
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             Times.Add(DateTime.Now);
 
-            var connection = new TestConnection
+            var connection = new TestConnectionContext
             {
                 ConnectionId = connectionId,
                 Target = target
@@ -47,24 +47,24 @@ namespace Microsoft.Azure.SignalR.Tests
             return Task.CompletedTask;
         }
 
-        private async Task HandshakeAsync(TestConnection connection)
+        private async Task HandshakeAsync(TestConnectionContext connectionContext)
         {
-            await DoHandshakeAsync(connection);
+            await DoHandshakeAsync(connectionContext);
         }
 
         /// <summary>
         /// Allow sub-class to override the handshake behavior
         /// </summary>
-        protected virtual async Task DoHandshakeAsync(TestConnection connection)
+        protected virtual async Task DoHandshakeAsync(TestConnectionContext connectionContext)
         {
-            await HandshakeUtils.ReceiveHandshakeRequestAsync(connection.Application.Input);
-            await HandshakeUtils.SendHandshakeResponseAsync(connection.Application.Output);
+            await HandshakeUtils.ReceiveHandshakeRequestAsync(connectionContext.Application.Input);
+            await HandshakeUtils.SendHandshakeResponseAsync(connectionContext.Application.Output);
         }
 
         /// <summary>
         /// Allow sub-class to override. Do something after connect being created.
         /// </summary>
-        protected virtual Task AfterConnectedAsync(TestConnection connection)
+        protected virtual Task AfterConnectedAsync(TestConnectionContext connectionContext)
         {
             return Task.CompletedTask;
         }

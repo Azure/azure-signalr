@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http.Features;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    public class TestConnection : ConnectionContext
+    public class TestConnectionContext : ConnectionContext
     {
         public override string ConnectionId { get; set; }
 
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public string Target { get; set; }
 
-        public TestConnection()
+        public TestConnectionContext()
         {
             Features = new FeatureCollection();
             Items = new ConcurrentDictionary<object, object>();

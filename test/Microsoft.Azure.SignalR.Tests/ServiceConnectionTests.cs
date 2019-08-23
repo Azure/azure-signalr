@@ -33,10 +33,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
                 var protocol = new ServiceProtocol();
-                TestConnection transportConnection = null;
+                TestConnectionContext transportConnectionContext = null;
                 var connectionFactory = new TestConnectionFactory(conn =>
                 {
-                    transportConnection = conn;
+                    transportConnectionContext = conn;
                     return Task.CompletedTask;
                 });
                 var services = new ServiceCollection();
@@ -53,12 +53,12 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
                 var clientConnectionId = Guid.NewGuid().ToString();
 
-                await transportConnection.Application.Output.WriteAsync(
+                await transportConnectionContext.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
 
                 var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
 
-                await transportConnection.Application.Output.WriteAsync(
+                await transportConnectionContext.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new CloseConnectionMessage(clientConnectionId)));
 
                 // Normal end with close message
@@ -67,13 +67,13 @@ namespace Microsoft.Azure.SignalR.Tests
                 // another connection comes in
                 clientConnectionId = Guid.NewGuid().ToString();
 
-                await transportConnection.Application.Output.WriteAsync(
+                await transportConnectionContext.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
 
                 clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
 
                 // complete reading to end the connection
-                transportConnection.Application.Output.Complete();
+                transportConnectionContext.Application.Output.Complete();
 
                 await connectionTask.OrTimeout();
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
@@ -96,10 +96,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
                 var protocol = new ServiceProtocol();
-                TestConnection transportConnection = null;
+                TestConnectionContext transportConnectionContext = null;
                 var connectionFactory = new TestConnectionFactory(conn =>
                 {
-                    transportConnection = conn;
+                    transportConnectionContext = conn;
                     return Task.CompletedTask;
                 });
                 var services = new ServiceCollection();
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
                 var clientConnectionId = Guid.NewGuid().ToString();
 
-                await transportConnection.Application.Output.WriteAsync(
+                await transportConnectionContext.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
 
                 var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
 
                 // complete reading to end the connection
-                transportConnection.Application.Output.Complete();
+                transportConnectionContext.Application.Output.Complete();
 
                 await connectionTask.OrTimeout();
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
@@ -157,10 +157,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 var ccm = new TestClientConnectionManager();
                 var ccf = new ClientConnectionFactory();
                 var protocol = new ServiceProtocol();
-                TestConnection transportConnection = null;
+                TestConnectionContext transportConnectionContext = null;
                 var connectionFactory = new TestConnectionFactory(conn =>
                 {
-                    transportConnection = conn;
+                    transportConnectionContext = conn;
                     return Task.CompletedTask;
                 });
                 var services = new ServiceCollection();
@@ -179,13 +179,13 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
                 var clientConnectionId = Guid.NewGuid().ToString();
 
-                await transportConnection.Application.Output.WriteAsync(
+                await transportConnectionContext.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
 
                 var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
 
                 // complete reading to end the connection
-                transportConnection.Application.Output.Complete();
+                transportConnectionContext.Application.Output.Complete();
 
                 // 5 seconds for application task to timeout
                 await connectionTask.OrTimeout(10000);

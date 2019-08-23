@@ -30,8 +30,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public ConnectionDelegate ConnectionDelegateCallback { get; }
 
-        public ConcurrentDictionary<string, TestConnection> ConnectionContexts { get; } =
-            new ConcurrentDictionary<string, TestConnection>();
+        public ConcurrentDictionary<string, TestConnectionContext> ConnectionContexts { get; } =
+            new ConcurrentDictionary<string, TestConnectionContext>();
 
         public ConcurrentDictionary<string, ServiceConnection> ServiceConnections { get; } = new ConcurrentDictionary<string, ServiceConnection>();
 
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private int _connectedServerConnectionCount;
 
         public ServiceConnectionProxy(ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null,
-            Func<Func<TestConnection, Task>, TestConnectionFactory> connectionFactoryCallback = null, int connectionCount = 1)
+            Func<Func<TestConnectionContext, Task>, TestConnectionFactory> connectionFactoryCallback = null, int connectionCount = 1)
         {
             ConnectionFactory = connectionFactoryCallback?.Invoke(ConnectionFactoryCallbackAsync) ?? new TestConnectionFactory(ConnectionFactoryCallbackAsync);
             ClientConnectionManager = new ClientConnectionManager();
@@ -74,26 +74,26 @@ namespace Microsoft.Azure.SignalR.Tests
             return connection;
         }
 
-        private Task ConnectionFactoryCallbackAsync(TestConnection connection)
+        private Task ConnectionFactoryCallbackAsync(TestConnectionContext connectionContext)
         {
-            ConnectionContexts.TryAdd(connection.ConnectionId, connection);
+            ConnectionContexts.TryAdd(connectionContext.ConnectionId, connectionContext);
             // Start a process for each server connection
-            _ = StartProcessApplicationMessagesAsync(connection);
+            _ = StartProcessApplicationMessagesAsync(connectionContext);
             return Task.CompletedTask;
         }
 
-        private async Task StartProcessApplicationMessagesAsync(TestConnection connection)
+        private async Task StartProcessApplicationMessagesAsync(TestConnectionContext connectionContext)
         {
-            await ServiceConnections[connection.ConnectionId].ConnectionInitializedTask;
+            await ServiceConnections[connectionContext.ConnectionId].ConnectionInitializedTask;
 
-            if (ServiceConnections[connection.ConnectionId].Status == ServiceConnectionStatus.Connected)
+            if (ServiceConnections[connectionContext.ConnectionId].Status == ServiceConnectionStatus.Connected)
             {
                 Interlocked.Increment(ref _connectedServerConnectionCount);
                 if (_waitForServerConnection.TryGetValue(_connectedServerConnectionCount, out var tcs))
                 {
-                    tcs.TrySetResult(connection);
+                    tcs.TrySetResult(connectionContext);
                 }
-                await ProcessApplicationMessagesAsync(connection.Application.Input);
+                await ProcessApplicationMessagesAsync(connectionContext.Application.Input);
             } 
         }
 
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.SignalR.Tests
         /// <summary>
         /// Write a message to server connection.
         /// </summary>
-        public async Task WriteMessageAsync(TestConnection context, ServiceMessage message)
+        public async Task WriteMessageAsync(TestConnectionContext context, ServiceMessage message)
         {
             SharedServiceProtocol.WriteMessage(message, context.Application.Output);
             await context.Application.Output.FlushAsync();

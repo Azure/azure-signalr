@@ -404,7 +404,7 @@ namespace Microsoft.Azure.SignalR.Tests
             });
 
             var onDemandConnection = await serverTask2.OrTimeout();
-            Assert.Equal(target, ((TestConnection)onDemandConnection).Target);
+            Assert.Equal(target, ((TestConnectionContext)onDemandConnection).Target);
 
             // Dispose the on-demand connection. Assert it won't reconnection
             var serverTask3 = proxy.WaitForServerConnectionAsync(3);
@@ -438,7 +438,7 @@ namespace Microsoft.Azure.SignalR.Tests
             });
 
             var onDemandConnection = await serverTask2.OrTimeout();
-            Assert.Equal(target, ((TestConnection)onDemandConnection).Target);
+            Assert.Equal(target, ((TestConnectionContext)onDemandConnection).Target);
 
             // Try to dispose default connection
             var serverTask3 = proxy.WaitForServerConnectionAsync(3);
@@ -537,14 +537,14 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private class TestConnectionFactoryWithHandshakeError : TestConnectionFactory
         {
-            public TestConnectionFactoryWithHandshakeError(Func<TestConnection, Task> callback) : base(callback)
+            public TestConnectionFactoryWithHandshakeError(Func<TestConnectionContext, Task> callback) : base(callback)
             {
             }
 
-            protected override async Task DoHandshakeAsync(TestConnection connection)
+            protected override async Task DoHandshakeAsync(TestConnectionContext connectionContext)
             {
-                await HandshakeUtils.ReceiveHandshakeRequestAsync(connection.Application.Input);
-                await HandshakeUtils.SendHandshakeResponseAsync(connection.Application.Output,
+                await HandshakeUtils.ReceiveHandshakeRequestAsync(connectionContext.Application.Input);
+                await HandshakeUtils.SendHandshakeResponseAsync(connectionContext.Application.Output,
                     new HandshakeResponseMessage("Handshake error."));
             }
         }
@@ -555,11 +555,11 @@ namespace Microsoft.Azure.SignalR.Tests
 
             private int _connectCount;
 
-            public TestConnectionFactoryWithConnectivityFailure(Func<TestConnection, Task> callback) : base(callback)
+            public TestConnectionFactoryWithConnectivityFailure(Func<TestConnectionContext, Task> callback) : base(callback)
             {
             }
 
-            protected override Task AfterConnectedAsync(TestConnection connection)
+            protected override Task AfterConnectedAsync(TestConnectionContext connectionContext)
             {
                 // Throw exception to test reconnect
                 if (_connectCount < MaxErrorCount)
@@ -578,18 +578,18 @@ namespace Microsoft.Azure.SignalR.Tests
 
             private int _connectCount;
 
-            public TestConnectionFactoryWithIntermittentInvalidHandshakeResponseMessage(Func<TestConnection, Task> callback) : base(callback)
+            public TestConnectionFactoryWithIntermittentInvalidHandshakeResponseMessage(Func<TestConnectionContext, Task> callback) : base(callback)
             {
             }
 
-            protected override async Task AfterConnectedAsync(TestConnection connection)
+            protected override async Task AfterConnectedAsync(TestConnectionContext connectionContext)
             {
                 // Throw exception to test reconnect
                 if (_connectCount < MaxErrorCount)
                 {
                     _connectCount++;
-                    Protocol.WriteMessage(PingMessage.Instance, connection.Application.Output);
-                    await connection.Application.Output.FlushAsync();
+                    Protocol.WriteMessage(PingMessage.Instance, connectionContext.Application.Output);
+                    await connectionContext.Application.Output.FlushAsync();
                 }
             }
         }
