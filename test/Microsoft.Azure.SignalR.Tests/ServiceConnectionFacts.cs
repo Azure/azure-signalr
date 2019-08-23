@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Primitives;
 using Xunit;
 
@@ -139,8 +140,8 @@ namespace Microsoft.Azure.SignalR.Tests
             await proxy.WriteMessageAsync(new OpenConnectionMessage("1", null));
 
             var connection = await task.OrTimeout();
-            CloseConnectionMessage message = (CloseConnectionMessage) await closeMessageTask.OrTimeout();
-            
+            CloseConnectionMessage message = (CloseConnectionMessage)await closeMessageTask.OrTimeout();
+
             Assert.Equal(message.ConnectionId, connection.ConnectionId);
 
             proxy.Stop();
@@ -181,8 +182,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var dataMessageTask = proxy.WaitForApplicationMessageAsync(typeof(ConnectionDataMessage));
             await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes("Hello World"));
-            ConnectionDataMessage message = (ConnectionDataMessage) await dataMessageTask.OrTimeout();
-            
+            ConnectionDataMessage message = (ConnectionDataMessage)await dataMessageTask.OrTimeout();
+
             Assert.Equal(message.ConnectionId, connection.ConnectionId);
             Assert.Equal("Hello World", Encoding.ASCII.GetString(message.Payload.ToArray()));
 
@@ -208,7 +209,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var dataMessageTask = proxy.WaitForApplicationMessageAsync(typeof(ConnectionDataMessage));
             await connection.Transport.Output.WriteAsync(Encoding.ASCII.GetBytes(outputMessage));
-            ConnectionDataMessage message = (ConnectionDataMessage) await dataMessageTask.OrTimeout();
+            ConnectionDataMessage message = (ConnectionDataMessage)await dataMessageTask.OrTimeout();
 
             Assert.Equal(message.ConnectionId, connection.ConnectionId);
             Assert.Equal(outputMessage, Encoding.ASCII.GetString(message.Payload.ToArray()));
@@ -241,7 +242,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // Check server PingMessage will send after reveive service PingMessage
             await pingMessageTask.OrTimeout();
-            
+
             proxy.Stop();
         }
 
@@ -290,7 +291,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var list = proxy.ConnectionFactory.Times;
             // no delay before first retry
             Assert.True(TimeSpan.FromSeconds(0.9) > list[1] - list[0]);
-            
+
             Assert.True(TimeSpan.FromSeconds(0.9) < list[2] - list[1]);
             Assert.True(TimeSpan.FromSeconds(2.1) > list[2] - list[1]);
             Assert.True(TimeSpan.FromSeconds(1.9) < list[3] - list[2]);
@@ -400,7 +401,7 @@ namespace Microsoft.Azure.SignalR.Tests
             string target = "Target";
             await proxy.WriteMessageAsync(new PingMessage()
             {
-                Messages = new[] {"target", target}
+                Messages = new[] { "target", target }
             });
 
             var onDemandConnection = await serverTask2.OrTimeout();
@@ -499,36 +500,28 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         /// <summary>
-        /// Test if there's a deadlock in server connection initialization
+        /// Test if there's a deadlock in server connection initialization. _serviceConnectionStartTcs in ServiceConnectionBase should be inited with option TaskCreationOptions.RunContinuationsAsynchronously
         /// </summary>
         /// <returns></returns>
-        //[Fact]
-        //public async Task ServiceConnectionInitializationDeadlockTest()
-        //{
-        //    var context = SynchronizationContext.Current;
-        //    SynchronizationContext.SetSynchronizationContext(null);
-        //    var conn = new Common.TestServiceConnection();
-        //    var initTask = conn.StartAsync();
-        //    await conn.ConnectionInitializedTask;
-        //    await conn.StopAsync();
-        //    var count = 0;
-        //    try
-        //    {
-        //        while (true)
-        //        {
-        //            Thread.Sleep(100);
-        //            if (initTask.IsCompleted)
-        //            {
-        //                break;
-        //            }
-        //            Assert.NotEqual(10, count++);
-        //        }
-        //    }
-        //    finally
-        //    {
-        //        SynchronizationContext.SetSynchronizationContext(context);
-        //    }
-        //}
+        [Fact]
+        public async Task ServiceConnectionInitializationDeadlockTest()
+        {
+            var context = SynchronizationContext.Current;
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(null);
+                var conn = new TestServiceConnection();
+                var initTask = conn.StartAsync();
+                await conn.ConnectionInitializedTask;
+                conn.Stop();
+                var completedTask = Task.WhenAny(initTask, Task.Delay(TimeSpan.FromSeconds(1))).Result;
+                Assert.Equal(initTask, completedTask);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+            }
+        }
 
         private static void AssertTimeout(params Task[] task)
         {
