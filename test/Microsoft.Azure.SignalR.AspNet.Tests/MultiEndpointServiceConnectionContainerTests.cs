@@ -422,6 +422,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             _ = container.StartAsync();
 
+            await container.ConnectionInitializedTask;
+
             await container.WriteAsync(DefaultGroupMessage);
 
             var endpoints = container.GetOnlineEndpoints().ToArray();
