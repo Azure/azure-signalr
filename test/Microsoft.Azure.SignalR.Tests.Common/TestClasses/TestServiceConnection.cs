@@ -71,5 +71,10 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
             return Task.CompletedTask;
         }
+
+        public void Stop()
+        {
+            ConnectionContext?.Transport.Input.CancelPendingRead();
+        }
     }
 }
