@@ -499,30 +499,6 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(connectionId2, proxy.ClientConnections.FirstOrDefault().Key);
         }
 
-        /// <summary>
-        /// Test if there's a deadlock in server connection initialization. _serviceConnectionStartTcs in ServiceConnectionBase should be inited with option TaskCreationOptions.RunContinuationsAsynchronously
-        /// </summary>
-        /// <returns></returns>
-        [Fact]
-        public async Task ServiceConnectionInitializationDeadlockTest()
-        {
-            var context = SynchronizationContext.Current;
-            try
-            {
-                SynchronizationContext.SetSynchronizationContext(null);
-                var conn = new TestServiceConnection();
-                var initTask = conn.StartAsync();
-                await conn.ConnectionInitializedTask;
-                conn.Stop();
-                var completedTask = Task.WhenAny(initTask, Task.Delay(TimeSpan.FromSeconds(1))).Result;
-                Assert.Equal(initTask, completedTask);
-            }
-            finally
-            {
-                SynchronizationContext.SetSynchronizationContext(context);
-            }
-        }
-
         private static void AssertTimeout(params Task[] task)
         {
             Assert.False(Task.WaitAll(task, DefaultTimeoutInMilliSeconds));
