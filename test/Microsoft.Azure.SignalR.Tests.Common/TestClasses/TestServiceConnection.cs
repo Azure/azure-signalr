@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace Microsoft.Azure.SignalR.AspNet.Tests
+namespace Microsoft.Azure.SignalR.Tests.Common
 {
     internal sealed class TestServiceConnection : ServiceConnectionBase
     {
@@ -36,9 +36,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             });
         }
 
-        protected override Task<bool> HandshakeAsync()
+        protected override async Task<bool> HandshakeAsync()
         {
-            return Task.FromResult(_status == ServiceConnectionStatus.Connected);
+            await Task.Yield();
+            return _status == ServiceConnectionStatus.Connected;
         }
 
         protected override Task DisposeConnection()
@@ -69,6 +70,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             }
 
             return Task.CompletedTask;
+        }
+
+        public void Stop()
+        {
+            ConnectionContext?.Transport.Input.CancelPendingRead();
         }
     }
 }
