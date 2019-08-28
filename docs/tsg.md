@@ -250,10 +250,10 @@ Client connections rise constantly for a long time in Azure SignalR's metrics bl
 SignalR client connection's `DisposeAsync` never be called, the connection keeps open.
 
 ### Troubleshooting Guide
-1. Check if the SignalR client **never** stop.
+1. Check if the SignalR client **never** close.
 
 ### Solution
-Check if you stop connection. Please manually call `HubConnection.DisposeAsync()` to stop the connection after using it.
+Check if you close connection. Please manually call `HubConnection.DisposeAsync()` to stop the connection after using it.
 
 For example:
 
@@ -279,7 +279,7 @@ finally
 This issue often occurs when someone establishes SignalR client connection in Azure Function method instead of making it a static member to your Function class. You might expect only one client connection is established, but you see client connection count increases constantly in metrics blade, all these connections drop only after the Azure Function or Azure SignalR service restarts. This is because for **each** request, Azure Function creates **one** client connection, if you don't stop client connection in Function method, the client keeps the connections alive to Azure SignalR service.
 
 #### Solution
-1. Remember to stop client connection if you use SignalR clients in Azure function or use SignalR client as a singleton.
+1. Remember to close client connection if you use SignalR clients in Azure function or use SignalR client as a singleton.
 1. Instead of using SignalR clients in Azure function, you can create SignalR clients anywhere else and use [Azure Functions Bindings for Azure SignalR Service](https://github.com/Azure/azure-functions-signalrservice-extension) to [negotiate](https://github.com/Azure/azure-functions-signalrservice-extension/blob/dev/samples/simple-chat/csharp/FunctionApp/Functions.cs#L22) the client to Azure SignalR. And you can also utilize the binding to [send messages](https://github.com/Azure/azure-functions-signalrservice-extension/blob/dev/samples/simple-chat/csharp/FunctionApp/Functions.cs#L40). Samples to negotiate client and send messages can be found [here](https://github.com/Azure/azure-functions-signalrservice-extension/tree/dev/samples). Further information can be found [here](https://github.com/Azure/azure-functions-signalrservice-extension).
 1. When you use SignalR clients in Azure function, there might be a better architecture to your scenario. Check if you design a proper serverless architecture. You can refer to [Real-time serverless applications with the SignalR Service bindings in Azure Functions](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.SignalRService).
 
