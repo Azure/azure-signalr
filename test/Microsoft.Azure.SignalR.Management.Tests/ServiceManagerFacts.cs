@@ -26,11 +26,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private static readonly string[] _appNames = new string[] { "appName", "", null };
         private static readonly string[] _userIds = new string[] { UserId, null };
         private static readonly IEnumerable<Claim[]> _claimLists = new Claim[][] { _defaultClaims, null };
+        private static readonly int[] _connectionCounts = new int[] {1, 2};
 
         public static IEnumerable<object[]> TestServiceManagerOptionData => from transport in _serviceTransportTypes
                                                                             from useLoggerFactory in _useLoggerFatories
                                                                             from appName in _appNames
-                                                                            select new object[] { transport, useLoggerFactory, appName };
+                                                                            from connectionCount in _connectionCounts
+                                                                            select new object[] { transport, useLoggerFactory, appName, connectionCount };
 
         public static IEnumerable<object[]> TestGenerateClientEndpointData => from appName in _appNames
                                                                               select new object[] { appName, GetExpectedClientEndpoint(appName) };
@@ -65,13 +67,14 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         [Theory]
         [MemberData(nameof(TestServiceManagerOptionData))]
-        internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFacory, string appName)
+        internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFacory, string appName, int connectionCount)
         {
             var serviceManager = new ServiceManager(new ServiceManagerOptions
             {
                 ConnectionString = _testConnectionString,
                 ServiceTransportType = serviceTransportType,
-                ApplicationName = appName
+                ApplicationName = appName,
+                ConnectionCount = connectionCount
             }, null);
 
             LoggerFactory loggerFactory;

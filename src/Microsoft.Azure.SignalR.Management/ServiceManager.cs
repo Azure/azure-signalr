@@ -23,7 +23,6 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly ServiceEndpointProvider _endpointProvider;
         private readonly IServerNameProvider _serverNameProvider;
         private readonly ServiceEndpoint _endpoint;
-        private const int ServerConnectionCount = 1;
         private readonly string _productInfo;
 
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo)
@@ -50,7 +49,7 @@ namespace Microsoft.Azure.SignalR.Management
                         var clientConnectionFactory = new ClientConnectionFactory();
                         ConnectionDelegate connectionDelegate = connectionContext => Task.CompletedTask;
                         var serviceConnectionFactory = new ServiceConnectionFactory(serviceProtocol, clientConnectionManager, connectionFactory, loggerFactory, connectionDelegate, clientConnectionFactory);
-                        var weakConnectionContainer = new WeakServiceConnectionContainer(serviceConnectionFactory, ServerConnectionCount, new HubServiceEndpoint(hubName, _endpointProvider, _endpoint));
+                        var weakConnectionContainer = new WeakServiceConnectionContainer(serviceConnectionFactory, _serviceManagerOptions.ConnectionCount, new HubServiceEndpoint(hubName, _endpointProvider, _endpoint));
 
                         var serviceCollection = new ServiceCollection();
                         serviceCollection.AddSignalRCore();

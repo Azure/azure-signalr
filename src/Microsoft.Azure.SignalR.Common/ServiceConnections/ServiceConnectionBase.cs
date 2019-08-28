@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
 
-        private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private readonly ServerConnectionType _connectionType;
 

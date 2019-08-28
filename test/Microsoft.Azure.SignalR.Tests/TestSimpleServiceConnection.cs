@@ -8,7 +8,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    internal sealed class TestServiceConnection : IServiceConnection
+    internal sealed class TestSimpleServiceConnection : IServiceConnection
     {
         public ServiceConnectionStatus Status { get; }
 
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public event Action<StatusChange> ConnectionStatusChanged;
 
-        public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false, TaskCompletionSource<object> writeAsyncTcs = null)
+        public TestSimpleServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false, TaskCompletionSource<object> writeAsyncTcs = null)
         {
             Status = status;
             _throws = throws;
