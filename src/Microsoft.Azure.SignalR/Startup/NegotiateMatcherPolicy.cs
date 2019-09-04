@@ -62,6 +62,7 @@ namespace Microsoft.Azure.SignalR
             routeEndpoint.RoutePattern,
             routeEndpoint.Order);
 
+            // Set DisplayName
             routeEndpointBuilder.DisplayName = routeEndpoint.DisplayName;
 
             // Preserve the metadata
