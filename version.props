@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ManagementSDKPackageVersionPrefix>1.0.0</ManagementSDKPackageVersionPrefix>
+    <ManagementSDKPackageVersionPrefix>1.0.1</ManagementSDKPackageVersionPrefix>
     <ManagementSDKPackageVersion>$(ManagementSDKPackageVersionPrefix)-preview1-$(BuildNumber)</ManagementSDKPackageVersion>
     <ManagementSDKPackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' == 'rtm' ">$(ManagementSDKPackageVersionPrefix)</ManagementSDKPackageVersion>
   </PropertyGroup>
