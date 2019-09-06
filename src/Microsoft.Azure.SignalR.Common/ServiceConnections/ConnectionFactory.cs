@@ -76,7 +76,7 @@ namespace Microsoft.Azure.SignalR
             {
                 return Task.CompletedTask;
             }
-#if !NETCOREAPP3_0
+#if NETSTANDARD2_0
             return ((HttpConnection)connection).DisposeAsync();
 #else
             return ((HttpConnection)connection).DisposeAsync().AsTask();
