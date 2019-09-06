@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR
             : base(serviceConnectionManager, protocolResolver)
         {
             // after core 3.0 UseAzureSignalR() is not required.
-#if !NETCOREAPP3_0
+#if NETSTANDARD2_0
             if (!marker.IsConfigured)
             {
                 throw new InvalidOperationException(MarkerNotConfiguredError);

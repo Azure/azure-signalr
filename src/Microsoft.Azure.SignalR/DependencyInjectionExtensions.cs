@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.TryAddSingleton(typeof(IEndpointRouter), typeof(DefaultEndpointRouter));
             builder.Services.TryAddSingleton(typeof(IConnectionRequestIdProvider), typeof(DefaultConnectionRequestIdProvider));
 
-#if NETCOREAPP3_0
+#if !NETSTANDARD2_0
             builder.Services.TryAddSingleton<AzureSignalRHostedService>();
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IStartupFilter, AzureSignalRStartupFilter>());
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<MatcherPolicy, NegotiateMatcherPolicy>());
