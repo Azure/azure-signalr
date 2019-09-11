@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -236,7 +237,7 @@ namespace Microsoft.Azure.SignalR
 
         public virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
-            return WriteToRandomAvailableConnection(serviceMessage);
+            return WriteToScopedOrRandomAvailableConnection(serviceMessage);
         }
 
         public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
@@ -249,7 +250,7 @@ namespace Microsoft.Azure.SignalR
             var task = _ackHandler.CreateAck(out var id, cancellationToken);
             ackableMessage.AckId = id;
 
-            await WriteToRandomAvailableConnection(serviceMessage);
+            await WriteToScopedOrRandomAvailableConnection(serviceMessage);
 
             var status = await task;
             switch (status)
@@ -288,28 +289,58 @@ namespace Microsoft.Azure.SignalR
                 : ServiceConnectionStatus.Disconnected;
         }
 
-        private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
+        private async Task WriteToScopedOrRandomAvailableConnection(ServiceMessage serviceMessage)
         {
-            return WriteWithRetry(serviceMessage, StaticRandom.Next(-FixedConnectionCount, FixedConnectionCount), FixedConnectionCount);
+            var connectionHolder = ServiceConnectionScopeInternal.Holder;
+            var connection = connectionHolder?.ServiceConnection;
+            var connectionUsed = await WriteWithRetry(serviceMessage, connection);
+
+            // Try to persist the connection choice for the subsequent calls within the same async flow
+            if (connectionHolder != null)
+            {
+                if (connectionUsed != connection)
+                {
+                    connectionHolder.ServiceConnection = connectionUsed;
+
+                    // raise the flag if a different connection was used before so the callers can react accordingly
+                    if (connection != null)
+                    {
+                        Log.EndpointConnectionChanged(Logger, Endpoint);
+                        connectionHolder.ConnectionChanged = true;
+                    }
+                }
+                else
+                {
+                    // clear the flag if the connection hasn't changed
+                    connectionHolder.ConnectionChanged = false;
+                }
+            }
+            else
+            {
+                // indicate invalid usage
+                Debug.Assert(connectionHolder != null);
+            }
         }
 
-        private async Task WriteWithRetry(ServiceMessage serviceMessage, int initial, int count)
+        private async Task<IServiceConnection> WriteWithRetry(ServiceMessage serviceMessage, IServiceConnection connection)
         {
             // go through all the connections, it can be useful when one of the remote service instances is down
-            var maxRetry = count;
+            var initial = StaticRandom.Next(-FixedConnectionCount, FixedConnectionCount);
+            var maxRetry = FixedConnectionCount;
             var retry = 0;
-            var index = (initial & int.MaxValue) % count;
-            var direction = initial > 0 ? 1 : count - 1;
-            while (retry < maxRetry)
+            var index = (initial & int.MaxValue) % FixedConnectionCount;
+            var direction = initial > 0 ? 1 : FixedConnectionCount - 1;
+
+            // ensure a full sweep starting with a connection flowed with the async context
+            while (retry <= maxRetry)
             {
-                var connection = FixedServiceConnections[index];
                 if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
                 {
                     try
                     {
                         // still possible the connection is not valid
                         await connection.WriteAsync(serviceMessage);
-                        return;
+                        return connection;
                     }
                     catch (ServiceConnectionNotActiveException)
                     {
@@ -320,8 +351,11 @@ namespace Microsoft.Azure.SignalR
                     }
                 }
 
+                // try current index instead
+                connection = FixedServiceConnections[index];
+
                 retry++;
-                index = (index + direction) % count;
+                index = (index + direction) % FixedConnectionCount;
             }
 
             throw new ServiceConnectionNotActiveException();
@@ -343,6 +377,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, string, Exception> _endpointOffline =
                 LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(2, "EndpointOffline"), "Hub '{hub}' is now disconnected from '{endpoint}'. Please check log for detailed info.");
 
+            private static readonly Action<ILogger, string, string, Exception> _endpointConnectionChanged =
+                LoggerMessage.Define<string, string>(LogLevel.Trace, new EventId(3, "EndpointConnectionChanged"), "Hub '{hub}' has changed connection for '{endpoint}'.");
+
             public static void EndpointOnline(ILogger logger, HubServiceEndpoint endpoint)
             {
                 _endpointOnline(logger, endpoint.Hub, endpoint.ToString(), null);
@@ -351,6 +388,11 @@ namespace Microsoft.Azure.SignalR
             public static void EndpointOffline(ILogger logger, HubServiceEndpoint endpoint)
             {
                 _endpointOffline(logger, endpoint.Hub, endpoint.ToString(), null);
+            }
+
+            public static void EndpointConnectionChanged(ILogger logger, HubServiceEndpoint endpoint)
+            {
+                _endpointConnectionChanged(logger, endpoint.Hub, endpoint.ToString(), null);
             }
         }
     }

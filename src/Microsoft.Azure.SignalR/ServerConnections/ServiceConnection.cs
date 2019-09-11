@@ -162,14 +162,18 @@ namespace Microsoft.Azure.SignalR
             AddClientConnection(connection, GetInstanceId(message.Headers));
             Log.ConnectedStarting(Logger, connection.ConnectionId);
 
-            // Execute the application code
-            connection.ApplicationTask = _connectionDelegate(connection);
+            // Setup async local context right before running the hub dispatchers
+            using (new ServiceConnectionScopeInternal(this))
+            {
+                // Execute the application code
+                connection.ApplicationTask = _connectionDelegate(connection);
 
-            // Writing from the application to the service
-            _ = ProcessOutgoingMessagesAsync(connection);
+                // Writing from the application to the service
+                _ = ProcessOutgoingMessagesAsync(connection);
 
-            // Waiting for the application to shutdown so we can clean up the connection
-            _ = WaitOnApplicationTask(connection);
+                // Waiting for the application to shutdown so we can clean up the connection
+                _ = WaitOnApplicationTask(connection);
+            }
             return Task.CompletedTask;
         }
 
