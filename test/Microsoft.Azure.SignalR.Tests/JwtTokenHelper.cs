@@ -50,6 +50,7 @@ namespace Microsoft.Azure.SignalR.Tests
             string requestId)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
+            securityKey.KeyId = signingKey;
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var requestIdClaims = requestId == null ? null : new Claim[] { new Claim(Constants.ClaimType.Id, requestId) };
