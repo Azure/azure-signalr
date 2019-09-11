@@ -68,7 +68,10 @@ namespace Microsoft.Azure.SignalR
             SigningCredentials credentials = null;
             if (!string.IsNullOrEmpty(signingKey))
             {
+                // Refer: https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/releases/tag/5.5.0
+                // From version 5.5.0, SignatureProvider caching is turned On by default, assign KeyId to enable correct cache for same SigningKey
                 var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
+                securityKey.KeyId = signingKey;
                 credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
             }
 
