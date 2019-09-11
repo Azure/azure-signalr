@@ -124,10 +124,10 @@ function Get-KoreBuild {
             }
 			 
             # Hack to use preview7
-            Write-Host "!!! Hack to use .NET Core SDK 3.0.100-preview7-012802"
+            Write-Host "!!! Hack to use .NET Core SDK 3.0.100-rc2-014211"
             $sdkversion = Get-ChildItem -Path $korebuildPath -Include sdk.version -Recurse
             $sdkpath = Join-Path $sdkversion.DirectoryName $sdkversion.Name
-            Set-Content -Path $sdkpath -Value "3.0.100-preview7-012802"
+            Set-Content -Path $sdkpath -Value "3.0.100-rc2-014211"
         }
         catch {
             Remove-Item -Recurse -Force $korebuildPath -ErrorAction Ignore
