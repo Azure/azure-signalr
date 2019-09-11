@@ -2,17 +2,18 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using Xunit;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Azure.SignalR.Common.Tests
 {
     public class AuthenticationHelperTest
     {
         private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        private const string DefaultConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
         private const string Audience = "https://localhost/aspnetclient?hub=testhub";
         private static TimeSpan DefaultLifetime = TimeSpan.FromHours(1);
 
@@ -23,6 +24,28 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var exception = Assert.Throws<AzureSignalRAccessTokenTooLongException>(() => AuthenticationHelper.GenerateAccessToken(SigningKey, Audience, claims, DefaultLifetime, string.Empty));
 
             Assert.Equal("AccessToken must not be longer than 4K.", exception.Message);
+        }
+
+        [Fact]
+        public void TestGenerateJwtBearerCaching()
+        {
+            var count = 0;
+            while (count < 1000)
+            {
+                AuthenticationHelper.GenerateJwtBearer(audience: Audience, expires: DateTime.UtcNow.Add(DefaultLifetime), signingKey: SigningKey);
+                count++;
+            };
+
+            // New a key to fetch cached CryptoProviderCache, it won't add to cache until CreateJwtSecurityToken
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SigningKey));
+
+            var cache = securityKey.CryptoProviderFactory.CryptoProviderCache;
+            var value = cache.GetType().GetField("_signingSignatureProviders", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(cache);
+
+            var signingProviders = value as ConcurrentDictionary<string, SignatureProvider>;
+            
+            // Validate same signing key cache once. 
+            Assert.Single(signingProviders);
         }
 
         private Claim[] GenerateClaims(int count)

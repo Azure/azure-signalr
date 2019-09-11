@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR
         public const string ItemsUnavailableError = nameof(Items) + UnavailableErrorTemplate;
         public const string ProtocolUnavailableError = nameof(Protocol) + UnavailableErrorTemplate;
 
-#if NETCOREAPP3_0
+#if !NETSTANDARD2_0
         public ServiceHubConnectionContext(HttpContext context)
             : base(new DummyConnectionContext(context), 
                   new HubConnectionContextOptions() { KeepAliveInterval = TimeSpan.MaxValue }, 
