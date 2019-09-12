@@ -6,11 +6,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   
-  <PropertyGroup Condition="'$(IsTargetMultiFramework)' != 'false'">
+  <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(IsTargetMultiFramework)' == 'false'">
-    <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -47,4 +44,10 @@
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="$(MicrosoftAspNetCoreSignalRPackageVersion)" />
   </ItemGroup>
 
+  <!-- Specifying signing for multiple files in a package. -->
+  <ItemGroup>
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Common.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Protocols.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+  </ItemGroup>
 </Project>
