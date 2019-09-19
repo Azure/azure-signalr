@@ -82,9 +82,9 @@ get_korebuild() {
             rm "$tmpfile" || true
         fi
  
-        echo "!!! Hack to use .NET Core SDK 3.0.100-rc2-014211"
+        echo "!!! Hack to use .NET Core SDK 3.0.100"
         local filePath=`find $korebuild_path -name sdk.version`
-        echo "3.0.100-rc2-014211" > $filePath
+        echo "3.0.100" > $filePath
 
         source "$korebuild_path/KoreBuild.sh"
     } || {
