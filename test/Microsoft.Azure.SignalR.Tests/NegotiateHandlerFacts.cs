@@ -9,6 +9,7 @@
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
@@ -357,6 +358,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 {
                     context.Response.StatusCode = 400;
                     var response = Encoding.UTF8.GetBytes("Invalid request");
+                    // In latest DefaultHttpContext, response body is set to null
+                    context.Response.Body = new MemoryStream();
                     context.Response.Body.Write(response, 0, response.Length);
                     return null;
                 }
