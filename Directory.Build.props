@@ -31,7 +31,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)microsoft.png" Pack="true" PackagePath="\"/>
+    <None Include="$(MSBuildThisFileDirectory)microsoft.png" Pack="true" PackagePath="\" />
   </ItemGroup>
   
   <!-- Specifying signing for multiple files in a package. -->
