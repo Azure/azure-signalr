@@ -29,4 +29,13 @@
     <PackageSigningCertName>NuGet</PackageSigningCertName>
     <IsTargetMultiFramework>true</IsTargetMultiFramework>
   </PropertyGroup>
+  
+  <!-- Specifying signing for multiple files in a package. -->
+  <ItemGroup>
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.AspNet.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Common.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Management.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Protocols.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+  </ItemGroup>
 </Project>

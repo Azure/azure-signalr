@@ -43,11 +43,4 @@
     <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="$(MicrosoftAspNetCoreHttpConnectionsClientPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="$(MicrosoftAspNetCoreSignalRPackageVersion)" />
   </ItemGroup>
-
-  <!-- Specifying signing for multiple files in a package. -->
-  <ItemGroup>
-    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
-    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Common.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
-    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Protocols.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
-  </ItemGroup>
 </Project>
