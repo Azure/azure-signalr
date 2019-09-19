@@ -13,8 +13,7 @@ Building Azure SignalR Service SDK requires:
         PS> ./eng/scripts/InstallVisualStudio.ps1
         ```
 * Git. <https://git-scm.org>
-* AspNetCore 3.0 SDK (Version >= 3.0.100-preview7-012802). Install from AspNetCore code repo before release <https://github.com/dotnet/core-sdk#installers-and-binaries>.
-* AspNetCore 3.0 Preview Runtime (Version >= 3.0.0-preview3-27503-5) <https://dotnet.microsoft.com/download/dotnet-core/3.0>
+* AspNetCore 3.0 SDK (Version >= 3.0.100). Install from AspNetCore code repo before release <https://github.com/dotnet/core-sdk#installers-and-binaries>.
 
 ## Clone the source code
 
@@ -56,4 +55,3 @@ Property                 | Description
 -------------------------|-------------------------------------------------------------------------------------------------------------
 BuildNumber              | (string). A specific build number, typically from a CI counter, which is appended to the preview1 label.
 Configuration            | `Debug` or `Release`. Default = `Debug`.
-IsTargetMultiFramework   | `true` or `false`. Default = `true`. Configure whether to build projects targeting ASP.NET Core 3.0.
