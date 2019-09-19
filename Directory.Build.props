@@ -30,6 +30,10 @@
     <IsTargetMultiFramework>true</IsTargetMultiFramework>
   </PropertyGroup>
   
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)microsoft.png" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+  
   <!-- Specifying signing for multiple files in a package. -->
   <ItemGroup>
     <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
