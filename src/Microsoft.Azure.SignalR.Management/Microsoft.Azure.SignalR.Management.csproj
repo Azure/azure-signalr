@@ -7,11 +7,8 @@
     <PackageVersion>$(ManagementSDKPackageVersion)</PackageVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(IsTargetMultiFramework)' != 'false'">
+  <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(IsTargetMultiFramework)' == 'false'">
-    <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
