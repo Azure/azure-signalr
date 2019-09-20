@@ -77,6 +77,13 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class CloseConnectionMessage : ConnectionMessage
     {
         /// <summary>
+        /// The last received ConnectionMessageData sequence id.
+        /// <value>
+        /// </value>
+        /// </summary>
+        public long LastSequenceId { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CloseConnectionMessage"/> class.
         /// </summary>
         /// <param name="connectionId">The connection Id.</param>
@@ -129,5 +136,10 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the binary payload.
         /// </summary>
         public ReadOnlySequence<byte> Payload { get; set; }
+
+        /// <summary>
+        /// The data package sequence id.
+        /// </summary>
+        public long SequenceId { get; set; } = 0;
     }
 }

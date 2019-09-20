@@ -70,9 +70,9 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ServiceProtocolConstants.OpenConnectionMessageType:
                     return CreateOpenConnectionMessage(arrayLength, input, ref startOffset);
                 case ServiceProtocolConstants.CloseConnectionMessageType:
-                    return CreateCloseConnectionMessage(input, ref startOffset);
+                    return CreateCloseConnectionMessage(input, ref startOffset, arrayLength);
                 case ServiceProtocolConstants.ConnectionDataMessageType:
-                    return CreateConnectionDataMessage(input, ref startOffset);
+                    return CreateConnectionDataMessage(input, ref startOffset, arrayLength);
                 case ServiceProtocolConstants.MultiConnectionDataMessageType:
                     return CreateMultiConnectionDataMessage(input, ref startOffset);
                 case ServiceProtocolConstants.UserDataMessageType:
@@ -227,20 +227,12 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteHandshakeRequestMessage(HandshakeRequestMessage message, Stream packer)
         {
-            if (message.ConnectionType == 0)
-            {
-                MessagePackBinary.WriteArrayHeader(packer, 2);
-                MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeRequestType);
-                MessagePackBinary.WriteInt32(packer, message.Version);
-            }
-            else
-            {
-                MessagePackBinary.WriteArrayHeader(packer, 4);
-                MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeRequestType);
-                MessagePackBinary.WriteInt32(packer, message.Version);
-                MessagePackBinary.WriteInt32(packer, message.ConnectionType);
-                MessagePackBinary.WriteString(packer, message.Target ?? string.Empty);
-            }
+            MessagePackBinary.WriteArrayHeader(packer, 5);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeRequestType);
+            MessagePackBinary.WriteInt32(packer, message.Version);
+            MessagePackBinary.WriteInt32(packer, message.ConnectionType);
+            MessagePackBinary.WriteString(packer, message.ConnectionType == 0 ? "" : message.Target ?? string.Empty);
+            MessagePackBinary.WriteInt32(packer, (int) message.MigratableStatus);
         }
 
         private static void WriteHandshakeResponseMessage(HandshakeResponseMessage message, Stream packer)
@@ -287,18 +279,20 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteCloseConnectionMessage(CloseConnectionMessage message, Stream packer)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
+            MessagePackBinary.WriteArrayHeader(packer, 4);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.CloseConnectionMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
             MessagePackBinary.WriteString(packer, message.ErrorMessage);
+            MessagePackBinary.WriteInt64(packer, message.LastSequenceId);
         }
 
         private static void WriteConnectionDataMessage(ConnectionDataMessage message, Stream packer)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
+            MessagePackBinary.WriteArrayHeader(packer, 4);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ConnectionDataMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
             WriteBinary(packer, message.Payload);
+            MessagePackBinary.WriteInt64(packer, message.SequenceId);
         }
 
         private static void WriteBinary(Stream packer, ReadOnlySequence<byte> payload)
@@ -517,6 +511,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 result.ConnectionType = ReadInt32(input, ref offset, "connectionType");
                 result.Target = ReadString(input, ref offset, "target");
             }
+            result.MigratableStatus = arrayLength >= 5 ? ReadInt32(input, ref offset, "migratableStatus") : 0;
             return result;
         }
 
@@ -553,7 +548,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 var headers = ReadHeaders(input, ref offset);
                 var queryString = ReadString(input, ref offset, "queryString");
-
                 return new OpenConnectionMessage(connectionId, claims, headers, queryString);
             }
             else
@@ -562,20 +556,30 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
-        private static CloseConnectionMessage CreateCloseConnectionMessage(byte[] input, ref int offset)
+        private static CloseConnectionMessage CreateCloseConnectionMessage(byte[] input, ref int offset, int arrayLength)
         {
             var connectionId = ReadString(input, ref offset, "connectionId");
             var errorMessage = ReadString(input, ref offset, "errorMessage");
 
-            return new CloseConnectionMessage(connectionId, errorMessage);
+            var message = new CloseConnectionMessage(connectionId, errorMessage);
+            if (arrayLength >= 4)
+            {
+                message.LastSequenceId = ReadInt64(input, ref offset, "lastSequenceId");
+            }
+            return message;
         }
 
-        private static ConnectionDataMessage CreateConnectionDataMessage(byte[] input, ref int offset)
+        private static ConnectionDataMessage CreateConnectionDataMessage(byte[] input, ref int offset, int arrayLength)
         {
             var connectionId = ReadString(input, ref offset, "connectionId");
             var payload = ReadBytes(input, ref offset, "payload");
 
-            return new ConnectionDataMessage(connectionId, payload);
+            var message = new ConnectionDataMessage(connectionId, payload);
+            if (arrayLength >= 4)
+            {
+                message.SequenceId = ReadInt64(input, ref offset, "sequenceId");
+            }
+            return message;
         }
 
         private static MultiConnectionDataMessage CreateMultiConnectionDataMessage(byte[] input, ref int offset)
@@ -771,6 +775,23 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
 
             throw new InvalidDataException($"Reading '{field}' as Int32 failed.", msgPackException);
+        }
+
+        private static long ReadInt64(byte[] input, ref int offset, string field)
+        {
+            Exception msgPackException = null;
+            try
+            {
+                var readInt = MessagePackBinary.ReadInt64(input, offset, out var readSize);
+                offset += readSize;
+                return readInt;
+            }
+            catch (Exception e)
+            {
+                msgPackException = e;
+            }
+
+            throw new InvalidDataException($"Reading '{field}' as Int64 failed.", msgPackException);
         }
 
         private static string ReadString(byte[] input, ref int offset, string field)

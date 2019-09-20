@@ -43,6 +43,18 @@ namespace Microsoft.Azure.SignalR.Protocol
         public int ConnectionType { get; set; }
 
         /// <summary>
+        /// Gets or sets the migratable flag.
+        /// <value>
+        /// <list type="bullet">
+        /// <item>0, Off, a client connection can not be migrated to another server connection.</item>
+        /// <item>1, Limited, message from a client can be sent to any of the server connection within this server. (there is no strong relationship between server/client connection)</item>
+        /// <item>2, Any, message from a client can be sent to any server connection across servers. (the server is stateless)</item>
+        /// </list>
+        /// </value>
+        /// </summary>
+        public int MigratableStatus { get; set; }
+
+        /// <summary>
         /// Gets or sets the target of service connection, only work for OnDemand connections.
         /// </summary>
         public string Target { get; set; }

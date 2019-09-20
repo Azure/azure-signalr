@@ -26,8 +26,17 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             }
         }
 
-        public static IDictionary<string, ProtocolTestData> TestData => new[]
+        public static IEnumerable<object[]> TestCompatibilityDataNames
         {
+            get
+            {
+                foreach (var k in TestCompatibilityData.Keys)
+                {
+                    yield return new object[] { k };
+                }
+            }
+        }
+        public static IDictionary<string, ProtocolTestData> TestCompatibilityData => new[] {
             new ProtocolTestData(
                 name: "HandshakeRequest",
                 message: new HandshakeRequestMessage(1),
@@ -36,6 +45,26 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "HandshakeRequestWithProperty",
                 message: new HandshakeRequestMessage(1) { ConnectionType = 1, Target = "abc" },
                 binary: "lAEBAaNhYmM="),
+            new ProtocolTestData(
+                name: "ConnectionData",
+                message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}),
+                binary: "kwalY29ubjXEBwECAwQFBgc="),
+        }.ToDictionary(t => t.Name);
+
+        public static IDictionary<string, ProtocolTestData> TestData => new[]
+        {
+            new ProtocolTestData(
+                name: "HandshakeRequest",
+                message: new HandshakeRequestMessage(1),
+                binary: "lQEBAKAA"),
+            new ProtocolTestData(
+                name: "HandshakeRequestWithProperty",
+                message: new HandshakeRequestMessage(1) { ConnectionType = 1, Target = "abc" },
+                binary: "lQEBAaNhYmMA"),
+            new ProtocolTestData(
+                name: "HandshakeRequestWithMigratableStatus",
+                message: new HandshakeRequestMessage(1) { MigratableStatus = 1},
+                binary: "lQEBAKAB"),
             new ProtocolTestData(
                 name: "HandshakeResponse",
                 message: new HandshakeResponseMessage(),
@@ -80,15 +109,25 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             new ProtocolTestData(
                 name: "CloseConnection",
                 message: new CloseConnectionMessage("conn3"),
-                binary: "kwWlY29ubjPA"),
+                binary: "lAWlY29ubjPAAA=="),
             new ProtocolTestData(
                 name: "CloseConnectionWithError",
                 message: new CloseConnectionMessage("conn4", "Error message."),
-                binary: "kwWlY29ubjSuRXJyb3IgbWVzc2FnZS4="),
+                binary: "lAWlY29ubjSuRXJyb3IgbWVzc2FnZS4A"),
+            new ProtocolTestData(
+                name: "CloseConnectionWithSequenceId",
+                message: new CloseConnectionMessage("conn3") {LastSequenceId = 192 },
+                binary: "lAWlY29ubjPAzMA="),
             new ProtocolTestData(
                 name: "ConnectionData",
                 message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}),
-                binary: "kwalY29ubjXEBwECAwQFBgc="),
+                binary: "lAalY29ubjXEBwECAwQFBgcA"),
+            new ProtocolTestData(
+                name: "ConnectionDataWithSequenceId",
+                message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}) {
+                    SequenceId = 1024
+                },
+                binary: "lAalY29ubjXEBwECAwQFBgfNBAA="),
             new ProtocolTestData(
                 name: "MultiConnectionData",
                 message: new MultiConnectionDataMessage(new [] {"conn6", "conn7"}, new Dictionary<string, ReadOnlyMemory<byte>>
@@ -196,6 +235,21 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new AckMessage(2, 101, "Joined group successfully"),
                 binary: "lBQCZblKb2luZWQgZ3JvdXAgc3VjY2Vzc2Z1bGx5"),
         }.ToDictionary(t => t.Name);
+
+        [Theory]
+        [MemberData(nameof(TestCompatibilityDataNames))]
+        public void ParseOldMessages(string testDataName)
+        {
+            var testData = TestData[testDataName];
+
+            // Verify that the input binary string decodes to the expected MsgPack primitives
+            var bytes = Convert.FromBase64String(testData.Binary);
+
+            // Parse the input fully now.
+            bytes = Frame(bytes);
+            var message = ParseServiceMessage(bytes);
+            Assert.Equal(testData.Message, message, ServiceMessageEqualityComparer.Instance);
+        }
 
         [Theory]
         [MemberData(nameof(TestDataNames))]
