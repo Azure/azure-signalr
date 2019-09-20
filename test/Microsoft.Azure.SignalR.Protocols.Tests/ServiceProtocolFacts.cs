@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             get
             {
-                foreach (var k in TestData.Values)
+                foreach (var k in TestData.Keys)
                 {
                     yield return new object[] { k };
                 }
@@ -30,19 +30,24 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             get
             {
-                foreach (var k in TestCompacityData.Values)
-                {
-                    yield return new object[] { k };
-                }
-                foreach (var k in TestData.Values)
+                foreach (var k in TestData.Keys)
                 {
                     yield return new object[] { k };
                 }
             }
         }
 
-        public static IDictionary<string, ProtocolTestData> TestCompacityData => new[]
+        public static IEnumerable<object[]> TestParseOldData
         {
+            get
+            {
+                foreach (var k in TestCompatibilityData.Keys)
+                {
+                    yield return new object[] { k };
+                }
+            }
+        }
+        public static IDictionary<string, ProtocolTestData> TestCompatibilityData => new[] {
             new ProtocolTestData(
                 name: "CloseConnection",
                 message: new CloseConnectionMessage("conn3"),
@@ -51,18 +56,6 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "CloseConnectionWithError",
                 message: new CloseConnectionMessage("conn4", "Error message."),
                 binary: "kwWlY29ubjSuRXJyb3IgbWVzc2FnZS4="),
-        }.ToDictionary(t => t.Name);
-
-        public static IDictionary<string, ProtocolTestData> TestData => new[]
-        {
-            new ProtocolTestData(
-                name: "CloseConnection",
-                message: new CloseConnectionMessage("conn3"),
-                binary: "lAWlY29ubjOggA=="),
-            new ProtocolTestData(
-                name: "CloseConnectionWithError",
-                message: new CloseConnectionMessage("conn4", "Error message."),
-                binary: "lAWlY29ubjSuRXJyb3IgbWVzc2FnZS6A"),
             new ProtocolTestData(
                 name: "CloseConnectionWithHeaders",
                 message: new CloseConnectionMessage("conn4", "Error message.", new Dictionary<string, StringValues>() {
@@ -77,6 +70,22 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "HandshakeRequestWithProperty",
                 message: new HandshakeRequestMessage(1) { ConnectionType = 1, Target = "abc" },
                 binary: "lAEBAaNhYmM="),
+        }.ToDictionary(t => t.Name);
+
+        public static IDictionary<string, ProtocolTestData> TestData => new[]
+        {
+            new ProtocolTestData(
+                name: "HandshakeRequest",
+                message: new HandshakeRequestMessage(1),
+                binary: "lQEBAKAA"),
+            new ProtocolTestData(
+                name: "HandshakeRequestWithProperty",
+                message: new HandshakeRequestMessage(1) { ConnectionType = 1, Target = "abc" },
+                binary: "lQEBAaNhYmMA"),
+            new ProtocolTestData(
+                name: "HandshakeRequestWithMigratableStatus",
+                message: new HandshakeRequestMessage(1) { MigrationLevel = 1},
+                binary: "lQEBAKAB"),
             new ProtocolTestData(
                 name: "HandshakeResponse",
                 message: new HandshakeResponseMessage(),
@@ -118,6 +127,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "OpenConnectionWithQueryString2",
                 message: new OpenConnectionMessage("conn4", null, new Dictionary<string, StringValues>(), "query1=value1&query2=query2&query3=value3"),
                 binary: "lQSlY29ubjSAgNkpcXVlcnkxPXZhbHVlMSZxdWVyeTI9cXVlcnkyJnF1ZXJ5Mz12YWx1ZTM="),
+            new ProtocolTestData(
+                name: "CloseConnection",
+                message: new CloseConnectionMessage("conn3"),
+                binary: "lAWlY29ubjOggA=="),
+            new ProtocolTestData(
+                name: "CloseConnectionWithError",
+                message: new CloseConnectionMessage("conn4", "Error message."),
+                binary: "lAWlY29ubjSuRXJyb3IgbWVzc2FnZS6A"),
             new ProtocolTestData(
                 name: "ConnectionData",
                 message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}),
@@ -231,9 +248,26 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         }.ToDictionary(t => t.Name);
 
         [Theory]
-        [MemberData(nameof(TestParseData))]
-        public void ParseMessages(ProtocolTestData testData)
+        [MemberData(nameof(TestParseOldData))]
+        public void ParseOldMessages(string testDataName)
         {
+            var testData = TestCompatibilityData[testDataName];
+
+            // Verify that the input binary string decodes to the expected MsgPack primitives
+            var bytes = Convert.FromBase64String(testData.Binary);
+
+            // Parse the input fully now.
+            bytes = Frame(bytes);
+            var message = ParseServiceMessage(bytes);
+            Assert.Equal(testData.Message, message, ServiceMessageEqualityComparer.Instance);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestParseData))]
+        public void ParseMessages(string testDataName)
+        {
+            var testData = TestData[testDataName];
+
             // Verify that the input binary string decodes to the expected MsgPack primitives
             var bytes = Convert.FromBase64String(testData.Binary);
 
@@ -245,8 +279,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         [Theory]
         [MemberData(nameof(TestWriteData))]
-        public void WriteMessages(ProtocolTestData testData)
+        public void WriteMessages(string testDataName)
         {
+            var testData = TestData[testDataName];
+
             var bytes = Protocol.GetMessageBytes(testData.Message);
 
             // Unframe the message to check the binary encoding
