@@ -5,7 +5,7 @@ The Azure SignalR Service Protocol is a protocol between Azure SignalR Service a
 ## Terms
 
 - Service - Azure SignalR Service. It accepts connections from both clients and servers, acting as the abstract transport between them. It will internally maintain a one-to-one mapping between clients and servers, to make sure that messages are correctly routed to the recipients as if it is a physical transport.
-- Server - Application server node, which is connected to the Azure SignalR Service, using this protocol to receive data from and send data to clients through Azure SignalR Service. 
+- Server - Application server node, which is connected to the Azure SignalR Service, using this protocol to receive data from and send data to clients through Azure SignalR Service.
 - Client - The SignalR client connected to the Azure SignalR Service. The Azure SignalR Service will look exactly the same as a self-hosted SignalR server from the client's perspective.
 
 ## Overview
@@ -53,7 +53,7 @@ Ack | Service | Sent from Service to Server to return the operation result of Jo
 
 ## Communication Model
 
-This protocol will be used between Service and Server. There will be one or a few physical connections between Service and Server. Data from/to multiple client connections will be multiplexed within these physical connections. Each client connection will be identified by a unique connection Id. 
+This protocol will be used between Service and Server. There will be one or a few physical connections between Service and Server. Data from/to multiple client connections will be multiplexed within these physical connections. Each client connection will be identified by a unique connection Id.
 
 The number of client connections will be far more (over 100 times) than the number of physical connections between Service and Server.
 
@@ -67,15 +67,23 @@ Server will initiate a physical connection to Service, using WebSocket transport
 
 When a new client is connected to Service, a `OpenConnection` message will be sent by Service to Server.
 
+#### Client migrate-in from another server
+
+When a new client is migrated from another server, a `OpenConnection` message will be sent by Service to Server, with an `Asrs-Migrated-In` header given.
+
 ### Client Disconnect
 
 - When a client is disconnected from Service, a `CloseConnection` message will be sent by Service to Server.
 - When Server wants to disconnect a client, a `CloseConnection` message will be sent by Server to Service. Then Service will disconnect the phyical connection with the target client.
 
+#### Client migrate-out to another server
+
+When a client is migrated to another server, a `CloseConnection` message will be sent by Service to Server, with an `Asrs-Migrated-Out` header given.
+
 ### Client Data Pass Through
 
 - When a client sends data to Service, a `ConnectionData` message will be sent by Service to Server.
-- When Server wants to send data to a client, a `ConnectionData` message will be sent by Server to Service. 
+- When Server wants to send data to a client, a `ConnectionData` message will be sent by Server to Service.
 
 ### SignalR scenarios
 
@@ -100,6 +108,14 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 ```
 - 1 - Message Type, indicating this is a `HandshakeRequest` message.
 - Version - A `Int32` encoding number of the protocol version.
+- ConnectionType - A `Int32` encoding number of the connection type.
+	- 0, Default, it can carry clients, service runtime should always accept this kind of connection.
+	- 1, OnDemand, creating when service requested more connections, it can carry clients, but it may be rejected by service runtime.
+	- 2, Weak, it can not carry clients, but it can send message.
+- MigratableStatus - A `Int32` encoding number indicates if further client connections associated with this server connection could be migrated.
+	- 0, Off, a client connection can not be migrated to another server.
+	- 1, ShutdownOnly, a client connection can be migrated only if the pairing server was shutdown gracefully.
+	- 2, Any, a client connection can be migrated even if the pairing server connection was dropped accidentally. (may cause data loss)
 
 #### Example: TODO
 
