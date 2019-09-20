@@ -26,4 +26,5 @@ namespace Microsoft.Azure.SignalR.Protocol
         public const int LeaveGroupWithAckMessageType = 19;
         public const int AckMessageType = 20;
     }
-}
+
+   }

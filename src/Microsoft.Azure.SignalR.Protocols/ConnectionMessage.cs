@@ -129,5 +129,10 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the binary payload.
         /// </summary>
         public ReadOnlySequence<byte> Payload { get; set; }
+
+        /// <summary>
+        /// The data package sequence id.
+        /// </summary>
+        public long SequenceId { get; set; } = 0;
     }
 }
