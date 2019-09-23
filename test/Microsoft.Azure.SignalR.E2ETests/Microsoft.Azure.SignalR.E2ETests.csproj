@@ -25,8 +25,4 @@
     <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.Management\Microsoft.Azure.SignalR.Management.csproj" />
     <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" />
   </ItemGroup>
-
-  <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' == 'true' ">
-    <PackageReference Include="Microsoft.Azure.SignalR.Management" Version="$(ManagementSDKPackageVersionPrefix)-*" />
-  </ItemGroup>
 </Project>
