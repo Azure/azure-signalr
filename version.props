@@ -9,9 +9,4 @@
     <VersionSuffix Condition="'$(VersionSuffix)' != '' And '$(FeatureBranchVersionSuffix)' != ''">$(VersionSuffix)-$([System.Text.RegularExpressions.Regex]::Replace('$(FeatureBranchVersionSuffix)', '[^\w-]', '-'))</VersionSuffix>
     <VersionSuffix Condition="'$(VersionSuffix)' != '' And '$(BuildNumber)' != ''">$(VersionSuffix)-$(BuildNumber)</VersionSuffix>
   </PropertyGroup>
-  <PropertyGroup>
-    <ManagementSDKPackageVersionPrefix>1.0.1</ManagementSDKPackageVersionPrefix>
-    <ManagementSDKPackageVersion>$(ManagementSDKPackageVersionPrefix)-preview1-$(BuildNumber)</ManagementSDKPackageVersion>
-    <ManagementSDKPackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' == 'rtm' ">$(ManagementSDKPackageVersionPrefix)</ManagementSDKPackageVersion>
-  </PropertyGroup>
 </Project>
