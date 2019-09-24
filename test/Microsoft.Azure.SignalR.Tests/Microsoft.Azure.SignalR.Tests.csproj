@@ -4,6 +4,7 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DefineConstants>MULTIFRAMEWORK</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,8 +28,4 @@
   <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' == 'true' ">
     <PackageReference Include="Microsoft.Azure.SignalR" Version="$(VersionPrefix)-*" />
   </ItemGroup>
-
-  <PropertyGroup Condition="'$(IsTargetMultiFramework)' != 'false'">
-    <DefineConstants>MULTIFRAMEWORK</DefineConstants>
-  </PropertyGroup>
 </Project>
