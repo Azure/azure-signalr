@@ -15,7 +15,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageProjectUrl>https://aka.ms/signalr_service</PackageProjectUrl>
-    <IconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</IconUrl>
+    <PackageIcon>microsoft.png</PackageIcon>
     <RepositoryUrl>https://github.com/azure/azure-signalr</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryRoot>$(MSBuildThisFileDirectory)</RepositoryRoot>
@@ -28,6 +28,10 @@
     <AssemblySigningCertName>Microsoft400</AssemblySigningCertName>
     <PackageSigningCertName>NuGet</PackageSigningCertName>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)microsoft.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
   
   <!-- Specifying signing for multiple files in a package. -->
   <ItemGroup>
