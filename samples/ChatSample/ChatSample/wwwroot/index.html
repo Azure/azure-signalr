@@ -172,6 +172,7 @@
 
             var connection = new signalR.HubConnectionBuilder()
                 .withUrl('/chat')
+                .withHubProtocol(new signalR.protocols.msgpack.MessagePackHubProtocol())
                 .build();
 
             bindConnectionMessage(connection);

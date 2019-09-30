@@ -36,12 +36,20 @@ namespace Microsoft.Azure.SignalR
             useSynchronizationContext: false);
 
         private readonly object _heartbeatLock = new object();
+
+        public bool Migrated = false;
+
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
         public ServiceConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
             ConnectionId = serviceMessage.ConnectionId;
             User = serviceMessage.GetUserPrincipal();
+
+            if (serviceMessage.Headers.TryGetValue(Constants.AsrsMigratedFrom, out _))
+            {
+                Migrated = true;
+            }
 
             // Create the Duplix Pipeline for the virtual connection
             transportPipeOptions = transportPipeOptions ?? DefaultPipeOptions;

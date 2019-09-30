@@ -111,10 +111,20 @@ namespace Microsoft.Azure.SignalR
                     {
                         break;
                     }
-
+                    
                     var buffer = result.Buffer;
                     if (!buffer.IsEmpty)
                     {
+                        if (connection.Migrated)
+                        {
+                            if (buffer.Length < 3)
+                            {
+                                continue;
+                            }
+                            connection.Migrated = false;
+                            buffer = buffer.Slice(3);
+                        }
+
                         try
                         {
                             // Forward the message to the service
@@ -150,8 +160,10 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private void AddClientConnection(ServiceConnectionContext connection, string instanceId)
+        private void AddClientConnection(ServiceConnectionContext connection, OpenConnectionMessage message)
         {
+            var instanceId = GetInstanceId(message.Headers);
+
             _clientConnectionManager.AddClientConnection(connection);
             _connectionIds.TryAdd(connection.ConnectionId, instanceId);
         }
@@ -159,7 +171,7 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnConnectedAsync(OpenConnectionMessage message)
         {
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
-            AddClientConnection(connection, GetInstanceId(message.Headers));
+            AddClientConnection(connection, message);
             Log.ConnectedStarting(Logger, connection.ConnectionId);
 
             // Execute the application code
@@ -270,6 +282,7 @@ namespace Microsoft.Azure.SignalR
                     if (payload.IsSingleSegment)
                     {
                         // Write the raw connection payload to the pipe let the upstream handle it
+                        Console.WriteLine(System.Text.Encoding.UTF8.GetString(payload.First.ToArray()));
                         await connection.Application.Output.WriteAsync(payload.First);
                     }
                     else
@@ -277,6 +290,7 @@ namespace Microsoft.Azure.SignalR
                         var position = payload.Start;
                         while (connectionDataMessage.Payload.TryGet(ref position, out var memory))
                         {
+                            Console.WriteLine(System.Text.Encoding.UTF8.GetString(memory.ToArray()));
                             await connection.Application.Output.WriteAsync(memory);
                         }
                     }

@@ -13,6 +13,7 @@ namespace Microsoft.Azure.SignalR
 
         public const string AsrsUserAgent = "Asrs-User-Agent";
         public const string AsrsInstanceId = "Asrs-Instance-Id";
+        public const string AsrsMigratedFrom = "Asrs-Migrated-From";
 
         public const string AzureSignalREnabledKey = "Azure:SignalR:Enabled";
 

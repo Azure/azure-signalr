@@ -32,6 +32,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _connectedStarting =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(11, "ConnectedStarting"), "Connection {TransportConnectionId} started.");
 
+            private static readonly Action<ILogger, string, Exception> _migrationStarting =
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(22, "MigrationStarting"), "Connection {TransportConnectionId} migrated from another server.");
+
             private static readonly Action<ILogger, string, Exception> _connectedEnding =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(12, "ConnectedEnding"), "Connection {TransportConnectionId} ended.");
 
@@ -80,6 +83,11 @@ namespace Microsoft.Azure.SignalR
             public static void ConnectedStarting(ILogger logger, string connectionId)
             {
                 _connectedStarting(logger, connectionId, null);
+            }
+
+            public static void MigrationStarting(ILogger logger, string connectionId)
+            {
+                _migrationStarting(logger, connectionId, null);
             }
 
             public static void ConnectedEnding(ILogger logger, string connectionId)
