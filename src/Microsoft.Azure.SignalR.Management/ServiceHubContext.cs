@@ -3,6 +3,7 @@
 
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -31,7 +32,14 @@ namespace Microsoft.Azure.SignalR.Management
             _serviceProvider?.Dispose();
         }
 
-        private Task StopConnectionAsync()
+        // for test only
+        public ServiceConnectionStatus GetConnectionStatus()
+        {
+            var container = _serviceProvider.GetService<IServiceConnectionContainer>();
+            return ((ManagementServiceConnectionContainer)container).GetServiceConnectionStatus();
+        }
+
+        public Task StopConnectionAsync()
         {
             var serviceConnectionManager = _serviceProvider.GetService<IServiceConnectionManager<Hub>>();
             if (serviceConnectionManager == null)

@@ -118,7 +118,7 @@ namespace Microsoft.Azure.SignalR
         /// Start and manage the whole connection lifetime
         /// </summary>
         /// <returns></returns>
-        protected async Task StartCoreAsync(IServiceConnection connection, string target = null)
+        protected virtual async Task StartCoreAsync(IServiceConnection connection, string target = null)
         {
             try
             {

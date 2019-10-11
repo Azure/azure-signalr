@@ -49,7 +49,7 @@ namespace Microsoft.Azure.SignalR.Management
                         var clientConnectionFactory = new ClientConnectionFactory();
                         ConnectionDelegate connectionDelegate = connectionContext => Task.CompletedTask;
                         var serviceConnectionFactory = new ServiceConnectionFactory(serviceProtocol, clientConnectionManager, connectionFactory, loggerFactory, connectionDelegate, clientConnectionFactory);
-                        var weakConnectionContainer = new WeakServiceConnectionContainer(serviceConnectionFactory, _serviceManagerOptions.ConnectionCount, new HubServiceEndpoint(hubName, _endpointProvider, _endpoint));
+                        var managementConnectionContainer = new ManagementServiceConnectionContainer(serviceConnectionFactory, _serviceManagerOptions.ConnectionCount, new HubServiceEndpoint(hubName, _endpointProvider, _endpoint));
 
                         var serviceCollection = new ServiceCollection();
                         serviceCollection.AddSignalRCore();
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.SignalR.Management
                             .AddSingleton(typeof(IConnectionFactory), sp => connectionFactory)
                             .AddSingleton(typeof(HubLifetimeManager<>), typeof(WebSocketsHubLifetimeManager<>))
                             .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
-                            .AddSingleton(typeof(IServiceConnectionContainer), sp => weakConnectionContainer);
+                            .AddSingleton(typeof(IServiceConnectionContainer), sp => managementConnectionContainer);
 
                         var success = false;
                         ServiceProvider serviceProvider = null;
@@ -73,11 +73,11 @@ namespace Microsoft.Azure.SignalR.Management
                             serviceProvider = serviceCollection.BuildServiceProvider();
 
                             var serviceConnectionManager = serviceProvider.GetRequiredService<IServiceConnectionManager<Hub>>();
-                            serviceConnectionManager.SetServiceConnection(weakConnectionContainer);
+                            serviceConnectionManager.SetServiceConnection(managementConnectionContainer);
                             _ = serviceConnectionManager.StartAsync();
 
                             // wait until service connection established
-                            await weakConnectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
+                            await managementConnectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
 
                             var webSocketsHubLifetimeManager = (WebSocketsHubLifetimeManager<Hub>)serviceProvider.GetRequiredService<HubLifetimeManager<Hub>>();
 
