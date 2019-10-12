@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using Microsoft.AspNet.SignalR.Tracing;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.TraceSource;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
