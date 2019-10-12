@@ -23,7 +23,8 @@
     <MicrosoftAspNetSignalRClientVersion>2.4.1</MicrosoftAspNetSignalRClientVersion>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.0</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
     <MicrosoftExtensionsLoggingTraceSourcePackageVersion>2.1.0</MicrosoftExtensionsLoggingTraceSourcePackageVersion>
-    <SystemThreadingChannelsPackageVersion>4.5.0</SystemThreadingChannelsPackageVersion>
+    <SystemThreadingChannelsPackageVersion>4.6.0</SystemThreadingChannelsPackageVersion>
+    <SystemIOPipelinesPackageVersion>4.6.0</SystemIOPipelinesPackageVersion>
     
     <!-- SignalR Management -->
     <MicrosoftConfigurationFileExtensionVersion>2.2.0</MicrosoftConfigurationFileExtensionVersion>
