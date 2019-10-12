@@ -19,10 +19,11 @@ namespace ChatSample
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSignalR()
+                    .AddMessagePackProtocol()
                     .AddAzureSignalR();
         }
 
-        public void Configure(IApplicationBuilder app)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseFileServer();
             app.UseAzureSignalR(routes =>

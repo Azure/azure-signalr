@@ -8,6 +8,7 @@ using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
@@ -36,12 +37,20 @@ namespace Microsoft.Azure.SignalR
             useSynchronizationContext: false);
 
         private readonly object _heartbeatLock = new object();
+
+        internal bool IsMigrated = false;
+
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
         public ServiceConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
             ConnectionId = serviceMessage.ConnectionId;
             User = serviceMessage.GetUserPrincipal();
+
+            if (serviceMessage.Headers.TryGetValue(Constants.AsrsMigratedFrom, out _))
+            {
+                IsMigrated = true;
+            }
 
             // Create the Duplix Pipeline for the virtual connection
             transportPipeOptions = transportPipeOptions ?? DefaultPipeOptions;

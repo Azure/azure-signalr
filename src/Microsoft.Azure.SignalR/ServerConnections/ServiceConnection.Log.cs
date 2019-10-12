@@ -32,6 +32,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _connectedStarting =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(11, "ConnectedStarting"), "Connection {TransportConnectionId} started.");
 
+            private static readonly Action<ILogger, string, Exception> _migrationStarting =
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(22, "MigrationStarting"), "Connection {TransportConnectionId} migrated from another server.");
+
             private static readonly Action<ILogger, string, Exception> _connectedEnding =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(12, "ConnectedEnding"), "Connection {TransportConnectionId} ended.");
 
@@ -46,6 +49,9 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, Exception> _applicationTaskTimedOut =
                 LoggerMessage.Define(LogLevel.Error, new EventId(21, "ApplicationTaskTimedOut"), "Timed out waiting for the application task to complete.");
+
+            private static readonly Action<ILogger, Exception> _errorSkippingHandshakeResponse =
+                LoggerMessage.Define(LogLevel.Warning, new EventId(22, "ErrorSkippingHandshakeResponse"), "The first received message after handshake is not HandshakeResponse.");
 
             public static void FailedToCleanupConnections(ILogger logger, Exception exception)
             {
@@ -67,6 +73,11 @@ namespace Microsoft.Azure.SignalR
                 _applicationTaskFailed(logger, exception);
             }
 
+            public static void ErrorSkippingHandshakeResponse(ILogger logger, string connectionId)
+            {
+                _errorSkippingHandshakeResponse(logger, null);
+            }
+
             public static void FailToWriteMessageToApplication(ILogger logger, string connectionId, Exception exception)
             {
                 _failToWriteMessageToApplication(logger, connectionId, exception);
@@ -80,6 +91,11 @@ namespace Microsoft.Azure.SignalR
             public static void ConnectedStarting(ILogger logger, string connectionId)
             {
                 _connectedStarting(logger, connectionId, null);
+            }
+
+            public static void MigrationStarting(ILogger logger, string connectionId)
+            {
+                _migrationStarting(logger, connectionId, null);
             }
 
             public static void ConnectedEnding(ILogger logger, string connectionId)

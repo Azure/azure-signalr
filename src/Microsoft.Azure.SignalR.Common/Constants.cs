@@ -19,6 +19,7 @@ namespace Microsoft.Azure.SignalR
         public const string Fin = "fin";
         public const string FinAck = "finack";
 
+        public const string AsrsMigratedFrom = "Asrs-Migrated-From";
         public const string AsrsUserAgent = "Asrs-User-Agent";
         public const string AsrsInstanceId = "Asrs-Instance-Id";
 

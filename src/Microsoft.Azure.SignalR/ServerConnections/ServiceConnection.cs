@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
                                  IClientConnectionManager clientConnectionManager,
-                                 IConnectionFactory connectionFactory, 
+                                 IConnectionFactory connectionFactory,
                                  ILoggerFactory loggerFactory,
                                  ConnectionDelegate connectionDelegate,
                                  IClientConnectionFactory clientConnectionFactory,
@@ -113,6 +114,16 @@ namespace Microsoft.Azure.SignalR
                     var buffer = result.Buffer;
                     if (!buffer.IsEmpty)
                     {
+                        if (connection.IsMigrated)
+                        { 
+                            if (SignalRProtocol.HandshakeProtocol.TryParseResponseMessage(ref buffer, out var message))
+                            {
+                                connection.IsMigrated = false;
+                                connection.Application.Input.AdvanceTo(buffer.End);
+                            }
+                            continue;
+                        }
+
                         try
                         {
                             // Forward the message to the service
@@ -148,8 +159,10 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private void AddClientConnection(ServiceConnectionContext connection, string instanceId)
+        private void AddClientConnection(ServiceConnectionContext connection, OpenConnectionMessage message)
         {
+            var instanceId = GetInstanceId(message.Headers);
+
             _clientConnectionManager.AddClientConnection(connection);
             _connectionIds.TryAdd(connection.ConnectionId, instanceId);
         }
@@ -157,7 +170,7 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnConnectedAsync(OpenConnectionMessage message)
         {
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
-            AddClientConnection(connection, GetInstanceId(message.Headers));
+            AddClientConnection(connection, message);
             Log.ConnectedStarting(Logger, connection.ConnectionId);
 
             // Execute the application code
