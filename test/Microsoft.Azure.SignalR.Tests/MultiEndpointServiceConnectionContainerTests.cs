@@ -624,7 +624,7 @@ namespace Microsoft.Azure.SignalR.Tests
                         new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                         new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                         new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    }, e, new AckHandler(100, 500));
+                    }, e, new AckHandler(100, 1000));
                 }
                 return containers[e] = new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
@@ -634,7 +634,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                }, e, new AckHandler(100, 500));
+                }, e, new AckHandler(100, 1000));
             }, sem, router, null);
 
             // All the connections started
