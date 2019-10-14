@@ -191,7 +191,13 @@ namespace Owin
 
             var resolver = configuration.Resolver ?? throw new ArgumentException("A dependency resolver must be specified.");
 
-            var loggerFactory = resolver.Resolve<ILoggerFactory>() ?? new LoggerFactory();
+            var loggerFactory = resolver.Resolve<ILoggerFactory>();
+            if (loggerFactory == null)
+            {
+                loggerFactory = new LoggerFactory();
+                // Add default 
+                loggerFactory.AddEventSourceLogger();
+            }
 
             var dispatcher = DispatcherHelper.PrepareAndGetDispatcher(builder, configuration, options, applicationName, loggerFactory);
             if (dispatcher != null)
