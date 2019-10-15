@@ -27,9 +27,7 @@ namespace Microsoft.Azure.SignalR
             string signingKey = null,
             string requestId = null)
         {
-            var requestIdClaim = new Claim[] { new Claim(Constants.ClaimType.Id, requestId ?? GenerateRequestId()) };
-            var claimsWithRequestId = claims == null ? requestIdClaim : claims.Concat(requestIdClaim);
-            var subject = new ClaimsIdentity(claimsWithRequestId);
+            var subject = new ClaimsIdentity(claims);
             return GenerateJwtBearer(issuer, audience, subject, expires, signingKey);
         }
 
