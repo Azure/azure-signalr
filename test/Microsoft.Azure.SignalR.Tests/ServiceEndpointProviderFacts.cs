@@ -128,7 +128,7 @@ namespace Microsoft.Azure.SignalR.Tests
         internal void GenerateServerAccessToken(IServiceEndpointProvider provider)
         {
             const string userId = "UserA";
-            var tokenString = provider.GenerateServerAccessToken(nameof(TestHub), userId, requestId: string.Empty);
+            var tokenString = provider.GenerateServerAccessToken(nameof(TestHub), userId);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/server/?hub={HubName}",
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.SignalR.Tests
         internal void GenerateServerAccessTokenWithPrefix(IServiceEndpointProvider provider)
         {
             const string userId = "UserA";
-            var tokenString = provider.GenerateServerAccessToken(nameof(TestHub), userId, requestId: string.Empty);
+            var tokenString = provider.GenerateServerAccessToken(nameof(TestHub), userId);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/server/?hub={AppName}_{HubName}",
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.SignalR.Tests
         internal void GenerateClientAccessToken(IServiceEndpointProvider provider)
         {
             var requestId = Guid.NewGuid().ToString();
-            var tokenString = provider.GenerateClientAccessToken(HubName, requestId: requestId);
+            var tokenString = provider.GenerateClientAccessToken(HubName);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/client/?hub={HubName}",
@@ -191,7 +191,7 @@ namespace Microsoft.Azure.SignalR.Tests
         internal void GenerateClientAccessTokenWithPrefix(IServiceEndpointProvider provider)
         {
             var requestId = Guid.NewGuid().ToString();
-            var tokenString = provider.GenerateClientAccessToken(HubName, requestId: requestId);
+            var tokenString = provider.GenerateClientAccessToken(HubName);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/client/?hub={AppName}_{HubName}",

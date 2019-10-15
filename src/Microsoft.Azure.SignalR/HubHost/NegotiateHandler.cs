@@ -46,20 +46,18 @@ namespace Microsoft.Azure.SignalR
                 return null;
             }
 
-            var clientRequestId = _connectionRequestIdProvider.GetRequestId();
-
-            var queryString = GetQueryString(_connectionRequestIdProvider, request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null);
+            var queryString = GetQueryString(request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null);
 
             return new NegotiationResponse
             {
                 Url = provider.GetClientEndpoint(hubName, originalPath, queryString),
-                AccessToken = provider.GenerateClientAccessToken(hubName, claims, requestId: clientRequestId),
+                AccessToken = provider.GenerateClientAccessToken(hubName, claims),
                 // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
                 AvailableTransports = new List<AvailableTransport>()
             };
         }
 
-        private string GetQueryString(IConnectionRequestIdProvider provider, string originalQueryString)
+        private string GetQueryString(string originalQueryString)
         {
             var clientRequestId = _connectionRequestIdProvider.GetRequestId();
             if (clientRequestId != null)

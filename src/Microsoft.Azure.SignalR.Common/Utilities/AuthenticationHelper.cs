@@ -25,13 +25,14 @@ namespace Microsoft.Azure.SignalR
             IEnumerable<Claim> claims = null,
             DateTime? expires = null,
             string signingKey = null,
-            string requestId = null)
+            DateTime? issuedAt = null,
+            DateTime? notBefore = null)
         {
-            var subject = claims == null ? new ClaimsIdentity() : new ClaimsIdentity(claims);
-            return GenerateJwtBearer(issuer, audience, subject, expires, signingKey);
+            var subject = claims == null ? null : new ClaimsIdentity(claims);
+            return GenerateJwtBearer(issuer, audience, subject, expires, signingKey, issuedAt, notBefore);
         }
 
-        public static string GenerateAccessToken(string signingKey, string audience, IEnumerable<Claim> claims, TimeSpan lifetime, string requestId = null)
+        public static string GenerateAccessToken(string signingKey, string audience, IEnumerable<Claim> claims, TimeSpan lifetime, DateTime? issueAt = null)
         {
             var expire = DateTime.UtcNow.Add(lifetime);
 
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.SignalR
                 claims: claims,
                 expires: expire,
                 signingKey: signingKey,
-                requestId: requestId
+                issuedAt: issueAt
             );
 
             if (jwtToken.Length > MaxTokenLength)
@@ -61,7 +62,9 @@ namespace Microsoft.Azure.SignalR
             string audience = null,
             ClaimsIdentity subject = null,
             DateTime? expires = null,
-            string signingKey = null)
+            string signingKey = null,
+            DateTime? issuedAt = null,
+            DateTime? notBefore = null)
         {
             SigningCredentials credentials = null;
             if (!string.IsNullOrEmpty(signingKey))
@@ -77,7 +80,9 @@ namespace Microsoft.Azure.SignalR
                 issuer: issuer,
                 audience: audience,
                 subject: subject,
+                notBefore: notBefore,
                 expires: expires,
+                issuedAt: issuedAt,
                 signingCredentials: credentials);
             return JwtTokenHandler.WriteToken(token);
         }
