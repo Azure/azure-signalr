@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR
             return GenerateJwtBearer(issuer, audience, subject, expires, signingKey, issuedAt, notBefore);
         }
 
-        public static string GenerateAccessToken(string signingKey, string audience, IEnumerable<Claim> claims, TimeSpan lifetime, DateTime? issueAt = null)
+        public static string GenerateAccessToken(string signingKey, string audience, IEnumerable<Claim> claims, TimeSpan lifetime)
         {
             var expire = DateTime.UtcNow.Add(lifetime);
 
@@ -40,8 +40,7 @@ namespace Microsoft.Azure.SignalR
                 audience: audience,
                 claims: claims,
                 expires: expire,
-                signingKey: signingKey,
-                issuedAt: issueAt
+                signingKey: signingKey
             );
 
             if (jwtToken.Length > MaxTokenLength)
