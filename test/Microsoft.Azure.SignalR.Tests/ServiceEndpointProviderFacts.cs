@@ -106,8 +106,8 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Fact]
-        internal void GenerateMutlipleAccessTokenShouldBeUnique()
+        [Fact(Skip = "Access token does not need to be unique")]
+        internal void GenerateMultipleAccessTokenShouldBeUnique()
         {
             var count = 1000;
             var sep = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName);

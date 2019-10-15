@@ -619,7 +619,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.True(Version.TryParse(version, out var vs));
                     Assert.True(vs >= VersionSupportingApplicationNamePrefix);
                     var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
-                    Assert.NotNull(requestId);
+                    Assert.Null(requestId);
                     Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
                 }
             }
@@ -668,7 +668,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.True(versionResult > new Version(1, 0, 8));
 
                     var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
-                    Assert.NotNull(requestId);
+                    Assert.Null(requestId);
                     Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
                 }
             }
