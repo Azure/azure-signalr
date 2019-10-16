@@ -9,14 +9,15 @@ namespace Microsoft.Azure.SignalR.Common
     [Serializable]
     public class ServiceConnectionNotActiveException : AzureSignalRException
     {
+        private const string NotActiveMessage = "The connection is not active, data cannot be sent to the service.";
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceConnectionNotActiveException"/> class.
         /// </summary>
-        public ServiceConnectionNotActiveException() : this("The connection is not active, data cannot be sent to the service.")
+        public ServiceConnectionNotActiveException() : this(NotActiveMessage)
         {
         }
 
-        public ServiceConnectionNotActiveException(string message) : base(message)
+        public ServiceConnectionNotActiveException(string message) : base(string.IsNullOrEmpty(message) ? NotActiveMessage : message)
         {
 
         }
