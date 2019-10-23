@@ -41,7 +41,8 @@ namespace Microsoft.Azure.SignalR.Tests
         public void GenerateNegotiateResponseWithUserId(Type type, string expectedUserId)
         {
             var config = new ConfigurationBuilder().Build();
-            var serviceProvider = new ServiceCollection().AddSignalR()
+            var serviceProvider = new ServiceCollection()
+                .AddSignalR(o => o.EnableDetailedErrors = false)
                 .AddAzureSignalR(
                 o =>
                 {
@@ -79,6 +80,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
             Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerName));
             Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode));
+            Assert.Null(token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.EnableDetailedErrors));
         }
 
         [Fact]
@@ -87,7 +89,8 @@ namespace Microsoft.Azure.SignalR.Tests
             var name = nameof(GenerateNegotiateResponseWithUserIdAndServerSticky);
             var serverNameProvider = new TestServerNameProvider(name);
             var config = new ConfigurationBuilder().Build();
-            var serviceProvider = new ServiceCollection().AddSignalR()
+            var serviceProvider = new ServiceCollection()
+                .AddSignalR(o => o.EnableDetailedErrors = true)
                 .AddAzureSignalR(
                 o =>
                 {
@@ -130,6 +133,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(name, serverName);
             var mode = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode)?.Value;
             Assert.Equal("Required", mode);
+            Assert.Equal("True", token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.EnableDetailedErrors)?.Value);
         }
 
         [Theory]
