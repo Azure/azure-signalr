@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -24,8 +25,9 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager, IHubProtocolResolver protocolResolver,
-            ILogger<ServiceLifetimeManager<THub>> logger, AzureSignalRMarkerService marker)
-            : base(serviceConnectionManager, protocolResolver)
+            ILogger<ServiceLifetimeManager<THub>> logger, AzureSignalRMarkerService marker,
+            IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions)
+            : base(serviceConnectionManager, protocolResolver, globalHubOptions, hubOptions)
         {
             // after core 3.0 UseAzureSignalR() is not required.
 #if !NETCOREAPP3_0
