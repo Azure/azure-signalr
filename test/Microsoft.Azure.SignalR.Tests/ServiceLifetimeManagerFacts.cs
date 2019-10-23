@@ -37,8 +37,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 },
                 NullLogger<DefaultHubProtocolResolver>.Instance);
 
-        private static readonly IOptions<HubOptions> _hubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "json", "messagepack" } });
-        private static readonly IOptions<HubOptions<TestHub>> _hubTOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "json", "messagepack" } });
+        private static readonly IOptions<HubOptions> _globalHubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "json", "messagepack" } });
+        private static readonly IOptions<HubOptions<TestHub>> _localHubOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "json", "messagepack" } });
 
         private static readonly ILogger<ServiceLifetimeManager<TestHub>> Logger =
             NullLogger<ServiceLifetimeManager<TestHub>>.Instance;
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker, _hubOptions, _hubTOptions);
+                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker, _hubOptions, _hubTOptions);
+                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.SignalR.Tests
             serviceConnectionManager.SetServiceConnection(proxy.ServiceConnectionContainer);
 
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker, _hubOptions, _hubTOptions);
+                proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions);
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
@@ -147,11 +147,11 @@ namespace Microsoft.Azure.SignalR.Tests
                     new CustomHubProtocol(),
                 },
                 NullLogger<DefaultHubProtocolResolver>.Instance);
-            IOptions<HubOptions> hubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "json", "messagepack", "blazorpack" } });
-            IOptions<HubOptions<TestHub>> hubTOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "json", "messagepack", "blazorpack" } });
+            IOptions<HubOptions> globalHubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "json", "messagepack", "blazorpack" } });
+            IOptions<HubOptions<TestHub>> localHubOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "json", "messagepack", "blazorpack" } });
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                new ClientConnectionManager(), protocolResolver, Logger, Marker, hubOptions, hubTOptions);
+                new ClientConnectionManager(), protocolResolver, Logger, Marker, globalHubOptions, localHubOptions);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
@@ -176,11 +176,11 @@ namespace Microsoft.Azure.SignalR.Tests
                     new CustomHubProtocol(),
                 },
                 NullLogger<DefaultHubProtocolResolver>.Instance);
-            IOptions<HubOptions> hubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "blazorpack" } });
-            IOptions<HubOptions<TestHub>> hubTOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "blazorpack" } });
+            IOptions<HubOptions> globalHubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "blazorpack" } });
+            IOptions<HubOptions<TestHub>> localHubOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "blazorpack" } });
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                new ClientConnectionManager(), protocolResolver, Logger, Marker, hubOptions, hubTOptions);
+                new ClientConnectionManager(), protocolResolver, Logger, Marker, globalHubOptions, localHubOptions);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
