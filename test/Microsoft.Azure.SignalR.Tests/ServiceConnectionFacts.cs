@@ -8,9 +8,13 @@ using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Primitives;
 using Xunit;
 
@@ -158,9 +162,9 @@ namespace Microsoft.Azure.SignalR.Tests
             await Task.Delay(200);
 
             var serviceConnection = proxy.ServiceConnections.First().Value;
-            var excption = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            var exception = await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(() =>
                 serviceConnection.WriteAsync(new ConnectionDataMessage("1", null)));
-            Assert.Equal(errorMessage, excption.Message);
+            Assert.Equal(errorMessage, exception.Message);
         }
 
         [Fact]
@@ -448,6 +452,75 @@ namespace Microsoft.Azure.SignalR.Tests
             // on-demand connection has been promoted. Try to dispose and another connection will be created
             onDemandConnection.Transport.Input.CancelPendingRead();
             await serverTask3.OrTimeout();
+        }
+
+        /// <summary>
+        /// If receive offline ping message from service and will trigger close connection
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task CloseClientsWhenReceiveInstanceOfflinePing()
+        {
+            // Prepare clients
+            var instanceId1 = Guid.NewGuid().ToString();
+            var connectionId1 = Guid.NewGuid().ToString("N");
+            var header1 = new HeaderDictionary() { { Constants.AsrsInstanceId, instanceId1 } };
+
+            var instanceId2 = Guid.NewGuid().ToString();
+            var connectionId2 = Guid.NewGuid().ToString("N");
+            var header2 = new HeaderDictionary() { { Constants.AsrsInstanceId, instanceId2 } };
+
+            var proxy = new ServiceConnectionProxy();
+
+            var connectionTask = proxy.WaitForServerConnectionAsync(1);
+            _ = proxy.StartAsync();
+
+            await connectionTask.OrTimeout();
+
+            // 2 client connects with different instanceIds
+            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId1, null, header1, null));
+            connectionTask = proxy.WaitForConnectionAsync(connectionId1);
+            await connectionTask.OrTimeout();
+
+            await proxy.WriteMessageAsync(new OpenConnectionMessage(connectionId2, null, header2, null));
+            connectionTask = proxy.WaitForConnectionAsync(connectionId2);
+            await connectionTask.OrTimeout();
+
+            // Server received instance offline ping on instanceId1 and trigger cleanup related client1
+            await proxy.WriteMessageAsync(new PingMessage()
+            {
+                Messages = new[] { "offline", instanceId1 }
+            });
+
+            // Validate client1 is closed and client2 is still connected
+            var disconnectTask = proxy.WaitForConnectionCloseAsync(connectionId1);
+            await disconnectTask.OrTimeout();
+            Assert.Single(proxy.ClientConnections);
+            Assert.Equal(connectionId2, proxy.ClientConnections.FirstOrDefault().Key);
+        }
+
+        /// <summary>
+        /// Test if there's a deadlock in server connection initialization. _serviceConnectionStartTcs in ServiceConnectionBase should be inited with option TaskCreationOptions.RunContinuationsAsynchronously
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task ServiceConnectionInitializationDeadlockTest()
+        {
+            var context = SynchronizationContext.Current;
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(null);
+                var conn = new TestServiceConnection();
+                var initTask = conn.StartAsync();
+                await conn.ConnectionInitializedTask;
+                conn.Stop();
+                var completedTask = Task.WhenAny(initTask, Task.Delay(TimeSpan.FromSeconds(1))).Result;
+                Assert.Equal(initTask, completedTask);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+            }
         }
 
         private static void AssertTimeout(params Task[] task)

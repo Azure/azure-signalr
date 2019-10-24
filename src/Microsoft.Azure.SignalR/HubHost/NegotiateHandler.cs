@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
@@ -15,18 +16,20 @@ namespace Microsoft.Azure.SignalR
     internal class NegotiateHandler
     {
         private readonly IUserIdProvider _userIdProvider;
+        private readonly IConnectionRequestIdProvider _connectionRequestIdProvider;
         private readonly Func<HttpContext, IEnumerable<Claim>> _claimsProvider;
         private readonly IServiceEndpointManager _endpointManager;
         private readonly IEndpointRouter _router;
         private readonly string _serverName;
         private readonly ServerStickyMode _mode;
 
-        public NegotiateHandler(IServiceEndpointManager endpointManager, IEndpointRouter router, IUserIdProvider userIdProvider, IServerNameProvider nameProvider, IOptions<ServiceOptions> options)
+        public NegotiateHandler(IServiceEndpointManager endpointManager, IEndpointRouter router, IUserIdProvider userIdProvider, IServerNameProvider nameProvider, IConnectionRequestIdProvider connectionRequestIdProvider, IOptions<ServiceOptions> options)
         {
             _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
             _router = router ?? throw new ArgumentNullException(nameof(router));
             _serverName = nameProvider?.GetName();
             _userIdProvider = userIdProvider ?? throw new ArgumentNullException(nameof(userIdProvider));
+            _connectionRequestIdProvider = connectionRequestIdProvider ?? throw new ArgumentNullException(nameof(connectionRequestIdProvider));
             _claimsProvider = options?.Value?.ClaimsProvider;
             _mode = options.Value.ServerStickyMode;
         }
@@ -43,14 +46,30 @@ namespace Microsoft.Azure.SignalR
                 return null;
             }
 
+            var queryString = GetQueryString(request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null);
+
             return new NegotiationResponse
             {
-                Url = provider.GetClientEndpoint(hubName, originalPath,
-                    request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : string.Empty),
+                Url = provider.GetClientEndpoint(hubName, originalPath, queryString),
                 AccessToken = provider.GenerateClientAccessToken(hubName, claims),
                 // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
                 AvailableTransports = new List<AvailableTransport>()
             };
+        }
+
+        private string GetQueryString(string originalQueryString)
+        {
+            var clientRequestId = _connectionRequestIdProvider.GetRequestId();
+            if (clientRequestId != null)
+            {
+                clientRequestId = WebUtility.UrlEncode(clientRequestId);
+            }
+            if (originalQueryString != null)
+            {
+                return $"{originalQueryString}&{Constants.QueryParameter.ConnectionRequestId}={clientRequestId}";
+            }
+
+            return $"{Constants.QueryParameter.ConnectionRequestId}={clientRequestId}";
         }
 
         private IEnumerable<Claim> BuildClaims(HttpContext context)

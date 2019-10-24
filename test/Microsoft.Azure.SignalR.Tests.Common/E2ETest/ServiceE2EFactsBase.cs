@@ -14,19 +14,26 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 {
     public class ServiceE2EFactsBase : VerifiableLoggedTest
     {
-        public static object[][] TestData = {
-            new object[] { "Echo", DefaultClientCount, new Func<string, ITestClientSet, Task>((methodName, clients) => clients.SendAsync(methodName, sendCount : DefaultClientCount, messages : _defaultMessage)) },
-            new object[] { "Broadcast", DefaultClientCount, new Func<string, ITestClientSet, Task>((methodName, clients) => clients.SendAsync(methodName, sendCount : 1, messages : _defaultMessage)) },
-            new object[] { "SendToClient", DefaultClientCount, new Func<string, ITestClientSet, Task>((methodName, clients) => clients.SendAsync(methodName, sendCount : DefaultClientCount, messages : _defaultMessage)) },
-            new object[] { "SendToUser", DefaultClientCount, new Func<string, ITestClientSet, Task>((methodName, clients) => clients.SendAsync(methodName, sendCount : DefaultClientCount, messages : _defaultMessage)) },
-            new object[] { "SendToGroup", GetGroupSize(DefaultSendGroupIndex), new Func<string, ITestClientSet, Task>(GroupTask) }
+        private readonly ITestServerFactory _testServerFactory;
+        private readonly ITestClientSetFactory _testClientSetFactory;
+        private readonly ITestOutputHelper _output;
+
+        public static string DefaultMessage { get; } = $"Message from {nameof(ServiceE2EFactsBase)}";
+
+        public static int DefaultClientCount { get; } = 3;
+
+        public static int DefaultDelayMilliseconds { get; } = 3000;
+
+        public static int DefaultSendGroupIndex { get; } = 0;
+
+        public static object[][] TestDataBase { get; } = {
+            new object[] { "Echo", DefaultClientCount, new Func<string, ITestClientSet, Task>((methodName, clients) => clients.SendAsync(methodName, sendCount : DefaultClientCount, messages : DefaultMessage)) },
+            new object[] { "Broadcast", DefaultClientCount, new Func<string, ITestClientSet, Task>((methodName, clients) => clients.SendAsync(methodName, sendCount : 1, messages : DefaultMessage)) },
+            new object[] { "SendToClient", DefaultClientCount, new Func<string, ITestClientSet, Task>((methodName, clients) => clients.SendAsync(methodName, sendCount : DefaultClientCount, messages : DefaultMessage)) },
+            new object[] { "SendToUser", DefaultClientCount, new Func<string, ITestClientSet, Task>((methodName, clients) => clients.SendAsync(methodName, sendCount : DefaultClientCount, messages : DefaultMessage)) },
+            new object[] { "SendToGroup", GetGroupSize(DefaultSendGroupIndex), new Func<string, ITestClientSet, Task>(GroupTask) },
         };
 
-        private const int DefaultClientCount = 3;
-        private const int DefaultDelayMilliseconds = 3000;
-        private const int DefaultSendGroupIndex = 0;
-
-        private static readonly string _defaultMessage = $"Message from {nameof(ServiceE2EFactsBase)}";
         private static IDictionary<int, string> ConnectionGroupMap
         {
             get
@@ -35,9 +42,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             }
         }
 
-        private readonly ITestServerFactory _testServerFactory;
-        private readonly ITestClientSetFactory _testClientSetFactory;
-        private readonly ITestOutputHelper _output;
+        
 
         public ServiceE2EFactsBase(ITestServerFactory testServerFactory, ITestClientSetFactory testClientSetFactory, ITestOutputHelper output) : base(output)
         {
@@ -46,18 +51,13 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             _output = output;
         }
 
-        [ConditionalTheory]
-        [SkipIfConnectionStringNotPresent]
-        [MemberData(nameof(TestData))]
-        public async Task RunE2ETests(string methodName, int expectedMessageCount, Func<string, ITestClientSet, Task> coreTask)
+        protected async Task RunE2ETestsBase(string methodName, int expectedMessageCount, Func<string, ITestClientSet, Task> coreTask)
         {
             ITestServer server = null;
-            IDisposable verifiableLog = null;
             try
             {
-                verifiableLog = StartVerifiableLog(out var loggerFactory);
-                server = _testServerFactory.Create();
-                var serverUrl = await server.StartAsync(loggerFactory);
+                server = _testServerFactory.Create(_output);
+                var serverUrl = await server.StartAsync();
                 var count = 0;
                 var clients = _testClientSetFactory.Create(serverUrl, DefaultClientCount, _output);
                 clients.AddListener(methodName, message => Interlocked.Increment(ref count));
@@ -71,7 +71,6 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             finally
             {
                 await server?.StopAsync();
-                verifiableLog?.Dispose();
             }
 
         }
@@ -79,16 +78,16 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         private static async Task GroupTask(string methodName, ITestClientSet clients)
         {
             await clients.ManageGroupAsync("JoinGroup", ConnectionGroupMap);
-            await clients.SendAsync(methodName, sendCount: 1, messages: new[] { GetGroupName(DefaultSendGroupIndex), _defaultMessage });
+            await clients.SendAsync(methodName, sendCount: 1, messages: new[] { GetGroupName(DefaultSendGroupIndex), DefaultMessage });
             await Task.Delay(DefaultDelayMilliseconds);
             await clients.ManageGroupAsync("LeaveGroup", ConnectionGroupMap);
-            await clients.SendAsync(methodName, messages: new[] { GetGroupName(DefaultSendGroupIndex), _defaultMessage });
+            await clients.SendAsync(methodName, messages: new[] { GetGroupName(DefaultSendGroupIndex), DefaultMessage });
             await Task.Delay(DefaultDelayMilliseconds);
         }
 
         private static string GetGroupName(int ind) => $"group_{ind % 2}";
 
-        private static int GetGroupSize(int ind) => (from entry in ConnectionGroupMap where GetGroupName(ind) == entry.Value select entry).Count();
+        protected static int GetGroupSize(int ind) => (from entry in ConnectionGroupMap where GetGroupName(ind) == entry.Value select entry).Count();
 
         private void Shuffle<T>(T[] array)
         {

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
@@ -77,7 +78,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 Assert.True(result.TryGetValue(expectedHubs[i], out var current));
                 var message = current as BroadcastDataMessage;
                 Assert.NotNull(message);
-                Assert.Equal(messageValue, message.Payloads["json"].GetSingleFramePayload());
+                Assert.Equal(messageValue, message.Payloads["json"].GetJsonMessageFromSingleFramePayload<string>());
             }
         }
 
@@ -118,7 +119,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 Assert.NotNull(message);
 
                 Assert.Equal(expectedConnectionIds[i], message.ConnectionId);
-                Assert.Equal(messageValue, message.Payload.First.GetSingleFramePayload());
+                Assert.Equal(messageValue, message.Payload.First.GetJsonMessageFromSingleFramePayload<string>());
             }
         }
 
@@ -158,7 +159,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 Assert.NotNull(message);
 
                 Assert.Equal(expectedConnectionIds[i], message.ConnectionId);
-                Assert.Equal(messageValue, message.Payload.First.GetSingleFramePayload());
+                Assert.Equal(messageValue, message.Payload.First.GetJsonMessageFromSingleFramePayload<string>());
             }
         }
 
@@ -199,7 +200,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var message = current as GroupBroadcastDataMessage;
                 Assert.NotNull(message);
                 Assert.Equal(message.GroupName, expectedGroups[i]);
-                Assert.Equal(messageValue, message.Payloads["json"].GetSingleFramePayload());
+                Assert.Equal(messageValue, message.Payloads["json"].GetJsonMessageFromSingleFramePayload<string>());
             }
         }
 
@@ -240,7 +241,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 Assert.NotNull(message);
 
                 Assert.Equal(expectedUsers[i], message.UserId);
-                Assert.Equal(messageValue, message.Payloads["json"].GetSingleFramePayload());
+                Assert.Equal(messageValue, message.Payloads["json"].GetJsonMessageFromSingleFramePayload<string>());
             }
         }
 

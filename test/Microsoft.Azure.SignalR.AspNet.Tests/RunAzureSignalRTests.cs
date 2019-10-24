@@ -441,7 +441,16 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public async Task TestRunAzureSignalRWithDefaultRouterNegotiateWithFallback()
         {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: e => true, logChecker: s =>
+            {
+                Assert.Equal(4, s.Count);
+                Assert.True(s.All(ss => ss.Write.EventId.Name == "EndpointOffline"));
+                Assert.Contains("Hub 'AzureSignalRTest' is now disconnected from '[tt3](Primary)http://localhost3'. Please check log for detailed info.", s.Select(ss => ss.Write.Message));
+                Assert.Contains("Hub 'AzureSignalRTest' is now disconnected from '[tt4](Secondary)http://localhost4'. Please check log for detailed info.", s.Select(ss => ss.Write.Message));
+                Assert.Contains("Hub 'chat' is now disconnected from '[tt3](Primary)http://localhost3'. Please check log for detailed info.", s.Select(ss => ss.Write.Message));
+                Assert.Contains("Hub 'chat' is now disconnected from '[tt4](Secondary)http://localhost4'. Please check log for detailed info.", s.Select(ss => ss.Write.Message));
+                return true;
+            }))
             {
                 // Prepare the configuration
                 var hubConfig = Utility.GetTestHubConfig(loggerFactory, "chat");
@@ -452,7 +461,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                 var scf = new TestServiceConnectionFactory(endpoint =>
                 {
-                    if (endpoint.EndpointType == EndpointType.Primary)
+                    if (endpoint.Name != "es")
                     {
                         return new TestServiceConnection(ServiceConnectionStatus.Disconnected);
                     };
@@ -465,12 +474,14 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 {
                     options.Endpoints = new ServiceEndpoint[]
                     {
-                        new ServiceEndpoint(ConnectionString2, EndpointType.Secondary),
-                        new ServiceEndpoint(ConnectionString3),
-                        new ServiceEndpoint(ConnectionString4),
+                        new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "es"),
+                        new ServiceEndpoint(ConnectionString3, name: "tt3"),
+                        new ServiceEndpoint(ConnectionString4, name: "tt4", type: EndpointType.Secondary),
                     };
                 })))
                 {
+                    // wait for service connections to connect or disconnect
+                    await Task.Delay(50);
                     var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
                     var response = await client.GetAsync("/negotiate");
 
@@ -481,6 +492,38 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     // The default router fallbacks to the secondary
                     Assert.Equal("http://localhost2/aspnetclient", responseObject.RedirectUrl);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("/user/path/negotiate", "", "", "")]
+        [InlineData("/user/path/negotiate", "?clientProtocol=1.89", "a", "")]
+        [InlineData("/user/path/negotiate", "?clientProtocol=1.0", "a", "")]
+        [InlineData("/user/path/negotiate", "?clientProtocol=2.1", "a", "?asrs_request_id=a&asrs.op=%2Fuser%2Fpath")]
+        [InlineData("/negotiate", "?%3DKey=%3Fa%3Dc&clientProtocol=2.1", "?a=c", "?%3DKey=%3Fa%3Dc&asrs_request_id=%3Fa%3Dc")]
+        [InlineData("/user/negotiate", "?clientProtocol=2.2&customKey=customeValue", "&", "?customKey=customeValue&asrs_request_id=%26&asrs.op=%2Fuser")]
+        public async Task TestNegotiateRedirectUrl(string path, string query, string id, string expectedQuery)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
+            {
+                var requestIdProvider = new TestRequestIdProvider(id);
+                // Prepare the configuration
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                hubConfig.Resolver.Register(typeof(IConnectionRequestIdProvider), () => requestIdProvider);
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, ConnectionString, hubConfig)))
+                {
+                    var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
+                    var response = await client.GetAsync(path + query);
+
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    var message = await response.Content.ReadAsStringAsync();
+                    var responseObject = JsonConvert.DeserializeObject<ResponseMessage>(message);
+                    Assert.Equal("2.0", responseObject.ProtocolVersion);
+
+                    var uri = new Uri(responseObject.RedirectUrl);
+                    // The default router fallbacks to the secondary
+                    Assert.Equal("http://localhost/aspnetclient" + expectedQuery, uri.AbsoluteUri);
                 }
             }
         }
@@ -578,7 +621,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.True(Version.TryParse(version, out var vs));
                     Assert.True(vs >= VersionSupportingApplicationNamePrefix);
                     var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
-                    Assert.NotNull(requestId);
+                    Assert.Null(requestId);
                     Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
                 }
             }
@@ -627,7 +670,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.True(versionResult > new Version(1, 0, 8));
 
                     var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
-                    Assert.NotNull(requestId);
+                    Assert.Null(requestId);
                     Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
                 }
             }
@@ -646,6 +689,21 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var response = await client.GetAsync("/negotiate?connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
                     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
                 }
+            }
+        }
+
+        private sealed class TestRequestIdProvider : IConnectionRequestIdProvider
+        {
+            private readonly string _id;
+
+            public TestRequestIdProvider(string id)
+            {
+                _id = id;
+            }
+
+            public string GetRequestId()
+            {
+                return _id;
             }
         }
 

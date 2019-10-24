@@ -4,10 +4,10 @@
 
 namespace Microsoft.Azure.SignalR
 {
-    internal static class AckStatus
+    internal enum AckStatus
     {
-        public const int Ok = 1;
-        public const int NotFound = 2;
-        public const int Timeout = 3;
+        Ok = 1,
+        NotFound = 2,
+        Timeout = 3
     }
 }

@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -31,43 +30,77 @@ namespace Microsoft.Azure.SignalR
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
         private readonly HandshakeRequestMessage _handshakeRequest;
 
-        private readonly SemaphoreSlim _serviceConnectionLock = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
 
-        private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
         private readonly ServerConnectionType _connectionType;
 
         private readonly IServiceMessageHandler _serviceMessageHandler;
+        private readonly object _statusLock = new object();
+
+        private volatile string _errorMessage;
 
         // Check service timeout
         private long _lastReceiveTimestamp;
+
         // Keep-alive tick
         private long _lastSendTimestamp;
-        private volatile bool _isConnected;
 
-        private readonly ILogger _logger;
+        private ServiceConnectionStatus _status;
+
+        private int _started;
+
+        protected HubServiceEndpoint HubEndpoint { get; }
 
         protected string ConnectionId { get; }
 
+        protected ILogger Logger { get; }
+
         protected IServiceProtocol ServiceProtocol { get; }
 
-        protected ConnectionContext ConnectionContext { get; set; }
+        private ConnectionContext _connectionContext;
 
-        protected string ErrorMessage { get; private set; }
+        public event Action<StatusChange> ConnectionStatusChanged;
 
-        public ServiceConnectionStatus Status { get; private set; }
+        public ServiceConnectionStatus Status
+        {
+            get => _status;
+            private set
+            {
+                if (_status != value)
+                {
+                    lock (_statusLock)
+                    {
+                        if (_status != value)
+                        {
+                            var prev = _status;
+                            _status = value;
+                            ConnectionStatusChanged?.Invoke(new StatusChange(prev, value));
+                        }
+                    }
+                }
+            }
+        }
 
         public Task ConnectionInitializedTask => _serviceConnectionStartTcs.Task;
 
-        public ServiceConnectionBase(IServiceProtocol serviceProtocol, ILoggerFactory loggerFactory, string connectionId, IServiceMessageHandler serviceMessageHandler, ServerConnectionType connectionType)
+        protected ServiceConnectionBase(IServiceProtocol serviceProtocol, string connectionId,
+            HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType connectionType, ILogger logger)
         {
             ServiceProtocol = serviceProtocol;
             ConnectionId = connectionId;
 
             _connectionType = connectionType;
+            HubEndpoint = endpoint;
 
-            _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
-            _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
-            _logger = loggerFactory?.CreateLogger<ServiceConnectionBase>() ?? NullLogger<ServiceConnectionBase>.Instance;
+            if (serviceProtocol != null)
+            {
+                _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
+                _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
+            }
+
+            Logger = logger ?? NullLogger<ServiceConnectionBase>.Instance;
             _serviceMessageHandler = serviceMessageHandler;
         }
 
@@ -79,29 +112,57 @@ namespace Microsoft.Azure.SignalR
         /// <returns>The task of StartAsync</returns>
         public async Task StartAsync(string target = null)
         {
-            // Codes in try block should catch and log exceptions separately.
-            // The catch here should be very rare to reach.
-            try
+            if (Interlocked.CompareExchange(ref _started, 1, 0) != 0)
             {
-                if (await StartAsyncCore(target))
-                {
-                    _serviceConnectionStartTcs.TrySetResult(true);
-                    _isConnected = true;
-                    await ProcessIncomingAsync();
-                    _isConnected = false;
-                }
-
-                _serviceConnectionStartTcs.TrySetResult(false);
+                throw new InvalidOperationException("Connection already started!");
             }
-            catch (Exception ex)
+
+            Status = ServiceConnectionStatus.Connecting;
+
+            var connection = await EstablishConnectionAsync(target);
+            if (connection != null)
+            {
+                _connectionContext = connection;
+                Status = ServiceConnectionStatus.Connected;
+                _serviceConnectionStartTcs.TrySetResult(true);
+                try
+                {
+                    await ProcessIncomingAsync(connection);
+
+                    // when ProcessIncoming completes, clean up the connection
+
+                    // TODO: Never cleanup connections unless Service asks us to do that
+                    // Current implementation is based on assumption that Service will drop clients
+                    // if server connection fails.
+                    await CleanupConnections();
+                }
+                catch (Exception ex)
+                {
+                    Log.ConnectionDropped(Logger, HubEndpoint.ToString(), ConnectionId, ex);
+                }
+                finally
+                {
+                    // wait until all the connections are cleaned up to close the outgoing pipe
+                    // mark the status as Disconnected so that no one will write to this connection anymore
+                    // Don't allow write anymore when the connection is disconnected
+                    Status = ServiceConnectionStatus.Disconnected;
+
+                    await _writeLock.WaitAsync();
+                    try
+                    {
+                        // close the underlying connection
+                        await DisposeConnection(connection);
+                    }
+                    finally
+                    {
+                        _writeLock.Release();
+                    }
+                }
+            }
+            else
             {
                 Status = ServiceConnectionStatus.Disconnected;
-                _serviceConnectionStartTcs.TrySetException(ex);
-                Log.UnexpectedExceptionInStart(_logger, ConnectionId, ex);
-            }
-            finally
-            {
-                await StopAsync();
+                _serviceConnectionStartTcs.TrySetResult(false);
             }
         }
 
@@ -109,59 +170,63 @@ namespace Microsoft.Azure.SignalR
         {
             try
             {
-                ConnectionContext?.Transport.Input.CancelPendingRead();
+                _connectionContext?.Transport.Input.CancelPendingRead();
             }
             catch (Exception ex)
             {
-                Log.UnexpectedExceptionInStop(_logger, ConnectionId, ex);
+                Log.UnexpectedExceptionInStop(Logger, ConnectionId, ex);
             }
             
             return Task.CompletedTask;
         }
 
-        // For test purpose only
-        public bool IsConnected => _isConnected;
-
-        public async virtual Task WriteAsync(ServiceMessage serviceMessage)
+        public virtual async Task WriteAsync(ServiceMessage serviceMessage)
         {
-            // We have to lock around outgoing sends since the pipe is single writer.
-            // The lock is per serviceConnection
-            await _serviceConnectionLock.WaitAsync();
-
-            var errorMessage = ErrorMessage;
+            var errorMessage = _errorMessage;
             if (!string.IsNullOrEmpty(errorMessage))
             {
-                _serviceConnectionLock.Release();
-                throw new InvalidOperationException(errorMessage);
+                // Can be out of the lock, it is ok to send out messages even when _error received.
+                throw new ServiceConnectionNotActiveException(errorMessage);
             }
 
-            if (ConnectionContext == null)
+            if (Status != ServiceConnectionStatus.Connected)
             {
-                _serviceConnectionLock.Release();
-                throw new ServiceConnectionNotActiveException();
+                // get the latest _errorMessage also
+                throw new ServiceConnectionNotActiveException(_errorMessage);
             }
 
+            await _writeLock.WaitAsync();
+
+            if (Status != ServiceConnectionStatus.Connected)
+            {
+                // Make sure not write messages to the connection when it is no longer connected
+                _writeLock.Release();
+                throw new ServiceConnectionNotActiveException(_errorMessage);
+            }
+
+            // We have to lock around outgoing sends since the pipe is single writer.
+            // The lock is per serviceConnection
             try
             {
                 // Write the service protocol message
-                ServiceProtocol.WriteMessage(serviceMessage, ConnectionContext.Transport.Output);
-                await ConnectionContext.Transport.Output.FlushAsync();
+                ServiceProtocol.WriteMessage(serviceMessage, _connectionContext.Transport.Output);
+                await _connectionContext.Transport.Output.FlushAsync();
             }
             catch (Exception ex)
             {
-                Log.FailedToWrite(_logger, ex);
+                Log.FailedToWrite(Logger, ConnectionId, ex);
             }
             finally
             {
-                _serviceConnectionLock.Release();
+                _writeLock.Release();
             }
         }
 
         protected abstract Task<ConnectionContext> CreateConnection(string target = null);
 
-        protected abstract Task DisposeConnection();
+        protected abstract Task DisposeConnection(ConnectionContext connection);
 
-        protected abstract Task CleanupConnections();
+        protected abstract Task CleanupConnections(string instanceId = null);
 
         protected abstract Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage);
 
@@ -174,11 +239,11 @@ namespace Microsoft.Azure.SignalR
             if (!string.IsNullOrEmpty(serviceErrorMessage.ErrorMessage))
             {
                 // When receives service error message, we suppose server -> service connection doesn't work,
-                // and set ErrorMessage to prevent sending message from server to service
+                // and set _errorMessage to prevent sending message from server to service
                 // But messages in the pipe from service -> server should be processed as usual. Just log without
                 // throw exception here.
-                ErrorMessage = serviceErrorMessage.ErrorMessage;
-                Log.ReceivedServiceErrorMessage(_logger, ConnectionId, serviceErrorMessage.ErrorMessage);
+                _errorMessage = serviceErrorMessage.ErrorMessage;
+                Log.ReceivedServiceErrorMessage(Logger, ConnectionId, serviceErrorMessage.ErrorMessage);
             }
 
             return Task.CompletedTask;
@@ -186,6 +251,11 @@ namespace Microsoft.Azure.SignalR
 
         protected Task OnPingMessageAsync(PingMessage pingMessage)
         {
+            if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.OfflineKey, out var instanceId) && !string.IsNullOrEmpty(instanceId))
+            {
+                Log.ReceivedInstanceOfflinePing(Logger, instanceId);
+                return CleanupConnections(instanceId);
+            }
             return _serviceMessageHandler.HandlePingAsync(pingMessage);
         }
 
@@ -195,51 +265,41 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        private async Task<bool> StartAsyncCore(string target)
+        private async Task<ConnectionContext> EstablishConnectionAsync(string target)
         {
-            // Lock here in case somebody tries to send before the connection is assigned
-            await _serviceConnectionLock.WaitAsync();
-
             try
             {
-                Status = ServiceConnectionStatus.Connecting;
-                ConnectionContext = await CreateConnection(target);
-                ErrorMessage = null;
-
-                if (await HandshakeAsync())
+                var connectionContext = await CreateConnection(target);
+                try
                 {
-                    Log.ServiceConnectionConnected(_logger, ConnectionId);
-                    Status = ServiceConnectionStatus.Connected;
-                    return true;
+                    if (await HandshakeAsync(connectionContext))
+                    {
+                        Log.ServiceConnectionConnected(Logger, ConnectionId);
+                        return connectionContext;
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    // False means we got a HandshakeResponseMessage with error. Will take below actions:
-                    // - Dispose the connection
-                    Status = ServiceConnectionStatus.Disconnected;
-                    await DisposeConnection();
-
-                    return false;
+                    Log.HandshakeError(Logger, ex.Message, ConnectionId);
+                    await DisposeConnection(connectionContext);
+                    return null;
                 }
+
+                // handshake return false
+                await DisposeConnection(connectionContext);
+
+                return null;
             }
             catch (Exception ex)
             {
-                Log.FailedToConnect(_logger, ex);
-
-                Status = ServiceConnectionStatus.Disconnected;
-                await DisposeConnection();
-
-                return false;
-            }
-            finally
-            {
-                _serviceConnectionLock.Release();
+                Log.FailedToConnect(Logger, HubEndpoint.ToString(), ConnectionId, ex);
+                return null;
             }
         }
 
-        private async Task<bool> HandshakeAsync()
+        protected virtual async Task<bool> HandshakeAsync(ConnectionContext context)
         {
-            await SendHandshakeRequestAsync(ConnectionContext.Transport.Output);
+            await SendHandshakeRequestAsync(context.Transport.Output);
 
             try
             {
@@ -250,9 +310,9 @@ namespace Microsoft.Azure.SignalR
                         cts.CancelAfter(DefaultHandshakeTimeout);
                     }
 
-                    if (await ReceiveHandshakeResponseAsync(ConnectionContext.Transport.Input, cts.Token))
+                    if (await ReceiveHandshakeResponseAsync(context.Transport.Input, cts.Token))
                     {
-                        Log.HandshakeComplete(_logger);
+                        Log.HandshakeComplete(Logger);
                         return true;
                     }
 
@@ -261,14 +321,14 @@ namespace Microsoft.Azure.SignalR
             }
             catch (Exception ex)
             {
-                Log.ErrorReceivingHandshakeResponse(_logger, ex);
+                Log.ErrorReceivingHandshakeResponse(Logger, ConnectionId, ex);
                 throw;
             }
         }
 
         private async Task SendHandshakeRequestAsync(PipeWriter output)
         {
-            Log.SendingHandshakeRequest(_logger);
+            Log.SendingHandshakeRequest(Logger);
 
             ServiceProtocol.WriteMessage(_handshakeRequest, output);
             var sendHandshakeResult = await output.FlushAsync();
@@ -317,11 +377,11 @@ namespace Microsoft.Azure.SignalR
                             if (_connectionType == ServerConnectionType.OnDemand)
                             {
                                 // Handshake errors on on-demand connections are acceptable.
-                                Log.OnDemandConnectionHandshakeResponse(_logger, handshakeResponse.ErrorMessage);
+                                Log.OnDemandConnectionHandshakeResponse(Logger, handshakeResponse.ErrorMessage);
                             }
                             else
                             {
-                                Log.HandshakeError(_logger, handshakeResponse.ErrorMessage);
+                                Log.HandshakeError(Logger, handshakeResponse.ErrorMessage, ConnectionId);
                             }
                             
                             return false;
@@ -341,27 +401,27 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task ProcessIncomingAsync()
+        private async Task ProcessIncomingAsync(ConnectionContext connection)
         {
             var keepAliveTimer = StartKeepAliveTimer();
             try
             {
                 while (true)
                 {
-                    var result = await ConnectionContext.Transport.Input.ReadAsync();
+                    var result = await connection.Transport.Input.ReadAsync();
                     var buffer = result.Buffer;
 
                     try
                     {
                         if (result.IsCanceled)
                         {
-                            Log.ReadingCancelled(_logger, ConnectionId);
+                            Log.ReadingCancelled(Logger, ConnectionId);
                             break;
                         }
 
                         if (!buffer.IsEmpty)
                         {
-                            Log.ReceivedMessage(_logger, buffer.Length, ConnectionId);
+                            Log.ReceivedMessage(Logger, buffer.Length, ConnectionId);
 
                             UpdateReceiveTimestamp();
 
@@ -377,7 +437,7 @@ namespace Microsoft.Azure.SignalR
                         if (result.IsCompleted)
                         {
                             // The connection is closed (reconnect)
-                            Log.ServiceConnectionClosed(_logger, ConnectionId);
+                            Log.ServiceConnectionClosed(Logger, ConnectionId);
                             break;
                         }
                     }
@@ -385,41 +445,18 @@ namespace Microsoft.Azure.SignalR
                     {
                         // Error occurs in handling the message, but the connection between SDK and service still works.
                         // So, just log error instead of breaking the connection
-                        Log.ErrorProcessingMessages(_logger, ex);
+                        Log.ErrorProcessingMessages(Logger, ConnectionId, ex);
                     }
                     finally
                     {
-                        ConnectionContext.Transport.Input.AdvanceTo(buffer.Start, buffer.End);
+                        connection.Transport.Input.AdvanceTo(buffer.Start, buffer.End);
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                // Fatal error: There is something wrong for the connection between SDK and service.
-                // Abort all the client connections, close the httpConnection.
-                // Only reconnect can recover.
-                Log.ConnectionDropped(_logger, ConnectionId, ex);
             }
             finally
             {
                 keepAliveTimer.Stop();
-
-                await _serviceConnectionLock.WaitAsync();
-                try
-                {
-                    Status = ServiceConnectionStatus.Disconnected;
-                    await DisposeConnection();
-                }
-                finally
-                {
-                    _serviceConnectionLock.Release();
-                }
             }
-
-            // TODO: Never cleanup connections unless Service asks us to do that
-            // Current implementation is based on assumption that Service will drop clients
-            // if server connection fails.
-            await CleanupConnections();
         }
 
         private Task DispatchMessageAsync(ServiceMessage message)
@@ -444,7 +481,7 @@ namespace Microsoft.Azure.SignalR
 
         private TimerAwaitable StartKeepAliveTimer()
         {
-            Log.StartingKeepAliveTimer(_logger, DefaultKeepAliveInterval);
+            Log.StartingKeepAliveTimer(Logger, DefaultKeepAliveInterval);
 
             _lastReceiveTimestamp = Stopwatch.GetTimestamp();
             _lastSendTimestamp = _lastReceiveTimestamp;
@@ -469,7 +506,8 @@ namespace Microsoft.Azure.SignalR
                 {
                     if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastReceiveTimestamp) > DefaultServiceTimeoutTicks)
                     {
-                        AbortConnection();
+                        Log.ServiceTimeout(Logger, DefaultServiceTimeout, ConnectionId);
+                        await StopAsync();
                         // We shouldn't get here twice.
                         continue;
                     }
@@ -479,7 +517,7 @@ namespace Microsoft.Azure.SignalR
 
         private async ValueTask TrySendPingAsync()
         {
-            if (!_serviceConnectionLock.Wait(0))
+            if (!_writeLock.Wait(0))
             {
                 // Skip sending PingMessage when failed getting lock
                 return;
@@ -490,87 +528,37 @@ namespace Microsoft.Azure.SignalR
                 // Check if last send time is longer than default keep-alive ticks and then send ping
                 if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendTimestamp) > DefaultKeepAliveTicks)
                 {
-                    await ConnectionContext.Transport.Output.WriteAsync(GetPingMessage());
+                    await _connectionContext.Transport.Output.WriteAsync(GetPingMessage());
                     Interlocked.Exchange(ref _lastSendTimestamp, Stopwatch.GetTimestamp());
-                    Log.SentPing(_logger);
+                    Log.SentPing(Logger);
                 }
             }
             catch (Exception ex)
             {
-                Log.FailedSendingPing(_logger, ex);
+                Log.FailedSendingPing(Logger, ConnectionId, ex);
             }
             finally
             {
-                _serviceConnectionLock.Release();
+                _writeLock.Release();
             }
         }
 
         protected virtual ReadOnlyMemory<byte> GetPingMessage() => _cachedPingBytes;
 
-        private void AbortConnection()
-        {
-            if (!_serviceConnectionLock.Wait(0))
-            {
-                // Couldn't get the lock so skip the cancellation (we could be in the middle of reconnecting?)
-                return;
-            }
-
-            try
-            {
-                // Stop the reading from connection
-                if (ConnectionContext != null)
-                {
-                    ConnectionContext.Transport.Input.CancelPendingRead();
-                    Log.ServiceTimeout(_logger, DefaultServiceTimeout);
-                }
-            }
-            finally
-            {
-                _serviceConnectionLock.Release();
-            }
-        }
-
         private static class Log
         {
             // Category: ServiceConnection
-            private static readonly Action<ILogger, string, Exception> _failedToWrite =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(1, "FailedToWrite"), "Failed to send message to the service: {message}");
+            private static readonly Action<ILogger, string, string, Exception> _failedToWrite =
+                LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(1, "FailedToWrite"), "Failed to send message to the service: {message}. Id: {ServiceConnectionId}");
 
-            private static readonly Action<ILogger, string, Exception> _failedToConnect =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, "FailedToConnect"), "Failed to connect to the service, will retry after the back off period. Error detail: {message}.");
+            private static readonly Action<ILogger, string, string, string, Exception> _failedToConnect =
+                LoggerMessage.Define<string, string, string>(LogLevel.Error, new EventId(2, "FailedToConnect"), "Failed to connect to '{endpoint}', will retry after the back off period. Error detail: {message}. Id: {ServiceConnectionId}");
 
-            private static readonly Action<ILogger, Exception> _errorProcessingMessages =
-                LoggerMessage.Define(LogLevel.Error, new EventId(3, "ErrorProcessingMessages"), "Error when processing messages.");
+            private static readonly Action<ILogger, string, Exception> _errorProcessingMessages =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "ErrorProcessingMessages"), "Error when processing messages. Id: {ServiceConnectionId}");
 
-            private static readonly Action<ILogger, string, Exception> _connectionDropped =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(4, "ConnectionDropped"), "Connection to the service was dropped, probably caused by network instability or service restart. Will try to reconnect after the back off period. Id: {ServiceConnectionId}");
-
-            private static readonly Action<ILogger, Exception> _failedToCleanupConnections =
-                LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailedToCleanupConnection"), "Failed to clean up client connections.");
-
-            private static readonly Action<ILogger, Exception> _errorSendingMessage =
-                LoggerMessage.Define(LogLevel.Error, new EventId(6, "ErrorSendingMessage"), "Error while sending message to the service.");
-
-            private static readonly Action<ILogger, string, Exception> _sendLoopStopped =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, "SendLoopStopped"), "Error while processing messages from {TransportConnectionId}.");
-
-            private static readonly Action<ILogger, Exception> _applicationTaskFailed =
-                LoggerMessage.Define(LogLevel.Error, new EventId(8, "ApplicationTaskFailed"), "Application task failed.");
-
-            private static readonly Action<ILogger, string, Exception> _failToWriteMessageToApplication =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(9, "FailToWriteMessageToApplication"), "Failed to write message to {TransportConnectionId}.");
-
-            private static readonly Action<ILogger, string, Exception> _receivedMessageForNonExistentConnection =
-                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(10, "ReceivedMessageForNonExistentConnection"), "Received message for connection {TransportConnectionId} which does not exist.");
-
-            private static readonly Action<ILogger, string, Exception> _connectedStarting =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(11, "ConnectedStarting"), "Connection {TransportConnectionId} started.");
-
-            private static readonly Action<ILogger, string, Exception> _connectedEnding =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(12, "ConnectedEnding"), "Connection {TransportConnectionId} ended.");
-
-            private static readonly Action<ILogger, string, Exception> _closeConnection =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(13, "CloseConnection"), "Sending close connection message to the service for {TransportConnectionId}.");
+            private static readonly Action<ILogger, string, string, string, Exception> _connectionDropped =
+                LoggerMessage.Define<string, string, string>(LogLevel.Error, new EventId(4, "ConnectionDropped"), "Connection to '{endpoint}' was dropped, probably caused by network instability or service restart. Will try to reconnect after the back off period. Error detail: {message}. Id: {ServiceConnectionId}.");
 
             private static readonly Action<ILogger, string, Exception> _serviceConnectionClosed =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(14, "serviceConnectionClose"), "Service connection {ServiceConnectionId} closed.");
@@ -584,8 +572,8 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, double, Exception> _startingKeepAliveTimer =
                 LoggerMessage.Define<double>(LogLevel.Trace, new EventId(17, "StartingKeepAliveTimer"), "Starting keep-alive timer. Duration: {KeepAliveInterval:0.00}ms");
 
-            private static readonly Action<ILogger, double, Exception> _serviceTimeout =
-                LoggerMessage.Define<double>(LogLevel.Error, new EventId(18, "ServiceTimeout"), "Service timeout. {ServiceTimeout:0.00}ms elapsed without receiving a message from service.");
+            private static readonly Action<ILogger, double, string, Exception> _serviceTimeout =
+                LoggerMessage.Define<double, string>(LogLevel.Error, new EventId(18, "ServiceTimeout"), "Service timeout. {ServiceTimeout:0.00}ms elapsed without receiving a message from service. Id: {ServiceConnectionId}");
 
             private static readonly Action<ILogger, long, string, Exception> _writeMessageToApplication =
                 LoggerMessage.Define<long, string>(LogLevel.Trace, new EventId(19, "WriteMessageToApplication"), "Writing {ReceivedBytes} to connection {TransportConnectionId}.");
@@ -599,17 +587,17 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, Exception> _handshakeComplete =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(22, "HandshakeComplete"), "Handshake with service completes.");
 
-            private static readonly Action<ILogger, Exception> _errorReceivingHandshakeResponse =
-                LoggerMessage.Define(LogLevel.Error, new EventId(23, "ErrorReceivingHandshakeResponse"), "Error receiving handshake response.");
+            private static readonly Action<ILogger, string, Exception> _errorReceivingHandshakeResponse =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(23, "ErrorReceivingHandshakeResponse"), "Error receiving handshake response. Id: {ServiceConnectionId}");
 
-            private static readonly Action<ILogger, string, Exception> _handshakeError =
-                LoggerMessage.Define<string>(LogLevel.Critical, new EventId(24, "HandshakeError"), "Service returned handshake error: {Error}");
+            private static readonly Action<ILogger, string, string, Exception> _handshakeError =
+                LoggerMessage.Define<string, string>(LogLevel.Critical, new EventId(24, "HandshakeError"), "Service returned handshake error: {Error}. Id: {ServiceConnectionId}");
 
             private static readonly Action<ILogger, Exception> _sentPing =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(25, "SentPing"), "Sent a ping message to service.");
 
-            private static readonly Action<ILogger, Exception> _failedSendingPing =
-                LoggerMessage.Define(LogLevel.Warning, new EventId(26, "FailedSendingPing"), "Failed sending a ping message to service.");
+            private static readonly Action<ILogger, string, Exception> _failedSendingPing =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(26, "FailedSendingPing"), "Failed sending a ping message to service. Id: {ServiceConnectionId}");
 
             private static readonly Action<ILogger, string, string, Exception> _receivedServiceErrorMessage =
                 LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(27, "ReceivedServiceErrorMessage"), "Connection {ServiceConnectionId} received error message from service: {Error}");
@@ -623,73 +611,36 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _onDemandConnectionHandshakeResponse =
                 LoggerMessage.Define<string>(LogLevel.Information, new EventId(30, "OnDemandConnectionHandshakeResponse"), "Service returned handshake response: {Message}");
 
-            public static void FailedToWrite(ILogger logger, Exception exception)
+            private static readonly Action<ILogger, string, Exception> _receivedInstanceOfflinePing =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(31, "ReceivedInstanceOfflinePing"), "Received instance offline service ping: {InstanceId}");
+
+
+            public static void FailedToWrite(ILogger logger, string serviceConnectionId, Exception exception)
             {
-                _failedToWrite(logger, exception.Message, null);
+                _failedToWrite(logger, exception.Message, serviceConnectionId, null);
             }
 
-            public static void FailedToConnect(ILogger logger, Exception exception)
+            public static void FailedToConnect(ILogger logger, string endpoint, string serviceConnectionId, Exception exception)
             {
                 var message = exception.Message;
                 var baseException = exception.GetBaseException();
                 message += ". " + baseException.Message;
 
-                _failedToConnect(logger, message, null);
+                _failedToConnect(logger, endpoint, message, serviceConnectionId, null);
             }
 
-            public static void ErrorProcessingMessages(ILogger logger, Exception exception)
+            public static void ErrorProcessingMessages(ILogger logger, string serviceConnectionId, Exception exception)
             {
-                _errorProcessingMessages(logger, exception);
+                _errorProcessingMessages(logger, serviceConnectionId, exception);
             }
 
-            public static void ConnectionDropped(ILogger logger, string serviceConnectionId, Exception exception)
+            public static void ConnectionDropped(ILogger logger, string endpoint, string serviceConnectionId, Exception exception)
             {
-                _connectionDropped(logger, serviceConnectionId, exception);
-            }
+                var message = exception.Message;
+                var baseException = exception.GetBaseException();
+                message += ". " + baseException.Message;
 
-            public static void FailedToCleanupConnections(ILogger logger, Exception exception)
-            {
-                _failedToCleanupConnections(logger, exception);
-            }
-
-            public static void ErrorSendingMessage(ILogger logger, Exception exception)
-            {
-                _errorSendingMessage(logger, exception);
-            }
-
-            public static void SendLoopStopped(ILogger logger, string connectionId, Exception exception)
-            {
-                _sendLoopStopped(logger, connectionId, exception);
-            }
-
-            public static void ApplicationTaskFailed(ILogger logger, Exception exception)
-            {
-                _applicationTaskFailed(logger, exception);
-            }
-
-            public static void FailToWriteMessageToApplication(ILogger logger, string connectionId, Exception exception)
-            {
-                _failToWriteMessageToApplication(logger, connectionId, exception);
-            }
-
-            public static void ReceivedMessageForNonExistentConnection(ILogger logger, string connectionId)
-            {
-                _receivedMessageForNonExistentConnection(logger, connectionId, null);
-            }
-
-            public static void ConnectedStarting(ILogger logger, string connectionId)
-            {
-                _connectedStarting(logger, connectionId, null);
-            }
-
-            public static void ConnectedEnding(ILogger logger, string connectionId)
-            {
-                _connectedEnding(logger, connectionId, null);
-            }
-
-            public static void CloseConnection(ILogger logger, string connectionId)
-            {
-                _closeConnection(logger, connectionId, null);
+                _connectionDropped(logger, endpoint, serviceConnectionId, message, null);
             }
 
             public static void ServiceConnectionClosed(ILogger logger, string serviceConnectionId)
@@ -717,14 +668,9 @@ namespace Microsoft.Azure.SignalR
                 _startingKeepAliveTimer(logger, keepAliveInterval.TotalMilliseconds, null);
             }
 
-            public static void ServiceTimeout(ILogger logger, TimeSpan serviceTimeout)
+            public static void ServiceTimeout(ILogger logger, TimeSpan serviceTimeout, string serviceConnectionId)
             {
-                _serviceTimeout(logger, serviceTimeout.TotalMilliseconds, null);
-            }
-
-            public static void WriteMessageToApplication(ILogger logger, long count, string connectionId)
-            {
-                _writeMessageToApplication(logger, count, connectionId, null);
+                _serviceTimeout(logger, serviceTimeout.TotalMilliseconds, serviceConnectionId, null);
             }
 
             public static void SendingHandshakeRequest(ILogger logger)
@@ -737,14 +683,14 @@ namespace Microsoft.Azure.SignalR
                 _handshakeComplete(logger, null);
             }
 
-            public static void ErrorReceivingHandshakeResponse(ILogger logger, Exception exception)
+            public static void ErrorReceivingHandshakeResponse(ILogger logger, string serviceConnectionId, Exception exception)
             {
-                _errorReceivingHandshakeResponse(logger, exception);
+                _errorReceivingHandshakeResponse(logger, serviceConnectionId, exception);
             }
 
-            public static void HandshakeError(ILogger logger, string error)
+            public static void HandshakeError(ILogger logger, string error, string serviceConnectionId)
             {
-                _handshakeError(logger, error, null);
+                _handshakeError(logger, error, serviceConnectionId, null);
             }
 
             public static void OnDemandConnectionHandshakeResponse(ILogger logger, string message)
@@ -757,9 +703,9 @@ namespace Microsoft.Azure.SignalR
                 _sentPing(logger, null);
             }
 
-            public static void FailedSendingPing(ILogger logger, Exception exception)
+            public static void FailedSendingPing(ILogger logger, string serviceConnectionId, Exception exception)
             {
-                _failedSendingPing(logger, exception);
+                _failedSendingPing(logger, serviceConnectionId, exception);
             }
 
             public static void ReceivedServiceErrorMessage(ILogger logger, string connectionId, string errorMessage)
@@ -775,6 +721,11 @@ namespace Microsoft.Azure.SignalR
             public static void UnexpectedExceptionInStop(ILogger logger, string connectionId, Exception exception)
             {
                 _unexpectedExceptionInStop(logger, connectionId, exception);
+            }
+
+            public static void ReceivedInstanceOfflinePing(ILogger logger, string instanceId)
+            {
+                _receivedInstanceOfflinePing(logger, instanceId, null);
             }
         }
     }

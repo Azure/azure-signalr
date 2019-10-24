@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private static readonly IHubProtocolResolver HubProtocolResolver =
             new DefaultHubProtocolResolver(new IHubProtocol[]
                 {
-                    new NewtonsoftJsonHubProtocol(),
+                    new JsonHubProtocol(),
                     new MessagePackHubProtocol()
                 },
                 NullLogger<DefaultHubProtocolResolver>.Instance);
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             if (typeof(IAckableMessage).IsAssignableFrom(messageType))
             {
-                await proxy.WriteMessageAsync(new AckMessage(1, AckStatus.Ok));
+                await proxy.WriteMessageAsync(new AckMessage(1, (int)AckStatus.Ok));
             }
 
             // Need to return in time, or it indicate a timeout when sending ack-able messages.

@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if NETCOREAPP3_0
+#if !NETSTANDARD2_0
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR
             return false;
         }
 
-        public Task ApplyAsync(HttpContext httpContext, EndpointSelectorContext context, CandidateSet candidates)
+        public Task ApplyAsync(HttpContext httpContext, CandidateSet candidates)
         {
             for (var i = 0; i < candidates.Count; i++)
             {
@@ -61,6 +61,9 @@ namespace Microsoft.Azure.SignalR
             },
             routeEndpoint.RoutePattern,
             routeEndpoint.Order);
+
+            // Set DisplayName
+            routeEndpointBuilder.DisplayName = routeEndpoint.DisplayName;
 
             // Preserve the metadata
             foreach (var metadata in endpoint.Metadata)

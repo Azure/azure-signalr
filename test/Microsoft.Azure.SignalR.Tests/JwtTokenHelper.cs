@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     internal static class JwtTokenHelper
     {
-        public static JwtSecurityTokenHandler JwtHandler { get; } = new JwtSecurityTokenHandler();
+        public static readonly JwtSecurityTokenHandler JwtHandler = new JwtSecurityTokenHandler();
 
         public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string accessKey, IEnumerable<Claim> customClaims = null)
         {
@@ -49,20 +49,15 @@ namespace Microsoft.Azure.SignalR.Tests
             string signingKey,
             string requestId)
         {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-            var requestIdClaims = requestId == null ? null : new Claim[] { new Claim(Constants.ClaimType.Id, requestId) };
-
-            var token = JwtHandler.CreateJwtSecurityToken(
+            
+            return AuthenticationHelper.GenerateJwtBearer(
                 issuer: null,
                 audience: audience,
-                subject: requestIdClaims == null && subject == null ? null : new ClaimsIdentity(subject == null ? requestIdClaims : subject.Concat(requestIdClaims)),
+                claims: subject,
                 notBefore: notBefore,
                 expires: expires,
                 issuedAt: issueAt,
-                signingCredentials: credentials);
-            return JwtHandler.WriteToken(token);
+                signingKey: signingKey);
         }
     }
 }

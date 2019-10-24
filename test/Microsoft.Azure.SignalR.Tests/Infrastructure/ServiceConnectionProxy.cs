@@ -35,7 +35,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public ConcurrentDictionary<string, ServiceConnection> ServiceConnections { get; } = new ConcurrentDictionary<string, ServiceConnection>();
 
-        public ConcurrentDictionary<string, ServiceConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
+        public IReadOnlyDictionary<string, ServiceConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
 
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
@@ -51,22 +51,23 @@ namespace Microsoft.Azure.SignalR.Tests
             _clientPipeOptions = clientPipeOptions;
             ConnectionDelegateCallback = callback ?? OnConnectionAsync;
 
-            ServiceConnectionContainer = new StrongServiceConnectionContainer(this, ConnectionFactory, connectionCount, new ServiceEndpoint("", ""));
+            ServiceConnectionContainer = new StrongServiceConnectionContainer(this, connectionCount, new HubServiceEndpoint("", null, null));
             ServiceMessageHandler = (StrongServiceConnectionContainer) ServiceConnectionContainer;
         }
 
-        public IServiceConnection Create(ServiceEndpoint endpoint, IConnectionFactory connectionFactory, IServiceMessageHandler serviceMessageHandler,
+        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler,
             ServerConnectionType type)
         {
             var connectionId = Guid.NewGuid().ToString("N");
             var connection = new ServiceConnection(
                 SharedServiceProtocol,
                 this,
-                connectionFactory,
+                ConnectionFactory,
                 NullLoggerFactory.Instance,
                 ConnectionDelegateCallback,
                 this,
                 connectionId,
+                endpoint,
                 serviceMessageHandler,
                 type);
             ServiceConnections.TryAdd(connectionId, connection);
@@ -237,14 +238,16 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        public void RemoveClientConnection(string connectionId)
+        public ServiceConnectionContext RemoveClientConnection(string connectionId)
         {
-            ClientConnectionManager.RemoveClientConnection(connectionId);
+            var connection = ClientConnectionManager.RemoveClientConnection(connectionId);
 
             if (_waitForConnectionClose.TryGetValue(connectionId, out var tcs))
             {
                 tcs.TrySetResult(null);
             }
+
+            return connection;
         }
 
         public ServiceConnectionContext CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)

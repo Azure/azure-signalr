@@ -4,14 +4,16 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
+using System.Linq;
+using System.Net;
+using System.Net.Mime;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
-using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Json;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
@@ -22,6 +24,9 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class NegotiateMiddleware : OwinMiddleware
     {
+        private static readonly HashSet<string> PreservedQueryParameters =
+            new HashSet<string>(new[] {"clientProtocol", "connectionToken", "connectionData"});
+        private static readonly Version ClientSupportQueryStringVersion = new Version(2, 1);
         private static readonly string AssemblyVersion = typeof(NegotiateMiddleware).Assembly.GetName().Version.ToString();
 
         private readonly string _appName;
@@ -30,13 +35,14 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private readonly IServiceEndpointManager _endpointManager;
         private readonly IEndpointRouter _router;
+        private readonly IConnectionRequestIdProvider _connectionRequestIdProvider;
         private readonly IUserIdProvider _provider;
         private readonly HubConfiguration _configuration;
 
         private readonly string _serverName;
         private readonly ServerStickyMode _mode;
 
-        public NegotiateMiddleware(OwinMiddleware next, HubConfiguration configuration, string appName, IServiceEndpointManager endpointManager, IEndpointRouter router, ServiceOptions options, IServerNameProvider serverNameProvider, ILoggerFactory loggerFactory)
+        public NegotiateMiddleware(OwinMiddleware next, HubConfiguration configuration, string appName, IServiceEndpointManager endpointManager, IEndpointRouter router, ServiceOptions options, IServerNameProvider serverNameProvider, IConnectionRequestIdProvider connectionRequestIdProvider, ILoggerFactory loggerFactory)
             : base(next)
         {
             _configuration = configuration;
@@ -45,6 +51,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _claimsProvider = options?.ClaimsProvider;
             _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
             _router = router ?? throw new ArgumentNullException(nameof(router));
+            _connectionRequestIdProvider = connectionRequestIdProvider ?? throw new ArgumentNullException(nameof(connectionRequestIdProvider));
             _logger = loggerFactory?.CreateLogger<NegotiateMiddleware>() ?? throw new ArgumentNullException(nameof(loggerFactory));
             _serverName = serverNameProvider?.GetName();
             _mode = options.ServerStickyMode;
@@ -132,8 +139,34 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             // Redirect to Service
-            // TODO: add OriginalPath and QueryString when the clients support it
-            var url = provider.GetClientEndpoint(null, null, null);
+            var clientProtocol = context.Request.QueryString["clientProtocol"];
+            string originalPath = null;
+            string queryString = null;
+
+            // add OriginalPath and QueryString when the clients protocol is higher than 2.0, earlier ASP.NET SignalR clients does not support redirect URL with query parameters
+            if (!string.IsNullOrEmpty(clientProtocol) && Version.TryParse(clientProtocol, out var version) && version >= ClientSupportQueryStringVersion)
+            {
+                var clientRequestId = _connectionRequestIdProvider.GetRequestId();
+                if (clientRequestId != null)
+                {
+                    // remove system preserved query strings
+                    queryString = "?" +
+                        string.Join("&",
+                            context.Request.QueryString.Where(s => !PreservedQueryParameters.Contains(s.Key)).Concat(
+                                    new[]
+                                    {
+                                        new KeyValuePair<string, string>(
+                                            Constants.QueryParameter.ConnectionRequestId,
+                                            clientRequestId)
+                                    })
+                                .Select(s => $"{Uri.EscapeDataString(s.Key)}={Uri.EscapeDataString(s.Value)}"));
+                }
+
+                originalPath = GetOriginalPath(context.Request.LocalPath);
+            }
+
+            var url = provider.GetClientEndpoint(null, originalPath, queryString);
+
             try
             {
                 accessToken = provider.GenerateClientAccessToken(null, claims);
@@ -146,6 +179,14 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             return SendJsonResponse(context, GetRedirectNegotiateResponse(url, accessToken));
+        }
+
+        private static string GetOriginalPath(string path)
+        {
+            path = path.TrimEnd('/');
+            return path.EndsWith(Constants.Path.Negotiate)
+                ? path.Substring(0, path.Length - Constants.Path.Negotiate.Length)
+                : string.Empty;
         }
 
         private IEnumerable<Claim> BuildClaims(IOwinContext owinContext, IRequest request)

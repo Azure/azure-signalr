@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
 using Xunit;
@@ -158,6 +159,28 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(1, request.Query.Count);
             Assert.Equal(path, request.Query[Constants.QueryParameter.OriginalPath]);
             Assert.Equal(path, request.Path);
+        }
+
+        [Theory]
+        [InlineData("1.1.1.1", true, "1.1.1.1")]
+        [InlineData("1.1.1.1, 2.2.2.2", true, "1.1.1.1")]
+        [InlineData("1.1.1.1,2.2.2.2,3.3.3.3", true, "1.1.1.1")]
+        [InlineData("2001:db8:cafe::17", true, "2001:db8:cafe::17")]
+        [InlineData("256.256.256.256", false, null)]
+        [InlineData("", false, null)]
+        public void ServiceConnectionContextRemoteIpTest(string xff, bool canBeParsed, string remoteIP)
+        {
+            var headers = new HeaderDictionary(new Dictionary<string, StringValues>
+            {
+                ["X-Forwarded-For"] = new StringValues(xff)
+            });
+
+            Assert.Equal(canBeParsed, ServiceConnectionContext.TryGetRemoteIpAddress(headers, out var address));
+
+            if (canBeParsed)
+            {
+                Assert.Equal(remoteIP, address.ToString());
+            }
         }
     }
 }

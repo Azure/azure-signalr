@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal abstract class ServiceEndpointManagerBase : IServiceEndpointManager
     {
-        private readonly ConcurrentDictionary<string, IReadOnlyList<ServiceEndpoint>> _endpointsPerHub = new ConcurrentDictionary<string, IReadOnlyList<ServiceEndpoint>>();
+        private readonly ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>> _endpointsPerHub = new ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>>();
 
         private readonly ILogger _logger;
 
@@ -29,7 +29,8 @@ namespace Microsoft.Azure.SignalR
         {
             _logger = logger ?? NullLogger.Instance;
 
-            var groupedEndpoints = endpoints.GroupBy(s => s.Endpoint).Select(s =>
+            // select the most valuable endpoint with the same endpoint address
+            var groupedEndpoints = endpoints.Distinct().GroupBy(s => s.Endpoint).Select(s =>
             {
                 var items = s.ToList();
                 if (items.Count == 1)
@@ -54,9 +55,13 @@ namespace Microsoft.Azure.SignalR
 
         public abstract IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
 
-        public IReadOnlyList<ServiceEndpoint> GetEndpoints(string hub)
+        public IReadOnlyList<HubServiceEndpoint> GetEndpoints(string hub)
         {
-            return _endpointsPerHub.GetOrAdd(hub, s => Endpoints.Select(e => new ServiceEndpoint(e)).ToArray());
+            return _endpointsPerHub.GetOrAdd(hub, s => Endpoints.Select(e =>
+            {
+                var provider = GetEndpointProvider(e);
+                return new HubServiceEndpoint(hub, provider, e);
+            }).ToArray());
         }
 
         private static IEnumerable<ServiceEndpoint> GetEndpoints(IServiceEndpointOptions options)
@@ -88,7 +93,7 @@ namespace Microsoft.Azure.SignalR
         private static class Log
         {
             private static readonly Action<ILogger, int, string, string, Exception> _duplicateEndpointFound =
-                LoggerMessage.Define<int, string, string>(LogLevel.Warning, new EventId(1, "DuplicateEndpointFound"), "{count} endpoints to {endpoint} found, use the one {name}");
+                LoggerMessage.Define<int, string, string>(LogLevel.Warning, new EventId(1, "DuplicateEndpointFound"), "{count} endpoint configurations to '{endpoint}' found, use '{name}'.");
 
             public static void DuplicateEndpointFound(ILogger logger, int count, string endpoint, string name)
             {

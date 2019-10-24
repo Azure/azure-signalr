@@ -71,9 +71,9 @@ There are two approaches to configure SignalR Service's connection string in you
 There are a few options you can customize when using Azure SignalR Service SDK.
 
 #### `ConnectionCount`
-- Default value is `2`.
-- This option controls the count of connections initially established between application server and Azure SignalR Service.
-The actual server connection count will be optimized during the app server's lifecycle based on the count of app servers and the unit count of the Azure SignalR service.
+- Default value is `5`.
+- This option controls the count of connections between application server and Azure SignalR Service.
+The default value will be performant enough most of the time.
 You can increase it for better performance if the total client count is too big.
 For example, if you have 100,000 clients in total, the connection count can be increased to `10` or `15` for better throughput.
 
@@ -177,10 +177,6 @@ By default, all claims from `IOwinContext.Authentication.User` of the negotiate 
 #### `ConnectionString`
 - Default value is the `Azure:SignalR:ConnectionString` `connectionString` or `appSetting` in `web.config` file.
 - It can be reconfigured, but please make sure the value is **NOT** hard coded.
-
-#### `ApplicationName`
-- Default value is `null`.
-- This option can be useful when you want to share the same Azure SignalR instance for different app servers containing the same hub names. If not set, all the connected app servers are considered to be instances of the same application.
 
 #### `ServerStickyMode`
 - Default value is `Disabled`.

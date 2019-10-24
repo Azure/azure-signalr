@@ -40,7 +40,14 @@ namespace Microsoft.Azure.SignalR.AspNet
                 configuration.Resolver.Register(typeof(IServerNameProvider), () => serverNameProvider);
             }
 
-            builder.Use<NegotiateMiddleware>(configuration, applicationName, endpoint, router, options, serverNameProvider, loggerFactory);
+            var requestIdProvider = configuration.Resolver.Resolve<IConnectionRequestIdProvider>();
+            if (requestIdProvider == null)
+            {
+                requestIdProvider = new DefaultConnectionRequestIdProvider();
+                configuration.Resolver.Register(typeof(IConnectionRequestIdProvider), () => requestIdProvider);
+            }
+
+            builder.Use<NegotiateMiddleware>(configuration, applicationName, endpoint, router, options, serverNameProvider, requestIdProvider, loggerFactory);
 
             builder.RunSignalR(configuration);
 
@@ -92,7 +99,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             var scf = configuration.Resolver.Resolve<IServiceConnectionFactory>();
             if (scf == null)
             {
-                scf = new ServiceConnectionFactory(serviceProtocol, ccm, loggerFactory);
+                var connectionFactory = new ConnectionFactory(serverNameProvider, loggerFactory);
+                scf = new ServiceConnectionFactory(serviceProtocol, ccm, connectionFactory, loggerFactory);
                 configuration.Resolver.Register(typeof(IServiceConnectionFactory), () => scf);
             }
 

@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,7 +23,6 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly ServiceEndpointProvider _endpointProvider;
         private readonly IServerNameProvider _serverNameProvider;
         private readonly ServiceEndpoint _endpoint;
-        private const int ServerConnectionCount = 1;
         private readonly string _productInfo;
 
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo)
@@ -45,13 +43,13 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 case ServiceTransportType.Persistent:
                     {
-                        var connectionFactory = new ManagementConnectionFactory(_productInfo, new ConnectionFactory(hubName, _endpointProvider, _serverNameProvider, loggerFactory));
+                        var connectionFactory = new ManagementConnectionFactory(_productInfo, new ConnectionFactory(_serverNameProvider, loggerFactory));
                         var serviceProtocol = new ServiceProtocol();
                         var clientConnectionManager = new ClientConnectionManager();
                         var clientConnectionFactory = new ClientConnectionFactory();
                         ConnectionDelegate connectionDelegate = connectionContext => Task.CompletedTask;
-                        var serviceConnectionFactory = new ServiceConnectionFactory(serviceProtocol, clientConnectionManager, loggerFactory, connectionDelegate, clientConnectionFactory);
-                        var weakConnectionContainer = new WeakServiceConnectionContainer(serviceConnectionFactory, connectionFactory, ServerConnectionCount, _endpoint);
+                        var serviceConnectionFactory = new ServiceConnectionFactory(serviceProtocol, clientConnectionManager, connectionFactory, loggerFactory, connectionDelegate, clientConnectionFactory);
+                        var weakConnectionContainer = new WeakServiceConnectionContainer(serviceConnectionFactory, _serviceManagerOptions.ConnectionCount, new HubServiceEndpoint(hubName, _endpointProvider, _endpoint));
 
                         var serviceCollection = new ServiceCollection();
                         serviceCollection.AddSignalRCore();

@@ -12,10 +12,10 @@
     <Authors>Microsoft</Authors>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <Owners>microsoft,azure-sdk</Owners>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/Azure/azure-signalr/dev/LICENSE</PackageLicenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageProjectUrl>https://aka.ms/signalr_service</PackageProjectUrl>
-    <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
+    <PackageIcon>microsoft.png</PackageIcon>
     <RepositoryUrl>https://github.com/azure/azure-signalr</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryRoot>$(MSBuildThisFileDirectory)</RepositoryRoot>
@@ -27,6 +27,18 @@
     <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>
     <AssemblySigningCertName>Microsoft400</AssemblySigningCertName>
     <PackageSigningCertName>NuGet</PackageSigningCertName>
-    <IsTargetMultiFramework>true</IsTargetMultiFramework>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)microsoft.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+  
+  <!-- Specifying signing for multiple files in a package. -->
+  <ItemGroup>
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.AspNet.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Common.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Management.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Protocols.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+  </ItemGroup>
 </Project>

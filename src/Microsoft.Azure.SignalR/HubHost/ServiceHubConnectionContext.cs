@@ -30,10 +30,19 @@ namespace Microsoft.Azure.SignalR
         public const string ItemsUnavailableError = nameof(Items) + UnavailableErrorTemplate;
         public const string ProtocolUnavailableError = nameof(Protocol) + UnavailableErrorTemplate;
 
+#if !NETSTANDARD2_0
+        public ServiceHubConnectionContext(HttpContext context)
+            : base(new DummyConnectionContext(context), 
+                  new HubConnectionContextOptions() { KeepAliveInterval = TimeSpan.MaxValue }, 
+                  NullLoggerFactory.Instance)
+        {
+        }
+#else
         public ServiceHubConnectionContext(HttpContext context)
             : base(new DummyConnectionContext(context), TimeSpan.MaxValue, NullLoggerFactory.Instance)
         {
         }
+#endif
 
         public override CancellationToken ConnectionAborted => throw new InvalidOperationException(ConnectionAbortedUnavailableError);
 

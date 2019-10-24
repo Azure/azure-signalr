@@ -21,8 +21,9 @@ namespace RazorComponentSample
             services.AddRazorPages();
             // When "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.Azure.SignalR" is configured in launchSettings.json
             // And "Azure:SignalR:Enabled": true is configured in appsettings.json
-            // Then .AddSignalR().AddAzureSignalR() could be removed 
-            services.AddServerSideBlazor().AddSignalR().AddAzureSignalR();
+            // Then .AddSignalR().AddAzureSignalR() could be removed
+            services.AddSignalR().AddAzureSignalR();
+            services.AddServerSideBlazor();
             services.AddSingleton<WeatherForecastService>();
         }
 

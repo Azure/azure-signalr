@@ -44,6 +44,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _serviceConnectionConnected =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(20, "ServiceConnectionConnected"), "Service connection {ServiceConnectionId} connected.");
 
+            private static readonly Action<ILogger, Exception> _applicationTaskTimedOut =
+                LoggerMessage.Define(LogLevel.Error, new EventId(21, "ApplicationTaskTimedOut"), "Timed out waiting for the application task to complete.");
+
             public static void FailedToCleanupConnections(ILogger logger, Exception exception)
             {
                 _failedToCleanupConnections(logger, exception);
@@ -92,6 +95,11 @@ namespace Microsoft.Azure.SignalR
             public static void WriteMessageToApplication(ILogger logger, long count, string connectionId)
             {
                 _writeMessageToApplication(logger, count, connectionId, null);
+            }
+
+            public static void ApplicationTaskTimedOut(ILogger logger)
+            {
+                _applicationTaskTimedOut(logger, null);
             }
         }
     }
