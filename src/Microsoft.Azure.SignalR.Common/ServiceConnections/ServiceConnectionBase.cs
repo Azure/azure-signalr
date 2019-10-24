@@ -127,14 +127,19 @@ namespace Microsoft.Azure.SignalR
                 _serviceConnectionStartTcs.TrySetResult(true);
                 try
                 {
-                    await ProcessIncomingAsync(connection);
+                    try
+                    {
+                        await ProcessIncomingAsync(connection);
+                    }
+                    finally
+                    {
+                        // when ProcessIncoming completes, clean up the connection
 
-                    // when ProcessIncoming completes, clean up the connection
-
-                    // TODO: Never cleanup connections unless Service asks us to do that
-                    // Current implementation is based on assumption that Service will drop clients
-                    // if server connection fails.
-                    await CleanupConnections();
+                        // TODO: Never cleanup connections unless Service asks us to do that
+                        // Current implementation is based on assumption that Service will drop clients
+                        // if server connection fails.
+                        await CleanupConnections();
+                    }
                 }
                 catch (Exception ex)
                 {
