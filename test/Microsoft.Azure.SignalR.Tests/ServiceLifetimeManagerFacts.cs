@@ -2,14 +2,17 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -34,6 +37,9 @@ namespace Microsoft.Azure.SignalR.Tests
                 },
                 NullLogger<DefaultHubProtocolResolver>.Instance);
 
+        private static readonly IOptions<HubOptions> _globalHubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "json", "messagepack" } });
+        private static readonly IOptions<HubOptions<TestHub>> _localHubOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "json", "messagepack" } });
+
         private static readonly ILogger<ServiceLifetimeManager<TestHub>> Logger =
             NullLogger<ServiceLifetimeManager<TestHub>>.Instance;
 
@@ -55,12 +61,13 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker);
+                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
             Assert.Equal(1, serviceConnectionManager.GetCallCount(type));
             VerifyServiceMessage(functionName, serviceConnectionManager.ServiceMessage);
+            Assert.Equal(2, (serviceConnectionManager.ServiceMessage as MulticastDataMessage).Payloads.Count);
         }
 
         [Theory]
@@ -72,7 +79,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker);
+                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
@@ -100,7 +107,7 @@ namespace Microsoft.Azure.SignalR.Tests
             serviceConnectionManager.SetServiceConnection(proxy.ServiceConnectionContainer);
 
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker);
+                proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions);
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
@@ -122,6 +129,64 @@ namespace Microsoft.Azure.SignalR.Tests
             var message = await task.OrTimeout();
 
             VerifyServiceMessage(methodName, message);
+        }
+
+        [Theory]
+        [InlineData("SendAllAsync", typeof(BroadcastDataMessage))]
+        [InlineData("SendAllExceptAsync", typeof(BroadcastDataMessage))]
+        [InlineData("SendConnectionsAsync", typeof(MultiConnectionDataMessage))]
+        [InlineData("SendGroupsAsync", typeof(MultiGroupBroadcastDataMessage))]
+        [InlineData("SendUserAsync", typeof(UserDataMessage))]
+        [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
+        public async void ServiceLifetimeManagerIgnoreBlazorHubProtocolTest(string functionName, Type type)
+        {
+            var protocolResolver = new DefaultHubProtocolResolver(new IHubProtocol[]
+                {
+                    new JsonHubProtocol(),
+                    new MessagePackHubProtocol(),
+                    new CustomHubProtocol(),
+                },
+                NullLogger<DefaultHubProtocolResolver>.Instance);
+            IOptions<HubOptions> globalHubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "json", "messagepack", "blazorpack" } });
+            IOptions<HubOptions<TestHub>> localHubOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "json", "messagepack", "blazorpack" } });
+            var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
+            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+                new ClientConnectionManager(), protocolResolver, Logger, Marker, globalHubOptions, localHubOptions);
+
+            await InvokeMethod(serviceLifetimeManager, functionName);
+
+            Assert.Equal(1, serviceConnectionManager.GetCallCount(type));
+            VerifyServiceMessage(functionName, serviceConnectionManager.ServiceMessage);
+            Assert.Equal(2, (serviceConnectionManager.ServiceMessage as MulticastDataMessage).Payloads.Count);
+        }
+
+        [Theory]
+        [InlineData("SendAllAsync", typeof(BroadcastDataMessage))]
+        [InlineData("SendAllExceptAsync", typeof(BroadcastDataMessage))]
+        [InlineData("SendConnectionsAsync", typeof(MultiConnectionDataMessage))]
+        [InlineData("SendGroupsAsync", typeof(MultiGroupBroadcastDataMessage))]
+        [InlineData("SendUserAsync", typeof(UserDataMessage))]
+        [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
+        public async void ServiceLifetimeManagerOnlyBlazorHubProtocolTest(string functionName, Type type)
+        {
+            var protocolResolver = new DefaultHubProtocolResolver(new IHubProtocol[]
+                {
+                    new JsonHubProtocol(),
+                    new MessagePackHubProtocol(),
+                    new CustomHubProtocol(),
+                },
+                NullLogger<DefaultHubProtocolResolver>.Instance);
+            IOptions<HubOptions> globalHubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "blazorpack" } });
+            IOptions<HubOptions<TestHub>> localHubOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "blazorpack" } });
+            var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
+            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+                new ClientConnectionManager(), protocolResolver, Logger, Marker, globalHubOptions, localHubOptions);
+
+            await InvokeMethod(serviceLifetimeManager, functionName);
+
+            Assert.Equal(1, serviceConnectionManager.GetCallCount(type));
+            VerifyServiceMessage(functionName, serviceConnectionManager.ServiceMessage);
+            Assert.Equal(1, (serviceConnectionManager.ServiceMessage as MulticastDataMessage).Payloads.Count);
         }
 
         private static async Task InvokeMethod(HubLifetimeManager<TestHub> serviceLifetimeManager, string methodName)
@@ -210,6 +275,35 @@ namespace Microsoft.Azure.SignalR.Tests
                     break;
                 default:
                     break;
+            }
+        }
+
+        private class CustomHubProtocol : IHubProtocol
+        {
+            public string Name => "blazorpack";
+
+            public TransferFormat TransferFormat => throw new NotImplementedException();
+
+            public int Version => throw new NotImplementedException();
+
+            public ReadOnlyMemory<byte> GetMessageBytes(HubMessage message)
+            {
+                return new byte[] { };
+            }
+
+            public bool IsVersionSupported(int version)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, out HubMessage message)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void WriteMessage(HubMessage message, IBufferWriter<byte> output)
+            {
+                throw new NotImplementedException();
             }
         }
     }
