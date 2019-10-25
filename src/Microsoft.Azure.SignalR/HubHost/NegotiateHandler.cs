@@ -22,8 +22,11 @@ namespace Microsoft.Azure.SignalR
         private readonly IEndpointRouter _router;
         private readonly string _serverName;
         private readonly ServerStickyMode _mode;
+        private readonly bool _enableDetailedErrors;
 
-        public NegotiateHandler(IServiceEndpointManager endpointManager, IEndpointRouter router, IUserIdProvider userIdProvider, IServerNameProvider nameProvider, IConnectionRequestIdProvider connectionRequestIdProvider, IOptions<ServiceOptions> options)
+        public NegotiateHandler(
+            IOptions<HubOptions> hubOptions,
+            IServiceEndpointManager endpointManager, IEndpointRouter router, IUserIdProvider userIdProvider, IServerNameProvider nameProvider, IConnectionRequestIdProvider connectionRequestIdProvider, IOptions<ServiceOptions> options)
         {
             _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
             _router = router ?? throw new ArgumentNullException(nameof(router));
@@ -32,6 +35,7 @@ namespace Microsoft.Azure.SignalR
             _connectionRequestIdProvider = connectionRequestIdProvider ?? throw new ArgumentNullException(nameof(connectionRequestIdProvider));
             _claimsProvider = options?.Value?.ClaimsProvider;
             _mode = options.Value.ServerStickyMode;
+            _enableDetailedErrors = hubOptions.Value.EnableDetailedErrors == true;
         }
 
         public NegotiationResponse Process(HttpContext context, string hubName)
@@ -46,20 +50,18 @@ namespace Microsoft.Azure.SignalR
                 return null;
             }
 
-            var clientRequestId = _connectionRequestIdProvider.GetRequestId();
-
-            var queryString = GetQueryString(_connectionRequestIdProvider, request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null);
+            var queryString = GetQueryString(request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null);
 
             return new NegotiationResponse
             {
                 Url = provider.GetClientEndpoint(hubName, originalPath, queryString),
-                AccessToken = provider.GenerateClientAccessToken(hubName, claims, requestId: clientRequestId),
+                AccessToken = provider.GenerateClientAccessToken(hubName, claims),
                 // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
                 AvailableTransports = new List<AvailableTransport>()
             };
         }
 
-        private string GetQueryString(IConnectionRequestIdProvider provider, string originalQueryString)
+        private string GetQueryString(string originalQueryString)
         {
             var clientRequestId = _connectionRequestIdProvider.GetRequestId();
             if (clientRequestId != null)
@@ -77,7 +79,7 @@ namespace Microsoft.Azure.SignalR
         private IEnumerable<Claim> BuildClaims(HttpContext context)
         {
             var userId = _userIdProvider.GetUserId(new ServiceHubConnectionContext(context));
-            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, _mode).ToList();
+            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, _mode, _enableDetailedErrors).ToList();
         }
 
         private Func<IEnumerable<Claim>> GetClaimsProvider(HttpContext context)

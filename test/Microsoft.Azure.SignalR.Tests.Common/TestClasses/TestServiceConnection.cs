@@ -13,6 +13,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
     {
         private readonly ServiceConnectionStatus _status;
         private readonly bool _throws;
+        private ConnectionContext _connection;
 
         public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false) : base(null, null, null, null, ServerConnectionType.Default, null)
         {
@@ -36,13 +37,14 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             });
         }
 
-        protected override async Task<bool> HandshakeAsync()
+        protected override async Task<bool> HandshakeAsync(ConnectionContext connection)
         {
+            _connection = connection;
             await Task.Yield();
             return _status == ServiceConnectionStatus.Connected;
         }
 
-        protected override Task DisposeConnection()
+        protected override Task DisposeConnection(ConnectionContext connection)
         {
             return Task.CompletedTask;
         }
@@ -74,7 +76,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public void Stop()
         {
-            ConnectionContext?.Transport.Input.CancelPendingRead();
+            _connection?.Transport.Input.CancelPendingRead();
         }
     }
 }
