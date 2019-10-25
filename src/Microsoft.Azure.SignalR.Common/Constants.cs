@@ -40,6 +40,7 @@ namespace Microsoft.Azure.SignalR
             public const string Id = AzureSignalRSysPrefix + "id";
             public const string AppName = AzureSignalRSysPrefix + "apn";
             public const string Version = AzureSignalRSysPrefix + "vn";
+            public const string EnableDetailedErrors = AzureSignalRSysPrefix + "derror";
 
             public const string AzureSignalRUserPrefix = "asrs.u.";
         }

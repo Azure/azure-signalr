@@ -178,6 +178,7 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 // Wait for the application task to complete
+                // application task can end when exception, or Context.Abort() from hub
                 await connection.ApplicationTask;
             }
             catch (Exception ex)
@@ -197,7 +198,7 @@ namespace Microsoft.Azure.SignalR
             if (connection.AbortOnClose)
             {
                 // Inform the Service that we will remove the client because SignalR told us it is disconnected.
-                var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, errorMessage: "Web application task completed, close the client.");
+                var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, errorMessage: exception?.Message);
                 await WriteAsync(serviceMessage);
                 Log.CloseConnection(Logger, connection.ConnectionId);
             }
