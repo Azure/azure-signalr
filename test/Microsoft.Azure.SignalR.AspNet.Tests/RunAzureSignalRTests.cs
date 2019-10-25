@@ -591,6 +591,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
                 var hubConfiguration = Utility.GetTestHubConfig(loggerFactory);
+                hubConfiguration.EnableDetailedErrors = true;
                 using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, hubConfiguration, options =>
                 {
                     options.ConnectionString = ConnectionString;
@@ -623,6 +624,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
                     Assert.Null(requestId);
                     Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
+
+                    var enableDetailedErrors = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.EnableDetailedErrors);
+                    Assert.Equal("True", enableDetailedErrors.Value);
                 }
             }
         }
@@ -672,6 +676,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
                     Assert.Null(requestId);
                     Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
+                    var enableDetailedErrors = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.EnableDetailedErrors);
+                    Assert.Null(enableDetailedErrors);
                 }
             }
         }
