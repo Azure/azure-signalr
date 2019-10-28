@@ -20,10 +20,10 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
     {
         public static PipeOptions DefaultOptions = new PipeOptions(writerScheduler: PipeScheduler.ThreadPool, readerScheduler: PipeScheduler.ThreadPool, useSynchronizationContext: false, pauseWriterThreshold: 0, resumeWriterThreshold: 0);
         
+        private readonly WebSocketMessageType _webSocketMessageType = WebSocketMessageType.Binary;
         private readonly ClientWebSocket _webSocket;
         private readonly Func<Task<string>> _accessTokenProvider;
         private IDuplexPipe _application;
-        private WebSocketMessageType _webSocketMessageType;
         private readonly ILogger _logger;
         private readonly TimeSpan _closeTimeout;
         private volatile bool _aborted;
@@ -92,14 +92,12 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
             _accessTokenProvider = accessTokenProvider;
         }
 
-        public async Task StartAsync(Uri url, WebSocketMessageType transferFormat, CancellationToken cancellationToken = default)
+        public async Task StartAsync(Uri url, CancellationToken cancellationToken = default)
         {
             if (url == null)
             {
                 throw new ArgumentNullException(nameof(url));
             }
-
-            _webSocketMessageType = transferFormat;
 
             var resolvedUrl = ResolveWebSocketsUrl(url);
 
@@ -113,7 +111,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
                 }
             }
 
-            Log.StartTransport(_logger, transferFormat, resolvedUrl);
+            Log.StartTransport(_logger, _webSocketMessageType, resolvedUrl);
 
             try
             {

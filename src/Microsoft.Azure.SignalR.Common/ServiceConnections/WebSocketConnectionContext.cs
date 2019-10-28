@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task StartAsync(Uri url, CancellationToken cancellationToken = default)
         {
-            await _websocketTransport.StartAsync(url, System.Net.WebSockets.WebSocketMessageType.Binary, cancellationToken).ForceAsync();
+            await _websocketTransport.StartAsync(url, cancellationToken).ForceAsync();
         }
 
         public Task StopAsync()
