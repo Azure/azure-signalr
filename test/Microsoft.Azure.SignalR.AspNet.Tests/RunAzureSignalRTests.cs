@@ -480,6 +480,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     };
                 })))
                 {
+                    // wait for service connections to connect or disconnect
+                    await Task.Delay(50);
                     var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
                     var response = await client.GetAsync("/negotiate");
 
@@ -589,6 +591,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
                 var hubConfiguration = Utility.GetTestHubConfig(loggerFactory);
+                hubConfiguration.EnableDetailedErrors = true;
                 using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, hubConfiguration, options =>
                 {
                     options.ConnectionString = ConnectionString;
@@ -619,8 +622,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.True(Version.TryParse(version, out var vs));
                     Assert.True(vs >= VersionSupportingApplicationNamePrefix);
                     var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
-                    Assert.NotNull(requestId);
+                    Assert.Null(requestId);
                     Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
+
+                    var enableDetailedErrors = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.EnableDetailedErrors);
+                    Assert.Equal("True", enableDetailedErrors.Value);
                 }
             }
         }
@@ -668,8 +674,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.True(versionResult > new Version(1, 0, 8));
 
                     var requestId = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.Id);
-                    Assert.NotNull(requestId);
+                    Assert.Null(requestId);
                     Assert.Equal(TimeSpan.FromDays(1), token.ValidTo - token.ValidFrom);
+                    var enableDetailedErrors = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.EnableDetailedErrors);
+                    Assert.Null(enableDetailedErrors);
                 }
             }
         }

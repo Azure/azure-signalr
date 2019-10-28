@@ -55,10 +55,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                 headers: CustomHeader);
         }
 
-        protected override Task DisposeConnection()
+        protected override Task DisposeConnection(ConnectionContext connection)
         {
-            var connection = ConnectionContext;
-            ConnectionContext = null;
             return _connectionFactory.DisposeAsync(connection);
         }
 

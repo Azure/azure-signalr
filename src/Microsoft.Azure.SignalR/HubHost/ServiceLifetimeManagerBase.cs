@@ -8,21 +8,22 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
     internal abstract class ServiceLifetimeManagerBase<THub> : HubLifetimeManager<THub> where THub : Hub
     {
-        private readonly IReadOnlyList<IHubProtocol> _allProtocols;
+        private readonly DefaultHubMessageSerializer _messageSerializer;
 
         protected readonly IServiceConnectionManager<THub> ServiceConnectionContainer;
 
         protected const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
 
-        public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver)
+        public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver, IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions)
         {
             ServiceConnectionContainer = serviceConnectionManager;
-            _allProtocols = protocolResolver.AllProtocols;
+            _messageSerializer = new DefaultHubMessageSerializer(protocolResolver, globalHubOptions.Value.SupportedProtocols, hubOptions.Value.SupportedProtocols);
         }
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
@@ -222,9 +223,10 @@ namespace Microsoft.Azure.SignalR
         {
             var payloads = new Dictionary<string, ReadOnlyMemory<byte>>();
             var message = new InvocationMessage(method, args);
-            foreach (var hubProtocol in _allProtocols)
+            var serializedHubMessages = _messageSerializer.SerializeMessage(message);
+            foreach (var serializedMessage in serializedHubMessages)
             {
-                payloads.Add(hubProtocol.Name, hubProtocol.GetMessageBytes(message));
+                payloads.Add(serializedMessage.ProtocolName, serializedMessage.Serialized);
             }
             return payloads;
         }

@@ -127,7 +127,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             Assert.Equal(expectedEndpoint, clientEndpoint);
         }
 
-        [Fact]
+        [Fact(Skip = "Access token does not need to be unique")]
         public void GenerateMutlipleAccessTokenShouldBeUnique()
         {
             var count = 1000;
