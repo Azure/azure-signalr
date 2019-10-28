@@ -291,3 +291,9 @@ __pycache__/
 *.xsd.cs
 
 .publish/
+
+# vim
+*.swp
+
+# docker
+.docker/
