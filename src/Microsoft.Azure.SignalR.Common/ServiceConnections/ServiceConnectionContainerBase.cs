@@ -155,6 +155,11 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(serviceConnection));
             }
 
+            if (serviceConnection.Status == ServiceConnectionStatus.Terminated)
+            {
+                return;
+            }
+
             serviceConnection.ConnectionStatusChanged -= OnConnectionStatusChanged;
 
             if (serviceConnection.Status == ServiceConnectionStatus.Connected)

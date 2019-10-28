@@ -176,6 +176,7 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 _connectionContext?.Transport.Input.CancelPendingRead();
+                Status = ServiceConnectionStatus.Terminated;
             }
             catch (Exception ex)
             {
