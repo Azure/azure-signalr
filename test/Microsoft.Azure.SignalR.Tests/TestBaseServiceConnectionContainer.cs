@@ -4,13 +4,14 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
     internal sealed class TestBaseServiceConnectionContainer : ServiceConnectionContainerBase
     {
         public TestBaseServiceConnectionContainer(List<IServiceConnection> serviceConnections, HubServiceEndpoint endpoint = null, AckHandler ackHandler = null)
-            : base(null, 0, endpoint, serviceConnections, ackHandler: ackHandler)
+            : base(null, 0, endpoint, serviceConnections, ackHandler: ackHandler, logger: NullLogger.Instance)
         {
         }
 

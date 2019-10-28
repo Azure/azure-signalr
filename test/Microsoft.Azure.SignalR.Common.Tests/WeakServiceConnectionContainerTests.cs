@@ -1,8 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using System;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         public void TestGetServiceStatus(bool[] pingStatus, int checkWindow, int checkMilli, bool expectedStatus)
         {
             var endpoint = new HubServiceEndpoint();
-            var container = new WeakServiceConnectionContainer(null, 0, endpoint);
+            var container = new WeakServiceConnectionContainer(null, 0, endpoint, NullLogger.Instance);
             var checkTimeSpan = TimeSpan.FromMilliseconds(checkMilli);
             bool status = true;
             foreach (var ping in pingStatus)

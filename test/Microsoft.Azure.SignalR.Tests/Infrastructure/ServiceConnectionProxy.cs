@@ -51,7 +51,7 @@ namespace Microsoft.Azure.SignalR.Tests
             _clientPipeOptions = clientPipeOptions;
             ConnectionDelegateCallback = callback ?? OnConnectionAsync;
 
-            ServiceConnectionContainer = new StrongServiceConnectionContainer(this, connectionCount, new HubServiceEndpoint("", null, null));
+            ServiceConnectionContainer = new StrongServiceConnectionContainer(this, connectionCount, new HubServiceEndpoint("", null, null), NullLogger.Instance);
             ServiceMessageHandler = (StrongServiceConnectionContainer) ServiceConnectionContainer;
         }
 

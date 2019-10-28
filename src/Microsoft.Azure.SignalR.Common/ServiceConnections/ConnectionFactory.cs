@@ -3,17 +3,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO.Pipelines;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http.Connections;
-using Microsoft.AspNetCore.Http.Connections.Client;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -24,7 +19,7 @@ namespace Microsoft.Azure.SignalR
 
         public ConnectionFactory(IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
         {
-            _loggerFactory = loggerFactory == null ? (ILoggerFactory)NullLoggerFactory.Instance : new GracefulLoggerFactory(loggerFactory);
+            _loggerFactory = loggerFactory != null ? new GracefulLoggerFactory(loggerFactory) : throw new ArgumentNullException(nameof(loggerFactory));
             _userId = nameProvider?.GetName();
         }
 
@@ -34,16 +29,12 @@ namespace Microsoft.Azure.SignalR
             var hubName = endpoint.Hub;
             Func<Task<string>> accessTokenGenerater = () => Task.FromResult(provider.GenerateServerAccessToken(hubName, _userId));
             var url = GetServiceUrl(provider, hubName, connectionId, target);
-            var httpConnectionOptions = new HttpConnectionOptions
+            var connectionOptions = new WebSocketConnectionOptions
             {
-                Url = GetServiceUrl(provider, hubName, connectionId, target),
-                AccessTokenProvider = accessTokenGenerater,
-                Transports = HttpTransportType.WebSockets,
-                SkipNegotiation = true,
                 Headers = headers,
                 Proxy = provider.Proxy,
             };
-            var connection = new WebSocketConnectionContext(httpConnectionOptions, _loggerFactory, accessTokenGenerater);
+            var connection = new WebSocketConnectionContext(connectionOptions, _loggerFactory, accessTokenGenerater);
             try
             {
                 await connection.StartAsync(url, cancellationToken);

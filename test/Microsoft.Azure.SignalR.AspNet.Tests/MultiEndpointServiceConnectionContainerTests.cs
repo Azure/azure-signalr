@@ -9,6 +9,7 @@ using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Owin;
 using Xunit;
 using Xunit.Abstractions;
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             // Start the container for it to disconnect
             _ = container.StartAsync();
@@ -79,19 +80,19 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             var container2 = new MultiEndpointServiceConnectionContainer("hub",
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             var container3 = new MultiEndpointServiceConnectionContainer("hub-another",
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             // Start the container for it to disconnect
             _ = container1.StartAsync();
@@ -151,7 +152,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             _ = container.StartAsync();
             await container.ConnectionInitializedTask.OrTimeout();
@@ -179,7 +180,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestServiceConnection(),
                 new TestServiceConnection(),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             _ = container.StartAsync();
             await container.ConnectionInitializedTask.OrTimeout();
@@ -222,7 +223,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new TestServiceConnection(),
                 new TestServiceConnection(),
                 new TestServiceConnection(),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             _ = container.StartAsync();
             await container.ConnectionInitializedTask.OrTimeout();
@@ -245,7 +246,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestServiceConnection(ServiceConnectionStatus.Disconnected),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             _ = container.StartAsync();
             await container.ConnectionInitializedTask.OrTimeout();
@@ -272,7 +273,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new TestServiceConnection(),
                 new TestServiceConnection(),
                 new TestServiceConnection(),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             _ = container.StartAsync();
             await container.ConnectionInitializedTask.OrTimeout();
@@ -299,7 +300,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new TestServiceConnection(),
                 new TestServiceConnection(),
                 new TestServiceConnection(),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             _ = container.StartAsync();
             await container.ConnectionInitializedTask.OrTimeout();
@@ -418,7 +419,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                         new TestServiceConnection(),
                         new TestServiceConnection(),
                     }, e);
-            }, sem, router, null);
+            }, sem, router, NullLoggerFactory.Instance);
 
             _ = container.StartAsync();
 
@@ -436,7 +437,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             private readonly ServiceEndpoint[] _endpoints;
 
-            public TestServiceEndpointManager(params ServiceEndpoint[] endpoints) : base(endpoints, null)
+            public TestServiceEndpointManager(params ServiceEndpoint[] endpoints) : base(endpoints, NullLogger.Instance)
             {
                 _endpoints = endpoints;
             }

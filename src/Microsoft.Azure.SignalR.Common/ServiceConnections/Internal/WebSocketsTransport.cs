@@ -8,8 +8,6 @@ using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -38,78 +36,70 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
 
         public PipeWriter Output => _transport.Output;
 
-        public WebSocketsTransport(HttpConnectionOptions httpConnectionOptions, ILoggerFactory loggerFactory, Func<Task<string>> accessTokenProvider)
+        public WebSocketsTransport(WebSocketConnectionOptions connectionOptions, ILoggerFactory loggerFactory, Func<Task<string>> accessTokenProvider)
         {
+            _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<WebSocketsTransport>();
             _webSocket = new ClientWebSocket();
 
             // Issue in ClientWebSocket prevents user-agent being set - https://github.com/dotnet/corefx/issues/26627
             //_webSocket.Options.SetRequestHeader("User-Agent", Constants.UserAgentHeader.ToString());
 
-            if (httpConnectionOptions != null)
+            if (connectionOptions != null)
             {
-                if (httpConnectionOptions.Headers != null)
+                if (connectionOptions.Headers != null)
                 {
-                    foreach (var header in httpConnectionOptions.Headers)
+                    foreach (var header in connectionOptions.Headers)
                     {
                         _webSocket.Options.SetRequestHeader(header.Key, header.Value);
                     }
                 }
 
-                if (httpConnectionOptions.Cookies != null)
+                if (connectionOptions.Cookies != null)
                 {
-                    _webSocket.Options.Cookies = httpConnectionOptions.Cookies;
+                    _webSocket.Options.Cookies = connectionOptions.Cookies;
                 }
 
-                if (httpConnectionOptions.ClientCertificates != null)
+                if (connectionOptions.ClientCertificates != null)
                 {
-                    _webSocket.Options.ClientCertificates.AddRange(httpConnectionOptions.ClientCertificates);
+                    _webSocket.Options.ClientCertificates.AddRange(connectionOptions.ClientCertificates);
                 }
 
-                if (httpConnectionOptions.Credentials != null)
+                if (connectionOptions.Credentials != null)
                 {
-                    _webSocket.Options.Credentials = httpConnectionOptions.Credentials;
+                    _webSocket.Options.Credentials = connectionOptions.Credentials;
                 }
 
-                if (httpConnectionOptions.Proxy != null)
+                if (connectionOptions.Proxy != null)
                 {
-                    _webSocket.Options.Proxy = httpConnectionOptions.Proxy;
+                    _webSocket.Options.Proxy = connectionOptions.Proxy;
                 }
 
-                if (httpConnectionOptions.UseDefaultCredentials != null)
+                if (connectionOptions.UseDefaultCredentials != null)
                 {
-                    _webSocket.Options.UseDefaultCredentials = httpConnectionOptions.UseDefaultCredentials.Value;
+                    _webSocket.Options.UseDefaultCredentials = connectionOptions.UseDefaultCredentials.Value;
                 }
 
-                httpConnectionOptions.WebSocketConfiguration?.Invoke(_webSocket.Options);
+                connectionOptions.WebSocketConfiguration?.Invoke(_webSocket.Options);
 
-                _closeTimeout = httpConnectionOptions.CloseTimeout;
+                _closeTimeout = connectionOptions.CloseTimeout;
             }
 
             // Set this header so the server auth middleware will set an Unauthorized instead of Redirect status code
             // See: https://github.com/aspnet/Security/blob/ff9f145a8e89c9756ea12ff10c6d47f2f7eb345f/src/Microsoft.AspNetCore.Authentication.Cookies/Events/CookieAuthenticationEvents.cs#L42
             _webSocket.Options.SetRequestHeader("X-Requested-With", "XMLHttpRequest");
 
-            _logger = (loggerFactory ?? NullLoggerFactory.Instance).CreateLogger<WebSocketsTransport>();
-
             // Ignore the HttpConnectionOptions access token provider. We were given an updated delegate from the HttpConnection.
             _accessTokenProvider = accessTokenProvider;
         }
 
-        public async Task StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken = default)
+        public async Task StartAsync(Uri url, WebSocketMessageType transferFormat, CancellationToken cancellationToken = default)
         {
             if (url == null)
             {
                 throw new ArgumentNullException(nameof(url));
             }
 
-            if (transferFormat != TransferFormat.Binary && transferFormat != TransferFormat.Text)
-            {
-                throw new ArgumentException($"The '{transferFormat}' transfer format is not supported by this transport.", nameof(transferFormat));
-            }
-
-            _webSocketMessageType = transferFormat == TransferFormat.Binary
-                ? WebSocketMessageType.Binary
-                : WebSocketMessageType.Text;
+            _webSocketMessageType = transferFormat;
 
             var resolvedUrl = ResolveWebSocketsUrl(url);
 

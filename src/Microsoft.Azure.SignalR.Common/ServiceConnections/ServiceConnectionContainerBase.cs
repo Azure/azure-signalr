@@ -73,6 +73,7 @@ namespace Microsoft.Azure.SignalR
             int minConnectionCount, HubServiceEndpoint endpoint,
             IReadOnlyList<IServiceConnection> initialConnections = null, ILogger logger = null, AckHandler ackHandler = null)
         {
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             ServiceConnectionFactory = serviceConnectionFactory;
             Endpoint = endpoint;
             _ackHandler = ackHandler ?? new AckHandler();
@@ -104,7 +105,6 @@ namespace Microsoft.Azure.SignalR
             FixedServiceConnections = initial;
             FixedConnectionCount = initial.Count;
             ConnectionStatusChanged += OnStatusChanged;
-            Logger = logger ?? NullLogger<ServiceConnectionBase>.Instance;
         }
 
         public Task StartAsync()

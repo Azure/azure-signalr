@@ -12,8 +12,8 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
     {
         private static class Log
         {
-            private static readonly Action<ILogger, TransferFormat, Uri, Exception> _startTransport =
-                LoggerMessage.Define<TransferFormat, Uri>(LogLevel.Information, new EventId(1, "StartTransport"), "Starting transport. Transfer mode: {TransferFormat}. Url: '{WebSocketUrl}'.");
+            private static readonly Action<ILogger, WebSocketMessageType, Uri, Exception> _startTransport =
+                LoggerMessage.Define<WebSocketMessageType, Uri>(LogLevel.Information, new EventId(1, "StartTransport"), "Starting transport. Transfer mode: {TransferFormat}. Url: '{WebSocketUrl}'.");
 
             private static readonly Action<ILogger, Exception> _transportStopped =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(2, "TransportStopped"), "Transport stopped.");
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
             private static readonly Action<ILogger, Exception> _startedTransport =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(19, "StartedTransport"), "Started transport.");
 
-            public static void StartTransport(ILogger logger, TransferFormat transferFormat, Uri webSocketUrl)
+            public static void StartTransport(ILogger logger, WebSocketMessageType transferFormat, Uri webSocketUrl)
             {
                 _startTransport(logger, transferFormat, webSocketUrl, null);
             }

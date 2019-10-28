@@ -7,7 +7,6 @@ using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Azure.SignalR.Connections.Client.Internal;
 using Microsoft.Extensions.Logging;
@@ -29,7 +28,7 @@ namespace Microsoft.Azure.SignalR
 
         public override IDuplexPipe Transport { get; set; }
 
-        public WebSocketConnectionContext(HttpConnectionOptions httpConnectionOptions, ILoggerFactory loggerFactory, Func<Task<string>> accessTokenProvider)
+        public WebSocketConnectionContext(WebSocketConnectionOptions httpConnectionOptions, ILoggerFactory loggerFactory, Func<Task<string>> accessTokenProvider)
         {
             Transport = _websocketTransport = new WebSocketsTransport(httpConnectionOptions, loggerFactory, accessTokenProvider);
             ConnectionId = "sc_" + Guid.NewGuid();
@@ -37,11 +36,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task StartAsync(Uri url, CancellationToken cancellationToken = default)
         {
-#if NETSTANDARD2_0
-            await _websocketTransport.StartAsync(url, TransferFormat.Binary).ForceAsync();
-#else
-            await _websocketTransport.StartAsync(url, TransferFormat.Binary, cancellationToken).ForceAsync();
-#endif
+            await _websocketTransport.StartAsync(url, System.Net.WebSockets.WebSocketMessageType.Binary, cancellationToken).ForceAsync();
         }
 
         public Task StopAsync()
