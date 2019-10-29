@@ -66,7 +66,7 @@ namespace Microsoft.Azure.SignalR
         public ServiceConnectionStatus Status
         {
             get => _status;
-            private set
+            protected set
             {
                 if (_status != value)
                 {
