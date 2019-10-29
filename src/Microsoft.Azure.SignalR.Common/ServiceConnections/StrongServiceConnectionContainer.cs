@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR
         private readonly object _lock = new object();
 
         public StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
-            int fixedConnectionCount, HubServiceEndpoint endpoint, ILogger logger = null) : base(serviceConnectionFactory, fixedConnectionCount, endpoint, logger: logger)
+            int fixedConnectionCount, HubServiceEndpoint endpoint, ILogger logger) : base(serviceConnectionFactory, fixedConnectionCount, endpoint, logger: logger)
         {
             _onDemandServiceConnections = new List<IServiceConnection>();
         }

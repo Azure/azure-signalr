@@ -4,19 +4,15 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.IO.Pipelines;
 using System.Linq;
-using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -53,7 +49,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestSimpleServiceConnection(),
                 new TestSimpleServiceConnection(),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             var result = container.GetRoutedEndpoints(new MultiGroupBroadcastDataMessage(new[] { "group1", "group2" }, null)).ToList();
 
@@ -83,7 +79,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestSimpleServiceConnection(),
                 new TestSimpleServiceConnection(),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             Assert.Equal(2, container.Connections.Count);
         }
@@ -107,7 +103,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
                 new TestSimpleServiceConnection(),
                 new TestSimpleServiceConnection(),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             // All the connections started
             _ = container.StartAsync();
@@ -155,7 +151,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                 new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                 new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             // All the connections started
             _ = container.StartAsync();
@@ -183,7 +179,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
                 new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             // All the connections started
             _ = container.StartAsync();
@@ -211,7 +207,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestSimpleServiceConnection(),
                 new TestSimpleServiceConnection(),
                 new TestSimpleServiceConnection(),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             // All the connections started
             _ = container.StartAsync();
@@ -241,7 +237,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                 new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                 new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-            }, e), sem, router, null);
+            }, e), sem, router, NullLoggerFactory.Instance);
 
             // All the connections started
             _ = container.StartAsync();
@@ -401,7 +397,7 @@ namespace Microsoft.Azure.SignalR.Tests
                         new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                         new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                     }, e);
-            }, sem, router, null);
+            }, sem, router, NullLoggerFactory.Instance);
 
             _ = container.StartAsync();
 
@@ -490,7 +486,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                 }, e);
-            }, sem, router, null);
+            }, sem, router, NullLoggerFactory.Instance);
 
             // All the connections started
             _ = container.StartAsync();
@@ -539,7 +535,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                 }, e);
-            }, sem, router, null);
+            }, sem, router, NullLoggerFactory.Instance);
 
             // All the connections started
             _ = container.StartAsync();
@@ -587,7 +583,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                 }, e, new AckHandler(100, 200));
-            }, sem, router, null);
+            }, sem, router, NullLoggerFactory.Instance);
 
             // All the connections started
             _ = container.StartAsync();
@@ -635,7 +631,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                 }, e, new AckHandler(100, 1000));
-            }, sem, router, null);
+            }, sem, router, NullLoggerFactory.Instance);
 
             // All the connections started
             _ = container.StartAsync();
@@ -681,7 +677,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                     new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
                 }, e, new AckHandler(100, 200));
-            }, sem, router, null);
+            }, sem, router, NullLoggerFactory.Instance);
 
             // All the connections started
             _ = container.StartAsync();
@@ -718,7 +714,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             private readonly ServiceEndpoint[] _endpoints;
 
-            public TestServiceEndpointManager(params ServiceEndpoint[] endpoints) : base(endpoints, null)
+            public TestServiceEndpointManager(params ServiceEndpoint[] endpoints) : base(endpoints, NullLogger.Instance)
             {
                 _endpoints = endpoints;
             }

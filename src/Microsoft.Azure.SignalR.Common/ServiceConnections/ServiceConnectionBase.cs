@@ -100,7 +100,7 @@ namespace Microsoft.Azure.SignalR
                 _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
             }
 
-            Logger = logger ?? NullLogger<ServiceConnectionBase>.Instance;
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _serviceMessageHandler = serviceMessageHandler;
         }
 

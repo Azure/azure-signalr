@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
         protected override ServerConnectionType InitialConnectionType => ServerConnectionType.Weak;
 
         public WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
-            int fixedConnectionCount, HubServiceEndpoint endpoint, ILogger logger = null)
+            int fixedConnectionCount, HubServiceEndpoint endpoint, ILogger logger)
             : base(serviceConnectionFactory, fixedConnectionCount, endpoint, logger: logger)
         {
             _timer = StartServiceStatusPingTimer();
