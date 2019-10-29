@@ -59,6 +59,8 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             return base.WriteAsync(serviceMessage);
         }
 
+        internal ServiceConnectionStatus GetServiceConnectionStatus() => GetStatus();
+
         internal bool GetServiceStatus(bool active, int checkWindow, TimeSpan checkTimeSpan)
         {
             lock (_lock)

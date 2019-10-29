@@ -233,9 +233,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     })
                     .Build();
                 var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", loggerFactory);
-                await Task.Delay(1000 * 60 * 2);
-                await serviceHubContext.DisposeAsync();
-                await Task.Delay(1000 * 60 * 10);
+                await ((ServiceHubContext)serviceHubContext).StopConnectionAsync();
+                await Task.Delay(100);
+                var status = ((ServiceHubContext) serviceHubContext).GetConnectionStatus();
+                await ((ServiceHubContext) serviceHubContext).DisposeAsync();
+                Assert.Equal(ServiceConnectionStatus.Terminated, status);
             }
         }
         private static IDictionary<string, List<string>> GenerateUserGroupDict(IList<string> userNames, IList<string> groupNames)
