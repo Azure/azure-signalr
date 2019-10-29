@@ -72,7 +72,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     lock (_statusLock)
                     {
-                        if (_status != value)
+                        if (_status != value && _status != ServiceConnectionStatus.Terminated)
                         {
                             var prev = _status;
                             _status = value;
