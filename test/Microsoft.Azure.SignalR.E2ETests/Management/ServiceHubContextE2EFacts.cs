@@ -217,8 +217,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        [SkipIfConnectionStringNotPresent]
         [Fact]
+        [SkipIfConnectionStringNotPresent]
         internal async Task StopServiceHubContextTest()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
