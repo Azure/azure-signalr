@@ -11,6 +11,8 @@ namespace Microsoft.Azure.SignalR
         public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
         public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
 
+        public const int DefaultShutdownTimeoutInSeconds = 30;
+
         public const string AsrsUserAgent = "Asrs-User-Agent";
         public const string AsrsInstanceId = "Asrs-Instance-Id";
 
@@ -66,6 +68,13 @@ namespace Microsoft.Azure.SignalR
         {
             public const string RebalanceKey = "target";
             public const string OfflineKey = "offline";
+            public const string ShutdownKey = "shutdown";
+        }
+
+        public static class ServicePingMessageValue
+        {
+            public const string ShutdownFin = "fin";
+            public const string ShutdownFinAck = "finack";
         }
     }
 }

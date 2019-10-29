@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         /// <typeparam name="THub">The <see cref="Hub"/> type to map requests to.</typeparam>
         /// <param name="path">The request path.</param>
-        public void MapHub<THub>(PathString path) where THub: Hub
+        public void MapHub<THub>(PathString path) where THub : Hub
         {
             // Get auth attributes
             var authorizationData = AuthorizeHelper.BuildAuthorizePolicy(typeof(THub));

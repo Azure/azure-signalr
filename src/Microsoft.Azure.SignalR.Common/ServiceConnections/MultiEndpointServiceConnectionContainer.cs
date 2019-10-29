@@ -115,6 +115,22 @@ namespace Microsoft.Azure.SignalR
             }));
         }
 
+        public Task ShutdownAsync(TimeSpan timeout)
+        {
+            if (_inner != null)
+            {
+                return _inner.ShutdownAsync(timeout);
+            }
+            else
+            {
+                return Task.WhenAll(Connections.Select(s =>
+                {
+                    Log.ClosingConnection(_logger, s.Key.Endpoint);
+                    return s.Value.ShutdownAsync(timeout);
+                }));
+            }
+        }
+
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
             if (_inner != null)
@@ -241,6 +257,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, string, Exception> _failedWritingMessageToEndpoint =
                 LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(5, "FailedWritingMessageToEndpoint"), "Message {messageType} is not sent to endpoint {endpoint} because all connections to this endpoint are offline.");
 
+            private static readonly Action<ILogger, string, Exception> _closingConnection =
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(6, "ClosingConnection"), "Closing connections for endpoint {endpoint}.");
+
             public static void StartingConnection(ILogger logger, string endpoint)
             {
                 _startingConnection(logger, endpoint, null);
@@ -249,6 +268,11 @@ namespace Microsoft.Azure.SignalR
             public static void StoppingConnection(ILogger logger, string endpoint)
             {
                 _stoppingConnection(logger, endpoint, null);
+            }
+
+            public static void ClosingConnection(ILogger logger, string endpoint)
+            {
+                _closingConnection(logger, endpoint, null);
             }
 
             public static void EndpointNotExists(ILogger logger, string endpoint)
