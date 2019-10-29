@@ -217,6 +217,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
+        [SkipIfConnectionStringNotPresent]
         [Fact]
         internal async Task StopServiceHubContextTest()
         {
