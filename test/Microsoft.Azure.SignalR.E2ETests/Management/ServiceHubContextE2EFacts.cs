@@ -173,7 +173,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 await RunTestCore(clientEndpoint, clientAccessTokens,
                     async () =>
                     {
-                        var connectionId = await task.OrTimeout();
+                        var connectionId = await SignalR.Tests.Common.TaskExtensions.OrTimeout(task);
                         await serviceHubContext.Clients.Client(connectionId).SendAsync(MethodName, Message);
                     },
                     1, receivedMessageDict);
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 await RunTestCore(clientEndpoint, clientAccessTokens,
                     async () =>
                     {
-                        var connectionId = await task.OrTimeout();
+                        var connectionId = await SignalR.Tests.Common.TaskExtensions.OrTimeout(task);
                         await serviceHubContext.Groups.AddToGroupAsync(connectionId, _groupNames[0]);
                         await serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
                         // We can't guarantee the order between the send group and the following leave group
