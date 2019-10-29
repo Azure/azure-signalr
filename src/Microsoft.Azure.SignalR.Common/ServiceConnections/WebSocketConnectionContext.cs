@@ -13,6 +13,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
+    /// <summary>
+    /// TODO: Implement Features
+    /// </summary>
     internal class WebSocketConnectionContext : ConnectionContext
     {
         private readonly WebSocketsTransport _websocketTransport;
