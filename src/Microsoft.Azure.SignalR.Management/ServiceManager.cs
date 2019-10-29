@@ -9,9 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
-#if NETSTANDARD2_0
-using Microsoft.AspNetCore.SignalR.Internal;
-#endif
 using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,8 +55,7 @@ namespace Microsoft.Azure.SignalR.Management
 
                         var serviceCollection = new ServiceCollection();
                         serviceCollection.AddSignalRCore();
-                        serviceCollection.AddSingleton<IConfigureOptions<HubOptions>, HubOptionsSetup>();
-
+                        serviceCollection.AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
 
                         if (loggerFactory != null)
                         {
