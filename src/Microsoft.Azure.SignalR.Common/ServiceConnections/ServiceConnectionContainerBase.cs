@@ -289,8 +289,8 @@ namespace Microsoft.Azure.SignalR
         protected virtual ServiceConnectionStatus GetStatus()
         {
             var statuses = (from conn in FixedServiceConnections
-                     group conn by conn.Status into g
-                     select g.Key
+                            group conn by conn.Status into g
+                            select g.Key
                    ).ToDictionary(status => status, _ => 0);
 
             if (statuses.ContainsKey(ServiceConnectionStatus.Connected))
