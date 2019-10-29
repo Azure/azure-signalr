@@ -16,6 +16,9 @@ namespace Microsoft.Azure.SignalR
         private readonly string _connectionString;
         private readonly ServiceEndpoint[] _endpoints;
 
+        private readonly bool _gracefulShutdownEnabled = false;
+        private readonly TimeSpan _shutdownTimeout = TimeSpan.FromSeconds(Constants.DefaultShutdownTimeoutInSeconds);
+
         public ServiceOptionsSetup(IConfiguration configuration)
         {
             _appName = configuration[Constants.ApplicationNameDefaultKeyPrefix];
@@ -35,6 +38,24 @@ namespace Microsoft.Azure.SignalR
 
             _connectionString = connectionString;
             _endpoints = endpoints;
+
+            if (configuration[Constants.ServerGracefulShutdownKey] == "Enabled")
+            {
+                _gracefulShutdownEnabled = true;
+            }
+
+            if (Int32.TryParse(configuration[Constants.ServerGracefulShutdownTimeoutKey], out int timeout))
+            {
+                if (timeout < 1)
+                {
+                    _gracefulShutdownEnabled = false;
+                }
+                else
+                {
+                    timeout = timeout > 600 ? 600 : timeout;
+                    _shutdownTimeout = TimeSpan.FromSeconds(timeout);
+                }
+            }
         }
 
         public void Configure(ServiceOptions options)
@@ -44,6 +65,8 @@ namespace Microsoft.Azure.SignalR
             options.Endpoints = _endpoints;
             options.ApplicationName = _appName;
             options.ServerStickyMode = _serverStickyMode;
+            options.EnableGracefulShutdown = _gracefulShutdownEnabled;
+            options.ServerShutdownTimeout = _shutdownTimeout;
         }
 
         private static (string, ServiceEndpoint[]) GetEndpoint(IConfiguration configuration, string key)

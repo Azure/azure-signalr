@@ -47,6 +47,8 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             return Task.CompletedTask;
         }
 
+        public override Task ShutdownAsync(TimeSpan timeout) => StopAsync();
+
         public override Task WriteAsync(ServiceMessage serviceMessage)
         {
             if (!_active && !(serviceMessage is PingMessage))

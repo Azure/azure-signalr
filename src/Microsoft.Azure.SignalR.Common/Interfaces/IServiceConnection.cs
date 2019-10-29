@@ -15,6 +15,8 @@ namespace Microsoft.Azure.SignalR
 
         Task StopAsync();
 
+        Task CloseAsync(TimeSpan timeout);
+
         ServiceConnectionStatus Status { get; }
 
         Task ConnectionInitializedTask { get; }

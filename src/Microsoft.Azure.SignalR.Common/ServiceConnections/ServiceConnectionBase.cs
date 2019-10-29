@@ -550,6 +550,18 @@ namespace Microsoft.Azure.SignalR
 
         protected virtual ReadOnlyMemory<byte> GetPingMessage() => _cachedPingBytes;
 
+        public Task CloseAsync()
+        {
+            // TODO will be implemented in the future PR.
+            return Task.CompletedTask;
+        }
+
+        public Task CloseAsync(TimeSpan timeout)
+        {
+            // TODO will be implemented in the future PR.
+            return Task.CompletedTask;
+        }
+
         private static class Log
         {
             // Category: ServiceConnection

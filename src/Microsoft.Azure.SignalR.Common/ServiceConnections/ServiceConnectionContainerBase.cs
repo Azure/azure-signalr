@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -29,6 +28,8 @@ namespace Microsoft.Azure.SignalR
         private volatile List<IServiceConnection> _fixedServiceConnections;
 
         private volatile ServiceConnectionStatus _status;
+
+        private volatile bool _shutdown;
 
         protected ILogger Logger { get; }
 
@@ -107,12 +108,20 @@ namespace Microsoft.Azure.SignalR
             ConnectionStatusChanged += OnStatusChanged;
         }
 
-        public Task StartAsync()
-        {
-            return Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
-        }
+        public Task StartAsync() => Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
 
         public virtual Task StopAsync() => Task.WhenAll(FixedServiceConnections.Select(c => c.StopAsync()));
+
+        protected void StartShutdown()
+        {
+            _shutdown = true;
+        }
+
+        public virtual Task ShutdownAsync(TimeSpan timeout)
+        {
+            StartShutdown();
+            return Task.WhenAll(FixedServiceConnections.Select(c => c.CloseAsync(timeout)));
+        }
 
         /// <summary>
         /// Start and manage the whole connection lifetime
@@ -201,6 +210,12 @@ namespace Microsoft.Azure.SignalR
             {
                 var connection = CreateServiceConnectionCore(InitialConnectionType);
                 ReplaceFixedConnections(index, connection);
+
+                if (_shutdown)
+                {
+                    return true;
+                }
+
                 _ = StartCoreAsync(connection);
                 await connection.ConnectionInitializedTask;
 

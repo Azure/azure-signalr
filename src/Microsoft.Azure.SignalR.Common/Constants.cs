@@ -11,6 +11,14 @@ namespace Microsoft.Azure.SignalR
         public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
         public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
 
+        public const string ServerGracefulShutdownKey = "Azure:SignalR:GracefulShutdown";
+        public const string ServerGracefulShutdownTimeoutKey = "Azure:SignalR:GracefulShutdownTimeout";
+
+        public const int DefaultShutdownTimeoutInSeconds = 30;
+
+        public const string Fin = "fin";
+        public const string FinAck = "finack";
+
         public const string AsrsUserAgent = "Asrs-User-Agent";
         public const string AsrsInstanceId = "Asrs-Instance-Id";
 

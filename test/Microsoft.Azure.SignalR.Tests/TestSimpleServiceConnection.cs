@@ -49,5 +49,15 @@ namespace Microsoft.Azure.SignalR.Tests
             _writeAsyncTcs?.TrySetResult(null);
             return Task.CompletedTask;
         }
+
+        public Task CloseAsync()
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task CloseAsync(TimeSpan timeout)
+        {
+            return Task.CompletedTask;
+        }
     }
 }

@@ -35,8 +35,17 @@ namespace Microsoft.Azure.SignalR
 
         public override Task StopAsync()
         {
-            var stopOndemandConnectionsTask =  Task.WhenAll(_onDemandServiceConnections.Select(c => c.StopAsync()));
+            var stopOndemandConnectionsTask = Task.WhenAll(_onDemandServiceConnections.Select(c => c.StopAsync()));
             return Task.WhenAll(stopOndemandConnectionsTask, base.StopAsync());
+        }
+
+        public override Task ShutdownAsync(TimeSpan timeout)
+        {
+            StartShutdown();
+            return Task.WhenAll(
+                Task.WhenAll(FixedServiceConnections.Select(c => c.CloseAsync(timeout))),
+                Task.WhenAll(_onDemandServiceConnections.Select(c => c.CloseAsync(timeout)))
+            );
         }
 
         protected override ServiceConnectionStatus GetStatus()

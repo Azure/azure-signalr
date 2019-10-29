@@ -53,6 +53,18 @@ namespace Microsoft.Azure.SignalR
         public ServerStickyMode ServerStickyMode { get; set; } = ServerStickyMode.Disabled;
 
         /// <summary>
+        /// Specifies if server will shutdown gracefully. 
+        /// Default value is false.
+        /// </summary>
+        public bool EnableGracefulShutdown { get; set; } = false;
+
+        /// <summary>
+        /// Specifies the timeout of a graceful shutdown process (in seconds). 
+        /// Default value is 30 seconds.
+        /// </summary>
+        public TimeSpan ServerShutdownTimeout { get; set; } = TimeSpan.FromSeconds(Constants.DefaultShutdownTimeoutInSeconds);
+
+        /// <summary>
         /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
         /// </summary>
         public IWebProxy Proxy { get; set; }
