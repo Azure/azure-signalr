@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR
             else
             {
                 initial = new List<IServiceConnection>(initialConnections);
-                foreach(var conn in initial)
+                foreach (var conn in initial)
                 {
                     conn.ConnectionStatusChanged += OnConnectionStatusChanged;
                 }
@@ -288,9 +288,22 @@ namespace Microsoft.Azure.SignalR
 
         protected virtual ServiceConnectionStatus GetStatus()
         {
-            return FixedServiceConnections.Any(s => s.Status == ServiceConnectionStatus.Connected)
-                ? ServiceConnectionStatus.Connected
-                : ServiceConnectionStatus.Disconnected;
+            var statuses = (from conn in FixedServiceConnections
+                     group conn by conn.Status into g
+                     select g.Key
+                   ).ToDictionary(status => status, _ => 0);
+
+            if (statuses.ContainsKey(ServiceConnectionStatus.Connected))
+            {
+                return ServiceConnectionStatus.Connected;
+            }
+
+            if (statuses.ContainsKey(ServiceConnectionStatus.Terminated))
+            {
+                return ServiceConnectionStatus.Terminated;
+            }
+
+            return ServiceConnectionStatus.Disconnected;
         }
 
         private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
