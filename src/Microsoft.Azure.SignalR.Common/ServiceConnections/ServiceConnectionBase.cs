@@ -173,17 +173,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task StopAsync()
         {
-            try
-            {
-                _connectionContext?.Transport.Input.CancelPendingRead();
-                Status = ServiceConnectionStatus.Terminated;
-            }
-            catch (Exception ex)
-            {
-                Log.UnexpectedExceptionInStop(Logger, ConnectionId, ex);
-            }
-            
-            return Task.CompletedTask;
+            return InternalStopAsync(ServiceConnectionStatus.Terminated);
         }
 
         public virtual async Task WriteAsync(ServiceMessage serviceMessage)
@@ -389,7 +379,7 @@ namespace Microsoft.Azure.SignalR
                             {
                                 Log.HandshakeError(Logger, handshakeResponse.ErrorMessage, ConnectionId);
                             }
-                            
+
                             return false;
                         }
                     }
@@ -513,7 +503,7 @@ namespace Microsoft.Azure.SignalR
                     if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastReceiveTimestamp) > DefaultServiceTimeoutTicks)
                     {
                         Log.ServiceTimeout(Logger, DefaultServiceTimeout, ConnectionId);
-                        await StopAsync();
+                        await InternalStopAsync();
                         // We shouldn't get here twice.
                         continue;
                     }
@@ -547,6 +537,21 @@ namespace Microsoft.Azure.SignalR
             {
                 _writeLock.Release();
             }
+        }
+
+        private Task InternalStopAsync(ServiceConnectionStatus? newStatus = null)
+        {
+            try
+            {
+                _connectionContext?.Transport.Input.CancelPendingRead();
+                Status = newStatus ?? Status;
+            }
+            catch (Exception ex)
+            {
+                Log.UnexpectedExceptionInStop(Logger, ConnectionId, ex);
+            }
+
+            return Task.CompletedTask;
         }
 
         protected virtual ReadOnlyMemory<byte> GetPingMessage() => _cachedPingBytes;
