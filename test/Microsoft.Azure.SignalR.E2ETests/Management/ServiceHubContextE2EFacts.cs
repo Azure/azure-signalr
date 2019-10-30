@@ -217,7 +217,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         [SkipIfConnectionStringNotPresent]
         internal async Task StopServiceHubContextTest()
         {
@@ -241,6 +241,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 Assert.Equal(ServiceConnectionStatus.Terminated, status);
             }
         }
+
         private static IDictionary<string, List<string>> GenerateUserGroupDict(IList<string> userNames, IList<string> groupNames)
         {
             return (from i in Enumerable.Range(0, userNames.Count)
