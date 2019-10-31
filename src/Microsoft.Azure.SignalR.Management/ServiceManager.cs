@@ -55,6 +55,7 @@ namespace Microsoft.Azure.SignalR.Management
 
                         var serviceCollection = new ServiceCollection();
                         serviceCollection.AddSignalRCore();
+                        serviceCollection.AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
 
                         if (loggerFactory != null)
                         {
