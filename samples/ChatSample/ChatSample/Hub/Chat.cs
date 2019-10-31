@@ -33,9 +33,4 @@ namespace ChatSample
             await base.OnDisconnectedAsync(e);
         }
     }
-
-    public class NotificationHub : Hub
-    {
-
-    }
 }
