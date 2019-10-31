@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR
         private readonly object _statusLock = new object();
 
         private readonly AckHandler _ackHandler;
-        
+
         private volatile List<IServiceConnection> _fixedServiceConnections;
 
         private volatile ServiceConnectionStatus _status;
@@ -133,10 +133,7 @@ namespace Microsoft.Azure.SignalR
             }
             finally
             {
-                if (!_terminated)
-                {
-                    await OnConnectionComplete(connection);
-                }
+                await OnConnectionComplete(connection);
             }
         }
 
@@ -163,6 +160,11 @@ namespace Microsoft.Azure.SignalR
             if (serviceConnection == null)
             {
                 throw new ArgumentNullException(nameof(serviceConnection));
+            }
+
+            if (_terminated)
+            {
+                return;
             }
 
             serviceConnection.ConnectionStatusChanged -= OnConnectionStatusChanged;

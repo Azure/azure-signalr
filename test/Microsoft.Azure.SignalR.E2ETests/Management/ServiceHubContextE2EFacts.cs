@@ -223,8 +223,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
-
-
                 var serviceManager = new ServiceManagerBuilder()
                     .WithOptions(o =>
                     {

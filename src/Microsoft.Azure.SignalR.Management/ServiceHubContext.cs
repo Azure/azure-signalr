@@ -46,7 +46,7 @@ namespace Microsoft.Azure.SignalR.Management
         public ServiceConnectionStatus GetConnectionStatus()
         {
             var container = _serviceProvider.GetService<IServiceConnectionContainer>();
-            return ((WeakServiceConnectionContainer)container).GetServiceConnectionStatus();
+            return container.Status;
         }
     }
 }
