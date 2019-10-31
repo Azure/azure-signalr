@@ -72,7 +72,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     lock (_statusLock)
                     {
-                        if (_status != value && _status != ServiceConnectionStatus.Terminated)
+                        if (_status != value)
                         {
                             var prev = _status;
                             _status = value;
@@ -173,7 +173,16 @@ namespace Microsoft.Azure.SignalR
 
         public Task StopAsync()
         {
-            return InternalStopAsync(ServiceConnectionStatus.Terminated);
+            try
+            {
+                _connectionContext?.Transport.Input.CancelPendingRead();
+            }
+            catch (Exception ex)
+            {
+                Log.UnexpectedExceptionInStop(Logger, ConnectionId, ex);
+            }
+
+            return Task.CompletedTask;
         }
 
         public virtual async Task WriteAsync(ServiceMessage serviceMessage)
@@ -503,7 +512,7 @@ namespace Microsoft.Azure.SignalR
                     if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastReceiveTimestamp) > DefaultServiceTimeoutTicks)
                     {
                         Log.ServiceTimeout(Logger, DefaultServiceTimeout, ConnectionId);
-                        await InternalStopAsync();
+                        await StopAsync();
                         // We shouldn't get here twice.
                         continue;
                     }
@@ -537,21 +546,6 @@ namespace Microsoft.Azure.SignalR
             {
                 _writeLock.Release();
             }
-        }
-
-        private Task InternalStopAsync(ServiceConnectionStatus? newStatus = null)
-        {
-            try
-            {
-                _connectionContext?.Transport.Input.CancelPendingRead();
-                Status = newStatus ?? Status;
-            }
-            catch (Exception ex)
-            {
-                Log.UnexpectedExceptionInStop(Logger, ConnectionId, ex);
-            }
-
-            return Task.CompletedTask;
         }
 
         protected virtual ReadOnlyMemory<byte> GetPingMessage() => _cachedPingBytes;

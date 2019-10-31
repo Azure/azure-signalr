@@ -238,7 +238,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 await Task.Delay(100);
                 var status = ((ServiceHubContext) serviceHubContext).GetConnectionStatus();
                 await ((ServiceHubContext) serviceHubContext).DisposeAsync();
-                Assert.Equal(ServiceConnectionStatus.Terminated, status);
+                Assert.Equal(ServiceConnectionStatus.Disconnected, status);
             }
         }
 

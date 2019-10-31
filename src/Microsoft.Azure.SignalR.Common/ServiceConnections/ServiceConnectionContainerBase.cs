@@ -26,9 +26,12 @@ namespace Microsoft.Azure.SignalR
         private readonly object _statusLock = new object();
 
         private readonly AckHandler _ackHandler;
+        
         private volatile List<IServiceConnection> _fixedServiceConnections;
 
         private volatile ServiceConnectionStatus _status;
+
+        private volatile bool _terminated = false;
 
         protected ILogger Logger { get; }
 
@@ -112,7 +115,11 @@ namespace Microsoft.Azure.SignalR
             return Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
         }
 
-        public virtual Task StopAsync() => Task.WhenAll(FixedServiceConnections.Select(c => c.StopAsync()));
+        public virtual Task StopAsync()
+        {
+            _terminated = true;
+            return Task.WhenAll(FixedServiceConnections.Select(c => c.StopAsync()));
+        }
 
         /// <summary>
         /// Start and manage the whole connection lifetime
@@ -126,7 +133,10 @@ namespace Microsoft.Azure.SignalR
             }
             finally
             {
-                await OnConnectionComplete(connection);
+                if (!_terminated)
+                {
+                    await OnConnectionComplete(connection);
+                }
             }
         }
 
@@ -153,11 +163,6 @@ namespace Microsoft.Azure.SignalR
             if (serviceConnection == null)
             {
                 throw new ArgumentNullException(nameof(serviceConnection));
-            }
-
-            if (serviceConnection.Status == ServiceConnectionStatus.Terminated)
-            {
-                return;
             }
 
             serviceConnection.ConnectionStatusChanged -= OnConnectionStatusChanged;
@@ -288,22 +293,9 @@ namespace Microsoft.Azure.SignalR
 
         protected virtual ServiceConnectionStatus GetStatus()
         {
-            var statuses = (from conn in FixedServiceConnections
-                            group conn by conn.Status into g
-                            select g.Key
-                   ).ToDictionary(status => status, _ => 0);
-
-            if (statuses.ContainsKey(ServiceConnectionStatus.Connected))
-            {
-                return ServiceConnectionStatus.Connected;
-            }
-
-            if (statuses.ContainsKey(ServiceConnectionStatus.Terminated))
-            {
-                return ServiceConnectionStatus.Terminated;
-            }
-
-            return ServiceConnectionStatus.Disconnected;
+            return FixedServiceConnections.Any(s => s.Status == ServiceConnectionStatus.Connected)
+                ? ServiceConnectionStatus.Connected
+                : ServiceConnectionStatus.Disconnected;
         }
 
         private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
