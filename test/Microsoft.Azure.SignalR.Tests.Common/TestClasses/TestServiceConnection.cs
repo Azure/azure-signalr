@@ -13,17 +13,19 @@ namespace Microsoft.Azure.SignalR.Tests.Common
     internal sealed class TestServiceConnection : ServiceConnectionBase
     {
         private readonly bool _throws;
+        private ServiceConnectionStatus _expectedStatus;
         private ConnectionContext _connection;
 
         public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false) : base(null, null, null, null, ServerConnectionType.Default, NullLogger.Instance)
         {
-            Status = status;
+            _expectedStatus = status;
             _throws = throws;
         }
 
         public void SetStatus(ServiceConnectionStatus status)
         {
             Status = status;
+            _expectedStatus = status;
         }
 
         protected override Task CleanupConnections(string instanceId = null)
@@ -46,7 +48,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         {
             _connection = connection;
             await Task.Yield();
-            return Status == ServiceConnectionStatus.Connected;
+            return _expectedStatus == ServiceConnectionStatus.Connected;
         }
 
         protected override Task DisposeConnection(ConnectionContext connection)
