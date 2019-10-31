@@ -221,7 +221,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [SkipIfConnectionStringNotPresent]
         internal async Task StopServiceHubContextTest()
         {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: context => context.EventId == new EventId(2, "EndpointOffline")))
             {
                 var serviceManager = new ServiceManagerBuilder()
                     .WithOptions(o =>
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     })
                     .Build();
                 var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", loggerFactory);
-                var connectionContainer = ((ServiceHubContext) serviceHubContext).ConnectionContainer;
+                var connectionContainer = ((ServiceHubContext)serviceHubContext).ConnectionContainer;
                 await serviceHubContext.DisposeAsync();
                 await Task.Delay(500);
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connectionContainer.Status);
