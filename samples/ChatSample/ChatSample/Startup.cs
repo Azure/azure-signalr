@@ -24,6 +24,7 @@ namespace ChatSample
 
         public void Configure(IApplicationBuilder app)
         {
+            app.UseFileServer();
             app.UseAzureSignalR(routes =>
             {
                 routes.MapHub<Chat>("/chat");
