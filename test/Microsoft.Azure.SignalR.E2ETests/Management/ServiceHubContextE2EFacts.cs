@@ -173,7 +173,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 await RunTestCore(clientEndpoint, clientAccessTokens,
                     async () =>
                     {
-                        var connectionId = await SignalR.Tests.Common.TaskExtensions.OrTimeout(task);
+                        var connectionId = await task.OrTimeout();
                         await serviceHubContext.Clients.Client(connectionId).SendAsync(MethodName, Message);
                     },
                     1, receivedMessageDict);
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 await RunTestCore(clientEndpoint, clientAccessTokens,
                     async () =>
                     {
-                        var connectionId = await SignalR.Tests.Common.TaskExtensions.OrTimeout(task);
+                        var connectionId = await task.OrTimeout();
                         await serviceHubContext.Groups.AddToGroupAsync(connectionId, _groupNames[0]);
                         await serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
                         // We can't guarantee the order between the send group and the following leave group
@@ -232,11 +232,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     })
                     .Build();
                 var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", loggerFactory);
-                await ((ServiceHubContext)serviceHubContext).StopConnectionAsync();
-                await Task.Delay(100);
-                var status = ((ServiceHubContext) serviceHubContext).GetConnectionStatus();
-                await ((ServiceHubContext) serviceHubContext).DisposeAsync();
-                Assert.Equal(ServiceConnectionStatus.Disconnected, status);
+                var connectionContainer = ((ServiceHubContext) serviceHubContext).ConnectionContainer;
+                await serviceHubContext.DisposeAsync();
+                await Task.Delay(500);
+                Assert.Equal(ServiceConnectionStatus.Disconnected, connectionContainer.Status);
             }
         }
 

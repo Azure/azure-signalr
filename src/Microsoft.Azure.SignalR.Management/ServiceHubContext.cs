@@ -19,11 +19,15 @@ namespace Microsoft.Azure.SignalR.Management
 
         public IUserGroupManager UserGroups { get; }
 
+        // for test only
+        internal IServiceConnectionContainer ConnectionContainer { get; }
+
         public ServiceHubContext(IHubContext<Hub> hubContext, IHubLifetimeManagerForUserGroup lifetimeManager, ServiceProvider serviceProvider)
         {
             _hubContext = hubContext;
             UserGroups = new UserGroupsManager(lifetimeManager);
             _serviceProvider = serviceProvider;
+            ConnectionContainer = _serviceProvider.GetService<IServiceConnectionContainer>();
         }
 
         public async Task DisposeAsync()
@@ -32,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Management
             _serviceProvider?.Dispose();
         }
 
-        public Task StopConnectionAsync()
+        private Task StopConnectionAsync()
         {
             var serviceConnectionManager = _serviceProvider.GetService<IServiceConnectionManager<Hub>>();
             if (serviceConnectionManager == null)
@@ -40,13 +44,6 @@ namespace Microsoft.Azure.SignalR.Management
                 return Task.CompletedTask;
             }
             return serviceConnectionManager.StopAsync();
-        }
-
-        // for test only
-        public ServiceConnectionStatus GetConnectionStatus()
-        {
-            var container = _serviceProvider.GetService<IServiceConnectionContainer>();
-            return container.Status;
         }
     }
 }
