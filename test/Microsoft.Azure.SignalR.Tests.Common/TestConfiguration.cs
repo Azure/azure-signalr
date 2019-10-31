@@ -18,6 +18,8 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         {
             _configuration = new ConfigurationBuilder()
                 .AddUserSecrets<TestConfiguration>(optional: true)
+                .AddJsonFile("../appsettings.Test.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
                 .Build();
 
             Init();
