@@ -181,7 +181,7 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.UnexpectedExceptionInStop(Logger, ConnectionId, ex);
             }
-            
+
             return Task.CompletedTask;
         }
 
@@ -388,7 +388,7 @@ namespace Microsoft.Azure.SignalR
                             {
                                 Log.HandshakeError(Logger, handshakeResponse.ErrorMessage, ConnectionId);
                             }
-                            
+
                             return false;
                         }
                     }
