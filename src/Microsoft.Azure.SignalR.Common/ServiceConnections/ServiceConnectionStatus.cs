@@ -9,6 +9,6 @@ namespace Microsoft.Azure.SignalR
         Inited,
         Disconnected,
         Connecting,
-        Connected
+        Connected,
     }
 }

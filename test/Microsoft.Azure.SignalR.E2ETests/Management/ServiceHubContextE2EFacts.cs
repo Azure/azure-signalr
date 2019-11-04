@@ -162,7 +162,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         internal async Task SendToConnectionTest(ServiceTransportType serviceTransportType, string appName)
         {
             var testServer = _testServerFactory.Create(TestOutputHelper);
-            await testServer.StartAsync(new Dictionary<string, string>{ [TestStartup.ApplicationName] = appName });
+            await testServer.StartAsync(new Dictionary<string, string> { [TestStartup.ApplicationName] = appName });
 
             var task = testServer.HubConnectionManager.WaitForConnectionCountAsync(1);
 
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             try
             {
                 await RunTestCore(clientEndpoint, clientAccessTokens,
-                    async () => 
+                    async () =>
                     {
                         var connectionId = await task.OrTimeout();
                         await serviceHubContext.Clients.Client(connectionId).SendAsync(MethodName, Message);
@@ -214,6 +214,28 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             finally
             {
                 await serviceHubContext.DisposeAsync();
+            }
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        internal async Task StopServiceHubContextTest()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: context => context.EventId == new EventId(2, "EndpointOffline")))
+            {
+                var serviceManager = new ServiceManagerBuilder()
+                    .WithOptions(o =>
+                    {
+                        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                        o.ConnectionCount = 1;
+                        o.ServiceTransportType = ServiceTransportType.Persistent;
+                    })
+                    .Build();
+                var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", loggerFactory);
+                var connectionContainer = ((ServiceHubContext)serviceHubContext).ConnectionContainer;
+                await serviceHubContext.DisposeAsync();
+                await Task.Delay(500);
+                Assert.Equal(ServiceConnectionStatus.Disconnected, connectionContainer.Status);
             }
         }
 

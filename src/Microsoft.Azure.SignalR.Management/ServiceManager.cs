@@ -51,7 +51,11 @@ namespace Microsoft.Azure.SignalR.Management
                         var clientConnectionFactory = new ClientConnectionFactory();
                         ConnectionDelegate connectionDelegate = connectionContext => Task.CompletedTask;
                         var serviceConnectionFactory = new ServiceConnectionFactory(serviceProtocol, clientConnectionManager, connectionFactory, loggerFactory, connectionDelegate, clientConnectionFactory);
-                        var weakConnectionContainer = new WeakServiceConnectionContainer(serviceConnectionFactory, _serviceManagerOptions.ConnectionCount, new HubServiceEndpoint(hubName, _endpointProvider, _endpoint), NullLogger.Instance);
+                        var weakConnectionContainer = new WeakServiceConnectionContainer(
+                            serviceConnectionFactory,
+                            _serviceManagerOptions.ConnectionCount,
+                            new HubServiceEndpoint(hubName, _endpointProvider, _endpoint),
+                            loggerFactory?.CreateLogger(nameof(WeakServiceConnectionContainer)) ?? NullLogger.Instance);
 
                         var serviceCollection = new ServiceCollection();
                         serviceCollection.AddSignalRCore();
