@@ -42,6 +42,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly string _serverName;
         private readonly ServerStickyMode _mode;
         private readonly bool _enableDetailedErrors;
+        private readonly int _endpointsCount;
 
         public NegotiateMiddleware(OwinMiddleware next, HubConfiguration configuration, string appName, IServiceEndpointManager endpointManager, IEndpointRouter router, ServiceOptions options, IServerNameProvider serverNameProvider, IConnectionRequestIdProvider connectionRequestIdProvider, ILoggerFactory loggerFactory)
             : base(next)
@@ -57,6 +58,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _serverName = serverNameProvider?.GetName();
             _mode = options.ServerStickyMode;
             _enableDetailedErrors = configuration.EnableDetailedErrors;
+            _endpointsCount = options.Endpoints.Length;
         }
 
         public override Task Invoke(IOwinContext owinContext)
@@ -198,7 +200,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             var user = owinContext.Authentication?.User;
             var userId = _provider?.GetUserId(request);
 
-            var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext), _serverName, _mode, _enableDetailedErrors);
+            var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext), _serverName, _mode, _enableDetailedErrors, _endpointsCount);
 
             yield return new Claim(Constants.ClaimType.Version, AssemblyVersion);
 
