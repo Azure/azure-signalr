@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// <summary>
         /// Gets applicationName, which will be used as a prefix to apply to each hub name
         /// </summary>
-        internal string ApplicationName{ get; set; }
+        internal string ApplicationName { get; set; }
         string IServiceEndpointOptions.ApplicationName => ApplicationName;
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             // Fallback to use AppSettings
             if (string.IsNullOrEmpty(connectionString) && endpoints.Count == 0)
             {
-                foreach(var key in ConfigurationManager.AppSettings.AllKeys)
+                foreach (var key in ConfigurationManager.AppSettings.AllKeys)
                 {
                     if (key == Constants.ConnectionStringDefaultKey)
                     {

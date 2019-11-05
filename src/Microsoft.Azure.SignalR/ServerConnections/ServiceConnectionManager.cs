@@ -31,6 +31,11 @@ namespace Microsoft.Azure.SignalR
             return _serviceConnection.StopAsync();
         }
 
+        public Task ShutdownAsync(TimeSpan timeout)
+        {
+            return _serviceConnection.ShutdownAsync(timeout);
+        }
+
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
             if (_serviceConnection == null)
