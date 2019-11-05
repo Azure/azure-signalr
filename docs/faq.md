@@ -94,4 +94,4 @@ Modes:
 Choosing:
 1. No hub server, choose `Serverless`.
 1. All of hubs have hub servers, choose `Default`.
-1. Some of hubs have hub servers, others not, choose `Classic`, but this may cause some problem, the better way is create two instances, one is `Serverless`, another is `Classic`.
+1. Some of hubs have hub servers, others not, choose `Classic`, but this may cause some problem, the better way is create two instances, one is `Serverless`, another is `Default`.
