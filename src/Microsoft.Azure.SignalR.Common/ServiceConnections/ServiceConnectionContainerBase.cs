@@ -26,9 +26,12 @@ namespace Microsoft.Azure.SignalR
         private readonly object _statusLock = new object();
 
         private readonly AckHandler _ackHandler;
+
         private volatile List<IServiceConnection> _fixedServiceConnections;
 
         private volatile ServiceConnectionStatus _status;
+
+        private volatile bool _terminated = false;
 
         protected ILogger Logger { get; }
 
@@ -73,6 +76,7 @@ namespace Microsoft.Azure.SignalR
             int minConnectionCount, HubServiceEndpoint endpoint,
             IReadOnlyList<IServiceConnection> initialConnections = null, ILogger logger = null, AckHandler ackHandler = null)
         {
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             ServiceConnectionFactory = serviceConnectionFactory;
             Endpoint = endpoint;
             _ackHandler = ackHandler ?? new AckHandler();
@@ -87,7 +91,7 @@ namespace Microsoft.Azure.SignalR
             else
             {
                 initial = new List<IServiceConnection>(initialConnections);
-                foreach(var conn in initial)
+                foreach (var conn in initial)
                 {
                     conn.ConnectionStatusChanged += OnConnectionStatusChanged;
                 }
@@ -104,7 +108,6 @@ namespace Microsoft.Azure.SignalR
             FixedServiceConnections = initial;
             FixedConnectionCount = initial.Count;
             ConnectionStatusChanged += OnStatusChanged;
-            Logger = logger ?? NullLogger<ServiceConnectionBase>.Instance;
         }
 
         public Task StartAsync()
@@ -112,7 +115,11 @@ namespace Microsoft.Azure.SignalR
             return Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
         }
 
-        public virtual Task StopAsync() => Task.WhenAll(FixedServiceConnections.Select(c => c.StopAsync()));
+        public virtual Task StopAsync()
+        {
+            _terminated = true;
+            return Task.WhenAll(FixedServiceConnections.Select(c => c.StopAsync()));
+        }
 
         /// <summary>
         /// Start and manage the whole connection lifetime
@@ -153,6 +160,11 @@ namespace Microsoft.Azure.SignalR
             if (serviceConnection == null)
             {
                 throw new ArgumentNullException(nameof(serviceConnection));
+            }
+
+            if (_terminated)
+            {
+                return;
             }
 
             serviceConnection.ConnectionStatusChanged -= OnConnectionStatusChanged;

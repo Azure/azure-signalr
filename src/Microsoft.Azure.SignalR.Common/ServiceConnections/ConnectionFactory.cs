@@ -7,8 +7,6 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http.Connections;
-using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -21,7 +19,7 @@ namespace Microsoft.Azure.SignalR
 
         public ConnectionFactory(IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
         {
-            _loggerFactory = loggerFactory == null ? (ILoggerFactory)NullLoggerFactory.Instance : new GracefulLoggerFactory(loggerFactory);
+            _loggerFactory = loggerFactory != null ? new GracefulLoggerFactory(loggerFactory) : throw new ArgumentNullException(nameof(loggerFactory));
             _userId = nameProvider?.GetName();
         }
 
@@ -29,26 +27,35 @@ namespace Microsoft.Azure.SignalR
         {
             var provider = endpoint.Provider;
             var hubName = endpoint.Hub;
-            var httpConnectionOptions = new HttpConnectionOptions
+            Func<Task<string>> accessTokenGenerater = () => Task.FromResult(provider.GenerateServerAccessToken(hubName, _userId));
+            var url = GetServiceUrl(provider, hubName, connectionId, target);
+            var connectionOptions = new WebSocketConnectionOptions
             {
-                Url = GetServiceUrl(provider, hubName, connectionId, target),
-                AccessTokenProvider = () => Task.FromResult(provider.GenerateServerAccessToken(hubName, _userId)),
-                Transports = HttpTransportType.WebSockets,
-                SkipNegotiation = true,
                 Headers = headers,
                 Proxy = provider.Proxy,
             };
-            var httpConnection = new HttpConnection(httpConnectionOptions, _loggerFactory);
+            var connection = new WebSocketConnectionContext(connectionOptions, _loggerFactory, accessTokenGenerater);
             try
             {
-                await httpConnection.StartAsync(transferFormat, cancellationToken);
-                return httpConnection;
+                await connection.StartAsync(url, cancellationToken);
+
+                return connection;
             }
             catch
             {
-                await httpConnection.DisposeAsync();
+                await connection.StopAsync();
                 throw;
             }
+        }
+
+        public Task DisposeAsync(ConnectionContext connection)
+        {
+            if (connection == null)
+            {
+                return Task.CompletedTask;
+            }
+
+            return ((WebSocketConnectionContext)connection).StopAsync();
         }
 
         private Uri GetServiceUrl(IServiceEndpointProvider provider, string hubName, string connectionId, string target)
@@ -68,19 +75,6 @@ namespace Microsoft.Azure.SignalR
                 baseUri.Query = query;
             }
             return baseUri.Uri;
-        }
-
-        public Task DisposeAsync(ConnectionContext connection)
-        {
-            if (connection == null)
-            {
-                return Task.CompletedTask;
-            }
-#if NETSTANDARD2_0
-            return ((HttpConnection)connection).DisposeAsync();
-#else
-            return ((HttpConnection)connection).DisposeAsync().AsTask();
-#endif
         }
 
         private sealed class GracefulLoggerFactory : ILoggerFactory

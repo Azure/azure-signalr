@@ -10,7 +10,6 @@ using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -31,7 +30,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(generator));
             }
 
-            _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? NullLogger<MultiEndpointServiceConnectionContainer>.Instance;
+            _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
 
             // provides a copy to the endpoint per container
             _endpoints = endpointManager.GetEndpoints(hub);

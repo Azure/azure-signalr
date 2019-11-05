@@ -13,6 +13,7 @@ using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -39,6 +40,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
         {
+            loggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
             switch (_serviceManagerOptions.ServiceTransportType)
             {
                 case ServiceTransportType.Persistent:
@@ -49,10 +51,15 @@ namespace Microsoft.Azure.SignalR.Management
                         var clientConnectionFactory = new ClientConnectionFactory();
                         ConnectionDelegate connectionDelegate = connectionContext => Task.CompletedTask;
                         var serviceConnectionFactory = new ServiceConnectionFactory(serviceProtocol, clientConnectionManager, connectionFactory, loggerFactory, connectionDelegate, clientConnectionFactory);
-                        var weakConnectionContainer = new WeakServiceConnectionContainer(serviceConnectionFactory, _serviceManagerOptions.ConnectionCount, new HubServiceEndpoint(hubName, _endpointProvider, _endpoint));
+                        var weakConnectionContainer = new WeakServiceConnectionContainer(
+                            serviceConnectionFactory,
+                            _serviceManagerOptions.ConnectionCount,
+                            new HubServiceEndpoint(hubName, _endpointProvider, _endpoint),
+                            loggerFactory?.CreateLogger(nameof(WeakServiceConnectionContainer)) ?? NullLogger.Instance);
 
                         var serviceCollection = new ServiceCollection();
                         serviceCollection.AddSignalRCore();
+                        serviceCollection.AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
 
                         if (loggerFactory != null)
                         {

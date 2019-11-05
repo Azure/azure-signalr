@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -27,7 +26,7 @@ namespace Microsoft.Azure.SignalR
         // for test purpose
         internal ServiceEndpointManagerBase(IEnumerable<ServiceEndpoint> endpoints, ILogger logger)
         {
-            _logger = logger ?? NullLogger.Instance;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             // select the most valuable endpoint with the same endpoint address
             var groupedEndpoints = endpoints.Distinct().GroupBy(s => s.Endpoint).Select(s =>

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly string DefaultNameClaimType = DefaultClaimsIdentity.NameClaimType;
         private static readonly string DefaultRoleClaimType = DefaultClaimsIdentity.RoleClaimType;
 
-        public static IEnumerable<Claim> BuildJwtClaims(ClaimsPrincipal user, string userId, Func<IEnumerable<Claim>> claimsProvider, string serverName = null, ServerStickyMode mode = ServerStickyMode.Disabled, bool enableDetailedErrors = false)
+        public static IEnumerable<Claim> BuildJwtClaims(ClaimsPrincipal user, string userId, Func<IEnumerable<Claim>> claimsProvider, string serverName = null, ServerStickyMode mode = ServerStickyMode.Disabled, bool enableDetailedErrors = false, int endpointsCount = 1)
         {
             if (userId != null)
             {
@@ -44,6 +44,12 @@ namespace Microsoft.Azure.SignalR
             if (authenticationType != null && authenticationType != DefaultAuthenticationType)
             {
                 yield return new Claim(Constants.ClaimType.AuthenticationType, authenticationType);
+            }
+
+            // Trace multiple instances
+            if (endpointsCount > 1)
+            {
+                yield return new Claim(Constants.ClaimType.ServiceEndpointsCount, endpointsCount.ToString());
             }
 
             if (enableDetailedErrors)

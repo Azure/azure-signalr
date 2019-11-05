@@ -8,6 +8,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
@@ -77,9 +78,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ConnectionCount = connectionCount
             }, null);
 
-            LoggerFactory loggerFactory;
-
-            using (loggerFactory = useLoggerFacory ? new LoggerFactory() : null)
+            using (var loggerFactory = useLoggerFacory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance)
             {
                 var hubContext = await serviceManager.CreateHubContextAsync(HubName, loggerFactory);
             }
