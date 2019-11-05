@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -110,15 +109,18 @@ namespace Microsoft.Azure.SignalR
             ConnectionStatusChanged += OnStatusChanged;
         }
 
-        public Task StartAsync()
-        {
-            return Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
-        }
+        public Task StartAsync() => Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
 
         public virtual Task StopAsync()
         {
             _terminated = true;
             return Task.WhenAll(FixedServiceConnections.Select(c => c.StopAsync()));
+        }
+
+        public virtual Task ShutdownAsync(TimeSpan timeout)
+        {
+            _terminated = true;
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -127,6 +129,11 @@ namespace Microsoft.Azure.SignalR
         /// <returns></returns>
         protected async Task StartCoreAsync(IServiceConnection connection, string target = null)
         {
+            if (_terminated)
+            {
+                return;
+            }
+
             try
             {
                 await connection.StartAsync(target);
@@ -160,11 +167,6 @@ namespace Microsoft.Azure.SignalR
             if (serviceConnection == null)
             {
                 throw new ArgumentNullException(nameof(serviceConnection));
-            }
-
-            if (_terminated)
-            {
-                return;
             }
 
             serviceConnection.ConnectionStatusChanged -= OnConnectionStatusChanged;
@@ -213,12 +215,12 @@ namespace Microsoft.Azure.SignalR
             {
                 var connection = CreateServiceConnectionCore(InitialConnectionType);
                 ReplaceFixedConnections(index, connection);
+
                 _ = StartCoreAsync(connection);
                 await connection.ConnectionInitializedTask;
 
                 return connection.Status == ServiceConnectionStatus.Connected;
             };
-
             await _backOffPolicy.CallProbeWithBackOffAsync(tryNewConnection, GetRetryDelay);
         }
 
