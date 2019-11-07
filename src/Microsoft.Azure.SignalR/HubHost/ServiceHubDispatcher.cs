@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
@@ -27,7 +28,8 @@ namespace Microsoft.Azure.SignalR
         private readonly string _hubName;
         private readonly IServerNameProvider _nameProvider;
 
-        public ServiceHubDispatcher(IServiceProtocol serviceProtocol,
+        public ServiceHubDispatcher(
+            IServiceProtocol serviceProtocol,
             IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
             IServiceEndpointManager serviceEndpointManager,
@@ -59,7 +61,13 @@ namespace Microsoft.Azure.SignalR
             _serviceConnectionManager.SetServiceConnection(serviceConnection);
 
             Log.StartingConnection(_logger, Name, _options.ConnectionCount);
+
             _ = _serviceConnectionManager.StartAsync();
+        }
+
+        public Task Shutdown(TimeSpan timeout)
+        {
+            return _serviceConnectionManager.ShutdownAsync(timeout);
         }
 
         private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
