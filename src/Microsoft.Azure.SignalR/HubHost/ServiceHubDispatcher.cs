@@ -70,12 +70,22 @@ namespace Microsoft.Azure.SignalR
             return _serviceConnectionManager.ShutdownAsync(timeout);
         }
 
-        private MultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
+        private IServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
         {
             var connectionFactory = new ConnectionFactory(_nameProvider, _loggerFactory);
             var serviceConnectionFactory = new ServiceConnectionFactory(_serviceProtocol, _clientConnectionManager, connectionFactory, _loggerFactory, connectionDelegate, _clientConnectionFactory);
             serviceConnectionFactory.ConfigureContext = contextConfig;
-            return new MultiEndpointServiceConnectionContainer(serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _nameProvider, _loggerFactory);
+
+            var factory = new ServiceConnectionContainerFactory(
+                serviceConnectionFactory, 
+                _serviceEndpointManager,
+                _router, 
+                _options, 
+                _nameProvider, 
+                _clientConnectionManager,
+                _loggerFactory
+            );
+            return factory.Create(hub);
         }
 
         private static class Log
