@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                                                           IEndpointRouter router,
                                                           ILoggerFactory loggerFactory
 
-                ) : base(hub, generator, endpoint, router, null, loggerFactory)
+                ) : base(hub, generator, endpoint, router, loggerFactory)
             {
             }
         }
