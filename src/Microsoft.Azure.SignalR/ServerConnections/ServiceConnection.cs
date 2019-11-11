@@ -101,6 +101,7 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnClientConnectedAsync(OpenConnectionMessage message)
         {
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
+            connection.ServiceConnection = this;
             AddClientConnection(connection, GetInstanceId(message.Headers));
             Log.ConnectedStarting(Logger, connection.ConnectionId);
 

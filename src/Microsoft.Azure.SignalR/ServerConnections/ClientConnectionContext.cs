@@ -111,8 +111,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task ApplicationTask { get; set; }
 
-        // The associated HubConnectionContext
-        public HubConnectionContext HubConnectionContext { get; set; }
+        public ServiceConnectionBase ServiceConnection { get; set; }
 
         public HttpContext HttpContext { get; set; }
 

@@ -359,7 +359,7 @@ namespace Microsoft.Azure.SignalR
         {
             _ = WriteFinAsync(c);
 
-            var source = new CancellationTokenSource();
+            using var source = new CancellationTokenSource();
             var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(RemoveFromServiceTimeout, source.Token));
             source.Cancel();
 
