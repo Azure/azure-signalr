@@ -43,6 +43,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
             public Task ConnectionInitializedTask => Task.Delay(TimeSpan.FromSeconds(1));
 
+            public Task ConnectionOfflineTask => Task.CompletedTask;
+
             public event Action<StatusChange> ConnectionStatusChanged;
 
             public SimpleTestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Disconnected)

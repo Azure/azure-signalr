@@ -262,5 +262,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 tcs.TrySetResult(message);
             }
         }
+
+        public Task WhenAllCompleted()
+        {
+            return Task.CompletedTask;
+        }
     }
 }

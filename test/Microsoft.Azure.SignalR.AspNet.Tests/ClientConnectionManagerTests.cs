@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
     {
         private readonly ClientConnectionManager _clientConnectionManager;
 
-        public ClientConnectionManagerTests()
+        private ClientConnectionManager CreateClientConnectionManager()
         {
             var hubConfig = new HubConfiguration
             {
@@ -28,7 +28,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var transport = new AzureTransportManager(hubConfig.Resolver);
             hubConfig.Resolver.Register(typeof(ITransportManager), () => transport);
 
-            _clientConnectionManager = new ClientConnectionManager(hubConfig, null);
+            return new ClientConnectionManager(hubConfig, null);
+        }
+
+        public ClientConnectionManagerTests()
+        {
+            _clientConnectionManager = CreateClientConnectionManager();
         }
 
         [Theory]
