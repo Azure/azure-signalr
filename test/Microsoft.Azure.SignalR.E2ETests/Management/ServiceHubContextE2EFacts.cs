@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
@@ -232,7 +233,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     })
                     .Build();
                 var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", loggerFactory);
-                var connectionContainer = ((ServiceHubContext)serviceHubContext).ConnectionContainer;
+                var connectionContainer = ((ServiceHubContext)serviceHubContext).ServiceProvider.GetRequiredService<IServiceConnectionContainer>();
                 await serviceHubContext.DisposeAsync();
                 await Task.Delay(500);
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connectionContainer.Status);
