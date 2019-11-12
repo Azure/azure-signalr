@@ -19,6 +19,8 @@ namespace Microsoft.Azure.SignalR
 
         Task ConnectionInitializedTask { get; }
 
+        Task ConnectionOfflineTask { get; }
+
         event Action<StatusChange> ConnectionStatusChanged;
     }
 }
