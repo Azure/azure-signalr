@@ -26,6 +26,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             _contains = contains;
         }
 
+        public Task WhenAllCompleted()
+        {
+            return Task.CompletedTask;
+        }
+
         public Task<IServiceTransport> CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
         {
             var transport = new TestTransport

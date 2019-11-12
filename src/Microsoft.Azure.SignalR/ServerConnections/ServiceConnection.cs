@@ -39,7 +39,7 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
                                  IClientConnectionManager clientConnectionManager,
-                                 IConnectionFactory connectionFactory, 
+                                 IConnectionFactory connectionFactory,
                                  ILoggerFactory loggerFactory,
                                  ConnectionDelegate connectionDelegate,
                                  IClientConnectionFactory clientConnectionFactory,
@@ -145,6 +145,7 @@ namespace Microsoft.Azure.SignalR
             {
                 connection.Application.Input.Complete();
                 await PerformDisconnectAsyncCore(connection.ConnectionId, true);
+                connection.OnCompleted();
             }
         }
 
@@ -168,6 +169,7 @@ namespace Microsoft.Azure.SignalR
 
             // Waiting for the application to shutdown so we can clean up the connection
             _ = WaitOnApplicationTask(connection);
+
             return Task.CompletedTask;
         }
 
