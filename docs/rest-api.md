@@ -4,19 +4,24 @@
 >
 > Azure SignalR Service only supports REST API for ASP.NET CORE SignalR applications.
 
-- [Typical Server-less Architecture](#serverless)
-- [API](#api)
-    - [Broadcast message to all clients](#broadcast)
-    - [Broadcast message to a group](#broadcast-group)
-    - [Send message to a user](#send-user)
-    - [Add a user to a group](#add-user-to-group)
-    - [Remove a user from a group](#remove-user-from-group)
-    - [Remove a user from all groups](#remove-user-from-all-groups)
-- [Using REST API](#using-rest-api)
+- [REST API in Azure SignalR Service](#rest-api-in-azure-signalr-service)
+  - [Typical Server-less Architecture with Azure Functions](#typical-server-less-architecture-with-azure-functions)
+  - [API](#api)
+    - [Broadcast message to all clients](#broadcast-message-to-all-clients)
+    - [Broadcast message to a group](#broadcast-message-to-a-group)
+    - [Send message to a user](#send-message-to-a-user)
+    - [Add a connection to a group](#add-a-connection-to-a-group)
+    - [Remove a connection from a group](#remove-a-connection-from-a-group)
+    - [Add a user to a group](#add-a-user-to-a-group)
+    - [Remove a user from a group](#remove-a-user-from-a-group)
+    - [Remove a user from all groups](#remove-a-user-from-all-groups)
+    - [Check user existence in a group](#check-user-existence-in-a-group)
+  - [Using REST API](#using-rest-api)
     - [Authentication](#authentication)
-        - [Signing Algorithm and Signature](#signing)
-        - [Claims](#claims)
-    - [User-related REST API](#user-api)
+      - [Signing Algorithm and Signature](#signing-algorithm-and-signature)
+      - [Claims](#claims)
+    - [Implement Negotiate Endpoint](#implement-negotiate-endpoint)
+    - [User-related REST API](#user-related-rest-api)
     - [Sample](#sample)
 
 On top of classical client-server pattern, Azure SignalR Service provides a set of REST APIs, so that you can easily integrate real-time functionality into your server-less architecture.
@@ -84,12 +89,31 @@ API Version | HTTP Method | Request URL | Request Body
 `1.0-preview` | `POST` | `https://<instance-name>.service.signalr.net/api/v1-preview/hub/<hub-name>/user/<user-id>` | `{ "target":"<method-name>", "arguments":[ ... ] }`
 `1.0` | `POST` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>` | Same as above
 
+<a name="add-connection-to-group"></a>
+### Add a connection to a group
+
+API Version | HTTP Method | Request URL
+---|---|---
+`1.0` | `PUT` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/connections/<connection-id>`
+`1.0` | `PUT` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/connections/<connection-id>/groups/<group-name>`
+
+<a name="remove-connection-from-group"></a>
+### Remove a connection from a group
+
+API Version | HTTP Method | Request URL
+---|---|---
+`1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/connections/<connection-id>`
+`1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/connections/<connection-id>/groups/<group-name>`
+
 <a name="add-user-to-group"></a>
 ### Add a user to a group
 
 API Version | HTTP Method | Request URL
 ---|---|---
 `1.0` | `PUT` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/users/<user-id>`
+`1.0` | `PUT` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/users/<user-id>?ttl=<Time to live in a group for a user (in seconds)>`
+`1.0` | `PUT` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups/<group-name>`
+`1.0` | `PUT` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups/<group-name>?ttl=<Time to live in a group for a user (in seconds)>`
 
 <a name="remove-user-from-group"></a>
 
@@ -98,6 +122,8 @@ API Version | HTTP Method | Request URL
 API Version | HTTP Method | Request URL
 ---|---|---
 `1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/users/<user-id>`
+`1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups/<group-name>`
+
 
 <a name="remove-user-from-all-groups"></a>
 
@@ -107,7 +133,11 @@ API Version | HTTP Method | Request URL
 | ----------- | ----------- | ------------------------------------------------------------ |
 | `1.0`       | `DELETE`    | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups` |
 
-
+### Check user existence in a group
+| API Version | HTTP Method | Request URL                                                  |
+| ----------- | ----------- | ------------------------------------------------------------ |
+| `1.0`       | `GET`    | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups/<group-name>` |
+| `1.0`       | `GET`    | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/users/<user-id>`  |
 
 ## Using REST API
 
