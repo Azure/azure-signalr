@@ -214,7 +214,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
                         return;
                     }
 #endif
-                    var memory = _application.Output.GetMemory();
+                    var memory = _application.Output.GetMemory(2048);
 #if !NETSTANDARD2_0
                     // Because we checked the CloseStatus from the 0 byte read above, we don't need to check again after reading
                     var receiveResult = await socket.ReceiveAsync(memory, CancellationToken.None);
