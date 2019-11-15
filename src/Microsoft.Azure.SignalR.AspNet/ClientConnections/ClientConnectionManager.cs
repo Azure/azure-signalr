@@ -4,9 +4,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
@@ -53,7 +52,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                     throw new InvalidOperationException(errorResponse);
                 }
 
-                return (AzureTransport) hostContext.Environment[AspNetConstants.Context.AzureSignalRTransportKey];
+                return (AzureTransport)hostContext.Environment[AspNetConstants.Context.AzureSignalRTransportKey];
             }
 
             // This happens when hub is not found
@@ -122,6 +121,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                 return reader.ReadToEnd();
             }
         }
+
+        public Task WhenAllCompleted() => Task.CompletedTask;
 
         private sealed class ClientConnectionHubDispatcher : HubDispatcher
         {

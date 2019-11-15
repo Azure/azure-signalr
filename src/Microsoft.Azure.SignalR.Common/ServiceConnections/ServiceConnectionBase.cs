@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -33,6 +32,7 @@ namespace Microsoft.Azure.SignalR
         private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
 
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<object> _serviceConnectionOfflineTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private readonly ServerConnectionType _connectionType;
 
@@ -84,6 +84,8 @@ namespace Microsoft.Azure.SignalR
         }
 
         public Task ConnectionInitializedTask => _serviceConnectionStartTcs.Task;
+
+        public Task ConnectionOfflineTask => _serviceConnectionOfflineTcs.Task;
 
         protected ServiceConnectionBase(IServiceProtocol serviceProtocol, string connectionId,
             HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType connectionType, ILogger logger)
@@ -260,6 +262,11 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
                 return CleanupConnections(instanceId);
+            } 
+            if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.ShutdownKey, out string val) && val == Constants.ServicePingMessageValue.ShutdownFinAck)
+            {
+                _serviceConnectionOfflineTcs.TrySetResult(null);
+                return Task.CompletedTask;
             }
             return _serviceMessageHandler.HandlePingAsync(pingMessage);
         }
