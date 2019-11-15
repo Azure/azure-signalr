@@ -18,17 +18,20 @@ namespace Microsoft.Azure.SignalR
         private readonly IMessageRouter _router;
         private readonly ILogger _logger;
         private readonly IServiceConnectionContainer _inner;
+        private readonly IClientConnectionLifetimeManager _clientLifetime;
 
         private IReadOnlyList<HubServiceEndpoint> _endpoints;
 
         public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
 
-        public MultiEndpointServiceConnectionContainer(string hub, Func<HubServiceEndpoint, IServiceConnectionContainer> generator, IServiceEndpointManager endpointManager, IMessageRouter router, ILoggerFactory loggerFactory)
+        public MultiEndpointServiceConnectionContainer(string hub, Func<HubServiceEndpoint, IServiceConnectionContainer> generator, IServiceEndpointManager endpointManager, IMessageRouter router, IClientConnectionLifetimeManager lifetime, ILoggerFactory loggerFactory)
         {
             if (generator == null)
             {
                 throw new ArgumentNullException(nameof(generator));
             }
+
+            _clientLifetime = lifetime;
 
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
 
@@ -47,10 +50,23 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public MultiEndpointServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory, string hub,
-            int count, IServiceEndpointManager endpointManager, IMessageRouter router, IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
-        :this(hub, endpoint => CreateContainer(serviceConnectionFactory, endpoint, count, loggerFactory),
-            endpointManager, router, loggerFactory)
+        public MultiEndpointServiceConnectionContainer(
+            IServiceConnectionFactory serviceConnectionFactory,
+            string hub,
+            int count,
+            IServiceEndpointManager endpointManager,
+            IMessageRouter router,
+            IServerNameProvider nameProvider,
+            IClientConnectionLifetimeManager lifetime,
+            ILoggerFactory loggerFactory
+            ) : this(
+                hub,
+                endpoint => CreateContainer(serviceConnectionFactory, endpoint, count, loggerFactory),
+                endpointManager,
+                router,
+                lifetime,
+                loggerFactory
+                )
         {
         }
 
@@ -115,20 +131,16 @@ namespace Microsoft.Azure.SignalR
             }));
         }
 
-        public Task ShutdownAsync(TimeSpan timeout)
+        public async Task ShutdownAsync(TimeSpan timeout)
         {
-            if (_inner != null)
-            {
-                return _inner.ShutdownAsync(timeout);
-            }
-            else
-            {
-                return Task.WhenAll(Connections.Select(s =>
-                {
-                    Log.ClosingConnection(_logger, s.Key.Endpoint);
-                    return s.Value.ShutdownAsync(timeout);
-                }));
-            }
+            // TODOS
+
+            // 1. write FIN to every server connection of every connection container.
+
+            // 2. wait until all client connections have been closed (either by server/client side)
+
+            // 3. stop every container.
+            await StopAsync();
         }
 
         public Task WriteAsync(ServiceMessage serviceMessage)
@@ -153,7 +165,8 @@ namespace Microsoft.Azure.SignalR
             // 2. All the endpoints response failed state including "NotFound", "Timeout" and waiting response to timeout
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            var writeMessageTask = WriteMultiEndpointMessageAsync(serviceMessage, async connection => {
+            var writeMessageTask = WriteMultiEndpointMessageAsync(serviceMessage, async connection =>
+            {
                 var succeeded = await connection.WriteAckableMessageAsync(serviceMessage, cancellationToken);
                 if (succeeded)
                 {

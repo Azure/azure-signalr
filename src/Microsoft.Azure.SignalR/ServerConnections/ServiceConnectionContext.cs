@@ -35,6 +35,10 @@ namespace Microsoft.Azure.SignalR
             readerScheduler: PipeScheduler.ThreadPool,
             useSynchronizationContext: false);
 
+        private readonly TaskCompletionSource<object> _connectionEndTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task CompleteTask => _connectionEndTcs.Task;
+
         private readonly object _heartbeatLock = new object();
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
@@ -55,6 +59,11 @@ namespace Microsoft.Azure.SignalR
             configureContext?.Invoke(HttpContext);
 
             Features = BuildFeatures();
+        }
+
+        public void OnCompleted()
+        {
+            _connectionEndTcs.TrySetResult(null);
         }
 
         public void OnHeartbeat(Action<object> action, object state)
