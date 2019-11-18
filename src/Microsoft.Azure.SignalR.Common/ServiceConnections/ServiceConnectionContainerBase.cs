@@ -18,6 +18,8 @@ namespace Microsoft.Azure.SignalR
         private static TimeSpan ReconnectInterval =>
             TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackOffInternalInMilliseconds));
 
+        private static TimeSpan RemoveFromServiceTimeout = TimeSpan.FromSeconds(3);
+
         private readonly BackOffPolicy _backOffPolicy = new BackOffPolicy();
 
         private readonly object _lock = new object();
@@ -31,6 +33,11 @@ namespace Microsoft.Azure.SignalR
         private volatile ServiceConnectionStatus _status;
 
         private volatile bool _terminated = false;
+
+        private static readonly PingMessage _shutdownFinMessage = new PingMessage()
+        {
+            Messages = new string[2] { Constants.ServicePingMessageKey.ShutdownKey, Constants.ServicePingMessageValue.ShutdownFin }
+        };
 
         protected ILogger Logger { get; }
 
@@ -115,12 +122,6 @@ namespace Microsoft.Azure.SignalR
         {
             _terminated = true;
             return Task.WhenAll(FixedServiceConnections.Select(c => c.StopAsync()));
-        }
-
-        public virtual Task ShutdownAsync(TimeSpan timeout)
-        {
-            _terminated = true;
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -347,6 +348,30 @@ namespace Microsoft.Azure.SignalR
             {
                 yield return CreateServiceConnectionCore(InitialConnectionType);
             }
+        }
+
+        protected async Task WriteFinAsync(IServiceConnection c)
+        {
+            await c.WriteAsync(_shutdownFinMessage);
+        }
+
+        protected async Task RemoveConnectionFromService(IServiceConnection c)
+        {
+            _ = WriteFinAsync(c);
+
+            var source = new CancellationTokenSource();
+            var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(RemoveFromServiceTimeout, source.Token));
+            source.Cancel();
+
+            if (task != c.ConnectionOfflineTask)
+            {
+                // log
+            }
+        }
+
+        public virtual Task OfflineAsync()
+        {
+            return Task.WhenAll(FixedServiceConnections.Select(c => RemoveConnectionFromService(c)));
         }
 
         private static class Log

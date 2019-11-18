@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Tests
                                                           IEndpointRouter router,
                                                           ILoggerFactory loggerFactory
 
-                ) : base(hub, generator, endpoint, router, null, loggerFactory)
+                ) : base(hub, generator, endpoint, router, loggerFactory)
             {
             }
         }
@@ -705,6 +705,60 @@ namespace Microsoft.Azure.SignalR.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task).OrTimeout();
         }
 
+        private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router)
+        {
+            var containers = new List<TestServiceConnectionContainer>();
+
+            var container = new TestMultiEndpointServiceConnectionContainer("hub", e =>
+            {
+                var c = new TestServiceConnectionContainer(new List<IServiceConnection>
+                {
+                    new TestSimpleServiceConnection(),
+                    new TestSimpleServiceConnection()
+                });
+                c.MockOffline = true;
+                containers.Add(c);
+                return c;
+            }, manager, router, NullLoggerFactory.Instance);
+
+            foreach (var c in containers)
+            {
+                Assert.False(c.IsOffline);
+            }
+
+            var expected = container.OfflineAsync();
+            var actual = await Task.WhenAny(
+                expected,
+                Task.Delay(TimeSpan.FromSeconds(1))
+            );
+            Assert.Equal(expected, actual);
+
+            foreach (var c in containers)
+            {
+                Assert.True(c.IsOffline);
+            }
+
+        }
+
+        [Fact]
+        public async Task TestSingleEndpointOffline()
+        {
+            var manager = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1)
+            );
+            await TestEndpointOfflineInner(manager, null);
+        }
+
+        [Fact]
+        public async Task TestMultiEndpointOffline()
+        {
+            var manager = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1),
+                new ServiceEndpoint(ConnectionString2)
+            );
+            await TestEndpointOfflineInner(manager, new TestEndpointRouter());
+        }
+
         private class NotExistEndpointRouter : EndpointRouterDecorator
         {
             public override IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints)
@@ -716,11 +770,6 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 return null;
             }
-        }
-
-        private IServiceConnection CreateServiceConnection(ServerConnectionType type, IConnectionFactory factory)
-        {
-            return new TestSimpleServiceConnection();
         }
 
         private class TestServiceEndpointManager : ServiceEndpointManagerBase

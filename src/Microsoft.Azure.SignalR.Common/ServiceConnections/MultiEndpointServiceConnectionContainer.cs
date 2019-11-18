@@ -18,20 +18,17 @@ namespace Microsoft.Azure.SignalR
         private readonly IMessageRouter _router;
         private readonly ILogger _logger;
         private readonly IServiceConnectionContainer _inner;
-        private readonly IClientConnectionLifetimeManager _clientLifetime;
 
         private IReadOnlyList<HubServiceEndpoint> _endpoints;
 
         public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
 
-        public MultiEndpointServiceConnectionContainer(string hub, Func<HubServiceEndpoint, IServiceConnectionContainer> generator, IServiceEndpointManager endpointManager, IMessageRouter router, IClientConnectionLifetimeManager lifetime, ILoggerFactory loggerFactory)
+        public MultiEndpointServiceConnectionContainer(string hub, Func<HubServiceEndpoint, IServiceConnectionContainer> generator, IServiceEndpointManager endpointManager, IMessageRouter router, ILoggerFactory loggerFactory)
         {
             if (generator == null)
             {
                 throw new ArgumentNullException(nameof(generator));
             }
-
-            _clientLifetime = lifetime;
 
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
 
@@ -57,14 +54,12 @@ namespace Microsoft.Azure.SignalR
             IServiceEndpointManager endpointManager,
             IMessageRouter router,
             IServerNameProvider nameProvider,
-            IClientConnectionLifetimeManager lifetime,
             ILoggerFactory loggerFactory
             ) : this(
                 hub,
                 endpoint => CreateContainer(serviceConnectionFactory, endpoint, count, loggerFactory),
                 endpointManager,
                 router,
-                lifetime,
                 loggerFactory
                 )
         {
@@ -131,16 +126,16 @@ namespace Microsoft.Azure.SignalR
             }));
         }
 
-        public async Task ShutdownAsync(TimeSpan timeout)
+        public Task OfflineAsync()
         {
-            // TODOS
-
-            // 1. write FIN to every server connection of every connection container.
-
-            // 2. wait until all client connections have been closed (either by server/client side)
-
-            // 3. stop every container.
-            await StopAsync();
+            if (_inner != null)
+            {
+                return _inner.OfflineAsync();
+            }
+            else
+            {
+                return Task.WhenAll(Connections.Select(c => c.Value.OfflineAsync()));
+            }
         }
 
         public Task WriteAsync(ServiceMessage serviceMessage)

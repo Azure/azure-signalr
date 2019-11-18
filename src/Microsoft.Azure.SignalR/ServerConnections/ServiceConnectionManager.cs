@@ -2,8 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
@@ -31,9 +29,9 @@ namespace Microsoft.Azure.SignalR
             return _serviceConnection.StopAsync();
         }
 
-        public Task ShutdownAsync(TimeSpan timeout)
+        public async Task OfflineAsync()
         {
-            return _serviceConnection.ShutdownAsync(timeout);
+            await _serviceConnection.OfflineAsync();
         }
 
         public Task WriteAsync(ServiceMessage serviceMessage)

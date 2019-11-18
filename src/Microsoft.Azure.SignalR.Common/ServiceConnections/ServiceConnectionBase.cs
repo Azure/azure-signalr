@@ -183,7 +183,6 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.UnexpectedExceptionInStop(Logger, ConnectionId, ex);
             }
-
             return Task.CompletedTask;
         }
 
@@ -395,7 +394,6 @@ namespace Microsoft.Azure.SignalR
                             {
                                 Log.HandshakeError(Logger, handshakeResponse.ErrorMessage, ConnectionId);
                             }
-
                             return false;
                         }
                     }
@@ -416,6 +414,7 @@ namespace Microsoft.Azure.SignalR
         private async Task ProcessIncomingAsync(ConnectionContext connection)
         {
             var keepAliveTimer = StartKeepAliveTimer();
+
             try
             {
                 while (true)
@@ -468,6 +467,7 @@ namespace Microsoft.Azure.SignalR
             finally
             {
                 keepAliveTimer.Stop();
+                _serviceConnectionOfflineTcs.TrySetResult(true);
             }
         }
 
@@ -625,7 +625,6 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, Exception> _receivedInstanceOfflinePing =
                 LoggerMessage.Define<string>(LogLevel.Information, new EventId(31, "ReceivedInstanceOfflinePing"), "Received instance offline service ping: {InstanceId}");
-
 
             public static void FailedToWrite(ILogger logger, string serviceConnectionId, Exception exception)
             {

@@ -13,7 +13,6 @@ namespace Microsoft.Azure.SignalR
         private readonly IServiceEndpointManager _serviceEndpointManager;
         private readonly IMessageRouter _router;
         private readonly IServerNameProvider _nameProvider;
-        private readonly IClientConnectionLifetimeManager _lifetime;
         private readonly IServiceConnectionFactory _serviceConnectionFactory;
 
         public ServiceConnectionContainerFactory(
@@ -22,7 +21,6 @@ namespace Microsoft.Azure.SignalR
         IMessageRouter router,
         IServiceEndpointOptions options,
         IServerNameProvider nameProvider,
-        IClientConnectionLifetimeManager lifetime,
         ILoggerFactory loggerFactory)
         {
             _serviceConnectionFactory = serviceConnectionFactory;
@@ -30,13 +28,12 @@ namespace Microsoft.Azure.SignalR
             _router = router ?? throw new ArgumentNullException(nameof(router));
             _options = options;
             _nameProvider = nameProvider;
-            _lifetime = lifetime;
             _loggerFactory = loggerFactory;
         }
 
         public IServiceConnectionContainer Create(string hub)
         {
-            return new MultiEndpointServiceConnectionContainer(_serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _nameProvider, _lifetime, _loggerFactory);
+            return new MultiEndpointServiceConnectionContainer(_serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _nameProvider, _loggerFactory);
         }
     }
 }
