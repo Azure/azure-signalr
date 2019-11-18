@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
+using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -21,6 +22,8 @@ namespace Microsoft.Azure.SignalR
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
         private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
         private static readonly TimeSpan CloseTimeout = TimeSpan.FromSeconds(5);
+
+        private readonly bool _enableConnectionMigration;
 
         private const string ClientConnectionCountInHub = "#clientInHub";
         private const string ClientConnectionCountInServiceConnection = "#client";
@@ -53,6 +56,8 @@ namespace Microsoft.Azure.SignalR
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
+
+            _enableConnectionMigration = false;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -102,8 +107,16 @@ namespace Microsoft.Azure.SignalR
         {
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
             connection.ServiceConnection = this;
-            AddClientConnection(connection, GetInstanceId(message.Headers));
-            Log.ConnectedStarting(Logger, connection.ConnectionId);
+            AddClientConnection(connection, message);
+
+            if (connection.IsMigrated)
+            {
+                Log.MigrationStarting(Logger, connection.ConnectionId);
+            }
+            else
+            {
+                Log.ConnectedStarting(Logger, connection.ConnectionId);
+            }
 
             // Execute the application code
             connection.ApplicationTask = _connectionDelegate(connection);
@@ -120,6 +133,17 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             var connectionId = closeConnectionMessage.ConnectionId;
+            if (_enableConnectionMigration && _clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
+            {
+                if (!context.HttpContext.Request.Headers.ContainsKey(Constants.AsrsMigrateOut))
+                {
+                    context.HttpContext.Request.Headers.Add(Constants.AsrsMigrateOut, "");
+                }
+                // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
+                // Since all user-created messages will be sent to `ServiceConnection` directly.
+                // We can simply ignore all messages came from the application pipe.
+                context.Application.Input.CancelPendingRead();
+            }
             return PerformDisconnectAsyncCore(connectionId, false);
         }
 
@@ -158,20 +182,72 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task ProcessOutgoingMessagesAsync(ClientConnectionContext connection)
+        private async Task<bool> SkipHandshakeResponse(ClientConnectionContext connection, CancellationToken token)
         {
             try
             {
                 while (true)
                 {
+                    var result = await connection.Application.Input.ReadAsync(token);
+                    if (result.IsCanceled || token.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+
+                    var buffer = result.Buffer;
+                    if (buffer.IsEmpty)
+                    {
+                        continue;
+                    }
+
+                    if (SignalRProtocol.HandshakeProtocol.TryParseResponseMessage(ref buffer, out var message))
+                    {
+                        connection.Application.Input.AdvanceTo(buffer.Start);
+                        return true;
+                    }
+
+                    if (result.IsCompleted)
+                    {
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.ErrorSkippingHandshakeResponse(Logger, ex);
+            }
+            return false;
+        }
+
+        private async Task ProcessOutgoingMessagesAsync(ClientConnectionContext connection)
+        {
+            try
+            {
+                if (connection.IsMigrated)
+                {
+                    using var source = new CancellationTokenSource(DefaultHandshakeTimeout);
+
+                    // A handshake response is not expected to be given
+                    // if the connection was migrated from another server, 
+                    // since the connection hasn't been `dropped` from the client point of view.
+                    if (!await SkipHandshakeResponse(connection, source.Token))
+                    {
+                        return;
+                    }
+                }
+
+                while (true)
+                {
                     var result = await connection.Application.Input.ReadAsync();
+
                     if (result.IsCanceled)
                     {
                         break;
                     }
 
                     var buffer = result.Buffer;
-                    if (!buffer.IsEmpty)
+
+                    if (!buffer.IsEmpty) 
                     {
                         try
                         {
@@ -209,8 +285,9 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private void AddClientConnection(ClientConnectionContext connection, string instanceId)
+        private void AddClientConnection(ClientConnectionContext connection, OpenConnectionMessage message)
         {
+            var instanceId = GetInstanceId(message.Headers);
             _clientConnectionManager.AddClientConnection(connection);
             _connectionIds.TryAdd(connection.ConnectionId, instanceId);
         }
