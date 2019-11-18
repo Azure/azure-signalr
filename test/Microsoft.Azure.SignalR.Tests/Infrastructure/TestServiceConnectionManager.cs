@@ -57,9 +57,6 @@ namespace Microsoft.Azure.SignalR.Tests
             return Task.CompletedTask;
         }
 
-        public Task ShutdownAsync(TimeSpan timeout)
-        {
-            return Task.CompletedTask;
-        }
+        public Task OfflineAsync() => Task.CompletedTask;
     }
 }

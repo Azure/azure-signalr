@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -58,6 +59,18 @@ namespace Microsoft.Azure.SignalR
 
             var dispatcher = _serviceProvider.GetRequiredService<ServiceHubDispatcher<THub>>();
             dispatcher.Start(app);
+
+#if NETCOREAPP
+            var lifetime = _serviceProvider.GetService<IHostApplicationLifetime>();
+#elif NETSTANDARD
+            var lifetime = _serviceProvider.GetService<IApplicationLifetime>();
+#else
+            var lifetime = null;
+#endif
+            if (lifetime != null)
+            {
+                // lifetime.ApplicationStopping.Register(() => dispatcher.ShutdownAsync(TimeSpan.FromSeconds(30)).Wait());
+            }
         }
     }
 }

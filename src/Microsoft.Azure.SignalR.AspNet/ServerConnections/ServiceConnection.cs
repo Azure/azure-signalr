@@ -80,7 +80,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
             else
             {
-                // the manager still contains this connectionId, probably this connection is not yet cleaned up 
+                // the manager still contains this connectionId, probably this connection is not yet cleaned up
                 Log.DuplicateConnectionId(Logger, connectionId, null);
                 return WriteAsync(
                     new CloseConnectionMessage(connectionId, $"Duplicate connection ID {connectionId}"));
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             public string InstanceId { get; }
 
             public ChannelReader<ServiceMessage> Input { get; }
-            
+
             public ChannelWriter<ServiceMessage> Output { get; }
 
             public IServiceTransport Transport { get; set; }

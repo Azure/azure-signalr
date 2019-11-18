@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -42,13 +43,11 @@ namespace Microsoft.Azure.SignalR
             );
         }
 
-        public override Task ShutdownAsync(TimeSpan timeout)
+        public override Task OfflineAsync()
         {
-            var task = base.StopAsync();
-            return Task.WhenAll(
-                task,
-                Task.CompletedTask // TODO
-            );
+            var task1 = base.OfflineAsync();
+            var task2 = Task.WhenAll(_onDemandServiceConnections.Select(c => RemoveConnectionFromService(c)));
+            return Task.WhenAll(task1, task2);
         }
 
         protected override ServiceConnectionStatus GetStatus()
