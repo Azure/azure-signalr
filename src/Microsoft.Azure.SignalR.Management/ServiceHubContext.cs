@@ -12,10 +12,7 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private readonly IHubContext<Hub> _hubContext;
         
-        private readonly ServiceProvider _serviceProvider;
-
-        // for test only
-        internal IServiceConnectionContainer ConnectionContainer { get; }
+        internal ServiceProvider ServiceProvider { get; }
 
         public IHubClients Clients => _hubContext.Clients;
 
@@ -27,19 +24,18 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _hubContext = hubContext;
             UserGroups = new UserGroupsManager(lifetimeManager);
-            _serviceProvider = serviceProvider;
-            ConnectionContainer = _serviceProvider.GetService<IServiceConnectionContainer>();
+            ServiceProvider = serviceProvider;
         }
 
         public async Task DisposeAsync()
         {
             await StopConnectionAsync();
-            _serviceProvider?.Dispose();
+            ServiceProvider?.Dispose();
         }
 
         private Task StopConnectionAsync()
         {
-            var serviceConnectionManager = _serviceProvider.GetService<IServiceConnectionManager<Hub>>();
+            var serviceConnectionManager = ServiceProvider.GetService<IServiceConnectionManager<Hub>>();
             if (serviceConnectionManager == null)
             {
                 return Task.CompletedTask;
