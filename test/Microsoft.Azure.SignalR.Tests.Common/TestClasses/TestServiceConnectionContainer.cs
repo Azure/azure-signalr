@@ -20,6 +20,8 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public Task ConnectionInitializedTask => Task.CompletedTask;
 
+        public Task ConnectionOfflineTask => Task.CompletedTask;
+
         public TestServiceConnectionContainer(ServiceConnectionStatus status)
         {
             Status = status;
@@ -60,7 +62,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             return Task.CompletedTask;
         }
 
-        public Task ShutdownAsync(TimeSpan timeout)
+        public Task OfflineAsync()
         {
             return Task.CompletedTask;
         }

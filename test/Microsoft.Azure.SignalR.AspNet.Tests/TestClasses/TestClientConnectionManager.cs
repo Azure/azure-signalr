@@ -1,9 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Concurrent;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
@@ -24,6 +22,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             _serverConnection = serverConnection;
             _contains = contains;
+        }
+
+        public Task WhenAllCompleted()
+        {
+            return Task.CompletedTask;
         }
 
         public Task<IServiceTransport> CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)

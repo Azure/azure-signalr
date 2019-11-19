@@ -300,6 +300,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 return connection;
             }
 
+            public Task WhenAllCompleted()
+            {
+                return Task.CompletedTask;
+            }
+
             public IReadOnlyDictionary<string, ServiceConnectionContext> ClientConnections => _ccm.ClientConnections;
         }
     }

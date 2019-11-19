@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
@@ -65,9 +66,28 @@ namespace Microsoft.Azure.SignalR
             _ = _serviceConnectionManager.StartAsync();
         }
 
-        public Task Shutdown(TimeSpan timeout)
+        public async Task ShutdownAsync(TimeSpan timeout)
         {
-            return _serviceConnectionManager.ShutdownAsync(timeout);
+            using CancellationTokenSource source = new CancellationTokenSource();
+
+            var expected = OfflineAndWaitForCompletedAsync();
+            var actual = await Task.WhenAny(
+                Task.Delay(timeout, source.Token), expected
+            );
+
+            if (actual != expected)
+            {
+                // TODO log timeout.
+            }
+
+            source.Cancel();
+            await _serviceConnectionManager.StopAsync();
+        }
+
+        private async Task OfflineAndWaitForCompletedAsync()
+        {
+            await _serviceConnectionManager.OfflineAsync();
+            await _clientConnectionManager.WhenAllCompleted();
         }
 
         private IServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
@@ -77,12 +97,11 @@ namespace Microsoft.Azure.SignalR
             serviceConnectionFactory.ConfigureContext = contextConfig;
 
             var factory = new ServiceConnectionContainerFactory(
-                serviceConnectionFactory, 
+                serviceConnectionFactory,
                 _serviceEndpointManager,
-                _router, 
-                _options, 
-                _nameProvider, 
-                _clientConnectionManager,
+                _router,
+                _options,
+                _nameProvider,
                 _loggerFactory
             );
             return factory.Create(hub);

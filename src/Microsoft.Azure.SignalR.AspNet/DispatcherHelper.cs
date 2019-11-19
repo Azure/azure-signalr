@@ -104,7 +104,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 configuration.Resolver.Register(typeof(IServiceConnectionFactory), () => scf);
             }
 
-            var sccf = new ServiceConnectionContainerFactory(scf, endpoint, router, options, serverNameProvider, ccm, loggerFactory);
+            var sccf = new ServiceConnectionContainerFactory(scf, endpoint, router, options, serverNameProvider, loggerFactory);
 
             if (hubs?.Count > 0)
             {

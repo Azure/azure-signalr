@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
@@ -120,6 +121,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                 return reader.ReadToEnd();
             }
         }
+
+        public Task WhenAllCompleted() => Task.CompletedTask;
 
         private sealed class ClientConnectionHubDispatcher : HubDispatcher
         {

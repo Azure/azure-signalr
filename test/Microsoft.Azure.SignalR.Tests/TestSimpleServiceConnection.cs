@@ -14,6 +14,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public Task ConnectionInitializedTask => Task.CompletedTask;
 
+        public Task ConnectionOfflineTask => Task.CompletedTask;
+
         private readonly bool _throws;
         private readonly TaskCompletionSource<object> _writeAsyncTcs = null;
 

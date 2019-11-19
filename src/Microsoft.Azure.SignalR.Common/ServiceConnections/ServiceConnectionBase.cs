@@ -32,6 +32,7 @@ namespace Microsoft.Azure.SignalR
         private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
 
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<object> _serviceConnectionOfflineTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private readonly ServerConnectionType _connectionType;
 
@@ -83,6 +84,8 @@ namespace Microsoft.Azure.SignalR
         }
 
         public Task ConnectionInitializedTask => _serviceConnectionStartTcs.Task;
+
+        public Task ConnectionOfflineTask => _serviceConnectionOfflineTcs.Task;
 
         protected ServiceConnectionBase(IServiceProtocol serviceProtocol, string connectionId,
             HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType connectionType, ILogger logger)
@@ -180,7 +183,6 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.UnexpectedExceptionInStop(Logger, ConnectionId, ex);
             }
-
             return Task.CompletedTask;
         }
 
@@ -259,6 +261,11 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
                 return CleanupConnections(instanceId);
+            } 
+            if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.ShutdownKey, out string val) && val == Constants.ServicePingMessageValue.ShutdownFinAck)
+            {
+                _serviceConnectionOfflineTcs.TrySetResult(null);
+                return Task.CompletedTask;
             }
             return _serviceMessageHandler.HandlePingAsync(pingMessage);
         }
@@ -387,7 +394,6 @@ namespace Microsoft.Azure.SignalR
                             {
                                 Log.HandshakeError(Logger, handshakeResponse.ErrorMessage, ConnectionId);
                             }
-
                             return false;
                         }
                     }
@@ -408,6 +414,7 @@ namespace Microsoft.Azure.SignalR
         private async Task ProcessIncomingAsync(ConnectionContext connection)
         {
             var keepAliveTimer = StartKeepAliveTimer();
+
             try
             {
                 while (true)
@@ -460,6 +467,7 @@ namespace Microsoft.Azure.SignalR
             finally
             {
                 keepAliveTimer.Stop();
+                _serviceConnectionOfflineTcs.TrySetResult(true);
             }
         }
 
@@ -617,7 +625,6 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, Exception> _receivedInstanceOfflinePing =
                 LoggerMessage.Define<string>(LogLevel.Information, new EventId(31, "ReceivedInstanceOfflinePing"), "Received instance offline service ping: {InstanceId}");
-
 
             public static void FailedToWrite(ILogger logger, string serviceConnectionId, Exception exception)
             {
