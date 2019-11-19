@@ -2,17 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal static class HttpClientFactory
+    internal class HttpClientFactory
     {
-        private static readonly IHttpClientFactory _clientFactory;
+        internal static IHttpClientFactory ClientFactory { get; }
 
         static HttpClientFactory()
         {
@@ -20,12 +16,12 @@ namespace Microsoft.Azure.SignalR.Management
             serviceCollection.AddHttpClient();
             var services = serviceCollection.BuildServiceProvider();
 
-            _clientFactory = services.GetRequiredService<IHttpClientFactory>();
+            ClientFactory = services.GetRequiredService<IHttpClientFactory>();
         }
 
         public static HttpClient CreateClient()
         {
-            return _clientFactory.CreateClient();
+            return ClientFactory.CreateClient();
         }
 
     }
