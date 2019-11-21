@@ -44,7 +44,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             _expectedStatus = status;
         }
 
-        protected override Task CleanupConnections(string instanceId = null)
+        protected override Task CleanupClientConnections(string fromInstanceId = null)
         {
             return Task.CompletedTask;
         }
@@ -76,17 +76,17 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             return Task.CompletedTask;
         }
 
-        protected override Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage)
+        protected override Task OnClientConnectedAsync(OpenConnectionMessage openConnectionMessage)
         {
             return Task.CompletedTask;
         }
 
-        protected override Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
+        protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             return Task.CompletedTask;
         }
 
-        protected override Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)
+        protected override Task OnClientMessageAsync(ConnectionDataMessage connectionDataMessage)
         {
             return Task.CompletedTask;
         }

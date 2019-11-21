@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR
         // Fix issue: https://github.com/Azure/azure-signalr/issues/198
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
         private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
-        private static readonly TimeSpan CloseApplicationTimeout = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan CloseTimeout = TimeSpan.FromSeconds(5);
 
         private const string ClientConnectionCountInHub = "#clientInHub";
         private const string ClientConnectionCountInServiceConnection = "#client";
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR
             return _connectionFactory.DisposeAsync(connection);
         }
 
-        protected override async Task CleanupConnections(string instanceId = null)
+        protected override async Task CleanupClientConnections(string fromInstanceId = null)
         {
             try
             {
@@ -74,9 +74,9 @@ namespace Microsoft.Azure.SignalR
                     return;
                 }
                 var connectionIds = _connectionIds.Select(s => s.Key);
-                if (!string.IsNullOrEmpty(instanceId))
+                if (!string.IsNullOrEmpty(fromInstanceId))
                 {
-                    connectionIds = _connectionIds.Where(s => s.Value == instanceId).Select(s => s.Key);
+                    connectionIds = _connectionIds.Where(s => s.Value == fromInstanceId).Select(s => s.Key);
                 }
                 await Task.WhenAll(connectionIds.Select(s => PerformDisconnectAsyncCore(s, false)));
             }
@@ -98,7 +98,66 @@ namespace Microsoft.Azure.SignalR
                 });
         }
 
-        private async Task ProcessOutgoingMessagesAsync(ServiceConnectionContext connection)
+        protected override Task OnClientConnectedAsync(OpenConnectionMessage message)
+        {
+            var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
+            AddClientConnection(connection, GetInstanceId(message.Headers));
+            Log.ConnectedStarting(Logger, connection.ConnectionId);
+
+            // Execute the application code
+            connection.ApplicationTask = _connectionDelegate(connection);
+
+            // Writing from the application to the service
+            _ = ProcessOutgoingMessagesAsync(connection);
+
+            // Waiting for the application to shutdown so we can clean up the connection
+            _ = WaitOnApplicationTask(connection);
+
+            return Task.CompletedTask;
+        }
+
+        protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
+        {
+            var connectionId = closeConnectionMessage.ConnectionId;
+            return PerformDisconnectAsyncCore(connectionId, false);
+        }
+
+        protected override async Task OnClientMessageAsync(ConnectionDataMessage connectionDataMessage)
+        {
+            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionDataMessage.ConnectionId, out var connection))
+            {
+                try
+                {
+                    var payload = connectionDataMessage.Payload;
+                    Log.WriteMessageToApplication(Logger, payload.Length, connectionDataMessage.ConnectionId);
+
+                    if (payload.IsSingleSegment)
+                    {
+                        // Write the raw connection payload to the pipe let the upstream handle it
+                        await connection.Application.Output.WriteAsync(payload.First);
+                    }
+                    else
+                    {
+                        var position = payload.Start;
+                        while (connectionDataMessage.Payload.TryGet(ref position, out var memory))
+                        {
+                            await connection.Application.Output.WriteAsync(memory);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.FailToWriteMessageToApplication(Logger, connectionDataMessage.ConnectionId, ex);
+                }
+            }
+            else
+            {
+                // Unexpected error
+                Log.ReceivedMessageForNonExistentConnection(Logger, connectionDataMessage.ConnectionId);
+            }
+        }
+
+        private async Task ProcessOutgoingMessagesAsync(ClientConnectionContext connection)
         {
             try
             {
@@ -149,31 +208,13 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private void AddClientConnection(ServiceConnectionContext connection, string instanceId)
+        private void AddClientConnection(ClientConnectionContext connection, string instanceId)
         {
             _clientConnectionManager.AddClientConnection(connection);
             _connectionIds.TryAdd(connection.ConnectionId, instanceId);
         }
 
-        protected override Task OnConnectedAsync(OpenConnectionMessage message)
-        {
-            var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
-            AddClientConnection(connection, GetInstanceId(message.Headers));
-            Log.ConnectedStarting(Logger, connection.ConnectionId);
-
-            // Execute the application code
-            connection.ApplicationTask = _connectionDelegate(connection);
-
-            // Writing from the application to the service
-            _ = ProcessOutgoingMessagesAsync(connection);
-
-            // Waiting for the application to shutdown so we can clean up the connection
-            _ = WaitOnApplicationTask(connection);
-
-            return Task.CompletedTask;
-        }
-
-        private async Task WaitOnApplicationTask(ServiceConnectionContext connection)
+        private async Task WaitOnApplicationTask(ClientConnectionContext connection)
         {
             Exception exception = null;
 
@@ -206,12 +247,6 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        protected override Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
-        {
-            var connectionId = closeConnectionMessage.ConnectionId;
-            return PerformDisconnectAsyncCore(connectionId, false);
-        }
-
         private async Task PerformDisconnectAsyncCore(string connectionId, bool abortOnClose)
         {
             var connection = _clientConnectionManager.RemoveClientConnection(connectionId);
@@ -236,7 +271,7 @@ namespace Microsoft.Azure.SignalR
                         using (var delayCts = new CancellationTokenSource())
                         {
                             var resultTask =
-                                await Task.WhenAny(app, Task.Delay(CloseApplicationTimeout, delayCts.Token));
+                                await Task.WhenAny(app, Task.Delay(CloseTimeout, delayCts.Token));
                             if (resultTask != app)
                             {
                                 // Application task timed out and it might never end writing to Transport.Output, cancel reading the pipe so that our ProcessOutgoing ends
@@ -256,41 +291,6 @@ namespace Microsoft.Azure.SignalR
                 }
 
                 Log.ConnectedEnding(Logger, connectionId);
-            }
-        }
-
-        protected override async Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)
-        {
-            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionDataMessage.ConnectionId, out var connection))
-            {
-                try
-                {
-                    var payload = connectionDataMessage.Payload;
-                    Log.WriteMessageToApplication(Logger, payload.Length, connectionDataMessage.ConnectionId);
-
-                    if (payload.IsSingleSegment)
-                    {
-                        // Write the raw connection payload to the pipe let the upstream handle it
-                        await connection.Application.Output.WriteAsync(payload.First);
-                    }
-                    else
-                    {
-                        var position = payload.Start;
-                        while (connectionDataMessage.Payload.TryGet(ref position, out var memory))
-                        {
-                            await connection.Application.Output.WriteAsync(memory);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.FailToWriteMessageToApplication(Logger, connectionDataMessage.ConnectionId, ex);
-                }
-            }
-            else
-            {
-                // Unexpected error
-                Log.ReceivedMessageForNonExistentConnection(Logger, connectionDataMessage.ConnectionId);
             }
         }
 

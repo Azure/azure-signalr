@@ -9,9 +9,9 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ClientConnectionFactory : IClientConnectionFactory
     {
-        public ServiceConnectionContext CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)
+        public ClientConnectionContext CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)
         {
-            return new ServiceConnectionContext(message, configureContext);
+            return new ClientConnectionContext(message, configureContext);
         }
     }
 }

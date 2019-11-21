@@ -258,41 +258,41 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             private readonly ClientConnectionManager _ccm = new ClientConnectionManager();
 
-            private readonly ConcurrentDictionary<string, TaskCompletionSource<ServiceConnectionContext>> _tcs =
-                new ConcurrentDictionary<string, TaskCompletionSource<ServiceConnectionContext>>();
+            private readonly ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>> _tcs =
+                new ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>>();
 
-            private readonly ConcurrentDictionary<string, TaskCompletionSource<ServiceConnectionContext>> _tcsForRemoval
-                = new ConcurrentDictionary<string, TaskCompletionSource<ServiceConnectionContext>>();
+            private readonly ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>> _tcsForRemoval
+                = new ConcurrentDictionary<string, TaskCompletionSource<ClientConnectionContext>>();
 
-            public Task<ServiceConnectionContext> WaitForClientConnectionRemovalAsync(string id)
+            public Task<ClientConnectionContext> WaitForClientConnectionRemovalAsync(string id)
             {
                 var tcs = _tcsForRemoval.GetOrAdd(id,
-                    s => new TaskCompletionSource<ServiceConnectionContext>(TaskCreationOptions
+                    s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
                         .RunContinuationsAsynchronously));
                 return tcs.Task;
             }
 
-            public Task<ServiceConnectionContext> WaitForClientConnectionAsync(string id)
+            public Task<ClientConnectionContext> WaitForClientConnectionAsync(string id)
             {
                 var tcs = _tcs.GetOrAdd(id,
-                    s => new TaskCompletionSource<ServiceConnectionContext>(TaskCreationOptions
+                    s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
                         .RunContinuationsAsynchronously));
                 return tcs.Task;
             }
 
-            public void AddClientConnection(ServiceConnectionContext clientConnection)
+            public void AddClientConnection(ClientConnectionContext clientConnection)
             {
                 var tcs = _tcs.GetOrAdd(clientConnection.ConnectionId,
-                    s => new TaskCompletionSource<ServiceConnectionContext>(TaskCreationOptions
+                    s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
                         .RunContinuationsAsynchronously));
                 _ccm.AddClientConnection(clientConnection);
                 tcs.SetResult(clientConnection);
             }
 
-            public ServiceConnectionContext RemoveClientConnection(string connectionId)
+            public ClientConnectionContext RemoveClientConnection(string connectionId)
             {
                 var tcs = _tcsForRemoval.GetOrAdd(connectionId,
-                    s => new TaskCompletionSource<ServiceConnectionContext>(TaskCreationOptions
+                    s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
                         .RunContinuationsAsynchronously));
                 _tcs.TryRemove(connectionId, out _);
                 var connection = _ccm.RemoveClientConnection(connectionId);
@@ -305,7 +305,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 return Task.CompletedTask;
             }
 
-            public IReadOnlyDictionary<string, ServiceConnectionContext> ClientConnections => _ccm.ClientConnections;
+            public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _ccm.ClientConnections;
         }
     }
 }
