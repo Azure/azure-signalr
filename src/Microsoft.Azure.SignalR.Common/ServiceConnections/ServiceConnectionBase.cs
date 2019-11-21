@@ -140,7 +140,7 @@ namespace Microsoft.Azure.SignalR
                         // TODO: Never cleanup connections unless Service asks us to do that
                         // Current implementation is based on assumption that Service will drop clients
                         // if server connection fails.
-                        await CleanupConnections();
+                        await CleanupClientConnections();
                     }
                 }
                 catch (Exception ex)
@@ -232,13 +232,13 @@ namespace Microsoft.Azure.SignalR
 
         protected abstract Task DisposeConnection(ConnectionContext connection);
 
-        protected abstract Task CleanupConnections(string instanceId = null);
+        protected abstract Task CleanupClientConnections(string fromInstanceId = null);
 
-        protected abstract Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage);
+        protected abstract Task OnClientConnectedAsync(OpenConnectionMessage openConnectionMessage);
 
-        protected abstract Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage);
+        protected abstract Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage);
 
-        protected abstract Task OnMessageAsync(ConnectionDataMessage connectionDataMessage);
+        protected abstract Task OnClientMessageAsync(ConnectionDataMessage connectionDataMessage);
 
         protected Task OnServiceErrorAsync(ServiceErrorMessage serviceErrorMessage)
         {
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.SignalR
             if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.OfflineKey, out var instanceId) && !string.IsNullOrEmpty(instanceId))
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
-                return CleanupConnections(instanceId);
+                return CleanupClientConnections(instanceId);
             } 
             if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.ShutdownKey, out string val) && val == Constants.ServicePingMessageValue.ShutdownFinAck)
             {
@@ -476,11 +476,11 @@ namespace Microsoft.Azure.SignalR
             switch (message)
             {
                 case OpenConnectionMessage openConnectionMessage:
-                    return OnConnectedAsync(openConnectionMessage);
+                    return OnClientConnectedAsync(openConnectionMessage);
                 case CloseConnectionMessage closeConnectionMessage:
-                    return OnDisconnectedAsync(closeConnectionMessage);
+                    return OnClientDisconnectedAsync(closeConnectionMessage);
                 case ConnectionDataMessage connectionDataMessage:
-                    return OnMessageAsync(connectionDataMessage);
+                    return OnClientMessageAsync(connectionDataMessage);
                 case ServiceErrorMessage serviceErrorMessage:
                     return OnServiceErrorAsync(serviceErrorMessage);
                 case PingMessage pingMessage:

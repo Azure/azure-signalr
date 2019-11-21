@@ -67,16 +67,16 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private sealed class TestClientConnectionManager : IClientConnectionManager
         {
-            public IReadOnlyDictionary<string, ServiceConnectionContext> ClientConnections => throw new NotImplementedException();
+            public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => throw new NotImplementedException();
 
             public DateTime completeTime = new DateTime();
 
-            public void AddClientConnection(ServiceConnectionContext clientConnection)
+            public void AddClientConnection(ClientConnectionContext clientConnection)
             {
                 throw new NotImplementedException();
             }
 
-            public ServiceConnectionContext RemoveClientConnection(string connectionId)
+            public ClientConnectionContext RemoveClientConnection(string connectionId)
             {
                 throw new NotImplementedException();
             }

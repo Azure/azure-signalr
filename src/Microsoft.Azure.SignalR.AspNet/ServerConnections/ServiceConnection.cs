@@ -60,13 +60,18 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _connectionFactory.DisposeAsync(connection);
         }
 
-        protected override Task CleanupConnections(string instanceId = null)
+        /// <summary>
+        /// Cleanup the client connections
+        /// </summary>
+        /// <param name="fromInstanceId">Specifies which Azure SignalR instance is the client connections come from, null means all</param>
+        /// <returns></returns>
+        protected override Task CleanupClientConnections(string fromInstanceId = null)
         {
-            _ = CleanupConnectionsAsyncCore(instanceId);
+            _ = CleanupConnectionsAsyncCore(fromInstanceId);
             return Task.CompletedTask;
         }
 
-        protected override Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage)
+        protected override Task OnClientConnectedAsync(OpenConnectionMessage openConnectionMessage)
         {
             // Create empty transport with only channel for async processing messages
             var connectionId = openConnectionMessage.ConnectionId;
@@ -87,12 +92,12 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-        protected override Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
+        protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             return ForwardMessageToApplication(closeConnectionMessage.ConnectionId, closeConnectionMessage);
         }
 
-        protected override Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)
+        protected override Task OnClientMessageAsync(ConnectionDataMessage connectionDataMessage)
         {
             return ForwardMessageToApplication(connectionDataMessage.ConnectionId, connectionDataMessage);
         }

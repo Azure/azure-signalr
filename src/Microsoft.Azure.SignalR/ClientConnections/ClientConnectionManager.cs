@@ -10,15 +10,15 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ClientConnectionManager : IClientConnectionManager
     {
-        private readonly ConcurrentDictionary<string, ServiceConnectionContext> _clientConnections =
-            new ConcurrentDictionary<string, ServiceConnectionContext>();
+        private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections =
+            new ConcurrentDictionary<string, ClientConnectionContext>();
 
-        public void AddClientConnection(ServiceConnectionContext clientConnection)
+        public void AddClientConnection(ClientConnectionContext clientConnection)
         {
             _clientConnections[clientConnection.ConnectionId] = clientConnection;
         }
 
-        public ServiceConnectionContext RemoveClientConnection(string connectionId)
+        public ClientConnectionContext RemoveClientConnection(string connectionId)
         {
             _clientConnections.TryRemove(connectionId, out var connection);
             return connection;
@@ -26,6 +26,6 @@ namespace Microsoft.Azure.SignalR
 
         public Task WhenAllCompleted() => Task.WhenAll(_clientConnections.Select(c => c.Value.CompleteTask));
 
-        public IReadOnlyDictionary<string, ServiceConnectionContext> ClientConnections => _clientConnections;
+        public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _clientConnections;
     }
 }
