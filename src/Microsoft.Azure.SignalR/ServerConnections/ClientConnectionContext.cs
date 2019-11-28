@@ -22,7 +22,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceConnectionContext : ConnectionContext,
+    internal class ClientConnectionContext : ConnectionContext,
                                               IConnectionUserFeature,
                                               IConnectionItemsFeature,
                                               IConnectionIdFeature,
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.SignalR
         private readonly object _heartbeatLock = new object();
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
-        public ServiceConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
+        public ClientConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
             ConnectionId = serviceMessage.ConnectionId;
             User = serviceMessage.GetUserPrincipal();
@@ -111,8 +111,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task ApplicationTask { get; set; }
 
-        // The associated HubConnectionContext
-        public HubConnectionContext HubConnectionContext { get; set; }
+        public ServiceConnectionBase ServiceConnection { get; set; }
 
         public HttpContext HttpContext { get; set; }
 

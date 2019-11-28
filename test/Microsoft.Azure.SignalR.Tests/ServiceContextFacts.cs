@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public void ServiceConnectionContextWithEmptyClaimsIsUnauthenticated()
         {
-            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", new Claim[0]));
+            var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0]));
             Assert.NotNull(serviceConnectionContext.User.Identity);
             Assert.False(serviceConnectionContext.User.Identity.IsAuthenticated);
         }
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public void ServiceConnectionContextWithNullClaimsIsUnauthenticated()
         {
-            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", null));
+            var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", null));
             Assert.NotNull(serviceConnectionContext.User.Identity);
             Assert.False(serviceConnectionContext.User.Identity.IsAuthenticated);
         }
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new Claim("nbf", "1234567890"),
                 new Claim(Constants.ClaimType.UserId, "customUserId"), 
             };
-            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", claims));
+            var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", claims));
             Assert.NotNull(serviceConnectionContext.User.Identity);
             Assert.False(serviceConnectionContext.User.Identity.IsAuthenticated);
         }
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new Claim(Constants.ClaimType.NameType, "customNameType"),
                 new Claim(Constants.ClaimType.RoleType, "customRoleType"),
             };
-            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", claims));
+            var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", claims));
             Assert.NotNull(serviceConnectionContext.User.Identity);
             Assert.False(serviceConnectionContext.User.IsInRole("Admin"));
             Assert.True(serviceConnectionContext.User.IsInRole("customRole"));
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new Claim("k1", "v1"),
                 new Claim("k2", "v2")
             };
-            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", claims));
+            var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", claims));
             Assert.NotNull(serviceConnectionContext.User.Identity);
             Assert.True(serviceConnectionContext.User.Identity.IsAuthenticated);
             var contextClaims = serviceConnectionContext.User.Claims.ToList();
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public void ServiceConnectionContextWithEmptyHttpContextByDefault()
         {
-            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", new Claim[0]));
+            var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0]));
             Assert.NotNull(serviceConnectionContext.User.Identity);
             Assert.NotNull(serviceConnectionContext.HttpContext);
             Assert.Equal(serviceConnectionContext.User, serviceConnectionContext.HttpContext.User);
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.SignalR.Tests
             const string key2 = "header-key-2";
             const string value1 = "header-value-1";
             var value2 = new[] {"header-value-2a", "header-value-2b"};
-            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", new Claim[0],
+            var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0],
                 new Dictionary<string, StringValues> (StringComparer.OrdinalIgnoreCase)
                 {
                     {key1, value1},
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void ServiceConnectionContextWithNonEmptyQueries()
         {
             const string queryString = "?query1=value1&query2=value2&query3=value3";
-            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
+            var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
 
             Assert.NotNull(serviceConnectionContext.User.Identity);
             Assert.NotNull(serviceConnectionContext.HttpContext);
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             const string path = "/this/is/user/path";
             var queryString = $"?{Constants.QueryParameter.OriginalPath}={WebUtility.UrlEncode(path)}";
-            var serviceConnectionContext = new ServiceConnectionContext(new OpenConnectionMessage("1", null, EmptyHeaders, queryString));
+            var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", null, EmptyHeaders, queryString));
 
             Assert.NotNull(serviceConnectionContext.User.Identity);
             Assert.NotNull(serviceConnectionContext.HttpContext);
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 ["X-Forwarded-For"] = new StringValues(xff)
             });
 
-            Assert.Equal(canBeParsed, ServiceConnectionContext.TryGetRemoteIpAddress(headers, out var address));
+            Assert.Equal(canBeParsed, ClientConnectionContext.TryGetRemoteIpAddress(headers, out var address));
 
             if (canBeParsed)
             {

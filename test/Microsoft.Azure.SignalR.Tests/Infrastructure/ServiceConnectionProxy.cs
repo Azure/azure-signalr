@@ -35,7 +35,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public ConcurrentDictionary<string, ServiceConnection> ServiceConnections { get; } = new ConcurrentDictionary<string, ServiceConnection>();
 
-        public IReadOnlyDictionary<string, ServiceConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
+        public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => ClientConnectionManager.ClientConnections;
 
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
         private readonly ConcurrentDictionary<string, TaskCompletionSource<object>> _waitForConnectionClose = new ConcurrentDictionary<string, TaskCompletionSource<object>>();
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.SignalR.Tests
             return tcs.Task;
         }
 
-        public void AddClientConnection(ServiceConnectionContext clientConnection)
+        public void AddClientConnection(ClientConnectionContext clientConnection)
         {
             ClientConnectionManager.AddClientConnection(clientConnection);
 
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        public ServiceConnectionContext RemoveClientConnection(string connectionId)
+        public ClientConnectionContext RemoveClientConnection(string connectionId)
         {
             var connection = ClientConnectionManager.RemoveClientConnection(connectionId);
 
@@ -250,9 +250,9 @@ namespace Microsoft.Azure.SignalR.Tests
             return connection;
         }
 
-        public ServiceConnectionContext CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)
+        public ClientConnectionContext CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)
         {
-            return new ServiceConnectionContext(message, configureContext, _clientPipeOptions, _clientPipeOptions);
+            return new ClientConnectionContext(message, configureContext, _clientPipeOptions, _clientPipeOptions);
         }
 
         private void AddApplicationMessage(Type type, ServiceMessage message)

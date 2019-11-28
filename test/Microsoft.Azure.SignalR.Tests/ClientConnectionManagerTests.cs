@@ -7,7 +7,7 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class ClientConnectionManagerTests
     {
-        private async Task RemoveConnection(IClientConnectionManager manager, ServiceConnectionContext ctx)
+        private async Task RemoveConnection(IClientConnectionManager manager, ClientConnectionContext ctx)
         {
             await Task.Delay(100);
             ctx.OnCompleted();
@@ -18,8 +18,8 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var manager = new ClientConnectionManager();
 
-            var c1 = new ServiceConnectionContext(new Protocol.OpenConnectionMessage("foo", new Claim[0]));
-            var c2 = new ServiceConnectionContext(new Protocol.OpenConnectionMessage("bar", new Claim[0]));
+            var c1 = new ClientConnectionContext(new Protocol.OpenConnectionMessage("foo", new Claim[0]));
+            var c2 = new ClientConnectionContext(new Protocol.OpenConnectionMessage("bar", new Claim[0]));
 
             manager.AddClientConnection(c1);
             manager.AddClientConnection(c2);
