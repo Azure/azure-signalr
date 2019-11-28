@@ -152,9 +152,16 @@ The abort reasons are listed in the following table:
 
 Reason | Description
 ------- | ------- 
-Connection count reaches limit. | Connection count reaches limit of your current price tier, consider scale up service unit.
+Connection count reaches limit | Connection count reaches limit of your current price tier. Consider scale up service unit
+Message rate reaches limit [todo](never see it) | Message rate is beyond limit. Consider publishing messages less frequently or conbiming messages
+Application server closed the connection | App server triggers the abortion. It can be considered as an expected abortion
+Connection ping timeout | Usually it is caused by network issue. Consider check your app server's availability from the internet
+Service reloading, please reconnect | Azure SignalR Service is reloading. Azure SignalR support auto-reconnect, you can wait until reconnected or manually reconnect to Azure SignalR Service
+Internal server transient error | Transient error occurs in Azure SignalR Service, should be auto-recovered
+Slow client [todo] | 
+Server connection dropped | Server connection drops with unknown error
 
-[todo](check: MessageRateReachLimit, )
+
 
 **Abort Reason**
 
