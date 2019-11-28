@@ -51,7 +51,7 @@ namespace Microsoft.Azure.SignalR
 
         protected int FixedConnectionCount { get; }
 
-        protected virtual ServerConnectionType InitialConnectionType { get; } = ServerConnectionType.Default;
+        protected virtual ServiceConnectionType InitialConnectionType { get; } = ServiceConnectionType.Default;
 
         public HubServiceEndpoint Endpoint { get; }
 
@@ -78,9 +78,13 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
-            int minConnectionCount, HubServiceEndpoint endpoint,
-            IReadOnlyList<IServiceConnection> initialConnections = null, ILogger logger = null, AckHandler ackHandler = null)
+        protected ServiceConnectionContainerBase(
+            IServiceConnectionFactory serviceConnectionFactory,
+            int minConnectionCount,
+            HubServiceEndpoint endpoint,
+            IReadOnlyList<IServiceConnection> initialConnections = null,
+            ILogger logger = null,
+            AckHandler ackHandler = null)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             ServiceConnectionFactory = serviceConnectionFactory;
@@ -155,7 +159,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Create a connection for a specific service connection type
         /// </summary>
-        protected IServiceConnection CreateServiceConnectionCore(ServerConnectionType type)
+        protected IServiceConnection CreateServiceConnectionCore(ServiceConnectionType type)
         {
             var connection = ServiceConnectionFactory.Create(Endpoint, this, type);
 

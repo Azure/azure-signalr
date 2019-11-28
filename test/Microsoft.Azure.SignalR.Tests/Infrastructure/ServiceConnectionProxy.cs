@@ -55,8 +55,7 @@ namespace Microsoft.Azure.SignalR.Tests
             ServiceMessageHandler = (StrongServiceConnectionContainer) ServiceConnectionContainer;
         }
 
-        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler,
-            ServerConnectionType type)
+        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
         {
             var connectionId = Guid.NewGuid().ToString("N");
             var connection = new ServiceConnection(
@@ -69,7 +68,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 connectionId,
                 endpoint,
                 serviceMessageHandler,
-                type);
+                ServiceConnectionOptions.Default
+            );
             ServiceConnections.TryAdd(connectionId, connection);
             return connection;
         }

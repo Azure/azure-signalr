@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
@@ -17,6 +15,8 @@ namespace Microsoft.Azure.SignalR
         private readonly ConnectionDelegate _connectionDelegate;
         private readonly IClientConnectionFactory _clientConnectionFactory;
 
+        private readonly ServiceConnectionOptions _options;
+
         public Action<HttpContext> ConfigureContext { get; set; }
 
         public ServiceConnectionFactory(IServiceProtocol serviceProtocol,
@@ -24,7 +24,9 @@ namespace Microsoft.Azure.SignalR
             IConnectionFactory connectionFactory,
             ILoggerFactory loggerFactory,
             ConnectionDelegate connectionDelegate,
-            IClientConnectionFactory clientConnectionFactory)
+            IClientConnectionFactory clientConnectionFactory,
+            ServiceConnectionOptions options
+        )
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
@@ -32,15 +34,36 @@ namespace Microsoft.Azure.SignalR
             _loggerFactory = loggerFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
+            _options = options;
         }
 
-        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
+        public IServiceConnection Create(
+            HubServiceEndpoint endpoint,
+            IServiceMessageHandler serviceMessageHandler,
+            ServiceConnectionType type
+        )
         {
-            var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, _connectionFactory,
-                _loggerFactory, _connectionDelegate, _clientConnectionFactory,
-                Guid.NewGuid().ToString(), endpoint, serviceMessageHandler, type);
-            serviceConnection.ConfigureContext = ConfigureContext;
-            return serviceConnection;
+            ServiceConnectionOptions options = _options;
+            if (type != _options.ConnectionType)
+            {
+                options = _options.Clone();
+                options.ConnectionType = type;
+            }
+            return new ServiceConnection(
+                _serviceProtocol,
+                _clientConnectionManager,
+                _connectionFactory,
+                _loggerFactory,
+                _connectionDelegate,
+                _clientConnectionFactory,
+                Guid.NewGuid().ToString(),
+                endpoint,
+                serviceMessageHandler,
+                options
+            )
+            {
+                ConfigureContext = ConfigureContext
+            };
         }
     }
 }

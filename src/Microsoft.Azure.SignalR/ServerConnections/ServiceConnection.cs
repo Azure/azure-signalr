@@ -49,8 +49,9 @@ namespace Microsoft.Azure.SignalR
                                  string connectionId,
                                  HubServiceEndpoint endpoint,
                                  IServiceMessageHandler serviceMessageHandler,
-                                 ServerConnectionType connectionType = ServerConnectionType.Default) :
-            base(serviceProtocol, connectionId, endpoint, serviceMessageHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>())
+                                 ServiceConnectionOptions options = null
+            ) :
+            base(serviceProtocol, connectionId, endpoint, serviceMessageHandler, options, loggerFactory?.CreateLogger<ServiceConnection>())
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;

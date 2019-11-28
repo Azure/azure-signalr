@@ -10,6 +10,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly IConnectionFactory _connectionFactory;
         private readonly ILoggerFactory _logger;
+        private readonly ServiceConnectionOptions _options = ServiceConnectionOptions.Default;
 
         public ServiceConnectionFactory(IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
@@ -22,9 +23,15 @@ namespace Microsoft.Azure.SignalR.AspNet
             _logger = logger;
         }
 
-        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
+        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
         {
-            return new ServiceConnection(Guid.NewGuid().ToString(), endpoint, _serviceProtocol, _connectionFactory, _clientConnectionManager, _logger, serviceMessageHandler, type);
+            ServiceConnectionOptions options = _options;
+            if (type != _options.ConnectionType)
+            {
+                options = _options.Clone();
+                options.ConnectionType = type;
+            }
+            return new ServiceConnection(Guid.NewGuid().ToString(), endpoint, _serviceProtocol, _connectionFactory, _clientConnectionManager, _logger, serviceMessageHandler, options);
         }
     }
 }

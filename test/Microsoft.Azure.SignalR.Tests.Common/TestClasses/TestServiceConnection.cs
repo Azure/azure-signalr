@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             Guid.NewGuid().ToString(),
             new HubServiceEndpoint(),
             null, // TODO replace it with a NullMessageHandler
-            ServerConnectionType.Default,
+            ServiceConnectionOptions.Default,
             NullLogger.Instance
         )
         {

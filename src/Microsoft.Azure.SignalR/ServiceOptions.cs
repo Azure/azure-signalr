@@ -59,6 +59,14 @@ namespace Microsoft.Azure.SignalR
         internal bool EnableGracefulShutdown { get; set; } = false;
 
         /// <summary>
+        /// Specifies if the client-connection assigned to this server can be migrated to another server.
+        /// Default value is 0.
+        /// 1: Only migrate client-connection if server was shutdown gracefully.
+        /// 2: Migrate client-connection even if server-connection was accidentally dropped. (Potential data losses)
+        /// </summary>
+        internal int ServerConnectionMigration { get; set; } = 0;
+
+        /// <summary>
         /// Specifies the timeout of a graceful shutdown process (in seconds). 
         /// Default value is 30 seconds.
         /// </summary>

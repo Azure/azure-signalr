@@ -34,7 +34,9 @@ namespace Microsoft.Azure.SignalR
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource<object> _serviceConnectionOfflineTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        private readonly ServerConnectionType _connectionType;
+        protected readonly ServiceConnectionOptions Options;
+
+        private ServiceConnectionType _connectionType { get => Options.ConnectionType; }
 
         private readonly IServiceMessageHandler _serviceMessageHandler;
         private readonly object _statusLock = new object();
@@ -87,19 +89,26 @@ namespace Microsoft.Azure.SignalR
 
         public Task ConnectionOfflineTask => _serviceConnectionOfflineTcs.Task;
 
-        protected ServiceConnectionBase(IServiceProtocol serviceProtocol, string connectionId,
-            HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType connectionType, ILogger logger)
+        protected ServiceConnectionBase(
+            IServiceProtocol serviceProtocol,
+            string connectionId,
+            HubServiceEndpoint endpoint,
+            IServiceMessageHandler serviceMessageHandler,
+            ServiceConnectionOptions options,
+            ILogger logger
+        )
         {
             ServiceProtocol = serviceProtocol;
             ConnectionId = connectionId;
 
-            _connectionType = connectionType;
+            Options = options ?? ServiceConnectionOptions.Default;
+
             HubEndpoint = endpoint;
 
             if (serviceProtocol != null)
             {
                 _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
-                _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
+                _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)options.ConnectionType);
             }
 
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -385,7 +394,7 @@ namespace Microsoft.Azure.SignalR
                             }
 
                             // Handshake error. Will stop reconnect.
-                            if (_connectionType == ServerConnectionType.OnDemand)
+                            if (_connectionType == ServiceConnectionType.OnDemand)
                             {
                                 // Handshake errors on on-demand connections are acceptable.
                                 Log.OnDemandConnectionHandshakeResponse(Logger, handshakeResponse.ErrorMessage);

@@ -66,13 +66,18 @@ namespace Microsoft.Azure.SignalR
             _ = _serviceConnectionManager.StartAsync();
         }
 
-        public async Task ShutdownAsync(TimeSpan timeout)
+        public async Task ShutdownAsync()
         {
+            if (!_options.EnableGracefulShutdown)
+            {
+                return;
+            }
+
             using CancellationTokenSource source = new CancellationTokenSource();
 
             var expected = OfflineAndWaitForCompletedAsync();
             var actual = await Task.WhenAny(
-                Task.Delay(timeout, source.Token), expected
+                Task.Delay(_options.ServerShutdownTimeout, source.Token), expected
             );
 
             if (actual != expected)
@@ -93,8 +98,21 @@ namespace Microsoft.Azure.SignalR
         private IServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
         {
             var connectionFactory = new ConnectionFactory(_nameProvider, _loggerFactory);
-            var serviceConnectionFactory = new ServiceConnectionFactory(_serviceProtocol, _clientConnectionManager, connectionFactory, _loggerFactory, connectionDelegate, _clientConnectionFactory);
-            serviceConnectionFactory.ConfigureContext = contextConfig;
+            var connectionOptions = ServiceConnectionOptions.Default;
+
+            if (_options.ServerConnectionMigration == 1)
+            {
+                connectionOptions.MigrationLevel = ServiceConnectionMigrationLevel.ShutdownOnly;
+            }
+            else if (_options.ServerConnectionMigration == 2)
+            {
+                connectionOptions.MigrationLevel = ServiceConnectionMigrationLevel.All;
+            }
+
+            var serviceConnectionFactory = new ServiceConnectionFactory(_serviceProtocol, _clientConnectionManager, connectionFactory, _loggerFactory, connectionDelegate, _clientConnectionFactory, connectionOptions)
+            {
+                ConfigureContext = contextConfig
+            };
 
             var factory = new ServiceConnectionContainerFactory(
                 serviceConnectionFactory,
