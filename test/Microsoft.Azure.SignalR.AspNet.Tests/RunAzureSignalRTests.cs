@@ -9,7 +9,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -17,6 +16,8 @@ using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Owin.Hosting;
@@ -47,7 +48,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
-
                 var hubConfig = Utility.GetTestHubConfig(loggerFactory);
                 using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, ConnectionString, hubConfig)))
                 {
@@ -695,6 +695,46 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var response = await client.GetAsync("/negotiate?connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
                     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
                 }
+            }
+        }
+
+        [Fact]
+        public void TestGetLoggerFactoryWithCustomLoggerBuilder()
+        {
+            var hubConfiguration = new HubConfiguration();
+            var testLoggingBuilder = new TestLoggingBuilder();
+            var testLoggerProvider = new TestLoggerProvider();
+            testLoggingBuilder.Services.TryAddEnumerable(
+                ServiceDescriptor.Singleton<ILoggerProvider>(testLoggerProvider));
+            hubConfiguration.Resolver.Register(typeof(ILoggingBuilder), () => testLoggingBuilder);
+            var loggerFactory = DispatcherHelper.GetLoggerFactory(hubConfiguration);
+            var name = nameof(TestGetLoggerFactoryWithCustomLoggerBuilder);
+            loggerFactory.CreateLogger(name);
+            Assert.Single(testLoggerProvider.Loggers);
+            Assert.Equal(name, testLoggerProvider.Loggers[0]);
+        }
+
+        private sealed class TestLoggerProvider : ILoggerProvider
+        {
+            public List<string> Loggers { get; } = new List<string>();
+            public void Dispose()
+            {
+            }
+
+            public ILogger CreateLogger(string categoryName)
+            {
+                Loggers.Add(categoryName);
+                return null;
+            }
+        }
+
+        private sealed class TestLoggingBuilder : ILoggingBuilder
+        {
+            public IServiceCollection Services { get; }
+
+            public TestLoggingBuilder()
+            {
+                Services = new ServiceCollection();
             }
         }
 
