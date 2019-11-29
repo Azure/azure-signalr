@@ -355,7 +355,7 @@ namespace Microsoft.Azure.SignalR
             await c.WriteAsync(_shutdownFinMessage);
         }
 
-        protected async Task RemoveConnectionFromService(IServiceConnection c)
+        protected async Task RemoveConnectionAsync(IServiceConnection c)
         {
             _ = WriteFinAsync(c);
 
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.SignalR
 
         public virtual Task OfflineAsync()
         {
-            return Task.WhenAll(FixedServiceConnections.Select(c => RemoveConnectionFromService(c)));
+            return Task.WhenAll(FixedServiceConnections.Select(c => RemoveConnectionAsync(c)));
         }
 
         private static class Log

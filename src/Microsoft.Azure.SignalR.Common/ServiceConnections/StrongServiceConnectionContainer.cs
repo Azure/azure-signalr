@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR
         public override Task OfflineAsync()
         {
             var task1 = base.OfflineAsync();
-            var task2 = Task.WhenAll(_onDemandServiceConnections.Select(c => RemoveConnectionFromService(c)));
+            var task2 = Task.WhenAll(_onDemandServiceConnections.Select(c => RemoveConnectionAsync(c)));
             return Task.WhenAll(task1, task2);
         }
 

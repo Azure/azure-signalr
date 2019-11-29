@@ -292,8 +292,8 @@ __pycache__/
 
 .publish/
 
-# docker
-.docker/
-
 # vim
 *.swp
+
+# docker
+.docker/
