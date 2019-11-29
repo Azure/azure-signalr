@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal abstract class ServiceConnectionBase : IServiceConnection
     {
-        private static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
+        protected static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
         // Service ping rate is 5 sec to let server know service status. Set timeout for 30 sec for some space.
         private static readonly TimeSpan DefaultServiceTimeout = TimeSpan.FromSeconds(30);
         private static readonly long DefaultServiceTimeoutTicks = DefaultServiceTimeout.Seconds * Stopwatch.Frequency;

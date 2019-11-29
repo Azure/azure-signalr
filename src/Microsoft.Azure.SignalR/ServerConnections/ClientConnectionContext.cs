@@ -15,7 +15,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Features.Authentication;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
@@ -39,6 +38,8 @@ namespace Microsoft.Azure.SignalR
 
         public Task CompleteTask => _connectionEndTcs.Task;
 
+        public bool IsMigrated { get; }
+
         private readonly object _heartbeatLock = new object();
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
@@ -46,6 +47,11 @@ namespace Microsoft.Azure.SignalR
         {
             ConnectionId = serviceMessage.ConnectionId;
             User = serviceMessage.GetUserPrincipal();
+
+            if (serviceMessage.Headers.TryGetValue(Constants.AsrsMigrateIn, out _))
+            {
+                IsMigrated = true;
+            }
 
             // Create the Duplix Pipeline for the virtual connection
             transportPipeOptions = transportPipeOptions ?? DefaultPipeOptions;
