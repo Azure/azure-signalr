@@ -13,6 +13,8 @@ namespace AspNet.ChatSample.CSharpClient
 {
     class Program
     {
+        private static readonly Func<Task> ReconnectDelayTask = () => DelayRandom(200, 1000);
+        private static readonly SemaphoreSlim ReconnectLock = new SemaphoreSlim(1);
         static async Task Main(string[] args)
         {
             var url = "http://localhost:8009";
@@ -63,7 +65,7 @@ namespace AspNet.ChatSample.CSharpClient
             {
                 output.WriteLine(e);
 
-                _ = StartAsyncWithAlwaysRetry(connection, output, DelayRandom(200, 1000), cancellationToken);
+                _ = StartAsyncWithAlwaysRetry(connection, output, ReconnectDelayTask(), cancellationToken);
             };
 
             var hubProxy = connection.CreateHubProxy("ChatHub");
@@ -77,23 +79,37 @@ namespace AspNet.ChatSample.CSharpClient
 
         private static async Task StartAsyncWithAlwaysRetry(HubConnection connection, TextWriter output, Task startDelay = null, CancellationToken cancellationToken = default)
         {
-            if (startDelay != null)
+            // When there is already a reconnect, directly return;
+            if (!ReconnectLock.Wait(0))
             {
-                await startDelay;
+                return;
             }
 
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                try
+                if (startDelay != null)
                 {
-                    await connection.Start();
-                    return;
+                    await startDelay;
                 }
-                catch (Exception e)
+
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    output.WriteLine($"Error starting: {e.Message}, retry...");
-                    await DelayRandom(200, 1000);
+                    try
+                    {
+                        // Sometimes Start throws and triggers Error event, however sometimes not.
+                        await connection.Start();
+                        return;
+                    }
+                    catch (Exception e)
+                    {
+                        output.WriteLine($"Error starting: {e.Message}, retry...");
+                        await ReconnectDelayTask();
+                    }
                 }
+            }
+            finally
+            {
+                ReconnectLock.Release();
             }
         }
 
