@@ -49,7 +49,7 @@ namespace Microsoft.Azure.SignalR
                                  string connectionId,
                                  HubServiceEndpoint endpoint,
                                  IServiceMessageHandler serviceMessageHandler,
-                                 ServerConnectionType connectionType = ServerConnectionType.Default) :
+                                 ServiceConnectionType connectionType = ServiceConnectionType.Default) :
             base(serviceProtocol, connectionId, endpoint, serviceMessageHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>())
         {
             _clientConnectionManager = clientConnectionManager;

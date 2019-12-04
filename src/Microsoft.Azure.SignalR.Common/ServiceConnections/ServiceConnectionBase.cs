@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource<object> _serviceConnectionOfflineTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        private readonly ServerConnectionType _connectionType;
+        private readonly ServiceConnectionType _connectionType;
 
         private readonly IServiceMessageHandler _serviceMessageHandler;
         private readonly object _statusLock = new object();
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR
         public Task ConnectionOfflineTask => _serviceConnectionOfflineTcs.Task;
 
         protected ServiceConnectionBase(IServiceProtocol serviceProtocol, string connectionId,
-            HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType connectionType, ILogger logger)
+            HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType connectionType, ILogger logger)
         {
             ServiceProtocol = serviceProtocol;
             ConnectionId = connectionId;
@@ -385,7 +385,7 @@ namespace Microsoft.Azure.SignalR
                             }
 
                             // Handshake error. Will stop reconnect.
-                            if (_connectionType == ServerConnectionType.OnDemand)
+                            if (_connectionType == ServiceConnectionType.OnDemand)
                             {
                                 // Handshake errors on on-demand connections are acceptable.
                                 Log.OnDemandConnectionHandshakeResponse(Logger, handshakeResponse.ErrorMessage);
