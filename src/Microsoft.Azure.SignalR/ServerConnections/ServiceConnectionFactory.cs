@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionFactory = clientConnectionFactory;
         }
 
-        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
+        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
         {
             var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, _connectionFactory,
                 _loggerFactory, _connectionDelegate, _clientConnectionFactory,

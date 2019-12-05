@@ -115,7 +115,7 @@ namespace Microsoft.Azure.SignalR
 
             lock (_lock)
             {
-                newConnection = CreateServiceConnectionCore(ServerConnectionType.OnDemand);
+                newConnection = CreateServiceConnectionCore(ServiceConnectionType.OnDemand);
                 _onDemandServiceConnections.Add(newConnection);
             }
 
