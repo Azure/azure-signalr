@@ -55,7 +55,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private sealed class SimpleTestServiceConnectionFactory : IServiceConnectionFactory
         {
-            public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type) => new SimpleTestServiceConnection();
+            public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type) => new SimpleTestServiceConnection();
         }
 
         private sealed class SimpleTestServiceConnection : IServiceConnection

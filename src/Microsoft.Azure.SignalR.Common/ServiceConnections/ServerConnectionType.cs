@@ -3,7 +3,7 @@
 
 namespace Microsoft.Azure.SignalR
 {
-    internal enum ServerConnectionType
+    internal enum ServiceConnectionType
     {
         /// <summary>
         /// 0, Default, it can carry clients, service runtime should always accept this kind of connection

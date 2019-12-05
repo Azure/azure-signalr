@@ -56,7 +56,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler,
-            ServerConnectionType type)
+            ServiceConnectionType type)
         {
             var connectionId = Guid.NewGuid().ToString("N");
             var connection = new ServiceConnection(
