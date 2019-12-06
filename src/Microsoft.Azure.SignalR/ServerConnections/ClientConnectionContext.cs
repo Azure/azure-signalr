@@ -29,7 +29,8 @@ namespace Microsoft.Azure.SignalR
                                               IConnectionHeartbeatFeature,
                                               IHttpContextFeature
     {
-        private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
+        private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(
+            pauseWriterThreshold: 0,
             resumeWriterThreshold: 0,
             readerScheduler: PipeScheduler.ThreadPool,
             useSynchronizationContext: false);
