@@ -18,11 +18,12 @@ namespace Microsoft.Azure.SignalR
 {
     internal partial class ServiceConnection : ServiceConnectionBase
     {
+        private const int DefaultCloseTimeoutMilliseconds = 5000;
+
         // Fix issue: https://github.com/Azure/azure-signalr/issues/198
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
         private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
-        private static readonly TimeSpan CloseTimeout = TimeSpan.FromSeconds(5);
-
+        
         private readonly bool _enableConnectionMigration;
 
         private const string ClientConnectionCountInHub = "#clientInHub";
@@ -30,6 +31,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionFactory _clientConnectionFactory;
+        private readonly TimeSpan _closeTimeOut;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly ConcurrentDictionary<string, string> _connectionIds =
             new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
@@ -49,14 +51,15 @@ namespace Microsoft.Azure.SignalR
                                  string connectionId,
                                  HubServiceEndpoint endpoint,
                                  IServiceMessageHandler serviceMessageHandler,
-                                 ServiceConnectionType connectionType = ServiceConnectionType.Default) :
+                                 ServiceConnectionType connectionType = ServiceConnectionType.Default,
+                                 int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds) :
             base(serviceProtocol, connectionId, endpoint, serviceMessageHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>())
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
-
+            _closeTimeOut = TimeSpan.FromMilliseconds(closeTimeOutMilliseconds);
             _enableConnectionMigration = false;
         }
 
@@ -107,6 +110,12 @@ namespace Microsoft.Azure.SignalR
         {
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
             connection.ServiceConnection = this;
+
+            // Execute the application code
+            connection.ApplicationTask = _connectionDelegate(connection);
+
+            connection.LifetimeTask = ProcessClientConnectionAsync(connection, connection.ConnectionAborted);
+
             AddClientConnection(connection, message);
 
             if (connection.IsMigrated)
@@ -117,15 +126,6 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.ConnectedStarting(Logger, connection.ConnectionId);
             }
-
-            // Execute the application code
-            connection.ApplicationTask = _connectionDelegate(connection);
-
-            // Writing from the application to the service
-            _ = ProcessOutgoingMessagesAsync(connection);
-
-            // Waiting for the application to shutdown so we can clean up the connection
-            _ = WaitOnApplicationTask(connection);
 
             return Task.CompletedTask;
         }
@@ -182,6 +182,19 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        private Task ProcessClientConnectionAsync(ClientConnectionContext connection, CancellationToken token = default)
+        {
+            // Writing from the application to the service
+            var outgoing = ProcessOutgoingMessagesAsync(connection, token);
+
+            // Waiting for the application to shutdown so we can clean up the connection
+            _ = ProcessIncomingMessageAsync(connection, token);
+
+            // TODO: add more details
+            // Current clean up is inside outgoing task when outgoing task completes
+            return outgoing;
+        }
+
         private async Task<bool> SkipHandshakeResponse(ClientConnectionContext connection, CancellationToken token)
         {
             try
@@ -219,13 +232,14 @@ namespace Microsoft.Azure.SignalR
             return false;
         }
 
-        private async Task ProcessOutgoingMessagesAsync(ClientConnectionContext connection)
+        private async Task ProcessOutgoingMessagesAsync(ClientConnectionContext connection, CancellationToken token = default)
         {
             try
             {
                 if (connection.IsMigrated)
                 {
-                    using var source = new CancellationTokenSource(DefaultHandshakeTimeout);
+                    using var timeoutToken = new CancellationTokenSource(DefaultHandshakeTimeout);
+                    using var source = CancellationTokenSource.CreateLinkedTokenSource(token, timeoutToken.Token);
 
                     // A handshake response is not expected to be given
                     // if the connection was migrated from another server, 
@@ -238,7 +252,7 @@ namespace Microsoft.Azure.SignalR
 
                 while (true)
                 {
-                    var result = await connection.Application.Input.ReadAsync();
+                    var result = await connection.Application.Input.ReadAsync(token);
 
                     if (result.IsCanceled)
                     {
@@ -292,7 +306,7 @@ namespace Microsoft.Azure.SignalR
             _connectionIds.TryAdd(connection.ConnectionId, instanceId);
         }
 
-        private async Task WaitOnApplicationTask(ClientConnectionContext connection)
+        private async Task ProcessIncomingMessageAsync(ClientConnectionContext connection, CancellationToken token = default)
         {
             Exception exception = null;
 
@@ -344,27 +358,17 @@ namespace Microsoft.Azure.SignalR
                 // Wait on the application task to complete
                 if (!app.IsCompleted)
                 {
-                    try
+                    using var delayCts = new CancellationTokenSource();
+                    var resultTask = await Task.WhenAny(app, Task.Delay(_closeTimeOut, delayCts.Token));
+                    if (resultTask != app)
                     {
-                        using (var delayCts = new CancellationTokenSource())
-                        {
-                            var resultTask =
-                                await Task.WhenAny(app, Task.Delay(CloseTimeout, delayCts.Token));
-                            if (resultTask != app)
-                            {
-                                // Application task timed out and it might never end writing to Transport.Output, cancel reading the pipe so that our ProcessOutgoing ends
-                                connection.Application.Input.CancelPendingRead();
-                                Log.ApplicationTaskTimedOut(Logger);
-                            }
-                            else
-                            {
-                                delayCts.Cancel();
-                            }
-                        }
+                        // Application task timed out and it might never end writing to Transport.Output, cancel reading the pipe so that our ProcessOutgoing ends
+                        connection.Application.Input.CancelPendingRead();
+                        Log.ApplicationTaskTimedOut(Logger);
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        Log.ApplicationTaskFailed(Logger, ex);
+                        delayCts.Cancel();
                     }
                 }
 
