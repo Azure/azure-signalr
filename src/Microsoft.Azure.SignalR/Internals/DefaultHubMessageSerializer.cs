@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR
     // Planning on replacing in the 5.0 timeframe
     internal class DefaultHubMessageSerializer
     {
-        private readonly List<IHubProtocol> _hubProtocols = new List<IHubProtocol>();
+        private readonly Dictionary<string, IHubProtocol> _hubProtocols = new Dictionary<string, IHubProtocol>();
 
         public DefaultHubMessageSerializer(IHubProtocolResolver hubProtocolResolver, IList<string> globalSupportedProtocols, IList<string> hubSupportedProtocols)
         {
@@ -31,7 +31,8 @@ namespace Microsoft.Azure.SignalR
                 var protocol = hubProtocolResolver.GetProtocol(protocolName, (supportedProtocols as IReadOnlyList<string>) ?? supportedProtocols.ToList());
                 if (protocol != null)
                 {
-                    _hubProtocols.Add(protocol);
+                    // the latter one override the previous one
+                    _hubProtocols[protocolName] = protocol;
                 }
             }
         }
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.SignalR
             var list = new List<SerializedMessage>(_hubProtocols.Count);
             foreach (var protocol in _hubProtocols)
             {
-                list.Add(new SerializedMessage(protocol.Name, protocol.GetMessageBytes(message)));
+                list.Add(new SerializedMessage(protocol.Value.Name, protocol.Value.GetMessageBytes(message)));
             }
 
             return list;

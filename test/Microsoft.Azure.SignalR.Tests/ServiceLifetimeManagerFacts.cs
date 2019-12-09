@@ -157,7 +157,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     new CustomHubProtocol(),
                 },
                 NullLogger<DefaultHubProtocolResolver>.Instance);
-            IOptions<HubOptions> globalHubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "json", "messagepack", MockProtocol } });
+            IOptions<HubOptions> globalHubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "json", "messagepack", MockProtocol, "json" } });
             IOptions<HubOptions<TestHub>> localHubOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "json", "messagepack", MockProtocol } });
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
