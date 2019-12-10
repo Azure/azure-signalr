@@ -248,8 +248,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
 
-                // 500ms for application task to timeout
-                await connectionTask.OrTimeout(600);
+                // 1s for application task to timeout
+                await connectionTask.OrTimeout(1000);
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
                 Assert.Empty(ccm.ClientConnections);
 
@@ -305,8 +305,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 await clientConnection.LifetimeTask.OrTimeout();
 
-                // 500ms for application task to timeout
-                await connectionTask.OrTimeout(600);
+                // 1s for application task to timeout
+                await connectionTask.OrTimeout(1000);
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
                 Assert.Empty(ccm.ClientConnections);
 
