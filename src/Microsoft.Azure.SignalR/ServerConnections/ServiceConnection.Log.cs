@@ -44,8 +44,8 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _serviceConnectionConnected =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(20, "ServiceConnectionConnected"), "Service connection {ServiceConnectionId} connected.");
 
-            private static readonly Action<ILogger, Exception> _applicationTaskTimedOut =
-                LoggerMessage.Define(LogLevel.Error, new EventId(21, "ApplicationTaskTimedOut"), "Timed out waiting for the application task to complete.");
+            private static readonly Action<ILogger, Exception> _applicationTaskCancelled =
+                LoggerMessage.Define(LogLevel.Error, new EventId(21, "ApplicationTaskCancelled"), "Cancelled running application code, probably caused by time out.");
 
             private static readonly Action<ILogger, string, Exception> _migrationStarting =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(22, "MigrationStarting"), "Connection {TransportConnectionId} migrated from another server.");
@@ -108,9 +108,9 @@ namespace Microsoft.Azure.SignalR
                 _writeMessageToApplication(logger, count, connectionId, null);
             }
 
-            public static void ApplicationTaskTimedOut(ILogger logger)
+            public static void ApplicationTaskCancelled(ILogger logger)
             {
-                _applicationTaskTimedOut(logger, null);
+                _applicationTaskCancelled(logger, null);
             }
 
             public static void ErrorSkippingHandshakeResponse(ILogger logger, Exception ex)
