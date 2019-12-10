@@ -306,7 +306,7 @@ namespace Microsoft.Azure.SignalR
             _connectionIds.TryAdd(connection.ConnectionId, instanceId);
         }
 
-        private async Task ProcessIncomingMessageAsync(ClientConnectionContext connection, CancellationToken token = default)
+        private async Task ProcessIncomingMessageAsync(ClientConnectionContext connection)
         {
             Exception exception = null;
 
