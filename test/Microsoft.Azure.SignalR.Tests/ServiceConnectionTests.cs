@@ -173,7 +173,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 builder.UseConnectionHandler<EndlessConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    Guid.NewGuid().ToString("N"), null, null);
+                    Guid.NewGuid().ToString("N"), null, null, ServiceConnectionType.Default, 500);
 
                 var connectionTask = connection.StartAsync();
 
@@ -190,8 +190,66 @@ namespace Microsoft.Azure.SignalR.Tests
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
 
-                // 5 seconds for application task to timeout
-                await connectionTask.OrTimeout(10000);
+                // 500ms for application task to timeout
+                await connectionTask.OrTimeout(600);
+                Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
+                Assert.Empty(ccm.ClientConnections);
+
+                connectionHandler.CancellationToken.Cancel();
+            }
+        }
+
+        [Fact]
+        public async void ClientConnectionCanBeAborted()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
+                logChecker: logs =>
+                {
+                    Assert.Equal(2, logs.Count);
+                    Assert.Equal("SendLoopStopped", logs[0].Write.EventId.Name);
+                    Assert.Equal("ApplicationTaskTimedOut", logs[1].Write.EventId.Name);
+                    return true;
+                }))
+            {
+                var ccm = new TestClientConnectionManager();
+                var ccf = new ClientConnectionFactory();
+                var protocol = new ServiceProtocol();
+                TestConnection transportConnection = null;
+                var connectionFactory = new TestConnectionFactory(conn =>
+                {
+                    transportConnection = conn;
+                    return Task.CompletedTask;
+                });
+                var services = new ServiceCollection();
+                var connectionHandler = new EndlessConnectionHandler();
+                services.AddSingleton(connectionHandler);
+                var builder = new ConnectionBuilder(services.BuildServiceProvider());
+                builder.UseConnectionHandler<EndlessConnectionHandler>();
+                ConnectionDelegate handler = builder.Build();
+                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
+                    Guid.NewGuid().ToString("N"), null, null, ServiceConnectionType.Default, 500);
+
+                var connectionTask = connection.StartAsync();
+
+                // completed handshake
+                await connection.ConnectionInitializedTask.OrTimeout();
+                Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
+                var clientConnectionId = Guid.NewGuid().ToString();
+
+                await transportConnection.Application.Output.WriteAsync(
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+
+                var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
+
+                clientConnection.AbortConnection();
+
+                await clientConnection.LifetimeTask.OrTimeout();
+
+                // complete reading to end the connection
+                transportConnection.Application.Output.Complete();
+
+                // 500ms for application task to timeout
+                await connectionTask.OrTimeout(600);
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
                 Assert.Empty(ccm.ClientConnections);
 
