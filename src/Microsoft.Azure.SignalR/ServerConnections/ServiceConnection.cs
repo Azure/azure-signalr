@@ -188,7 +188,7 @@ namespace Microsoft.Azure.SignalR
             var outgoing = ProcessOutgoingMessagesAsync(connection, token);
 
             // Waiting for the application to shutdown so we can clean up the connection
-            _ = ProcessIncomingMessageAsync(connection, token);
+            _ = ProcessIncomingMessageAsync(connection);
 
             // TODO: add more details
             // Current clean up is inside outgoing task when outgoing task completes

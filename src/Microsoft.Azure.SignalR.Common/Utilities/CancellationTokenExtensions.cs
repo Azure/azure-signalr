@@ -17,6 +17,7 @@ namespace Microsoft.Azure.SignalR
         {
             await cancellationToken;
         }
+
         public static CancellationTokenAwaiter GetAwaiter(this CancellationToken cancellationToken)
         {
             return new CancellationTokenAwaiter(cancellationToken);
