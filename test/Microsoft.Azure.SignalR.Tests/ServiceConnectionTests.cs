@@ -4,16 +4,19 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO.Pipelines;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Primitives;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -196,6 +199,37 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
+        [Fact]
+        public async void ServiceConnectionShouldIgnoreFirstHandshakeResponse()
+        {
+            var factory = new TestClientConnectionFactory();
+            var connection = MockServiceConnection(null, factory);
+
+            // create a connection with migration header.
+            await connection.OnClientConnectedAsyncForTest(new OpenConnectionMessage("foo", new Claim[0])
+            {
+                Headers = new Dictionary<string, StringValues>{
+                    { Constants.AsrsMigrateIn, "another-server" }
+                }
+            });
+
+            Assert.Equal(1, factory.Connections.Count);
+            var context = factory.Connections[0];
+            Assert.True(context.IsMigrated);
+
+            var message = new AspNetCore.SignalR.Protocol.HandshakeResponseMessage("");
+            HandshakeProtocol.WriteResponseMessage(message, context.Transport.Output);
+            await context.Transport.Output.FlushAsync();
+
+            var task = context.Transport.Input.ReadAsync();
+            await Task.Delay(100);
+
+            // nothing should be written into the transport
+            Assert.False(task.IsCompleted);
+            // but the `migrated` status should remain False (readonly)
+            Assert.True(context.IsMigrated);
+        }
+
         private sealed class TestConnectionHandler : ConnectionHandler
         {
             private TaskCompletionSource<object> _startedTcs = new TaskCompletionSource<object>();
@@ -223,6 +257,54 @@ namespace Microsoft.Azure.SignalR.Tests
                     }
                 }
             }
+        }
+
+        private class TestServiceConnection : ServiceConnection
+        {
+            public TestServiceConnection(IConnectionFactory serviceConnectionFactory,
+                                         IClientConnectionFactory clientConnectionFactory,
+                                         ILoggerFactory loggerFactory,
+                                         ConnectionDelegate handler) : base(
+                new ServiceProtocol(),
+                new TestClientConnectionManager(),
+                serviceConnectionFactory,
+                loggerFactory,
+                handler,
+                clientConnectionFactory,
+                Guid.NewGuid().ToString("N"),
+                null,
+                null
+            )
+            {
+            }
+
+            public Task OnClientConnectedAsyncForTest(OpenConnectionMessage message)
+            {
+                return base.OnClientConnectedAsync(message);
+            }
+        }
+
+        private TestServiceConnection MockServiceConnection(IConnectionFactory serviceConnectionFactory = null,
+                                                            IClientConnectionFactory clientConnectionFactory = null,
+                                                            ILoggerFactory loggerFactory = null)
+        {
+            clientConnectionFactory ??= new ClientConnectionFactory();
+            serviceConnectionFactory ??= new TestConnectionFactory(conn => Task.CompletedTask);
+            loggerFactory ??= NullLoggerFactory.Instance;
+
+            var services = new ServiceCollection();
+            var connectionHandler = new EndlessConnectionHandler();
+            services.AddSingleton(connectionHandler);
+            var builder = new ConnectionBuilder(services.BuildServiceProvider());
+            builder.UseConnectionHandler<EndlessConnectionHandler>();
+            ConnectionDelegate handler = builder.Build();
+
+            return new TestServiceConnection(
+                serviceConnectionFactory,
+                clientConnectionFactory,
+                loggerFactory,
+                handler
+            );
         }
 
         private sealed class EndlessConnectionHandler : ConnectionHandler

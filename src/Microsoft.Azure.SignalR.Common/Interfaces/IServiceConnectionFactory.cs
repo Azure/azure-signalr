@@ -2,6 +2,6 @@
 {
     interface IServiceConnectionFactory
     {
-        IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type);
+        IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type);
     }
 }

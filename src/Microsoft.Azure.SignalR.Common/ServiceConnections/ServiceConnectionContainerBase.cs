@@ -51,7 +51,7 @@ namespace Microsoft.Azure.SignalR
 
         protected int FixedConnectionCount { get; }
 
-        protected virtual ServerConnectionType InitialConnectionType { get; } = ServerConnectionType.Default;
+        protected virtual ServiceConnectionType InitialConnectionType { get; } = ServiceConnectionType.Default;
 
         public HubServiceEndpoint Endpoint { get; }
 
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Create a connection for a specific service connection type
         /// </summary>
-        protected IServiceConnection CreateServiceConnectionCore(ServerConnectionType type)
+        protected IServiceConnection CreateServiceConnectionCore(ServiceConnectionType type)
         {
             var connection = ServiceConnectionFactory.Create(Endpoint, this, type);
 
@@ -355,11 +355,11 @@ namespace Microsoft.Azure.SignalR
             await c.WriteAsync(_shutdownFinMessage);
         }
 
-        protected async Task RemoveConnectionFromService(IServiceConnection c)
+        protected async Task RemoveConnectionAsync(IServiceConnection c)
         {
             _ = WriteFinAsync(c);
 
-            var source = new CancellationTokenSource();
+            using var source = new CancellationTokenSource();
             var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(RemoveFromServiceTimeout, source.Token));
             source.Cancel();
 
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.SignalR
 
         public virtual Task OfflineAsync()
         {
-            return Task.WhenAll(FixedServiceConnections.Select(c => RemoveConnectionFromService(c)));
+            return Task.WhenAll(FixedServiceConnections.Select(c => RemoveConnectionAsync(c)));
         }
 
         private static class Log

@@ -4,7 +4,7 @@
 using System;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Azure.SignalR.AspNet;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Owin
 {
@@ -178,7 +178,7 @@ namespace Owin
             // applicationName is case insensitive, it will be lower cased in the service side
             if (string.IsNullOrEmpty(applicationName))
             {
-                throw new ArgumentException(nameof(applicationName), "Empty application name is not allowed.");
+                throw new ArgumentException("Empty application name is not allowed.", nameof(applicationName));
             }
 
             options.ApplicationName = applicationName;
@@ -189,15 +189,7 @@ namespace Owin
                 throw new ArgumentException("A configuration object must be specified.");
             }
 
-            var resolver = configuration.Resolver ?? throw new ArgumentException("A dependency resolver must be specified.");
-
-            var loggerFactory = resolver.Resolve<ILoggerFactory>();
-            if (loggerFactory == null)
-            {
-                loggerFactory = new LoggerFactory();
-                // Add default 
-                loggerFactory.AddEventSourceLogger();
-            }
+            var loggerFactory = DispatcherHelper.GetLoggerFactory(configuration) ?? NullLoggerFactory.Instance;
 
             var dispatcher = DispatcherHelper.PrepareAndGetDispatcher(builder, configuration, options, applicationName, loggerFactory);
             if (dispatcher != null)

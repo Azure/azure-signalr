@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,13 +13,20 @@ namespace Microsoft.Azure.SignalR.Tests
     {
         private readonly Func<TestConnection, Task> _connectCallback;
 
+        public IList<TestConnection> Connections = new List<TestConnection>();
+
         public List<DateTime> Times { get; } = new List<DateTime>();
+
+        public TestConnectionFactory()
+        {
+            _connectCallback = null;
+        }
 
         public TestConnectionFactory(Func<TestConnection, Task> connectCallback)
         {
             _connectCallback = connectCallback;
         }
-        
+
         public async Task<ConnectionContext> ConnectAsync(HubServiceEndpoint endpoint, TransferFormat transferFormat, string connectionId, string target,
             CancellationToken cancellationToken = default, IDictionary<string, string> headers = null)
         {
@@ -31,13 +37,18 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionId = connectionId,
                 Target = target
             };
+            Connections.Add(connection);
+
             // Start a task to process handshake request from the newly-created server connection.
             _ = HandshakeAsync(connection);
 
             // Do something for test purpose
             await AfterConnectedAsync(connection);
 
-            await _connectCallback(connection);
+            if (_connectCallback != null)
+            {
+                await _connectCallback(connection);
+            }
 
             return connection;
         }

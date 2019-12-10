@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 
         private readonly TimerAwaitable _timer;
 
-        protected override ServerConnectionType InitialConnectionType => ServerConnectionType.Weak;
+        protected override ServiceConnectionType InitialConnectionType => ServiceConnectionType.Weak;
 
         public WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
             int fixedConnectionCount, HubServiceEndpoint endpoint, ILogger logger)

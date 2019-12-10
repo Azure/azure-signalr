@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -46,7 +45,7 @@ namespace Microsoft.Azure.SignalR
         public override Task OfflineAsync()
         {
             var task1 = base.OfflineAsync();
-            var task2 = Task.WhenAll(_onDemandServiceConnections.Select(c => RemoveConnectionFromService(c)));
+            var task2 = Task.WhenAll(_onDemandServiceConnections.Select(c => RemoveConnectionAsync(c)));
             return Task.WhenAll(task1, task2);
         }
 
@@ -116,7 +115,7 @@ namespace Microsoft.Azure.SignalR
 
             lock (_lock)
             {
-                newConnection = CreateServiceConnectionCore(ServerConnectionType.OnDemand);
+                newConnection = CreateServiceConnectionCore(ServiceConnectionType.OnDemand);
                 _onDemandServiceConnections.Add(newConnection);
             }
 

@@ -3,11 +3,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Primitives;
 using Xunit;
 
@@ -42,7 +44,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new Claim("exp", "1234567890"),
                 new Claim("iat", "1234567890"),
                 new Claim("nbf", "1234567890"),
-                new Claim(Constants.ClaimType.UserId, "customUserId"), 
+                new Claim(Constants.ClaimType.UserId, "customUserId"),
             };
             var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", claims));
             Assert.NotNull(serviceConnectionContext.User.Identity);
@@ -159,6 +161,20 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(1, request.Query.Count);
             Assert.Equal(path, request.Query[Constants.QueryParameter.OriginalPath]);
             Assert.Equal(path, request.Path);
+        }
+
+        [Fact]
+        public void ServiceConnectionShouldBeMigrated()
+        {
+            var open = new OpenConnectionMessage("foo", new Claim[0]);
+            var context = new ClientConnectionContext(open);
+            Assert.False(context.IsMigrated);
+
+            open.Headers = new Dictionary<string, StringValues>{
+                { Constants.AsrsMigrateIn, "another-server" }
+            };
+            context = new ClientConnectionContext(open);
+            Assert.True(context.IsMigrated);
         }
 
         [Theory]
