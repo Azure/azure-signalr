@@ -241,7 +241,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
 
-                clientConnection.CancelOutgoing(-1);
+                clientConnection.CancelOutgoing();
 
                 await clientConnection.LifetimeTask.OrTimeout();
 
@@ -298,7 +298,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
 
-                clientConnection.CancelApplication(-1);
+                clientConnection.CancelApplication();
 
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();

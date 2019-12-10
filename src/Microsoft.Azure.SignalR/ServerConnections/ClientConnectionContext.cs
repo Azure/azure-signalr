@@ -133,7 +133,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Cancel the outgoing process
         /// </summary>
-        public void CancelOutgoing(int millisecondsDelay)
+        public void CancelOutgoing(int millisecondsDelay = 0)
         {
             if (millisecondsDelay <= 0)
             {
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Cancel the application task
         /// </summary>
-        public void CancelApplication(int millisecondsDelay)
+        public void CancelApplication(int millisecondsDelay = 0)
         {
             if (millisecondsDelay <= 0)
             {
