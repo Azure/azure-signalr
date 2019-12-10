@@ -345,8 +345,6 @@ namespace Microsoft.Azure.SignalR
                 connection.Application.Input.CancelPendingRead();
                 Log.ApplicationTaskCancelled(Logger);
             }
-
-            await task;
         }
 
         private async Task ProcessApplicationTaskAsyncCore(ClientConnectionContext connection)
