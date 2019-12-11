@@ -8,6 +8,7 @@ using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
@@ -35,13 +36,38 @@ namespace Microsoft.Azure.SignalR
             useSynchronizationContext: false);
 
         private readonly TaskCompletionSource<object> _connectionEndTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly CancellationTokenSource _abortConnectionCts = new CancellationTokenSource();
+        private readonly object _heartbeatLock = new object();
+        private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
         public Task CompleteTask => _connectionEndTcs.Task;
 
         public bool IsMigrated { get; }
 
-        private readonly object _heartbeatLock = new object();
-        private List<(Action<object> handler, object state)> _heartbeatHandlers;
+        // Send "Abort" to service on close except that Service asks SDK to close
+        public bool AbortOnClose { get; set; } = true;
+
+        public override string ConnectionId { get; set; }
+
+        public override IFeatureCollection Features { get; }
+
+        public override IDictionary<object, object> Items { get; set; } = new ConnectionItems(new ConcurrentDictionary<object, object>());
+
+        public override IDuplexPipe Transport { get; set; }
+
+        public IDuplexPipe Application { get; set; }
+
+        public ClaimsPrincipal User { get; set; }
+
+        public Task ApplicationTask { get; set; }
+
+        public Task LifetimeTask { get; set; } = Task.CompletedTask;
+
+        public ServiceConnectionBase ServiceConnection { get; set; }
+
+        public HttpContext HttpContext { get; set; }
+
+        public CancellationToken ConnectionAborted => _abortConnectionCts.Token;
 
         public ClientConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
@@ -100,26 +126,13 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        // Send "Abort" to service on close except that Service asks SDK to close
-        public bool AbortOnClose { get; set; } = true;
-
-        public override string ConnectionId { get; set; }
-
-        public override IFeatureCollection Features { get; }
-
-        public override IDictionary<object, object> Items { get; set; } = new ConnectionItems(new ConcurrentDictionary<object, object>());
-
-        public override IDuplexPipe Transport { get; set; }
-
-        public IDuplexPipe Application { get; set; }
-
-        public ClaimsPrincipal User { get; set; }
-
-        public Task ApplicationTask { get; set; }
-
-        public ServiceConnectionBase ServiceConnection { get; set; }
-
-        public HttpContext HttpContext { get; set; }
+        /// <summary>
+        /// Use another method name instead of override Abort as Abort is only available for netcore3.0
+        /// </summary>
+        public void AbortConnection()
+        {
+            _abortConnectionCts.Cancel();
+        }
 
         private FeatureCollection BuildFeatures()
         {
