@@ -32,7 +32,8 @@ namespace Microsoft.Azure.SignalR.Management
             _endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString, EndpointType.Secondary);
             _endpointProvider = new ServiceEndpointProvider(_endpoint, Options.Create(new ServiceOptions
             {
-                ApplicationName = _serviceManagerOptions.ApplicationName
+                ApplicationName = _serviceManagerOptions.ApplicationName,
+                Proxy = serviceManagerOptions.Proxy
             }));
             _serverNameProvider = new DefaultServerNameProvider();
             _productInfo = productInfo;

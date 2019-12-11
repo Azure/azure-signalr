@@ -36,7 +36,9 @@ namespace Microsoft.Azure.SignalR
             useSynchronizationContext: false);
 
         private readonly TaskCompletionSource<object> _connectionEndTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-        private readonly CancellationTokenSource _abortConnectionCts = new CancellationTokenSource();
+        private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
+        private readonly CancellationTokenSource _abortApplicationCts = new CancellationTokenSource();
+
         private readonly object _heartbeatLock = new object();
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
@@ -67,7 +69,9 @@ namespace Microsoft.Azure.SignalR
 
         public HttpContext HttpContext { get; set; }
 
-        public CancellationToken ConnectionAborted => _abortConnectionCts.Token;
+        public CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
+
+        public CancellationToken ApplicationAborted => _abortApplicationCts.Token;
 
         public ClientConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
@@ -127,11 +131,33 @@ namespace Microsoft.Azure.SignalR
         }
 
         /// <summary>
-        /// Use another method name instead of override Abort as Abort is only available for netcore3.0
+        /// Cancel the outgoing process
         /// </summary>
-        public void AbortConnection()
+        public void CancelOutgoing(int millisecondsDelay = 0)
         {
-            _abortConnectionCts.Cancel();
+            if (millisecondsDelay <= 0)
+            {
+                _abortOutgoingCts.Cancel();
+            }
+            else
+            {
+                _abortOutgoingCts.CancelAfter(millisecondsDelay);
+            }
+        }
+
+        /// <summary>
+        /// Cancel the application task
+        /// </summary>
+        public void CancelApplication(int millisecondsDelay = 0)
+        {
+            if (millisecondsDelay <= 0)
+            {
+                _abortApplicationCts.Cancel();
+            }
+            else
+            {
+                _abortApplicationCts.CancelAfter(millisecondsDelay);
+            }
         }
 
         private FeatureCollection BuildFeatures()
