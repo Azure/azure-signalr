@@ -493,7 +493,7 @@ namespace Microsoft.Azure.SignalR.Tests
                         .RunContinuationsAsynchronously));
                 _tcs.TryRemove(connectionId, out _);
                 var connection = _ccm.RemoveClientConnection(connectionId);
-                tcs.SetResult(connection);
+                tcs.TrySetResult(connection);
                 return connection;
             }
 
