@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionFactory _clientConnectionFactory;
-        private readonly TimeSpan _closeTimeOut;
+        private readonly int _closeTimeOutMilliseconds;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly ConcurrentDictionary<string, string> _connectionIds =
             new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
-            _closeTimeOut = TimeSpan.FromMilliseconds(closeTimeOutMilliseconds);
+            _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
             _enableConnectionMigration = false;
         }
 
@@ -112,9 +112,9 @@ namespace Microsoft.Azure.SignalR
             connection.ServiceConnection = this;
 
             // Execute the application code
-            connection.ApplicationTask = _connectionDelegate(connection);
+            connection.ApplicationTask = ProcessApplicationTaskAsync(connection);
 
-            connection.LifetimeTask = ProcessClientConnectionAsync(connection, connection.ConnectionAborted);
+            connection.LifetimeTask = ProcessClientConnectionAsync(connection);
 
             AddClientConnection(connection, message);
 
@@ -182,10 +182,10 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private Task ProcessClientConnectionAsync(ClientConnectionContext connection, CancellationToken token = default)
+        private Task ProcessClientConnectionAsync(ClientConnectionContext connection)
         {
             // Writing from the application to the service
-            var outgoing = ProcessOutgoingMessagesAsync(connection, token);
+            var outgoing = ProcessOutgoingMessagesAsync(connection, connection.OutgoingAborted);
 
             // Waiting for the application to shutdown so we can clean up the connection
             _ = ProcessIncomingMessageAsync(connection);
@@ -309,12 +309,53 @@ namespace Microsoft.Azure.SignalR
         private async Task ProcessIncomingMessageAsync(ClientConnectionContext connection)
         {
             Exception exception = null;
+            try
+            {
+                await connection.ApplicationTask;
+            }
+            catch (Exception e)
+            {
+                exception = e;
+            }
+            finally
+            {
+                // If we aren't already aborted, we send the abort message to the service
+                if (connection.AbortOnClose)
+                {
+                    // Inform the Service that we will remove the client because SignalR told us it is disconnected.
+                    var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, errorMessage: exception?.Message);
+                    await WriteAsync(serviceMessage);
+                    Log.CloseConnection(Logger, connection.ConnectionId);
+                }
+            }
+        }
+
+        private async Task ProcessApplicationTaskAsync(ClientConnectionContext connection)
+        {
+            // Wait for the application task to complete
+            // application task can end when exception, or Context.Abort() from hub
+            var app = ProcessApplicationTaskAsyncCore(connection);
+
+            var cancelTask = connection.ApplicationAborted.AsTask();
+            var task = await Task.WhenAny(app, cancelTask);
+
+            if (task != app)
+            {
+                // cancel the application task, to end the outgoing task
+                connection.Application.Input.CancelPendingRead();
+                Log.ApplicationTaskCancelled(Logger);
+            }
+        }
+
+        private async Task ProcessApplicationTaskAsyncCore(ClientConnectionContext connection)
+        {
+            Exception exception = null;
 
             try
             {
                 // Wait for the application task to complete
                 // application task can end when exception, or Context.Abort() from hub
-                await connection.ApplicationTask;
+                await _connectionDelegate(connection);
             }
             catch (Exception ex)
             {
@@ -327,15 +368,6 @@ namespace Microsoft.Azure.SignalR
                 // Close the transport side since the application is no longer running
                 connection.Transport.Output.Complete(exception);
                 connection.Transport.Input.Complete();
-            }
-
-            // If we aren't already aborted, we send the abort message to the service
-            if (connection.AbortOnClose)
-            {
-                // Inform the Service that we will remove the client because SignalR told us it is disconnected.
-                var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, errorMessage: exception?.Message);
-                await WriteAsync(serviceMessage);
-                Log.CloseConnection(Logger, connection.ConnectionId);
             }
         }
 
@@ -358,18 +390,8 @@ namespace Microsoft.Azure.SignalR
                 // Wait on the application task to complete
                 if (!app.IsCompleted)
                 {
-                    using var delayCts = new CancellationTokenSource();
-                    var resultTask = await Task.WhenAny(app, Task.Delay(_closeTimeOut, delayCts.Token));
-                    if (resultTask != app)
-                    {
-                        // Application task timed out and it might never end writing to Transport.Output, cancel reading the pipe so that our ProcessOutgoing ends
-                        connection.Application.Input.CancelPendingRead();
-                        Log.ApplicationTaskTimedOut(Logger);
-                    }
-                    else
-                    {
-                        delayCts.Cancel();
-                    }
+                    connection.CancelApplication(_closeTimeOutMilliseconds);
+                    await app;
                 }
 
                 Log.ConnectedEnding(Logger, connectionId);

@@ -153,7 +153,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 logChecker: logs =>
                 {
                     Assert.Single(logs);
-                    Assert.Equal("ApplicationTaskTimedOut", logs[0].Write.EventId.Name);
+                    Assert.Equal("ApplicationTaskCancelled", logs[0].Write.EventId.Name);
                     return true;
                 }))
             {
@@ -200,14 +200,14 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async void ClientConnectionCanBeAborted()
+        public async void ClientConnectionOutgoingAbortCanEndLifeTime()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
                 logChecker: logs =>
                 {
                     Assert.Equal(2, logs.Count);
                     Assert.Equal("SendLoopStopped", logs[0].Write.EventId.Name);
-                    Assert.Equal("ApplicationTaskTimedOut", logs[1].Write.EventId.Name);
+                    Assert.Equal("ApplicationTaskCancelled", logs[1].Write.EventId.Name);
                     return true;
                 }))
             {
@@ -241,15 +241,72 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
 
-                clientConnection.AbortConnection();
+                clientConnection.CancelOutgoing();
 
                 await clientConnection.LifetimeTask.OrTimeout();
 
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
 
-                // 500ms for application task to timeout
-                await connectionTask.OrTimeout(600);
+                // 1s for application task to timeout
+                await connectionTask.OrTimeout(1000);
+                Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
+                Assert.Empty(ccm.ClientConnections);
+
+                connectionHandler.CancellationToken.Cancel();
+            }
+        }
+
+        [Fact]
+        public async void ClientConnectionApplicationAbortCanEndLifeTime()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
+                logChecker: logs =>
+                {
+                    Assert.Single(logs);
+                    Assert.Equal("ApplicationTaskCancelled", logs[0].Write.EventId.Name);
+                    return true;
+                }))
+            {
+                var ccm = new TestClientConnectionManager();
+                var ccf = new ClientConnectionFactory();
+                var protocol = new ServiceProtocol();
+                TestConnection transportConnection = null;
+                var connectionFactory = new TestConnectionFactory(conn =>
+                {
+                    transportConnection = conn;
+                    return Task.CompletedTask;
+                });
+                var services = new ServiceCollection();
+                var connectionHandler = new EndlessConnectionHandler();
+                services.AddSingleton(connectionHandler);
+                var builder = new ConnectionBuilder(services.BuildServiceProvider());
+                builder.UseConnectionHandler<EndlessConnectionHandler>();
+                ConnectionDelegate handler = builder.Build();
+                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
+                    Guid.NewGuid().ToString("N"), null, null, ServiceConnectionType.Default, 500);
+
+                var connectionTask = connection.StartAsync();
+
+                // completed handshake
+                await connection.ConnectionInitializedTask.OrTimeout();
+                Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
+                var clientConnectionId = Guid.NewGuid().ToString();
+
+                await transportConnection.Application.Output.WriteAsync(
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+
+                var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
+
+                clientConnection.CancelApplication();
+
+                // complete reading to end the connection
+                transportConnection.Application.Output.Complete();
+
+                await clientConnection.LifetimeTask.OrTimeout();
+
+                // 1s for application task to timeout
+                await connectionTask.OrTimeout(1000);
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
                 Assert.Empty(ccm.ClientConnections);
 
@@ -436,7 +493,7 @@ namespace Microsoft.Azure.SignalR.Tests
                         .RunContinuationsAsynchronously));
                 _tcs.TryRemove(connectionId, out _);
                 var connection = _ccm.RemoveClientConnection(connectionId);
-                tcs.SetResult(connection);
+                tcs.TrySetResult(connection);
                 return connection;
             }
 
