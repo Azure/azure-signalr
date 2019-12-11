@@ -249,6 +249,9 @@ namespace Microsoft.Azure.SignalR
                 // But messages in the pipe from service -> server should be processed as usual. Just log without
                 // throw exception here.
                 _errorMessage = serviceErrorMessage.ErrorMessage;
+
+                // Update the status immediately
+                Status = ServiceConnectionStatus.Disconnected;
                 Log.ReceivedServiceErrorMessage(Logger, ConnectionId, serviceErrorMessage.ErrorMessage);
             }
 
