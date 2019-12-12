@@ -115,7 +115,7 @@ The following code is an example of an archive log JSON string:
 
 To view diagnostic logs, follow these steps:
 
-1. Click `Logs` in your target log analytics.
+1. Click `Logs` in your target Log Analytics.
 
     ![Log Analytics menu item](./images/diagnostic-logs/log-analytics-menu-item.png)
 
