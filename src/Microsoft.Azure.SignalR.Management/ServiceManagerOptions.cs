@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Net;
 using Microsoft.Azure.SignalR;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -30,6 +31,11 @@ namespace Microsoft.Azure.SignalR.Management
         /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 1.
         /// </summary>
         public int ConnectionCount { get; set; } = 1;
+
+        /// <summary>
+        /// Gets or sets the proxy used when ServiceManager will attempt to connect to Azure SignalR Service.
+        /// </summary>
+        public IWebProxy Proxy { get; set; }
 
         internal void ValidateOptions()
         {

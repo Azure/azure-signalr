@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR
         internal TimeSpan ServerShutdownTimeout { get; set; } = TimeSpan.FromSeconds(Constants.DefaultShutdownTimeoutInSeconds);
 
         /// <summary>
-        /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
+        /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR Service.
         /// </summary>
         public IWebProxy Proxy { get; set; }
     }
