@@ -1,21 +1,19 @@
-# Diagnostic Logs for Azure SignalR Service
+# Diagnostic Logs for Azure SignalR Service <!-- omit in toc --> 
 
-## Contents
-- [Diagnostic Logs for Azure SignalR Service](#diagnostic-logs-for-azure-signalr-service)
-  - [Contents](#contents)
-  - [Prerequisites](#prerequisites)
-  - [Set up diagnostic logs for an Azure SignalR Service](#set-up-diagnostic-logs-for-an-azure-signalr-service)
-    - [Enable diagnostic logs](#enable-diagnostic-logs)
-    - [Diagnostic logs categories](#diagnostic-logs-categories)
-    - [Archive to a storage account](#archive-to-a-storage-account)
-      - [Archive logs schema for Log Analytics](#archive-logs-schema-for-log-analytics)
-    - [Troubleshooting with diagnostic logs](#troubleshooting-with-diagnostic-logs)
-      - [Unexpected connections' number changes](#unexpected-connections-number-changes)
-        - [Unexpected connection dropping](#unexpected-connection-dropping)
-        - [Unexpected connection growing](#unexpected-connection-growing)
-      - [Authorization failure](#authorization-failure)
-      - [Throttling](#throttling)
-    - [Get help](#get-help)
+## Contents <!-- omit in toc -->
+- [Prerequisites](#prerequisites)
+- [Set up diagnostic logs for an Azure SignalR Service](#set-up-diagnostic-logs-for-an-azure-signalr-service)
+  - [Enable diagnostic logs](#enable-diagnostic-logs)
+  - [Diagnostic logs categories](#diagnostic-logs-categories)
+  - [Archive to a storage account](#archive-to-a-storage-account)
+  - [Archive logs schema for Log Analytics](#archive-logs-schema-for-log-analytics)
+  - [Troubleshooting with diagnostic logs](#troubleshooting-with-diagnostic-logs)
+    - [Unexpected connections' number changes](#unexpected-connections-number-changes)
+      - [Unexpected connection dropping](#unexpected-connection-dropping)
+      - [Unexpected connection growing](#unexpected-connection-growing)
+    - [Authorization failure](#authorization-failure)
+    - [Throttling](#throttling)
+  - [Get help](#get-help)
   
 ## Prerequisites
 To enable diagnostic logs, you'll need somewhere to store your log data. This tutorial uses Azure Storage and Log Analytics.
@@ -113,7 +111,7 @@ The following code is an example of an archive log JSON string:
 }
 ```
 
-#### Archive logs schema for Log Analytics
+### Archive logs schema for Log Analytics
 
 To view diagnostic logs, follow these steps:
 
