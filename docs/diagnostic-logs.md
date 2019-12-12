@@ -82,8 +82,8 @@ properties | Detailed properties related to this log event. For more detail, see
 
 Name | Description
 ------- | -------
-type | Collection of the log event. Currently, we provide information about connectivity to the Azure SignalR Service. Only `ConnectivityLogs` collection is available
-collection | Type of the log event. Allowed values are: `Connection`, `Authorization` and `Throttling`
+type | Type of the log event. Currently, we provide information about connectivity to the Azure SignalR Service. Only `ConnectivityLogs` type is available
+collection | Collection of the log event. Allowed values are: `Connection`, `Authorization` and `Throttling`
 connectionId | Identity of the connection
 transportType | Transport type of the connection. Allowed values are: `Websockets` \| `ServerSentEvents` \| `LongPolling`
 connectionType | Type of the connection. Allowed values are: `Server` \| `Client`. `Server`: connection from server side; `Client`: connection from client side
@@ -130,7 +130,7 @@ Archive log columns include elements listed in the following table:
 Name | Description
 ------- | ------- 
 TimeGenerated | Log event time
-Collection | Type of the log event. Allowed values are: `Connection`, `Authorization` and `Throttling`
+Collection | Collection of the log event. Allowed values are: `Connection`, `Authorization` and `Throttling`
 OperationName | Operation name of the event
 Location | Location of your Azure SignalR Service
 Level | Log event level
