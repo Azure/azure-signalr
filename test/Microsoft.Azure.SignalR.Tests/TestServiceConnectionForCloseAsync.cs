@@ -18,10 +18,5 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             return Task.CompletedTask;
         }
-
-        public override Task WriteAsync(ServiceMessage serviceMessage)
-        {
-            return WriteAsyncBase(serviceMessage);
-        }
     }
 }

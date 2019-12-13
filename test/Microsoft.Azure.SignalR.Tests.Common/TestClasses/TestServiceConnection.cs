@@ -91,11 +91,6 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             return Task.CompletedTask;
         }
 
-        protected Task WriteAsyncBase(ServiceMessage serviceMessage)
-        {
-            return base.WriteAsync(serviceMessage);
-        }
-
         protected override Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
         {
             if (_throws)
