@@ -87,7 +87,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 // the manager still contains this connectionId, probably this connection is not yet cleaned up
                 Log.DuplicateConnectionId(Logger, connectionId, null);
-                return WriteAsync(
+                return SafeWriteAsync(
                     new CloseConnectionMessage(connectionId, $"Duplicate connection ID {connectionId}"));
             }
         }
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                     Log.FailToWriteMessageToApplication(Logger, message.GetType().Name, connectionId, e);
                     _ = PerformDisconnectCore(connectionId, true);
 
-                    _ = WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
+                    _ = SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
                 }
             }
         }
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 Log.ConnectedStartingFailed(Logger, connectionId, e);
                 // Should not wait for application task inside the application task
                 _ = PerformDisconnectCore(connectionId, false);
-                _ = WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
+                _ = SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
             }
         }
 
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 // Notify client to disconnect.
                 Log.SendLoopStopped(Logger, connectionId, e);
                 _ = PerformDisconnectCore(connectionId, false);
-                _ = WriteAsync(new CloseConnectionMessage(connectionId, e.Message));
+                _ = SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
             }
         }
 
