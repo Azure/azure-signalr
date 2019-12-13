@@ -186,7 +186,7 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        public virtual async Task WriteAsync(ServiceMessage serviceMessage)
+        public async Task WriteAsync(ServiceMessage serviceMessage)
         {
             if (!await SafeWriteAsync(serviceMessage))
             {
@@ -194,10 +194,9 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        protected async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
+        protected virtual async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
         {
-            var errorMessage = _errorMessage;
-            if (!string.IsNullOrEmpty(errorMessage) || Status != ServiceConnectionStatus.Connected)
+            if (!string.IsNullOrEmpty(_errorMessage) || Status != ServiceConnectionStatus.Connected)
             {
                 return false;
             }
