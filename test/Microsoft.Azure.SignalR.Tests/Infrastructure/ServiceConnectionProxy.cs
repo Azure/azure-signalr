@@ -216,14 +216,9 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private Task OnConnectionAsync(ConnectionContext connection)
         {
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            // Wait for the connection to close
-            connection.Transport.Input.OnWriterCompleted((ex, state) =>
-            {
-                tcs.TrySetResult(null);
-            },
-            null);
+            connection.ConnectionClosed.Register(() => tcs.TrySetResult(null));
 
             return tcs.Task;
         }
