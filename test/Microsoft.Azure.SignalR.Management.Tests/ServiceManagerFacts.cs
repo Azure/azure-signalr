@@ -66,7 +66,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.Equal(expectedClientEndpoint, clientEndpoint);
         }
 
-        [Theory]
+        [Theory(Skip = "Reenable when it is ready")]
         [MemberData(nameof(TestServiceManagerOptionData))]
         internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFacory, string appName, int connectionCount)
         {

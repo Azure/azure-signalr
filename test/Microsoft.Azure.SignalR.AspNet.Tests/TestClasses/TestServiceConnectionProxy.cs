@@ -62,9 +62,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             } 
         }
 
-        public override Task WriteAsync(ServiceMessage serviceMessage)
+        protected override async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
         {
-            var task = base.WriteAsync(serviceMessage);
+            var result = await base.SafeWriteAsync(serviceMessage);
 
             if (serviceMessage is ConnectionDataMessage cdm)
             {
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var tcs = _waitForOutgoingMessage.GetOrAdd(ccm.ConnectionId, t => new TaskCompletionSource<ServiceMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
                 tcs.TrySetResult(serviceMessage);
             }
-            return Task.CompletedTask;
+            return result;
         }
 
         public Task<ServiceMessage> WaitForOutgoingMessageAsync(string connectionId)

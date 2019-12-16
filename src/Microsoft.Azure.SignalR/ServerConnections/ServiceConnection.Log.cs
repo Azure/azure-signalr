@@ -44,8 +44,14 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _serviceConnectionConnected =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(20, "ServiceConnectionConnected"), "Service connection {ServiceConnectionId} connected.");
 
-            private static readonly Action<ILogger, Exception> _applicationTaskTimedOut =
-                LoggerMessage.Define(LogLevel.Error, new EventId(21, "ApplicationTaskTimedOut"), "Timed out waiting for the application task to complete.");
+            private static readonly Action<ILogger, Exception> _applicationTaskCancelled =
+                LoggerMessage.Define(LogLevel.Error, new EventId(21, "ApplicationTaskCancelled"), "Cancelled running application code, probably caused by time out.");
+
+            private static readonly Action<ILogger, string, Exception> _migrationStarting =
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(22, "MigrationStarting"), "Connection {TransportConnectionId} migrated from another server.");
+
+            private static readonly Action<ILogger, string, Exception> _errorSkippingHandshakeResponse =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(23, "ErrorSkippingHandshakeResponse"), "Error while skipping handshake response during migration, the connection will be dropped on the client-side. Error detail: {message}");
 
             public static void FailedToCleanupConnections(ILogger logger, Exception exception)
             {
@@ -82,6 +88,11 @@ namespace Microsoft.Azure.SignalR
                 _connectedStarting(logger, connectionId, null);
             }
 
+            public static void MigrationStarting(ILogger logger, string connectionId)
+            {
+                _migrationStarting(logger, connectionId, null);
+            }
+
             public static void ConnectedEnding(ILogger logger, string connectionId)
             {
                 _connectedEnding(logger, connectionId, null);
@@ -97,9 +108,14 @@ namespace Microsoft.Azure.SignalR
                 _writeMessageToApplication(logger, count, connectionId, null);
             }
 
-            public static void ApplicationTaskTimedOut(ILogger logger)
+            public static void ApplicationTaskCancelled(ILogger logger)
             {
-                _applicationTaskTimedOut(logger, null);
+                _applicationTaskCancelled(logger, null);
+            }
+
+            public static void ErrorSkippingHandshakeResponse(ILogger logger, Exception ex)
+            {
+                _errorSkippingHandshakeResponse(logger, ex.Message, ex);
             }
         }
     }

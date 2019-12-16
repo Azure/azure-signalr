@@ -8,6 +8,7 @@ using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
@@ -15,14 +16,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Features.Authentication;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceConnectionContext : ConnectionContext,
+    internal class ClientConnectionContext : ConnectionContext,
                                               IConnectionUserFeature,
                                               IConnectionItemsFeature,
                                               IConnectionIdFeature,
@@ -36,16 +36,52 @@ namespace Microsoft.Azure.SignalR
             useSynchronizationContext: false);
 
         private readonly TaskCompletionSource<object> _connectionEndTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        public Task CompleteTask => _connectionEndTcs.Task;
+        private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
+        private readonly CancellationTokenSource _abortApplicationCts = new CancellationTokenSource();
 
         private readonly object _heartbeatLock = new object();
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
-        public ServiceConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
+        public Task CompleteTask => _connectionEndTcs.Task;
+
+        public bool IsMigrated { get; }
+
+        // Send "Abort" to service on close except that Service asks SDK to close
+        public bool AbortOnClose { get; set; } = true;
+
+        public override string ConnectionId { get; set; }
+
+        public override IFeatureCollection Features { get; }
+
+        public override IDictionary<object, object> Items { get; set; } = new ConnectionItems(new ConcurrentDictionary<object, object>());
+
+        public override IDuplexPipe Transport { get; set; }
+
+        public IDuplexPipe Application { get; set; }
+
+        public ClaimsPrincipal User { get; set; }
+
+        public Task ApplicationTask { get; set; }
+
+        public Task LifetimeTask { get; set; } = Task.CompletedTask;
+
+        public ServiceConnectionBase ServiceConnection { get; set; }
+
+        public HttpContext HttpContext { get; set; }
+
+        public CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
+
+        public CancellationToken ApplicationAborted => _abortApplicationCts.Token;
+
+        public ClientConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
             ConnectionId = serviceMessage.ConnectionId;
             User = serviceMessage.GetUserPrincipal();
+
+            if (serviceMessage.Headers.TryGetValue(Constants.AsrsMigrateIn, out _))
+            {
+                IsMigrated = true;
+            }
 
             // Create the Duplix Pipeline for the virtual connection
             transportPipeOptions = transportPipeOptions ?? DefaultPipeOptions;
@@ -94,27 +130,35 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        // Send "Abort" to service on close except that Service asks SDK to close
-        public bool AbortOnClose { get; set; } = true;
+        /// <summary>
+        /// Cancel the outgoing process
+        /// </summary>
+        public void CancelOutgoing(int millisecondsDelay = 0)
+        {
+            if (millisecondsDelay <= 0)
+            {
+                _abortOutgoingCts.Cancel();
+            }
+            else
+            {
+                _abortOutgoingCts.CancelAfter(millisecondsDelay);
+            }
+        }
 
-        public override string ConnectionId { get; set; }
-
-        public override IFeatureCollection Features { get; }
-
-        public override IDictionary<object, object> Items { get; set; } = new ConnectionItems(new ConcurrentDictionary<object, object>());
-
-        public override IDuplexPipe Transport { get; set; }
-
-        public IDuplexPipe Application { get; set; }
-
-        public ClaimsPrincipal User { get; set; }
-
-        public Task ApplicationTask { get; set; }
-
-        // The associated HubConnectionContext
-        public HubConnectionContext HubConnectionContext { get; set; }
-
-        public HttpContext HttpContext { get; set; }
+        /// <summary>
+        /// Cancel the application task
+        /// </summary>
+        public void CancelApplication(int millisecondsDelay = 0)
+        {
+            if (millisecondsDelay <= 0)
+            {
+                _abortApplicationCts.Cancel();
+            }
+            else
+            {
+                _abortApplicationCts.CancelAfter(millisecondsDelay);
+            }
+        }
 
         private FeatureCollection BuildFeatures()
         {

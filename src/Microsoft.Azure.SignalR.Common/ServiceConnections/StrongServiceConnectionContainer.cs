@@ -42,13 +42,11 @@ namespace Microsoft.Azure.SignalR
             );
         }
 
-        public override Task ShutdownAsync(TimeSpan timeout)
+        public override Task OfflineAsync()
         {
-            var task = base.StopAsync();
-            return Task.WhenAll(
-                task,
-                Task.CompletedTask // TODO
-            );
+            var task1 = base.OfflineAsync();
+            var task2 = Task.WhenAll(_onDemandServiceConnections.Select(c => RemoveConnectionAsync(c)));
+            return Task.WhenAll(task1, task2);
         }
 
         protected override ServiceConnectionStatus GetStatus()
@@ -117,7 +115,7 @@ namespace Microsoft.Azure.SignalR
 
             lock (_lock)
             {
-                newConnection = CreateServiceConnectionCore(ServerConnectionType.OnDemand);
+                newConnection = CreateServiceConnectionCore(ServiceConnectionType.OnDemand);
                 _onDemandServiceConnections.Add(newConnection);
             }
 

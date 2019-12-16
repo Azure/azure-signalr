@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 using Xunit;
@@ -29,27 +30,53 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.NotEqual(ServiceConnectionStatus.Connected, container.Connections[1].Status);
         }
 
+        [Fact]
+        public async Task TestOffline()
+        {
+            List<IServiceConnection> connections = new List<IServiceConnection>
+            {
+                new SimpleTestServiceConnection(),
+                new SimpleTestServiceConnection()
+            };
+            using TestServiceConnectionContainer container = new TestServiceConnectionContainer(connections, factory: new SimpleTestServiceConnectionFactory());
+
+            foreach (SimpleTestServiceConnection c in connections)
+            {
+                Assert.False(c.ConnectionOfflineTask.IsCompleted);
+            }
+
+            await container.OfflineAsync();
+
+            foreach (SimpleTestServiceConnection c in connections)
+            {
+                Assert.True(c.ConnectionOfflineTask.IsCompleted);
+            }
+        }
+
         private sealed class SimpleTestServiceConnectionFactory : IServiceConnectionFactory
         {
-            public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType type)
-            {
-                return new SimpleTestServiceConnection();
-            }
+            public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type) => new SimpleTestServiceConnection();
         }
 
         private sealed class SimpleTestServiceConnection : IServiceConnection
         {
-            public ServiceConnectionStatus Status { get; set; }
-
             public Task ConnectionInitializedTask => Task.Delay(TimeSpan.FromSeconds(1));
 
-            public Task ConnectionOfflineTask => Task.CompletedTask;
+            public ServiceConnectionStatus Status { get; set; } = ServiceConnectionStatus.Disconnected;
 
-            public event Action<StatusChange> ConnectionStatusChanged;
+            private readonly TaskCompletionSource<bool> _offline = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+
+            public Task ConnectionOfflineTask => _offline.Task;
 
             public SimpleTestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Disconnected)
             {
                 Status = status;
+            }
+
+            public event Action<StatusChange> ConnectionStatusChanged
+            {
+                add { }
+                remove { }
             }
 
             public Task StartAsync(string target = null)
@@ -60,12 +87,16 @@ namespace Microsoft.Azure.SignalR.Tests
 
             public Task StopAsync()
             {
-                throw new NotImplementedException();
+                return Task.CompletedTask;
             }
 
             public Task WriteAsync(ServiceMessage serviceMessage)
             {
-                throw new NotImplementedException();
+                if (serviceMessage is PingMessage ping && ping.TryGetValue(Constants.ServicePingMessageKey.ShutdownKey, out var val) && val == Constants.ServicePingMessageValue.ShutdownFin)
+                {
+                    _offline.SetResult(true);
+                }
+                return Task.CompletedTask;
             }
         }
     }

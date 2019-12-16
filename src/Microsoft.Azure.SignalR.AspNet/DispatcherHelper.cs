@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNet.SignalR;
@@ -9,6 +10,7 @@ using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.AspNet.SignalR.Tracing;
 using Microsoft.AspNet.SignalR.Transports;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Owin.Infrastructure;
@@ -18,6 +20,28 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class DispatcherHelper
     {
+        internal static ILoggerFactory GetLoggerFactory(HubConfiguration configuration)
+        {
+            var resolver = configuration.Resolver ?? throw new ArgumentException("A dependency resolver must be specified.", nameof(configuration.Resolver));
+
+            // 1. check if loggerFactory is already defined
+            var loggerFactory = resolver.Resolve<ILoggerFactory>();
+            if (loggerFactory != null)
+            {
+                return loggerFactory;
+            }
+
+            // 2. check if loggingBuilder is already defined
+            var loggingBuilder = configuration?.Resolver.Resolve<ILoggingBuilder>() ?? new DefaultLoggingBuilder();
+            var providers = loggingBuilder.Services?.BuildServiceProvider().GetServices<ILoggerProvider>();
+            if (providers != null)
+            {
+                loggerFactory = new LoggerFactory(providers);
+            }
+
+            return loggerFactory;
+        }
+
         internal static ServiceHubDispatcher PrepareAndGetDispatcher(IAppBuilder builder, HubConfiguration configuration, ServiceOptions options, string applicationName, ILoggerFactory loggerFactory)
         {
             // Ensure we have the conversions for MS.Owin so that
@@ -104,7 +128,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 configuration.Resolver.Register(typeof(IServiceConnectionFactory), () => scf);
             }
 
-            var sccf = new ServiceConnectionContainerFactory(scf, endpoint, router, options, serverNameProvider, ccm, loggerFactory);
+            var sccf = new ServiceConnectionContainerFactory(scf, endpoint, router, options, serverNameProvider, loggerFactory);
 
             if (hubs?.Count > 0)
             {
@@ -121,6 +145,27 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             var hubManager = configuration.Resolver.Resolve<IHubManager>();
             return hubManager?.GetHubs().Select(s => s.Name).ToList();
+        }
+
+        /// <summary>
+        /// For compatibility issue that
+        /// public static ILoggerFactory AddEventSourceLogger(this ILoggerFactory factory)
+        /// is removed since Microsoft.Extensions.Logging.EventSource 3.0.0
+        /// </summary>
+        private sealed class DefaultLoggingBuilder : ILoggingBuilder
+        {
+            public IServiceCollection Services { get; }
+
+            public DefaultLoggingBuilder()
+            {
+                Services = new ServiceCollection();
+                this.AddEventSourceLogger();
+            }
+
+            public IServiceProvider Build()
+            {
+                return Services.BuildServiceProvider();
+            }
         }
     }
 }

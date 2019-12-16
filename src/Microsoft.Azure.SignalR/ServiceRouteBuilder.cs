@@ -2,11 +2,15 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Linq;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -17,6 +21,7 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly RouteBuilder _routes;
+        private readonly IList<Func<TimeSpan, Task>> _shutdownHooks = new List<Func<TimeSpan, Task>>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceRouteBuilder"/> class.
@@ -26,6 +31,18 @@ namespace Microsoft.Azure.SignalR
         {
             _routes = routes;
             _serviceProvider = _routes.ServiceProvider;
+
+#if NETCOREAPP
+            var lifetime = _serviceProvider.GetService<IHostApplicationLifetime>();
+#elif NETSTANDARD
+            var lifetime = _serviceProvider.GetService<IApplicationLifetime>();
+#else
+            var lifetime = null;
+#endif
+            if (lifetime != null)
+            {
+                // lifetime.ApplicationStopping.Register(Shutdown);
+            }
         }
 
         /// <summary>
@@ -58,6 +75,14 @@ namespace Microsoft.Azure.SignalR
 
             var dispatcher = _serviceProvider.GetRequiredService<ServiceHubDispatcher<THub>>();
             dispatcher.Start(app);
+
+            _shutdownHooks.Add(dispatcher.ShutdownAsync);
+        }
+
+        private void Shutdown()
+        {
+            var timeout = TimeSpan.FromSeconds(30);
+            Task.WaitAll(_shutdownHooks.Select(func => func(timeout)).ToArray());
         }
     }
 }

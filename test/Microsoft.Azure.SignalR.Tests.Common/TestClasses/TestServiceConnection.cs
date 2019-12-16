@@ -1,25 +1,45 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.IO.Pipelines;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
 {
-    internal sealed class TestServiceConnection : ServiceConnectionBase
+    internal class TestServiceConnection : ServiceConnectionBase
     {
         private readonly bool _throws;
+        private readonly ILogger _logger;
+
         private ServiceConnectionStatus _expectedStatus;
+
         private ConnectionContext _connection;
 
-        public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false) : base(null, null, null, null, ServerConnectionType.Default, NullLogger.Instance)
+        public IDuplexPipe Application { get; private set; }
+
+        private TaskCompletionSource<object> _created = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task ConnectionCreated => _created.Task;
+
+        public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false, ILogger logger = null) : base(
+            new ServiceProtocol(),
+            Guid.NewGuid().ToString(),
+            new HubServiceEndpoint(),
+            null, // TODO replace it with a NullMessageHandler
+            ServiceConnectionType.Default,
+            logger ?? NullLogger.Instance
+        )
         {
             _expectedStatus = status;
             _throws = throws;
+            _logger = logger ?? NullLogger.Instance;
         }
 
         public void SetStatus(ServiceConnectionStatus status)
@@ -28,7 +48,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             _expectedStatus = status;
         }
 
-        protected override Task CleanupConnections(string instanceId = null)
+        protected override Task CleanupClientConnections(string fromInstanceId = null)
         {
             return Task.CompletedTask;
         }
@@ -37,6 +57,10 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         {
             var pipeOptions = new PipeOptions();
             var duplex = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+
+            Application = duplex.Application;
+            _created.SetResult(null);
+
             return Task.FromResult<ConnectionContext>(new DefaultConnectionContext()
             {
                 Application = duplex.Application,
@@ -56,29 +80,34 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             return Task.CompletedTask;
         }
 
-        protected override Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage)
+        protected override Task OnClientConnectedAsync(OpenConnectionMessage openConnectionMessage)
         {
             return Task.CompletedTask;
         }
 
-        protected override Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
+        protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             return Task.CompletedTask;
         }
 
-        protected override Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)
+        protected override Task OnClientMessageAsync(ConnectionDataMessage connectionDataMessage)
         {
             return Task.CompletedTask;
         }
 
-        public override Task WriteAsync(ServiceMessage serviceMessage)
+        protected Task WriteAsyncBase(ServiceMessage serviceMessage)
+        {
+            return base.WriteAsync(serviceMessage);
+        }
+
+        protected override Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
         {
             if (_throws)
             {
-                throw new ServiceConnectionNotActiveException();
+                return Task.FromResult(false);
             }
 
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
         public void Stop()

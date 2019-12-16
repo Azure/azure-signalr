@@ -1,0 +1,20 @@
+name: Gated-Windows
+on: 
+ push:
+   branches: 
+     - master
+     - dev
+ pull_request:
+   branches: 
+     - master
+     - dev
+jobs:
+  build_windows:
+    runs-on: [windows-latest]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build with dotnet
+      shell: powershell
+      run: .\run.ps1 default-build
+    
+  

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal abstract class ServiceConnectionBase : IServiceConnection
     {
-        private static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
+        protected static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
         // Service ping rate is 5 sec to let server know service status. Set timeout for 30 sec for some space.
         private static readonly TimeSpan DefaultServiceTimeout = TimeSpan.FromSeconds(30);
         private static readonly long DefaultServiceTimeoutTicks = DefaultServiceTimeout.Seconds * Stopwatch.Frequency;
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource<object> _serviceConnectionOfflineTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        private readonly ServerConnectionType _connectionType;
+        private readonly ServiceConnectionType _connectionType;
 
         private readonly IServiceMessageHandler _serviceMessageHandler;
         private readonly object _statusLock = new object();
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR
         public Task ConnectionOfflineTask => _serviceConnectionOfflineTcs.Task;
 
         protected ServiceConnectionBase(IServiceProtocol serviceProtocol, string connectionId,
-            HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServerConnectionType connectionType, ILogger logger)
+            HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType connectionType, ILogger logger)
         {
             ServiceProtocol = serviceProtocol;
             ConnectionId = connectionId;
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.SignalR
                         // TODO: Never cleanup connections unless Service asks us to do that
                         // Current implementation is based on assumption that Service will drop clients
                         // if server connection fails.
-                        await CleanupConnections();
+                        await CleanupClientConnections();
                     }
                 }
                 catch (Exception ex)
@@ -183,23 +183,22 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.UnexpectedExceptionInStop(Logger, ConnectionId, ex);
             }
-
             return Task.CompletedTask;
         }
 
-        public virtual async Task WriteAsync(ServiceMessage serviceMessage)
+        public async Task WriteAsync(ServiceMessage serviceMessage)
         {
-            var errorMessage = _errorMessage;
-            if (!string.IsNullOrEmpty(errorMessage))
+            if (!await SafeWriteAsync(serviceMessage))
             {
-                // Can be out of the lock, it is ok to send out messages even when _error received.
-                throw new ServiceConnectionNotActiveException(errorMessage);
-            }
-
-            if (Status != ServiceConnectionStatus.Connected)
-            {
-                // get the latest _errorMessage also
                 throw new ServiceConnectionNotActiveException(_errorMessage);
+            }
+        }
+
+        protected virtual async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
+        {
+            if (!string.IsNullOrEmpty(_errorMessage) || Status != ServiceConnectionStatus.Connected)
+            {
+                return false;
             }
 
             await _writeLock.WaitAsync();
@@ -208,20 +207,21 @@ namespace Microsoft.Azure.SignalR
             {
                 // Make sure not write messages to the connection when it is no longer connected
                 _writeLock.Release();
-                throw new ServiceConnectionNotActiveException(_errorMessage);
+                return false;
             }
-
-            // We have to lock around outgoing sends since the pipe is single writer.
-            // The lock is per serviceConnection
             try
             {
                 // Write the service protocol message
                 ServiceProtocol.WriteMessage(serviceMessage, _connectionContext.Transport.Output);
                 await _connectionContext.Transport.Output.FlushAsync();
+                return true;
             }
             catch (Exception ex)
             {
+                // We always mark the connection as Disconnected before dispose the underlying http connection
+                // So in theory this log should never trigger
                 Log.FailedToWrite(Logger, ConnectionId, ex);
+                return false;
             }
             finally
             {
@@ -233,13 +233,13 @@ namespace Microsoft.Azure.SignalR
 
         protected abstract Task DisposeConnection(ConnectionContext connection);
 
-        protected abstract Task CleanupConnections(string instanceId = null);
+        protected abstract Task CleanupClientConnections(string fromInstanceId = null);
 
-        protected abstract Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage);
+        protected abstract Task OnClientConnectedAsync(OpenConnectionMessage openConnectionMessage);
 
-        protected abstract Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage);
+        protected abstract Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage);
 
-        protected abstract Task OnMessageAsync(ConnectionDataMessage connectionDataMessage);
+        protected abstract Task OnClientMessageAsync(ConnectionDataMessage connectionDataMessage);
 
         protected Task OnServiceErrorAsync(ServiceErrorMessage serviceErrorMessage)
         {
@@ -250,6 +250,9 @@ namespace Microsoft.Azure.SignalR
                 // But messages in the pipe from service -> server should be processed as usual. Just log without
                 // throw exception here.
                 _errorMessage = serviceErrorMessage.ErrorMessage;
+
+                // Update the status immediately
+                Status = ServiceConnectionStatus.Disconnected;
                 Log.ReceivedServiceErrorMessage(Logger, ConnectionId, serviceErrorMessage.ErrorMessage);
             }
 
@@ -261,7 +264,7 @@ namespace Microsoft.Azure.SignalR
             if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.OfflineKey, out var instanceId) && !string.IsNullOrEmpty(instanceId))
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
-                return CleanupConnections(instanceId);
+                return CleanupClientConnections(instanceId);
             } 
             if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.ShutdownKey, out string val) && val == Constants.ServicePingMessageValue.ShutdownFinAck)
             {
@@ -386,7 +389,7 @@ namespace Microsoft.Azure.SignalR
                             }
 
                             // Handshake error. Will stop reconnect.
-                            if (_connectionType == ServerConnectionType.OnDemand)
+                            if (_connectionType == ServiceConnectionType.OnDemand)
                             {
                                 // Handshake errors on on-demand connections are acceptable.
                                 Log.OnDemandConnectionHandshakeResponse(Logger, handshakeResponse.ErrorMessage);
@@ -395,7 +398,6 @@ namespace Microsoft.Azure.SignalR
                             {
                                 Log.HandshakeError(Logger, handshakeResponse.ErrorMessage, ConnectionId);
                             }
-
                             return false;
                         }
                     }
@@ -416,6 +418,7 @@ namespace Microsoft.Azure.SignalR
         private async Task ProcessIncomingAsync(ConnectionContext connection)
         {
             var keepAliveTimer = StartKeepAliveTimer();
+
             try
             {
                 while (true)
@@ -468,6 +471,7 @@ namespace Microsoft.Azure.SignalR
             finally
             {
                 keepAliveTimer.Stop();
+                _serviceConnectionOfflineTcs.TrySetResult(true);
             }
         }
 
@@ -476,11 +480,11 @@ namespace Microsoft.Azure.SignalR
             switch (message)
             {
                 case OpenConnectionMessage openConnectionMessage:
-                    return OnConnectedAsync(openConnectionMessage);
+                    return OnClientConnectedAsync(openConnectionMessage);
                 case CloseConnectionMessage closeConnectionMessage:
-                    return OnDisconnectedAsync(closeConnectionMessage);
+                    return OnClientDisconnectedAsync(closeConnectionMessage);
                 case ConnectionDataMessage connectionDataMessage:
-                    return OnMessageAsync(connectionDataMessage);
+                    return OnClientMessageAsync(connectionDataMessage);
                 case ServiceErrorMessage serviceErrorMessage:
                     return OnServiceErrorAsync(serviceErrorMessage);
                 case PingMessage pingMessage:
@@ -625,7 +629,6 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, Exception> _receivedInstanceOfflinePing =
                 LoggerMessage.Define<string>(LogLevel.Information, new EventId(31, "ReceivedInstanceOfflinePing"), "Received instance offline service ping: {InstanceId}");
-
 
             public static void FailedToWrite(ILogger logger, string serviceConnectionId, Exception exception)
             {

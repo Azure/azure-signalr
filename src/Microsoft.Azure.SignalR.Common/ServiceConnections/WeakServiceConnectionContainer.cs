@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 
         private readonly TimerAwaitable _timer;
 
-        protected override ServerConnectionType InitialConnectionType => ServerConnectionType.Weak;
+        protected override ServiceConnectionType InitialConnectionType => ServiceConnectionType.Weak;
 
         public WeakServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
             int fixedConnectionCount, HubServiceEndpoint endpoint, ILogger logger)
@@ -47,8 +47,6 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             return Task.CompletedTask;
         }
 
-        public override Task ShutdownAsync(TimeSpan timeout) => StopAsync();
-
         public override Task WriteAsync(ServiceMessage serviceMessage)
         {
             if (!_active && !(serviceMessage is PingMessage))
@@ -59,6 +57,11 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             }
 
             return base.WriteAsync(serviceMessage);
+        }
+
+        public override Task OfflineAsync()
+        {
+            return Task.CompletedTask;
         }
 
         internal bool GetServiceStatus(bool active, int checkWindow, TimeSpan checkTimeSpan)

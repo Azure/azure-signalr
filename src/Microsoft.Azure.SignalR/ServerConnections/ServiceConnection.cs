@@ -12,21 +12,26 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
+using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
     internal partial class ServiceConnection : ServiceConnectionBase
     {
+        private const int DefaultCloseTimeoutMilliseconds = 5000;
+
         // Fix issue: https://github.com/Azure/azure-signalr/issues/198
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
         private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
-        private static readonly TimeSpan CloseApplicationTimeout = TimeSpan.FromSeconds(5);
+        
+        private readonly bool _enableConnectionMigration;
 
         private const string ClientConnectionCountInHub = "#clientInHub";
         private const string ClientConnectionCountInServiceConnection = "#client";
 
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionFactory _clientConnectionFactory;
+        private readonly int _closeTimeOutMilliseconds;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly ConcurrentDictionary<string, string> _connectionIds =
             new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
@@ -46,13 +51,16 @@ namespace Microsoft.Azure.SignalR
                                  string connectionId,
                                  HubServiceEndpoint endpoint,
                                  IServiceMessageHandler serviceMessageHandler,
-                                 ServerConnectionType connectionType = ServerConnectionType.Default) :
+                                 ServiceConnectionType connectionType = ServiceConnectionType.Default,
+                                 int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds) :
             base(serviceProtocol, connectionId, endpoint, serviceMessageHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>())
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
+            _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
+            _enableConnectionMigration = false;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -65,7 +73,7 @@ namespace Microsoft.Azure.SignalR
             return _connectionFactory.DisposeAsync(connection);
         }
 
-        protected override async Task CleanupConnections(string instanceId = null)
+        protected override async Task CleanupClientConnections(string fromInstanceId = null)
         {
             try
             {
@@ -74,9 +82,9 @@ namespace Microsoft.Azure.SignalR
                     return;
                 }
                 var connectionIds = _connectionIds.Select(s => s.Key);
-                if (!string.IsNullOrEmpty(instanceId))
+                if (!string.IsNullOrEmpty(fromInstanceId))
                 {
-                    connectionIds = _connectionIds.Where(s => s.Value == instanceId).Select(s => s.Key);
+                    connectionIds = _connectionIds.Where(s => s.Value == fromInstanceId).Select(s => s.Key);
                 }
                 await Task.WhenAll(connectionIds.Select(s => PerformDisconnectAsyncCore(s, false)));
             }
@@ -98,20 +106,162 @@ namespace Microsoft.Azure.SignalR
                 });
         }
 
-        private async Task ProcessOutgoingMessagesAsync(ServiceConnectionContext connection)
+        protected override Task OnClientConnectedAsync(OpenConnectionMessage message)
+        {
+            var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
+            connection.ServiceConnection = this;
+
+            // Execute the application code
+            connection.ApplicationTask = ProcessApplicationTaskAsync(connection);
+
+            connection.LifetimeTask = ProcessClientConnectionAsync(connection);
+
+            AddClientConnection(connection, message);
+
+            if (connection.IsMigrated)
+            {
+                Log.MigrationStarting(Logger, connection.ConnectionId);
+            }
+            else
+            {
+                Log.ConnectedStarting(Logger, connection.ConnectionId);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
+        {
+            var connectionId = closeConnectionMessage.ConnectionId;
+            if (_enableConnectionMigration && _clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
+            {
+                if (!context.HttpContext.Request.Headers.ContainsKey(Constants.AsrsMigrateOut))
+                {
+                    context.HttpContext.Request.Headers.Add(Constants.AsrsMigrateOut, "");
+                }
+                // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
+                // Since all user-created messages will be sent to `ServiceConnection` directly.
+                // We can simply ignore all messages came from the application pipe.
+                context.Application.Input.CancelPendingRead();
+            }
+            return PerformDisconnectAsyncCore(connectionId, false);
+        }
+
+        protected override async Task OnClientMessageAsync(ConnectionDataMessage connectionDataMessage)
+        {
+            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionDataMessage.ConnectionId, out var connection))
+            {
+                try
+                {
+                    var payload = connectionDataMessage.Payload;
+                    Log.WriteMessageToApplication(Logger, payload.Length, connectionDataMessage.ConnectionId);
+
+                    if (payload.IsSingleSegment)
+                    {
+                        // Write the raw connection payload to the pipe let the upstream handle it
+                        await connection.Application.Output.WriteAsync(payload.First);
+                    }
+                    else
+                    {
+                        var position = payload.Start;
+                        while (connectionDataMessage.Payload.TryGet(ref position, out var memory))
+                        {
+                            await connection.Application.Output.WriteAsync(memory);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.FailToWriteMessageToApplication(Logger, connectionDataMessage.ConnectionId, ex);
+                }
+            }
+            else
+            {
+                // Unexpected error
+                Log.ReceivedMessageForNonExistentConnection(Logger, connectionDataMessage.ConnectionId);
+            }
+        }
+
+        private Task ProcessClientConnectionAsync(ClientConnectionContext connection)
+        {
+            // Writing from the application to the service
+            var outgoing = ProcessOutgoingMessagesAsync(connection, connection.OutgoingAborted);
+
+            // Waiting for the application to shutdown so we can clean up the connection
+            _ = ProcessIncomingMessageAsync(connection);
+
+            // TODO: add more details
+            // Current clean up is inside outgoing task when outgoing task completes
+            return outgoing;
+        }
+
+        private async Task<bool> SkipHandshakeResponse(ClientConnectionContext connection, CancellationToken token)
         {
             try
             {
                 while (true)
                 {
-                    var result = await connection.Application.Input.ReadAsync();
+                    var result = await connection.Application.Input.ReadAsync(token);
+                    if (result.IsCanceled || token.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+
+                    var buffer = result.Buffer;
+                    if (buffer.IsEmpty)
+                    {
+                        continue;
+                    }
+
+                    if (SignalRProtocol.HandshakeProtocol.TryParseResponseMessage(ref buffer, out var message))
+                    {
+                        connection.Application.Input.AdvanceTo(buffer.Start);
+                        return true;
+                    }
+
+                    if (result.IsCompleted)
+                    {
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.ErrorSkippingHandshakeResponse(Logger, ex);
+            }
+            return false;
+        }
+
+        private async Task ProcessOutgoingMessagesAsync(ClientConnectionContext connection, CancellationToken token = default)
+        {
+            try
+            {
+                if (connection.IsMigrated)
+                {
+                    using var timeoutToken = new CancellationTokenSource(DefaultHandshakeTimeout);
+                    using var source = CancellationTokenSource.CreateLinkedTokenSource(token, timeoutToken.Token);
+
+                    // A handshake response is not expected to be given
+                    // if the connection was migrated from another server, 
+                    // since the connection hasn't been `dropped` from the client point of view.
+                    if (!await SkipHandshakeResponse(connection, source.Token))
+                    {
+                        return;
+                    }
+                }
+
+                while (true)
+                {
+                    var result = await connection.Application.Input.ReadAsync(token);
+
                     if (result.IsCanceled)
                     {
                         break;
                     }
 
                     var buffer = result.Buffer;
-                    if (!buffer.IsEmpty)
+
+                    if (!buffer.IsEmpty) 
                     {
                         try
                         {
@@ -149,31 +299,55 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private void AddClientConnection(ServiceConnectionContext connection, string instanceId)
+        private void AddClientConnection(ClientConnectionContext connection, OpenConnectionMessage message)
         {
+            var instanceId = GetInstanceId(message.Headers);
             _clientConnectionManager.AddClientConnection(connection);
             _connectionIds.TryAdd(connection.ConnectionId, instanceId);
         }
 
-        protected override Task OnConnectedAsync(OpenConnectionMessage message)
+        private async Task ProcessIncomingMessageAsync(ClientConnectionContext connection)
         {
-            var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
-            AddClientConnection(connection, GetInstanceId(message.Headers));
-            Log.ConnectedStarting(Logger, connection.ConnectionId);
-
-            // Execute the application code
-            connection.ApplicationTask = _connectionDelegate(connection);
-
-            // Writing from the application to the service
-            _ = ProcessOutgoingMessagesAsync(connection);
-
-            // Waiting for the application to shutdown so we can clean up the connection
-            _ = WaitOnApplicationTask(connection);
-
-            return Task.CompletedTask;
+            Exception exception = null;
+            try
+            {
+                await connection.ApplicationTask;
+            }
+            catch (Exception e)
+            {
+                exception = e;
+            }
+            finally
+            {
+                // If we aren't already aborted, we send the abort message to the service
+                if (connection.AbortOnClose)
+                {
+                    // Inform the Service that we will remove the client because SignalR told us it is disconnected.
+                    var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, errorMessage: exception?.Message);
+                    await SafeWriteAsync(serviceMessage);
+                    Log.CloseConnection(Logger, connection.ConnectionId);
+                }
+            }
         }
 
-        private async Task WaitOnApplicationTask(ServiceConnectionContext connection)
+        private async Task ProcessApplicationTaskAsync(ClientConnectionContext connection)
+        {
+            // Wait for the application task to complete
+            // application task can end when exception, or Context.Abort() from hub
+            var app = ProcessApplicationTaskAsyncCore(connection);
+
+            var cancelTask = connection.ApplicationAborted.AsTask();
+            var task = await Task.WhenAny(app, cancelTask);
+
+            if (task != app)
+            {
+                // cancel the application task, to end the outgoing task
+                connection.Application.Input.CancelPendingRead();
+                Log.ApplicationTaskCancelled(Logger);
+            }
+        }
+
+        private async Task ProcessApplicationTaskAsyncCore(ClientConnectionContext connection)
         {
             Exception exception = null;
 
@@ -181,7 +355,7 @@ namespace Microsoft.Azure.SignalR
             {
                 // Wait for the application task to complete
                 // application task can end when exception, or Context.Abort() from hub
-                await connection.ApplicationTask;
+                await _connectionDelegate(connection);
             }
             catch (Exception ex)
             {
@@ -195,21 +369,6 @@ namespace Microsoft.Azure.SignalR
                 connection.Transport.Output.Complete(exception);
                 connection.Transport.Input.Complete();
             }
-
-            // If we aren't already aborted, we send the abort message to the service
-            if (connection.AbortOnClose)
-            {
-                // Inform the Service that we will remove the client because SignalR told us it is disconnected.
-                var serviceMessage = new CloseConnectionMessage(connection.ConnectionId, errorMessage: exception?.Message);
-                await WriteAsync(serviceMessage);
-                Log.CloseConnection(Logger, connection.ConnectionId);
-            }
-        }
-
-        protected override Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
-        {
-            var connectionId = closeConnectionMessage.ConnectionId;
-            return PerformDisconnectAsyncCore(connectionId, false);
         }
 
         private async Task PerformDisconnectAsyncCore(string connectionId, bool abortOnClose)
@@ -231,66 +390,11 @@ namespace Microsoft.Azure.SignalR
                 // Wait on the application task to complete
                 if (!app.IsCompleted)
                 {
-                    try
-                    {
-                        using (var delayCts = new CancellationTokenSource())
-                        {
-                            var resultTask =
-                                await Task.WhenAny(app, Task.Delay(CloseApplicationTimeout, delayCts.Token));
-                            if (resultTask != app)
-                            {
-                                // Application task timed out and it might never end writing to Transport.Output, cancel reading the pipe so that our ProcessOutgoing ends
-                                connection.Application.Input.CancelPendingRead();
-                                Log.ApplicationTaskTimedOut(Logger);
-                            }
-                            else
-                            {
-                                delayCts.Cancel();
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.ApplicationTaskFailed(Logger, ex);
-                    }
+                    connection.CancelApplication(_closeTimeOutMilliseconds);
+                    await app;
                 }
 
                 Log.ConnectedEnding(Logger, connectionId);
-            }
-        }
-
-        protected override async Task OnMessageAsync(ConnectionDataMessage connectionDataMessage)
-        {
-            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionDataMessage.ConnectionId, out var connection))
-            {
-                try
-                {
-                    var payload = connectionDataMessage.Payload;
-                    Log.WriteMessageToApplication(Logger, payload.Length, connectionDataMessage.ConnectionId);
-
-                    if (payload.IsSingleSegment)
-                    {
-                        // Write the raw connection payload to the pipe let the upstream handle it
-                        await connection.Application.Output.WriteAsync(payload.First);
-                    }
-                    else
-                    {
-                        var position = payload.Start;
-                        while (connectionDataMessage.Payload.TryGet(ref position, out var memory))
-                        {
-                            await connection.Application.Output.WriteAsync(memory);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.FailToWriteMessageToApplication(Logger, connectionDataMessage.ConnectionId, ex);
-                }
-            }
-            else
-            {
-                // Unexpected error
-                Log.ReceivedMessageForNonExistentConnection(Logger, connectionDataMessage.ConnectionId);
             }
         }
 
