@@ -272,53 +272,58 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public async Task TestContainerWithTwoEndpointWithAllConnectedFailsWithBadRouter()
         {
-            var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1), 
-                new ServiceEndpoint(ConnectionString2));
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, logChecker: logs => true))
+            {
+                var sem = new TestServiceEndpointManager(
+                    new ServiceEndpoint(ConnectionString1),
+                    new ServiceEndpoint(ConnectionString2));
+                var logger = loggerFactory.CreateLogger<TestServiceConnection>();
+                var router = new TestEndpointRouter(true);
+                var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                    e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                        new TestServiceConnection(logger: logger),
+                        new TestServiceConnection(logger: logger),
+                        new TestServiceConnection(logger: logger),
+                        new TestServiceConnection(logger: logger),
+                        new TestServiceConnection(logger: logger),
+                        new TestServiceConnection(logger: logger),
+                        new TestServiceConnection(logger: logger),
+                    }, e, logger), sem, router, loggerFactory);
+                _ = Task.Run(container.StartAsync);
+                await container.ConnectionInitializedTask.OrTimeout();
 
-            var router = new TestEndpointRouter(true);
-            var container = new TestMultiEndpointServiceConnectionContainer("hub",
-                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-            }, e), sem, router, NullLoggerFactory.Instance);
-
-            _ = container.StartAsync();
-            await container.ConnectionInitializedTask.OrTimeout();
-
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                () => container.WriteAsync(DefaultGroupMessage)
+                await Assert.ThrowsAsync<InvalidOperationException>(
+                    () => container.WriteAsync(DefaultGroupMessage)
                 );
+            }
         }
 
         [Fact]
         public async Task TestContainerWithTwoEndpointWithAllConnectedSucceedsWithGoodRouter()
         {
-            var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1),
-                new ServiceEndpoint(ConnectionString2));
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs => true))
+            {
+                var sem = new TestServiceEndpointManager(
+                    new ServiceEndpoint(ConnectionString1),
+                    new ServiceEndpoint(ConnectionString2));
 
-            var router = new TestEndpointRouter(false);
-            var container = new TestMultiEndpointServiceConnectionContainer("hub",
-                e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-                new TestServiceConnection(),
-            }, e), sem, router, NullLoggerFactory.Instance);
+                var router = new TestEndpointRouter(false);
+                var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                    e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
+                        new TestServiceConnection(),
+                        new TestServiceConnection(),
+                        new TestServiceConnection(),
+                        new TestServiceConnection(),
+                        new TestServiceConnection(),
+                        new TestServiceConnection(),
+                        new TestServiceConnection(),
+                    }, e), sem, router, loggerFactory);
 
-            _ = container.StartAsync();
-            await container.ConnectionInitializedTask.OrTimeout();
+                _ = container.StartAsync();
+                await container.ConnectionInitializedTask.OrTimeout();
 
-            await container.WriteAsync(DefaultGroupMessage);
+                await container.WriteAsync(DefaultGroupMessage);
+            }
         }
 
         [Fact]

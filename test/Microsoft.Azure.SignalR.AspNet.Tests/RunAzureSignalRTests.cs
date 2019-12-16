@@ -481,7 +481,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 })))
                 {
                     // wait for service connections to connect or disconnect
-                    await Task.Delay(50);
+                    await Task.Delay(500);
                     var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
                     var response = await client.GetAsync("/negotiate");
 
