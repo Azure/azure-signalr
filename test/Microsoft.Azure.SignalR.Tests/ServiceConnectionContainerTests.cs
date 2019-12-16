@@ -102,7 +102,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async void TestCloseAsyncWithoutStartAsync()
+        public void TestCloseAsyncWithoutStartAsync()
         {
             var conn = new TestServiceConnectionForCloseAsync();
             var hub = new HubServiceEndpoint();

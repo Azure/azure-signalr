@@ -73,7 +73,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 Status = status;
             }
 
-            public event Action<StatusChange> ConnectionStatusChanged;
+            public event Action<StatusChange> ConnectionStatusChanged
+            {
+                add { }
+                remove { }
+            }
 
             public Task StartAsync(string target = null)
             {
