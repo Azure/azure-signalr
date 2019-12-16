@@ -204,8 +204,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
             await manager.SendConnectionAsync("conn1", "foo", new object[] { 1, 2 });
 
-            Assert.NotNull(connection.last);
-            if (connection.last is MultiConnectionDataMessage m)
+            Assert.NotNull(connection.LastMessage);
+            if (connection.LastMessage is MultiConnectionDataMessage m)
             {
                 Assert.Equal("conn1", m.ConnectionList[0]);
                 Assert.Equal(1, m.Payloads.Count);
@@ -331,12 +331,12 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private sealed class TestServiceConnectionPrivate : TestServiceConnection
         {
-            public ServiceMessage last = null;
+            public ServiceMessage LastMessage { get; private set; }
 
-            public override Task WriteAsync(ServiceMessage serviceMessage)
+            protected override Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
             {
-                last = serviceMessage;
-                return Task.CompletedTask;
+                LastMessage = serviceMessage;
+                return Task.FromResult(true);
             }
         }
 

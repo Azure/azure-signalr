@@ -100,14 +100,14 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             return base.WriteAsync(serviceMessage);
         }
 
-        public override Task WriteAsync(ServiceMessage serviceMessage)
+        protected override Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
         {
             if (_throws)
             {
-                throw new ServiceConnectionNotActiveException();
+                return Task.FromResult(false);
             }
 
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
         public void Stop()
