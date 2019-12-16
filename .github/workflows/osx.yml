@@ -1,0 +1,19 @@
+name: Gated-OSX
+on:
+ push:
+   branches: 
+     - master
+     - dev
+ pull_request:
+   branches: 
+     - master
+     - dev
+jobs:
+  build_osx:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build with dotnet
+      run: "./build.sh --ci /p:DisableNet461Tests=true"
+    
+  
