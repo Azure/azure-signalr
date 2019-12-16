@@ -480,8 +480,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     };
                 })))
                 {
+                    var connection = hubConfig.Resolver.GetService(typeof(IServiceConnectionManager)) as ServiceConnectionManager;
+                    Assert.NotNull(connection);
+
                     // wait for service connections to connect or disconnect
-                    await Task.Delay(500);
+                    await connection.ConnectionInitializedTask.OrTimeout();
+
                     var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
                     var response = await client.GetAsync("/negotiate");
 
