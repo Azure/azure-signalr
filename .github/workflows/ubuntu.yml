@@ -1,0 +1,18 @@
+name: Gated-Ubuntu
+on: 
+ push:
+   branches: 
+     - master
+     - dev
+ pull_request:
+   branches: 
+     - master
+     - dev
+jobs:
+  build_ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build
+      run: "./build.sh --ci /p:DisableNet461Tests=true"
+  

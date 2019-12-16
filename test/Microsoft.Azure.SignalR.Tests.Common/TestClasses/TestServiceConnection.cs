@@ -3,10 +3,12 @@
 
 using System;
 using System.IO.Pipelines;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
@@ -14,6 +16,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
     internal class TestServiceConnection : ServiceConnectionBase
     {
         private readonly bool _throws;
+        private readonly ILogger _logger;
 
         private ServiceConnectionStatus _expectedStatus;
 
@@ -25,17 +28,18 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public Task ConnectionCreated => _created.Task;
 
-        public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false) : base(
+        public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false, ILogger logger = null) : base(
             new ServiceProtocol(),
             Guid.NewGuid().ToString(),
             new HubServiceEndpoint(),
             null, // TODO replace it with a NullMessageHandler
             ServiceConnectionType.Default,
-            NullLogger.Instance
+            logger ?? NullLogger.Instance
         )
         {
             _expectedStatus = status;
             _throws = throws;
+            _logger = logger ?? NullLogger.Instance;
         }
 
         public void SetStatus(ServiceConnectionStatus status)
@@ -96,14 +100,14 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             return base.WriteAsync(serviceMessage);
         }
 
-        public override Task WriteAsync(ServiceMessage serviceMessage)
+        protected override Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
         {
             if (_throws)
             {
-                throw new ServiceConnectionNotActiveException();
+                return Task.FromResult(false);
             }
 
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
         public void Stop()

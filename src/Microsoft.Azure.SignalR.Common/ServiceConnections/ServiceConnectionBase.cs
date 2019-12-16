@@ -186,19 +186,19 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        public virtual async Task WriteAsync(ServiceMessage serviceMessage)
+        public async Task WriteAsync(ServiceMessage serviceMessage)
         {
-            var errorMessage = _errorMessage;
-            if (!string.IsNullOrEmpty(errorMessage))
+            if (!await SafeWriteAsync(serviceMessage))
             {
-                // Can be out of the lock, it is ok to send out messages even when _error received.
-                throw new ServiceConnectionNotActiveException(errorMessage);
-            }
-
-            if (Status != ServiceConnectionStatus.Connected)
-            {
-                // get the latest _errorMessage also
                 throw new ServiceConnectionNotActiveException(_errorMessage);
+            }
+        }
+
+        protected virtual async Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
+        {
+            if (!string.IsNullOrEmpty(_errorMessage) || Status != ServiceConnectionStatus.Connected)
+            {
+                return false;
             }
 
             await _writeLock.WaitAsync();
@@ -207,20 +207,21 @@ namespace Microsoft.Azure.SignalR
             {
                 // Make sure not write messages to the connection when it is no longer connected
                 _writeLock.Release();
-                throw new ServiceConnectionNotActiveException(_errorMessage);
+                return false;
             }
-
-            // We have to lock around outgoing sends since the pipe is single writer.
-            // The lock is per serviceConnection
             try
             {
                 // Write the service protocol message
                 ServiceProtocol.WriteMessage(serviceMessage, _connectionContext.Transport.Output);
                 await _connectionContext.Transport.Output.FlushAsync();
+                return true;
             }
             catch (Exception ex)
             {
+                // We always mark the connection as Disconnected before dispose the underlying http connection
+                // So in theory this log should never trigger
                 Log.FailedToWrite(Logger, ConnectionId, ex);
+                return false;
             }
             finally
             {
@@ -249,6 +250,9 @@ namespace Microsoft.Azure.SignalR
                 // But messages in the pipe from service -> server should be processed as usual. Just log without
                 // throw exception here.
                 _errorMessage = serviceErrorMessage.ErrorMessage;
+
+                // Update the status immediately
+                Status = ServiceConnectionStatus.Disconnected;
                 Log.ReceivedServiceErrorMessage(Logger, ConnectionId, serviceErrorMessage.ErrorMessage);
             }
 
