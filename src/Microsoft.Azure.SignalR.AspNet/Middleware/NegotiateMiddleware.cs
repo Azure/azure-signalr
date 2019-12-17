@@ -233,7 +233,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 jsonWriter.WritePropertyName("AccessToken");
                 jsonWriter.WriteValue(token);
                 jsonWriter.WritePropertyName("TryWebSockets"); // fix the c# client issue https://github.com/SignalR/SignalR/issues/4435
-                jsonWriter.WriteValue("true");
+                jsonWriter.WriteValue(true);
                 jsonWriter.WriteEndObject();
             }
 
