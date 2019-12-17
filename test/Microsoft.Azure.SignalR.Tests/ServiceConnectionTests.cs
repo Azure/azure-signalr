@@ -135,8 +135,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 logChecker: logs =>
                 {
                     Assert.Equal(2, logs.Count);
-                    Assert.Equal("ApplicationTaskFailed", logs[0].Write.EventId.Name);
-                    Assert.Equal("SendLoopStopped", logs[1].Write.EventId.Name);
+                    Assert.Equal("SendLoopStopped", logs[0].Write.EventId.Name);
+                    Assert.Equal("ApplicationTaskFailed", logs[1].Write.EventId.Name);
                     return true;
                 }))
             {
@@ -175,6 +175,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 errorTcs.SetException(new InvalidOperationException("error operation"));
 
+                await clientConnection.LifetimeTask.OrTimeout();
+
                 // Should complete the connection when application throws
                 await ccm.WaitForClientConnectionRemovalAsync(clientConnectionId).OrTimeout();
 
@@ -197,7 +199,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 logChecker: logs =>
                 {
                     Assert.Single(logs);
-                    Assert.Equal("ApplicationTaskCancelled", logs[0].Write.EventId.Name);
+                    Assert.Equal("ApplicationTaskFailed", logs[0].Write.EventId.Name);
                     return true;
                 }))
             {
@@ -217,7 +219,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 builder.UseConnectionHandler<EndlessConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    Guid.NewGuid().ToString("N"), null, null, ServiceConnectionType.Default, 500);
+                    Guid.NewGuid().ToString("N"), 
+                    null, null, ServiceConnectionType.Default, 1000);
 
                 var connectionTask = connection.StartAsync();
 
@@ -234,8 +237,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
 
+                await clientConnection.LifetimeTask.OrTimeout();
+
                 // 500ms for application task to timeout
-                await connectionTask.OrTimeout(600);
+                await connectionTask.OrTimeout(1000);
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
                 Assert.Empty(ccm.ClientConnections);
 
@@ -251,7 +256,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 {
                     Assert.Equal(2, logs.Count);
                     Assert.Equal("SendLoopStopped", logs[0].Write.EventId.Name);
-                    Assert.Equal("ApplicationTaskCancelled", logs[1].Write.EventId.Name);
+                    Assert.Equal("ApplicationTaskFailed", logs[1].Write.EventId.Name);
                     return true;
                 }))
             {
@@ -308,7 +313,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 logChecker: logs =>
                 {
                     Assert.Single(logs);
-                    Assert.Equal("ApplicationTaskCancelled", logs[0].Write.EventId.Name);
+                    Assert.Equal("ApplicationTaskFailed", logs[0].Write.EventId.Name);
                     return true;
                 }))
             {
