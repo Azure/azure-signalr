@@ -78,11 +78,6 @@ namespace Microsoft.Azure.SignalR
             ConnectionId = serviceMessage.ConnectionId;
             User = serviceMessage.GetUserPrincipal();
 
-            if (serviceMessage.Headers.TryGetValue(Constants.AsrsMigrateIn, out _))
-            {
-                IsMigrated = true;
-            }
-
             // Create the Duplix Pipeline for the virtual connection
             transportPipeOptions = transportPipeOptions ?? DefaultPipeOptions;
             appPipeOptions = appPipeOptions ?? DefaultPipeOptions;
@@ -92,6 +87,13 @@ namespace Microsoft.Azure.SignalR
             Application = pair.Transport;
 
             HttpContext = BuildHttpContext(serviceMessage);
+
+            if (serviceMessage.Headers.TryGetValue(Constants.AsrsMigrateIn, out var val))
+            {
+                IsMigrated = true;
+                HttpContext.Items.Add(Constants.AsrsMigrateIn, val);
+            }
+
             configureContext?.Invoke(HttpContext);
 
             Features = BuildFeatures();

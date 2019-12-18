@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
+using System.Reflection;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -315,7 +316,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async void ServiceConnectionShouldIgnoreFirstHandshakeResponse()
+        public async void TestServiceConnectionForMigratedIn()
         {
             var factory = new TestClientConnectionFactory();
             var connection = MockServiceConnection(null, factory);
@@ -331,6 +332,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(1, factory.Connections.Count);
             var context = factory.Connections[0];
             Assert.True(context.IsMigrated);
+            Assert.True(context.HttpContext.Items.ContainsKey(Constants.AsrsMigrateIn));
 
             var message = new AspNetCore.SignalR.Protocol.HandshakeResponseMessage("");
             HandshakeProtocol.WriteResponseMessage(message, context.Transport.Output);
@@ -343,6 +345,23 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.False(task.IsCompleted);
             // but the `migrated` status should remain False (readonly)
             Assert.True(context.IsMigrated);
+        }
+
+        [Fact]
+        public async void TestServiceConnectionForMigratedOut()
+        {
+            var factory = new TestClientConnectionFactory();
+
+            var connection = MockServiceConnection(null, factory);
+
+            // create a connection with migration header.
+            await connection.OnClientConnectedAsyncForTest(new OpenConnectionMessage("foo", new Claim[0]));
+
+            var context = factory.Connections[0];
+
+            await connection.OnClientDisconnectedAsyncForTest(new CloseConnectionMessage(context.ConnectionId));
+
+            Assert.True(context.HttpContext.Items.ContainsKey(Constants.AsrsMigrateOut));
         }
 
         private sealed class TestConnectionHandler : ConnectionHandler
@@ -388,7 +407,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 clientConnectionFactory,
                 Guid.NewGuid().ToString("N"),
                 null,
-                null
+                null,
+                enableConnectionMigration: true
             )
             {
             }
@@ -396,6 +416,11 @@ namespace Microsoft.Azure.SignalR.Tests
             public Task OnClientConnectedAsyncForTest(OpenConnectionMessage message)
             {
                 return base.OnClientConnectedAsync(message);
+            }
+
+            public Task OnClientDisconnectedAsyncForTest(CloseConnectionMessage message)
+            {
+                return base.OnClientDisconnectedAsync(message);
             }
         }
 

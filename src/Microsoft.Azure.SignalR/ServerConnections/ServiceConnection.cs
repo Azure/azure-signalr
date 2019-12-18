@@ -52,7 +52,9 @@ namespace Microsoft.Azure.SignalR
                                  HubServiceEndpoint endpoint,
                                  IServiceMessageHandler serviceMessageHandler,
                                  ServiceConnectionType connectionType = ServiceConnectionType.Default,
-                                 int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds) :
+                                 int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds,
+                                 bool enableConnectionMigration = false
+            ) :
             base(serviceProtocol, connectionId, endpoint, serviceMessageHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>())
         {
             _clientConnectionManager = clientConnectionManager;
@@ -60,7 +62,7 @@ namespace Microsoft.Azure.SignalR
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
             _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
-            _enableConnectionMigration = false;
+            _enableConnectionMigration = enableConnectionMigration;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -133,11 +135,12 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             var connectionId = closeConnectionMessage.ConnectionId;
+
             if (_enableConnectionMigration && _clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
             {
-                if (!context.HttpContext.Request.Headers.ContainsKey(Constants.AsrsMigrateOut))
+                if (!context.HttpContext.Items.ContainsKey(Constants.AsrsMigrateOut))
                 {
-                    context.HttpContext.Request.Headers.Add(Constants.AsrsMigrateOut, "");
+                    context.HttpContext.Items.Add(Constants.AsrsMigrateOut, "");
                 }
                 // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
                 // Since all user-created messages will be sent to `ServiceConnection` directly.
