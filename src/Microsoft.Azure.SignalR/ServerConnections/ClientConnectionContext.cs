@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
@@ -36,6 +37,7 @@ namespace Microsoft.Azure.SignalR
             useSynchronizationContext: false);
 
         private readonly TaskCompletionSource<object> _connectionEndTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly CancellationTokenSource _abortIncomingCts = new CancellationTokenSource();
         private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
         private readonly CancellationTokenSource _abortApplicationCts = new CancellationTokenSource();
 
@@ -69,6 +71,8 @@ namespace Microsoft.Azure.SignalR
 
         public HttpContext HttpContext { get; set; }
 
+        public CancellationToken IncomingAborted => _abortIncomingCts.Token;
+
         public CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
 
         public CancellationToken ApplicationAborted => _abortApplicationCts.Token;
@@ -95,6 +99,29 @@ namespace Microsoft.Azure.SignalR
             configureContext?.Invoke(HttpContext);
 
             Features = BuildFeatures();
+            IncomingAborted.Register(() => Application.Output.Complete());
+        }
+
+        public async Task WriteMessageAsync(ReadOnlySequence<byte> payload)
+        {
+            if (IncomingAborted.IsCancellationRequested)
+            {
+                throw new OperationCanceledException();
+            }
+
+            if (payload.IsSingleSegment)
+            {
+                // Write the raw connection payload to the pipe let the upstream handle it
+                await Application.Output.WriteAsync(payload.First, IncomingAborted);
+            }
+            else
+            {
+                var position = payload.Start;
+                while (payload.TryGet(ref position, out var memory))
+                {
+                    await Application.Output.WriteAsync(memory, IncomingAborted);
+                }
+            }
         }
 
         public void OnCompleted()
@@ -127,6 +154,21 @@ namespace Microsoft.Azure.SignalR
                 {
                     handler(state);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Cancel the outgoing process
+        /// </summary>
+        public void CancelIncoming(int millisecondsDelay = 0)
+        {
+            if (millisecondsDelay <= 0)
+            {
+                _abortIncomingCts.Cancel();
+            }
+            else
+            {
+                _abortIncomingCts.CancelAfter(millisecondsDelay);
             }
         }
 

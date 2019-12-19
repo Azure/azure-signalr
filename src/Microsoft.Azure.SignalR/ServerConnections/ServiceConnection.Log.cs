@@ -53,6 +53,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _errorSkippingHandshakeResponse =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(23, "ErrorSkippingHandshakeResponse"), "Error while skipping handshake response during migration, the connection will be dropped on the client-side. Error detail: {message}");
 
+            private static readonly Action<ILogger, string, Exception> _dispatchMessageCanceled =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(24, "DispatchMessageCanceled"), "Canceled writing message to {TransportConnectionId}, the connection is about to close.");
+
             public static void FailedToCleanupConnections(ILogger logger, Exception exception)
             {
                 _failedToCleanupConnections(logger, exception);
@@ -76,6 +79,11 @@ namespace Microsoft.Azure.SignalR
             public static void FailToWriteMessageToApplication(ILogger logger, string connectionId, Exception exception)
             {
                 _failToWriteMessageToApplication(logger, connectionId, exception);
+            }
+
+            public static void DispatchMessageCanceled(ILogger logger, string connectionId)
+            {
+                _dispatchMessageCanceled(logger, connectionId, null);
             }
 
             public static void ReceivedMessageForNonExistentConnection(ILogger logger, string connectionId)
