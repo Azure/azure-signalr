@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
@@ -40,6 +41,11 @@ namespace Microsoft.Azure.SignalR
         private readonly CancellationTokenSource _abortApplicationCts = new CancellationTokenSource();
 
         private readonly object _heartbeatLock = new object();
+
+        private readonly object _incomingTaskLock = new object();
+        private bool _incomingCompleted;
+        private Task _ongoingWriting = Task.CompletedTask;
+
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
         public Task CompleteTask => _connectionEndTcs.Task;
@@ -95,6 +101,63 @@ namespace Microsoft.Azure.SignalR
             configureContext?.Invoke(HttpContext);
 
             Features = BuildFeatures();
+        }
+
+        public async Task CompleteIncoming()
+        {
+            Application.Output.CancelPendingFlush();
+            Task ongoingWriting;
+            lock (_incomingTaskLock)
+            {
+                _incomingCompleted = true;
+                ongoingWriting = _ongoingWriting;
+            }
+
+            await ongoingWriting;
+
+            Application.Output.Complete();
+        }
+
+        public async Task WriteMessageAsync(ReadOnlySequence<byte> payload)
+        {
+            if (Volatile.Read(ref _incomingCompleted))
+            {
+                return;
+            }
+
+            lock (_incomingTaskLock)
+            {
+                if (_incomingCompleted)
+                {
+                    return;
+                }
+
+                _ongoingWriting = WriteMessageAsyncCore(payload);
+            }
+
+            await _ongoingWriting;
+        }
+
+        private async Task WriteMessageAsyncCore(ReadOnlySequence<byte> payload)
+        {
+            if (payload.IsSingleSegment)
+            {
+                // Write the raw connection payload to the pipe let the upstream handle it
+                await Application.Output.WriteAsync(payload.First);
+            }
+            else
+            {
+                var position = payload.Start;
+                while (payload.TryGet(ref position, out var memory))
+                {
+                    var result = await Application.Output.WriteAsync(memory);
+                    if (result.IsCanceled)
+                    {
+                        // IsCanceled when CancelPendingFlush is called
+                        break;
+                    }
+                }
+            }
         }
 
         public void OnCompleted()
