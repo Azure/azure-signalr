@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
@@ -31,6 +32,10 @@ namespace Microsoft.Azure.SignalR
                                               IConnectionHeartbeatFeature,
                                               IHttpContextFeature
     {
+        private const int WritingState = 1;
+        private const int CompletingState = 2;
+        private const int IdleState = 0;
+
         private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
             resumeWriterThreshold: 0,
             readerScheduler: PipeScheduler.ThreadPool,
@@ -40,11 +45,11 @@ namespace Microsoft.Azure.SignalR
         private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
         private readonly CancellationTokenSource _abortApplicationCts = new CancellationTokenSource();
 
-        private readonly object _heartbeatLock = new object();
+        private readonly TaskCompletionSource<object> _writeCompleteTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        private readonly object _incomingTaskLock = new object();
-        private bool _incomingCompleted;
-        private Task _ongoingWriting = Task.CompletedTask;
+        private int _connectionState = IdleState;
+
+        private readonly object _heartbeatLock = new object();
 
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
@@ -105,58 +110,42 @@ namespace Microsoft.Azure.SignalR
 
         public async Task CompleteIncoming()
         {
+            // always set the connection state to completing when this method is called
+            var previousState =
+                Interlocked.Exchange(ref _connectionState, CompletingState);
+            
             Application.Output.CancelPendingFlush();
-            Task ongoingWriting;
-            lock (_incomingTaskLock)
-            {
-                _incomingCompleted = true;
-                ongoingWriting = _ongoingWriting;
-            }
 
-            await ongoingWriting;
+            if (previousState == WritingState)
+            {
+                // there is only when the connection is in writing that there is need to wait for write to complete
+                await _writeCompleteTcs.Task;
+            }
 
             Application.Output.Complete();
         }
-
+        
         public async Task WriteMessageAsync(ReadOnlySequence<byte> payload)
         {
-            if (Volatile.Read(ref _incomingCompleted))
+            var previousState = Interlocked.CompareExchange(ref _connectionState, WritingState, IdleState);
+            
+            // Write should not be called from multiple threads
+            Debug.Assert(previousState != WritingState);
+
+            if (previousState == CompletingState)
             {
+                // already completing, don't write anymore
                 return;
             }
 
-            lock (_incomingTaskLock)
-            {
-                if (_incomingCompleted)
-                {
-                    return;
-                }
+            // Start write
+            await WriteMessageAsyncCore(payload);
 
-                _ongoingWriting = WriteMessageAsyncCore(payload);
-            }
-
-            await _ongoingWriting;
-        }
-
-        private async Task WriteMessageAsyncCore(ReadOnlySequence<byte> payload)
-        {
-            if (payload.IsSingleSegment)
+            // Try to set the connection to idle if it is in writing state, if it is in complete state, complete the tcs
+            previousState = Interlocked.CompareExchange(ref _connectionState, IdleState, WritingState);
+            if (previousState == CompletingState)
             {
-                // Write the raw connection payload to the pipe let the upstream handle it
-                await Application.Output.WriteAsync(payload.First);
-            }
-            else
-            {
-                var position = payload.Start;
-                while (payload.TryGet(ref position, out var memory))
-                {
-                    var result = await Application.Output.WriteAsync(memory);
-                    if (result.IsCanceled)
-                    {
-                        // IsCanceled when CancelPendingFlush is called
-                        break;
-                    }
-                }
+                _writeCompleteTcs.TrySetResult(null);
             }
         }
 
@@ -233,6 +222,28 @@ namespace Microsoft.Azure.SignalR
             features.Set<IConnectionTransportFeature>(this);
             features.Set<IHttpContextFeature>(this);
             return features;
+        }
+
+        private async Task WriteMessageAsyncCore(ReadOnlySequence<byte> payload)
+        {
+            if (payload.IsSingleSegment)
+            {
+                // Write the raw connection payload to the pipe let the upstream handle it
+                await Application.Output.WriteAsync(payload.First);
+            }
+            else
+            {
+                var position = payload.Start;
+                while (payload.TryGet(ref position, out var memory))
+                {
+                    var result = await Application.Output.WriteAsync(memory);
+                    if (result.IsCanceled)
+                    {
+                        // IsCanceled when CancelPendingFlush is called
+                        break;
+                    }
+                }
+            }
         }
 
         private HttpContext BuildHttpContext(OpenConnectionMessage message)
