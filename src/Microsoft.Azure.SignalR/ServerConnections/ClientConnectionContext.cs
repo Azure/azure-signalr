@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR
                                               IHttpContextFeature
     {
         private const int WritingState = 1;
-        private const int CompletingState = 2;
+        private const int CompletedState = 2;
         private const int IdleState = 0;
 
         private static readonly PipeOptions DefaultPipeOptions = new PipeOptions(pauseWriterThreshold: 0,
@@ -112,10 +112,13 @@ namespace Microsoft.Azure.SignalR
         {
             // always set the connection state to completing when this method is called
             var previousState =
-                Interlocked.Exchange(ref _connectionState, CompletingState);
+                Interlocked.Exchange(ref _connectionState, CompletedState);
             
             Application.Output.CancelPendingFlush();
 
+            // If it is idle, complete directly
+            // If it is completing already, complete directly
+            // If it is writing, wait until the write task completes
             if (previousState == WritingState)
             {
                 // there is only when the connection is in writing that there is need to wait for write to complete
@@ -132,20 +135,25 @@ namespace Microsoft.Azure.SignalR
             // Write should not be called from multiple threads
             Debug.Assert(previousState != WritingState);
 
-            if (previousState == CompletingState)
+            if (previousState == CompletedState)
             {
                 // already completing, don't write anymore
                 return;
             }
 
-            // Start write
-            await WriteMessageAsyncCore(payload);
-
-            // Try to set the connection to idle if it is in writing state, if it is in complete state, complete the tcs
-            previousState = Interlocked.CompareExchange(ref _connectionState, IdleState, WritingState);
-            if (previousState == CompletingState)
+            try
             {
-                _writeCompleteTcs.TrySetResult(null);
+                // Start write
+                await WriteMessageAsyncCore(payload);
+            }
+            finally
+            {
+                // Try to set the connection to idle if it is in writing state, if it is in complete state, complete the tcs
+                previousState = Interlocked.CompareExchange(ref _connectionState, IdleState, WritingState);
+                if (previousState == CompletedState)
+                {
+                    _writeCompleteTcs.TrySetResult(null);
+                }
             }
         }
 
