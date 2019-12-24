@@ -45,8 +45,6 @@ namespace Microsoft.Azure.SignalR
         private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
         private readonly CancellationTokenSource _abortApplicationCts = new CancellationTokenSource();
 
-        private readonly TaskCompletionSource<object> _writeCompleteTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-
         private int _connectionState = IdleState;
 
         private readonly object _heartbeatLock = new object();
@@ -108,7 +106,7 @@ namespace Microsoft.Azure.SignalR
             Features = BuildFeatures();
         }
 
-        public async Task CompleteIncoming()
+        public void CompleteIncoming()
         {
             // always set the connection state to completing when this method is called
             var previousState =
@@ -118,14 +116,10 @@ namespace Microsoft.Azure.SignalR
 
             // If it is idle, complete directly
             // If it is completing already, complete directly
-            // If it is writing, wait until the write task completes
-            if (previousState == WritingState)
+            if (previousState != WritingState)
             {
-                // there is only when the connection is in writing that there is need to wait for write to complete
-                await _writeCompleteTcs.Task;
+                Application.Output.Complete();
             }
-
-            Application.Output.Complete();
         }
         
         public async Task WriteMessageAsync(ReadOnlySequence<byte> payload)
@@ -152,7 +146,7 @@ namespace Microsoft.Azure.SignalR
                 previousState = Interlocked.CompareExchange(ref _connectionState, IdleState, WritingState);
                 if (previousState == CompletedState)
                 {
-                    _writeCompleteTcs.TrySetResult(null);
+                    Application.Output.Complete();
                 }
             }
         }

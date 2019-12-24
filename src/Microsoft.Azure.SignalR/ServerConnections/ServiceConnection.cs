@@ -372,7 +372,7 @@ namespace Microsoft.Azure.SignalR
 
                 // We're done writing to the application output
                 // Let the connection complete incoming
-                _ = connection.CompleteIncoming();
+                connection.CompleteIncoming();
 
                 var app = connection.ApplicationTask;
 
