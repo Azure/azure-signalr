@@ -85,6 +85,50 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        public async Task TestServiceConnectionErrorCleansAllClients()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var ccm = new TestClientConnectionManager();
+                var ccf = new ClientConnectionFactory();
+                var protocol = new ServiceProtocol();
+                TestConnection transportConnection = null;
+                var connectionFactory = new TestConnectionFactory(conn =>
+                {
+                    transportConnection = conn;
+                    return Task.CompletedTask;
+                });
+                var services = new ServiceCollection();
+                var builder = new ConnectionBuilder(services.BuildServiceProvider());
+                builder.UseConnectionHandler<TestConnectionHandler>();
+                ConnectionDelegate handler = builder.Build();
+                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
+                    Guid.NewGuid().ToString("N"), null, null);
+
+                var connectionTask = connection.StartAsync();
+
+                // completed handshake
+                await connection.ConnectionInitializedTask.OrTimeout();
+                Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
+                var clientConnectionId = Guid.NewGuid().ToString();
+
+                await transportConnection.Application.Output.WriteAsync(
+                    protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
+
+                var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
+                // Cancel pending read to end the server connection
+                transportConnection.Transport.Input.CancelPendingRead();
+
+                // complete reading to end the connection
+                transportConnection.Application.Output.Complete();
+
+                await connectionTask.OrTimeout();
+                Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
+                Assert.Empty(ccm.ClientConnections);
+            }
+        }
+
+        [Fact]
         public async Task TestServiceConnectionWithErrorApplicationTask()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,

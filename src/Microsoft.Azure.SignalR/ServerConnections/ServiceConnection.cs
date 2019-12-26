@@ -75,6 +75,7 @@ namespace Microsoft.Azure.SignalR
 
         protected override async Task CleanupClientConnections(string fromInstanceId = null)
         {
+            // To gracefully complete client connections, let the client itself owns the connection lifetime 
             try
             {
                 if (_connectionIds.Count == 0)
@@ -155,20 +156,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     var payload = connectionDataMessage.Payload;
                     Log.WriteMessageToApplication(Logger, payload.Length, connectionDataMessage.ConnectionId);
-
-                    if (payload.IsSingleSegment)
-                    {
-                        // Write the raw connection payload to the pipe let the upstream handle it
-                        await connection.Application.Output.WriteAsync(payload.First);
-                    }
-                    else
-                    {
-                        var position = payload.Start;
-                        while (connectionDataMessage.Payload.TryGet(ref position, out var memory))
-                        {
-                            await connection.Application.Output.WriteAsync(memory);
-                        }
-                    }
+                    await connection.WriteMessageAsync(payload);
                 }
                 catch (Exception ex)
                 {
@@ -383,7 +371,8 @@ namespace Microsoft.Azure.SignalR
                 connection.AbortOnClose = abortOnClose;
 
                 // We're done writing to the application output
-                connection.Application.Output.Complete();
+                // Let the connection complete incoming
+                connection.CompleteIncoming();
 
                 var app = connection.ApplicationTask;
 
