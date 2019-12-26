@@ -5,9 +5,9 @@ Azure SignalR Service SDK for .NET helps you to instantly build Azure applicatio
 This repository contains the open source subset of the .NET SDK.
 
 ## Build Status
-
-[![Travis build status](https://img.shields.io/travis/Azure/azure-signalr.svg?label=travis-ci&branch=dev&style=flat-square)](https://travis-ci.org/Azure/azure-signalr/branches)
-[![AppVeyor build status](https://img.shields.io/appveyor/ci/vicancy/azure-signalr/dev.svg?label=appveyor&style=flat-square)](https://ci.appveyor.com/project/vicancy/azure-signalr)
+[![Windows](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-Windows/dev?label=Windows)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Windowns)
+[![Ubuntu](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-Ubuntu/dev?label=Ubuntu)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Ubuntu)
+[![OSX](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-OSX/dev?label=OSX)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-OSX)
 
 ## Nuget Packages
 Azure SignalR Service SDK is supporting ASP.NET Core 3.0 from version `1.1.0-*`. Please find package information below.
