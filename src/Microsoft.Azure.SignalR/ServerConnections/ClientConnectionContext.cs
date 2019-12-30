@@ -71,8 +71,6 @@ namespace Microsoft.Azure.SignalR
 
         private volatile bool _abortOnClose = true;
 
-        public Task CompleteTask => _connectionEndTcs.Task;
-
         public bool IsMigrated { get; }
 
         // Send "Abort" to service on close except that Service asks SDK to close
