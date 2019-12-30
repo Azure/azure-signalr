@@ -114,9 +114,9 @@ namespace Microsoft.Azure.SignalR
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
             connection.ServiceConnection = this;
 
-            connection.LifetimeTask = ProcessClientConnectionAsync(connection);
-
             AddClientConnection(connection, message);
+
+            _ = ProcessClientConnectionAsync(connection);
 
             if (connection.IsMigrated)
             {
@@ -180,7 +180,8 @@ namespace Microsoft.Azure.SignalR
                 var app = ProcessIncomingMessageAsync(connection);
 
                 var task = await Task.WhenAny(app, transport);
-                // anyway remove it from the connection list
+
+                // remove it from the connection list
                 RemoveClientConnection(connection.ConnectionId);
 
                 // This is the exception from application
@@ -239,6 +240,7 @@ namespace Microsoft.Azure.SignalR
             catch (Exception e)
             {
                 // When it throws, there must be something wrong
+                connection.OnCompleted();
                 Log.ProcessConnectionFailed(Logger, connection.ConnectionId, e);
             }
         }

@@ -94,7 +94,7 @@ namespace Microsoft.Azure.SignalR
 
         public ClaimsPrincipal User { get; set; }
 
-        public Task LifetimeTask { get; set; }
+        public Task LifetimeTask => _connectionEndTcs.Task;
 
         public ServiceConnectionBase ServiceConnection { get; set; }
 
