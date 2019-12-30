@@ -11,6 +11,21 @@ namespace Microsoft.Azure.SignalR
         private static class Log
         {
             // Category: ServiceConnection
+            private static readonly Action<ILogger, Exception> _waitingForTransport =
+                LoggerMessage.Define(LogLevel.Debug, new EventId(2, "WaitingForTransport"), "Waiting for the transport layer to end.");
+
+            private static readonly Action<ILogger, Exception> _transportComplete =
+                LoggerMessage.Define(LogLevel.Debug, new EventId(2, "TransportComplete"), "Transport completed.");
+
+            private static readonly Action<ILogger, Exception> _closeTimedOut =
+                LoggerMessage.Define(LogLevel.Debug, new EventId(3, "CloseTimedOut"), "Timed out waiting for close message sending to client, aborting the connection.");
+
+            private static readonly Action<ILogger, Exception> _waitingForApplication =
+                LoggerMessage.Define(LogLevel.Debug, new EventId(4, "WaitingForApplication"), "Waiting for the application to end.");
+
+            private static readonly Action<ILogger, Exception> _applicationComplete =
+                LoggerMessage.Define(LogLevel.Debug, new EventId(4, "ApplicationComplete"), "Application task completes.");
+
             private static readonly Action<ILogger, Exception> _failedToCleanupConnections =
                 LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailedToCleanupConnection"), "Failed to clean up client connections.");
 
@@ -52,6 +67,34 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, Exception> _errorSkippingHandshakeResponse =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(23, "ErrorSkippingHandshakeResponse"), "Error while skipping handshake response during migration, the connection will be dropped on the client-side. Error detail: {message}");
+
+            private static readonly Action<ILogger, string, Exception> _processConnectionFailed =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(24, "ProcessConnectionFailed"), "Error processing the connection {TransportConnectionId}.");
+
+            public static void WaitingForTransport(ILogger logger)
+            {
+                _waitingForTransport(logger, null);
+            }
+
+            public static void TransportComplete(ILogger logger)
+            {
+                _transportComplete(logger, null);
+            }
+
+            public static void CloseTimedOut(ILogger logger)
+            {
+                _closeTimedOut(logger, null);
+            }
+
+            public static void WaitingForApplication(ILogger logger)
+            {
+                _waitingForApplication(logger, null);
+            }
+
+            public static void ApplicationComplete(ILogger logger)
+            {
+                _applicationComplete(logger, null);
+            }
 
             public static void FailedToCleanupConnections(ILogger logger, Exception exception)
             {
@@ -116,6 +159,11 @@ namespace Microsoft.Azure.SignalR
             public static void ErrorSkippingHandshakeResponse(ILogger logger, Exception ex)
             {
                 _errorSkippingHandshakeResponse(logger, ex.Message, ex);
+            }
+
+            public static void ProcessConnectionFailed(ILogger logger, string connectionId, Exception exception)
+            {
+                _processConnectionFailed(logger, connectionId, exception);
             }
         }
     }

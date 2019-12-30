@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR
             return connection;
         }
 
-        public Task WhenAllCompleted() => Task.WhenAll(_clientConnections.Select(c => c.Value.CompleteTask));
+        public Task WhenAllCompleted() => Task.WhenAll(_clientConnections.Select(c => c.Value.LifetimeTask));
 
         public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _clientConnections;
     }

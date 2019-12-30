@@ -24,6 +24,24 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR
 {
+    /// <summary>
+    /// The client connection context
+    /// </summary>
+    /// <code>
+    ///   ------------------------- Client Connection-------------------------------                   ------------Service Connection---------
+    ///  |                                      Transport              Application  |                 |   Transport              Application  |
+    ///  | ========================            =============         ============   |                 |  =============         ============   |
+    ///  | |                      |            |   Input   |         |   Output |   |                 |  |   Input   |         |   Output |   |
+    ///  | |      User's          |  /-------  |     |---------------------|    |   |    /-------     |  |     |---------------------|    |   |
+    ///  | |      Delegated       |  \-------  |     |---------------------|    |   |    \-------     |  |     |---------------------|    |   |
+    ///  | |      Handler         |            |           |         |          |   |                 |  |           |         |          |   |
+    ///  | |                      |            |           |         |          |   |                 |  |           |         |          |   |
+    ///  | |                      |  -------\  |     |---------------------|    |   |    -------\     |  |     |---------------------|    |   |
+    ///  | |                      |  -------/  |     |---------------------|    |   |    -------/     |  |     |---------------------|    |   |
+    ///  | |                      |            |   Output  |         |   Input  |   |                 |  |   Output  |         |   Input  |   |
+    ///  | ========================            ============         ============    |                 |  ============         ============    |
+    ///   --------------------------------------------------------------------------                   ---------------------------------------
+    /// </code>
     internal class ClientConnectionContext : ConnectionContext,
                                               IConnectionUserFeature,
                                               IConnectionItemsFeature,
@@ -51,12 +69,16 @@ namespace Microsoft.Azure.SignalR
 
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
-        public Task CompleteTask => _connectionEndTcs.Task;
+        private volatile bool _abortOnClose = true;
 
         public bool IsMigrated { get; }
 
         // Send "Abort" to service on close except that Service asks SDK to close
-        public bool AbortOnClose { get; set; } = true;
+        public bool AbortOnClose
+        {
+            get => _abortOnClose;
+            set => _abortOnClose = value;
+        }
 
         public override string ConnectionId { get; set; }
 
@@ -70,9 +92,7 @@ namespace Microsoft.Azure.SignalR
 
         public ClaimsPrincipal User { get; set; }
 
-        public Task ApplicationTask { get; set; }
-
-        public Task LifetimeTask { get; set; } = Task.CompletedTask;
+        public Task LifetimeTask => _connectionEndTcs.Task;
 
         public ServiceConnectionBase ServiceConnection { get; set; }
 
