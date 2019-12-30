@@ -234,14 +234,16 @@ namespace Microsoft.Azure.SignalR
                     Log.CloseConnection(Logger, connection.ConnectionId);
                 }
 
-                connection.OnCompleted();
                 Log.ConnectedEnding(Logger, connection.ConnectionId);
             }
             catch (Exception e)
             {
                 // When it throws, there must be something wrong
-                connection.OnCompleted();
                 Log.ProcessConnectionFailed(Logger, connection.ConnectionId, e);
+            }
+            finally
+            {
+                connection.OnCompleted();
             }
         }
 
