@@ -70,7 +70,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ServiceProtocolConstants.OpenConnectionMessageType:
                     return CreateOpenConnectionMessage(arrayLength, input, ref startOffset);
                 case ServiceProtocolConstants.CloseConnectionMessageType:
-                    return CreateCloseConnectionMessage(input, ref startOffset);
+                    return CreateCloseConnectionMessage(arrayLength, input, ref startOffset);
                 case ServiceProtocolConstants.ConnectionDataMessageType:
                     return CreateConnectionDataMessage(input, ref startOffset);
                 case ServiceProtocolConstants.MultiConnectionDataMessageType:
@@ -279,7 +279,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 MessagePackBinary.WriteMapHeader(packer, 0);
             }
-
             WriteHeaders(message.Headers, packer);
 
             MessagePackBinary.WriteString(packer, message.QueryString);
@@ -287,10 +286,11 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteCloseConnectionMessage(CloseConnectionMessage message, Stream packer)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
+            MessagePackBinary.WriteArrayHeader(packer, 4);
             MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.CloseConnectionMessageType);
             MessagePackBinary.WriteString(packer, message.ConnectionId);
             MessagePackBinary.WriteString(packer, message.ErrorMessage);
+            WriteHeaders(message.Headers, packer);
         }
 
         private static void WriteConnectionDataMessage(ConnectionDataMessage message, Stream packer)
@@ -562,12 +562,12 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
-        private static CloseConnectionMessage CreateCloseConnectionMessage(byte[] input, ref int offset)
+        private static CloseConnectionMessage CreateCloseConnectionMessage(int arrayLength, byte[] input, ref int offset)
         {
             var connectionId = ReadString(input, ref offset, "connectionId");
             var errorMessage = ReadString(input, ref offset, "errorMessage");
-
-            return new CloseConnectionMessage(connectionId, errorMessage);
+            var headers = arrayLength > 3 ? ReadHeaders(input, ref offset) : new Dictionary<string, StringValues>();
+            return new CloseConnectionMessage(connectionId, errorMessage, headers);
         }
 
         private static ConnectionDataMessage CreateConnectionDataMessage(byte[] input, ref int offset)

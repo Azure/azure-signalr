@@ -15,19 +15,60 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
     {
         private static readonly IServiceProtocol Protocol = new ServiceProtocol();
 
-        public static IEnumerable<object[]> TestDataNames
+        public static IEnumerable<object[]> TestWriteData
         {
             get
             {
-                foreach (var k in TestData.Keys)
+                foreach (var k in TestData.Values)
                 {
                     yield return new object[] { k };
                 }
             }
         }
 
+        public static IEnumerable<object[]> TestParseData
+        {
+            get
+            {
+                foreach (var k in TestCompacityData.Values)
+                {
+                    yield return new object[] { k };
+                }
+                foreach (var k in TestData.Values)
+                {
+                    yield return new object[] { k };
+                }
+            }
+        }
+
+        public static IDictionary<string, ProtocolTestData> TestCompacityData => new[]
+        {
+            new ProtocolTestData(
+                name: "CloseConnection",
+                message: new CloseConnectionMessage("conn3"),
+                binary: "kwWlY29ubjPA"),
+            new ProtocolTestData(
+                name: "CloseConnectionWithError",
+                message: new CloseConnectionMessage("conn4", "Error message."),
+                binary: "kwWlY29ubjSuRXJyb3IgbWVzc2FnZS4="),
+        }.ToDictionary(t => t.Name);
+
         public static IDictionary<string, ProtocolTestData> TestData => new[]
         {
+            new ProtocolTestData(
+                name: "CloseConnection",
+                message: new CloseConnectionMessage("conn3"),
+                binary: "lAWlY29ubjOggA=="),
+            new ProtocolTestData(
+                name: "CloseConnectionWithError",
+                message: new CloseConnectionMessage("conn4", "Error message."),
+                binary: "lAWlY29ubjSuRXJyb3IgbWVzc2FnZS6A"),
+            new ProtocolTestData(
+                name: "CloseConnectionWithHeaders",
+                message: new CloseConnectionMessage("conn4", "Error message.", new Dictionary<string, StringValues>() {
+                    { "foo", "bar" }
+                }),
+                binary: "lAWlY29ubjSuRXJyb3IgbWVzc2FnZS6Bo2Zvb5GjYmFy"),
             new ProtocolTestData(
                 name: "HandshakeRequest",
                 message: new HandshakeRequestMessage(1),
@@ -77,14 +118,6 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "OpenConnectionWithQueryString2",
                 message: new OpenConnectionMessage("conn4", null, new Dictionary<string, StringValues>(), "query1=value1&query2=query2&query3=value3"),
                 binary: "lQSlY29ubjSAgNkpcXVlcnkxPXZhbHVlMSZxdWVyeTI9cXVlcnkyJnF1ZXJ5Mz12YWx1ZTM="),
-            new ProtocolTestData(
-                name: "CloseConnection",
-                message: new CloseConnectionMessage("conn3"),
-                binary: "kwWlY29ubjPA"),
-            new ProtocolTestData(
-                name: "CloseConnectionWithError",
-                message: new CloseConnectionMessage("conn4", "Error message."),
-                binary: "kwWlY29ubjSuRXJyb3IgbWVzc2FnZS4="),
             new ProtocolTestData(
                 name: "ConnectionData",
                 message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}),
@@ -198,11 +231,9 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         }.ToDictionary(t => t.Name);
 
         [Theory]
-        [MemberData(nameof(TestDataNames))]
-        public void ParseMessages(string testDataName)
+        [MemberData(nameof(TestParseData))]
+        public void ParseMessages(ProtocolTestData testData)
         {
-            var testData = TestData[testDataName];
-
             // Verify that the input binary string decodes to the expected MsgPack primitives
             var bytes = Convert.FromBase64String(testData.Binary);
 
@@ -213,11 +244,9 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         }
 
         [Theory]
-        [MemberData(nameof(TestDataNames))]
-        public void WriteMessages(string testDataName)
+        [MemberData(nameof(TestWriteData))]
+        public void WriteMessages(ProtocolTestData testData)
         {
-            var testData = TestData[testDataName];
-
             var bytes = Protocol.GetMessageBytes(testData.Message);
 
             // Unframe the message to check the binary encoding
@@ -311,9 +340,9 @@ Please verify the MsgPack output and update the baseline");
 
         public class ProtocolTestData
         {
-            public string Name { get; }
-            public string Binary { get; }
-            public ServiceMessage Message { get; }
+            public string Name { get; private set; }
+            public string Binary { get; private set; }
+            public ServiceMessage Message { get; private set; }
 
             public ProtocolTestData(string name, ServiceMessage message, string binary)
             {
@@ -321,8 +350,6 @@ Please verify the MsgPack output and update the baseline");
                 Message = message;
                 Binary = binary;
             }
-
-            public override string ToString() => Name;
         }
     }
 }
