@@ -80,24 +80,31 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Initializes a new instance of the <see cref="CloseConnectionMessage"/> class.
         /// </summary>
         /// <param name="connectionId">The connection Id.</param>
-        public CloseConnectionMessage(string connectionId) : this(connectionId, null)
+        /// <param name="errorMessage">Optional error message.</param>
+        /// <param name="headers">A <see cref="IDictionary{TKey,TValue}"/> associated with the connection.</param>
+        public CloseConnectionMessage(string connectionId, string errorMessage, IDictionary<string, StringValues> headers = null) : base(connectionId)
         {
+            ErrorMessage = errorMessage ?? "";
+            Headers = headers ?? new Dictionary<string, StringValues>();
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CloseConnectionMessage"/> class.
+        /// Test only
         /// </summary>
-        /// <param name="connectionId">The connection Id.</param>
-        /// <param name="errorMessage">Optional error message.</param>
-        public CloseConnectionMessage(string connectionId, string errorMessage) : base(connectionId)
+        /// <param name="connectionId"></param>
+        public CloseConnectionMessage(string connectionId) : this(connectionId, "")
         {
-            ErrorMessage = errorMessage;
         }
 
         /// <summary>
         /// Gets or sets the error message.
         /// </summary>
         public string ErrorMessage { get; set; }
+
+        /// <summary>
+        /// Gets or sets the associated headers.
+        /// </summary>
+        public IDictionary<string, StringValues> Headers { get; set; }
     }
 
     /// <summary>
