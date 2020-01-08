@@ -227,20 +227,12 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteHandshakeRequestMessage(HandshakeRequestMessage message, Stream packer)
         {
-            if (message.ConnectionType == 0)
-            {
-                MessagePackBinary.WriteArrayHeader(packer, 2);
-                MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeRequestType);
-                MessagePackBinary.WriteInt32(packer, message.Version);
-            }
-            else
-            {
-                MessagePackBinary.WriteArrayHeader(packer, 4);
-                MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeRequestType);
-                MessagePackBinary.WriteInt32(packer, message.Version);
-                MessagePackBinary.WriteInt32(packer, message.ConnectionType);
-                MessagePackBinary.WriteString(packer, message.Target ?? string.Empty);
-            }
+            MessagePackBinary.WriteArrayHeader(packer, 5);
+            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeRequestType);
+            MessagePackBinary.WriteInt32(packer, message.Version);
+            MessagePackBinary.WriteInt32(packer, message.ConnectionType);
+            MessagePackBinary.WriteString(packer, message.ConnectionType == 0 ? "" : message.Target ?? string.Empty);
+            MessagePackBinary.WriteInt32(packer, (int) message.MigrationLevel);
         }
 
         private static void WriteHandshakeResponseMessage(HandshakeResponseMessage message, Stream packer)
@@ -517,6 +509,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 result.ConnectionType = ReadInt32(input, ref offset, "connectionType");
                 result.Target = ReadString(input, ref offset, "target");
             }
+            result.MigrationLevel = arrayLength >= 5 ? ReadInt32(input, ref offset, "migratableStatus") : 0;
             return result;
         }
 
@@ -553,7 +546,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 var headers = ReadHeaders(input, ref offset);
                 var queryString = ReadString(input, ref offset, "queryString");
-
                 return new OpenConnectionMessage(connectionId, claims, headers, queryString);
             }
             else
