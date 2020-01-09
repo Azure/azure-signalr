@@ -23,11 +23,12 @@ namespace Microsoft.Azure.SignalR
 
         public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
 
-        public MultiEndpointServiceConnectionContainer(string hub,
-                                                       Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
-                                                       IServiceEndpointManager endpointManager,
-                                                       IMessageRouter router,
-                                                       ILoggerFactory loggerFactory)
+        internal MultiEndpointServiceConnectionContainer(
+            string hub,
+            Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
+            IServiceEndpointManager endpointManager,
+            IMessageRouter router,
+            ILoggerFactory loggerFactory)
         {
             if (generator == null)
             {
@@ -57,7 +58,6 @@ namespace Microsoft.Azure.SignalR
             int count,
             IServiceEndpointManager endpointManager,
             IMessageRouter router,
-            IServerNameProvider nameProvider,
             ILoggerFactory loggerFactory
             ) : this(
                 hub,
