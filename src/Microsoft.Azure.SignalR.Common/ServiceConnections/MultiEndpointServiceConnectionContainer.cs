@@ -13,15 +13,17 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class MultiEndpointServiceConnectionContainer : IServiceConnectionContainer
+    internal class MultiEndpointServiceConnectionContainer : IMultiEndpointServiceConnectionContainer
     {
         private readonly IMessageRouter _router;
         private readonly ILogger _logger;
         private readonly IServiceConnectionContainer _inner;
 
-        private IReadOnlyList<HubServiceEndpoint> _endpoints;
+        private IReadOnlyList<HubServiceEndpoint> _hubEndpoints { get; }
 
         public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
+
+        private bool _needRouter => _hubEndpoints.Count > 1;
 
         public MultiEndpointServiceConnectionContainer(string hub,
                                                        Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
@@ -37,17 +39,18 @@ namespace Microsoft.Azure.SignalR
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
 
             // provides a copy to the endpoint per container
-            _endpoints = endpointManager.GetEndpoints(hub);
+            _hubEndpoints = endpointManager.GetEndpoints(hub);
 
-            if (_endpoints.Count == 1)
+            if (!_needRouter)
             {
-                _inner = generator(_endpoints[0]);
+                _inner = generator(_hubEndpoints[0]);
+                Connections.Add(_hubEndpoints[0], _inner);
             }
             else
             {
                 // router is required when endpoints > 1
                 _router = router ?? throw new ArgumentNullException(nameof(router));
-                Connections = _endpoints.ToDictionary(s => (ServiceEndpoint)s, s => generator(s));
+                Connections = _hubEndpoints.ToDictionary(s => (ServiceEndpoint)s, s => generator(s));
             }
         }
 
@@ -67,6 +70,8 @@ namespace Microsoft.Azure.SignalR
                 loggerFactory
                 )
         {
+            // Always add default router for potential scale needs.
+            _router = router;
         }
 
         public IEnumerable<ServiceEndpoint> GetOnlineEndpoints()
@@ -92,7 +97,7 @@ namespace Microsoft.Azure.SignalR
         {
             get
             {
-                if (_inner != null)
+                if (!_needRouter)
                 {
                     return _inner.ConnectionInitializedTask;
                 }
@@ -101,6 +106,10 @@ namespace Microsoft.Azure.SignalR
                                     select connection.Value.ConnectionInitializedTask);
             }
         }
+
+        public bool IsStable => throw new NotImplementedException();
+
+        public bool IsActive => throw new NotImplementedException();
 
         public Task StartAsync()
         {
@@ -183,7 +192,7 @@ namespace Microsoft.Azure.SignalR
 
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
         {
-            var endpoints = _endpoints;
+            var endpoints = _hubEndpoints;
             switch (message)
             {
                 case BroadcastDataMessage bdm:
@@ -249,6 +258,11 @@ namespace Microsoft.Azure.SignalR
             }
 
             return Task.WhenAll(routed);
+        }
+
+        public bool AddServiceEndpoint(HubServiceEndpoint endpoint, ILoggerFactory loggerFactory)
+        {
+            throw new NotImplementedException();
         }
 
         private static class Log

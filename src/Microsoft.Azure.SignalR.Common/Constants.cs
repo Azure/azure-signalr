@@ -10,6 +10,7 @@ namespace Microsoft.Azure.SignalR
         public const string ServerStickyModeDefaultKey = "Azure:SignalR:ServerStickyMode";
         public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
         public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
+        public const string EndpointsDefaultKey = "Azure:SignalR:Endpoints";
 
         public const int DefaultShutdownTimeoutInSeconds = 30;
 

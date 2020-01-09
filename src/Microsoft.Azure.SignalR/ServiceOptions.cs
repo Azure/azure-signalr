@@ -68,5 +68,10 @@ namespace Microsoft.Azure.SignalR
         /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR Service.
         /// </summary>
         public IWebProxy Proxy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the the flag to enable scale Azure SignalR Endpoints by configuration updates.
+        /// </summary>
+        public bool EnableAutoScale { get; set; } = true;
     }
 }
