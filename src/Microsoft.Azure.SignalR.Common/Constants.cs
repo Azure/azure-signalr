@@ -68,11 +68,13 @@ namespace Microsoft.Azure.SignalR
 
         public static class ServicePingMessageKey
         {
+            public const string StatusKey = "status";
             public const string RebalanceKey = "target";
             public const string OfflineKey = "offline";
             public const string ShutdownKey = "shutdown";
+            public const string ServersKey = "servers";
         }
-
+        
         public static class ServicePingMessageValue
         {
             public const string ShutdownFin = "fin";

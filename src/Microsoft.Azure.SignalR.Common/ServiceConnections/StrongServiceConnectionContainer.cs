@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.SignalR
 
         public override Task HandlePingAsync(PingMessage pingMessage)
         {
-            if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.RebalanceKey, out string target) && !string.IsNullOrEmpty(target))
+            if (RuntimeServicePingMessage.TryGetRebalance(pingMessage, out var target) && !string.IsNullOrEmpty(target))
             {
                 var connection = CreateOnDemandServiceConnection();
                 return StartCoreAsync(connection, target);

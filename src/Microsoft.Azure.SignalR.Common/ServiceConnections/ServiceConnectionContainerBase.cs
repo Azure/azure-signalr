@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,9 +16,10 @@ namespace Microsoft.Azure.SignalR
     internal abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler, IDisposable
     {
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
+        private static readonly TimeSpan DefaultGetServiceStatusInterval = TimeSpan.FromSeconds(10);
+        private static readonly long DefaultGetServiceStatusTicks = DefaultGetServiceStatusInterval.Seconds * Stopwatch.Frequency;
         private static TimeSpan ReconnectInterval =>
             TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackOffInternalInMilliseconds));
-
         private static TimeSpan RemoveFromServiceTimeout = TimeSpan.FromSeconds(3);
 
         private readonly BackOffPolicy _backOffPolicy = new BackOffPolicy();
@@ -28,16 +30,17 @@ namespace Microsoft.Azure.SignalR
 
         private readonly AckHandler _ackHandler;
 
+        private readonly TimerAwaitable _timer;
+
         private volatile List<IServiceConnection> _fixedServiceConnections;
 
         private volatile ServiceConnectionStatus _status;
 
         private volatile bool _terminated = false;
 
-        private static readonly PingMessage _shutdownFinMessage = new PingMessage()
-        {
-            Messages = new string[2] { Constants.ServicePingMessageKey.ShutdownKey, Constants.ServicePingMessageValue.ShutdownFin }
-        };
+        private long _lastSendTimestamp = 0;
+
+        private static readonly PingMessage _shutdownFinMessage = RuntimeServicePingMessage.GetFinPingMessage();
 
         protected ILogger Logger { get; }
 
@@ -56,6 +59,18 @@ namespace Microsoft.Azure.SignalR
         public HubServiceEndpoint Endpoint { get; }
 
         public event Action<StatusChange> ConnectionStatusChanged;
+
+        protected HashSet<string> GlobalServerIds { get; set; }
+
+        protected bool HasClients { get; private set; }
+
+        protected long _serverIdsLastUpdated { get; set; }
+
+        private bool _hasActiveClients = false;
+
+        private volatile bool _addingEndpoint = false;
+
+        private volatile bool _removingEndpoint = false;
 
         public ServiceConnectionStatus Status
         {
@@ -114,6 +129,8 @@ namespace Microsoft.Azure.SignalR
             FixedServiceConnections = initial;
             FixedConnectionCount = initial.Count;
             ConnectionStatusChanged += OnStatusChanged;
+
+            _timer = StartServiceStatusPingTimer();
         }
 
         public Task StartAsync() => Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
@@ -145,7 +162,22 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public abstract Task HandlePingAsync(PingMessage pingMessage);
+        public virtual Task HandlePingAsync(PingMessage pingMessage)
+        {
+            if (RuntimeServicePingMessage.TryGetStatus(pingMessage, out var status))
+            {
+                HasClients = status;
+                Log.ReceivedServiceStatusPing(Logger, status, Endpoint);
+            }
+            else if (RuntimeServicePingMessage.TryGetServerIds(pingMessage, out var serverIds, out var updatedTime))
+            {
+                if (updatedTime > _lastSendTimestamp)
+                {
+                    GlobalServerIds = serverIds;
+                }
+            }
+            return Task.CompletedTask;
+        }
 
         public void HandleAck(AckMessage ackMessage)
         {
@@ -284,8 +316,38 @@ namespace Microsoft.Azure.SignalR
         // Ready for scalable containers
         public void Dispose()
         {
+            _timer.Stop();
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        public virtual Task OfflineAsync()
+        {
+            return Task.WhenAll(FixedServiceConnections.Select(c => RemoveConnectionAsync(c)));
+        }
+
+        public Task StartAddServiceEndpointAsync()
+        {
+            _addingEndpoint = true;
+            return Task.CompletedTask;
+        }
+
+        public Task StopAddServiceEndpointAsync()
+        {
+            _addingEndpoint = false;
+            return Task.CompletedTask;
+        }
+
+        public Task StartRemoveServiceEndpointAsync()
+        {
+            _removingEndpoint = true;
+            return Task.CompletedTask;
+        }
+
+        public Task StopRemoveServiceEndpointAsync()
+        {
+            _removingEndpoint = false;
+            return Task.CompletedTask;
         }
 
         protected virtual void Dispose(bool disposing)
@@ -301,6 +363,25 @@ namespace Microsoft.Azure.SignalR
             return FixedServiceConnections.Any(s => s.Status == ServiceConnectionStatus.Connected)
                 ? ServiceConnectionStatus.Connected
                 : ServiceConnectionStatus.Disconnected;
+        }
+
+        protected async Task WriteFinAsync(IServiceConnection c)
+        {
+            await c.WriteAsync(_shutdownFinMessage);
+        }
+
+        protected async Task RemoveConnectionAsync(IServiceConnection c)
+        {
+            _ = WriteFinAsync(c);
+
+            using var source = new CancellationTokenSource();
+            var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(RemoveFromServiceTimeout, source.Token));
+            source.Cancel();
+
+            if (task != c.ConnectionOfflineTask)
+            {
+                // log
+            }
         }
 
         private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
@@ -350,28 +431,46 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        protected async Task WriteFinAsync(IServiceConnection c)
+        private TimerAwaitable StartServiceStatusPingTimer()
         {
-            await c.WriteAsync(_shutdownFinMessage);
+            Log.StartingServiceStatusPingTimer(Logger, DefaultGetServiceStatusInterval);
+
+            _lastSendTimestamp = Stopwatch.GetTimestamp();
+            var timer = new TimerAwaitable(DefaultGetServiceStatusInterval, DefaultGetServiceStatusInterval);
+            _ = ServiceStatusPingAsync(timer);
+
+            return timer;
         }
 
-        protected async Task RemoveConnectionAsync(IServiceConnection c)
+        private async Task ServiceStatusPingAsync(TimerAwaitable timer)
         {
-            _ = WriteFinAsync(c);
-
-            using var source = new CancellationTokenSource();
-            var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(RemoveFromServiceTimeout, source.Token));
-            source.Cancel();
-
-            if (task != c.ConnectionOfflineTask)
+            using (timer)
             {
-                // log
-            }
-        }
+                timer.Start();
 
-        public virtual Task OfflineAsync()
-        {
-            return Task.WhenAll(FixedServiceConnections.Select(c => RemoveConnectionAsync(c)));
+                while (await timer)
+                {
+                    try
+                    {
+                        // Check if last send time is longer than default keep-alive ticks and then send ping
+                        if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendTimestamp) > DefaultGetServiceStatusTicks)
+                        {
+                            await WriteAsync(RuntimeServicePingMessage.GetStatusPingMessage(true));
+                            // Re-use timer to send get global servers ping when add service endpoint starts
+                            if (_addingEndpoint)
+                            {
+                                await WriteAsync(RuntimeServicePingMessage.GetServersPingMessage());
+                            }
+                            Interlocked.Exchange(ref _lastSendTimestamp, Stopwatch.GetTimestamp());
+                            Log.SentServiceStatusPing(Logger);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Log.FailedSendingServiceStatusPing(Logger, e);
+                    }
+                }
+            }
         }
 
         private static class Log
@@ -382,6 +481,18 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, string, Exception> _endpointOffline =
                 LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(2, "EndpointOffline"), "Hub '{hub}' is now disconnected from '{endpoint}'. Please check log for detailed info.");
 
+            private static readonly Action<ILogger, double, Exception> _startingServiceStatusPingTimer =
+                LoggerMessage.Define<double>(LogLevel.Debug, new EventId(3, "StartingServiceStatusPingTimer"), "Starting service status ping timer. Duration: {KeepAliveInterval:0.00}ms");
+
+            private static readonly Action<ILogger, Exception> _sentServiceStatusPing =
+                LoggerMessage.Define(LogLevel.Debug, new EventId(4, "SentServiceStatusPing"), "Sent a service status ping message to service.");
+
+            private static readonly Action<ILogger, Exception> _failedSendingServiceStatusPing =
+                LoggerMessage.Define(LogLevel.Warning, new EventId(5, "FailedSendingServiceStatusPing"), "Failed sending a service status ping message to service.");
+
+            private static readonly Action<ILogger, bool, ServiceEndpoint, string, Exception> _receivedServiceStatusPing =
+                LoggerMessage.Define<bool, ServiceEndpoint, string>(LogLevel.Debug, new EventId(6, "ReceivedServiceStatusPing"), "Received a service status active={isActive} from {endpoint} for hub {hub}.");
+
             public static void EndpointOnline(ILogger logger, HubServiceEndpoint endpoint)
             {
                 _endpointOnline(logger, endpoint.Hub, endpoint.ToString(), null);
@@ -390,6 +501,26 @@ namespace Microsoft.Azure.SignalR
             public static void EndpointOffline(ILogger logger, HubServiceEndpoint endpoint)
             {
                 _endpointOffline(logger, endpoint.Hub, endpoint.ToString(), null);
+            }
+
+            public static void StartingServiceStatusPingTimer(ILogger logger, TimeSpan keepAliveInterval)
+            {
+                _startingServiceStatusPingTimer(logger, keepAliveInterval.TotalMilliseconds, null);
+            }
+
+            public static void SentServiceStatusPing(ILogger logger)
+            {
+                _sentServiceStatusPing(logger, null);
+            }
+
+            public static void FailedSendingServiceStatusPing(ILogger logger, Exception exception)
+            {
+                _failedSendingServiceStatusPing(logger, exception);
+            }
+
+            public static void ReceivedServiceStatusPing(ILogger logger, bool isActive, HubServiceEndpoint endpoint)
+            {
+                _receivedServiceStatusPing(logger, isActive, endpoint, endpoint.Hub, null);
             }
         }
     }

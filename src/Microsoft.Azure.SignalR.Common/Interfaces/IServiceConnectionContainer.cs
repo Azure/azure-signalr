@@ -3,11 +3,12 @@
 
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Common.Interfaces;
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal interface IServiceConnectionContainer
+    internal interface IServiceConnectionContainer : IServiceEndpointScaleManager
     {
         Task StartAsync();
 

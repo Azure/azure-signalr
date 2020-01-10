@@ -181,6 +181,30 @@ namespace Microsoft.Azure.SignalR
             return tcs.Task.IsCompleted;
         }
 
+        public Task StartAddServiceEndpointAsync()
+        {
+            // for each in connections, do start.
+            return Task.WhenAll(Connections.Select(c => c.Value.StartAddServiceEndpointAsync()));
+        }
+
+        public Task StopAddServiceEndpointAsync()
+        {
+            // for each in connection, do stop.
+            return Task.WhenAll(Connections.Select(c => c.Value.StopAddServiceEndpointAsync()));
+        }
+
+        public Task StartRemoveServiceEndpointAsync()
+        {
+            // for each in connections, do start.
+            return Task.WhenAll(Connections.Select(c => c.Value.StartRemoveServiceEndpointAsync()));
+        }
+
+        public Task StopRemoveServiceEndpointAsync()
+        {
+            // for each in connection, do stop.
+            return Task.WhenAll(Connections.Select(c => c.Value.StopRemoveServiceEndpointAsync()));
+        }
+
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
         {
             var endpoints = _endpoints;

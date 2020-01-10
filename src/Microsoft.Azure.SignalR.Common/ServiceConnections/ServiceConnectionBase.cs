@@ -261,12 +261,12 @@ namespace Microsoft.Azure.SignalR
 
         protected Task OnPingMessageAsync(PingMessage pingMessage)
         {
-            if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.OfflineKey, out var instanceId) && !string.IsNullOrEmpty(instanceId))
+            if (RuntimeServicePingMessage.TryGetOffline(pingMessage, out var instanceId) && !string.IsNullOrEmpty(instanceId))
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
                 return CleanupClientConnections(instanceId);
             } 
-            if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.ShutdownKey, out string val) && val == Constants.ServicePingMessageValue.ShutdownFinAck)
+            if (RuntimeServicePingMessage.IsFinAck(pingMessage))
             {
                 _serviceConnectionOfflineTcs.TrySetResult(null);
                 return Task.CompletedTask;
