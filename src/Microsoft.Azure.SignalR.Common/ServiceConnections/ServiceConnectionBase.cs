@@ -27,7 +27,8 @@ namespace Microsoft.Azure.SignalR
         private static readonly long DefaultKeepAliveTicks = DefaultKeepAliveInterval.Seconds * Stopwatch.Frequency;
 
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
-        private readonly HandshakeRequestMessage _handshakeRequest;
+
+        internal readonly HandshakeRequestMessage _handshakeRequest;
 
         private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
 

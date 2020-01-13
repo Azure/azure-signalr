@@ -1,5 +1,7 @@
+using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Azure.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -13,7 +15,11 @@ namespace ChatSample.CoreApp3
         {
             services.AddMvc();
             services.AddSignalR()
-                .AddAzureSignalR()
+                .AddAzureSignalR(option =>
+                {
+                    option.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
+                    option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(10);
+                })
                 .AddMessagePackProtocol();
         }
 

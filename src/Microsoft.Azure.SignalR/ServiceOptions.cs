@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR
         /// 1: Only migrate client-connection if server was shutdown gracefully.
         /// 2: Migrate client-connection even if server-connection was accidentally dropped. (Potential data losses)
         /// </summary>
-        internal GracefulShutdownOptions GracefulShutdown { get; set; } = new GracefulShutdownOptions();
+        public GracefulShutdownOptions GracefulShutdown { get; set; } = new GracefulShutdownOptions();
 
         /// <summary>
         /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
