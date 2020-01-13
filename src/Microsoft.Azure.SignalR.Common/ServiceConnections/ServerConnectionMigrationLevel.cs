@@ -1,6 +1,6 @@
 ﻿namespace Microsoft.Azure.SignalR
 {
-    internal enum ServerConnectionMigrationLevel
+    public enum ServerConnectionMigrationLevel
     {
         Off = 0,
         ShutdownOnly = 1,

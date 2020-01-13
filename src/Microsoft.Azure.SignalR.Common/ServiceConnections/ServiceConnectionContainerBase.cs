@@ -215,7 +215,7 @@ namespace Microsoft.Azure.SignalR
 
         private async Task RestartServiceConnectionCoreAsync(int index)
         {
-            Func<Task<bool>> tryNewConnection = async () =>
+            async Task<bool> tryNewConnection()
             {
                 var connection = CreateServiceConnectionCore(InitialConnectionType);
                 ReplaceFixedConnections(index, connection);
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.SignalR
                 await connection.ConnectionInitializedTask;
 
                 return connection.Status == ServiceConnectionStatus.Connected;
-            };
+            }
             await _backOffPolicy.CallProbeWithBackOffAsync(tryNewConnection, GetRetryDelay);
         }
 

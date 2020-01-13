@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly RouteBuilder _routes;
-        private readonly IList<Func<TimeSpan, Task>> _shutdownHooks = new List<Func<TimeSpan, Task>>();
+        private readonly IList<Func<Task>> _shutdownHooks = new List<Func<Task>>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceRouteBuilder"/> class.
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR
 #endif
             if (lifetime != null)
             {
-                // lifetime.ApplicationStopping.Register(Shutdown);
+                lifetime.ApplicationStopping.Register(Shutdown);
             }
         }
 
@@ -81,8 +81,7 @@ namespace Microsoft.Azure.SignalR
 
         private void Shutdown()
         {
-            var timeout = TimeSpan.FromSeconds(30);
-            Task.WaitAll(_shutdownHooks.Select(func => func(timeout)).ToArray());
+            Task.WaitAll(_shutdownHooks.Select(func => func()).ToArray());
         }
     }
 }

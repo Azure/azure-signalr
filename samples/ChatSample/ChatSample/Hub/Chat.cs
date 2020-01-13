@@ -4,6 +4,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR;
 
 namespace ChatSample
 {
@@ -23,12 +24,24 @@ namespace ChatSample
 
         public override async Task OnConnectedAsync()
         {
+            var feature = Context.Features.Get<IConnectionMigrationFeature>();
+            if (feature != null)
+            {
+                Console.WriteLine($"connection was migrated from {feature.MigrateFrom}");
+            }
+
             Console.WriteLine($"{Context.ConnectionId} connected.");
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception e)
         {
+            var feature = Context.Features.Get<IConnectionMigrationFeature>();
+            if (feature != null)
+            {
+                Console.WriteLine($"connection has been migrated to {feature.MigrateTo}");
+            }
+
             Console.WriteLine($"{Context.ConnectionId} disconnected.");
             await base.OnDisconnectedAsync(e);
         }

@@ -96,6 +96,7 @@ namespace Microsoft.Azure.SignalR
             HubServiceEndpoint endpoint,
             IServiceMessageHandler serviceMessageHandler,
             ServiceConnectionType connectionType,
+            ServerConnectionMigrationLevel migrationLevel,
             ILogger logger)
         {
             ServiceProtocol = serviceProtocol;
@@ -108,7 +109,7 @@ namespace Microsoft.Azure.SignalR
             if (serviceProtocol != null)
             {
                 _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
-                _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType);
+                _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType, (int)migrationLevel);
             }
 
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));

@@ -33,6 +33,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             new HubServiceEndpoint(),
             null, // TODO replace it with a NullMessageHandler
             ServiceConnectionType.Default,
+            ServerConnectionMigrationLevel.Off,
             logger ?? NullLogger.Instance
         )
         {

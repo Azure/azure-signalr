@@ -18,19 +18,24 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var clientManager = new TestClientConnectionManager();
             var serviceManager = new TestServiceConnectionManager<Hub>();
+
+            var options = new TestOptions();
+            options.Value.EnableGracefulShutdown = true;
+            options.Value.ServerShutdownTimeout = TimeSpan.FromSeconds(1);
+
             var dispatcher = new ServiceHubDispatcher<Hub>(
                 null,
                 serviceManager,
                 clientManager,
                 null,
-                new TestOptions(),
+                options,
                 NullLoggerFactory.Instance,
                 new TestRouter(),
                 null,
                 null
             );
 
-            await dispatcher.ShutdownAsync(TimeSpan.FromSeconds(1));
+            await dispatcher.ShutdownAsync();
 
             Assert.True(clientManager.completeTime.Subtract(serviceManager.offlineTime) > TimeSpan.FromMilliseconds(100));
             Assert.True(clientManager.completeTime.Subtract(serviceManager.stopTime) < -TimeSpan.FromMilliseconds(100));
@@ -90,7 +95,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private sealed class TestOptions : IOptions<ServiceOptions>
         {
-            public ServiceOptions Value => new ServiceOptions();
+            public ServiceOptions Value { get; } = new ServiceOptions();
         }
 
         private sealed class TestServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub

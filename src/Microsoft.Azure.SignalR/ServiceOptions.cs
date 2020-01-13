@@ -56,13 +56,13 @@ namespace Microsoft.Azure.SignalR
         /// Specifies if server will shutdown gracefully. 
         /// Default value is false.
         /// </summary>
-        internal bool EnableGracefulShutdown { get; set; } = false;
+        public bool EnableGracefulShutdown { get; set; } = false;
 
         /// <summary>
         /// Specifies the timeout of a graceful shutdown process (in seconds). 
         /// Default value is 30 seconds.
         /// </summary>
-        internal TimeSpan ServerShutdownTimeout { get; set; } = TimeSpan.FromSeconds(Constants.DefaultShutdownTimeoutInSeconds);
+        public TimeSpan ServerShutdownTimeout { get; set; } = TimeSpan.FromSeconds(Constants.DefaultShutdownTimeoutInSeconds);
 
         /// <summary>
         /// Specifies if the client-connection assigned to this server can be migrated to another server.
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.SignalR
         /// 1: Only migrate client-connection if server was shutdown gracefully.
         /// 2: Migrate client-connection even if server-connection was accidentally dropped. (Potential data losses)
         /// </summary>
-        internal ServerConnectionMigrationLevel MigrationLevel { get; set; } = ServerConnectionMigrationLevel.Off;
+        public ServerConnectionMigrationLevel MigrationLevel { get; set; } = ServerConnectionMigrationLevel.Off;
 
         /// <summary>
         /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
