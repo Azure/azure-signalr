@@ -6,16 +6,12 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal interface IServiceScaleManager
+    public interface IServiceScaleManager
     {
-        void AddMultipleEndpointServiceConnectionContainer(IMultiEndpointServiceConnectionContainer container);
-
-        IMultiEndpointServiceConnectionContainer GetMultipleEndpointServiceConnectionContainer(string hub);
-
-        IReadOnlyList<string> GetHubs();
-
         Task AddServiceEndpoint(ServiceEndpoint endpoint);
 
         Task RemoveServiceEndpoint(ServiceEndpoint endpoint);
+
+        IEnumerable<ServiceEndpoint> GetServiceEndpoints(string hub);
     }
 }

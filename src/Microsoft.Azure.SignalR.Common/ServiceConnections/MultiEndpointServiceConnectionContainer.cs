@@ -15,13 +15,16 @@ namespace Microsoft.Azure.SignalR
 {
     internal class MultiEndpointServiceConnectionContainer : IMultiEndpointServiceConnectionContainer
     {
+        private readonly int _connectionCount;
         private readonly IMessageRouter _router;
         private readonly ILogger _logger;
+        private readonly ILoggerFactory _loggerFactory;
         private readonly IServiceConnectionContainer _inner;
+        private readonly IServiceConnectionFactory _serviceConnectionFactory;
 
         private IReadOnlyList<HubServiceEndpoint> _hubEndpoints { get; }
 
-        public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
+        public Dictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; }
 
         private bool _needRouter => _hubEndpoints.Count > 1;
 
@@ -36,6 +39,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(generator));
             }
 
+            _loggerFactory = loggerFactory;
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
 
             // provides a copy to the endpoint per container
@@ -44,13 +48,13 @@ namespace Microsoft.Azure.SignalR
             if (!_needRouter)
             {
                 _inner = generator(_hubEndpoints[0]);
-                Connections.Add(_hubEndpoints[0], _inner);
+                ConnectionContainers.Add(_hubEndpoints[0], _inner);
             }
             else
             {
                 // router is required when endpoints > 1
                 _router = router ?? throw new ArgumentNullException(nameof(router));
-                Connections = _hubEndpoints.ToDictionary(s => (ServiceEndpoint)s, s => generator(s));
+                ConnectionContainers = _hubEndpoints.ToDictionary(s => (ServiceEndpoint)s, s => generator(s));
             }
         }
 
@@ -72,11 +76,13 @@ namespace Microsoft.Azure.SignalR
         {
             // Always add default router for potential scale needs.
             _router = router;
+            _connectionCount = count;
+            _serviceConnectionFactory = serviceConnectionFactory;
         }
 
         public IEnumerable<ServiceEndpoint> GetOnlineEndpoints()
         {
-            return Connections.Keys.Where(s => s.Online);
+            return ConnectionContainers.Keys.Where(s => s.Online);
         }
 
         private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, HubServiceEndpoint endpoint, int count, ILoggerFactory loggerFactory)
@@ -102,14 +108,16 @@ namespace Microsoft.Azure.SignalR
                     return _inner.ConnectionInitializedTask;
                 }
 
-                return Task.WhenAll(from connection in Connections
+                return Task.WhenAll(from connection in ConnectionContainers
                                     select connection.Value.ConnectionInitializedTask);
             }
         }
 
-        public bool IsStable => throw new NotImplementedException();
+        public HashSet<string> GlobalServerIds => throw new NotImplementedException();
 
-        public bool IsActive => throw new NotImplementedException();
+        public bool HasClients => throw new NotImplementedException();
+
+        public bool IsStable => throw new NotImplementedException();
 
         public Task StartAsync()
         {
@@ -118,7 +126,7 @@ namespace Microsoft.Azure.SignalR
                 return _inner.StartAsync();
             }
 
-            return Task.WhenAll(Connections.Select(s =>
+            return Task.WhenAll(ConnectionContainers.Select(s =>
             {
                 Log.StartingConnection(_logger, s.Key.Endpoint);
                 return s.Value.StartAsync();
@@ -132,7 +140,7 @@ namespace Microsoft.Azure.SignalR
                 return _inner.StopAsync();
             }
 
-            return Task.WhenAll(Connections.Select(s =>
+            return Task.WhenAll(ConnectionContainers.Select(s =>
             {
                 Log.StoppingConnection(_logger, s.Key.Endpoint);
                 return s.Value.StopAsync();
@@ -147,7 +155,7 @@ namespace Microsoft.Azure.SignalR
             }
             else
             {
-                return Task.WhenAll(Connections.Select(c => c.Value.OfflineAsync()));
+                return Task.WhenAll(ConnectionContainers.Select(c => c.Value.OfflineAsync()));
             }
         }
 
@@ -190,6 +198,39 @@ namespace Microsoft.Azure.SignalR
             return tcs.Task.IsCompleted;
         }
 
+        public async Task<bool> TryAddServiceEndpoint(HubServiceEndpoint endpoint)
+        {
+            try
+            {
+                var container = CreateContainer(_serviceConnectionFactory, endpoint, _connectionCount, _loggerFactory);
+                ConnectionContainers.Add(endpoint, container);
+                await container.StartAsync();
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> TryRemoveServiceEndpoint(HubServiceEndpoint endpoint)
+        {
+            if (ConnectionContainers.TryGetValue(endpoint, out var container))
+            {
+                try
+                {
+                    await container.StopAsync();
+                    ConnectionContainers.Remove(endpoint);
+                    return true;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
         {
             var endpoints = _hubEndpoints;
@@ -223,7 +264,7 @@ namespace Microsoft.Azure.SignalR
             var routed = GetRoutedEndpoints(serviceMessage)?
                 .Select(endpoint =>
                 {
-                    if (Connections.TryGetValue(endpoint, out var connection))
+                    if (ConnectionContainers.TryGetValue(endpoint, out var connection))
                     {
                         return (e: endpoint, c: connection);
                     }
@@ -258,11 +299,6 @@ namespace Microsoft.Azure.SignalR
             }
 
             return Task.WhenAll(routed);
-        }
-
-        public bool AddServiceEndpoint(HubServiceEndpoint endpoint, ILoggerFactory loggerFactory)
-        {
-            throw new NotImplementedException();
         }
 
         private static class Log

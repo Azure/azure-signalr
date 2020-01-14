@@ -64,19 +64,31 @@ namespace Microsoft.Azure.SignalR
             }).ToArray());
         }
 
-        public void AddServiceEndpoint(ServiceEndpoint endpoint)
+        public void AddServiceEndpointToNegotiation(ServiceEndpoint endpoint)
         {
-            throw new NotImplementedException();
+            foreach (var hubEndpoints in _endpointsPerHub)
+            {
+                var provider = GetEndpointProvider(endpoint);
+                var hubServiceEndpoint = new HubServiceEndpoint(hubEndpoints.Key, provider, endpoint);
+                var updatedHubEndpoints = hubEndpoints.Value.Append(hubServiceEndpoint).ToArray();
+                _endpointsPerHub.TryUpdate(hubEndpoints.Key, updatedHubEndpoints, hubEndpoints.Value);
+            }
         }
 
-        public void RemoveServiceEndpoint(ServiceEndpoint endpoint)
+        public void RemoveServiceEndpointFromNegotiation(ServiceEndpoint endpoint)
         {
-            throw new NotImplementedException();
+            foreach (var hubEndpoints in _endpointsPerHub)
+            {
+                // Make ConnectionString the key to match existing endpoints
+                var updatedHubEndpoints = hubEndpoints.Value.Where(e => e.ConnectionString != endpoint.ConnectionString).ToArray();
+                _endpointsPerHub.TryUpdate(hubEndpoints.Key, updatedHubEndpoints, hubEndpoints.Value);
+            }
         }
 
         public HubServiceEndpoint GenerateHubServiceEndpoint(string hub, ServiceEndpoint endpoint)
         {
-            throw new NotImplementedException();
+            var provider = GetEndpointProvider(endpoint);
+            return new HubServiceEndpoint(hub, provider, endpoint);
         }
 
         private static IEnumerable<ServiceEndpoint> GetEndpoints(IServiceEndpointOptions options)

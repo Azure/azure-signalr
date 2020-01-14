@@ -13,9 +13,9 @@ namespace Microsoft.Azure.SignalR
 
         IReadOnlyList<HubServiceEndpoint> GetEndpoints(string hub);
 
-        void AddServiceEndpoint(ServiceEndpoint endpoint);
+        void AddServiceEndpointToNegotiation(ServiceEndpoint endpoint);
 
-        void RemoveServiceEndpoint(ServiceEndpoint endpoint);
+        void RemoveServiceEndpointFromNegotiation(ServiceEndpoint endpoint);
 
         HubServiceEndpoint GenerateHubServiceEndpoint(string hub, ServiceEndpoint endpoint);
     }

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
+﻿using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -9,18 +8,14 @@ namespace Microsoft.Azure.SignalR
         /// Create IServiceConnectionContainer for new ServiceEndpoint and start server connections
         /// </summary>
         /// <param name="endpoint"></param>
-        /// <param name="loggerFactory"></param>
         /// <returns>add result</returns>
-        bool AddServiceEndpoint(HubServiceEndpoint endpoint, ILoggerFactory loggerFactory);
+        Task<bool> TryAddServiceEndpoint(HubServiceEndpoint endpoint);
 
         /// <summary>
-        /// Label to detect whether New ServiceEndpoint is ready to open route
+        /// Remove existing ServiceEndpoint
         /// </summary>
-        bool IsStable { get; }
-
-        /// <summary>
-        /// Label to detect whether ServiceEndpoint has clients and ready to remove
-        /// </summary>
-        bool IsActive { get; }
+        /// <param name="endpoint"></param>
+        /// <returns>remove result</returns>
+        Task<bool> TryRemoveServiceEndpoint(HubServiceEndpoint endpoint);
     }
 }

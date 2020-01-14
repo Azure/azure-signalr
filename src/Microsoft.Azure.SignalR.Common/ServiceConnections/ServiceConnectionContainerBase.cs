@@ -249,6 +249,12 @@ namespace Microsoft.Azure.SignalR
         public Task ConnectionInitializedTask => Task.WhenAll(from connection in FixedServiceConnections
                                                               select connection.ConnectionInitializedTask);
 
+        public HashSet<string> GlobalServerIds => throw new NotImplementedException();
+
+        public bool HasClients => throw new NotImplementedException();
+
+        public bool IsStable => throw new NotImplementedException();
+
         public virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
             return WriteToRandomAvailableConnection(serviceMessage);
