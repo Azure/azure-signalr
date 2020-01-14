@@ -18,9 +18,11 @@ namespace Microsoft.Azure.SignalR
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
         private static readonly TimeSpan DefaultGetServiceStatusInterval = TimeSpan.FromSeconds(10);
         private static readonly long DefaultGetServiceStatusTicks = DefaultGetServiceStatusInterval.Seconds * Stopwatch.Frequency;
+        // Give 5s(interval) * 24 = 2min window for retry considering abnormal case.
+        private const int MaxRetryRemoveSeverConnection = 24;
         private static TimeSpan ReconnectInterval =>
             TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackOffInternalInMilliseconds));
-        private static TimeSpan RemoveFromServiceTimeout = TimeSpan.FromSeconds(3);
+        private static TimeSpan RemoveFromServiceTimeout = TimeSpan.FromSeconds(5);
 
         private readonly BackOffPolicy _backOffPolicy = new BackOffPolicy();
 
@@ -60,17 +62,17 @@ namespace Microsoft.Azure.SignalR
 
         public event Action<StatusChange> ConnectionStatusChanged;
 
-        protected HashSet<string> GlobalServerIds { get; set; }
+        public HashSet<string> GlobalServerIds { get; private set; }
 
-        protected bool HasClients { get; private set; }
+        public bool HasClients { get; private set; }
+
+        public bool IsStable => throw new NotSupportedException();
 
         protected long _serverIdsLastUpdated { get; set; }
 
         private bool _hasActiveClients = false;
 
         private volatile bool _addingEndpoint = false;
-
-        private volatile bool _removingEndpoint = false;
 
         public ServiceConnectionStatus Status
         {
@@ -171,9 +173,10 @@ namespace Microsoft.Azure.SignalR
             }
             else if (RuntimeServicePingMessage.TryGetServerIds(pingMessage, out var serverIds, out var updatedTime))
             {
-                if (updatedTime > _lastSendTimestamp)
+                if (updatedTime > _serverIdsLastUpdated)
                 {
                     GlobalServerIds = serverIds;
+                    _serverIdsLastUpdated = updatedTime;
                 }
             }
             return Task.CompletedTask;
@@ -340,13 +343,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task StartRemoveServiceEndpointAsync()
         {
-            _removingEndpoint = true;
-            return Task.CompletedTask;
-        }
-
-        public Task StopRemoveServiceEndpointAsync()
-        {
-            _removingEndpoint = false;
+            _ = OfflineAsync();
             return Task.CompletedTask;
         }
 
@@ -372,16 +369,21 @@ namespace Microsoft.Azure.SignalR
 
         protected async Task RemoveConnectionAsync(IServiceConnection c)
         {
-            _ = WriteFinAsync(c);
-
+            var retry = 0;
             using var source = new CancellationTokenSource();
-            var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(RemoveFromServiceTimeout, source.Token));
-            source.Cancel();
-
-            if (task != c.ConnectionOfflineTask)
+            while (retry < MaxRetryRemoveSeverConnection)
             {
-                // log
+                _ = WriteFinAsync(c);
+                var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(RemoveFromServiceTimeout, source.Token));
+                if (task == c.ConnectionOfflineTask)
+                {
+                    source.Cancel();
+                    Log.ReceivedFinAckPing(Logger);
+                    return;
+                }
+                retry++;
             }
+            Log.TimeoutWaitingForFinAck(Logger, retry);
         }
 
         private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
@@ -493,6 +495,12 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, bool, ServiceEndpoint, string, Exception> _receivedServiceStatusPing =
                 LoggerMessage.Define<bool, ServiceEndpoint, string>(LogLevel.Debug, new EventId(6, "ReceivedServiceStatusPing"), "Received a service status active={isActive} from {endpoint} for hub {hub}.");
 
+            private static readonly Action<ILogger, Exception> _receivedFinAckPing =
+                LoggerMessage.Define(LogLevel.Information, new EventId(7, "ReceivedFinAckPing"), "Received FinAck ping.");
+
+            private static readonly Action<ILogger, int, Exception> _timeoutWaitingForFinAck =
+                LoggerMessage.Define<int>(LogLevel.Error, new EventId(8, "TimeoutWaitingForFinAck"), "Fail to receive FinAckPing after retry {retryCount} times.");
+
             public static void EndpointOnline(ILogger logger, HubServiceEndpoint endpoint)
             {
                 _endpointOnline(logger, endpoint.Hub, endpoint.ToString(), null);
@@ -521,6 +529,16 @@ namespace Microsoft.Azure.SignalR
             public static void ReceivedServiceStatusPing(ILogger logger, bool isActive, HubServiceEndpoint endpoint)
             {
                 _receivedServiceStatusPing(logger, isActive, endpoint, endpoint.Hub, null);
+            }
+
+            public static void ReceivedFinAckPing(ILogger logger)
+            {
+                _receivedFinAckPing(logger, null);
+            }
+
+            public static void TimeoutWaitingForFinAck(ILogger logger, int retryCount)
+            {
+                _timeoutWaitingForFinAck(logger, retryCount, null);
             }
         }
     }

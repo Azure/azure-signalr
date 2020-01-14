@@ -12,7 +12,5 @@ namespace Microsoft.Azure.SignalR.Common.Interfaces
         Task StopAddServiceEndpointAsync();
 
         Task StartRemoveServiceEndpointAsync();
-
-        Task StopRemoveServiceEndpointAsync();
     }
 }

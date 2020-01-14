@@ -94,7 +94,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestSimpleServiceConnection(),
             }, e), sem, router, NullLoggerFactory.Instance);
 
-            Assert.Equal(2, container.Connections.Count);
+            Assert.Equal(2, container.ConnectionContainers.Count);
         }
 
         [Fact]
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
-            Assert.Equal(2, container.Connections.Count);
+            Assert.Equal(2, container.ConnectionContainers.Count);
         }
 
         [Fact]

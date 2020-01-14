@@ -19,9 +19,36 @@ namespace Microsoft.Azure.SignalR
         private readonly ILogger _logger;
         private readonly IServiceConnectionContainer _inner;
 
+        private bool _hasClients;
+        private bool _isStable;
+
         private IReadOnlyList<HubServiceEndpoint> _endpoints;
 
-        public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
+        public Dictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; }
+
+        public bool HasClients 
+        {
+            get 
+            { 
+                return _hasClients; 
+            }
+            set
+            {
+                _hasClients = GetGolbalHasClients();
+            }
+        }
+
+        public bool IsStable
+        {
+            get
+            {
+                return _isStable;
+            }
+            set
+            {
+                _isStable = GetGlobalIsStable();
+            }
+        }
 
         public MultiEndpointServiceConnectionContainer(string hub,
                                                        Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
@@ -47,7 +74,7 @@ namespace Microsoft.Azure.SignalR
             {
                 // router is required when endpoints > 1
                 _router = router ?? throw new ArgumentNullException(nameof(router));
-                Connections = _endpoints.ToDictionary(s => (ServiceEndpoint)s, s => generator(s));
+                ConnectionContainers = _endpoints.ToDictionary(s => (ServiceEndpoint)s, s => generator(s));
             }
         }
 
@@ -71,7 +98,7 @@ namespace Microsoft.Azure.SignalR
 
         public IEnumerable<ServiceEndpoint> GetOnlineEndpoints()
         {
-            return Connections.Keys.Where(s => s.Online);
+            return ConnectionContainers.Keys.Where(s => s.Online);
         }
 
         private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, HubServiceEndpoint endpoint, int count, ILoggerFactory loggerFactory)
@@ -97,10 +124,12 @@ namespace Microsoft.Azure.SignalR
                     return _inner.ConnectionInitializedTask;
                 }
 
-                return Task.WhenAll(from connection in Connections
+                return Task.WhenAll(from connection in ConnectionContainers
                                     select connection.Value.ConnectionInitializedTask);
             }
         }
+
+        public HashSet<string> GlobalServerIds => throw new NotSupportedException();
 
         public Task StartAsync()
         {
@@ -109,7 +138,7 @@ namespace Microsoft.Azure.SignalR
                 return _inner.StartAsync();
             }
 
-            return Task.WhenAll(Connections.Select(s =>
+            return Task.WhenAll(ConnectionContainers.Select(s =>
             {
                 Log.StartingConnection(_logger, s.Key.Endpoint);
                 return s.Value.StartAsync();
@@ -123,7 +152,7 @@ namespace Microsoft.Azure.SignalR
                 return _inner.StopAsync();
             }
 
-            return Task.WhenAll(Connections.Select(s =>
+            return Task.WhenAll(ConnectionContainers.Select(s =>
             {
                 Log.StoppingConnection(_logger, s.Key.Endpoint);
                 return s.Value.StopAsync();
@@ -138,7 +167,7 @@ namespace Microsoft.Azure.SignalR
             }
             else
             {
-                return Task.WhenAll(Connections.Select(c => c.Value.OfflineAsync()));
+                return Task.WhenAll(ConnectionContainers.Select(c => c.Value.OfflineAsync()));
             }
         }
 
@@ -183,26 +212,17 @@ namespace Microsoft.Azure.SignalR
 
         public Task StartAddServiceEndpointAsync()
         {
-            // for each in connections, do start.
-            return Task.WhenAll(Connections.Select(c => c.Value.StartAddServiceEndpointAsync()));
+            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StartAddServiceEndpointAsync()));
         }
 
         public Task StopAddServiceEndpointAsync()
         {
-            // for each in connection, do stop.
-            return Task.WhenAll(Connections.Select(c => c.Value.StopAddServiceEndpointAsync()));
+            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StopAddServiceEndpointAsync()));
         }
 
         public Task StartRemoveServiceEndpointAsync()
         {
-            // for each in connections, do start.
-            return Task.WhenAll(Connections.Select(c => c.Value.StartRemoveServiceEndpointAsync()));
-        }
-
-        public Task StopRemoveServiceEndpointAsync()
-        {
-            // for each in connection, do stop.
-            return Task.WhenAll(Connections.Select(c => c.Value.StopRemoveServiceEndpointAsync()));
+            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StartRemoveServiceEndpointAsync()));
         }
 
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
@@ -238,7 +258,7 @@ namespace Microsoft.Azure.SignalR
             var routed = GetRoutedEndpoints(serviceMessage)?
                 .Select(endpoint =>
                 {
-                    if (Connections.TryGetValue(endpoint, out var connection))
+                    if (ConnectionContainers.TryGetValue(endpoint, out var connection))
                     {
                         return (e: endpoint, c: connection);
                     }
@@ -273,6 +293,26 @@ namespace Microsoft.Azure.SignalR
             }
 
             return Task.WhenAll(routed);
+        }
+
+        private bool GetGlobalIsStable()
+        {
+            var serversPerEndpoint = ConnectionContainers.Select(c => c.Value.GlobalServerIds);
+            var baseServers = serversPerEndpoint.FirstOrDefault();
+            foreach (var servers in serversPerEndpoint)
+            {
+                if (!baseServers.SetEquals(servers))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private bool GetGolbalHasClients()
+        {
+            var hasClients = ConnectionContainers.Select(c => c.Value.HasClients);
+            return hasClients.Any(c => c);
         }
 
         private static class Log

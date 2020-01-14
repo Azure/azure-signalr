@@ -117,6 +117,27 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _appConnection.WriteAckableMessageAsync(serviceMessage, cancellationToken);
         }
 
+        public Task StartAddServiceEndpointAsync()
+        {
+            return Task.WhenAll(GetConnections().Select(s => s.StartAddServiceEndpointAsync()));
+        }
+
+        public Task StopAddServiceEndpointAsync()
+        {
+            return Task.WhenAll(GetConnections().Select(s => s.StopAddServiceEndpointAsync()));
+        }
+
+        public Task StartRemoveServiceEndpointAsync()
+        {
+            return Task.WhenAll(GetConnections().Select(s => s.StartRemoveServiceEndpointAsync()));
+        }
+
+        public HashSet<string> GlobalServerIds => throw new NotSupportedException();
+
+        public bool HasClients => throw new NotSupportedException();
+
+        public bool IsStable => throw new NotSupportedException();
+
         private IEnumerable<IServiceConnectionContainer> GetConnections()
         {
             if (_appConnection != null)
