@@ -51,7 +51,15 @@ namespace Microsoft.Azure.SignalR.Management
                         var clientConnectionManager = new ClientConnectionManager();
                         var clientConnectionFactory = new ClientConnectionFactory();
                         ConnectionDelegate connectionDelegate = connectionContext => Task.CompletedTask;
-                        var serviceConnectionFactory = new ServiceConnectionFactory(serviceProtocol, clientConnectionManager, connectionFactory, loggerFactory, connectionDelegate, clientConnectionFactory);
+                        var serviceConnectionFactory = new ServiceConnectionFactory(
+                            serviceProtocol,
+                            clientConnectionManager,
+                            connectionFactory,
+                            loggerFactory,
+                            connectionDelegate,
+                            clientConnectionFactory,
+                            new DefaultServerNameProvider()
+                            );
                         var weakConnectionContainer = new WeakServiceConnectionContainer(
                             serviceConnectionFactory,
                             _serviceManagerOptions.ConnectionCount,

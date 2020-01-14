@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.ServerConnections;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR
@@ -107,11 +108,6 @@ namespace Microsoft.Azure.SignalR
             ConnectionId = serviceMessage.ConnectionId;
             User = serviceMessage.GetUserPrincipal();
 
-            if (serviceMessage.Headers.TryGetValue(Constants.AsrsMigrateIn, out _))
-            {
-                IsMigrated = true;
-            }
-
             // Create the Duplix Pipeline for the virtual connection
             transportPipeOptions = transportPipeOptions ?? DefaultPipeOptions;
             appPipeOptions = appPipeOptions ?? DefaultPipeOptions;
@@ -124,6 +120,11 @@ namespace Microsoft.Azure.SignalR
             configureContext?.Invoke(HttpContext);
 
             Features = BuildFeatures();
+
+            if (serviceMessage.Headers.TryGetValue(Constants.AsrsMigrateFrom, out _))
+            {
+                IsMigrated = true;
+            }
         }
 
         public void CompleteIncoming()

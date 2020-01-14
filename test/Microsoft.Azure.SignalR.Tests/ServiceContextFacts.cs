@@ -171,7 +171,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.False(context.IsMigrated);
 
             open.Headers = new Dictionary<string, StringValues>{
-                { Constants.AsrsMigrateIn, "another-server" }
+                { Constants.AsrsMigrateFrom, "another-server" }
             };
             context = new ClientConnectionContext(open);
             Assert.True(context.IsMigrated);

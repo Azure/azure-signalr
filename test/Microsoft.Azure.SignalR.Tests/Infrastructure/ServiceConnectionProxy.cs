@@ -28,6 +28,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public IServiceMessageHandler ServiceMessageHandler { get; }
 
+        public IServerNameProvider ServerNameProvider { get; }
+
         public ConnectionDelegate ConnectionDelegateCallback { get; }
 
         public ConcurrentDictionary<string, TestConnection> ConnectionContexts { get; } =
@@ -43,14 +45,20 @@ namespace Microsoft.Azure.SignalR.Tests
         private readonly ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>> _waitForServerConnection = new ConcurrentDictionary<int, TaskCompletionSource<ConnectionContext>>();
         private int _connectedServerConnectionCount;
 
-        public ServiceConnectionProxy(ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null,
-            Func<Func<TestConnection, Task>, TestConnectionFactory> connectionFactoryCallback = null, int connectionCount = 1)
+        public ServiceConnectionProxy(
+            ConnectionDelegate callback = null,
+            PipeOptions clientPipeOptions = null,
+            Func<Func<TestConnection, Task>, TestConnectionFactory> connectionFactoryCallback = null,
+            int connectionCount = 1)
         {
             ConnectionFactory = connectionFactoryCallback?.Invoke(ConnectionFactoryCallbackAsync) ?? new TestConnectionFactory(ConnectionFactoryCallbackAsync);
             ClientConnectionManager = new ClientConnectionManager();
             _clientPipeOptions = clientPipeOptions;
             ConnectionDelegateCallback = callback ?? OnConnectionAsync;
 
+            ServerNameProvider = new DefaultServerNameProvider();
+
+            // these two lines should be located in the end of this constructor.
             ServiceConnectionContainer = new StrongServiceConnectionContainer(this, connectionCount, new HubServiceEndpoint("", null, null), NullLogger.Instance);
             ServiceMessageHandler = (StrongServiceConnectionContainer) ServiceConnectionContainer;
         }
@@ -66,6 +74,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 NullLoggerFactory.Instance,
                 ConnectionDelegateCallback,
                 this,
+                ServerNameProvider.GetName(),
                 connectionId,
                 endpoint,
                 serviceMessageHandler,
