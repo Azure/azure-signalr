@@ -253,8 +253,6 @@ namespace Microsoft.Azure.SignalR
 
         public bool HasClients => throw new NotImplementedException();
 
-        public bool IsStable => throw new NotImplementedException();
-
         public virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
             return WriteToRandomAvailableConnection(serviceMessage);

@@ -64,25 +64,33 @@ namespace Microsoft.Azure.SignalR
             }).ToArray());
         }
 
-        public void AddServiceEndpointToNegotiation(ServiceEndpoint endpoint)
+        public void AddServiceEndpointToNegotiation(string hub, ServiceEndpoint endpoint)
         {
-            foreach (var hubEndpoints in _endpointsPerHub)
+            if (_endpointsPerHub.TryGetValue(hub, out var hubEndpoints))
             {
                 var provider = GetEndpointProvider(endpoint);
-                var hubServiceEndpoint = new HubServiceEndpoint(hubEndpoints.Key, provider, endpoint);
-                var updatedHubEndpoints = hubEndpoints.Value.Append(hubServiceEndpoint).ToArray();
-                _endpointsPerHub.TryUpdate(hubEndpoints.Key, updatedHubEndpoints, hubEndpoints.Value);
+                var hubServiceEndpoint = new HubServiceEndpoint(hub, provider, endpoint);
+                var updatedHubEndpoints = hubEndpoints.Append(hubServiceEndpoint).ToArray();
+                _endpointsPerHub.TryUpdate(hub, updatedHubEndpoints, hubEndpoints);
+                return;
             }
+            Log.ServiceEndpointAlreadyExist(_logger, endpoint.Endpoint);
         }
 
-        public void RemoveServiceEndpointFromNegotiation(ServiceEndpoint endpoint)
+        public void RemoveServiceEndpointFromNegotiation(string hub, ServiceEndpoint endpoint)
         {
-            foreach (var hubEndpoints in _endpointsPerHub)
+            if (_endpointsPerHub.TryGetValue(hub, out var hubEndpoints))
             {
-                // Make ConnectionString the key to match existing endpoints
-                var updatedHubEndpoints = hubEndpoints.Value.Where(e => e.ConnectionString != endpoint.ConnectionString).ToArray();
-                _endpointsPerHub.TryUpdate(hubEndpoints.Key, updatedHubEndpoints, hubEndpoints.Value);
+                // Keep those except target endpoint
+                var updatedHubEndpoints = hubEndpoints.Where(e => e.ConnectionString != endpoint.ConnectionString).ToArray();
+                if (!_endpointsPerHub.TryUpdate(hub, updatedHubEndpoints, hubEndpoints))
+                {
+                    Log.FailedToRemoveEndpointFromNegotiationRouter(_logger, endpoint.Endpoint);
+                    
+                }
+                return;
             }
+            Log.ServiceEndpointNotExist(_logger, endpoint.Endpoint);
         }
 
         public HubServiceEndpoint GenerateHubServiceEndpoint(string hub, ServiceEndpoint endpoint)
@@ -122,9 +130,34 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, int, string, string, Exception> _duplicateEndpointFound =
                 LoggerMessage.Define<int, string, string>(LogLevel.Warning, new EventId(1, "DuplicateEndpointFound"), "{count} endpoint configurations to '{endpoint}' found, use '{name}'.");
 
+            private static readonly Action<ILogger, string, Exception> _serviceEndpointAlreadyExist =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(2, "ServiceEndpointAlreadyExists"), "Add Endpoint {endpoint} already exists, skip add to negotiation router.");
+
+            private static readonly Action<ILogger, string, Exception> _serviceEndpointNotExist =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(3, "ServiceEndpointNotExists"), "Remove endpoint {endpoint} not exist, skip remove from negotiation router.");
+
+            private static readonly Action<ILogger, string, Exception> _failedToRemoveEndpointFromNegotiationRouter =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(4, "ServiceEndpointNotExists"), "Failed to remove endpoint {endpoint} from negotiation router.");
+
+
             public static void DuplicateEndpointFound(ILogger logger, int count, string endpoint, string name)
             {
                 _duplicateEndpointFound(logger, count, endpoint, name, null);
+            }
+
+            public static void ServiceEndpointAlreadyExist(ILogger logger, string endpoint)
+            {
+                _serviceEndpointAlreadyExist(logger, endpoint, null);
+            }
+
+            public static void ServiceEndpointNotExist(ILogger logger, string endpoint)
+            {
+                _serviceEndpointNotExist(logger, endpoint, null);
+            }
+
+            public static void FailedToRemoveEndpointFromNegotiationRouter(ILogger logger, string endpoint)
+            {
+                _failedToRemoveEndpointFromNegotiationRouter(logger, endpoint, null);
             }
         }
     }

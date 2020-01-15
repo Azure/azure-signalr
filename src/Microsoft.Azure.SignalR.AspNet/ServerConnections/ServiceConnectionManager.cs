@@ -30,8 +30,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public bool HasClients => throw new NotImplementedException();
 
-        public bool IsStable => throw new NotImplementedException();
-
         public ServiceConnectionManager(string appName, IReadOnlyList<string> hubs)
         {
             _hubs = hubs ?? Array.Empty<string>();

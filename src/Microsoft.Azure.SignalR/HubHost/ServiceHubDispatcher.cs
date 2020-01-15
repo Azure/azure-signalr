@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IEndpointRouter _router;
         private readonly string _hubName;
         private readonly IServerNameProvider _nameProvider;
-        private readonly IMultiEndpointServiceContainerFactory _multiEndpointServiceContainerFactory;
+        private readonly IMultiEndpointServiceContainerManager _multiEndpointServiceContainerManager;
 
         public ServiceHubDispatcher(
             IServiceProtocol serviceProtocol,
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR
             IEndpointRouter router,
             IServerNameProvider nameProvider,
             IClientConnectionFactory clientConnectionFactory,
-            IMultiEndpointServiceContainerFactory multiEndpointServiceContainerFactory)
+            IMultiEndpointServiceContainerManager multiEndpointServiceContainerManager)
         {
             _serviceProtocol = serviceProtocol;
             _serviceConnectionManager = serviceConnectionManager;
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionFactory = clientConnectionFactory;
             _nameProvider = nameProvider;
             _hubName = typeof(THub).Name;
-            _multiEndpointServiceContainerFactory = multiEndpointServiceContainerFactory;
+            _multiEndpointServiceContainerManager = multiEndpointServiceContainerManager;
         }
 
         public void Start(ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.SignalR
             // Simply create a couple of connections which connect to Azure SignalR
             var serviceConnection = GetMultiEndpointServiceConnectionContainer(_hubName, connectionDelegate, contextConfig);
 
-            _multiEndpointServiceContainerFactory.AddMultipleEndpointServiceConnectionContainer(_hubName, serviceConnection);
+            _multiEndpointServiceContainerManager.SaveMultipleEndpointServiceConnectionContainer(_hubName, serviceConnection);
             _serviceConnectionManager.SetServiceConnection(serviceConnection);
 
             Log.StartingConnection(_logger, Name, _options.ConnectionCount);

@@ -24,10 +24,15 @@ namespace Microsoft.Azure.SignalR
 
         Task ConnectionInitializedTask { get; }
 
+        /// <summary>
+        /// Global connected Server Ids get from servers ping result from ASRS
+        /// Invalid for MultiEndpointServiceConnectionContainer
+        /// </summary>
         HashSet<string> GlobalServerIds { get; }
 
+        /// <summary>
+        /// Flag presents whether there's active clients from status ping result
+        /// </summary>
         bool HasClients { get; }
-
-        bool IsStable { get; }
     }
 }

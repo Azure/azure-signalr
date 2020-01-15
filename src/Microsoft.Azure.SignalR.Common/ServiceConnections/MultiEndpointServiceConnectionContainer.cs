@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR
 
         private IReadOnlyList<HubServiceEndpoint> _hubEndpoints { get; }
 
-        public Dictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; }
+        public Dictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; } = new Dictionary<ServiceEndpoint, IServiceConnectionContainer>();
 
         private bool _needRouter => _hubEndpoints.Count > 1;
 
@@ -200,6 +200,11 @@ namespace Microsoft.Azure.SignalR
 
         public async Task<bool> TryAddServiceEndpoint(HubServiceEndpoint endpoint)
         {
+            if (ConnectionContainers.ContainsKey(endpoint))
+            {
+                Log.ServiceEndpointAlreadyExist(_logger, endpoint.Endpoint);
+                return true;
+            }
             try
             {
                 var container = CreateContainer(_serviceConnectionFactory, endpoint, _connectionCount, _loggerFactory);
@@ -207,8 +212,9 @@ namespace Microsoft.Azure.SignalR
                 await container.StartAsync();
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log.FailStartConnectionForNewEndpoint(_logger, endpoint.Endpoint, ex);
                 return false;
             }
         }
@@ -228,6 +234,7 @@ namespace Microsoft.Azure.SignalR
                     return false;
                 }
             }
+            Log.ServiceEndpointNotExist(_logger, endpoint.Endpoint);
             return true;
         }
 
@@ -321,6 +328,16 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _closingConnection =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(6, "ClosingConnection"), "Closing connections for endpoint {endpoint}.");
 
+            private static readonly Action<ILogger, string, Exception> _serviceEndpointAlreadyExist =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(7, "ServiceEndpointAlreadyExists"), "Trying to add endpoint {endpoint} already exists.");
+
+            private static readonly Action<ILogger, string, Exception> _serviceEndpointNotExist =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(8, "ServiceEndpointNotExists"), "Trying to remove endpoint {endpoint} not exist.");
+
+            private static readonly Action<ILogger, string, Exception> _failStartConnectionForNewEndpoint =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(9, "FailStartConnectionForNewEndpoint"), "Fail to create can start server connection for new endpoint {endpoint}");
+
+
             public static void StartingConnection(ILogger logger, string endpoint)
             {
                 _startingConnection(logger, endpoint, null);
@@ -349,6 +366,21 @@ namespace Microsoft.Azure.SignalR
             public static void FailedWritingMessageToEndpoint(ILogger logger, string messageType, string endpoint)
             {
                 _failedWritingMessageToEndpoint(logger, messageType, endpoint, null);
+            }
+
+            public static void ServiceEndpointAlreadyExist(ILogger logger, string endpoint)
+            {
+                _serviceEndpointAlreadyExist(logger, endpoint, null);
+            }
+
+            public static void ServiceEndpointNotExist(ILogger logger, string endpoint)
+            {
+                _serviceEndpointNotExist(logger, endpoint, null);
+            }
+
+            public static void FailStartConnectionForNewEndpoint(ILogger logger, string endpoint, Exception ex)
+            {
+                _failStartConnectionForNewEndpoint(logger, endpoint, ex);
             }
         }
     }
