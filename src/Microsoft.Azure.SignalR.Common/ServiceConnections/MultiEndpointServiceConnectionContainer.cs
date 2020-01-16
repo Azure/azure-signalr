@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IServiceConnectionContainer _inner;
         private readonly IServiceConnectionFactory _serviceConnectionFactory;
 
-        private IReadOnlyList<HubServiceEndpoint> _hubEndpoints { get; }
+        private List<HubServiceEndpoint> _hubEndpoints = new List<HubServiceEndpoint>();
 
         public Dictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; } = new Dictionary<ServiceEndpoint, IServiceConnectionContainer>();
 
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.SignalR
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
 
             // provides a copy to the endpoint per container
-            _hubEndpoints = endpointManager.GetEndpoints(hub);
+            _hubEndpoints = endpointManager.GetEndpoints(hub).ToList();
 
             if (!_needRouter)
             {
@@ -210,8 +210,12 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 var container = CreateContainer(_serviceConnectionFactory, endpoint, _connectionCount, _loggerFactory);
-                ConnectionContainers.Add(endpoint, container);
                 await container.StartAsync();
+
+                // Add to message router after connection setup
+                _hubEndpoints.Add(endpoint);
+                ConnectionContainers.Add(endpoint, container);
+
                 return true;
             }
             catch (Exception ex)
@@ -221,33 +225,29 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public async Task<bool> TryRemoveServiceEndpoint(HubServiceEndpoint endpoint)
+        public async Task RemoveServiceEndpoint(HubServiceEndpoint endpoint, TimeSpan timeout)
         {
             if (ConnectionContainers.TryGetValue(endpoint, out var container))
             {
                 try
                 {
+                    // notify ASRS to remove server connection from service router and disconnect clients
+                    _ = container.OfflineAsync();
+                    // wait for clients disconnect
+                    await WaitForClientsDisconnect(container, endpoint, timeout);
+                    // remove from message router after client disconnects
+                    _hubEndpoints.Remove(endpoint);
+
                     await container.StopAsync();
                     ConnectionContainers.Remove(endpoint);
-                    return true;
+                    return;
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    return false;
+                    Log.FailRemoveConnectionForEndpoint(_logger, endpoint.Endpoint, ex);
                 }
             }
             Log.EndpointNotExists(_logger, endpoint.Endpoint);
-            return true;
-        }
-
-        public bool IsEndpointActive(ServiceEndpoint serviceEndpoint)
-        {
-            if (ConnectionContainers.TryGetValue(serviceEndpoint, out var container))
-            {
-                return container.HasClients;
-            }
-            Log.EndpointNotExists(_logger, serviceEndpoint.Endpoint);
-            return false;
         }
 
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
@@ -320,6 +320,21 @@ namespace Microsoft.Azure.SignalR
             return Task.WhenAll(routed);
         }
 
+        private async Task WaitForClientsDisconnect(IServiceConnectionContainer container, ServiceEndpoint endpoint, TimeSpan timeout)
+        {
+            var startTime = DateTime.UtcNow;
+            while (DateTime.UtcNow - startTime < timeout)
+            {
+                if (!container.HasClients)
+                {
+                    return;
+                }
+                // wait 3 seconds for next try
+                await Task.Delay(3000);
+            }
+            Log.TimeoutWaitingClientsDisconnect(_logger, endpoint.Endpoint, timeout.Minutes);
+        }
+
         private static class Log
         {
             private static readonly Action<ILogger, string, Exception> _startingConnection =
@@ -345,6 +360,12 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, Exception> _failStartConnectionForNewEndpoint =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(8, "FailStartConnectionForNewEndpoint"), "Fail to create can start server connection for new endpoint {endpoint}");
+
+            private static readonly Action<ILogger, string, Exception> _failRemoveConnectionForEndpoint =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(9, "FailRemoveConnectionForEndpoint"), "Fail to create can start server connection for new endpoint {endpoint}");
+            
+            private static readonly Action<ILogger, string, int, Exception> _timeoutWaitingClientsDisconnect =
+                LoggerMessage.Define<string, int>(LogLevel.Error, new EventId(10, "TimeoutWaitingClientsDisconnect"), "Timeout waiting for clients disconnect for {endpoint} in {timeoutMinute} minutes. Check if app configurations are consistant and restart app server.");
 
 
             public static void StartingConnection(ILogger logger, string endpoint)
@@ -385,6 +406,16 @@ namespace Microsoft.Azure.SignalR
             public static void FailStartConnectionForNewEndpoint(ILogger logger, string endpoint, Exception ex)
             {
                 _failStartConnectionForNewEndpoint(logger, endpoint, ex);
+            }
+
+            public static void FailRemoveConnectionForEndpoint(ILogger logger, string endpoint, Exception ex)
+            {
+                _failRemoveConnectionForEndpoint(logger, endpoint, ex);
+            }
+
+            public static void TimeoutWaitingClientsDisconnect(ILogger logger, string endpoint, int timeoutMinute)
+            {
+                _timeoutWaitingClientsDisconnect(logger, endpoint, timeoutMinute, null);
             }
         }
     }

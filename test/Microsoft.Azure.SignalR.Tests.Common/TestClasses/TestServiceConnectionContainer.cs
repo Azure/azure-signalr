@@ -76,17 +76,12 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public Task<bool> TryAddServiceEndpoint(HubServiceEndpoint endpoint)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(true);
         }
 
-        public Task<bool> TryRemoveServiceEndpoint(HubServiceEndpoint endpoint)
+        public Task RemoveServiceEndpoint(ServiceEndpoint endpoint, TimeSpan timeout)
         {
-            throw new NotImplementedException();
-        }
-
-        public bool IsEndpointActive(ServiceEndpoint serviceEndpoint)
-        {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
     }
 }

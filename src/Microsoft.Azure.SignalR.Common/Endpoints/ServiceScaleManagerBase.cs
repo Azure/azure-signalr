@@ -83,37 +83,14 @@ namespace Microsoft.Azure.SignalR
             Log.TimeoutAddingNewEndpoint(_logger, endpoint.Endpoint, endpoint.ToString(), DefaultScaleTimeout.Minutes);
         }
 
-        private async Task WaitForConnectionRemove(IMultiEndpointServiceConnectionContainer container, string hub, ServiceEndpoint endpoint)
-        {
-            var startWait = DateTime.UtcNow;
-            while (DateTime.UtcNow - startWait < DefaultScaleTimeout)
-            {
-                // succeed and return
-                // if (!container.IsEndpointActive(endpoint))
-                // {
-                //      container.TryRemoveServiceEndpoint(endpoint)
-                // }
-                // wait 3s for next try
-                await Task.Delay(3000);
-            }
-            Log.TimeoutRemovingEndpoint(_logger, endpoint.Endpoint, endpoint.ToString(), DefaultScaleTimeout.Minutes);
-        }
-
         private static class Log
         {
             private static readonly Action<ILogger, string, string, int, Exception> _timeoutAddingNewEndpoint =
                 LoggerMessage.Define<string, string, int>(LogLevel.Error, new EventId(1, "TimeoutAddingNewEndpoint"), "Timeout adding new endpoint '{endpoint}', name '{name}' in {timeoutMinute} minutes. Check if app configurations are consistant and restart app server.");
-            
-            private static readonly Action<ILogger, string, string, int, Exception> _timeoutRemovingEndpoint =
-                LoggerMessage.Define<string, string, int>(LogLevel.Error, new EventId(2, "TimeoutRemovingEndpoint"), "Timeout removing endpoint '{endpoint}', name '{name}' in {timeoutMinute} minutes. Check if app configurations are consistant and restart app server.");
 
             public static void TimeoutAddingNewEndpoint(ILogger logger, string endpoint, string name, int timeoutMinute)
             {
                 _timeoutAddingNewEndpoint(logger, endpoint, name, timeoutMinute, null);
-            }
-            public static void TimeoutRemovingEndpoint(ILogger logger, string endpoint, string name, int timeoutMinute)
-            {
-                _timeoutRemovingEndpoint(logger, endpoint, name, timeoutMinute, null);
             }
         }
     }
