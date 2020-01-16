@@ -131,8 +131,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public bool HasClients => throw new NotSupportedException();
 
-        public bool IsStable => throw new NotSupportedException();
-
         private IEnumerable<IServiceConnectionContainer> GetConnections()
         {
             if (_appConnection != null)

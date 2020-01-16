@@ -174,6 +174,7 @@ namespace Microsoft.Azure.SignalR
             {
                 if (updatedTime > _serverIdsLastUpdated)
                 {
+                    // TODO: set empty if timeout?
                     GlobalServerIds = serverIds;
                     _serverIdsLastUpdated = updatedTime;
                 }

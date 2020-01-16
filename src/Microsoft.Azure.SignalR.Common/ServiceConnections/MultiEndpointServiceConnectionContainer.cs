@@ -279,12 +279,6 @@ namespace Microsoft.Azure.SignalR
             return true;
         }
 
-        private bool GetGolbalHasClients()
-        {
-            var hasClients = ConnectionContainers.Select(c => c.Value.HasClients);
-            return hasClients.Any(c => c);
-        }
-
         private static class Log
         {
             private static readonly Action<ILogger, string, Exception> _startingConnection =
