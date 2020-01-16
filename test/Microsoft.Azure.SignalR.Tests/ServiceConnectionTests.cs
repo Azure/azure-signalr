@@ -4,17 +4,15 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO.Pipelines;
 using System.Security.Claims;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Internal;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.ServerConnections;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -50,7 +48,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 builder.UseConnectionHandler<TestConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    Guid.NewGuid().ToString("N"), null, null);
+                                                       "serverId", Guid.NewGuid().ToString("N"), null, null);
 
                 var connectionTask = connection.StartAsync();
 
@@ -106,7 +104,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 builder.UseConnectionHandler<TestConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    Guid.NewGuid().ToString("N"), null, null);
+                                                       "serverId", Guid.NewGuid().ToString("N"), null, null);
 
                 var connectionTask = connection.StartAsync();
 
@@ -162,7 +160,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionDelegate handler = builder.Build();
 
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    Guid.NewGuid().ToString("N"), null, null);
+                                                       "serverId", Guid.NewGuid().ToString("N"), null, null);
 
                 var connectionTask = connection.StartAsync();
 
@@ -222,7 +220,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 builder.UseConnectionHandler<EndlessConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    Guid.NewGuid().ToString("N"), 
+                    "serverId", Guid.NewGuid().ToString("N"),
                     null, null, ServiceConnectionType.Default, 1000);
 
                 var connectionTask = connection.StartAsync();
@@ -252,7 +250,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async void ClientConnectionOutgoingAbortCanEndLifeTime()
+        public async Task ClientConnectionOutgoingAbortCanEndLifeTime()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
                 logChecker: logs =>
@@ -279,7 +277,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 builder.UseConnectionHandler<EndlessConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    Guid.NewGuid().ToString("N"), null, null, ServiceConnectionType.Default, 500);
+                                                       "serverId", Guid.NewGuid().ToString("N"), null, null,
+                                                       ServiceConnectionType.Default, 500);
 
                 var connectionTask = connection.StartAsync();
 
@@ -310,7 +309,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async void ClientConnectionContextAbortCanSendOutCloseMessage()
+        public async Task ClientConnectionContextAbortCanSendOutCloseMessage()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Trace, expectedErrors: c => true,
                 logChecker: logs =>
@@ -337,7 +336,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionDelegate handler = builder.Build();
 
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    Guid.NewGuid().ToString("N"), null, null, ServiceConnectionType.Default, 500);
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, ServiceConnectionType.Default, 500);
 
                 var connectionTask = connection.StartAsync();
 
@@ -375,7 +374,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async void ClientConnectionLastWillCanSendOut()
+        public async Task ClientConnectionLastWillCanSendOut()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
                 logChecker: logs =>
@@ -401,7 +400,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 builder.UseConnectionHandler<EndlessConnectionHandler>();
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
-                    Guid.NewGuid().ToString("N"), null, null, ServiceConnectionType.Default, 500);
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, ServiceConnectionType.Default, 500);
 
                 var connectionTask = connection.StartAsync();
 
@@ -432,7 +431,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async void ServiceConnectionShouldIgnoreFirstHandshakeResponse()
+        public async Task TestServiceConnectionForMigratedIn()
         {
             var factory = new TestClientConnectionFactory();
             var connection = MockServiceConnection(null, factory);
@@ -441,7 +440,7 @@ namespace Microsoft.Azure.SignalR.Tests
             await connection.OnClientConnectedAsyncForTest(new OpenConnectionMessage("foo", new Claim[0])
             {
                 Headers = new Dictionary<string, StringValues>{
-                    { Constants.AsrsMigrateIn, "another-server" }
+                    { Constants.AsrsMigrateFrom, "another-server" }
                 }
             });
 
@@ -458,8 +457,33 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // nothing should be written into the transport
             Assert.False(task.IsCompleted);
-            // but the `migrated` status should remain False (readonly)
             Assert.True(context.IsMigrated);
+
+            var feature = context.Features.Get<IConnectionMigrationFeature>();
+            Assert.NotNull(feature);
+            Assert.Equal("another-server", feature.MigrateFrom);
+        }
+
+        [Fact]
+        public async Task TestServiceConnectionForMigratedOut()
+        {
+            var factory = new TestClientConnectionFactory();
+
+            var connection = MockServiceConnection(null, factory);
+
+            // create a connection with migration header.
+            await connection.OnClientConnectedAsyncForTest(new OpenConnectionMessage("foo", new Claim[0]));
+
+            var context = factory.Connections[0];
+
+            var closeMessage = new CloseConnectionMessage(context.ConnectionId);
+            closeMessage.Headers.Add(Constants.AsrsMigrateTo, "another-server");
+
+            await connection.OnClientDisconnectedAsyncForTest(closeMessage);
+
+            var feature = context.Features.Get<IConnectionMigrationFeature>();
+            Assert.NotNull(feature);
+            Assert.Equal("another-server", feature.MigrateTo);
         }
 
         private sealed class TestConnectionHandler : ConnectionHandler
@@ -503,9 +527,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 loggerFactory,
                 handler,
                 clientConnectionFactory,
+                "serverId",
                 Guid.NewGuid().ToString("N"),
                 null,
-                null
+                null,
+                enableConnectionMigration: true
             )
             {
             }
@@ -513,6 +539,11 @@ namespace Microsoft.Azure.SignalR.Tests
             public Task OnClientConnectedAsyncForTest(OpenConnectionMessage message)
             {
                 return base.OnClientConnectedAsync(message);
+            }
+
+            public Task OnClientDisconnectedAsyncForTest(CloseConnectionMessage message)
+            {
+                return base.OnClientDisconnectedAsync(message);
             }
         }
 

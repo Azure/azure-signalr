@@ -96,8 +96,11 @@ namespace Microsoft.Azure.SignalR
         }
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
-            int minConnectionCount, HubServiceEndpoint endpoint,
-            IReadOnlyList<IServiceConnection> initialConnections = null, ILogger logger = null, AckHandler ackHandler = null)
+                                                 int minConnectionCount,
+                                                 HubServiceEndpoint endpoint,
+                                                 IReadOnlyList<IServiceConnection> initialConnections = null,
+                                                 ILogger logger = null,
+                                                 AckHandler ackHandler = null)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             ServiceConnectionFactory = serviceConnectionFactory;

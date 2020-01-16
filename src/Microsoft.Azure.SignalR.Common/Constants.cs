@@ -13,8 +13,9 @@ namespace Microsoft.Azure.SignalR
 
         public const int DefaultShutdownTimeoutInSeconds = 30;
 
-        public const string AsrsMigrateIn = "Asrs-Migrate-In";
-        public const string AsrsMigrateOut = "Asrs-Migrate-Out";
+        public const string AsrsMigrateFrom = "Asrs-Migrate-From";
+        public const string AsrsMigrateTo = "Asrs-Migrate-To";
+
         public const string AsrsUserAgent = "Asrs-User-Agent";
         public const string AsrsInstanceId = "Asrs-Instance-Id";
 

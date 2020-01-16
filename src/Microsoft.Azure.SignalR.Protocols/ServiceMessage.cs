@@ -43,6 +43,18 @@ namespace Microsoft.Azure.SignalR.Protocol
         public int ConnectionType { get; set; }
 
         /// <summary>
+        /// Gets or sets the migratable flag.
+        /// <value>
+        /// <list type="bullet">
+        /// <item>0, Off, a client connection can not be migrated to another server.</item>
+        /// <item>1, ShutdownOnly, a client connection can be migrated only if the pairing server was shutdown gracefully.</item>
+        /// <item>2, Any, a client connection can be migrated even if the pairing server connection was dropped accidentally. (may cause data loss)</item>
+        /// </list>
+        /// </value>
+        /// </summary>
+        public int MigrationLevel { get; set; }
+
+        /// <summary>
         /// Gets or sets the target of service connection, only work for OnDemand connections.
         /// </summary>
         public string Target { get; set; }

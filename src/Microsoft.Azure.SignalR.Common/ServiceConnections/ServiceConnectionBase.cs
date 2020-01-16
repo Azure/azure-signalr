@@ -53,6 +53,8 @@ namespace Microsoft.Azure.SignalR
 
         protected HubServiceEndpoint HubEndpoint { get; }
 
+        protected string ServerId { get; }
+
         protected string ConnectionId { get; }
 
         protected ILogger Logger { get; }
@@ -87,10 +89,17 @@ namespace Microsoft.Azure.SignalR
 
         public Task ConnectionOfflineTask => _serviceConnectionOfflineTcs.Task;
 
-        protected ServiceConnectionBase(IServiceProtocol serviceProtocol, string connectionId,
-            HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType connectionType, ILogger logger)
+        protected ServiceConnectionBase(
+            IServiceProtocol serviceProtocol,
+            string serverId,
+            string connectionId,
+            HubServiceEndpoint endpoint,
+            IServiceMessageHandler serviceMessageHandler,
+            ServiceConnectionType connectionType,
+            ILogger logger)
         {
             ServiceProtocol = serviceProtocol;
+            ServerId = serverId;
             ConnectionId = connectionId;
 
             _connectionType = connectionType;
