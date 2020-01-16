@@ -79,7 +79,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             return Task.FromResult(true);
         }
 
-        public Task RemoveServiceEndpoint(ServiceEndpoint endpoint, TimeSpan timeout)
+        public Task RemoveServiceEndpoint(HubServiceEndpoint endpoint, TimeSpan timeout)
         {
             return Task.CompletedTask;
         }
