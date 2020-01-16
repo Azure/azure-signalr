@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
@@ -16,15 +14,18 @@ namespace Microsoft.Azure.SignalR
         private readonly ILoggerFactory _loggerFactory;
         private readonly ConnectionDelegate _connectionDelegate;
         private readonly IClientConnectionFactory _clientConnectionFactory;
+        private readonly IServerNameProvider _nameProvider;
 
         public Action<HttpContext> ConfigureContext { get; set; }
 
-        public ServiceConnectionFactory(IServiceProtocol serviceProtocol,
+        public ServiceConnectionFactory(
+            IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
             IConnectionFactory connectionFactory,
             ILoggerFactory loggerFactory,
             ConnectionDelegate connectionDelegate,
-            IClientConnectionFactory clientConnectionFactory)
+            IClientConnectionFactory clientConnectionFactory,
+            IServerNameProvider nameProvider)
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
@@ -32,15 +33,26 @@ namespace Microsoft.Azure.SignalR
             _loggerFactory = loggerFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
+            _nameProvider = nameProvider;
         }
 
         public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
         {
-            var serviceConnection = new ServiceConnection(_serviceProtocol, _clientConnectionManager, _connectionFactory,
-                _loggerFactory, _connectionDelegate, _clientConnectionFactory,
-                Guid.NewGuid().ToString(), endpoint, serviceMessageHandler, type);
-            serviceConnection.ConfigureContext = ConfigureContext;
-            return serviceConnection;
+            return new ServiceConnection(
+                _serviceProtocol,
+                _clientConnectionManager,
+                _connectionFactory,
+                _loggerFactory,
+                _connectionDelegate,
+                _clientConnectionFactory,
+                _nameProvider.GetName(),
+                Guid.NewGuid().ToString(),
+                endpoint,
+                serviceMessageHandler,
+                type)
+            {
+                ConfigureContext = ConfigureContext
+            };
         }
     }
 }

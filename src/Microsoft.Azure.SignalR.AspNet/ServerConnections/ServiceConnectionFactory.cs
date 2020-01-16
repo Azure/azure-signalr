@@ -10,21 +10,26 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly IConnectionFactory _connectionFactory;
         private readonly ILoggerFactory _logger;
+        private readonly IServerNameProvider _nameProvider;
 
-        public ServiceConnectionFactory(IServiceProtocol serviceProtocol,
+        public ServiceConnectionFactory(
+            IServiceProtocol serviceProtocol,
             IClientConnectionManager clientConnectionManager,
             IConnectionFactory connectionFactory,
-            ILoggerFactory logger)
+            ILoggerFactory logger,
+            IServerNameProvider nameProvider
+            )
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _logger = logger;
+            _nameProvider = nameProvider;
         }
 
         public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
         {
-            return new ServiceConnection(Guid.NewGuid().ToString(), endpoint, _serviceProtocol, _connectionFactory, _clientConnectionManager, _logger, serviceMessageHandler, type);
+            return new ServiceConnection(_nameProvider.GetName(), Guid.NewGuid().ToString(), endpoint, _serviceProtocol, _connectionFactory, _clientConnectionManager, _logger, serviceMessageHandler, type);
         }
     }
 }

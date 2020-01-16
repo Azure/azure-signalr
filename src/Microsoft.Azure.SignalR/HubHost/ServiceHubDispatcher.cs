@@ -97,15 +97,23 @@ namespace Microsoft.Azure.SignalR
         private IMultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
         {
             var connectionFactory = new ConnectionFactory(_nameProvider, _loggerFactory);
-            var serviceConnectionFactory = new ServiceConnectionFactory(_serviceProtocol, _clientConnectionManager, connectionFactory, _loggerFactory, connectionDelegate, _clientConnectionFactory);
-            serviceConnectionFactory.ConfigureContext = contextConfig;
+            var serviceConnectionFactory = new ServiceConnectionFactory(_serviceProtocol,
+                _clientConnectionManager,
+                connectionFactory,
+                _loggerFactory,
+                connectionDelegate,
+                _clientConnectionFactory,
+                _nameProvider
+                )
+            {
+                ConfigureContext = contextConfig
+            };
 
             var factory = new ServiceConnectionContainerFactory(
                 serviceConnectionFactory,
                 _serviceEndpointManager,
                 _router,
                 _options,
-                _nameProvider,
                 _loggerFactory
             );
             return factory.Create(hub);

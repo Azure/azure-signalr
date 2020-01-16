@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.ServerConnections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
@@ -49,19 +50,21 @@ namespace Microsoft.Azure.SignalR
                                  ILoggerFactory loggerFactory,
                                  ConnectionDelegate connectionDelegate,
                                  IClientConnectionFactory clientConnectionFactory,
+                                 string serverId,
                                  string connectionId,
                                  HubServiceEndpoint endpoint,
                                  IServiceMessageHandler serviceMessageHandler,
                                  ServiceConnectionType connectionType = ServiceConnectionType.Default,
-                                 int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds) :
-            base(serviceProtocol, connectionId, endpoint, serviceMessageHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>())
+                                 int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds,
+                                 bool enableConnectionMigration = false) :
+            base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>())
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
             _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
-            _enableConnectionMigration = false;
+            _enableConnectionMigration = enableConnectionMigration;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -114,6 +117,11 @@ namespace Microsoft.Azure.SignalR
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
             connection.ServiceConnection = this;
 
+            if (message.Headers.TryGetValue(Constants.AsrsMigrateFrom, out var from))
+            {
+                connection.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(from, ServerId));
+            }
+
             AddClientConnection(connection, message);
 
             _ = ProcessClientConnectionAsync(connection);
@@ -135,9 +143,9 @@ namespace Microsoft.Azure.SignalR
             var connectionId = closeConnectionMessage.ConnectionId;
             if (_enableConnectionMigration && _clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
             {
-                if (!context.HttpContext.Request.Headers.ContainsKey(Constants.AsrsMigrateOut))
+                if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
                 {
-                    context.HttpContext.Request.Headers.Add(Constants.AsrsMigrateOut, "");
+                    context.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(ServerId, to));
                 }
                 // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
                 // Since all user-created messages will be sent to `ServiceConnection` directly.

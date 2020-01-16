@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
     {
         private static readonly IServiceProtocol Protocol = new ServiceProtocol();
 
-        public static IEnumerable<object[]> TestDataNames
+        public static IEnumerable<object[]> TestWriteData
         {
             get
             {
@@ -26,8 +26,42 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             }
         }
 
-        public static IDictionary<string, ProtocolTestData> TestData => new[]
+        public static IEnumerable<object[]> TestParseData
         {
+            get
+            {
+                foreach (var k in TestData.Keys)
+                {
+                    yield return new object[] { k };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> TestParseOldData
+        {
+            get
+            {
+                foreach (var k in TestCompatibilityData.Keys)
+                {
+                    yield return new object[] { k };
+                }
+            }
+        }
+        public static IDictionary<string, ProtocolTestData> TestCompatibilityData => new[] {
+            new ProtocolTestData(
+                name: "CloseConnection",
+                message: new CloseConnectionMessage("conn3"),
+                binary: "kwWlY29ubjPA"),
+            new ProtocolTestData(
+                name: "CloseConnectionWithError",
+                message: new CloseConnectionMessage("conn4", "Error message."),
+                binary: "kwWlY29ubjSuRXJyb3IgbWVzc2FnZS4="),
+            new ProtocolTestData(
+                name: "CloseConnectionWithHeaders",
+                message: new CloseConnectionMessage("conn4", "Error message.", new Dictionary<string, StringValues>() {
+                    { "foo", "bar" }
+                }),
+                binary: "lAWlY29ubjSuRXJyb3IgbWVzc2FnZS6Bo2Zvb5GjYmFy"),
             new ProtocolTestData(
                 name: "HandshakeRequest",
                 message: new HandshakeRequestMessage(1),
@@ -36,6 +70,22 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "HandshakeRequestWithProperty",
                 message: new HandshakeRequestMessage(1) { ConnectionType = 1, Target = "abc" },
                 binary: "lAEBAaNhYmM="),
+        }.ToDictionary(t => t.Name);
+
+        public static IDictionary<string, ProtocolTestData> TestData => new[]
+        {
+            new ProtocolTestData(
+                name: "HandshakeRequest",
+                message: new HandshakeRequestMessage(1),
+                binary: "lQEBAKAA"),
+            new ProtocolTestData(
+                name: "HandshakeRequestWithProperty",
+                message: new HandshakeRequestMessage(1) { ConnectionType = 1, Target = "abc" },
+                binary: "lQEBAaNhYmMA"),
+            new ProtocolTestData(
+                name: "HandshakeRequestWithMigratableStatus",
+                message: new HandshakeRequestMessage(1) { MigrationLevel = 1},
+                binary: "lQEBAKAB"),
             new ProtocolTestData(
                 name: "HandshakeResponse",
                 message: new HandshakeResponseMessage(),
@@ -80,11 +130,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             new ProtocolTestData(
                 name: "CloseConnection",
                 message: new CloseConnectionMessage("conn3"),
-                binary: "kwWlY29ubjPA"),
+                binary: "lAWlY29ubjOggA=="),
             new ProtocolTestData(
                 name: "CloseConnectionWithError",
                 message: new CloseConnectionMessage("conn4", "Error message."),
-                binary: "kwWlY29ubjSuRXJyb3IgbWVzc2FnZS4="),
+                binary: "lAWlY29ubjSuRXJyb3IgbWVzc2FnZS6A"),
             new ProtocolTestData(
                 name: "ConnectionData",
                 message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}),
@@ -198,7 +248,22 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         }.ToDictionary(t => t.Name);
 
         [Theory]
-        [MemberData(nameof(TestDataNames))]
+        [MemberData(nameof(TestParseOldData))]
+        public void ParseOldMessages(string testDataName)
+        {
+            var testData = TestCompatibilityData[testDataName];
+
+            // Verify that the input binary string decodes to the expected MsgPack primitives
+            var bytes = Convert.FromBase64String(testData.Binary);
+
+            // Parse the input fully now.
+            bytes = Frame(bytes);
+            var message = ParseServiceMessage(bytes);
+            Assert.Equal(testData.Message, message, ServiceMessageEqualityComparer.Instance);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestParseData))]
         public void ParseMessages(string testDataName)
         {
             var testData = TestData[testDataName];
@@ -213,7 +278,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         }
 
         [Theory]
-        [MemberData(nameof(TestDataNames))]
+        [MemberData(nameof(TestWriteData))]
         public void WriteMessages(string testDataName)
         {
             var testData = TestData[testDataName];
@@ -311,9 +376,9 @@ Please verify the MsgPack output and update the baseline");
 
         public class ProtocolTestData
         {
-            public string Name { get; }
-            public string Binary { get; }
-            public ServiceMessage Message { get; }
+            public string Name { get; private set; }
+            public string Binary { get; private set; }
+            public ServiceMessage Message { get; private set; }
 
             public ProtocolTestData(string name, ServiceMessage message, string binary)
             {
@@ -321,8 +386,6 @@ Please verify the MsgPack output and update the baseline");
                 Message = message;
                 Binary = binary;
             }
-
-            public override string ToString() => Name;
         }
     }
 }
