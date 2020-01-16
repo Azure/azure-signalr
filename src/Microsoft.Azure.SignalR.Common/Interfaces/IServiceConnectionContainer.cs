@@ -4,12 +4,11 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Common.Interfaces;
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal interface IServiceConnectionContainer : IServiceEndpointScaleManager
+    internal interface IServiceConnectionContainer
     {
         Task StartAsync();
 
@@ -21,6 +20,10 @@ namespace Microsoft.Azure.SignalR
 
         Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default);
 
+        Task StartGetServersPingAsync();
+
+        Task StopGetServersPingAsync();
+
         ServiceConnectionStatus Status { get; }
 
         Task ConnectionInitializedTask { get; }
@@ -28,7 +31,5 @@ namespace Microsoft.Azure.SignalR
         HashSet<string> GlobalServerIds { get; }
 
         bool HasClients { get; }
-
-        bool IsStable { get; }
     }
 }

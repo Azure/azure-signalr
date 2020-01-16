@@ -92,7 +92,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             public Task WriteAsync(ServiceMessage serviceMessage)
             {
-                if (serviceMessage is PingMessage ping && ping.TryGetValue(Constants.ServicePingMessageKey.ShutdownKey, out var val) && val == Constants.ServicePingMessageValue.ShutdownFin)
+                if (serviceMessage is PingMessage ping && RuntimeServicePingMessage.IsFin(ping))
                 {
                     _offline.SetResult(true);
                 }

@@ -19,36 +19,9 @@ namespace Microsoft.Azure.SignalR
         private readonly ILogger _logger;
         private readonly IServiceConnectionContainer _inner;
 
-        private bool _hasClients;
-        private bool _isStable;
-
         private IReadOnlyList<HubServiceEndpoint> _endpoints;
 
         public Dictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; }
-
-        public bool HasClients 
-        {
-            get 
-            { 
-                return _hasClients; 
-            }
-            set
-            {
-                _hasClients = GetGolbalHasClients();
-            }
-        }
-
-        public bool IsStable
-        {
-            get
-            {
-                return _isStable;
-            }
-            set
-            {
-                _isStable = GetGlobalIsStable();
-            }
-        }
 
         internal MultiEndpointServiceConnectionContainer(
             string hub,
@@ -131,6 +104,8 @@ namespace Microsoft.Azure.SignalR
 
         public HashSet<string> GlobalServerIds => throw new NotSupportedException();
 
+        public bool HasClients => throw new NotImplementedException();
+
         public Task StartAsync()
         {
             if (_inner != null)
@@ -210,19 +185,14 @@ namespace Microsoft.Azure.SignalR
             return tcs.Task.IsCompleted;
         }
 
-        public Task StartAddServiceEndpointAsync()
+        public Task StartGetServersPingAsync()
         {
-            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StartAddServiceEndpointAsync()));
+            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StartGetServersPingAsync()));
         }
 
-        public Task StopAddServiceEndpointAsync()
+        public Task StopGetServersPingAsync()
         {
-            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StopAddServiceEndpointAsync()));
-        }
-
-        public Task StartRemoveServiceEndpointAsync()
-        {
-            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StartRemoveServiceEndpointAsync()));
+            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StopGetServersPingAsync()));
         }
 
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)

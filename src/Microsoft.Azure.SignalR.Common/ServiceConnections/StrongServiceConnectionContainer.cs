@@ -29,6 +29,7 @@ namespace Microsoft.Azure.SignalR
 
         public override Task HandlePingAsync(PingMessage pingMessage)
         {
+            base.HandlePingAsync(pingMessage);
             if (RuntimeServicePingMessage.TryGetRebalance(pingMessage, out var target) && !string.IsNullOrEmpty(target))
             {
                 var connection = CreateOnDemandServiceConnection();

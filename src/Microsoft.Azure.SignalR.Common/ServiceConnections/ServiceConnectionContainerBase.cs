@@ -66,11 +66,7 @@ namespace Microsoft.Azure.SignalR
 
         public bool HasClients { get; private set; }
 
-        public bool IsStable => throw new NotSupportedException();
-
         protected long _serverIdsLastUpdated { get; set; }
-
-        private bool _hasActiveClients = false;
 
         private volatile bool _addingEndpoint = false;
 
@@ -171,8 +167,8 @@ namespace Microsoft.Azure.SignalR
         {
             if (RuntimeServicePingMessage.TryGetStatus(pingMessage, out var status))
             {
-                HasClients = status;
                 Log.ReceivedServiceStatusPing(Logger, status, Endpoint);
+                HasClients = status;
             }
             else if (RuntimeServicePingMessage.TryGetServerIds(pingMessage, out var serverIds, out var updatedTime))
             {
@@ -332,21 +328,15 @@ namespace Microsoft.Azure.SignalR
             return Task.WhenAll(FixedServiceConnections.Select(c => RemoveConnectionAsync(c)));
         }
 
-        public Task StartAddServiceEndpointAsync()
+        public Task StartGetServersPingAsync()
         {
             _addingEndpoint = true;
             return Task.CompletedTask;
         }
 
-        public Task StopAddServiceEndpointAsync()
+        public Task StopGetServersPingAsync()
         {
             _addingEndpoint = false;
-            return Task.CompletedTask;
-        }
-
-        public Task StartRemoveServiceEndpointAsync()
-        {
-            _ = OfflineAsync();
             return Task.CompletedTask;
         }
 
@@ -365,20 +355,20 @@ namespace Microsoft.Azure.SignalR
                 : ServiceConnectionStatus.Disconnected;
         }
 
-        protected async Task WriteFinAsync(IServiceConnection c)
+        protected async Task WriteFinAsync(IServiceConnection connection)
         {
-            await c.WriteAsync(_shutdownFinMessage);
+            await connection.WriteAsync(_shutdownFinMessage);
         }
 
-        protected async Task RemoveConnectionAsync(IServiceConnection c)
+        protected async Task RemoveConnectionAsync(IServiceConnection connection)
         {
             var retry = 0;
             using var source = new CancellationTokenSource();
             while (retry < MaxRetryRemoveSeverConnection)
             {
-                _ = WriteFinAsync(c);
-                var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(RemoveFromServiceTimeout, source.Token));
-                if (task == c.ConnectionOfflineTask)
+                _ = WriteFinAsync(connection);
+                var task = await Task.WhenAny(connection.ConnectionOfflineTask, Task.Delay(RemoveFromServiceTimeout, source.Token));
+                if (task == connection.ConnectionOfflineTask)
                 {
                     source.Cancel();
                     Log.ReceivedFinAckPing(Logger);

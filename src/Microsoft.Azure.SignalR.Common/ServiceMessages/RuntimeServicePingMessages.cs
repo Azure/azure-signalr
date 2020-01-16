@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Azure.SignalR.Protocol;
+using System;
 using System.Collections.Generic;
 using ServicePingMessage = Microsoft.Azure.SignalR.Protocol.PingMessage;
 
@@ -27,6 +28,9 @@ namespace Microsoft.Azure.SignalR
         private static readonly ServicePingMessage ShutdownFin =
             new ServicePingMessage { Messages = new[] { ShutdownKey, ShutdownFinValue } };
 
+        private static readonly ServicePingMessage ShutdownFinAck =
+            new ServicePingMessage { Messages = new[] { ShutdownKey, ShutdownFinAckValue } };
+
         private static readonly ServicePingMessage GetServerIds =
             new ServicePingMessage { Messages = new[] { ServersKey, string.Empty } };
 
@@ -53,8 +57,9 @@ namespace Microsoft.Azure.SignalR
 
         public static bool TryGetServerIds(this ServicePingMessage ping, out HashSet<string> serverIds, out long updatedTime)
         {
+            // servers ping format: { "servers", "1234567890:server1;server2;server3" }
             if (!TryGetValue(ping, ServersKey, out var value) || string.IsNullOrEmpty(value) 
-                || long.TryParse(value.Substring(0, value.IndexOf(":")), out updatedTime))
+                || !long.TryParse(value.Substring(0, value.IndexOf(":")), out updatedTime))
             {
                 serverIds = null;
                 updatedTime = DateTime.MinValue.Ticks;
@@ -67,7 +72,12 @@ namespace Microsoft.Azure.SignalR
 
         public static ServicePingMessage GetFinPingMessage() => ShutdownFin;
 
+        public static ServicePingMessage GetFinAckPingMessage() => ShutdownFinAck;
+
         public static ServicePingMessage GetServersPingMessage() => GetServerIds;
+        
+        public static bool IsFin(this ServiceMessage serviceMessage) =>
+            serviceMessage is ServicePingMessage ping && TryGetValue(ping, ShutdownKey, out var value) && value == ShutdownFinValue;
 
         public static bool IsFinAck(this ServicePingMessage ping) =>
             TryGetValue(ping, ShutdownKey, out var value) && value == ShutdownFinAckValue;
