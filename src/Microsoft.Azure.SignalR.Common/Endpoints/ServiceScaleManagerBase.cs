@@ -56,7 +56,7 @@ namespace Microsoft.Azure.SignalR
         {
             // 1. ServiceEndpointManager.RemoveServiceEndpointFromNegotiation()
             // 2. MultiSEContainer.StartRemoveServiceEndpoint() to trigger `Fin` ping.
-            // 3. Wait MultiSEContainer.HasClients() to check clients for the endpoint are diconnected
+            // 3. Wait MultiSEContainer.IsEndpointActive(endpoint) to check clients for the endpoint are diconnected
             // 4. MultiSEContainer.TryRemoveServiceEndpoint() to stop server connections and remove local container
             throw new NotImplementedException();
         }
@@ -89,9 +89,9 @@ namespace Microsoft.Azure.SignalR
             while (DateTime.UtcNow - startWait < DefaultScaleTimeout)
             {
                 // succeed and return
-                // if (!container.HasClients())
+                // if (!container.IsEndpointActive(endpoint))
                 // {
-                //      _serviceEndpointManager.RemoveServiceEndpointFromNegotiation(hub, endpoint);
+                //      container.TryRemoveServiceEndpoint(endpoint)
                 // }
                 // wait 3s for next try
                 await Task.Delay(3000);

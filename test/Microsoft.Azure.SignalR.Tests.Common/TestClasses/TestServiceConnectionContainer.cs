@@ -83,5 +83,10 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         {
             throw new NotImplementedException();
         }
+
+        public bool IsEndpointActive(ServiceEndpoint serviceEndpoint)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

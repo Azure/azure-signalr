@@ -26,5 +26,12 @@ namespace Microsoft.Azure.SignalR
         /// Flag of globally stable by comparing inner multiple endpoints connected serverIds with strong consistent
         /// </summary>
         bool IsStable { get; }
+
+        /// <summary>
+        /// Get result whether target ServiceEndpoint has active clients
+        /// </summary>
+        /// <param name="serviceEndpoint"></param>
+        /// <returns></returns>
+        bool IsEndpointActive(ServiceEndpoint serviceEndpoint);
     }
 }

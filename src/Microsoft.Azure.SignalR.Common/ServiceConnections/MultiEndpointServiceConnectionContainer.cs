@@ -113,8 +113,10 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        // can aggregate return all servers on all endpoints, but may not be meaningful currently
         public HashSet<string> GlobalServerIds => throw new NotImplementedException();
 
+        // can aggregate return HasClients on all endpoints, but may not be meaningful currently 
         public bool HasClients => throw new NotImplementedException();
 
         public bool IsStable => throw new NotImplementedException();
@@ -202,7 +204,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (ConnectionContainers.ContainsKey(endpoint))
             {
-                Log.ServiceEndpointAlreadyExist(_logger, endpoint.Endpoint);
+                Log.EndpointAlreadyExists(_logger, endpoint.Endpoint);
                 return true;
             }
             try
@@ -234,8 +236,18 @@ namespace Microsoft.Azure.SignalR
                     return false;
                 }
             }
-            Log.ServiceEndpointNotExist(_logger, endpoint.Endpoint);
+            Log.EndpointNotExists(_logger, endpoint.Endpoint);
             return true;
+        }
+
+        public bool IsEndpointActive(ServiceEndpoint serviceEndpoint)
+        {
+            if (ConnectionContainers.TryGetValue(serviceEndpoint, out var container))
+            {
+                return container.HasClients;
+            }
+            Log.EndpointNotExists(_logger, serviceEndpoint.Endpoint);
+            return false;
         }
 
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
@@ -328,14 +340,11 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _closingConnection =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(6, "ClosingConnection"), "Closing connections for endpoint {endpoint}.");
 
-            private static readonly Action<ILogger, string, Exception> _serviceEndpointAlreadyExist =
-                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(7, "ServiceEndpointAlreadyExists"), "Trying to add endpoint {endpoint} already exists.");
-
-            private static readonly Action<ILogger, string, Exception> _serviceEndpointNotExist =
-                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(8, "ServiceEndpointNotExists"), "Trying to remove endpoint {endpoint} not exist.");
+            private static readonly Action<ILogger, string, Exception> _endpointAlreadyExists =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(7, "EndpointAlreadyExists"), "Endpoint {endpoint} already exists.");
 
             private static readonly Action<ILogger, string, Exception> _failStartConnectionForNewEndpoint =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(9, "FailStartConnectionForNewEndpoint"), "Fail to create can start server connection for new endpoint {endpoint}");
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(8, "FailStartConnectionForNewEndpoint"), "Fail to create can start server connection for new endpoint {endpoint}");
 
 
             public static void StartingConnection(ILogger logger, string endpoint)
@@ -368,14 +377,9 @@ namespace Microsoft.Azure.SignalR
                 _failedWritingMessageToEndpoint(logger, messageType, endpoint, null);
             }
 
-            public static void ServiceEndpointAlreadyExist(ILogger logger, string endpoint)
+            public static void EndpointAlreadyExists(ILogger logger, string endpoint)
             {
-                _serviceEndpointAlreadyExist(logger, endpoint, null);
-            }
-
-            public static void ServiceEndpointNotExist(ILogger logger, string endpoint)
-            {
-                _serviceEndpointNotExist(logger, endpoint, null);
+                _endpointAlreadyExists(logger, endpoint, null);
             }
 
             public static void FailStartConnectionForNewEndpoint(ILogger logger, string endpoint, Exception ex)
