@@ -78,8 +78,13 @@ namespace Microsoft.Azure.SignalR
         public IWebProxy Proxy { get; set; }
 
         /// <summary>
-        /// Gets or sets the the flag to enable scale Azure SignalR Endpoints by configuration updates.
+        /// Gets or sets the the flag to enable live-scale Azure SignalR Endpoints with updating configuration.
         /// </summary>
-        public bool EnableAutoScale { get; set; } = true;
+        public bool EnableAutoScale { get; set; } = false;
+
+        /// <summary>
+        /// Specifies the timeout of scaling endpoints in running app (in minutes). 
+        /// </summary>
+        public TimeSpan ServiceScaleTimeout { get; set; } = TimeSpan.FromMinutes(Constants.DefaultScaleTimeoutInMinutes);
     }
 }

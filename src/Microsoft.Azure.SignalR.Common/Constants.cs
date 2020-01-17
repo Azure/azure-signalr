@@ -13,6 +13,7 @@ namespace Microsoft.Azure.SignalR
         public const string EnableAutoScaleDefaultKey = "Azure:SignalR:EnableAutoScale";
 
         public const int DefaultShutdownTimeoutInSeconds = 30;
+        public const int DefaultScaleTimeoutInMinutes = 15;
 
         public const string AsrsMigrateFrom = "Asrs-Migrate-From";
         public const string AsrsMigrateTo = "Asrs-Migrate-To";
