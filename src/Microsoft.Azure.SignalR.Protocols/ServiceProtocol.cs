@@ -281,50 +281,10 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.WriteArrayHeader(3);
             writer.Write(ServiceProtocolConstants.ConnectionDataMessageType);
             writer.Write(message.ConnectionId);
-            WriteBinary(ref writer, message.Payload);
-        }
 
-        private static void WriteBinary(ref MessagePackWriter writer, ReadOnlySequence<byte> payload)
-        {
-            // We're manually writing the message pack binary payload to the stream directly
-            // because MessagePack-Csharp doesn't support writing the binary header outside of 
-            // calling WriteBytes directly
-            var count = (int)payload.Length;
-            if (count <= byte.MaxValue)
-            {
-                writer.Write(MessagePackCode.Bin8);
-                writer.Write((byte)count);
-            }
-            else if (count <= UInt16.MaxValue)
-            {
-                writer.Write(MessagePackCode.Bin16);
-                writer.Write((byte)(count >> 8));
-                writer.Write((byte)count);
-            }
-            else
-            {
-                writer.Write(MessagePackCode.Bin32);
-                writer.Write((byte)(count >> 24));
-                writer.Write((byte)(count >> 16));
-                writer.Write((byte)(count >> 8));
-                writer.Write((byte)count);
-            }
-
-            // Now writes the raw bytes to the stream directly
-            writer.Write(payload);
-
-            /*********************************************************************************/
-            // REVIEW : PREVIOUS CODE WAS :
-            //var position = payload.Start;
-            //while (payload.TryGet(ref position, out var memory))
-            //{
-            //    bool isArray = MemoryMarshal.TryGetArray(memory, out var segment);
-            //    Debug.Assert(isArray, "We're not using managed memory");
-
-            //    writer.Write(segment.Array, segment.Offset, segment.Count);
-            //}
-            /*********************************************************************************/
-
+            /************ REVIEW ************/
+            // REVIEW : PREVIOUS CODE WAS writing every bytes manualy, not sure if this is the strict equivalent in term of serialization
+            writer.Write(message.Payload);
         }
 
         private static void WriteMultiConnectionDataMessage(ref MessagePackWriter writer, MultiConnectionDataMessage message)
@@ -466,8 +426,9 @@ namespace Microsoft.Azure.SignalR.Protocol
                 foreach (var payload in payloads)
                 {
                     writer.Write(payload.Key);
-                    writer.Write(payload.Value.Span);
 
+                    /*********************************************************************************/
+                    writer.Write(payload.Value.Span);
                     /*********************************************************************************/
                     // REVIEW : PREVIOUS CODE WAS :
                     //bool isArray = MemoryMarshal.TryGetArray(payload.Value, out var segment);
