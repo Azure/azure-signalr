@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -22,15 +23,20 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Adds the minimum essential Azure SignalR services to the specified <see cref="ISignalRServerBuilder" />.
         /// </summary>
         /// <param name="builder">The <see cref="ISignalRServerBuilder"/>.</param>
+        /// <param name="configuration">The <see cref="IConfiguration"/>.</param>
         /// <returns>The same instance of the <see cref="ISignalRServerBuilder"/> for chaining.</returns>
         /// <remarks>
         /// It reads connection string from a configuration entry Azure:SignalR:ConnectionString.
         /// In development environment, try `dotnet user-secrets set Azure:SignalR:ConnectionString {YourConnectionString}`.
         /// </remarks>
-        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder)
+        public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, IConfiguration configuration = null)
         {
-
             builder.Services.AddSingleton<IConfigureOptions<ServiceOptions>, ServiceOptionsSetup>();
+            if (configuration != null)
+            {
+                // supports hot-reload settings.
+                builder.Services.AddSingleton<IOptionsChangeTokenSource<ServiceOptions>>(new ConfigurationChangeTokenSource<ServiceOptions>(configuration));
+            }
             return builder.AddAzureSignalRCore();
         }
 
@@ -75,7 +81,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton(typeof(AzureSignalRMarkerService))
                 .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
                 .AddSingleton<IHostedService, HeartBeat>()
-                .AddSingleton<NegotiateHandler>();
+                .AddSingleton<NegotiateHandler>()
+                .AddSingleton<ServiceScaleManager>();
 
             // If a custom router is added, do not add the default router
             builder.Services.TryAddSingleton(typeof(IEndpointRouter), typeof(DefaultEndpointRouter));

@@ -3,7 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
+using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
@@ -20,6 +21,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string CustomValue = "Endpoint=https://customconnectionstring;AccessKey=1";
         private const string DefaultValue = "Endpoint=https://defaultconnectionstring;AccessKey=1";
         private const string SecondaryValue = "Endpoint=https://secondaryconnectionstring;AccessKey=1";
+        private const string ConfigFile = "testappsettings.json";
 
         public AddAzureSignalRFacts(ITestOutputHelper output) : base(output)
         {
@@ -367,6 +369,42 @@ namespace Microsoft.Azure.SignalR.Tests
                     Assert.Contains(endpoints,
                         s => s.ConnectionString == expected && s.EndpointType == EndpointType.Primary);
                 }
+            }
+        }
+
+        [Fact]
+        public async Task AddAzureSignalRHotReloadConfigValue()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var tcs = new TaskCompletionSource<object>();
+                var services = new ServiceCollection();
+                var config = new ConfigurationBuilder()
+                    .AddJsonFile(ConfigFile, optional: false, reloadOnChange: true)
+                    .Build();
+                var serviceProvider = services.AddSignalR()
+                    .AddAzureSignalR(config)
+                    .Services
+                    .AddSingleton<IConfiguration>(config)
+                    .AddSingleton(loggerFactory)
+                    .BuildServiceProvider();
+
+                var optionsMonitor = serviceProvider.GetService<IOptionsMonitor<ServiceOptions>>();
+                var options = optionsMonitor.CurrentValue;
+
+                Assert.Equal(2, options.Endpoints.Length);
+                Assert.True(options.EnableAutoScale);
+
+                // Update config file to add a new endpoint ConnectionString
+                var text = File.ReadAllText(ConfigFile);
+                text = text.Replace("\"ConnectionString\": [", "\"ConnectionString\": [ {\"EP3:Primary\": \"Endpoint = https://customconnectionstring;AccessKey=1\"},");
+                File.WriteAllText(ConfigFile, text);
+
+                // give a few seconds delay for change detected
+                await Task.Delay(2000);
+
+                options = optionsMonitor.CurrentValue;
+                Assert.Equal(3, options.Endpoints.Length);
             }
         }
     }
