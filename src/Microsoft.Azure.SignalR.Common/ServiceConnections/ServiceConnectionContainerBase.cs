@@ -34,10 +34,7 @@ namespace Microsoft.Azure.SignalR
 
         private volatile bool _terminated = false;
 
-        private static readonly PingMessage _shutdownFinMessage = new PingMessage()
-        {
-            Messages = new string[2] { Constants.ServicePingMessageKey.ShutdownKey, Constants.ServicePingMessageValue.ShutdownFin }
-        };
+        private static readonly PingMessage _shutdownFinMessage = RuntimeServicePingMessage.GetFinPingMessage();
 
         protected ILogger Logger { get; }
 
