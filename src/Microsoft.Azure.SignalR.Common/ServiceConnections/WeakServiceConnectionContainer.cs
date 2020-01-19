@@ -38,10 +38,10 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 
         public override Task HandlePingAsync(PingMessage pingMessage)
         {
-            if (pingMessage.TryGetServiceStatusPingMessage(out var status))
+            if (RuntimeServicePingMessage.TryGetStatus(pingMessage, out var status))
             {
-                _active = GetServiceStatus(status.IsActive, CheckWindow, CheckTimeSpan);
-                Log.ReceivedServiceStatusPing(Logger, status.IsActive, Endpoint);
+                _active = GetServiceStatus(status, CheckWindow, CheckTimeSpan);
+                Log.ReceivedServiceStatusPing(Logger, status, Endpoint);
             }
 
             return Task.CompletedTask;
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
                         // Check if last send time is longer than default keep-alive ticks and then send ping
                         if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendTimestamp) > DefaultGetServiceStatusTicks)
                         {
-                            await WriteAsync(ServiceStatusPingMessage.ActiveServicePingMessage);
+                            await WriteAsync(RuntimeServicePingMessage.GetStatusPingMessage(true));
                             Interlocked.Exchange(ref _lastSendTimestamp, Stopwatch.GetTimestamp());
                             Log.SentServiceStatusPing(Logger);
                         }
