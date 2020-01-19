@@ -12,6 +12,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal abstract class ServiceEndpointManagerBase : IServiceEndpointManager
     {
+        // endpoints ready for client negotiation
         private readonly ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>> _endpointsPerHub = new ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>>();
 
         private readonly ILogger _logger;
@@ -63,6 +64,39 @@ namespace Microsoft.Azure.SignalR
             }).ToArray());
         }
 
+        public void AddServiceEndpointToNegotiation(string hub, HubServiceEndpoint endpoint)
+        {
+            if (_endpointsPerHub.TryGetValue(hub, out var hubEndpoints))
+            {
+                var updatedHubEndpoints = hubEndpoints.Append(endpoint).ToArray();
+                _endpointsPerHub.TryUpdate(hub, updatedHubEndpoints, hubEndpoints);
+                return;
+            }
+            Log.ServiceEndpointAlreadyExist(_logger, endpoint.Endpoint);
+        }
+
+        public void RemoveServiceEndpointFromNegotiation(string hub, HubServiceEndpoint endpoint)
+        {
+            if (_endpointsPerHub.TryGetValue(hub, out var hubEndpoints))
+            {
+                // Keep those except target endpoint
+                var updatedHubEndpoints = hubEndpoints.Where(e => e.ConnectionString != endpoint.ConnectionString).ToArray();
+                if (!_endpointsPerHub.TryUpdate(hub, updatedHubEndpoints, hubEndpoints))
+                {
+                    Log.FailedToRemoveEndpointFromNegotiationRouter(_logger, endpoint.Endpoint);
+
+                }
+                return;
+            }
+            Log.ServiceEndpointNotExist(_logger, endpoint.Endpoint);
+        }
+
+        public HubServiceEndpoint GenerateHubServiceEndpoint(string hub, ServiceEndpoint endpoint)
+        {
+            var provider = GetEndpointProvider(endpoint);
+            return new HubServiceEndpoint(hub, provider, endpoint);
+        }
+
         private static IEnumerable<ServiceEndpoint> GetEndpoints(IServiceEndpointOptions options)
         {
             if (options == null)
@@ -94,9 +128,33 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, int, string, string, Exception> _duplicateEndpointFound =
                 LoggerMessage.Define<int, string, string>(LogLevel.Warning, new EventId(1, "DuplicateEndpointFound"), "{count} endpoint configurations to '{endpoint}' found, use '{name}'.");
 
+            private static readonly Action<ILogger, string, Exception> _serviceEndpointAlreadyExist =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(2, "ServiceEndpointAlreadyExists"), "Add Endpoint {endpoint} already exists, skip add to negotiation router.");
+
+            private static readonly Action<ILogger, string, Exception> _serviceEndpointNotExist =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(3, "ServiceEndpointNotExists"), "Remove endpoint {endpoint} not exist, skip remove from negotiation router.");
+
+            private static readonly Action<ILogger, string, Exception> _failedToRemoveEndpointFromNegotiationRouter =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(4, "ServiceEndpointNotExists"), "Failed to remove endpoint {endpoint} from negotiation router.");
+
             public static void DuplicateEndpointFound(ILogger logger, int count, string endpoint, string name)
             {
                 _duplicateEndpointFound(logger, count, endpoint, name, null);
+            }
+
+            public static void ServiceEndpointAlreadyExist(ILogger logger, string endpoint)
+            {
+                _serviceEndpointAlreadyExist(logger, endpoint, null);
+            }
+
+            public static void ServiceEndpointNotExist(ILogger logger, string endpoint)
+            {
+                _serviceEndpointNotExist(logger, endpoint, null);
+            }
+
+            public static void FailedToRemoveEndpointFromNegotiationRouter(ILogger logger, string endpoint)
+            {
+                _failedToRemoveEndpointFromNegotiationRouter(logger, endpoint, null);
             }
         }
     }

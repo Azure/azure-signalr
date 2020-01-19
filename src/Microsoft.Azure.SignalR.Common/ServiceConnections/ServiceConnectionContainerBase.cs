@@ -155,6 +155,10 @@ namespace Microsoft.Azure.SignalR
             _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status);
         }
 
+        public HashSet<string> GlobalServerIds => throw new NotImplementedException();
+
+        public bool HasClients => throw new NotImplementedException();
+
         /// <summary>
         /// Create a connection for a specific service connection type
         /// </summary>

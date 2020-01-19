@@ -13,15 +13,19 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class MultiEndpointServiceConnectionContainer : IServiceConnectionContainer
+    internal class MultiEndpointServiceConnectionContainer : IMultiEndpointServiceConnectionContainer
     {
+        private readonly int _connectionCount;
         private readonly IMessageRouter _router;
+        private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
         private readonly IServiceConnectionContainer _inner;
+        private readonly IServiceConnectionFactory _serviceConnectionFactory;
 
-        private IReadOnlyList<HubServiceEndpoint> _endpoints;
+        private List<HubServiceEndpoint> _hubEndpoints = new List<HubServiceEndpoint>();
+        private bool _needRouter => _hubEndpoints.Count > 1;
 
-        public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
+        public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; } = new Dictionary<ServiceEndpoint, IServiceConnectionContainer>();
 
         internal MultiEndpointServiceConnectionContainer(
             string hub,
@@ -38,17 +42,18 @@ namespace Microsoft.Azure.SignalR
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
 
             // provides a copy to the endpoint per container
-            _endpoints = endpointManager.GetEndpoints(hub);
+            _hubEndpoints = endpointManager.GetEndpoints(hub).ToList();
 
-            if (_endpoints.Count == 1)
+            if (!_needRouter)
             {
-                _inner = generator(_endpoints[0]);
+                _inner = generator(_hubEndpoints[0]);
+                Connections.Add(_hubEndpoints[0], _inner);
             }
             else
             {
                 // router is required when endpoints > 1
                 _router = router ?? throw new ArgumentNullException(nameof(router));
-                Connections = _endpoints.ToDictionary(s => (ServiceEndpoint)s, s => generator(s));
+                Connections = _hubEndpoints.ToDictionary(s => (ServiceEndpoint)s, s => generator(s));
             }
         }
 
@@ -67,6 +72,11 @@ namespace Microsoft.Azure.SignalR
                 loggerFactory
                 )
         {
+            // Preserve some information for potential scale needs.
+            _router = router;
+            _loggerFactory = loggerFactory;
+            _connectionCount = count;
+            _serviceConnectionFactory = serviceConnectionFactory;
         }
 
         public IEnumerable<ServiceEndpoint> GetOnlineEndpoints()
@@ -92,7 +102,7 @@ namespace Microsoft.Azure.SignalR
         {
             get
             {
-                if (_inner != null)
+                if (!_needRouter)
                 {
                     return _inner.ConnectionInitializedTask;
                 }
@@ -101,6 +111,10 @@ namespace Microsoft.Azure.SignalR
                                     select connection.Value.ConnectionInitializedTask);
             }
         }
+
+        public HashSet<string> GlobalServerIds => throw new NotSupportedException();
+
+        public bool HasClients => throw new NotSupportedException();
 
         public Task StartAsync()
         {
@@ -181,9 +195,62 @@ namespace Microsoft.Azure.SignalR
             return tcs.Task.IsCompleted;
         }
 
+        public async Task AddServiceEndpoint(HubServiceEndpoint endpoint, TimeSpan timeout)
+        {
+            if (Connections.ContainsKey(endpoint))
+            {
+                Log.EndpointAlreadyExists(_logger, endpoint.Endpoint);
+                return;
+            }
+            try
+            {
+                var container = CreateContainer(_serviceConnectionFactory, endpoint, _connectionCount, _loggerFactory);
+                await container.StartAsync();
+
+                // Add to message router after connection setup
+                _hubEndpoints.Add(endpoint);
+                Connections.Add(endpoint, container);
+                // wait for server stable then return to add endpoint to client negotation
+                await WaitForServerStable(container, endpoint, timeout);
+            }
+            catch (Exception ex)
+            {
+                Log.FailedStartingConnectionForNewEndpoint(_logger, endpoint.Endpoint, ex);
+            }
+        }
+
+        public async Task RemoveServiceEndpoint(HubServiceEndpoint endpoint, TimeSpan timeout)
+        {
+            if (Connections.TryGetValue(endpoint, out var container))
+            {
+                try
+                {
+                    // notify ASRS to remove server connection from service router and disconnect clients
+                    _ = container.OfflineAsync();
+                    // wait for clients disconnect
+                    await WaitForClientsDisconnect(container, endpoint, timeout);
+                    // stop server connection and remove endpoint from message router
+                    await container.StopAsync();
+                }
+                catch (Exception ex)
+                {
+                    Log.FailedRemovingConnectionForEndpoint(_logger, endpoint.Endpoint, ex);
+                }
+                finally
+                {
+                    if (!(_hubEndpoints.Remove(endpoint) && Connections.Remove(endpoint)))
+                    {
+                        Log.FailedRemovingEndpointFromMessageRouter(_logger, endpoint.Endpoint);
+                    }
+                }
+                return;
+            }
+            Log.EndpointNotExists(_logger, endpoint.Endpoint);
+        }
+
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
         {
-            var endpoints = _endpoints;
+            var endpoints = _hubEndpoints;
             switch (message)
             {
                 case BroadcastDataMessage bdm:
@@ -251,6 +318,50 @@ namespace Microsoft.Azure.SignalR
             return Task.WhenAll(routed);
         }
 
+        private async Task WaitForServerStable(IServiceConnectionContainer container, ServiceEndpoint endpoint, TimeSpan timeout)
+        {
+            // TODO: start server ping: container.StartGetServersPing()
+            // and check global servers are consistent among endpoints
+            var startTime = DateTime.UtcNow;
+            while (DateTime.UtcNow - startTime < timeout)
+            {
+                var isStable = false;
+                foreach (var connectionContainer in Connections)
+                {
+                    var serversOnNew = container.GlobalServerIds;
+                    isStable = serversOnNew.Count > 0 && serversOnNew.SetEquals(connectionContainer.Value.GlobalServerIds);
+                    // skip iteration if not stable and wait for next check.
+                    if (!isStable)
+                    {
+                        break;
+                    }
+                }
+                if (isStable)
+                {
+                    // TODO: stop servers ping if succeed: container.StopGetServersPing()
+                    return;
+                }
+                // wait 3 seconds for next try
+                await Task.Delay(3000);
+            }
+            Log.TimeoutWaitingForAddingEndpoint(_logger, endpoint.Endpoint, timeout.Minutes);
+        }
+
+        private async Task WaitForClientsDisconnect(IServiceConnectionContainer container, ServiceEndpoint endpoint, TimeSpan timeout)
+        {
+            var startTime = DateTime.UtcNow;
+            while (DateTime.UtcNow - startTime < timeout)
+            {
+                if (!container.HasClients)
+                {
+                    return;
+                }
+                // wait 3 seconds for next try
+                await Task.Delay(3000);
+            }
+            Log.TimeoutWaitingClientsDisconnect(_logger, endpoint.Endpoint, timeout.Minutes);
+        }
+
         private static class Log
         {
             private static readonly Action<ILogger, string, Exception> _startingConnection =
@@ -270,6 +381,24 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, Exception> _closingConnection =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(6, "ClosingConnection"), "Closing connections for endpoint {endpoint}.");
+
+            private static readonly Action<ILogger, string, Exception> _endpointAlreadyExists =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(7, "EndpointAlreadyExists"), "Endpoint {endpoint} already exists.");
+
+            private static readonly Action<ILogger, string, Exception> _failedStartingConnectionForNewEndpoint =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(8, "FailedStartingConnectionForNewEndpoint"), "Fail to create and start server connection for new endpoint {endpoint}.");
+
+            private static readonly Action<ILogger, string, Exception> _failedRemovingConnectionForEndpoint =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(9, "FailedRemovingConnectionForEndpoint"), "Fail to stop server connections for endpoint {endpoint}.");
+            
+            private static readonly Action<ILogger, string, Exception> _failedRemovingEndpointFromMessageRouter =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(10, "FailedRemovingEndpointFromMessageRouter"), "Fail to remove endpoint {endpoint} from message router.");
+
+            private static readonly Action<ILogger, string, int, Exception> _timeoutWaitingForAddingEndpoint =
+                LoggerMessage.Define<string, int>(LogLevel.Error, new EventId(11, "TimeoutWaitingForAddingEndpoint"), "Timeout waiting for add a new endpoint {endpoint} in {timeoutMinute} minutes. Check if app configurations are consistant and restart app server.");
+            
+            private static readonly Action<ILogger, string, int, Exception> _timeoutWaitingClientsDisconnect =
+                LoggerMessage.Define<string, int>(LogLevel.Error, new EventId(12, "TimeoutWaitingClientsDisconnect"), "Timeout waiting for clients disconnect for {endpoint} in {timeoutMinute} minutes. Try restart app server to fix.");
 
             public static void StartingConnection(ILogger logger, string endpoint)
             {
@@ -299,6 +428,35 @@ namespace Microsoft.Azure.SignalR
             public static void FailedWritingMessageToEndpoint(ILogger logger, string messageType, string endpoint)
             {
                 _failedWritingMessageToEndpoint(logger, messageType, endpoint, null);
+            }
+
+            public static void EndpointAlreadyExists(ILogger logger, string endpoint)
+            {
+                _endpointAlreadyExists(logger, endpoint, null);
+            }
+
+            public static void FailedStartingConnectionForNewEndpoint(ILogger logger, string endpoint, Exception ex)
+            {
+                _failedStartingConnectionForNewEndpoint(logger, endpoint, ex);
+            }
+
+            public static void FailedRemovingConnectionForEndpoint(ILogger logger, string endpoint, Exception ex)
+            {
+                _failedRemovingConnectionForEndpoint(logger, endpoint, ex);
+            }
+
+            public static void FailedRemovingEndpointFromMessageRouter(ILogger logger, string endpoint)
+            {
+                _failedRemovingEndpointFromMessageRouter(logger, endpoint, null);
+            }
+            public static void TimeoutWaitingForAddingEndpoint(ILogger logger, string endpoint, int timeoutMinute)
+            {
+                _timeoutWaitingForAddingEndpoint(logger, endpoint, timeoutMinute, null);
+            }
+
+            public static void TimeoutWaitingClientsDisconnect(ILogger logger, string endpoint, int timeoutMinute)
+            {
+                _timeoutWaitingClientsDisconnect(logger, endpoint, timeoutMinute, null);
             }
         }
     }
