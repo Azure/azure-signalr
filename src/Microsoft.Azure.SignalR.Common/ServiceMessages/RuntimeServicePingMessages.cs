@@ -8,7 +8,7 @@ using ServicePingMessage = Microsoft.Azure.SignalR.Protocol.PingMessage;
 
 namespace Microsoft.Azure.SignalR
 {
-    public static class RuntimeServicePingMessage
+    internal static class RuntimeServicePingMessage
     {
         private const string OfflineKey = "offline";
         private const string TargetKey = "target";
