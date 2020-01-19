@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR
 
         private IReadOnlyList<HubServiceEndpoint> _endpoints;
 
-        public Dictionary<ServiceEndpoint, IServiceConnectionContainer> Connections { get; }
+        public Dictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; }
 
         internal MultiEndpointServiceConnectionContainer(
             string hub,
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR
             {
                 // router is required when endpoints > 1
                 _router = router ?? throw new ArgumentNullException(nameof(router));
-                Connections = _endpoints.ToDictionary(s => (ServiceEndpoint)s, s => generator(s));
+                ConnectionContainers = _endpoints.ToDictionary(s => (ServiceEndpoint)s, s => generator(s));
             }
         }
 
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR
 
         public IEnumerable<ServiceEndpoint> GetOnlineEndpoints()
         {
-            return Connections.Keys.Where(s => s.Online);
+            return ConnectionContainers.Keys.Where(s => s.Online);
         }
 
         private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, HubServiceEndpoint endpoint, int count, ILoggerFactory loggerFactory)
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.SignalR
                     return _inner.ConnectionInitializedTask;
                 }
 
-                return Task.WhenAll(from connection in Connections
+                return Task.WhenAll(from connection in ConnectionContainers
                                     select connection.Value.ConnectionInitializedTask);
             }
         }
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.SignalR
                 return _inner.StartAsync();
             }
 
-            return Task.WhenAll(Connections.Select(s =>
+            return Task.WhenAll(ConnectionContainers.Select(s =>
             {
                 Log.StartingConnection(_logger, s.Key.Endpoint);
                 return s.Value.StartAsync();
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.SignalR
                 return _inner.StopAsync();
             }
 
-            return Task.WhenAll(Connections.Select(s =>
+            return Task.WhenAll(ConnectionContainers.Select(s =>
             {
                 Log.StoppingConnection(_logger, s.Key.Endpoint);
                 return s.Value.StopAsync();
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.SignalR
             }
             else
             {
-                return Task.WhenAll(Connections.Select(c => c.Value.OfflineAsync()));
+                return Task.WhenAll(ConnectionContainers.Select(c => c.Value.OfflineAsync()));
             }
         }
 
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.SignalR
             var routed = GetRoutedEndpoints(serviceMessage)?
                 .Select(endpoint =>
                 {
-                    if (Connections.TryGetValue(endpoint, out var connection))
+                    if (ConnectionContainers.TryGetValue(endpoint, out var connection))
                     {
                         return (e: endpoint, c: connection);
                     }
