@@ -20,7 +20,6 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Azure.SignalR.ServerConnections;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR

@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Azure.SignalR.ServerConnections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
