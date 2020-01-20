@@ -11,6 +11,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -393,18 +395,27 @@ namespace Microsoft.Azure.SignalR.Tests
                 var options = optionsMonitor.CurrentValue;
 
                 Assert.Equal(2, options.Endpoints.Length);
-                Assert.True(options.EnableAutoScale);
 
                 // Update config file to add a new endpoint ConnectionString
+                var customeCS = "Endpoint = https://customconnectionstring;AccessKey=1";
                 var text = File.ReadAllText(ConfigFile);
-                text = text.Replace("\"ConnectionString\": [", "\"ConnectionString\": [ {\"EP3:Primary\": \"Endpoint = https://customconnectionstring;AccessKey=1\"},");
-                File.WriteAllText(ConfigFile, text);
+                var jsonObj = JsonConvert.DeserializeObject<JObject>(text);
+                var endpoints = (JArray)jsonObj["Azure"]["SignalR"]["ConnectionString"];
+                var newEndpoint = new JObject()
+                { 
+                    { "EP3:Primary", customeCS } 
+                };
+                
+                endpoints.Add(newEndpoint);
+                var output = JsonConvert.SerializeObject(jsonObj, Formatting.Indented);
+                File.WriteAllText(ConfigFile, output);
 
-                // give a few seconds delay for change detected
-                await Task.Delay(2000);
+                // give a few delay for change detected
+                await Task.Delay(500);
 
                 options = optionsMonitor.CurrentValue;
                 Assert.Equal(3, options.Endpoints.Length);
+                Assert.Equal(customeCS, options.Endpoints[2].ConnectionString);
             }
         }
     }

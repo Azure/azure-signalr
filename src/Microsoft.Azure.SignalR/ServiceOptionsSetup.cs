@@ -29,13 +29,12 @@ namespace Microsoft.Azure.SignalR
             options.Endpoints = configuration.Endpoints;
             options.ApplicationName = configuration.AppName;
             options.ServerStickyMode = configuration.StickyMode;
-            options.EnableAutoScale = configuration.EnableAutoScale;
 
             options.EnableGracefulShutdown = _gracefulShutdownEnabled;
             options.ServerShutdownTimeout = _shutdownTimeout;
         }
 
-        private (string AppName, string ConnectionString, ServerStickyMode StickyMode, bool EnableAutoScale, ServiceEndpoint[] Endpoints) ParseConfiguration()
+        private (string AppName, string ConnectionString, ServerStickyMode StickyMode, ServiceEndpoint[] Endpoints) ParseConfiguration()
         {
             var appName = _configuration[Constants.ApplicationNameDefaultKeyPrefix];
             var stickyMode = ServerStickyMode.Disabled;
@@ -44,9 +43,6 @@ namespace Microsoft.Azure.SignalR
             {
                 Enum.TryParse(mode, true, out stickyMode);
             }
-            var enableAutoScale = false;
-            var autoScaleValue = _configuration[Constants.EnableAutoScaleDefaultKey];
-            bool.TryParse(autoScaleValue, out enableAutoScale);
 
             var (connectionString, endpoints) = GetEndpoint(_configuration, Constants.ConnectionStringDefaultKey);
 
@@ -56,7 +52,7 @@ namespace Microsoft.Azure.SignalR
                 (connectionString, endpoints) = GetEndpoint(_configuration, Constants.ConnectionStringSecondaryKey);
             }
 
-            return (appName, connectionString, stickyMode, enableAutoScale, endpoints);
+            return (appName, connectionString, stickyMode, endpoints);
         }
 
         private static (string, ServiceEndpoint[]) GetEndpoint(IConfiguration configuration, string key)
