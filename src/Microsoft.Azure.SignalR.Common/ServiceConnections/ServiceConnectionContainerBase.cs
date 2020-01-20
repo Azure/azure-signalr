@@ -15,10 +15,12 @@ namespace Microsoft.Azure.SignalR
     internal abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler, IDisposable
     {
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
+        // Give interval(5s) * 24 = 2min window for retry considering abnormal case.
+        private const int MaxRetryRemoveSeverConnection = 24;
         private static TimeSpan ReconnectInterval =>
             TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackOffInternalInMilliseconds));
 
-        private static TimeSpan RemoveFromServiceTimeout = TimeSpan.FromSeconds(3);
+        private static TimeSpan RemoveFromServiceTimeout = TimeSpan.FromSeconds(5);
 
         private readonly BackOffPolicy _backOffPolicy = new BackOffPolicy();
 
@@ -34,7 +36,8 @@ namespace Microsoft.Azure.SignalR
 
         private volatile bool _terminated = false;
 
-        private static readonly PingMessage _shutdownFinMessage = RuntimeServicePingMessage.GetFinPingMessage();
+        private static readonly PingMessage _shutdownFinMessage = RuntimeServicePingMessage.GetFinPingMessage(false);
+        private static readonly PingMessage _shutdownFinMigratableMessage = RuntimeServicePingMessage.GetFinPingMessage(true);
 
         protected ILogger Logger { get; }
 
@@ -281,6 +284,11 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        public virtual Task OfflineAsync(bool migratable)
+        {
+            return Task.WhenAll(FixedServiceConnections.Select(c => RemoveConnectionAsync(c, migratable)));
+        }
+
         // Ready for scalable containers
         public void Dispose()
         {
@@ -301,6 +309,39 @@ namespace Microsoft.Azure.SignalR
             return FixedServiceConnections.Any(s => s.Status == ServiceConnectionStatus.Connected)
                 ? ServiceConnectionStatus.Connected
                 : ServiceConnectionStatus.Disconnected;
+        }
+
+        protected async Task WriteFinAsync(IServiceConnection c, bool migratable)
+        {
+            if (migratable)
+            {
+                await c.WriteAsync(_shutdownFinMigratableMessage);
+            }
+            else
+            {
+                await c.WriteAsync(_shutdownFinMessage);
+            }
+        }
+
+        protected async Task RemoveConnectionAsync(IServiceConnection c, bool migratable)
+        {
+            var retry = 0;
+            using var source = new CancellationTokenSource();
+            while (retry < MaxRetryRemoveSeverConnection)
+            {
+                _ = WriteFinAsync(c, migratable);
+
+                var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(RemoveFromServiceTimeout, source.Token));
+
+                if (task == c.ConnectionOfflineTask)
+                {
+                    source.Cancel();
+                    Log.ReceivedFinAckPing(Logger);
+                    return;
+                }
+                retry++;
+            }
+            Log.TimeoutWaitingForFinAck(Logger, retry);
         }
 
         private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
@@ -350,30 +391,6 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        protected async Task WriteFinAsync(IServiceConnection c)
-        {
-            await c.WriteAsync(_shutdownFinMessage);
-        }
-
-        protected async Task RemoveConnectionAsync(IServiceConnection c)
-        {
-            _ = WriteFinAsync(c);
-
-            using var source = new CancellationTokenSource();
-            var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(RemoveFromServiceTimeout, source.Token));
-            source.Cancel();
-
-            if (task != c.ConnectionOfflineTask)
-            {
-                // log
-            }
-        }
-
-        public virtual Task OfflineAsync()
-        {
-            return Task.WhenAll(FixedServiceConnections.Select(c => RemoveConnectionAsync(c)));
-        }
-
         private static class Log
         {
             private static readonly Action<ILogger, string, string, Exception> _endpointOnline =
@@ -381,6 +398,12 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, string, Exception> _endpointOffline =
                 LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(2, "EndpointOffline"), "Hub '{hub}' is now disconnected from '{endpoint}'. Please check log for detailed info.");
+
+            private static readonly Action<ILogger, Exception> _receivedFinAckPing =
+                LoggerMessage.Define(LogLevel.Information, new EventId(3, "ReceivedFinAckPing"), "Received FinAck ping.");
+
+            private static readonly Action<ILogger, int, Exception> _timeoutWaitingForFinAck =
+                LoggerMessage.Define<int>(LogLevel.Error, new EventId(4, "TimeoutWaitingForFinAck"), "Fail to receive FinAckPing after retry {retryCount} times.");
 
             public static void EndpointOnline(ILogger logger, HubServiceEndpoint endpoint)
             {
@@ -390,6 +413,16 @@ namespace Microsoft.Azure.SignalR
             public static void EndpointOffline(ILogger logger, HubServiceEndpoint endpoint)
             {
                 _endpointOffline(logger, endpoint.Hub, endpoint.ToString(), null);
+            }
+
+            public static void ReceivedFinAckPing(ILogger logger)
+            {
+                _receivedFinAckPing(logger, null);
+            }
+
+            public static void TimeoutWaitingForFinAck(ILogger logger, int retryCount)
+            {
+                _timeoutWaitingForFinAck(logger, retryCount, null);
             }
         }
     }

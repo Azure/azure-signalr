@@ -45,10 +45,10 @@ namespace Microsoft.Azure.SignalR
             );
         }
 
-        public override Task OfflineAsync()
+        public override Task OfflineAsync(bool migratable)
         {
-            var task1 = base.OfflineAsync();
-            var task2 = Task.WhenAll(_onDemandServiceConnections.Select(c => RemoveConnectionAsync(c)));
+            var task1 = base.OfflineAsync(migratable);
+            var task2 = Task.WhenAll(_onDemandServiceConnections.Select(c => RemoveConnectionAsync(c, migratable)));
             return Task.WhenAll(task1, task2);
         }
 
