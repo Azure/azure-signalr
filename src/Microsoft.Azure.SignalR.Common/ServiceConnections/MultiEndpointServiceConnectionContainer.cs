@@ -102,6 +102,10 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        public HashSet<string> GlobalServerIds => throw new NotSupportedException();
+
+        public bool HasClients => throw new NotSupportedException();
+
         public Task StartAsync()
         {
             if (_inner != null)
@@ -179,6 +183,16 @@ namespace Microsoft.Azure.SignalR
             await task;
 
             return tcs.Task.IsCompleted;
+        }
+
+        public Task StartGetServersPingAsync()
+        {
+            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StartGetServersPingAsync()));
+        }
+
+        public Task StopGetServersPingAsync()
+        {
+            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StopGetServersPingAsync()));
         }
 
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
