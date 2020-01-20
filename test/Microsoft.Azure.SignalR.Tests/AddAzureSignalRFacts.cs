@@ -385,7 +385,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     .AddJsonFile(ConfigFile, optional: false, reloadOnChange: true)
                     .Build();
                 var serviceProvider = services.AddSignalR()
-                    .AddAzureSignalR(config)
+                    .AddAzureSignalR()
                     .Services
                     .AddSingleton<IConfiguration>(config)
                     .AddSingleton(loggerFactory)

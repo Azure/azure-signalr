@@ -6,15 +6,18 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceOptionsSetup : IConfigureOptions<ServiceOptions>
+    internal class ServiceOptionsSetup : IConfigureOptions<ServiceOptions>, IOptionsChangeTokenSource<ServiceOptions>
     {
         private readonly IConfiguration _configuration;
 
         private readonly bool _gracefulShutdownEnabled = false;
         private readonly TimeSpan _shutdownTimeout = TimeSpan.FromSeconds(Constants.DefaultShutdownTimeoutInSeconds);
+
+        public string Name => Options.DefaultName;
 
         public ServiceOptionsSetup(IConfiguration configuration)
         {
@@ -32,6 +35,11 @@ namespace Microsoft.Azure.SignalR
 
             options.EnableGracefulShutdown = _gracefulShutdownEnabled;
             options.ServerShutdownTimeout = _shutdownTimeout;
+        }
+
+        public IChangeToken GetChangeToken()
+        {
+            return _configuration.GetReloadToken();
         }
 
         private (string AppName, string ConnectionString, ServerStickyMode StickyMode, ServiceEndpoint[] Endpoints) ParseConfiguration()

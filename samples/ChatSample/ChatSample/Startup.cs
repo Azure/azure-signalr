@@ -19,7 +19,7 @@ namespace ChatSample
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSignalR()
-                    .AddAzureSignalR(Configuration);
+                    .AddAzureSignalR();
         }
 
         public void Configure(IApplicationBuilder app)
