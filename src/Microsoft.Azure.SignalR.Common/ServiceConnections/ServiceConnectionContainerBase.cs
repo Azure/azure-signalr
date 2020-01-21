@@ -326,9 +326,9 @@ namespace Microsoft.Azure.SignalR
         protected async Task RemoveConnectionAsync(IServiceConnection c, bool migratable)
         {
             var retry = 0;
-            using var source = new CancellationTokenSource();
             while (retry < MaxRetryRemoveSeverConnection)
             {
+                using var source = new CancellationTokenSource();
                 _ = WriteFinAsync(c, migratable);
 
                 var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(RemoveFromServiceTimeout, source.Token));
