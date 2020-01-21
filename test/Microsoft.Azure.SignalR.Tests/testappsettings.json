@@ -1,7 +1,6 @@
 {
   "Azure": {
     "SignalR": {
-      "EnableAutoScale": true,
       "ConnectionString": [
         {
           "EP1:Primary": "Endpoint=https://primaryconnectionstring;AccessKey=1"
