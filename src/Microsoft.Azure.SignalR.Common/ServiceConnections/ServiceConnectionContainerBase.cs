@@ -30,31 +30,31 @@ namespace Microsoft.Azure.SignalR
 
         private readonly object _statusLock = new object();
 
+        private readonly object _pingLock = new object();
+
         private readonly AckHandler _ackHandler;
 
         private readonly TimerAwaitable _timer;
 
-        private volatile List<IServiceConnection> _fixedServiceConnections;
-
         private volatile ServiceConnectionStatus _status;
+
+        private volatile HashSet<string> _globalServerIds;
 
         private volatile bool _terminated = false;
 
-        private volatile bool _addingEndpoint = false;
+        private TimerAwaitable _serverIdsTimer;
 
         private long _lastSendTimestamp = 0;
 
         private long _serverIdsLastUpdated = 0;
 
+        private long _lastSendServerIdsTimestamp = 0;
+
         private static readonly PingMessage _shutdownFinMessage = RuntimeServicePingMessage.GetFinPingMessage();
 
         protected ILogger Logger { get; }
 
-        protected List<IServiceConnection> FixedServiceConnections
-        {
-            get { return _fixedServiceConnections; }
-            set { _fixedServiceConnections = value; }
-        }
+        protected List<IServiceConnection> FixedServiceConnections { get; set; }
 
         protected IServiceConnectionFactory ServiceConnectionFactory { get; }
 
@@ -66,10 +66,13 @@ namespace Microsoft.Azure.SignalR
 
         public event Action<StatusChange> ConnectionStatusChanged;
 
-        public HashSet<string> GlobalServerIds { get; private set; }
+        public HashSet<string> GlobalServerIds 
+        {
+            get { return _globalServerIds; }
+            private set { _globalServerIds = value; } 
+        } 
 
         public bool HasClients { get; private set; }
-
 
         public ServiceConnectionStatus Status
         {
@@ -169,13 +172,18 @@ namespace Microsoft.Azure.SignalR
             if (RuntimeServicePingMessage.TryGetStatus(pingMessage, out var status))
             {
                 Log.ReceivedServiceStatusPing(Logger, status, Endpoint);
-                HasClients = status;
+                // Interlocked not support bool, use lock to ensure thread-safe
+                lock (_pingLock)
+                {
+                    HasClients = status;
+                }
             }
             else if (RuntimeServicePingMessage.TryGetServerIds(pingMessage, out var serverIds, out var updatedTime))
             {
-                if (updatedTime > _serverIdsLastUpdated)
+                Log.ReceivedServerIdsPing(Logger, Endpoint);
+                if (updatedTime > Interlocked.Read(ref _serverIdsLastUpdated))
                 {
-                    GlobalServerIds = serverIds;
+                    Interlocked.Exchange(ref _globalServerIds, serverIds);
                     Interlocked.Exchange(ref _serverIdsLastUpdated, updatedTime);
                 }
             }
@@ -318,14 +326,14 @@ namespace Microsoft.Azure.SignalR
 
         public Task StartGetServersPingAsync()
         {
-            _addingEndpoint = true;
+            _serverIdsTimer = StartServerIdsPingTimer();
             return Task.CompletedTask;
         }
 
         public Task StopGetServersPingAsync()
         {
-            _addingEndpoint = false;
-            GlobalServerIds.Clear();
+            Interlocked.Exchange(ref _globalServerIds, null);
+            _serverIdsTimer?.Stop();
             return Task.CompletedTask;
         }
 
@@ -448,16 +456,7 @@ namespace Microsoft.Azure.SignalR
                         if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendTimestamp) > DefaultGetServiceStatusTicks)
                         {
                             await WriteAsync(RuntimeServicePingMessage.GetStatusPingMessage(true));
-                            // Re-use timer to send get global servers ping when add service endpoint starts
-                            if (_addingEndpoint)
-                            {
-                                await WriteAsync(RuntimeServicePingMessage.GetServersPingMessage());
-                                if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _serverIdsLastUpdated) > DefaultGetServiceStatusTimeoutTicks)
-                                {
-                                    // clear timeout values to improve accuracy.
-                                    GlobalServerIds.Clear();
-                                }
-                            }
+                            
                             Interlocked.Exchange(ref _lastSendTimestamp, Stopwatch.GetTimestamp());
                             Log.SentServiceStatusPing(Logger);
                         }
@@ -465,6 +464,48 @@ namespace Microsoft.Azure.SignalR
                     catch (Exception e)
                     {
                         Log.FailedSendingServiceStatusPing(Logger, e);
+                    }
+                }
+            }
+        }
+
+        private TimerAwaitable StartServerIdsPingTimer()
+        {
+            Log.StartingServerIdsPingTimer(Logger, DefaultGetServiceStatusInterval);
+
+            _lastSendServerIdsTimestamp = Stopwatch.GetTimestamp();
+            var timer = new TimerAwaitable(DefaultGetServiceStatusInterval, DefaultGetServiceStatusInterval);
+            _ = ServerIdsPingAsync(timer);
+
+            return timer;
+        }
+
+        private async Task ServerIdsPingAsync(TimerAwaitable timer)
+        {
+            using (timer)
+            {
+                timer.Start();
+        
+                while (await timer)
+                {
+                    try
+                    {
+                        // Check if last send time is longer than default keep-alive ticks and then send ping
+                        if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendServerIdsTimestamp) > DefaultGetServiceStatusTicks)
+                        {
+                            await WriteAsync(RuntimeServicePingMessage.GetServersPingMessage());
+                            if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _serverIdsLastUpdated) > DefaultGetServiceStatusTimeoutTicks)
+                            {
+                                // clear long term not updated values for accuracy
+                                Interlocked.Exchange(ref _globalServerIds, null);
+                            }
+                            Interlocked.Exchange(ref _lastSendServerIdsTimestamp, Stopwatch.GetTimestamp());
+                            Log.SentServerIdsPing(Logger);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Log.FailedSendingServerIdsPing(Logger, e);
                     }
                 }
             }
@@ -489,6 +530,19 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, bool, ServiceEndpoint, string, Exception> _receivedServiceStatusPing =
                 LoggerMessage.Define<bool, ServiceEndpoint, string>(LogLevel.Debug, new EventId(8, "ReceivedServiceStatusPing"), "Received a service status active={isActive} from {endpoint} for hub {hub}.");
+
+
+            private static readonly Action<ILogger, double, Exception> _startingServerIdsPingTimer =
+                LoggerMessage.Define<double>(LogLevel.Debug, new EventId(9, "StartingServerIdsPingTimer"), "Starting get server ids ping timer. Duration: {KeepAliveInterval:0.00}ms");
+
+            private static readonly Action<ILogger, Exception> _sentServerIdsPing =
+                LoggerMessage.Define(LogLevel.Debug, new EventId(10, "SentServerIdsPing"), "Sent a get server ids ping message to service.");
+
+            private static readonly Action<ILogger, Exception> _failedSendingServerIdsPing =
+                LoggerMessage.Define(LogLevel.Warning, new EventId(11, "FailedSendingServerIdsPing"), "Failed sending a server ids ping message to service.");
+
+            private static readonly Action<ILogger, ServiceEndpoint, string, Exception> _receivedServerIdsPing =
+                LoggerMessage.Define<ServiceEndpoint, string>(LogLevel.Debug, new EventId(12, "ReceivedServerIdsPing"), "Received a server ids ping from {endpoint} for hub {hub}.");
 
 
             public static void EndpointOnline(ILogger logger, HubServiceEndpoint endpoint)
@@ -519,6 +573,26 @@ namespace Microsoft.Azure.SignalR
             public static void ReceivedServiceStatusPing(ILogger logger, bool isActive, HubServiceEndpoint endpoint)
             {
                 _receivedServiceStatusPing(logger, isActive, endpoint, endpoint.Hub, null);
+            }
+
+            public static void StartingServerIdsPingTimer(ILogger logger, TimeSpan keepAliveInterval)
+            {
+                _startingServerIdsPingTimer(logger, keepAliveInterval.TotalMilliseconds, null);
+            }
+
+            public static void SentServerIdsPing(ILogger logger)
+            {
+                _sentServerIdsPing(logger, null);
+            }
+
+            public static void FailedSendingServerIdsPing(ILogger logger, Exception exception)
+            {
+                _failedSendingServerIdsPing(logger, exception);
+            }
+
+            public static void ReceivedServerIdsPing(ILogger logger, HubServiceEndpoint endpoint)
+            {
+                _receivedServerIdsPing(logger, endpoint, endpoint.Hub, null);
             }
         }
     }
