@@ -341,6 +341,8 @@ namespace Microsoft.Azure.SignalR
         public void Dispose()
         {
             _timer.Stop();
+            // in case StopGetServersPingAsync is not executed.
+            _serverIdsTimer?.Stop();
             Dispose(true);
             GC.SuppressFinalize(this);
         }
