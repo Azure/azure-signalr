@@ -16,6 +16,8 @@
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="$(MicrosoftExtensionsPrimitivesPackageVersion)" />
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersPackageVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryPackageVersion)" />
+
+    <PackageReference Include="Microsoft.VisualStudio.Validation" Version="$(MicrosoftVisualStudioValidationPackageVersion)" />
   </ItemGroup>
 
   <PropertyGroup>
