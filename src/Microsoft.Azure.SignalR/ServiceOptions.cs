@@ -80,6 +80,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Specifies the timeout of scaling endpoints in running app (in minutes). 
         /// </summary>
-        public TimeSpan ServiceScaleTimeout { get; set; } = TimeSpan.FromMinutes(Constants.DefaultScaleTimeoutInMinutes);
+        // TODO: make public when feature ready.
+        internal TimeSpan ServiceScaleTimeout { get; set; } = TimeSpan.FromMinutes(Constants.DefaultScaleTimeoutInMinutes);
     }
 }
