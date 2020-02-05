@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             return base.WriteAsync(serviceMessage);
         }
 
-        public override Task OfflineAsync()
+        public override Task OfflineAsync(bool migratable)
         {
             return Task.CompletedTask;
         }
