@@ -11,9 +11,7 @@ namespace Nerdbank.Streams
     using System.ComponentModel;
     using System.Diagnostics;
     using System.Reflection;
-    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
-    using Microsoft;
 
     /// <summary>
     /// Manages a sequence of elements, readily castable as a <see cref="ReadOnlySequence{T}"/>.
@@ -54,8 +52,7 @@ namespace Nerdbank.Streams
         /// <param name="memoryPool">The pool to use for recycling backing arrays.</param>
         public Sequence(MemoryPool<T> memoryPool)
         {
-            Requires.NotNull(memoryPool, nameof(memoryPool));
-            this.memoryPool = memoryPool;
+            this.memoryPool = memoryPool ?? throw new NullReferenceException(nameof(memoryPool));
         }
 
         /// <summary>
@@ -64,8 +61,7 @@ namespace Nerdbank.Streams
         /// <param name="arrayPool">The pool to use for recycling backing arrays.</param>
         public Sequence(ArrayPool<T> arrayPool)
         {
-            Requires.NotNull(arrayPool, nameof(arrayPool));
-            this.arrayPool = arrayPool;
+            this.arrayPool = arrayPool ?? throw new NullReferenceException(nameof(arrayPool));
         }
 
         /// <summary>
@@ -149,10 +145,16 @@ namespace Nerdbank.Streams
                 current = current.Next;
             }
 
-            Requires.Argument(current != null, nameof(position), "Position does not represent a valid position in this sequence.");
+            if(current == null)
+            {
+                throw new ArgumentException("Position does not represent a valid position in this sequence.", nameof(position));
+            }
 
             // Also confirm that the position is not a prior position in the block.
-            Requires.Argument(firstIndex >= current.Start, nameof(position), "Position must not be earlier than current position.");
+            if (firstIndex < current.Start)
+            {
+                throw new ArgumentException("Position must not be earlier than current position.", nameof(position));
+            }
 
             // Now repeat the loop, performing the mutations.
             current = this.first;
@@ -179,7 +181,12 @@ namespace Nerdbank.Streams
         public void Advance(int count)
         {
             SequenceSegment? last = this.last;
-            Verify.Operation(last != null, "Cannot advance before acquiring memory.");
+
+            if(last == null)
+            {
+                throw new InvalidOperationException("Cannot advance before acquiring memory.");
+            }
+            
             last.Advance(count);
         }
 
@@ -222,7 +229,11 @@ namespace Nerdbank.Streams
 
         private SequenceSegment GetSegment(int sizeHint)
         {
-            Requires.Range(sizeHint >= 0, nameof(sizeHint));
+            if(sizeHint < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(sizeHint));
+            }
+            
             int? minBufferSize = null;
             if (sizeHint == 0)
             {
@@ -437,7 +448,11 @@ namespace Nerdbank.Streams
             /// <param name="count">The number of elements written.</param>
             internal void Advance(int count)
             {
-                Requires.Range(count >= 0 && this.End + count <= this.Memory.Length, nameof(count));
+                if (count < 0 || this.End + count > this.Memory.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(count));
+                }
+                
                 this.End += count;
             }
 
