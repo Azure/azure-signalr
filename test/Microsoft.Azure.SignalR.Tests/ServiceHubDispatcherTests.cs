@@ -98,7 +98,7 @@ namespace Microsoft.Azure.SignalR.Tests
             public DateTime offlineTime = new DateTime();
             public DateTime stopTime = new DateTime();
 
-            public async Task OfflineAsync()
+            public async Task OfflineAsync(bool migratable)
             {
                 await Task.Delay(100);
                 offlineTime = DateTime.Now;

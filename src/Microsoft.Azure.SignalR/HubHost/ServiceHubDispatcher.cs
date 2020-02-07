@@ -70,7 +70,7 @@ namespace Microsoft.Azure.SignalR
         {
             using CancellationTokenSource source = new CancellationTokenSource();
 
-            var expected = OfflineAndWaitForCompletedAsync();
+            var expected = OfflineAndWaitForCompletedAsync(_options.MigrationLevel != ServerConnectionMigrationLevel.Off);
             var actual = await Task.WhenAny(
                 Task.Delay(timeout, source.Token), expected
             );
@@ -84,9 +84,9 @@ namespace Microsoft.Azure.SignalR
             await _serviceConnectionManager.StopAsync();
         }
 
-        private async Task OfflineAndWaitForCompletedAsync()
+        private async Task OfflineAndWaitForCompletedAsync(bool migratable)
         {
-            await _serviceConnectionManager.OfflineAsync();
+            await _serviceConnectionManager.OfflineAsync(migratable);
             await _clientConnectionManager.WhenAllCompleted();
         }
 
