@@ -12,11 +12,13 @@ namespace Microsoft.Azure.SignalR
 {
     internal abstract class ServiceEndpointManagerBase : IServiceEndpointManager
     {
+        // Endpoints for negotiation
         private readonly ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>> _endpointsPerHub = new ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>>();
 
         private readonly ILogger _logger;
 
-        public ServiceEndpoint[] Endpoints { get; }
+        // Filtered valuable endpoints from ServiceOptions
+        public ServiceEndpoint[] Endpoints { get; private set; }
 
         protected ServiceEndpointManagerBase(IServiceEndpointOptions options, ILogger logger) 
             : this(GetEndpoints(options), logger)
@@ -28,22 +30,7 @@ namespace Microsoft.Azure.SignalR
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            // select the most valuable endpoint with the same endpoint address
-            var groupedEndpoints = endpoints.Distinct().GroupBy(s => s.Endpoint).Select(s =>
-            {
-                var items = s.ToList();
-                if (items.Count == 1)
-                {
-                    return items[0];
-                }
-
-                // By default pick up the primary endpoint, otherwise the first one
-                var item = items.FirstOrDefault(i => i.EndpointType == EndpointType.Primary) ?? items.FirstOrDefault();
-                Log.DuplicateEndpointFound(_logger, items.Count, item?.Endpoint, item?.ToString());
-                return item;
-            });
-
-            Endpoints = groupedEndpoints.ToArray();
+            SetValuableEndpoints(endpoints);
 
             if (Endpoints.Length > 0 && Endpoints.All(s => s.EndpointType != EndpointType.Primary))
             {
@@ -63,7 +50,7 @@ namespace Microsoft.Azure.SignalR
             }).ToArray());
         }
 
-        private static IEnumerable<ServiceEndpoint> GetEndpoints(IServiceEndpointOptions options)
+        protected static IEnumerable<ServiceEndpoint> GetEndpoints(IServiceEndpointOptions options)
         {
             if (options == null)
             {
@@ -87,6 +74,26 @@ namespace Microsoft.Azure.SignalR
                     yield return endpoint;
                 }
             }
+        }
+
+        protected void SetValuableEndpoints(IEnumerable<ServiceEndpoint> endpoints)
+        {
+            // select the most valuable endpoint with the same endpoint address
+            var groupedEndpoints = endpoints.Distinct().GroupBy(s => s.Endpoint).Select(s =>
+            {
+                var items = s.ToList();
+                if (items.Count == 1)
+                {
+                    return items[0];
+                }
+
+                // By default pick up the primary endpoint, otherwise the first one
+                var item = items.FirstOrDefault(i => i.EndpointType == EndpointType.Primary) ?? items.FirstOrDefault();
+                Log.DuplicateEndpointFound(_logger, items.Count, item?.Endpoint, item?.ToString());
+                return item;
+            });
+
+            Endpoints = groupedEndpoints.ToArray();
         }
 
         private static class Log

@@ -25,8 +25,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private static readonly string ConnectionStringWithV1Version = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0";
 
-        private static readonly IOptions<ServiceOptions> _optionsWithoutAppName = Options.Create(new ServiceOptions());
-        private static readonly IOptions<ServiceOptions> _optionsWithAppName = Options.Create(new ServiceOptions { ApplicationName = AppName });
+        private static readonly ServiceOptions _optionsWithoutAppName = Options.Create(new ServiceOptions()).Value;
+        private static readonly ServiceOptions _optionsWithAppName = Options.Create(new ServiceOptions { ApplicationName = AppName }).Value;
 
         private static readonly ServiceEndpointProvider[] EndpointProviderArray =
         {

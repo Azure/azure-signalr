@@ -27,7 +27,6 @@ namespace Microsoft.Azure.SignalR.Tests
                 NullLoggerFactory.Instance,
                 new TestRouter(),
                 null,
-                null,
                 null
             );
 
