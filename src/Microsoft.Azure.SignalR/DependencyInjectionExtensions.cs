@@ -30,10 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder)
         {
-            builder.Services.AddSingleton<ServiceOptionsSetup>();
-            builder.Services.AddSingleton<IConfigureOptions<ServiceOptions>>(s => s.GetService<ServiceOptionsSetup>());
-            builder.Services.AddSingleton<IOptionsChangeTokenSource<ServiceOptions>>(s => s.GetService<ServiceOptionsSetup>());
-
+            builder.Services.AddSingleton<IConfigureOptions<ServiceOptions>, IOptionsChangeTokenSource<ServiceOptions>, ServiceOptionsSetup>();
             return builder.AddAzureSignalRCore();
         }
 
