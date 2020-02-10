@@ -49,13 +49,17 @@ namespace Microsoft.Azure.SignalR
         {
             Log.DetectConfigurationChanges(_logger);
 
-            // Reset local cache
+            // Reset local cache and validate result
             SetValuableEndpoints(GetEndpoints(options));
+            if (Endpoints.Length == 0)
+            {
+                throw new ArgumentException(ServiceEndpointProvider.ConnectionStringNotFound);
+            }
             var updatedEndpoints = Endpoints.ToList();
 
             var endpoints = GetChangedEndpoints(updatedEndpoints);
 
-            OnRename(endpoints.RenamedEndpoints);
+            RenameServiceEndpoints(endpoints.RenamedEndpoints);
 
             _ = DoScaleAsync(endpoints.AddedEndpoints, endpoints.RemovedEndpoints);
 
@@ -64,29 +68,43 @@ namespace Microsoft.Azure.SignalR
 
         private Task DoScaleAsync(IReadOnlyList<ServiceEndpoint> addedEndpoints, IReadOnlyList<ServiceEndpoint> removedEndpoints)
         {
-            // First add then remove to minor the affect to new clients
-            OnAdd(addedEndpoints);
+            // First add then remove to minor the affect to new clients.
+            // Update EndpointType follow same process.
+            AddServiceEndpoints(addedEndpoints);
 
-            OnRemove(removedEndpoints);
+            RemoveServiceEndpoint(removedEndpoints);
 
             return Task.CompletedTask;
         }
 
-        private Task OnAdd(IReadOnlyList<ServiceEndpoint> endpoints)
+        private Task AddServiceEndpoints(IReadOnlyList<ServiceEndpoint> endpoints)
         {
-            // TODO: parallel do add
+            if (endpoints.Count > 0)
+            {
+                // TODO: parallel do add
+                Log.StartAddingServiceEndpoints(_logger, endpoints.Count);
+            }
             return Task.CompletedTask;
         }
 
-        private Task OnRemove(IReadOnlyList<ServiceEndpoint> endpoints)
+        private Task RemoveServiceEndpoint(IReadOnlyList<ServiceEndpoint> endpoints)
         {
-            // TODO: parallel do remove
+            if (endpoints.Count > 0)
+            {
+                // TODO: parallel do remove
+                Log.StartRemovingServiceEndpoints(_logger, endpoints.Count);
+            }
             return Task.CompletedTask;
         }
 
-        private void OnRename(IReadOnlyList<ServiceEndpoint> endpoints)
+        private Task RenameServiceEndpoints(IReadOnlyList<ServiceEndpoint> endpoints)
         {
             // No need to affect existing connections, property update is enough
+            if (endpoints.Count > 0)
+            {
+                Log.StartRenamingServiceEndpoints(_logger, endpoints.Count);
+            }
+            return Task.CompletedTask;
         }
 
         private (IReadOnlyList<ServiceEndpoint> AddedEndpoints, 
@@ -120,9 +138,34 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, Exception> _detectEndpointChanges =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(1, "DetectConfigurationChanges"), "Dected configuration changes in configuration, start live-scale.");
 
+            private static readonly Action<ILogger, int, Exception> _startAddingServiceEndpoints =
+                LoggerMessage.Define<int>(LogLevel.Information, new EventId(2, "StartAddingServiceEndpoints"), "Start adding {count} endpoints.");
+
+            private static readonly Action<ILogger, int, Exception> _startRemovingServiceEndpoints =
+                LoggerMessage.Define<int>(LogLevel.Information, new EventId(3, "StartRemovingServiceEndpoints"), "Start removing {count} endpoints.");
+            
+            private static readonly Action<ILogger, int, Exception> _startUpdatingServiceEndpoints =
+                LoggerMessage.Define<int>(LogLevel.Information, new EventId(4, "StartRenamingServiceEndpoints"), "Start renaming {count} endpoints.");
+
+
             public static void DetectConfigurationChanges(ILogger logger)
             {
                 _detectEndpointChanges(logger, null);
+            }
+
+            public static void StartAddingServiceEndpoints(ILogger logger, int count)
+            {
+                _startAddingServiceEndpoints(logger, count, null);
+            }
+
+            public static void StartRemovingServiceEndpoints(ILogger logger, int count)
+            {
+                _startRemovingServiceEndpoints(logger, count, null);
+            }
+
+            public static void StartRenamingServiceEndpoints(ILogger logger, int count)
+            {
+                _startRenamingServiceEndpoints(logger, count, null);
             }
         }
     }

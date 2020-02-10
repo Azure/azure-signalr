@@ -78,9 +78,9 @@ namespace Microsoft.Azure.SignalR
         public IWebProxy Proxy { get; set; }
 
         /// <summary>
-        /// Specifies the timeout of scaling endpoints in running app (in minutes). 
+        /// Specifies the timeout of scaling endpoints in running app (in seconds). 
         /// </summary>
         // TODO: make public when feature ready.
-        internal TimeSpan ServiceScaleTimeout { get; set; } = TimeSpan.FromMinutes(Constants.DefaultScaleTimeoutInMinutes);
+        internal TimeSpan ServiceScaleTimeout { get; set; } = TimeSpan.FromSeconds(Constants.DefaultScaleTimeoutInSeconds);
     }
 }
