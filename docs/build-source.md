@@ -19,7 +19,12 @@ Building Azure SignalR Service SDK requires:
 
 For a new copy of the project, run:
 ```
+git clone --recursive https://github.com/Azure/azure-signalr
+```
+or if you have already cloned the repository :
+```
 git clone https://github.com/Azure/azure-signalr
+git submodule update --init --recursive
 ```
 
 ## Building on command-line
