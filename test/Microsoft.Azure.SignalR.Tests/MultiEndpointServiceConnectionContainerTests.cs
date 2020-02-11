@@ -702,7 +702,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var manager = new TestServiceEndpointManager(
                 new ServiceEndpoint(ConnectionString1)
             );
-            await TestEndpointOfflineInner(manager, null, migratable);
+            await TestEndpointOfflineInner(manager, new TestEndpointRouter(), migratable);
         }
 
         [Theory]
