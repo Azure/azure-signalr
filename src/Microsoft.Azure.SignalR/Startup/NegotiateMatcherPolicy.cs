@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if !NETSTANDARD2_0
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.SignalR
     internal class NegotiateMatcherPolicy : MatcherPolicy, IEndpointSelectorPolicy
     {
         // This caches the replacement endpoints for negotiate so they are not recomputed on every request
-        private readonly ConcurrentDictionary<Endpoint, Endpoint> _negotiateEndpointCache = new ConcurrentDictionary<Endpoint, Endpoint>();
+        private readonly ConcurrentDictionary<Type, Endpoint> _negotiateEndpointCache = new ConcurrentDictionary<Type, Endpoint>();
         
         public override int Order => 1;
 
@@ -42,9 +43,10 @@ namespace Microsoft.Azure.SignalR
             {
                 ref var candidate = ref candidates[i];
                 // Only apply to RouteEndpoint
-                if (candidate.Endpoint is RouteEndpoint)
+                if (candidate.Endpoint is RouteEndpoint routeEndpoint)
                 {
-                    var newEndpoint = _negotiateEndpointCache.GetOrAdd(candidate.Endpoint, CreateNegotiateEndpoint);
+                    var hubType = routeEndpoint.Metadata.GetMetadata<HubMetadata>().HubType;
+                    var newEndpoint = _negotiateEndpointCache.GetOrAdd(hubType, e => CreateNegotiateEndpoint(routeEndpoint));
 
                     candidates.ReplaceEndpoint(i, newEndpoint, candidate.Values);
                 }
@@ -53,10 +55,9 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        private Endpoint CreateNegotiateEndpoint(Endpoint endpoint)
+        private Endpoint CreateNegotiateEndpoint(RouteEndpoint routeEndpoint)
         {
-            var routeEndpoint = (RouteEndpoint)endpoint;
-            var hubMetadata = endpoint.Metadata.GetMetadata<HubMetadata>();
+            var hubMetadata = routeEndpoint.Metadata.GetMetadata<HubMetadata>();
 
             // Replaces the negotiate endpoint with one that does the service redirect
             var routeEndpointBuilder = new RouteEndpointBuilder(async context =>
@@ -70,7 +71,7 @@ namespace Microsoft.Azure.SignalR
             routeEndpointBuilder.DisplayName = routeEndpoint.DisplayName;
 
             // Preserve the metadata
-            foreach (var metadata in endpoint.Metadata)
+            foreach (var metadata in routeEndpoint.Metadata)
             {
                 routeEndpointBuilder.Metadata.Add(metadata);
             }

@@ -124,11 +124,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             if (scf == null)
             {
                 var connectionFactory = new ConnectionFactory(serverNameProvider, loggerFactory);
-                scf = new ServiceConnectionFactory(serviceProtocol, ccm, connectionFactory, loggerFactory);
+                scf = new ServiceConnectionFactory(serviceProtocol, ccm, connectionFactory, loggerFactory, serverNameProvider);
                 configuration.Resolver.Register(typeof(IServiceConnectionFactory), () => scf);
             }
 
-            var sccf = new ServiceConnectionContainerFactory(scf, endpoint, router, options, serverNameProvider, loggerFactory);
+            var sccf = new ServiceConnectionContainerFactory(scf, endpoint, router, options, loggerFactory);
 
             if (hubs?.Count > 0)
             {

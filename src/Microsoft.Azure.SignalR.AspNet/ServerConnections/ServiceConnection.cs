@@ -34,6 +34,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IClientConnectionManager _clientConnectionManager;
 
         public ServiceConnection(
+            string serverId,
             string connectionId,
             HubServiceEndpoint endpoint,
             IServiceProtocol serviceProtocol,
@@ -42,8 +43,14 @@ namespace Microsoft.Azure.SignalR.AspNet
             ILoggerFactory loggerFactory,
             IServiceMessageHandler serviceMessageHandler,
             ServiceConnectionType connectionType = ServiceConnectionType.Default)
-            : base(serviceProtocol, connectionId, endpoint, serviceMessageHandler, connectionType,
-                loggerFactory?.CreateLogger<ServiceConnection>())
+            : base(
+                  serviceProtocol,
+                  serverId,
+                  connectionId,
+                  endpoint,
+                  serviceMessageHandler,
+                  connectionType,
+                  loggerFactory?.CreateLogger<ServiceConnection>())
         {
             _connectionFactory = connectionFactory;
             _clientConnectionManager = clientConnectionManager;

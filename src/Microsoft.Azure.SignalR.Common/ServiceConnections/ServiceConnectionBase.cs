@@ -53,6 +53,8 @@ namespace Microsoft.Azure.SignalR
 
         protected HubServiceEndpoint HubEndpoint { get; }
 
+        protected string ServerId { get; }
+
         protected string ConnectionId { get; }
 
         protected ILogger Logger { get; }
@@ -87,10 +89,17 @@ namespace Microsoft.Azure.SignalR
 
         public Task ConnectionOfflineTask => _serviceConnectionOfflineTcs.Task;
 
-        protected ServiceConnectionBase(IServiceProtocol serviceProtocol, string connectionId,
-            HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType connectionType, ILogger logger)
+        protected ServiceConnectionBase(
+            IServiceProtocol serviceProtocol,
+            string serverId,
+            string connectionId,
+            HubServiceEndpoint endpoint,
+            IServiceMessageHandler serviceMessageHandler,
+            ServiceConnectionType connectionType,
+            ILogger logger)
         {
             ServiceProtocol = serviceProtocol;
+            ServerId = serverId;
             ConnectionId = connectionId;
 
             _connectionType = connectionType;
@@ -261,12 +270,12 @@ namespace Microsoft.Azure.SignalR
 
         protected Task OnPingMessageAsync(PingMessage pingMessage)
         {
-            if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.OfflineKey, out var instanceId) && !string.IsNullOrEmpty(instanceId))
+            if (RuntimeServicePingMessage.TryGetOffline(pingMessage, out var instanceId))
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
                 return CleanupClientConnections(instanceId);
             } 
-            if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.ShutdownKey, out string val) && val == Constants.ServicePingMessageValue.ShutdownFinAck)
+            if (RuntimeServicePingMessage.IsFinAck(pingMessage))
             {
                 _serviceConnectionOfflineTcs.TrySetResult(null);
                 return Task.CompletedTask;

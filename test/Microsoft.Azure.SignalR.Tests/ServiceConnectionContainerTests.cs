@@ -33,18 +33,12 @@ namespace Microsoft.Azure.SignalR.Tests
                     // write back a FinAck after receiving a Fin
                     if (proto.TryParseMessage(ref buffer, out ServiceMessage message))
                     {
-                        if (message is PingMessage ping && ping.TryGetValue(Constants.ServicePingMessageKey.ShutdownKey, out string val))
+                        if (RuntimeServicePingMessage.IsFin(message))
                         {
-                            if (val == Constants.ServicePingMessageValue.ShutdownFin)
-                            {
-                                PingMessage pong = new PingMessage
-                                {
-                                    Messages = new string[2] { Constants.ServicePingMessageKey.ShutdownKey, Constants.ServicePingMessageValue.ShutdownFinAck }
-                                };
-                                proto.WriteMessage(pong, conn.Application.Output);
-                                await conn.Application.Output.FlushAsync();
-                                break;
-                            }
+                            var pong = RuntimeServicePingMessage.GetFinAckPingMessage();
+                            proto.WriteMessage(pong, conn.Application.Output);
+                            await conn.Application.Output.FlushAsync();
+                            break;
                         }
                     }
                 }
