@@ -148,7 +148,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
-            if (_needRouter)
+            if (!_needRouter)
             {
                 return _inner.WriteAsync(serviceMessage);
             }
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            if (_needRouter)
+            if (!_needRouter)
             {
                 return await _inner.WriteAckableMessageAsync(serviceMessage, cancellationToken);
             }
