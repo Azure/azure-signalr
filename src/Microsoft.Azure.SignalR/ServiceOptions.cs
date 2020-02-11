@@ -76,11 +76,5 @@ namespace Microsoft.Azure.SignalR
         /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
         /// </summary>
         public IWebProxy Proxy { get; set; }
-
-        /// <summary>
-        /// Specifies the timeout of scaling endpoints in running app (in seconds). 
-        /// </summary>
-        // TODO: make public when feature ready.
-        internal TimeSpan ServiceScaleTimeout { get; set; } = TimeSpan.FromSeconds(Constants.DefaultScaleTimeoutInSeconds);
     }
 }

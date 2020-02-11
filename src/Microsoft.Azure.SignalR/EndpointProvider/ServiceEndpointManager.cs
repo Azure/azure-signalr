@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly ILogger _logger;
 
-        // Store the initial ServiceOptions for generate EndpointProvider use.
+        // Store the initial ServiceOptions for generating EndpointProvider use.
         // Only Endpoints value accept hot-reload and prevent changes of unexpected modification on other configurations.
         private readonly ServiceOptions _options;
         private IReadOnlyList<ServiceEndpoint> _endpointsStore;
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(ServiceEndpointProvider.ConnectionStringNotFound);
             }
             _options = optionsMonitor.CurrentValue;
-            _logger = loggerFactory?.CreateLogger<ServiceEndpointManager>();
+            _logger = loggerFactory?.CreateLogger<ServiceEndpointManager>() ?? throw new ArgumentNullException(nameof(loggerFactory));
 
             // TODO: Enable optionsMonitor.OnChange when feature ready.
             // optionsMonitor.OnChange(OnChange);
@@ -50,31 +50,17 @@ namespace Microsoft.Azure.SignalR
             Log.DetectConfigurationChanges(_logger);
 
             // Reset local cache and validate result
-            SetValuableEndpoints(GetEndpoints(options));
-            if (Endpoints.Length == 0)
+            var endpoints = GetValuableEndpoints(GetEndpoints(options));
+            if (endpoints.Length == 0)
             {
-                throw new ArgumentException(ServiceEndpointProvider.ConnectionStringNotFound);
+                Log.EndpointNotFound(_logger);
+                return; 
             }
-            var updatedEndpoints = Endpoints.ToList();
+            Endpoints = endpoints;
 
-            var endpoints = GetChangedEndpoints(updatedEndpoints);
+            var updatedEndpoints = GetChangedEndpoints(Endpoints);
 
-            // RenameServiceEndpoints(endpoints.RenamedEndpoints);
-
-            _ = DoScaleAsync(endpoints.AddedEndpoints, endpoints.RemovedEndpoints);
-
-            _endpointsStore = updatedEndpoints.ToList();
-        }
-
-        private Task DoScaleAsync(IReadOnlyList<ServiceEndpoint> addedEndpoints, IReadOnlyList<ServiceEndpoint> removedEndpoints)
-        {
-            // First add then remove to minor the affect to new clients.
-            // Update EndpointType follow same process.
-            // AddServiceEndpoints(addedEndpoints);
-            // 
-            // RemoveServiceEndpoint(removedEndpoints);
-
-            return Task.CompletedTask;
+            _endpointsStore = Endpoints.ToList();
         }
 
         private (IReadOnlyList<ServiceEndpoint> AddedEndpoints, 
@@ -94,7 +80,7 @@ namespace Microsoft.Azure.SignalR
         {
             public bool Equals(ServiceEndpoint x, ServiceEndpoint y)
             {
-                return x.ConnectionString == y.ConnectionString && x.EndpointType == y.EndpointType;
+                return x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType;
             }
 
             public int GetHashCode(ServiceEndpoint obj)
@@ -108,9 +94,17 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, Exception> _detectEndpointChanges =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(1, "DetectConfigurationChanges"), "Dected configuration changes in configuration, start live-scale.");
 
+            private static readonly Action<ILogger, Exception> _endpointNotFound =
+                LoggerMessage.Define(LogLevel.Error, new EventId(1, "EndpointNotFound"), "No connection string is specified. Skip scale operation.");
+
             public static void DetectConfigurationChanges(ILogger logger)
             {
                 _detectEndpointChanges(logger, null);
+            }
+
+            public static void EndpointNotFound(ILogger logger)
+            {
+                _endpointNotFound(logger, null);
             }
         }
     }

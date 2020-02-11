@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ILogger _logger;
 
         // Filtered valuable endpoints from ServiceOptions
-        public ServiceEndpoint[] Endpoints { get; private set; }
+        public ServiceEndpoint[] Endpoints { get; protected set; }
 
         protected ServiceEndpointManagerBase(IServiceEndpointOptions options, ILogger logger) 
             : this(GetEndpoints(options), logger)
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            SetValuableEndpoints(endpoints);
+            Endpoints = GetValuableEndpoints(endpoints);
 
             if (Endpoints.Length > 0 && Endpoints.All(s => s.EndpointType != EndpointType.Primary))
             {
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        protected void SetValuableEndpoints(IEnumerable<ServiceEndpoint> endpoints)
+        protected ServiceEndpoint[] GetValuableEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
             // select the most valuable endpoint with the same endpoint address
             var groupedEndpoints = endpoints.Distinct().GroupBy(s => s.Endpoint).Select(s =>
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.SignalR
                 return item;
             });
 
-            Endpoints = groupedEndpoints.ToArray();
+            return groupedEndpoints.ToArray();
         }
 
         private static class Log
