@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
 
@@ -17,6 +18,10 @@ namespace Microsoft.Azure.SignalR
         private readonly ILogger _logger;
 
         public ServiceEndpoint[] Endpoints { get; }
+
+        public event EndpointEventHandler OnAdd;
+        public event EndpointEventHandler OnRemove;
+        public event EndpointEventHandler OnUpdate;
 
         protected ServiceEndpointManagerBase(IServiceEndpointOptions options, ILogger logger) 
             : this(GetEndpoints(options), logger)
@@ -56,11 +61,45 @@ namespace Microsoft.Azure.SignalR
 
         public IReadOnlyList<HubServiceEndpoint> GetEndpoints(string hub)
         {
-            return _endpointsPerHub.GetOrAdd(hub, s => Endpoints.Select(e =>
+            return _endpointsPerHub.GetOrAdd(hub, s => Endpoints.Select(e => CreateHubServiceEndpoint(hub, e)).ToArray());
+        }
+
+        protected async Task AddServiceEndpointsAsync(IReadOnlyList<ServiceEndpoint> endpoints)
+        {
+            if (endpoints.Count > 0)
             {
-                var provider = GetEndpointProvider(e);
-                return new HubServiceEndpoint(hub, provider, e);
-            }).ToArray());
+                var hubEndpoints = CreateHubServiceEndpoints(endpoints);
+
+                await Task.WhenAll(hubEndpoints.Select(e => AddServiceEndpoint(e)));
+
+                UpdateNegotiationEndpointsStore(hubEndpoints, ScaleOperation.Add);
+            }
+        }
+
+        protected Task RemoveServiceEndpoints(IReadOnlyList<ServiceEndpoint> endpoints)
+        {
+            if (endpoints.Count > 0)
+            {
+                var hubEndpoints = CreateHubServiceEndpoints(endpoints);
+
+                UpdateNegotiationEndpointsStore(hubEndpoints, ScaleOperation.Remove);
+
+                return Task.WhenAll(hubEndpoints.Select(e => RemoveServiceEndpoint(e)));
+            }
+            return Task.CompletedTask;
+        }
+
+        protected Task RenameSerivceEndpoints(IReadOnlyList<ServiceEndpoint> endpoints)
+        {
+            if (endpoints.Count > 0)
+            {
+                var hubEndpoints = CreateHubServiceEndpoints(endpoints);
+
+                UpdateNegotiationEndpointsStore(hubEndpoints, ScaleOperation.Rename);
+
+                return Task.WhenAll(hubEndpoints.Select(e => UpdateServiceEndpoint(e)));
+            }
+            return Task.CompletedTask;
         }
 
         private static IEnumerable<ServiceEndpoint> GetEndpoints(IServiceEndpointOptions options)
@@ -86,6 +125,85 @@ namespace Microsoft.Azure.SignalR
                 {
                     yield return endpoint;
                 }
+            }
+        }
+
+        private IReadOnlyList<HubServiceEndpoint> CreateHubServiceEndpoints(string hub, IEnumerable<ServiceEndpoint> endpoints)
+        {
+            return endpoints.Select(e => CreateHubServiceEndpoint(hub, e)).ToList();
+        }
+
+        private HubServiceEndpoint CreateHubServiceEndpoint(string hub, ServiceEndpoint endpoint)
+        {
+            var provider = GetEndpointProvider(endpoint);
+            return new HubServiceEndpoint(hub, provider, endpoint);
+        }
+
+        private void UpdateNegotiationEndpointsStore(IReadOnlyList<HubServiceEndpoint> endpoints, ScaleOperation scaleOperation)
+        {
+            foreach (var hubEndpoint in _endpointsPerHub)
+            {
+                var deltaEndpoints = endpoints.Where(e => e.Hub == hubEndpoint.Key).ToList();
+                var updatedEndpoints = hubEndpoint.Value.ToList();
+                switch (scaleOperation)
+                {
+                    case ScaleOperation.Add:
+                        updatedEndpoints.AddRange(deltaEndpoints);
+                        break;
+                    case ScaleOperation.Remove:
+                        updatedEndpoints = updatedEndpoints.Except(deltaEndpoints, new HubServiceEndpointWeakComparer()).ToList();
+                        break;
+                    case ScaleOperation.Rename:
+                        updatedEndpoints = updatedEndpoints.Except(deltaEndpoints, new HubServiceEndpointWeakComparer()).ToList();
+                        updatedEndpoints.AddRange(deltaEndpoints);
+                        break;
+                }
+                _endpointsPerHub.TryUpdate(hubEndpoint.Key, updatedEndpoints, hubEndpoint.Value);
+            }
+        }
+
+        private IReadOnlyList<HubServiceEndpoint> CreateHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints)
+        {
+            var hubEndpoints = new List<HubServiceEndpoint>();
+            var hubs = _endpointsPerHub.Keys;
+            foreach (var hub in hubs)
+            {
+                hubEndpoints.AddRange(CreateHubServiceEndpoints(hub, endpoints));
+            }
+            return hubEndpoints;
+        }
+
+        private Task AddServiceEndpoint(HubServiceEndpoint endpoint)
+        {
+            OnAdd?.Invoke(endpoint);
+            // Wait for new endpoint turn Ready
+            while (!endpoint.Ready);
+
+            return Task.CompletedTask;
+        }
+
+        private Task RemoveServiceEndpoint(HubServiceEndpoint endpoint)
+        {
+            OnRemove?.Invoke(endpoint);
+            return Task.CompletedTask;
+        }
+
+        private Task UpdateServiceEndpoint(HubServiceEndpoint endpoint)
+        {
+            OnUpdate?.Invoke(endpoint);
+            return Task.CompletedTask;
+        }
+
+        private sealed class HubServiceEndpointWeakComparer : IEqualityComparer<HubServiceEndpoint>
+        {
+            public bool Equals(HubServiceEndpoint x, HubServiceEndpoint y)
+            {
+                return x.ConnectionString == y.ConnectionString && x.EndpointType == y.EndpointType;
+            }
+        
+            public int GetHashCode(HubServiceEndpoint obj)
+            {
+                return obj.ConnectionString.GetHashCode() ^ obj.EndpointType.GetHashCode();
             }
         }
 

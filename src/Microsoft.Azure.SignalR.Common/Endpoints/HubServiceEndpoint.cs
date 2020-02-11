@@ -16,5 +16,11 @@ namespace Microsoft.Azure.SignalR
         public string Hub { get; }
 
         public IServiceEndpointProvider Provider { get; }
+
+        /// <summary>
+        /// Flag to know whether HubServiceEndpoint has all server connections and ready to add negotiation
+        /// Value not alreadys get updated and only used when AddServiceEndpoint
+        /// </summary>
+        public bool Ready { get; internal set; } = false;
     }
 }
