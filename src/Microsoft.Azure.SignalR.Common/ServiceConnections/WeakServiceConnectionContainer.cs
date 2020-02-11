@@ -13,9 +13,9 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
     internal class WeakServiceConnectionContainer : ServiceConnectionContainerBase
     {
         private const int CheckWindow = 5;
-        private static readonly TimeSpan DefaultGetServiceStatusInterval = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan DefaultGetServiceStatusInterval = TimeSpan.FromSeconds(Constants.DefaultStatusPingIntervalInSeconds);
         private static readonly long DefaultGetServiceStatusTicks = DefaultGetServiceStatusInterval.Seconds * Stopwatch.Frequency;
-        private static readonly TimeSpan CheckTimeSpan = TimeSpan.FromMinutes(10);
+        private static readonly TimeSpan CheckTimeSpan = TimeSpan.FromMinutes(Constants.DefaultStatusPingIntervalInSeconds);
 
         private readonly object _lock = new object();
         private int _inactiveCount;

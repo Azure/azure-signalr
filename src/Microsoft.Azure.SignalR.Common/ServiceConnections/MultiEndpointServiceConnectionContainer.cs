@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -13,15 +14,20 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class MultiEndpointServiceConnectionContainer : IServiceConnectionContainer
+    internal class MultiEndpointServiceConnectionContainer : IMultiEndpointServiceConnectionContainer
     {
+        private readonly ConcurrentDictionary<ServiceEndpoint, IServiceConnectionContainer> _connectionContainers =
+               new ConcurrentDictionary<ServiceEndpoint, IServiceConnectionContainer>();
+
         private readonly IMessageRouter _router;
         private readonly ILogger _logger;
         private readonly IServiceConnectionContainer _inner;
 
         private IReadOnlyList<HubServiceEndpoint> _endpoints;
 
-        public Dictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; }
+        private bool _needRouter => _endpoints.Count > 1;
+
+        public IReadOnlyDictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers => _connectionContainers;
 
         internal MultiEndpointServiceConnectionContainer(
             string hub,
@@ -35,21 +41,19 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(generator));
             }
 
+            _router = router ?? throw new ArgumentNullException(nameof(router));
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
 
             // provides a copy to the endpoint per container
             _endpoints = endpointManager.GetEndpoints(hub);
 
-            if (_endpoints.Count == 1)
+            foreach (var endpoint in _endpoints)
             {
-                _inner = generator(_endpoints[0]);
+                _connectionContainers[endpoint] = generator(endpoint);
             }
-            else
-            {
-                // router is required when endpoints > 1
-                _router = router ?? throw new ArgumentNullException(nameof(router));
-                ConnectionContainers = _endpoints.ToDictionary(s => (ServiceEndpoint)s, s => generator(s));
-            }
+
+            // assign first element to _inner for quick access in single endpoint case
+            _inner = _connectionContainers.First().Value;
         }
 
         public MultiEndpointServiceConnectionContainer(
@@ -71,7 +75,7 @@ namespace Microsoft.Azure.SignalR
 
         public IEnumerable<ServiceEndpoint> GetOnlineEndpoints()
         {
-            return ConnectionContainers.Keys.Where(s => s.Online);
+            return _connectionContainers.Keys.Where(s => s.Online);
         }
 
         private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, HubServiceEndpoint endpoint, int count, ILoggerFactory loggerFactory)
@@ -92,24 +96,24 @@ namespace Microsoft.Azure.SignalR
         {
             get
             {
-                if (_inner != null)
+                if (!_needRouter)
                 {
                     return _inner.ConnectionInitializedTask;
                 }
 
-                return Task.WhenAll(from connection in ConnectionContainers
+                return Task.WhenAll(from connection in _connectionContainers
                                     select connection.Value.ConnectionInitializedTask);
             }
         }
 
         public Task StartAsync()
         {
-            if (_inner != null)
+            if (!_needRouter)
             {
                 return _inner.StartAsync();
             }
 
-            return Task.WhenAll(ConnectionContainers.Select(s =>
+            return Task.WhenAll(_connectionContainers.Select(s =>
             {
                 Log.StartingConnection(_logger, s.Key.Endpoint);
                 return s.Value.StartAsync();
@@ -118,12 +122,12 @@ namespace Microsoft.Azure.SignalR
 
         public Task StopAsync()
         {
-            if (_inner != null)
+            if (!_needRouter)
             {
                 return _inner.StopAsync();
             }
 
-            return Task.WhenAll(ConnectionContainers.Select(s =>
+            return Task.WhenAll(_connectionContainers.Select(s =>
             {
                 Log.StoppingConnection(_logger, s.Key.Endpoint);
                 return s.Value.StopAsync();
@@ -132,19 +136,19 @@ namespace Microsoft.Azure.SignalR
 
         public Task OfflineAsync(bool migratable)
         {
-            if (_inner != null)
+            if (!_needRouter)
             {
                 return _inner.OfflineAsync(migratable);
             }
             else
             {
-                return Task.WhenAll(ConnectionContainers.Select(c => c.Value.OfflineAsync(migratable)));
+                return Task.WhenAll(_connectionContainers.Select(c => c.Value.OfflineAsync(migratable)));
             }
         }
 
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
-            if (_inner != null)
+            if (_needRouter)
             {
                 return _inner.WriteAsync(serviceMessage);
             }
@@ -153,7 +157,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            if (_inner != null)
+            if (_needRouter)
             {
                 return await _inner.WriteAckableMessageAsync(serviceMessage, cancellationToken);
             }
@@ -214,7 +218,7 @@ namespace Microsoft.Azure.SignalR
             var routed = GetRoutedEndpoints(serviceMessage)?
                 .Select(endpoint =>
                 {
-                    if (ConnectionContainers.TryGetValue(endpoint, out var connection))
+                    if (_connectionContainers.TryGetValue(endpoint, out var connection))
                     {
                         return (e: endpoint, c: connection);
                     }

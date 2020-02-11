@@ -20,19 +20,6 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class TestEndpointServiceConnectionContainerTests : VerifiableLoggedTest
     {
-        private sealed class TestMultiEndpointServiceConnectionContainer : MultiEndpointServiceConnectionContainer
-        {
-            public TestMultiEndpointServiceConnectionContainer(string hub,
-                                                          Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
-                                                          IServiceEndpointManager endpoint,
-                                                          IEndpointRouter router,
-                                                          ILoggerFactory loggerFactory
-
-                ) : base(hub, generator, endpoint, router, loggerFactory)
-            {
-            }
-        }
-
         private const string ConnectionStringFormatter = "Endpoint={0};AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string Url1 = "http://url1";
         private const string Url2 = "https://url2";
@@ -705,6 +692,29 @@ namespace Microsoft.Azure.SignalR.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task).OrTimeout();
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task TestSingleEndpointOffline(bool migratable)
+        {
+            var manager = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1)
+            );
+            await TestEndpointOfflineInner(manager, new TestEndpointRouter(), migratable);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task TestMultiEndpointOffline(bool migratable)
+        {
+            var manager = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1),
+                new ServiceEndpoint(ConnectionString2)
+            );
+            await TestEndpointOfflineInner(manager, new TestEndpointRouter(), migratable);
+        }
+
         private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router, bool migratable)
         {
             var containers = new List<TestServiceConnectionContainer>();
@@ -740,29 +750,6 @@ namespace Microsoft.Azure.SignalR.Tests
 
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task TestSingleEndpointOffline(bool migratable)
-        {
-            var manager = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1)
-            );
-            await TestEndpointOfflineInner(manager, null, migratable);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task TestMultiEndpointOffline(bool migratable)
-        {
-            var manager = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1),
-                new ServiceEndpoint(ConnectionString2)
-            );
-            await TestEndpointOfflineInner(manager, new TestEndpointRouter(), migratable);
-        }
-
         private class NotExistEndpointRouter : EndpointRouterDecorator
         {
             public override IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints)
@@ -773,6 +760,19 @@ namespace Microsoft.Azure.SignalR.Tests
             public override IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> endpoints)
             {
                 return null;
+            }
+        }
+
+        private sealed class TestMultiEndpointServiceConnectionContainer : MultiEndpointServiceConnectionContainer
+        {
+            public TestMultiEndpointServiceConnectionContainer(string hub,
+                                                          Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
+                                                          IServiceEndpointManager endpoint,
+                                                          IEndpointRouter router,
+                                                          ILoggerFactory loggerFactory
+
+                ) : base(hub, generator, endpoint, router, loggerFactory)
+            {
             }
         }
 

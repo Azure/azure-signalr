@@ -2,13 +2,14 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
 {
-    internal sealed class TestServiceConnectionContainer : IServiceConnectionContainer, IServiceConnection
+    internal sealed class TestServiceConnectionContainer : IServiceConnectionContainer, IServiceConnection, IMultiEndpointServiceConnectionContainer
     {
         private readonly Action<(ServiceMessage, IServiceConnectionContainer)> _validator;
 
@@ -21,6 +22,8 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         public Task ConnectionInitializedTask => Task.CompletedTask;
 
         public Task ConnectionOfflineTask => Task.CompletedTask;
+
+        public IReadOnlyDictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; }
 
         public TestServiceConnectionContainer(ServiceConnectionStatus status)
         {

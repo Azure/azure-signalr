@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.Azure.SignalR
 {
     interface IServiceConnectionContainerFactory
     {
-        IServiceConnectionContainer Create(string hub);
+        IMultiEndpointServiceConnectionContainer Create(string hub);
     }
 }
