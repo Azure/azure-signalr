@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR
 
             // TODO: Enable optionsMonitor.OnChange when feature ready.
             // optionsMonitor.OnChange(OnChange);
-            _endpointsStore = Endpoints.ToList();
+            _endpointsStore = Endpoints;
         }
 
         public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.SignalR
 
             var updatedEndpoints = GetChangedEndpoints(Endpoints);
 
-            _endpointsStore = Endpoints.ToList();
+            _endpointsStore = Endpoints;
         }
 
         private (IReadOnlyList<ServiceEndpoint> AddedEndpoints, 
@@ -68,10 +68,11 @@ namespace Microsoft.Azure.SignalR
             IReadOnlyList<ServiceEndpoint> RenamedEndpoints)
             GetChangedEndpoints(IEnumerable<ServiceEndpoint> updatedEndpoints)
         {
-            var addedEndpoints = updatedEndpoints.Except(_endpointsStore, new ServiceEndpointWeakComparer()).ToList();
-            var removedEndpoints = _endpointsStore.Except(updatedEndpoints, new ServiceEndpointWeakComparer()).ToList();
+            var originalEndpoints = _endpointsStore;
+            var addedEndpoints = updatedEndpoints.Except(originalEndpoints, new ServiceEndpointWeakComparer()).ToList();
+            var removedEndpoints = originalEndpoints.Except(updatedEndpoints, new ServiceEndpointWeakComparer()).ToList();
 
-            var renamedEndpoints = updatedEndpoints.Except(_endpointsStore).Except(addedEndpoints).ToList();
+            var renamedEndpoints = updatedEndpoints.Except(originalEndpoints).Except(addedEndpoints).ToList();
 
             return (AddedEndpoints: addedEndpoints, RemovedEndpoints: removedEndpoints, RenamedEndpoints: renamedEndpoints);
         }
@@ -85,7 +86,7 @@ namespace Microsoft.Azure.SignalR
 
             public int GetHashCode(ServiceEndpoint obj)
             {
-                return obj.ConnectionString.GetHashCode() ^ obj.EndpointType.GetHashCode();
+                return obj.Endpoint.GetHashCode() ^ obj.EndpointType.GetHashCode();
             }
         }
 
