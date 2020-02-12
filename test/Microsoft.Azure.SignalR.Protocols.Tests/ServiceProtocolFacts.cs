@@ -70,6 +70,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "HandshakeRequestWithProperty",
                 message: new HandshakeRequestMessage(1) { ConnectionType = 1, Target = "abc" },
                 binary: "lAEBAaNhYmM="),
+            new ProtocolTestData(
+                name: "ConnectionData",
+                message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}),
+                binary: "kwalY29ubjXEBwECAwQFBgc="),
         }.ToDictionary(t => t.Name);
 
         public static IDictionary<string, ProtocolTestData> TestData => new[]
@@ -138,7 +142,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             new ProtocolTestData(
                 name: "ConnectionData",
                 message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}),
-                binary: "kwalY29ubjXEBwECAwQFBgc="),
+                binary: "lAalY29ubjX/xAcBAgMEBQYH"),
+            new ProtocolTestData(
+                name: "ConnectionDataWithSeqId",
+                message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}) {SequenceId = 102599743},
+                binary: "lAalY29ubjXOBh2MP8QHAQIDBAUGBw=="),
             new ProtocolTestData(
                 name: "MultiConnectionData",
                 message: new MultiConnectionDataMessage(new [] {"conn6", "conn7"}, new Dictionary<string, ReadOnlyMemory<byte>>
@@ -231,15 +239,15 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "kg/ZK01heGltdW0gbWVzc2FnZSBjb3VudCBsaW1pdCByZWFjaGVkOiAxMDAwMDA="),
             new ProtocolTestData(
                 name: "JoinGroupWithAck",
-                message: new JoinGroupWithAckMessage("conn14", "group1", 1), 
+                message: new JoinGroupWithAckMessage("conn14", "group1", 1),
                 binary: "lBKmY29ubjE0pmdyb3VwMQE="),
             new ProtocolTestData(
                 name: "LeaveGroupWithAck",
-                message: new LeaveGroupWithAckMessage("conn15", "group2", 1), 
+                message: new LeaveGroupWithAckMessage("conn15", "group2", 1),
                 binary: "lBOmY29ubjE1pmdyb3VwMgE="),
             new ProtocolTestData(
                 name: "Ack",
-                message: new AckMessage(1, 100), 
+                message: new AckMessage(1, 100),
                 binary: "lBQBZKA="),
             new ProtocolTestData(
                 name: "AckWithMessage",
@@ -300,6 +308,18 @@ Please verify the MsgPack output and update the baseline");
         }
 
         [Fact]
+        public void DefaultValue()
+        {
+            ServiceMessage message;
+
+            // check if default sequence id of ConnectionDataMessage is -1.
+            message = new ConnectionDataMessage("foo", new ReadOnlyMemory<byte>());
+            if (message is ConnectionDataMessage t) {
+                Assert.Equal(-1, t.SequenceId);
+            }
+        }
+
+        [Fact]
         public void ParseMessageWithExtraData()
         {
             // Legacy protocol
@@ -339,17 +359,17 @@ Please verify the MsgPack output and update the baseline");
 
         private static byte ArrayBytes(int size)
         {
-            return (byte) (0x90 | size);
+            return (byte)(0x90 | size);
         }
 
         private static byte StringBytes(int size)
         {
-            return (byte) (0xa0 | size);
+            return (byte)(0xa0 | size);
         }
 
         private static byte MapBytes(int size)
         {
-            return (byte) (0x80 | size);
+            return (byte)(0x80 | size);
         }
 
         private static byte[] Frame(byte[] input)

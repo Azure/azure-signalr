@@ -56,7 +56,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ServiceProtocolConstants.CloseConnectionMessageType:
                     return CreateCloseConnectionMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.ConnectionDataMessageType:
-                    return CreateConnectionDataMessage(ref reader);
+                    return CreateConnectionDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.MultiConnectionDataMessageType:
                     return CreateMultiConnectionDataMessage(ref reader);
                 case ServiceProtocolConstants.UserDataMessageType:
@@ -277,9 +277,10 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteConnectionDataMessage(ref MessagePackWriter writer, ConnectionDataMessage message)
         {
-            writer.WriteArrayHeader(3);
+            writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.ConnectionDataMessageType);
             writer.Write(message.ConnectionId);
+            writer.Write(message.SequenceId);
 
             /************ REVIEW ************/
             // REVIEW : PREVIOUS CODE WAS writing every bytes manualy, not sure if this is the strict equivalent in term of serialization
@@ -526,12 +527,15 @@ namespace Microsoft.Azure.SignalR.Protocol
             return new CloseConnectionMessage(connectionId, errorMessage, headers);
         }
 
-        private static ConnectionDataMessage CreateConnectionDataMessage(ref MessagePackReader reader)
+        private static ConnectionDataMessage CreateConnectionDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var connectionId = ReadString(ref reader, "connectionId");
+            var seqId = arrayLength > 3 ? ReadInt32(ref reader, "sequenceId") : -1;
             var payload = ReadBytes(ref reader, "payload");
-
-            return new ConnectionDataMessage(connectionId, payload);
+            return new ConnectionDataMessage(connectionId, payload)
+            {
+                SequenceId = seqId
+            };
         }
 
         private static MultiConnectionDataMessage CreateMultiConnectionDataMessage(ref MessagePackReader reader)
