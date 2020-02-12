@@ -17,15 +17,18 @@ namespace Microsoft.Azure.SignalR
         // The lock is only used to lock the on-demand part
         private readonly object _lock = new object();
 
-        public StrongServiceConnectionContainer(IServiceConnectionFactory serviceConnectionFactory,
-            int fixedConnectionCount, HubServiceEndpoint endpoint, ILogger logger) : base(serviceConnectionFactory, fixedConnectionCount, endpoint, logger: logger)
+        public StrongServiceConnectionContainer(
+            IServiceConnectionFactory serviceConnectionFactory,
+            int fixedConnectionCount,
+            HubServiceEndpoint endpoint,
+            ILogger logger) : base(serviceConnectionFactory, fixedConnectionCount, endpoint, logger: logger)
         {
             _onDemandServiceConnections = new List<IServiceConnection>();
         }
 
         public override Task HandlePingAsync(PingMessage pingMessage)
         {
-            if (pingMessage.TryGetValue(Constants.ServicePingMessageKey.RebalanceKey, out string target) && !string.IsNullOrEmpty(target))
+            if (RuntimeServicePingMessage.TryGetRebalance(pingMessage, out var target) && !string.IsNullOrEmpty(target))
             {
                 var connection = CreateOnDemandServiceConnection();
                 return StartCoreAsync(connection, target);
@@ -42,10 +45,10 @@ namespace Microsoft.Azure.SignalR
             );
         }
 
-        public override Task OfflineAsync()
+        public override Task OfflineAsync(bool migratable)
         {
-            var task1 = base.OfflineAsync();
-            var task2 = Task.WhenAll(_onDemandServiceConnections.Select(c => RemoveConnectionAsync(c)));
+            var task1 = base.OfflineAsync(migratable);
+            var task2 = Task.WhenAll(_onDemandServiceConnections.Select(c => RemoveConnectionAsync(c, migratable)));
             return Task.WhenAll(task1, task2);
         }
 

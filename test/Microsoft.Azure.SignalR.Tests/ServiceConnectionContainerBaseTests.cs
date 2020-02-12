@@ -30,8 +30,10 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.NotEqual(ServiceConnectionStatus.Connected, container.Connections[1].Status);
         }
 
-        [Fact]
-        public async Task TestOffline()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task TestOffline(bool migratable)
         {
             List<IServiceConnection> connections = new List<IServiceConnection>
             {
@@ -45,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.False(c.ConnectionOfflineTask.IsCompleted);
             }
 
-            await container.OfflineAsync();
+            await container.OfflineAsync(migratable);
 
             foreach (SimpleTestServiceConnection c in connections)
             {
@@ -92,7 +94,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             public Task WriteAsync(ServiceMessage serviceMessage)
             {
-                if (serviceMessage is PingMessage ping && ping.TryGetValue(Constants.ServicePingMessageKey.ShutdownKey, out var val) && val == Constants.ServicePingMessageValue.ShutdownFin)
+                if (RuntimeServicePingMessage.IsFin(serviceMessage))
                 {
                     _offline.SetResult(true);
                 }

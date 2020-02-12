@@ -94,7 +94,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestSimpleServiceConnection(),
             }, e), sem, router, NullLoggerFactory.Instance);
 
-            Assert.Equal(2, container.Connections.Count);
+            Assert.Equal(2, container.ConnectionContainers.Count);
         }
 
         [Fact]
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
-            Assert.Equal(2, container.Connections.Count);
+            Assert.Equal(2, container.ConnectionContainers.Count);
         }
 
         [Fact]
@@ -705,7 +705,7 @@ namespace Microsoft.Azure.SignalR.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task).OrTimeout();
         }
 
-        private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router)
+        private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router, bool migratable)
         {
             var containers = new List<TestServiceConnectionContainer>();
 
@@ -726,7 +726,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.False(c.IsOffline);
             }
 
-            var expected = container.OfflineAsync();
+            var expected = container.OfflineAsync(migratable);
             var actual = await Task.WhenAny(
                 expected,
                 Task.Delay(TimeSpan.FromSeconds(1))
@@ -740,23 +740,27 @@ namespace Microsoft.Azure.SignalR.Tests
 
         }
 
-        [Fact]
-        public async Task TestSingleEndpointOffline()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task TestSingleEndpointOffline(bool migratable)
         {
             var manager = new TestServiceEndpointManager(
                 new ServiceEndpoint(ConnectionString1)
             );
-            await TestEndpointOfflineInner(manager, null);
+            await TestEndpointOfflineInner(manager, null, migratable);
         }
 
-        [Fact]
-        public async Task TestMultiEndpointOffline()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task TestMultiEndpointOffline(bool migratable)
         {
             var manager = new TestServiceEndpointManager(
                 new ServiceEndpoint(ConnectionString1),
                 new ServiceEndpoint(ConnectionString2)
             );
-            await TestEndpointOfflineInner(manager, new TestEndpointRouter());
+            await TestEndpointOfflineInner(manager, new TestEndpointRouter(), migratable);
         }
 
         private class NotExistEndpointRouter : EndpointRouterDecorator

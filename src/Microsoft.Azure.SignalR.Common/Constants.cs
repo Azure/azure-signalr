@@ -13,8 +13,9 @@ namespace Microsoft.Azure.SignalR
 
         public const int DefaultShutdownTimeoutInSeconds = 30;
 
-        public const string AsrsMigrateIn = "Asrs-Migrate-In";
-        public const string AsrsMigrateOut = "Asrs-Migrate-Out";
+        public const string AsrsMigrateFrom = "Asrs-Migrate-From";
+        public const string AsrsMigrateTo = "Asrs-Migrate-To";
+
         public const string AsrsUserAgent = "Asrs-User-Agent";
         public const string AsrsInstanceId = "Asrs-Instance-Id";
 
@@ -59,24 +60,6 @@ namespace Microsoft.Azure.SignalR
         {
             public const string OriginalPath = "asrs.op";
             public const string ConnectionRequestId = "asrs_request_id";
-        }
-
-        public static class Config
-        {
-            public static readonly string ConnectionStringKey = "Azure:SignalR:ConnectionString";
-        }
-
-        public static class ServicePingMessageKey
-        {
-            public const string RebalanceKey = "target";
-            public const string OfflineKey = "offline";
-            public const string ShutdownKey = "shutdown";
-        }
-
-        public static class ServicePingMessageValue
-        {
-            public const string ShutdownFin = "fin";
-            public const string ShutdownFinAck = "finack";
         }
     }
 }

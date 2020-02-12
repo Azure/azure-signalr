@@ -3,10 +3,8 @@
 
 using System;
 using System.IO.Pipelines;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -30,6 +28,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false, ILogger logger = null) : base(
             new ServiceProtocol(),
+            "serverId",
             Guid.NewGuid().ToString(),
             new HubServiceEndpoint(),
             null, // TODO replace it with a NullMessageHandler

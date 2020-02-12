@@ -12,9 +12,11 @@ jobs:
   build_windows:
     runs-on: [windows-latest]
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
+
+    - name: Update SubModules
+      run: git submodule update --init --recursive
+    
     - name: Build with dotnet
       shell: powershell
       run: .\run.ps1 default-build
-    
-  
