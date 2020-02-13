@@ -21,12 +21,12 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IMessageRouter _router;
         private readonly ILogger _logger;
-        private readonly IServiceConnectionContainer _inner;
 
-        private IReadOnlyList<HubServiceEndpoint> _endpoints;
+        // use lock when modify below fields to ensure synced.
+        private volatile IReadOnlyList<HubServiceEndpoint> _endpoints;
+        private volatile bool _needRouter;
 
-        private bool _needRouter => _endpoints.Count > 1;
-
+        // for test use
         public IReadOnlyDictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers => _connectionContainers;
 
         internal MultiEndpointServiceConnectionContainer(
@@ -47,13 +47,13 @@ namespace Microsoft.Azure.SignalR
             // provides a copy to the endpoint per container
             _endpoints = endpointManager.GetEndpoints(hub);
 
+            // router will be used when there's customized MessageRouter or multiple endpoints
+            _needRouter = _endpoints.Count > 1 || !(_router is DefaultMessageRouter);
+
             foreach (var endpoint in _endpoints)
             {
                 _connectionContainers[endpoint] = generator(endpoint);
             }
-
-            // assign first element to _inner for quick access in single endpoint case
-            _inner = _connectionContainers.First().Value;
         }
 
         public MultiEndpointServiceConnectionContainer(
@@ -96,11 +96,6 @@ namespace Microsoft.Azure.SignalR
         {
             get
             {
-                if (!_needRouter)
-                {
-                    return _inner.ConnectionInitializedTask;
-                }
-
                 return Task.WhenAll(from connection in _connectionContainers
                                     select connection.Value.ConnectionInitializedTask);
             }
@@ -108,11 +103,6 @@ namespace Microsoft.Azure.SignalR
 
         public Task StartAsync()
         {
-            if (!_needRouter)
-            {
-                return _inner.StartAsync();
-            }
-
             return Task.WhenAll(_connectionContainers.Select(s =>
             {
                 Log.StartingConnection(_logger, s.Key.Endpoint);
@@ -122,11 +112,6 @@ namespace Microsoft.Azure.SignalR
 
         public Task StopAsync()
         {
-            if (!_needRouter)
-            {
-                return _inner.StopAsync();
-            }
-
             return Task.WhenAll(_connectionContainers.Select(s =>
             {
                 Log.StoppingConnection(_logger, s.Key.Endpoint);
@@ -136,32 +121,16 @@ namespace Microsoft.Azure.SignalR
 
         public Task OfflineAsync(bool migratable)
         {
-            if (!_needRouter)
-            {
-                return _inner.OfflineAsync(migratable);
-            }
-            else
-            {
-                return Task.WhenAll(_connectionContainers.Select(c => c.Value.OfflineAsync(migratable)));
-            }
+            return Task.WhenAll(_connectionContainers.Select(c => c.Value.OfflineAsync(migratable)));
         }
 
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
-            if (!_needRouter)
-            {
-                return _inner.WriteAsync(serviceMessage);
-            }
             return WriteMultiEndpointMessageAsync(serviceMessage, connection => connection.WriteAsync(serviceMessage));
         }
 
         public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            if (!_needRouter)
-            {
-                return await _inner.WriteAckableMessageAsync(serviceMessage, cancellationToken);
-            }
-
             // If we have multiple endpoints, we should wait to one of the following conditions hit
             // 1. One endpoint responses "OK" state
             // 2. All the endpoints response failed state including "NotFound", "Timeout" and waiting response to timeout
@@ -187,6 +156,10 @@ namespace Microsoft.Azure.SignalR
 
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
         {
+            if (!_needRouter)
+            {
+                return _endpoints;
+            }
             var endpoints = _endpoints;
             switch (message)
             {
