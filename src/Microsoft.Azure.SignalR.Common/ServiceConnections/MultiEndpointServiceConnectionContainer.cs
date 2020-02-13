@@ -156,6 +156,10 @@ namespace Microsoft.Azure.SignalR
 
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
         {
+            if (!_needRouter)
+            {
+                return _endpoints;
+            }
             var endpoints = _endpoints;
             switch (message)
             {
@@ -184,19 +188,6 @@ namespace Microsoft.Azure.SignalR
 
         private Task WriteMultiEndpointMessageAsync(ServiceMessage serviceMessage, Func<IServiceConnectionContainer, Task> inner)
         {
-            if (!_needRouter)
-            {
-                var endpointContainer = _connectionContainers.First();
-                try
-                {
-                    inner(endpointContainer.Value);
-                }
-                catch (ServiceConnectionNotActiveException)
-                {
-                    // uniform behavior when write failure
-                    Log.FailedWritingMessageToEndpoint(_logger, serviceMessage.GetType().Name, endpointContainer.Key.ToString());
-                }
-            }
             var routed = GetRoutedEndpoints(serviceMessage)?
                 .Select(endpoint =>
                 {
