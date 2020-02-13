@@ -12,7 +12,6 @@ namespace Microsoft.Azure.SignalR
         public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
 
         public const int DefaultShutdownTimeoutInSeconds = 30;
-        public const int DefaultScaleTimeoutInSeconds = 300;
         public const int DefaultStatusPingIntervalInSeconds = 10;
 
         public const string AsrsMigrateFrom = "Asrs-Migrate-From";
