@@ -20,7 +20,7 @@
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.0</MicrosoftExtensionsPrimitivesPackageVersion>
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>
-    
+
     <!-- Azure ASP.NET SignalR -->
     <MicrosoftAspNetSignalRPackageVersion>2.4.1</MicrosoftAspNetSignalRPackageVersion>
     <MicrosoftAspNetSignalRClientVersion>2.4.1</MicrosoftAspNetSignalRClientVersion>
@@ -28,7 +28,7 @@
     <MicrosoftExtensionsLoggingEventSourcePackageVersion>2.1.0</MicrosoftExtensionsLoggingEventSourcePackageVersion>
     <SystemThreadingChannelsPackageVersion>4.6.0</SystemThreadingChannelsPackageVersion>
     <SystemIOPipelinesPackageVersion>4.6.0</SystemIOPipelinesPackageVersion>
-    
+
     <!-- SignalR Management -->
     <MicrosoftConfigurationFileExtensionVersion>2.2.0</MicrosoftConfigurationFileExtensionVersion>
     <MicrosoftConfigurationUserSecretVersion>2.2.0</MicrosoftConfigurationUserSecretVersion>

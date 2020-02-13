@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -23,7 +22,7 @@ namespace Microsoft.Azure.SignalR
 
         public IWebProxy Proxy { get; }
 
-        public ServiceEndpointProvider(ServiceEndpoint endpoint, IOptions<ServiceOptions> serviceOptions)
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions serviceOptions)
         {
             var connectionString = endpoint.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
@@ -31,10 +30,10 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(ConnectionStringNotFound);
             }
 
-            _accessTokenLifetime = serviceOptions.Value.AccessTokenLifetime;
+            _accessTokenLifetime = serviceOptions.AccessTokenLifetime;
             _accessKey = endpoint.AccessKey;
-            _appName = serviceOptions.Value.ApplicationName;
-            Proxy = serviceOptions.Value.Proxy;
+            _appName = serviceOptions.ApplicationName;
+            Proxy = serviceOptions.Proxy;
 
             var port = endpoint.Port;
             var version = endpoint.Version;
