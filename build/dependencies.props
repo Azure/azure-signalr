@@ -11,6 +11,7 @@
     <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.0</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackage3_0Version>3.0.0</MicrosoftAspNetCoreConnectionsAbstractionsPackage3_0Version>
     <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0</MicrosoftAspNetCoreSignalRPackageVersion>
+    <MicrosoftAspNetCoreLocalizationPackageVersion>2.2.0</MicrosoftAspNetCoreLocalizationPackageVersion>
     <MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>3.19.1</MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>
     <MicrosoftAzureKeyVaultPackageVersion>2.3.2</MicrosoftAzureKeyVaultPackageVersion>
     <SystemBuffersPackageVersion>4.5.0</SystemBuffersPackageVersion>
@@ -20,7 +21,7 @@
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.0</MicrosoftExtensionsPrimitivesPackageVersion>
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>
-    
+
     <!-- Azure ASP.NET SignalR -->
     <MicrosoftAspNetSignalRPackageVersion>2.4.1</MicrosoftAspNetSignalRPackageVersion>
     <MicrosoftAspNetSignalRClientVersion>2.4.1</MicrosoftAspNetSignalRClientVersion>
@@ -28,7 +29,7 @@
     <MicrosoftExtensionsLoggingEventSourcePackageVersion>2.1.0</MicrosoftExtensionsLoggingEventSourcePackageVersion>
     <SystemThreadingChannelsPackageVersion>4.6.0</SystemThreadingChannelsPackageVersion>
     <SystemIOPipelinesPackageVersion>4.6.0</SystemIOPipelinesPackageVersion>
-    
+
     <!-- SignalR Management -->
     <MicrosoftConfigurationFileExtensionVersion>2.2.0</MicrosoftConfigurationFileExtensionVersion>
     <MicrosoftConfigurationUserSecretVersion>2.2.0</MicrosoftConfigurationUserSecretVersion>

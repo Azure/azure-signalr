@@ -60,6 +60,7 @@ namespace Microsoft.Azure.SignalR
         {
             public const string OriginalPath = "asrs.op";
             public const string ConnectionRequestId = "asrs_request_id";
+            public const string RequestCulture = "asrs_request_culture";
         }
     }
 }

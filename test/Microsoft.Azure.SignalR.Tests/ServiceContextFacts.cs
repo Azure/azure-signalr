@@ -3,13 +3,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO.Pipelines;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Primitives;
 using Xunit;
 
@@ -197,6 +196,19 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 Assert.Equal(remoteIP, address.ToString());
             }
+        }
+
+        [Theory]
+        [InlineData("", "en-US")]
+        [InlineData("&asrs_request_culture=ar-SA", "ar-SA")]
+        public void ServiceConnectionContextCultureTest(string cultureQuery, string result)
+        {
+            var queryString = $"?{cultureQuery}";
+            Assert.Equal("en-US", CultureInfo.CurrentCulture.Name);
+            
+            var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
+
+            Assert.Equal(result, CultureInfo.CurrentCulture.Name);
         }
     }
 }
