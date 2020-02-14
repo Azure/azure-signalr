@@ -28,4 +28,10 @@
   <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' == 'true' ">
     <PackageReference Include="Microsoft.Azure.SignalR" Version="$(VersionPrefix)-*" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="testappsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
