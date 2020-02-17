@@ -273,14 +273,13 @@ namespace Microsoft.Azure.SignalR
         private HttpContext BuildHttpContext(OpenConnectionMessage message)
         {
             var httpContextFeatures = new FeatureCollection();
+            ProcessQuery(message.QueryString, out var originalPath);
             var requestFeature = new HttpRequestFeature
             {
                 Headers = new HeaderDictionary((Dictionary<string, StringValues>)message.Headers),
                 QueryString = message.QueryString,
-                Path = GetOriginalPath(message.QueryString)
+                Path = originalPath
             };
-
-            SetCurrentThreadCulture(message.QueryString);
 
             httpContextFeatures.Set<IHttpRequestFeature>(requestFeature);
             httpContextFeatures.Set<IHttpAuthenticationFeature>(new HttpAuthenticationFeature
@@ -296,17 +295,6 @@ namespace Microsoft.Azure.SignalR
             return new DefaultHttpContext(httpContextFeatures);
         }
 
-        private static void SetCurrentThreadCulture(string queryString)
-        {
-            var query = QueryHelpers.ParseNullableQuery(queryString);
-            if (query != null && query.TryGetValue(Constants.QueryParameter.RequestCulture, out var cultureName))
-            {
-                var requestCulture = new RequestCulture(cultureName);
-                CultureInfo.CurrentCulture = requestCulture.Culture;
-                CultureInfo.CurrentUICulture = requestCulture.UICulture;
-            }
-        }
-
         internal static bool TryGetRemoteIpAddress(IHeaderDictionary headers, out IPAddress address)
         {
             var forwardedFor = headers.GetCommaSeparatedValues("X-Forwarded-For");
@@ -318,12 +306,41 @@ namespace Microsoft.Azure.SignalR
             return false;
         }
 
-        private static string GetOriginalPath(string queryString)
+        private static void ProcessQuery(string queryString, out string originalPath)
         {
+            originalPath = string.Empty;
             var query = QueryHelpers.ParseNullableQuery(queryString);
-            return query?.TryGetValue(Constants.QueryParameter.OriginalPath, out var originalPath) == true
-                ? originalPath.FirstOrDefault()
-                : string.Empty;
+            if (query == null)
+            {
+                return;
+            }
+
+            if (query.TryGetValue(Constants.QueryParameter.RequestCulture, out var culture))
+            {
+                SetCurrentThreadCulture(culture.FirstOrDefault());
+            }
+            if (query.TryGetValue(Constants.QueryParameter.OriginalPath, out var path))
+            {
+                originalPath = path.FirstOrDefault();
+            }
+        }
+
+        private static void SetCurrentThreadCulture(string cultureName)
+        {
+            if (!string.IsNullOrEmpty(cultureName))
+            {
+                try
+                {
+                    var requestCulture = new RequestCulture(cultureName);
+                    CultureInfo.CurrentCulture = requestCulture.Culture;
+                    CultureInfo.CurrentUICulture = requestCulture.UICulture;
+                }
+                catch (Exception)
+                {
+                    // skip invalid culture, normal won't hit.
+                    return;
+                }
+            }
         }
     }
 }

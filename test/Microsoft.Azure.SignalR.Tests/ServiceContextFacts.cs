@@ -199,8 +199,10 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
+        [InlineData("&asrs_lang=ar-SA", "ar-SA")]
         [InlineData("", "en-US")]
-        [InlineData("&asrs_request_culture=ar-SA", "ar-SA")]
+        [InlineData("&arsa_lang=", "en-US")]
+        [InlineData("&arsa_lang=123", "en-US")] // invalid culture won't change default en-US
         public void ServiceConnectionContextCultureTest(string cultureQuery, string result)
         {
             var queryString = $"?{cultureQuery}";
