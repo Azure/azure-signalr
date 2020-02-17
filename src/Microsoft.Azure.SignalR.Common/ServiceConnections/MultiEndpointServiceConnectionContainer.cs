@@ -22,9 +22,8 @@ namespace Microsoft.Azure.SignalR
         private readonly IMessageRouter _router;
         private readonly ILogger _logger;
 
-        // use lock when modify below fields to ensure synced.
-        private volatile IReadOnlyList<HubServiceEndpoint> _endpoints;
-        private volatile bool _needRouter;
+        // <needRouter, endpoints>
+        private volatile Tuple<bool, IReadOnlyList<HubServiceEndpoint>> _routerEndpoints;
 
         // for test use
         public IReadOnlyDictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers => _connectionContainers;
@@ -45,12 +44,13 @@ namespace Microsoft.Azure.SignalR
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
 
             // provides a copy to the endpoint per container
-            _endpoints = endpointManager.GetEndpoints(hub);
-
+            var endpoints = endpointManager.GetEndpoints(hub);
             // router will be used when there's customized MessageRouter or multiple endpoints
-            _needRouter = _endpoints.Count > 1 || !(_router is DefaultMessageRouter);
+            var needRouter = endpoints.Count > 1 || !(_router is DefaultMessageRouter);
 
-            foreach (var endpoint in _endpoints)
+            _routerEndpoints = new Tuple<bool, IReadOnlyList<HubServiceEndpoint>>(needRouter, endpoints);
+
+            foreach (var endpoint in endpoints)
             {
                 _connectionContainers[endpoint] = generator(endpoint);
             }
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.SignalR
 
         public IEnumerable<ServiceEndpoint> GetOnlineEndpoints()
         {
-            return _connectionContainers.Keys.Where(s => s.Online);
+            return _connectionContainers.Where(s => s.Key.Online).Select(s => s.Key);
         }
 
         private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, HubServiceEndpoint endpoint, int count, ILoggerFactory loggerFactory)
@@ -156,11 +156,11 @@ namespace Microsoft.Azure.SignalR
 
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
         {
-            if (!_needRouter)
+            if (!_routerEndpoints.Item1)
             {
-                return _endpoints;
+                return _routerEndpoints.Item2;
             }
-            var endpoints = _endpoints;
+            var endpoints = _routerEndpoints.Item2;
             switch (message)
             {
                 case BroadcastDataMessage bdm:
