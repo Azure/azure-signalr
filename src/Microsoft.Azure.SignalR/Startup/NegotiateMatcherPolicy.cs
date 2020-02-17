@@ -45,10 +45,14 @@ namespace Microsoft.Azure.SignalR
                 // Only apply to RouteEndpoint
                 if (candidate.Endpoint is RouteEndpoint routeEndpoint)
                 {
-                    var hubType = routeEndpoint.Metadata.GetMetadata<HubMetadata>().HubType;
-                    var newEndpoint = _negotiateEndpointCache.GetOrAdd(hubType, e => CreateNegotiateEndpoint(routeEndpoint));
+                    var hubMetadata = routeEndpoint.Metadata.GetMetadata<HubMetadata>();
+                    // skip endpoint not apply hub.
+                    if (hubMetadata != null)
+                    {
+                        var newEndpoint = _negotiateEndpointCache.GetOrAdd(hubMetadata.HubType, e => CreateNegotiateEndpoint(routeEndpoint));
 
-                    candidates.ReplaceEndpoint(i, newEndpoint, candidate.Values);
+                        candidates.ReplaceEndpoint(i, newEndpoint, candidate.Values);
+                    }
                 }
             }
 

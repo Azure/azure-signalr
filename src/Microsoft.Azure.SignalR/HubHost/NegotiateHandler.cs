@@ -6,8 +6,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 
@@ -44,6 +46,7 @@ namespace Microsoft.Azure.SignalR
         {
             var claims = BuildClaims(context);
             var request = context.Request;
+            var cultureName = context.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture.Name;
             var originalPath = GetOriginalPath(request.Path);
             var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(context, _endpointManager.GetEndpoints(hubName)));
 
@@ -52,7 +55,7 @@ namespace Microsoft.Azure.SignalR
                 return null;
             }
 
-            var queryString = GetQueryString(request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null);
+            var queryString = GetQueryString(request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null, cultureName);
 
             return new NegotiationResponse
             {
@@ -63,19 +66,23 @@ namespace Microsoft.Azure.SignalR
             };
         }
 
-        private string GetQueryString(string originalQueryString)
+        private string GetQueryString(string originalQueryString, string cultureName)
         {
             var clientRequestId = _connectionRequestIdProvider.GetRequestId();
             if (clientRequestId != null)
             {
                 clientRequestId = WebUtility.UrlEncode(clientRequestId);
             }
-            if (originalQueryString != null)
+
+            var queryString = $"{Constants.QueryParameter.ConnectionRequestId}={clientRequestId}";
+            if (!string.IsNullOrEmpty(cultureName))
             {
-                return $"{originalQueryString}&{Constants.QueryParameter.ConnectionRequestId}={clientRequestId}";
+                queryString += $"&{Constants.QueryParameter.RequestCulture}={cultureName}";
             }
 
-            return $"{Constants.QueryParameter.ConnectionRequestId}={clientRequestId}";
+            return originalQueryString != null 
+                ? $"{originalQueryString}&{queryString}"
+                : queryString;
         }
 
         private IEnumerable<Claim> BuildClaims(HttpContext context)
