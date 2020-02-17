@@ -338,7 +338,6 @@ namespace Microsoft.Azure.SignalR
                 catch (Exception)
                 {
                     // skip invalid culture, normal won't hit.
-                    return;
                 }
             }
         }
