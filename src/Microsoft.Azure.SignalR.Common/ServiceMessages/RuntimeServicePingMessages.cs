@@ -18,7 +18,8 @@ namespace Microsoft.Azure.SignalR
 
         private const string StatusActiveValue = "1";
         private const string StatusInactiveValue = "0";
-        private const string ShutdownFinValue = "fin";
+        private const string ShutdownFinMigratableValue = "fin:1";
+        private const string ShutdownFinValue = "fin:0";
         private const string ShutdownFinAckValue = "finack";
         private const char ServerListSeparator = ';';
 
@@ -30,6 +31,9 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly ServicePingMessage ShutdownFin =
             new ServicePingMessage { Messages = new[] { ShutdownKey, ShutdownFinValue } };
+
+        private static readonly ServicePingMessage ShutdownFinMigratable =
+            new ServicePingMessage { Messages = new[] { ShutdownKey, ShutdownFinMigratableValue } };
 
         private static readonly ServicePingMessage ShutdownFinAck =
             new ServicePingMessage { Messages = new[] { ShutdownKey, ShutdownFinAckValue } };
@@ -73,14 +77,15 @@ namespace Microsoft.Azure.SignalR
             return true;
         }
 
-        public static ServicePingMessage GetFinPingMessage() => ShutdownFin;
+        public static ServicePingMessage GetFinPingMessage(bool migratable) =>
+            migratable ? ShutdownFinMigratable : ShutdownFin;
 
         public static ServicePingMessage GetFinAckPingMessage() => ShutdownFinAck;
 
         public static ServicePingMessage GetServersPingMessage() => GetServerIds;
 
         public static bool IsFin(this ServiceMessage serviceMessage) =>
-            serviceMessage is ServicePingMessage ping && TryGetValue(ping, ShutdownKey, out var value) && value == ShutdownFinValue;
+            serviceMessage is ServicePingMessage ping && TryGetValue(ping, ShutdownKey, out var value) && (value == ShutdownFinValue || value == ShutdownFinMigratableValue);
 
         public static bool IsFinAck(this ServicePingMessage ping) =>
             TryGetValue(ping, ShutdownKey, out var value) && value == ShutdownFinAckValue;

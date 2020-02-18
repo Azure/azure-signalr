@@ -134,15 +134,15 @@ namespace Microsoft.Azure.SignalR
             }));
         }
 
-        public Task OfflineAsync()
+        public Task OfflineAsync(bool migratable)
         {
             if (_inner != null)
             {
-                return _inner.OfflineAsync();
+                return _inner.OfflineAsync(migratable);
             }
             else
             {
-                return Task.WhenAll(ConnectionContainers.Select(c => c.Value.OfflineAsync()));
+                return Task.WhenAll(ConnectionContainers.Select(c => c.Value.OfflineAsync(migratable)));
             }
         }
 

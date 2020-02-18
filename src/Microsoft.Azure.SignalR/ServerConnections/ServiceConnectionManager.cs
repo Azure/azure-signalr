@@ -29,9 +29,9 @@ namespace Microsoft.Azure.SignalR
             return _serviceConnection.StopAsync();
         }
 
-        public async Task OfflineAsync()
+        public async Task OfflineAsync(bool migratable)
         {
-            await _serviceConnection.OfflineAsync();
+            await _serviceConnection.OfflineAsync(migratable);
         }
 
         public Task WriteAsync(ServiceMessage serviceMessage)

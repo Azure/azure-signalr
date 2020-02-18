@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Tests
             prop.SetValue(this, true);
         }
 
-        public override async Task OfflineAsync()
+        public override async Task OfflineAsync(bool migratable)
         {
             if (MockOffline)
             {
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 IsOffline = true;
             } else
             {
-                await base.OfflineAsync();
+                await base.OfflineAsync(migratable);
             }
         }
 
