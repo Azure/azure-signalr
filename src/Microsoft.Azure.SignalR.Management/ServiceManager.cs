@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 ApplicationName = _serviceManagerOptions.ApplicationName,
                 Proxy = serviceManagerOptions.Proxy
-            }));
+            }).Value);
             _serverNameProvider = new DefaultServerNameProvider();
             _productInfo = productInfo;
         }

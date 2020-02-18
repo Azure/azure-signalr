@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
@@ -18,6 +19,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Features.Authentication;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
@@ -271,11 +273,12 @@ namespace Microsoft.Azure.SignalR
         private HttpContext BuildHttpContext(OpenConnectionMessage message)
         {
             var httpContextFeatures = new FeatureCollection();
+            ProcessQuery(message.QueryString, out var originalPath);
             var requestFeature = new HttpRequestFeature
             {
                 Headers = new HeaderDictionary((Dictionary<string, StringValues>)message.Headers),
                 QueryString = message.QueryString,
-                Path = GetOriginalPath(message.QueryString)
+                Path = originalPath
             };
 
             httpContextFeatures.Set<IHttpRequestFeature>(requestFeature);
@@ -303,12 +306,40 @@ namespace Microsoft.Azure.SignalR
             return false;
         }
 
-        private static string GetOriginalPath(string queryString)
+        private static void ProcessQuery(string queryString, out string originalPath)
         {
+            originalPath = string.Empty;
             var query = QueryHelpers.ParseNullableQuery(queryString);
-            return query?.TryGetValue(Constants.QueryParameter.OriginalPath, out var originalPath) == true
-                ? originalPath.FirstOrDefault()
-                : string.Empty;
+            if (query == null)
+            {
+                return;
+            }
+
+            if (query.TryGetValue(Constants.QueryParameter.RequestCulture, out var culture))
+            {
+                SetCurrentThreadCulture(culture.FirstOrDefault());
+            }
+            if (query.TryGetValue(Constants.QueryParameter.OriginalPath, out var path))
+            {
+                originalPath = path.FirstOrDefault();
+            }
+        }
+
+        private static void SetCurrentThreadCulture(string cultureName)
+        {
+            if (!string.IsNullOrEmpty(cultureName))
+            {
+                try
+                {
+                    var requestCulture = new RequestCulture(cultureName);
+                    CultureInfo.CurrentCulture = requestCulture.Culture;
+                    CultureInfo.CurrentUICulture = requestCulture.UICulture;
+                }
+                catch (Exception)
+                {
+                    // skip invalid culture, normal won't hit.
+                }
+            }
         }
     }
 }

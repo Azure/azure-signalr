@@ -3,13 +3,16 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
+using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -20,6 +23,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string CustomValue = "Endpoint=https://customconnectionstring;AccessKey=1";
         private const string DefaultValue = "Endpoint=https://defaultconnectionstring;AccessKey=1";
         private const string SecondaryValue = "Endpoint=https://secondaryconnectionstring;AccessKey=1";
+        private const string ConfigFile = "testappsettings.json";
 
         public AddAzureSignalRFacts(ITestOutputHelper output) : base(output)
         {
@@ -367,6 +371,51 @@ namespace Microsoft.Azure.SignalR.Tests
                     Assert.Contains(endpoints,
                         s => s.ConnectionString == expected && s.EndpointType == EndpointType.Primary);
                 }
+            }
+        }
+
+        [Fact]
+        public async Task AddAzureSignalRHotReloadConfigValue()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var tcs = new TaskCompletionSource<object>();
+                var services = new ServiceCollection();
+                var config = new ConfigurationBuilder()
+                    .AddJsonFile(ConfigFile, optional: false, reloadOnChange: true)
+                    .Build();
+                var serviceProvider = services.AddSignalR()
+                    .AddAzureSignalR()
+                    .Services
+                    .AddSingleton<IConfiguration>(config)
+                    .AddSingleton(loggerFactory)
+                    .BuildServiceProvider();
+
+                var optionsMonitor = serviceProvider.GetService<IOptionsMonitor<ServiceOptions>>();
+                var options = optionsMonitor.CurrentValue;
+
+                Assert.Equal(2, options.Endpoints.Length);
+
+                // Update config file to add a new endpoint ConnectionString
+                var customeCS = "Endpoint = https://customconnectionstring;AccessKey=1";
+                var text = File.ReadAllText(ConfigFile);
+                var jsonObj = JsonConvert.DeserializeObject<JObject>(text);
+                var endpoints = (JArray)jsonObj["Azure"]["SignalR"]["ConnectionString"];
+                var newEndpoint = new JObject()
+                { 
+                    { "EP3:Primary", customeCS } 
+                };
+                
+                endpoints.Add(newEndpoint);
+                var output = JsonConvert.SerializeObject(jsonObj, Formatting.Indented);
+                File.WriteAllText(ConfigFile, output);
+
+                // give a few delay for change detected
+                await Task.Delay(500);
+
+                options = optionsMonitor.CurrentValue;
+                Assert.Equal(3, options.Endpoints.Length);
+                Assert.Equal(customeCS, options.Endpoints[2].ConnectionString);
             }
         }
     }
