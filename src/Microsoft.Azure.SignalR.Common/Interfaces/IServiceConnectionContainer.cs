@@ -20,9 +20,9 @@ namespace Microsoft.Azure.SignalR
 
         Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default);
 
-        Task StartGetServersPingAsync();
+        Task StartGetServersPing();
 
-        Task StopGetServersPingAsync();
+        Task StopGetServersPing();
 
         ServiceConnectionStatus Status { get; }
 

@@ -61,5 +61,11 @@ namespace Microsoft.Azure.SignalR
             public const string OriginalPath = "asrs.op";
             public const string ConnectionRequestId = "asrs_request_id";
         }
+
+        public static class CustomizedPingTimer
+        {
+            public const string ServiceStatus = "ServiceStatus";
+            public const string Servers = "Servers";
+        }
     }
 }

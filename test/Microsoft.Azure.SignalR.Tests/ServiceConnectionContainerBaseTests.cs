@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
@@ -55,6 +56,30 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
+        [Fact]
+        public async Task TestServerIdsPing()
+        {
+            List<IServiceConnection> connections = new List<IServiceConnection>
+            {
+                new SimpleTestServiceConnection(),
+                new SimpleTestServiceConnection(),
+                new SimpleTestServiceConnection()
+            };
+            using TestServiceConnectionContainer container = new TestServiceConnectionContainer(connections, factory: new SimpleTestServiceConnectionFactory());
+
+            await container.StartAsync();
+            await container.StartGetServersPing();
+
+            // var connection = connections.First() as SimpleTestServiceConnection;
+            // default interval is 5s, add 2s for delay, validate any one connection write servers ping.
+            await Task.WhenAny(connections.Select(c => {
+                var connection = c as SimpleTestServiceConnection;
+                return connection.ServerIdsPingTask.OrTimeout(7000);
+            }));
+
+            await container.StopGetServersPing();
+        }
+
         private sealed class SimpleTestServiceConnectionFactory : IServiceConnectionFactory
         {
             public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type) => new SimpleTestServiceConnection();
@@ -67,8 +92,11 @@ namespace Microsoft.Azure.SignalR.Tests
             public ServiceConnectionStatus Status { get; set; } = ServiceConnectionStatus.Disconnected;
 
             private readonly TaskCompletionSource<bool> _offline = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+            private readonly TaskCompletionSource<bool> _serverIdsPing = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
 
             public Task ConnectionOfflineTask => _offline.Task;
+
+            public Task ServerIdsPingTask => _serverIdsPing.Task;
 
             public SimpleTestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Disconnected)
             {
@@ -97,6 +125,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 if (RuntimeServicePingMessage.IsFin(serviceMessage))
                 {
                     _offline.SetResult(true);
+                }
+                if (RuntimeServicePingMessage.IsGetServers(serviceMessage))
+                {
+                    _serverIdsPing.SetResult(true);
                 }
                 return Task.CompletedTask;
             }

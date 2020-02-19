@@ -72,12 +72,12 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             return Task.CompletedTask;
         }
 
-        public Task StartGetServersPingAsync()
+        public Task StartGetServersPing()
         {
             return Task.CompletedTask;
         }
 
-        public Task StopGetServersPingAsync()
+        public Task StopGetServersPing()
         {
             return Task.CompletedTask;
         }

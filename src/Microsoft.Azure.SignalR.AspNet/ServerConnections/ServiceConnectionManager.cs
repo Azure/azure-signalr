@@ -117,14 +117,14 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _appConnection.WriteAckableMessageAsync(serviceMessage, cancellationToken);
         }
 
-        public Task StartGetServersPingAsync()
+        public Task StartGetServersPing()
         {
-            return Task.WhenAll(GetConnections().Select(s => s.StartGetServersPingAsync()));
+            return Task.WhenAll(GetConnections().Select(s => s.StartGetServersPing()));
         }
 
-        public Task StopGetServersPingAsync()
+        public Task StopGetServersPing()
         {
-            return Task.WhenAll(GetConnections().Select(s => s.StopGetServersPingAsync()));
+            return Task.WhenAll(GetConnections().Select(s => s.StopGetServersPing()));
         }
 
         public HashSet<string> GlobalServerIds => throw new NotSupportedException();

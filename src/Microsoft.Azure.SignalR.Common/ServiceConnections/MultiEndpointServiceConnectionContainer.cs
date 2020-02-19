@@ -185,14 +185,14 @@ namespace Microsoft.Azure.SignalR
             return tcs.Task.IsCompleted;
         }
 
-        public Task StartGetServersPingAsync()
+        public Task StartGetServersPing()
         {
-            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StartGetServersPingAsync()));
+            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StartGetServersPing()));
         }
 
-        public Task StopGetServersPingAsync()
+        public Task StopGetServersPing()
         {
-            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StopGetServersPingAsync()));
+            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StopGetServersPing()));
         }
 
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)

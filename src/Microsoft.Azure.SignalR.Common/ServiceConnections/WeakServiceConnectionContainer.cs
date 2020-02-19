@@ -33,7 +33,8 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
         public override Task HandlePingAsync(PingMessage pingMessage)
         {
             base.HandlePingAsync(pingMessage);
-            _active = GetServiceStatus(HasClients, CheckWindow, CheckTimeSpan);
+            var active = HasClients;
+            _active = GetServiceStatus(active, CheckWindow, CheckTimeSpan);
 
             return Task.CompletedTask;
         }
