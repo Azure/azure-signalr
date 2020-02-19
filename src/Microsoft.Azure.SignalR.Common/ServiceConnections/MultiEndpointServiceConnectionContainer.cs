@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ILogger _logger;
 
         // <needRouter, endpoints>
-        private volatile Tuple<bool, IReadOnlyList<HubServiceEndpoint>> _routerEndpoints;
+        private (bool needRouter, IReadOnlyList<HubServiceEndpoint> endpoints) _routerEndpoints;
 
         // for test use
         public IReadOnlyDictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers => _connectionContainers;
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR
             // router will be used when there's customized MessageRouter or multiple endpoints
             var needRouter = endpoints.Count > 1 || !(_router is DefaultMessageRouter);
 
-            _routerEndpoints = new Tuple<bool, IReadOnlyList<HubServiceEndpoint>>(needRouter, endpoints);
+            _routerEndpoints = (needRouter, endpoints);
 
             foreach (var endpoint in endpoints)
             {
@@ -156,11 +156,11 @@ namespace Microsoft.Azure.SignalR
 
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
         {
-            if (!_routerEndpoints.Item1)
+            if (!_routerEndpoints.needRouter)
             {
-                return _routerEndpoints.Item2;
+                return _routerEndpoints.endpoints;
             }
-            var endpoints = _routerEndpoints.Item2;
+            var endpoints = _routerEndpoints.endpoints;
             switch (message)
             {
                 case BroadcastDataMessage bdm:
