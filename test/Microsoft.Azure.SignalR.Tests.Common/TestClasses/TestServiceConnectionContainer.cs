@@ -9,7 +9,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
 {
-    internal sealed class TestServiceConnectionContainer : IServiceConnectionContainer, IServiceConnection
+    internal sealed class TestServiceConnectionContainer : IServiceConnectionContainer, IServiceConnection, IMultiEndpointServiceConnectionContainer
     {
         private readonly Action<(ServiceMessage, IServiceConnectionContainer)> _validator;
 
@@ -22,6 +22,8 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         public Task ConnectionInitializedTask => Task.CompletedTask;
 
         public Task ConnectionOfflineTask => Task.CompletedTask;
+
+        public IReadOnlyDictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; }
 
         public HashSet<string> GlobalServerIds => throw new NotSupportedException();
 

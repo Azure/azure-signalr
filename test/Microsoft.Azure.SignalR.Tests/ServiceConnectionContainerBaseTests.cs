@@ -70,7 +70,6 @@ namespace Microsoft.Azure.SignalR.Tests
             await container.StartAsync();
             await container.StartGetServersPing();
 
-            // var connection = connections.First() as SimpleTestServiceConnection;
             // default interval is 5s, add 2s for delay, validate any one connection write servers ping.
             await Task.WhenAny(connections.Select(c => {
                 var connection = c as SimpleTestServiceConnection;

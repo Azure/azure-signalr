@@ -15,6 +15,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -337,6 +338,44 @@ namespace Microsoft.Azure.SignalR.Tests
 
             handler = serviceProvider.GetRequiredService<NegotiateHandler>();
             Assert.Throws<InvalidOperationException>(() => handler.Process(httpContext, "chat"));
+        }
+
+        [Fact]
+        public void TestNegotiateHandlerRespectClientRequestCulture()
+        {
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection()
+                .AddSignalR(o => o.EnableDetailedErrors = false)
+                .AddAzureSignalR(
+                o =>
+                {
+                    o.ConnectionString = DefaultConnectionString;
+                    o.AccessTokenLifetime = TimeSpan.FromDays(1);
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var features = new FeatureCollection();
+            var requestFeature = new HttpRequestFeature
+            {
+                Path = "/user/path/negotiate/",
+                QueryString = "?endpoint=chosen"
+            };
+            features.Set<IHttpRequestFeature>(requestFeature);
+            var customCulture = new RequestCulture("ar-SA");
+            features.Set<IRequestCultureFeature>(
+                new RequestCultureFeature(customCulture,
+                new AcceptLanguageHeaderRequestCultureProvider()));
+
+            var httpContext = new DefaultHttpContext(features);
+
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            var negotiateResponse = handler.Process(httpContext, "hub");
+
+            var queryContainsCulture = negotiateResponse.Url.Contains($"{Constants.QueryParameter.RequestCulture}=ar-SA");
+            Assert.True(queryContainsCulture);
         }
 
         private sealed class TestServerNameProvider : IServerNameProvider

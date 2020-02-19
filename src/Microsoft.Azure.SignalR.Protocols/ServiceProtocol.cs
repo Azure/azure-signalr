@@ -6,7 +6,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Security.Claims;
 using MessagePack;
 using Microsoft.Extensions.Primitives;
@@ -32,75 +31,60 @@ namespace Microsoft.Azure.SignalR.Protocol
                 return false;
             }
 
-            var arraySegment = GetArraySegment(payload);
+            var reader = new MessagePackReader(payload);
 
-            message = ParseMessage(arraySegment.Array, arraySegment.Offset);
+            message = ParseMessage(ref reader);
             return true;
         }
 
-        private static ArraySegment<byte> GetArraySegment(in ReadOnlySequence<byte> input)
+        private static ServiceMessage ParseMessage(ref MessagePackReader reader)
         {
-            if (input.IsSingleSegment)
-            {
-                var isArray = MemoryMarshal.TryGetArray(input.First, out var arraySegment);
-                // This will never be false unless we started using un-managed buffers
-                Debug.Assert(isArray);
-                return arraySegment;
-            }
+            var arrayLength = reader.ReadArrayHeader();
 
-            // Should be rare
-            return new ArraySegment<byte>(input.ToArray());
-        }
-
-        private static ServiceMessage ParseMessage(byte[] input, int startOffset)
-        {
-            var arrayLength = MessagePackBinary.ReadArrayHeader(input, startOffset, out var readSize);
-            startOffset += readSize;
-
-            var messageType = ReadInt32(input, ref startOffset, "messageType");
+            var messageType = reader.ReadInt32();
 
             switch (messageType)
             {
                 case ServiceProtocolConstants.HandshakeRequestType:
-                    return CreateHandshakeRequestMessage(input, ref startOffset, arrayLength);
+                    return CreateHandshakeRequestMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.HandshakeResponseType:
-                    return CreateHandshakeResponseMessage(input, ref startOffset);
+                    return CreateHandshakeResponseMessage(ref reader);
                 case ServiceProtocolConstants.PingMessageType:
-                    return CreatePingMessage(input, ref startOffset, arrayLength);
+                    return CreatePingMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.OpenConnectionMessageType:
-                    return CreateOpenConnectionMessage(arrayLength, input, ref startOffset);
+                    return CreateOpenConnectionMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.CloseConnectionMessageType:
-                    return CreateCloseConnectionMessage(arrayLength, input, ref startOffset);
+                    return CreateCloseConnectionMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.ConnectionDataMessageType:
-                    return CreateConnectionDataMessage(input, ref startOffset);
+                    return CreateConnectionDataMessage(ref reader);
                 case ServiceProtocolConstants.MultiConnectionDataMessageType:
-                    return CreateMultiConnectionDataMessage(input, ref startOffset);
+                    return CreateMultiConnectionDataMessage(ref reader);
                 case ServiceProtocolConstants.UserDataMessageType:
-                    return CreateUserDataMessage(input, ref startOffset);
+                    return CreateUserDataMessage(ref reader);
                 case ServiceProtocolConstants.MultiUserDataMessageType:
-                    return CreateMultiUserDataMessage(input, ref startOffset);
+                    return CreateMultiUserDataMessage(ref reader);
                 case ServiceProtocolConstants.BroadcastDataMessageType:
-                    return CreateBroadcastDataMessage(input, ref startOffset);
+                    return CreateBroadcastDataMessage(ref reader);
                 case ServiceProtocolConstants.JoinGroupMessageType:
-                    return CreateJoinGroupMessage(input, ref startOffset);
+                    return CreateJoinGroupMessage(ref reader);
                 case ServiceProtocolConstants.LeaveGroupMessageType:
-                    return CreateLeaveGroupMessage(input, ref startOffset);
+                    return CreateLeaveGroupMessage(ref reader);
                 case ServiceProtocolConstants.UserJoinGroupMessageType:
-                    return CreateUserJoinGroupMessage(input, ref startOffset);
+                    return CreateUserJoinGroupMessage(ref reader);
                 case ServiceProtocolConstants.UserLeaveGroupMessageType:
-                    return CreateUserLeaveGroupMessage(input, ref startOffset);
+                    return CreateUserLeaveGroupMessage(ref reader);
                 case ServiceProtocolConstants.GroupBroadcastDataMessageType:
-                    return CreateGroupBroadcastDataMessage(input, ref startOffset);
+                    return CreateGroupBroadcastDataMessage(ref reader);
                 case ServiceProtocolConstants.MultiGroupBroadcastDataMessageType:
-                    return CreateMultiGroupBroadcastDataMessage(input, ref startOffset);
+                    return CreateMultiGroupBroadcastDataMessage(ref reader);
                 case ServiceProtocolConstants.ServiceErrorMessageType:
-                    return CreateServiceErrorMessage(input, ref startOffset);
+                    return CreateServiceErrorMessage(ref reader);
                 case ServiceProtocolConstants.JoinGroupWithAckMessageType:
-                    return CreateJoinGroupWithAckMessage(input, ref startOffset);
+                    return CreateJoinGroupWithAckMessage(ref reader);
                 case ServiceProtocolConstants.LeaveGroupWithAckMessageType:
-                    return CreateLeaveGroupWithAckMessage(input, ref startOffset);
+                    return CreateLeaveGroupWithAckMessage(ref reader);
                 case ServiceProtocolConstants.AckMessageType:
-                    return CreateAckMessage(input, ref startOffset);
+                    return CreateAckMessage(ref reader);
                 default:
                     // Future protocol changes can add message types, old clients can ignore them
                     return null;
@@ -110,417 +94,397 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <inheritdoc />
         public void WriteMessage(ServiceMessage message, IBufferWriter<byte> output)
         {
-            var writer = MemoryBufferWriter.Get();
+            var memoryBufferWriter = MemoryBufferWriter.Get();
 
             try
             {
+                var writer = new MessagePackWriter(memoryBufferWriter);
+
                 // Write message to a buffer so we can get its length
-                WriteMessageCore(message, writer);
+                WriteMessageCore(ref writer, message);
 
                 // Write length then message to output
-                BinaryMessageFormatter.WriteLengthPrefix(writer.Length, output);
-                writer.CopyTo(output);
+                BinaryMessageFormatter.WriteLengthPrefix(memoryBufferWriter.Length, output);
+                memoryBufferWriter.CopyTo(output);
             }
             finally
             {
-                MemoryBufferWriter.Return(writer);
+                MemoryBufferWriter.Return(memoryBufferWriter);
             }
         }
 
         /// <inheritdoc />
         public ReadOnlyMemory<byte> GetMessageBytes(ServiceMessage message)
         {
-            var writer = MemoryBufferWriter.Get();
+            var memoryBufferWriter = MemoryBufferWriter.Get();
 
             try
             {
-                // Write message to a buffer so we can get its length
-                WriteMessageCore(message, writer);
+                var writer = new MessagePackWriter(memoryBufferWriter);
 
-                var dataLength = writer.Length;
-                var prefixLength = BinaryMessageFormatter.LengthPrefixLength(writer.Length);
+                // Write message to a buffer so we can get its length
+                WriteMessageCore(ref writer, message);
+
+                var dataLength = memoryBufferWriter.Length;
+                var prefixLength = BinaryMessageFormatter.LengthPrefixLength(memoryBufferWriter.Length);
 
                 var array = new byte[dataLength + prefixLength];
                 var span = array.AsSpan();
 
                 // Write length then message to output
-                var written = BinaryMessageFormatter.WriteLengthPrefix(writer.Length, span);
+                var written = BinaryMessageFormatter.WriteLengthPrefix(memoryBufferWriter.Length, span);
                 Debug.Assert(written == prefixLength);
-                writer.CopyTo(span.Slice(prefixLength));
+                memoryBufferWriter.CopyTo(span.Slice(prefixLength));
 
                 return array;
             }
             finally
             {
-                MemoryBufferWriter.Return(writer);
+                MemoryBufferWriter.Return(memoryBufferWriter);
             }
         }
 
-        private static void WriteMessageCore(ServiceMessage message, Stream packer)
+        private static void WriteMessageCore(ref MessagePackWriter writer, ServiceMessage message)
         {
             switch (message)
             {
                 case HandshakeRequestMessage handshakeRequestMessage:
-                    WriteHandshakeRequestMessage(handshakeRequestMessage, packer);
+                    WriteHandshakeRequestMessage(ref writer, handshakeRequestMessage);
                     break;
                 case HandshakeResponseMessage handshakeResponseMessage:
-                    WriteHandshakeResponseMessage(handshakeResponseMessage, packer);
+                    WriteHandshakeResponseMessage(ref writer, handshakeResponseMessage);
                     break;
                 case PingMessage pingMessage:
-                    WritePingMessage(pingMessage, packer);
+                    WritePingMessage(ref writer, pingMessage);
                     break;
                 case OpenConnectionMessage openConnectionMessage:
-                    WriteOpenConnectionMessage(openConnectionMessage, packer);
+                    WriteOpenConnectionMessage(ref writer, openConnectionMessage);
                     break;
                 case CloseConnectionMessage closeConnectionMessage:
-                    WriteCloseConnectionMessage(closeConnectionMessage, packer);
+                    WriteCloseConnectionMessage(ref writer, closeConnectionMessage);
                     break;
                 case ConnectionDataMessage connectionDataMessage:
-                    WriteConnectionDataMessage(connectionDataMessage, packer);
+                    WriteConnectionDataMessage(ref writer, connectionDataMessage);
                     break;
                 case MultiConnectionDataMessage multiConnectionDataMessage:
-                    WriteMultiConnectionDataMessage(multiConnectionDataMessage, packer);
+                    WriteMultiConnectionDataMessage(ref writer, multiConnectionDataMessage);
                     break;
                 case UserDataMessage userDataMessage:
-                    WriteUserDataMessage(userDataMessage, packer);
+                    WriteUserDataMessage(ref writer, userDataMessage);
                     break;
                 case MultiUserDataMessage multiUserDataMessage:
-                    WriteMultiUserDataMessage(multiUserDataMessage, packer);
+                    WriteMultiUserDataMessage(ref writer, multiUserDataMessage);
                     break;
                 case BroadcastDataMessage broadcastDataMessage:
-                    WriteBroadcastDataMessage(broadcastDataMessage, packer);
+                    WriteBroadcastDataMessage(ref writer, broadcastDataMessage);
                     break;
                 case JoinGroupMessage joinGroupMessage:
-                    WriteJoinGroupMessage(joinGroupMessage, packer);
+                    WriteJoinGroupMessage(ref writer, joinGroupMessage);
                     break;
                 case JoinGroupWithAckMessage joinGroupWithAckMessage:
-                    WriteJoinGroupWithAckMessage(joinGroupWithAckMessage, packer);
+                    WriteJoinGroupWithAckMessage(ref writer, joinGroupWithAckMessage);
                     break;
                 case LeaveGroupMessage leaveGroupMessage:
-                    WriteLeaveGroupMessage(leaveGroupMessage, packer);
+                    WriteLeaveGroupMessage(ref writer, leaveGroupMessage);
                     break;
                 case LeaveGroupWithAckMessage leaveGroupWithAckMessage:
-                    WriteLeaveGroupWithAckMessage(leaveGroupWithAckMessage, packer);
+                    WriteLeaveGroupWithAckMessage(ref writer, leaveGroupWithAckMessage);
                     break;
                 case UserJoinGroupMessage userJoinGroupMessage:
-                    WriteUserJoinGroupMessage(userJoinGroupMessage, packer);
+                    WriteUserJoinGroupMessage(ref writer, userJoinGroupMessage);
                     break;
                 case UserLeaveGroupMessage userLeaveGroupMessage:
-                    WriteUserLeaveGroupMessage(userLeaveGroupMessage, packer);
+                    WriteUserLeaveGroupMessage(ref writer, userLeaveGroupMessage);
                     break;
                 case GroupBroadcastDataMessage groupBroadcastDataMessage:
-                    WriteGroupBroadcastDataMessage(groupBroadcastDataMessage, packer);
+                    WriteGroupBroadcastDataMessage(ref writer, groupBroadcastDataMessage);
                     break;
                 case MultiGroupBroadcastDataMessage multiGroupBroadcastDataMessage:
-                    WriteMultiGroupBroadcastDataMessage(multiGroupBroadcastDataMessage, packer);
+                    WriteMultiGroupBroadcastDataMessage(ref writer, multiGroupBroadcastDataMessage);
                     break;
                 case ServiceErrorMessage serviceErrorMessage:
-                    WriteServiceErrorMessage(serviceErrorMessage, packer);
+                    WriteServiceErrorMessage(ref writer, serviceErrorMessage);
                     break;
                 case AckMessage ackMessage:
-                    WriteAckMessage(ackMessage, packer);
+                    WriteAckMessage(ref writer, ackMessage);
                     break;
                 default:
                     throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
             }
+
+            writer.Flush();
         }
 
-        private static void WriteHandshakeRequestMessage(HandshakeRequestMessage message, Stream packer)
+        private static void WriteHandshakeRequestMessage(ref MessagePackWriter writer, HandshakeRequestMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 5);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeRequestType);
-            MessagePackBinary.WriteInt32(packer, message.Version);
-            MessagePackBinary.WriteInt32(packer, message.ConnectionType);
-            MessagePackBinary.WriteString(packer, message.ConnectionType == 0 ? "" : message.Target ?? string.Empty);
-            MessagePackBinary.WriteInt32(packer, (int) message.MigrationLevel);
+            writer.WriteArrayHeader(5);
+            writer.Write(ServiceProtocolConstants.HandshakeRequestType);
+            writer.Write(message.Version);
+            writer.Write(message.ConnectionType);
+            writer.Write(message.ConnectionType == 0 ? "" : message.Target ?? string.Empty);
+            writer.Write((int)message.MigrationLevel);
         }
 
-        private static void WriteHandshakeResponseMessage(HandshakeResponseMessage message, Stream packer)
+        private static void WriteHandshakeResponseMessage(ref MessagePackWriter writer, HandshakeResponseMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 2);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.HandshakeResponseType);
-            MessagePackBinary.WriteString(packer, message.ErrorMessage);
+            writer.WriteArrayHeader(2);
+            writer.Write(ServiceProtocolConstants.HandshakeResponseType);
+            writer.Write(message.ErrorMessage);
         }
 
-        private static void WritePingMessage(PingMessage message, Stream packer)
+        private static void WritePingMessage(ref MessagePackWriter writer, PingMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, message.Messages.Length + 1);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.PingMessageType);
+            writer.WriteArrayHeader(message.Messages.Length + 1);
+            writer.Write(ServiceProtocolConstants.PingMessageType);
             foreach (var item in message.Messages)
             {
-                MessagePackBinary.WriteString(packer, item);
+                writer.Write(item);
             }
         }
 
-        private static void WriteOpenConnectionMessage(OpenConnectionMessage message, Stream packer)
+        private static void WriteOpenConnectionMessage(ref MessagePackWriter writer, OpenConnectionMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 5);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.OpenConnectionMessageType);
-            MessagePackBinary.WriteString(packer, message.ConnectionId);
+            writer.WriteArrayHeader(5);
+            writer.Write(ServiceProtocolConstants.OpenConnectionMessageType);
+            writer.Write(message.ConnectionId);
 
             if (message.Claims?.Length > 0)
             {
-                MessagePackBinary.WriteMapHeader(packer, message.Claims.Length);
+                writer.WriteMapHeader(message.Claims.Length);
                 foreach (var claim in message.Claims)
                 {
-                    MessagePackBinary.WriteString(packer, claim.Type);
-                    MessagePackBinary.WriteString(packer, claim.Value);
+                    writer.Write(claim.Type);
+                    writer.Write(claim.Value);
                 }
             }
             else
             {
-                MessagePackBinary.WriteMapHeader(packer, 0);
+                writer.WriteMapHeader(0);
             }
-            WriteHeaders(message.Headers, packer);
+            WriteHeaders(ref writer, message.Headers);
 
-            MessagePackBinary.WriteString(packer, message.QueryString);
+            writer.Write(message.QueryString);
         }
 
-        private static void WriteCloseConnectionMessage(CloseConnectionMessage message, Stream packer)
+        private static void WriteCloseConnectionMessage(ref MessagePackWriter writer, CloseConnectionMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 4);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.CloseConnectionMessageType);
-            MessagePackBinary.WriteString(packer, message.ConnectionId);
-            MessagePackBinary.WriteString(packer, message.ErrorMessage);
-            WriteHeaders(message.Headers, packer);
+            writer.WriteArrayHeader(4);
+            writer.Write(ServiceProtocolConstants.CloseConnectionMessageType);
+            writer.Write(message.ConnectionId);
+            writer.Write(message.ErrorMessage);
+            WriteHeaders(ref writer, message.Headers);
         }
 
-        private static void WriteConnectionDataMessage(ConnectionDataMessage message, Stream packer)
+        private static void WriteConnectionDataMessage(ref MessagePackWriter writer, ConnectionDataMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ConnectionDataMessageType);
-            MessagePackBinary.WriteString(packer, message.ConnectionId);
-            WriteBinary(packer, message.Payload);
+            writer.WriteArrayHeader(3);
+            writer.Write(ServiceProtocolConstants.ConnectionDataMessageType);
+            writer.Write(message.ConnectionId);
+
+            /************ REVIEW ************/
+            // REVIEW : PREVIOUS CODE WAS writing every bytes manualy, not sure if this is the strict equivalent in term of serialization
+            writer.Write(message.Payload);
         }
 
-        private static void WriteBinary(Stream packer, ReadOnlySequence<byte> payload)
+        private static void WriteMultiConnectionDataMessage(ref MessagePackWriter writer, MultiConnectionDataMessage message)
         {
-            // We're manually writing the message pack binary payload to the stream directly
-            // because MessagePack-Csharp doesn't support writing the binary header outside of 
-            // calling WriteBytes directly
-            var count = (int)payload.Length;
-            if (count <= byte.MaxValue)
-            {
-                packer.WriteByte(MessagePackCode.Bin8);
-                packer.WriteByte((byte)count);
-            }
-            else if (count <= UInt16.MaxValue)
-            {
-                packer.WriteByte(MessagePackCode.Bin16);
-                packer.WriteByte((byte)(count >> 8));
-                packer.WriteByte((byte)count);
-            }
-            else
-            {
-                packer.WriteByte(MessagePackCode.Bin32);
-                packer.WriteByte((byte)(count >> 24));
-                packer.WriteByte((byte)(count >> 16));
-                packer.WriteByte((byte)(count >> 8));
-                packer.WriteByte((byte)count);
-            }
-
-            // Now writes the raw bytes to the stream directly
-            var position = payload.Start;
-            while (payload.TryGet(ref position, out var memory))
-            {
-                bool isArray = MemoryMarshal.TryGetArray(memory, out var segment);
-                Debug.Assert(isArray, "We're not using managed memory");
-                packer.Write(segment.Array, segment.Offset, segment.Count);
-            }
+            writer.WriteArrayHeader(3);
+            writer.Write(ServiceProtocolConstants.MultiConnectionDataMessageType);
+            WriteStringArray(ref writer, message.ConnectionList);
+            WritePayloads(ref writer, message.Payloads);
         }
 
-        private static void WriteMultiConnectionDataMessage(MultiConnectionDataMessage message, Stream packer)
+        private static void WriteUserDataMessage(ref MessagePackWriter writer, UserDataMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.MultiConnectionDataMessageType);
-            WriteStringArray(message.ConnectionList, packer);
-            WritePayloads(message.Payloads, packer);
+            writer.WriteArrayHeader(3);
+            writer.Write(ServiceProtocolConstants.UserDataMessageType);
+            writer.Write(message.UserId);
+            WritePayloads(ref writer, message.Payloads);
         }
 
-        private static void WriteUserDataMessage(UserDataMessage message, Stream packer)
+        private static void WriteMultiUserDataMessage(ref MessagePackWriter writer, MultiUserDataMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.UserDataMessageType);
-            MessagePackBinary.WriteString(packer, message.UserId);
-            WritePayloads(message.Payloads, packer);
+            writer.WriteArrayHeader(3);
+            writer.Write(ServiceProtocolConstants.MultiUserDataMessageType);
+            WriteStringArray(ref writer, message.UserList);
+            WritePayloads(ref writer, message.Payloads);
         }
 
-        private static void WriteMultiUserDataMessage(MultiUserDataMessage message, Stream packer)
+        private static void WriteBroadcastDataMessage(ref MessagePackWriter writer, BroadcastDataMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.MultiUserDataMessageType);
-            WriteStringArray(message.UserList, packer);
-            WritePayloads(message.Payloads, packer);
+            writer.WriteArrayHeader(3);
+            writer.Write(ServiceProtocolConstants.BroadcastDataMessageType);
+            WriteStringArray(ref writer, message.ExcludedList);
+            WritePayloads(ref writer, message.Payloads);
         }
 
-        private static void WriteBroadcastDataMessage(BroadcastDataMessage message, Stream packer)
+        private static void WriteJoinGroupMessage(ref MessagePackWriter writer, JoinGroupMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.BroadcastDataMessageType);
-            WriteStringArray(message.ExcludedList, packer);
-            WritePayloads(message.Payloads, packer);
+            writer.WriteArrayHeader(3);
+            writer.Write(ServiceProtocolConstants.JoinGroupMessageType);
+            writer.Write(message.ConnectionId);
+            writer.Write(message.GroupName);
         }
 
-        private static void WriteJoinGroupMessage(JoinGroupMessage message, Stream packer)
+        private static void WriteLeaveGroupMessage(ref MessagePackWriter writer, LeaveGroupMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.JoinGroupMessageType);
-            MessagePackBinary.WriteString(packer, message.ConnectionId);
-            MessagePackBinary.WriteString(packer, message.GroupName);
+            writer.WriteArrayHeader(3);
+            writer.Write(ServiceProtocolConstants.LeaveGroupMessageType);
+            writer.Write(message.ConnectionId);
+            writer.Write(message.GroupName);
         }
 
-        private static void WriteLeaveGroupMessage(LeaveGroupMessage message, Stream packer)
+        private static void WriteUserJoinGroupMessage(ref MessagePackWriter writer, UserJoinGroupMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.LeaveGroupMessageType);
-            MessagePackBinary.WriteString(packer, message.ConnectionId);
-            MessagePackBinary.WriteString(packer, message.GroupName);
+            writer.WriteArrayHeader(3);
+            writer.Write(ServiceProtocolConstants.UserJoinGroupMessageType);
+            writer.Write(message.UserId);
+            writer.Write(message.GroupName);
         }
 
-        private static void WriteUserJoinGroupMessage(UserJoinGroupMessage message, Stream packer)
+        private static void WriteUserLeaveGroupMessage(ref MessagePackWriter writer, UserLeaveGroupMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.UserJoinGroupMessageType);
-            MessagePackBinary.WriteString(packer, message.UserId);
-            MessagePackBinary.WriteString(packer, message.GroupName);
+            writer.WriteArrayHeader(3);
+            writer.Write(ServiceProtocolConstants.UserLeaveGroupMessageType);
+            writer.Write(message.UserId);
+            writer.Write(message.GroupName);
         }
 
-        private static void WriteUserLeaveGroupMessage(UserLeaveGroupMessage message, Stream packer)
+        private static void WriteGroupBroadcastDataMessage(ref MessagePackWriter writer, GroupBroadcastDataMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.UserLeaveGroupMessageType);
-            MessagePackBinary.WriteString(packer, message.UserId);
-            MessagePackBinary.WriteString(packer, message.GroupName);
+            writer.WriteArrayHeader(4);
+            writer.Write(ServiceProtocolConstants.GroupBroadcastDataMessageType);
+            writer.Write(message.GroupName);
+            WriteStringArray(ref writer, message.ExcludedList);
+            WritePayloads(ref writer, message.Payloads);
         }
 
-        private static void WriteGroupBroadcastDataMessage(GroupBroadcastDataMessage message, Stream packer)
+        private static void WriteMultiGroupBroadcastDataMessage(ref MessagePackWriter writer, MultiGroupBroadcastDataMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 4);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.GroupBroadcastDataMessageType);
-            MessagePackBinary.WriteString(packer, message.GroupName);
-            WriteStringArray(message.ExcludedList, packer);
-            WritePayloads(message.Payloads, packer);
+            writer.WriteArrayHeader(3);
+            writer.Write(ServiceProtocolConstants.MultiGroupBroadcastDataMessageType);
+            WriteStringArray(ref writer, message.GroupList);
+            WritePayloads(ref writer, message.Payloads);
         }
 
-        private static void WriteMultiGroupBroadcastDataMessage(MultiGroupBroadcastDataMessage message, Stream packer)
+        private static void WriteServiceErrorMessage(ref MessagePackWriter writer, ServiceErrorMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 3);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.MultiGroupBroadcastDataMessageType);
-            WriteStringArray(message.GroupList, packer);
-            WritePayloads(message.Payloads, packer);
+            writer.WriteArrayHeader(2);
+            writer.Write(ServiceProtocolConstants.ServiceErrorMessageType);
+            writer.Write(message.ErrorMessage);
         }
 
-        private static void WriteServiceErrorMessage(ServiceErrorMessage message, Stream packer)
+        private static void WriteJoinGroupWithAckMessage(ref MessagePackWriter writer, JoinGroupWithAckMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 2);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.ServiceErrorMessageType);
-            MessagePackBinary.WriteString(packer, message.ErrorMessage);
+            writer.WriteArrayHeader(4);
+            writer.Write(ServiceProtocolConstants.JoinGroupWithAckMessageType);
+            writer.Write(message.ConnectionId);
+            writer.Write(message.GroupName);
+            writer.Write(message.AckId);
         }
 
-        private static void WriteJoinGroupWithAckMessage(JoinGroupWithAckMessage message, Stream packer)
+        private static void WriteLeaveGroupWithAckMessage(ref MessagePackWriter writer, LeaveGroupWithAckMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 4);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.JoinGroupWithAckMessageType);
-            MessagePackBinary.WriteString(packer, message.ConnectionId);
-            MessagePackBinary.WriteString(packer, message.GroupName);
-            MessagePackBinary.WriteInt32(packer, message.AckId);
+            writer.WriteArrayHeader(4);
+            writer.Write(ServiceProtocolConstants.LeaveGroupWithAckMessageType);
+            writer.Write(message.ConnectionId);
+            writer.Write(message.GroupName);
+            writer.Write(message.AckId);
         }
 
-        private static void WriteLeaveGroupWithAckMessage(LeaveGroupWithAckMessage message, Stream packer)
+        private static void WriteAckMessage(ref MessagePackWriter writer, AckMessage message)
         {
-            MessagePackBinary.WriteArrayHeader(packer, 4);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.LeaveGroupWithAckMessageType);
-            MessagePackBinary.WriteString(packer, message.ConnectionId);
-            MessagePackBinary.WriteString(packer, message.GroupName);
-            MessagePackBinary.WriteInt32(packer, message.AckId);
+            writer.WriteArrayHeader(4);
+            writer.Write(ServiceProtocolConstants.AckMessageType);
+            writer.Write(message.AckId);
+            writer.Write(message.Status);
+            writer.Write(message.Message);
         }
 
-        private static void WriteAckMessage(AckMessage message, Stream packer)
-        {
-            MessagePackBinary.WriteArrayHeader(packer, 4);
-            MessagePackBinary.WriteInt32(packer, ServiceProtocolConstants.AckMessageType);
-            MessagePackBinary.WriteInt32(packer, message.AckId);
-            MessagePackBinary.WriteInt32(packer, message.Status);
-            MessagePackBinary.WriteString(packer, message.Message);
-        }
-
-        private static void WriteStringArray(IReadOnlyList<string> array, Stream packer)
+        private static void WriteStringArray(ref MessagePackWriter writer, IReadOnlyList<string> array)
         {
             if (array?.Count > 0)
             {
-                MessagePackBinary.WriteArrayHeader(packer, array.Count);
+                writer.WriteArrayHeader(array.Count);
                 foreach (var value in array)
                 {
-                    MessagePackBinary.WriteString(packer, value);
+                    writer.Write(value);
                 }
             }
             else
             {
-                MessagePackBinary.WriteArrayHeader(packer, 0);
+                writer.WriteArrayHeader(0);
             }
         }
 
-        private static void WritePayloads(IDictionary<string, ReadOnlyMemory<byte>> payloads, Stream packer)
+        private static void WritePayloads(ref MessagePackWriter writer, IDictionary<string, ReadOnlyMemory<byte>> payloads)
         {
             if (payloads?.Count > 0)
             {
-                MessagePackBinary.WriteMapHeader(packer, payloads.Count);
+                writer.WriteMapHeader(payloads.Count);
                 foreach (var payload in payloads)
                 {
-                    MessagePackBinary.WriteString(packer, payload.Key);
-                    bool isArray = MemoryMarshal.TryGetArray(payload.Value, out var segment);
-                    Debug.Assert(isArray, "We're not using managed memory");
-                    MessagePackBinary.WriteBytes(packer, segment.Array, segment.Offset, segment.Count);
+                    writer.Write(payload.Key);
+
+                    /*********************************************************************************/
+                    writer.Write(payload.Value.Span);
+                    /*********************************************************************************/
+                    // REVIEW : PREVIOUS CODE WAS :
+                    //bool isArray = MemoryMarshal.TryGetArray(payload.Value, out var segment);
+                    //Debug.Assert(isArray, "We're not using managed memory");
+
+                    // writer.WriteBytes(segment.Array, segment.Offset, segment.Count);
+                    /*********************************************************************************/
                 }
             }
             else
             {
-                MessagePackBinary.WriteMapHeader(packer, 0);
+                writer.WriteMapHeader(0);
             }
         }
 
-        private static void WriteHeaders(IDictionary<string, StringValues> headers, Stream packer)
+        private static void WriteHeaders(ref MessagePackWriter writer, IDictionary<string, StringValues> headers)
         {
             if (headers?.Count > 0)
             {
-                MessagePackBinary.WriteMapHeader(packer, headers.Count);
+                writer.WriteMapHeader(headers.Count);
                 foreach (var header in headers)
                 {
-                    MessagePackBinary.WriteString(packer, header.Key);
-                    MessagePackBinary.WriteArrayHeader(packer, header.Value.Count);
+                    writer.Write(header.Key);
+                    writer.WriteArrayHeader(header.Value.Count);
                     foreach (var stringValue in header.Value)
                     {
-                        MessagePackBinary.WriteString(packer, stringValue);
+                        writer.Write(stringValue);
                     }
                 }
             }
             else
             {
-                MessagePackBinary.WriteMapHeader(packer, 0);
+                writer.WriteMapHeader(0);
             }
         }
 
-        private static HandshakeRequestMessage CreateHandshakeRequestMessage(byte[] input, ref int offset, int arrayLength)
+        private static HandshakeRequestMessage CreateHandshakeRequestMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var version = ReadInt32(input, ref offset, "version");
+            var version = ReadInt32(ref reader, "version");
             var result = new HandshakeRequestMessage(version);
             if (arrayLength >= 4)
             {
-                result.ConnectionType = ReadInt32(input, ref offset, "connectionType");
-                result.Target = ReadString(input, ref offset, "target");
+                result.ConnectionType = ReadInt32(ref reader, "connectionType");
+                result.Target = ReadString(ref reader, "target");
             }
-            result.MigrationLevel = arrayLength >= 5 ? ReadInt32(input, ref offset, "migratableStatus") : 0;
+            result.MigrationLevel = arrayLength >= 5 ? ReadInt32(ref reader, "migratableStatus") : 0;
             return result;
         }
 
-        private static HandshakeResponseMessage CreateHandshakeResponseMessage(byte[] input, ref int offset)
+        private static HandshakeResponseMessage CreateHandshakeResponseMessage(ref MessagePackReader reader)
         {
-            var errorMessage = ReadString(input, ref offset, "errorMessage");
+            var errorMessage = ReadString(ref reader, "errorMessage");
 
             return new HandshakeResponseMessage(errorMessage);
         }
 
-        private static PingMessage CreatePingMessage(byte[] input, ref int offset, int arrayLength)
+        private static PingMessage CreatePingMessage(ref MessagePackReader reader, int arrayLength)
         {
             if (arrayLength > 1)
             {
@@ -528,7 +492,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 var values = new string[length];
                 for (int i = 0; i < length; i++)
                 {
-                    values[i] = ReadString(input, ref offset, $"messages[{i}]");
+                    values[i] = ReadString(ref reader, $"messages[{i}]");
                 }
 
                 return new PingMessage { Messages = values };
@@ -536,16 +500,16 @@ namespace Microsoft.Azure.SignalR.Protocol
             return PingMessage.Instance;
         }
 
-        private static OpenConnectionMessage CreateOpenConnectionMessage(int arrayLength, byte[] input, ref int offset)
+        private static OpenConnectionMessage CreateOpenConnectionMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var connectionId = ReadString(input, ref offset, "connectionId");
-            var claims = ReadClaims(input, ref offset);
+            var connectionId = ReadString(ref reader, "connectionId");
+            var claims = ReadClaims(ref reader);
 
             // Backward compatible with old versions
             if (arrayLength > 3)
             {
-                var headers = ReadHeaders(input, ref offset);
-                var queryString = ReadString(input, ref offset, "queryString");
+                var headers = ReadHeaders(ref reader);
+                var queryString = ReadString(ref reader, "queryString");
                 return new OpenConnectionMessage(connectionId, claims, headers, queryString);
             }
             else
@@ -554,148 +518,148 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
         }
 
-        private static CloseConnectionMessage CreateCloseConnectionMessage(int arrayLength, byte[] input, ref int offset)
+        private static CloseConnectionMessage CreateCloseConnectionMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var connectionId = ReadString(input, ref offset, "connectionId");
-            var errorMessage = ReadString(input, ref offset, "errorMessage");
-            var headers = arrayLength > 3 ? ReadHeaders(input, ref offset) : new Dictionary<string, StringValues>();
+            var connectionId = ReadString(ref reader, "connectionId");
+            var errorMessage = ReadString(ref reader, "errorMessage");
+            var headers = arrayLength > 3 ? ReadHeaders(ref reader) : new Dictionary<string, StringValues>();
             return new CloseConnectionMessage(connectionId, errorMessage, headers);
         }
 
-        private static ConnectionDataMessage CreateConnectionDataMessage(byte[] input, ref int offset)
+        private static ConnectionDataMessage CreateConnectionDataMessage(ref MessagePackReader reader)
         {
-            var connectionId = ReadString(input, ref offset, "connectionId");
-            var payload = ReadBytes(input, ref offset, "payload");
+            var connectionId = ReadString(ref reader, "connectionId");
+            var payload = ReadBytes(ref reader, "payload");
 
             return new ConnectionDataMessage(connectionId, payload);
         }
 
-        private static MultiConnectionDataMessage CreateMultiConnectionDataMessage(byte[] input, ref int offset)
+        private static MultiConnectionDataMessage CreateMultiConnectionDataMessage(ref MessagePackReader reader)
         {
-            var connectionList = ReadStringArray(input, ref offset, "connectionList");
-            var payloads = ReadPayloads(input, ref offset);
+            var connectionList = ReadStringArray(ref reader, "connectionList");
+            var payloads = ReadPayloads(ref reader);
 
             return new MultiConnectionDataMessage(connectionList, payloads);
         }
 
-        private static ServiceMessage CreateUserDataMessage(byte[] input, ref int offset)
+        private static ServiceMessage CreateUserDataMessage(ref MessagePackReader reader)
         {
-            var userId = ReadString(input, ref offset, "userId");
-            var payloads = ReadPayloads(input, ref offset);
+            var userId = ReadString(ref reader, "userId");
+            var payloads = ReadPayloads(ref reader);
 
             return new UserDataMessage(userId, payloads);
         }
 
-        private static MultiUserDataMessage CreateMultiUserDataMessage(byte[] input, ref int offset)
+        private static MultiUserDataMessage CreateMultiUserDataMessage(ref MessagePackReader reader)
         {
-            var userList = ReadStringArray(input, ref offset, "userList");
-            var payloads = ReadPayloads(input, ref offset);
+            var userList = ReadStringArray(ref reader, "userList");
+            var payloads = ReadPayloads(ref reader);
 
             return new MultiUserDataMessage(userList, payloads);
         }
 
-        private static BroadcastDataMessage CreateBroadcastDataMessage(byte[] input, ref int offset)
+        private static BroadcastDataMessage CreateBroadcastDataMessage(ref MessagePackReader reader)
         {
-            var excludedList = ReadStringArray(input, ref offset, "excludedList");
-            var payloads = ReadPayloads(input, ref offset);
+            var excludedList = ReadStringArray(ref reader, "excludedList");
+            var payloads = ReadPayloads(ref reader);
 
             return new BroadcastDataMessage(excludedList, payloads);
         }
 
-        private static JoinGroupMessage CreateJoinGroupMessage(byte[] input, ref int offset)
+        private static JoinGroupMessage CreateJoinGroupMessage(ref MessagePackReader reader)
         {
-            var connectionId = ReadString(input, ref offset, "connectionId");
-            var groupName = ReadString(input, ref offset, "groupName");
+            var connectionId = ReadString(ref reader, "connectionId");
+            var groupName = ReadString(ref reader, "groupName");
 
             return new JoinGroupMessage(connectionId, groupName);
         }
 
-        private static LeaveGroupMessage CreateLeaveGroupMessage(byte[] input, ref int offset)
+        private static LeaveGroupMessage CreateLeaveGroupMessage(ref MessagePackReader reader)
         {
-            var connectionId = ReadString(input, ref offset, "connectionId");
-            var groupName = ReadString(input, ref offset, "groupName");
+            var connectionId = ReadString(ref reader, "connectionId");
+            var groupName = ReadString(ref reader, "groupName");
 
             return new LeaveGroupMessage(connectionId, groupName);
         }
 
-        private static UserJoinGroupMessage CreateUserJoinGroupMessage(byte[] input, ref int offset)
+        private static UserJoinGroupMessage CreateUserJoinGroupMessage(ref MessagePackReader reader)
         {
-            var userId = ReadString(input, ref offset, "userId");
-            var groupName = ReadString(input, ref offset, "groupName");
+            var userId = ReadString(ref reader, "userId");
+            var groupName = ReadString(ref reader, "groupName");
 
             return new UserJoinGroupMessage(userId, groupName);
         }
 
-        private static UserLeaveGroupMessage CreateUserLeaveGroupMessage(byte[] input, ref int offset)
+        private static UserLeaveGroupMessage CreateUserLeaveGroupMessage(ref MessagePackReader reader)
         {
-            var userId = ReadString(input, ref offset, "userId");
-            var groupName = ReadString(input, ref offset, "groupName");
+            var userId = ReadString(ref reader, "userId");
+            var groupName = ReadString(ref reader, "groupName");
 
             return new UserLeaveGroupMessage(userId, groupName);
         }
 
-        private static GroupBroadcastDataMessage CreateGroupBroadcastDataMessage(byte[] input, ref int offset)
+        private static GroupBroadcastDataMessage CreateGroupBroadcastDataMessage(ref MessagePackReader reader)
         {
-            var groupName = ReadString(input, ref offset, "groupName");
-            var excludedList = ReadStringArray(input, ref offset, "excludedList");
-            var payloads = ReadPayloads(input, ref offset);
+            var groupName = ReadString(ref reader, "groupName");
+            var excludedList = ReadStringArray(ref reader, "excludedList");
+            var payloads = ReadPayloads(ref reader);
 
             return new GroupBroadcastDataMessage(groupName, excludedList, payloads);
         }
 
-        private static MultiGroupBroadcastDataMessage CreateMultiGroupBroadcastDataMessage(byte[] input, ref int offset)
+        private static MultiGroupBroadcastDataMessage CreateMultiGroupBroadcastDataMessage(ref MessagePackReader reader)
         {
-            var groupList = ReadStringArray(input, ref offset, "groupList");
-            var payloads = ReadPayloads(input, ref offset);
+            var groupList = ReadStringArray(ref reader, "groupList");
+            var payloads = ReadPayloads(ref reader);
 
             return new MultiGroupBroadcastDataMessage(groupList, payloads);
         }
 
-        private static ServiceErrorMessage CreateServiceErrorMessage(byte[] input, ref int offset)
+        private static ServiceErrorMessage CreateServiceErrorMessage(ref MessagePackReader reader)
         {
-            var errorMessage = ReadString(input, ref offset, "errorMessage");
+            var errorMessage = ReadString(ref reader, "errorMessage");
 
             return new ServiceErrorMessage(errorMessage);
         }
 
-        private static JoinGroupWithAckMessage CreateJoinGroupWithAckMessage(byte[] input, ref int offset)
+        private static JoinGroupWithAckMessage CreateJoinGroupWithAckMessage(ref MessagePackReader reader)
         {
-            var connectionId = ReadString(input, ref offset, "connectionId");
-            var groupName = ReadString(input, ref offset, "groupName");
-            var ackId = ReadInt32(input, ref offset, "ackId");
+            var connectionId = ReadString(ref reader, "connectionId");
+            var groupName = ReadString(ref reader, "groupName");
+            var ackId = ReadInt32(ref reader, "ackId");
 
             return new JoinGroupWithAckMessage(connectionId, groupName, ackId);
         }
 
-        private static LeaveGroupWithAckMessage CreateLeaveGroupWithAckMessage(byte[] input, ref int offset)
+        private static LeaveGroupWithAckMessage CreateLeaveGroupWithAckMessage(ref MessagePackReader reader)
         {
-            var connectionId = ReadString(input, ref offset, "connectionId");
-            var groupName = ReadString(input, ref offset, "groupName");
-            var ackId = ReadInt32(input, ref offset, "ackId");
+            var connectionId = ReadString(ref reader, "connectionId");
+            var groupName = ReadString(ref reader, "groupName");
+            var ackId = ReadInt32(ref reader, "ackId");
 
             return new LeaveGroupWithAckMessage(connectionId, groupName, ackId);
         }
 
-        private static AckMessage CreateAckMessage(byte[] input, ref int offset)
+        private static AckMessage CreateAckMessage(ref MessagePackReader reader)
         {
-            var ackId = ReadInt32(input, ref offset, "ackId");
-            var status = ReadInt32(input, ref offset, "status");
-            var message = ReadString(input, ref offset, "message");
+            var ackId = ReadInt32(ref reader, "ackId");
+            var status = ReadInt32(ref reader, "status");
+            var message = ReadString(ref reader, "message");
 
             return new AckMessage(ackId, status, message);
         }
 
-        private static Claim[] ReadClaims(byte[] input, ref int offset)
+        private static Claim[] ReadClaims(ref MessagePackReader reader)
         {
-            var claimCount = ReadMapLength(input, ref offset, "claims");
+            var claimCount = ReadMapLength(ref reader, "claims");
             if (claimCount > 0)
             {
                 var claims = new Claim[claimCount];
 
                 for (var i = 0; i < claimCount; i++)
                 {
-                    var type = ReadString(input, ref offset, $"claims[{i}].Type");
-                    var value = ReadString(input, ref offset, $"claims[{i}].Value");
+                    var type = ReadString(ref reader, $"claims[{i}].Type");
+                    var value = ReadString(ref reader, $"claims[{i}].Value");
                     claims[i] = new Claim(type, value);
                 }
 
@@ -705,16 +669,16 @@ namespace Microsoft.Azure.SignalR.Protocol
             return null;
         }
 
-        private static IDictionary<string, ReadOnlyMemory<byte>> ReadPayloads(byte[] input, ref int offset)
+        private static IDictionary<string, ReadOnlyMemory<byte>> ReadPayloads(ref MessagePackReader reader)
         {
-            var payloadCount = ReadMapLength(input, ref offset, "payloads");
+            var payloadCount = ReadMapLength(ref reader, "payloads");
             if (payloadCount > 0)
             {
                 var payloads = new Dictionary<string, ReadOnlyMemory<byte>>((int)payloadCount);
                 for (var i = 0; i < payloadCount; i++)
                 {
-                    var key = ReadString(input, ref offset, $"payloads[{i}].key");
-                    var value = ReadBytes(input, ref offset, $"payloads[{i}].value");
+                    var key = ReadString(ref reader, $"payloads[{i}].key");
+                    var value = ReadBytes(ref reader, $"payloads[{i}].value");
                     payloads.Add(key, value);
                 }
 
@@ -724,20 +688,20 @@ namespace Microsoft.Azure.SignalR.Protocol
             return null;
         }
 
-        private static Dictionary<string, StringValues> ReadHeaders(byte[] input, ref int offset)
+        private static Dictionary<string, StringValues> ReadHeaders(ref MessagePackReader reader)
         {
-            var headerCount = ReadMapLength(input, ref offset, "headers");
+            var headerCount = ReadMapLength(ref reader, "headers");
             if (headerCount > 0)
             {
                 var headers = new Dictionary<string, StringValues>((int)headerCount, StringComparer.OrdinalIgnoreCase);
                 for (var i = 0; i < headerCount; i++)
                 {
-                    var key = ReadString(input, ref offset, $"headers[{i}].key");
-                    var count = ReadArrayLength(input, ref offset, $"headers[{i}].value.length");
+                    var key = ReadString(ref reader, $"headers[{i}].key");
+                    var count = ReadArrayLength(ref reader, $"headers[{i}].value.length");
                     var stringValues = new string[count];
                     for (var j = 0; j < count; j++)
                     {
-                        stringValues[j] = ReadString(input, ref offset, $"headers[{i}].value[{j}]");
+                        stringValues[j] = ReadString(ref reader, $"headers[{i}].value[{j}]");
                     }
                     headers.Add(key, stringValues);
                 }
@@ -748,49 +712,40 @@ namespace Microsoft.Azure.SignalR.Protocol
             return new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
         }
 
-        private static int ReadInt32(byte[] input, ref int offset, string field)
+        private static int ReadInt32(ref MessagePackReader reader, string field)
         {
-            Exception msgPackException = null;
             try
             {
-                var readInt = MessagePackBinary.ReadInt32(input, offset, out var readSize);
-                offset += readSize;
-                return readInt;
+                return reader.ReadInt32();
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                msgPackException = e;
+                throw new InvalidDataException($"Reading '{field}' as Int32 failed.", ex);
             }
 
-            throw new InvalidDataException($"Reading '{field}' as Int32 failed.", msgPackException);
         }
 
-        private static string ReadString(byte[] input, ref int offset, string field)
+        private static string ReadString(ref MessagePackReader reader, string field)
         {
-            Exception msgPackException = null;
             try
             {
-                var readString = MessagePackBinary.ReadString(input, offset, out var readSize);
-                offset += readSize;
-                return readString;
+                return reader.ReadString();
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                msgPackException = e;
+                throw new InvalidDataException($"Reading '{field}' as String failed.", ex);
             }
-
-            throw new InvalidDataException($"Reading '{field}' as String failed.", msgPackException);
         }
 
-        private static string[] ReadStringArray(byte[] input, ref int offset, string field)
+        private static string[] ReadStringArray(ref MessagePackReader reader, string field)
         {
-            var arrayLength = ReadArrayLength(input, ref offset, field);
+            var arrayLength = ReadArrayLength(ref reader, field);
             if (arrayLength > 0)
             {
                 var array = new string[arrayLength];
                 for (int i = 0; i < arrayLength; i++)
                 {
-                    array[i] = ReadString(input, ref offset, $"{field}[{i}]");
+                    array[i] = ReadString(ref reader, $"{field}[{i}]");
                 }
 
                 return array;
@@ -799,55 +754,42 @@ namespace Microsoft.Azure.SignalR.Protocol
             return null;
         }
 
-        private static byte[] ReadBytes(byte[] input, ref int offset, string field)
+        private static byte[] ReadBytes(ref MessagePackReader reader, string field)
         {
-            Exception msgPackException = null;
             try
             {
-                var readBytes = MessagePackBinary.ReadBytes(input, offset, out var readSize);
-                offset += readSize;
-                return readBytes;
+                return reader.ReadBytes()?.ToArray() ?? Array.Empty<byte>();
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                msgPackException = e;
+                throw new InvalidDataException($"Reading '{field}' as Byte[] failed.", ex);
             }
 
-            throw new InvalidDataException($"Reading '{field}' as Byte[] failed.", msgPackException);
         }
 
-        private static long ReadMapLength(byte[] input, ref int offset, string field)
+        private static long ReadMapLength(ref MessagePackReader reader, string field)
         {
-            Exception msgPackException = null;
             try
             {
-                var readMap = MessagePackBinary.ReadMapHeader(input, offset, out var readSize);
-                offset += readSize;
-                return readMap;
+                return reader.ReadMapHeader();
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                msgPackException = e;
+                throw new InvalidDataException($"Reading map length for '{field}' failed.", ex);
             }
-
-            throw new InvalidDataException($"Reading map length for '{field}' failed.", msgPackException);
         }
 
-        private static long ReadArrayLength(byte[] input, ref int offset, string field)
+        private static long ReadArrayLength(ref MessagePackReader reader, string field)
         {
-            Exception msgPackException = null;
             try
             {
-                var readArray = MessagePackBinary.ReadArrayHeader(input, offset, out var readSize);
-                offset += readSize;
-                return readArray;
+                return reader.ReadArrayHeader();
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                msgPackException = e;
+                throw new InvalidDataException($"Reading array length for '{field}' failed.", ex);
             }
 
-            throw new InvalidDataException($"Reading array length for '{field}' failed.", msgPackException);
         }
     }
 }

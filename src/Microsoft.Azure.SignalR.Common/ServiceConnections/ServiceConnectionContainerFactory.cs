@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR
             _loggerFactory = loggerFactory;
         }
 
-        public IServiceConnectionContainer Create(string hub)
+        public IMultiEndpointServiceConnectionContainer Create(string hub)
         {
             return new MultiEndpointServiceConnectionContainer(_serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _loggerFactory);
         }

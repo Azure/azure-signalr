@@ -6,49 +6,61 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceOptionsSetup : IConfigureOptions<ServiceOptions>
+    internal class ServiceOptionsSetup : IConfigureOptions<ServiceOptions>, IOptionsChangeTokenSource<ServiceOptions>
     {
-        private readonly string _appName;
-        private readonly ServerStickyMode _serverStickyMode;
-        private readonly string _connectionString;
-        private readonly ServiceEndpoint[] _endpoints;
+        private readonly IConfiguration _configuration;
 
         private readonly bool _gracefulShutdownEnabled = false;
         private readonly TimeSpan _shutdownTimeout = TimeSpan.FromSeconds(Constants.DefaultShutdownTimeoutInSeconds);
 
+        public string Name => Options.DefaultName;
+
         public ServiceOptionsSetup(IConfiguration configuration)
         {
-            _appName = configuration[Constants.ApplicationNameDefaultKeyPrefix];
-            var mode = configuration[Constants.ServerStickyModeDefaultKey];
-            if (!string.IsNullOrEmpty(mode))
-            {
-                Enum.TryParse(mode, true, out _serverStickyMode);
-            }
-
-            var (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringDefaultKey);
-
-            // Fallback to ConnectionStrings:Azure:SignalR:ConnectionString format when the default one is not available
-            if (connectionString == null && endpoints.Length == 0)
-            {
-                (connectionString, endpoints) = GetEndpoint(configuration, Constants.ConnectionStringSecondaryKey);
-            }
-
-            _connectionString = connectionString;
-            _endpoints = endpoints;
+            _configuration = configuration;
         }
 
         public void Configure(ServiceOptions options)
         {
-            // The default setup of ServiceOptions
-            options.ConnectionString = _connectionString;
-            options.Endpoints = _endpoints;
-            options.ApplicationName = _appName;
-            options.ServerStickyMode = _serverStickyMode;
+            var configuration = ParseConfiguration();
+
+            options.ConnectionString = configuration.ConnectionString;
+            options.Endpoints = configuration.Endpoints;
+            options.ApplicationName = configuration.AppName;
+            options.ServerStickyMode = configuration.StickyMode;
+
             options.EnableGracefulShutdown = _gracefulShutdownEnabled;
             options.ServerShutdownTimeout = _shutdownTimeout;
+        }
+
+        public IChangeToken GetChangeToken()
+        {
+            return _configuration.GetReloadToken();
+        }
+
+        private (string AppName, string ConnectionString, ServerStickyMode StickyMode, ServiceEndpoint[] Endpoints) ParseConfiguration()
+        {
+            var appName = _configuration[Constants.ApplicationNameDefaultKeyPrefix];
+            var stickyMode = ServerStickyMode.Disabled;
+            var mode = _configuration[Constants.ServerStickyModeDefaultKey];
+            if (!string.IsNullOrEmpty(mode))
+            {
+                Enum.TryParse(mode, true, out stickyMode);
+            }
+
+            var (connectionString, endpoints) = GetEndpoint(_configuration, Constants.ConnectionStringDefaultKey);
+
+            // Fallback to ConnectionStrings:Azure:SignalR:ConnectionString format when the default one is not available
+            if (connectionString == null && endpoints.Length == 0)
+            {
+                (connectionString, endpoints) = GetEndpoint(_configuration, Constants.ConnectionStringSecondaryKey);
+            }
+
+            return (appName, connectionString, stickyMode, endpoints);
         }
 
         private static (string, ServiceEndpoint[]) GetEndpoint(IConfiguration configuration, string key)
