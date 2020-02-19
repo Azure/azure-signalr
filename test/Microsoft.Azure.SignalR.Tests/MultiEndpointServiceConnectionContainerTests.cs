@@ -20,19 +20,6 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class TestEndpointServiceConnectionContainerTests : VerifiableLoggedTest
     {
-        private sealed class TestMultiEndpointServiceConnectionContainer : MultiEndpointServiceConnectionContainer
-        {
-            public TestMultiEndpointServiceConnectionContainer(string hub,
-                                                          Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
-                                                          IServiceEndpointManager endpoint,
-                                                          IEndpointRouter router,
-                                                          ILoggerFactory loggerFactory
-
-                ) : base(hub, generator, endpoint, router, loggerFactory)
-            {
-            }
-        }
-
         private const string ConnectionStringFormatter = "Endpoint={0};AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string Url1 = "http://url1";
         private const string Url2 = "https://url2";
@@ -122,7 +109,7 @@ namespace Microsoft.Azure.SignalR.Tests
             _ = container.StartAsync();
             await container.ConnectionInitializedTask;
 
-            endpoints = container.GetOnlineEndpoints().ToArray();
+            endpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
@@ -150,8 +137,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public async Task TestContainerWithOneEndpointWithAllConnectedSucceeeds()
         {
             var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
-            var throws = new ServiceConnectionNotActiveException();
-            var router = new TestEndpointRouter(throws);
+            var router = new TestEndpointRouter();
 
             var writeTcs = new TaskCompletionSource<object>();
             TestServiceConnectionContainer innerContainer = null;
@@ -176,12 +162,44 @@ namespace Microsoft.Azure.SignalR.Tests
             await task.OrTimeout();
         }
 
+        [Fact]
+        public async Task TestContainerWithOneEndpointWithAllDisconnectedConnectionThrows()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
+            {
+                var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
+                Assert.Single(warns);
+                Assert.Contains(warns, s => s.Write.Message.Contains("Message JoinGroupWithAckMessage is not sent to endpoint (Primary)http://url1 because all connections to this endpoint are offline."));
+                return true;
+            }))
+            { 
+                var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
+                var router = new DefaultEndpointRouter();
+            
+                var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                    e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                    new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+                    new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+                    new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+                    new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+                    new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+                    new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+                    new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+                }, e), sem, router, loggerFactory);
+
+                // All the connections started
+                _ = container.StartAsync();
+                await container.ConnectionInitializedTask.OrTimeout();
+
+                await container.WriteAsync(DefaultGroupMessage);
+            }
+        }
 
         [Fact]
         public async Task TestContainerWithBadRouterThrows()
         {
             var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
-            var throws = new ServiceConnectionNotActiveException();
+            var throws = new InvalidOperationException();
             var router = new TestEndpointRouter(throws);
             var container = new TestMultiEndpointServiceConnectionContainer("hub",
                 e => new TestServiceConnectionContainer(new List<IServiceConnection> {
@@ -210,7 +228,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString1),
                 new ServiceEndpoint(ConnectionString2));
 
-            var router = new TestEndpointRouter(new ServiceConnectionNotActiveException());
+            var router = new TestEndpointRouter(new InvalidOperationException());
             var container = new TestMultiEndpointServiceConnectionContainer("hub",
                 e => new TestServiceConnectionContainer(new List<IServiceConnection> {
                 new TestSimpleServiceConnection(),
@@ -226,7 +244,7 @@ namespace Microsoft.Azure.SignalR.Tests
             _ = container.StartAsync();
             await container.ConnectionInitializedTask;
 
-            await Assert.ThrowsAsync<ServiceConnectionNotActiveException>(
+            await Assert.ThrowsAsync<InvalidOperationException>(
                 () => container.WriteAsync(DefaultGroupMessage)
                 );
         }
@@ -705,6 +723,29 @@ namespace Microsoft.Azure.SignalR.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task).OrTimeout();
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task TestSingleEndpointOffline(bool migratable)
+        {
+            var manager = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1)
+            );
+            await TestEndpointOfflineInner(manager, new TestEndpointRouter(), migratable);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task TestMultiEndpointOffline(bool migratable)
+        {
+            var manager = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1),
+                new ServiceEndpoint(ConnectionString2)
+            );
+            await TestEndpointOfflineInner(manager, new TestEndpointRouter(), migratable);
+        }
+
         private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router, bool migratable)
         {
             var containers = new List<TestServiceConnectionContainer>();
@@ -740,29 +781,6 @@ namespace Microsoft.Azure.SignalR.Tests
 
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task TestSingleEndpointOffline(bool migratable)
-        {
-            var manager = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1)
-            );
-            await TestEndpointOfflineInner(manager, null, migratable);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task TestMultiEndpointOffline(bool migratable)
-        {
-            var manager = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1),
-                new ServiceEndpoint(ConnectionString2)
-            );
-            await TestEndpointOfflineInner(manager, new TestEndpointRouter(), migratable);
-        }
-
         private class NotExistEndpointRouter : EndpointRouterDecorator
         {
             public override IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints)
@@ -773,6 +791,19 @@ namespace Microsoft.Azure.SignalR.Tests
             public override IEnumerable<ServiceEndpoint> GetEndpointsForGroup(string groupName, IEnumerable<ServiceEndpoint> endpoints)
             {
                 return null;
+            }
+        }
+
+        private sealed class TestMultiEndpointServiceConnectionContainer : MultiEndpointServiceConnectionContainer
+        {
+            public TestMultiEndpointServiceConnectionContainer(string hub,
+                                                          Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
+                                                          IServiceEndpointManager endpoint,
+                                                          IEndpointRouter router,
+                                                          ILoggerFactory loggerFactory
+
+                ) : base(hub, generator, endpoint, router, loggerFactory)
+            {
             }
         }
 
