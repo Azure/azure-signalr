@@ -90,44 +90,12 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 
         private static class Log
         {
-            private static readonly Action<ILogger, double, Exception> _startingServiceStatusPingTimer =
-                LoggerMessage.Define<double>(LogLevel.Debug, new EventId(0, "StartingServiceStatusPingTimer"), "Starting service status ping timer. Duration: {KeepAliveInterval:0.00}ms");
-
-            private static readonly Action<ILogger, Exception> _sentServiceStatusPing =
-                LoggerMessage.Define(LogLevel.Debug, new EventId(1, "SentServiceStatusPing"), "Sent a service status ping message to service.");
-
-            private static readonly Action<ILogger, Exception> _failedSendingServiceStatusPing =
-                LoggerMessage.Define(LogLevel.Warning, new EventId(2, "FailedSendingServiceStatusPing"), "Failed sending a service status ping message to service.");
-
             private static readonly Action<ILogger, string, ServiceEndpoint, string, Exception> _ignoreSendingMessageToInactiveEndpoint =
-                LoggerMessage.Define<string, ServiceEndpoint, string>(LogLevel.Debug, new EventId(3, "IgnoreSendingMessageToInactiveEndpoint"), "Message {type} sending to {endpoint} for hub {hub} is ignored because the endpoint is inactive.");
-
-            private static readonly Action<ILogger, bool, ServiceEndpoint, string, Exception> _receivedServiceStatusPing =
-                LoggerMessage.Define<bool, ServiceEndpoint, string>(LogLevel.Debug, new EventId(4, "ReceivedServiceStatusPing"), "Received a service status active={isActive} from {endpoint} for hub {hub}.");
-
-            public static void StartingServiceStatusPingTimer(ILogger logger, TimeSpan keepAliveInterval)
-            {
-                _startingServiceStatusPingTimer(logger, keepAliveInterval.TotalMilliseconds, null);
-            }
-
-            public static void SentServiceStatusPing(ILogger logger)
-            {
-                _sentServiceStatusPing(logger, null);
-            }
-
-            public static void FailedSendingServiceStatusPing(ILogger logger, Exception exception)
-            {
-                _failedSendingServiceStatusPing(logger, exception);
-            }
+                LoggerMessage.Define<string, ServiceEndpoint, string>(LogLevel.Debug, new EventId(1, "IgnoreSendingMessageToInactiveEndpoint"), "Message {type} sending to {endpoint} for hub {hub} is ignored because the endpoint is inactive.");
 
             public static void IgnoreSendingMessageToInactiveEndpoint(ILogger logger, Type messageType, HubServiceEndpoint endpoint)
             {
                 _ignoreSendingMessageToInactiveEndpoint(logger, messageType.Name, endpoint, endpoint.Hub, null);
-            }
-
-            public static void ReceivedServiceStatusPing(ILogger logger, bool isActive, HubServiceEndpoint endpoint)
-            {
-                _receivedServiceStatusPing(logger, isActive, endpoint, endpoint.Hub, null);
             }
         }
     }

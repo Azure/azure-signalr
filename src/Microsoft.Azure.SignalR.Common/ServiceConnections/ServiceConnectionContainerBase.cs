@@ -19,15 +19,18 @@ namespace Microsoft.Azure.SignalR
         private const int MaxRetryRemoveSeverConnection = 24;
 
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
+        private static readonly TimeSpan RemoveFromServiceTimeout = TimeSpan.FromSeconds(5);
         private static readonly TimeSpan DefaultStatusPingInterval = TimeSpan.FromSeconds(10);
         private static readonly TimeSpan DefaultServersPingInterval = TimeSpan.FromSeconds(5);
         // Give (interval * 3 + 1) delay when check value expire.
         private static readonly long DefaultServersPingTimeoutTicks = Stopwatch.Frequency * (DefaultServersPingInterval.Seconds * 3 + 1);
+        private static readonly Tuple<HashSet<string>, long> DefaultServerIdContext = new Tuple<HashSet<string>, long>(null, 0);
+
+        private static readonly PingMessage _shutdownFinMessage = RuntimeServicePingMessage.GetFinPingMessage(false);
+        private static readonly PingMessage _shutdownFinMigratableMessage = RuntimeServicePingMessage.GetFinPingMessage(true);
 
         private static TimeSpan ReconnectInterval =>
             TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackOffInternalInMilliseconds));
-
-        private static TimeSpan RemoveFromServiceTimeout = TimeSpan.FromSeconds(5);
 
         private readonly BackOffPolicy _backOffPolicy = new BackOffPolicy();
 
@@ -39,22 +42,24 @@ namespace Microsoft.Azure.SignalR
 
         private readonly CustomizedPingTimer _statusPing;
 
+        private volatile List<IServiceConnection> _fixedServiceConnections;
+
         private volatile ServiceConnectionStatus _status;
 
-        private volatile HashSet<string> _globalServerIds;
+        // <serverIds, lastServerIdsTimestamp>
+        private volatile Tuple<HashSet<string>, long> _serverIdContext;
         private volatile bool _hasClients;
-
         private volatile bool _terminated = false;
 
-        private static readonly PingMessage _shutdownFinMessage = RuntimeServicePingMessage.GetFinPingMessage(false);
-        private static readonly PingMessage _shutdownFinMigratableMessage = RuntimeServicePingMessage.GetFinPingMessage(true);
-
-        private long _serverIdsLastUpdated = 0;
         private CustomizedPingTimer _serverIdsPing;
 
         protected ILogger Logger { get; }
 
-        protected List<IServiceConnection> FixedServiceConnections { get; set; }
+        protected List<IServiceConnection> FixedServiceConnections
+        {
+            get { return _fixedServiceConnections; }
+            set { _fixedServiceConnections = value; }
+        }
 
         protected IServiceConnectionFactory ServiceConnectionFactory { get; }
 
@@ -66,7 +71,7 @@ namespace Microsoft.Azure.SignalR
 
         public event Action<StatusChange> ConnectionStatusChanged;
 
-        public HashSet<string> GlobalServerIds => _globalServerIds;
+        public HashSet<string> GlobalServerIds => _serverIdContext.Item1;
 
         public bool HasClients => _hasClients;
 
@@ -173,10 +178,9 @@ namespace Microsoft.Azure.SignalR
             else if (RuntimeServicePingMessage.TryGetServerIds(pingMessage, out var serverIds, out var updatedTime))
             {
                 Log.ReceivedServerIdsPing(Logger, Endpoint);
-                if (updatedTime > Interlocked.Read(ref _serverIdsLastUpdated))
+                if (updatedTime > _serverIdContext.Item2)
                 {
-                    Interlocked.Exchange(ref _globalServerIds, serverIds);
-                    Interlocked.Exchange(ref _serverIdsLastUpdated, updatedTime);
+                    _serverIdContext = new Tuple<HashSet<string>,long>(serverIds, updatedTime);
                 }
             }
             return Task.CompletedTask;
@@ -330,7 +334,7 @@ namespace Microsoft.Azure.SignalR
         public Task StopGetServersPing()
         {
             // reset value to clear
-            Interlocked.Exchange(ref _globalServerIds, null);
+            _serverIdContext = DefaultServerIdContext;
             _serverIdsPing?.Dispose();
             _serverIdsPing = null;
             return Task.CompletedTask;
@@ -449,10 +453,10 @@ namespace Microsoft.Azure.SignalR
         private async Task WriteServerIdsPingAsync()
         {
             await WriteAsync(RuntimeServicePingMessage.GetServersPingMessage());
-            if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _serverIdsLastUpdated) > DefaultServersPingTimeoutTicks)
+            if (Stopwatch.GetTimestamp() - _serverIdContext.Item2 > DefaultServersPingTimeoutTicks)
             {
-                // clear long term not updated values for accuracy
-                Interlocked.Exchange(ref _globalServerIds, null);
+                // reset value if expired.
+                _serverIdContext = DefaultServerIdContext;
             }
         }
 
