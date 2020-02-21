@@ -1,15 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.Logging;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    public class ServiceConnectionContainerBaseTests
+    public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
     {
+        public ServiceConnectionContainerBaseTests(ITestOutputHelper helper) : base(helper)
+        { }
+
+
         [Fact]
         public async Task TestIfConnectionWillRestartAfterShutdown()
         {
@@ -56,27 +63,64 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        [Fact]
-        public async Task TestServerIdsPing()
+        [Theory]
+        [InlineData(3, 3, 0)]
+        [InlineData(0, 1, 1)] // stop called more than start will have warn log
+        [InlineData(3, 1, 0)]
+        public async Task TestServerIdsPing(int startCount, int stopCount, int expectedWarn)
         {
-            List<IServiceConnection> connections = new List<IServiceConnection>
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
             {
-                new SimpleTestServiceConnection(),
-                new SimpleTestServiceConnection(),
-                new SimpleTestServiceConnection()
-            };
-            using TestServiceConnectionContainer container = new TestServiceConnectionContainer(connections, factory: new SimpleTestServiceConnectionFactory());
+                var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
+                Assert.Equal(expectedWarn, warns.Count);
+                if (expectedWarn > 0)
+                {
+                    Assert.Contains(warns, s => s.Write.Message.Contains("Failed to stop Servers timer as it's not started"));
+                }
+                return true;
+            }))
+            {
+                List<IServiceConnection> connections = new List<IServiceConnection>
+                {
+                    new SimpleTestServiceConnection(),
+                    new SimpleTestServiceConnection(),
+                    new SimpleTestServiceConnection()
+                };
+                using TestServiceConnectionContainer container = 
+                    new TestServiceConnectionContainer(
+                        connections, 
+                        factory: new SimpleTestServiceConnectionFactory(), 
+                        logger: loggerFactory.CreateLogger<TestServiceConnectionContainer>());
 
-            await container.StartAsync();
-            await container.StartGetServersPing();
+                await container.StartAsync();
 
-            // default interval is 5s, add 2s for delay, validate any one connection write servers ping.
-            await Task.WhenAny(connections.Select(c => {
-                var connection = c as SimpleTestServiceConnection;
-                return connection.ServerIdsPingTask.OrTimeout(7000);
-            }));
+                var tasks = new List<Task>();
 
-            await container.StopGetServersPing();
+                while (startCount > 0)
+                {
+                    tasks.Add(container.StartGetServersPing());
+                    startCount--;
+                }
+                await Task.WhenAll(tasks);
+
+                // default interval is 5s, add 2s for delay, validate any one connection write servers ping.
+                if (tasks.Count > 0)
+                { 
+                    await Task.WhenAny(connections.Select(c =>
+                    {
+                        var connection = c as SimpleTestServiceConnection;
+                        return connection.ServerIdsPingTask.OrTimeout(7000);
+                    })); 
+                }
+
+                tasks.Clear();
+                while (stopCount > 0)
+                {
+                    tasks.Add(container.StopGetServersPing());
+                    stopCount--;
+                }
+                await Task.WhenAll(tasks);
+            }
         }
 
         private sealed class SimpleTestServiceConnectionFactory : IServiceConnectionFactory

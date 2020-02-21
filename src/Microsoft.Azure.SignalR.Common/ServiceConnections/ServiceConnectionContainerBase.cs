@@ -41,6 +41,8 @@ namespace Microsoft.Azure.SignalR
         private readonly AckHandler _ackHandler;
 
         private readonly CustomizedPingTimer _statusPing;
+        // Use Lazy for serversPing cause only apply for multiple endpoints scaling cases.
+        private readonly Lazy<CustomizedPingTimer> _serversPing;
 
         private volatile List<IServiceConnection> _fixedServiceConnections;
 
@@ -50,8 +52,6 @@ namespace Microsoft.Azure.SignalR
         private volatile Tuple<HashSet<string>, long> _serverIdContext;
         private volatile bool _hasClients;
         private volatile bool _terminated = false;
-
-        private CustomizedPingTimer _serverIdsPing;
 
         protected ILogger Logger { get; }
 
@@ -137,6 +137,9 @@ namespace Microsoft.Azure.SignalR
             ConnectionStatusChanged += OnStatusChanged;
 
             _statusPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.ServiceStatus, WriteServiceStatusPingAsync, DefaultStatusPingInterval, DefaultStatusPingInterval);
+            _statusPing.Start();
+
+            _serversPing = new Lazy<CustomizedPingTimer>(() => CreateServersPingTimer());
         }
 
         public Task StartAsync() => Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
@@ -327,25 +330,24 @@ namespace Microsoft.Azure.SignalR
 
         public Task StartGetServersPing()
         {
-            _serverIdsPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServerIdsPingAsync, DefaultServersPingInterval, DefaultServersPingInterval);
+            _serversPing.Value.Start();
             return Task.CompletedTask;
         }
 
         public Task StopGetServersPing()
         {
-            // reset value to clear
+            // reset cached value
             _serverIdContext = DefaultServerIdContext;
-            _serverIdsPing?.Dispose();
-            _serverIdsPing = null;
+            _serversPing.Value.Stop();
             return Task.CompletedTask;
         }
 
         // Ready for scalable containers
         public void Dispose()
         {
-            _statusPing.Dispose();
+            _statusPing.Stop();
             // in case StopGetServersPingAsync is not executed.
-            _serverIdsPing?.Dispose();
+            _serversPing.Value.Dispose();
             Dispose(true);
             GC.SuppressFinalize(this);
         }
@@ -460,6 +462,11 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        private CustomizedPingTimer CreateServersPingTimer()
+        {
+            return new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServerIdsPingAsync, DefaultServersPingInterval, DefaultServersPingInterval);
+        }
+
         private sealed class CustomizedPingTimer : IDisposable
         {
             private long _lastSendTimestamp = 0;
@@ -467,10 +474,14 @@ namespace Microsoft.Azure.SignalR
 
             private readonly string _pingName;
             private readonly Func<Task> _writePing;
-            private readonly TimerAwaitable _timer;
             private readonly TimeSpan _dueTime;
             private readonly TimeSpan _intervalTime;
 
+            // Considering parallel add endpoints to save time
+            // Add a counter control multiple time call Start() and Stop() correctly
+            private volatile int _counter = 0;
+
+            private TimerAwaitable _timer;
             private ILogger _logger { get; }
 
             public CustomizedPingTimer(ILogger logger, string pingName, Func<Task> writePing, TimeSpan dueTime, TimeSpan intervalTime)
@@ -481,22 +492,48 @@ namespace Microsoft.Azure.SignalR
                 _dueTime = dueTime;
                 _intervalTime = intervalTime;
                 _defaultPingTicks = intervalTime.Seconds * Stopwatch.Frequency;
+            }
 
-                _timer = StartPingTimer();
+            public void Start()
+            {
+                if (_counter == 0)
+                {
+                    _timer = Init();
+                    _timer.Start();
+                    _ = PingAsync(_timer);
+                }
+                Interlocked.Increment(ref _counter);
+            }
+
+            public void Stop()
+            {
+                if (_counter == 0)
+                {
+                    Log.TimerAlreadyStopped(_logger, _pingName);
+                    return;
+                }
+
+                if (_counter == 1)
+                {
+                    _timer.Stop();
+                }
+                Interlocked.Decrement(ref _counter);
             }
 
             public void Dispose()
             {
-                _timer.Stop();
+                if (_counter > 0)
+                {
+                    _timer.Stop();
+                }
             }
 
-            private TimerAwaitable StartPingTimer()
+            private TimerAwaitable Init()
             {
                 Log.StartingPingTimer(_logger, _pingName, _intervalTime);
 
                 _lastSendTimestamp = Stopwatch.GetTimestamp();
                 var timer = new TimerAwaitable(_dueTime, _intervalTime);
-                _ = PingAsync(timer);
 
                 return timer;
             }
@@ -505,8 +542,6 @@ namespace Microsoft.Azure.SignalR
             {
                 using (timer)
                 {
-                    timer.Start();
-
                     while (await timer)
                     {
                         try
@@ -558,6 +593,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, ServiceEndpoint, string, Exception> _receivedServerIdsPing =
                 LoggerMessage.Define<ServiceEndpoint, string>(LogLevel.Debug, new EventId(9, "ReceivedServerIdsPing"), "Received a server ids ping from {endpoint} for hub {hub}.");
 
+            private static readonly Action<ILogger, string, Exception> _timerAlreadyStopped =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(10, "TimerAlreadyStopped"), "Failed to stop {pingName} timer as it's not started");
+
             public static void EndpointOnline(ILogger logger, HubServiceEndpoint endpoint)
             {
                 _endpointOnline(logger, endpoint.Hub, endpoint.ToString(), null);
@@ -601,6 +639,11 @@ namespace Microsoft.Azure.SignalR
             public static void ReceivedServerIdsPing(ILogger logger, HubServiceEndpoint endpoint)
             {
                 _receivedServerIdsPing(logger, endpoint, endpoint.Hub, null);
+            }
+
+            public static void TimerAlreadyStopped(ILogger logger, string pingName)
+            {
+                _timerAlreadyStopped(logger, pingName, null);
             }
         }
     }
