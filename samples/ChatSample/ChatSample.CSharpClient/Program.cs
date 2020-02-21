@@ -29,7 +29,7 @@ namespace ChatSample.CSharpClient
                 switch (mode)
                 {
                     case Mode.Broadcast:
-                        await proxy.SendAsync("BroadcastMessage", currentUser, input);
+                        await proxy.InvokeAsync("BroadcastMessage", currentUser, input);
                         break;
                     case Mode.Echo:
                         await proxy.InvokeAsync("echo", input);
