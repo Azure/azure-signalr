@@ -31,14 +31,6 @@ textarea:focus {
     background: #87CEFA;
 }
 
-.error {
-    color: red
-}
-
-.success {
-    color: green
-}
-
 .broadcast-message {
     display: inline-block;
     background: yellow;

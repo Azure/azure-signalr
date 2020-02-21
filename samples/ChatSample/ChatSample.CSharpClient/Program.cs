@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Azure.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ChatSample.CSharpClient
 {
@@ -29,7 +30,6 @@ namespace ChatSample.CSharpClient
                 {
                     case Mode.Broadcast:
                         await proxy.InvokeAsync("BroadcastMessage", currentUser, input);
-
                         break;
                     case Mode.Echo:
                         await proxy.InvokeAsync("echo", input);
@@ -44,7 +44,9 @@ namespace ChatSample.CSharpClient
 
         private static async Task<HubConnection> ConnectAsync(string url, TextWriter output, CancellationToken cancellationToken = default)
         {
-            var connection = new HubConnectionBuilder().WithUrl(url).Build();
+            var connection = new HubConnectionBuilder()
+                .WithUrl(url)
+                .AddMessagePackProtocol().Build();
 
             connection.On<string, string>("BroadcastMessage", BroadcastMessage);
             connection.On<string>("Echo", Echo);
