@@ -492,13 +492,14 @@ namespace Microsoft.Azure.SignalR
                 _dueTime = dueTime;
                 _intervalTime = intervalTime;
                 _defaultPingTicks = intervalTime.Seconds * Stopwatch.Frequency;
+
+                _timer = Init();
             }
 
             public void Start()
             {
                 if (_counter == 0)
                 {
-                    _timer = Init();
                     _timer.Start();
                     _ = PingAsync(_timer);
                 }
