@@ -183,7 +183,7 @@ namespace Microsoft.Azure.SignalR
                 Log.ReceivedServerIdsPing(Logger, Endpoint);
                 if (updatedTime > _serverIdContext.Item2)
                 {
-                    _serverIdContext = new Tuple<HashSet<string>,long>(serverIds, updatedTime);
+                    _serverIdContext = Tuple.Create(serverIds, updatedTime);
                 }
             }
             return Task.CompletedTask;
@@ -330,24 +330,32 @@ namespace Microsoft.Azure.SignalR
 
         public Task StartGetServersPing()
         {
-            _serversPing.Value.Start();
+            if (_serversPing.Value.Start())
+            {
+                // reset old value when true start.
+                _serverIdContext = DefaultServerIdContext;
+            }
             return Task.CompletedTask;
         }
 
         public Task StopGetServersPing()
         {
-            // reset cached value
-            _serverIdContext = DefaultServerIdContext;
-            _serversPing.Value.Stop();
+            if (_serversPing.IsValueCreated)
+            {
+                _serversPing.Value.Stop();
+            }
             return Task.CompletedTask;
         }
 
         // Ready for scalable containers
         public void Dispose()
         {
+            if (_serversPing.IsValueCreated)
+            {
+                _serversPing.Value.Dispose();
+            }
+
             _statusPing.Stop();
-            // in case StopGetServersPingAsync is not executed.
-            _serversPing.Value.Dispose();
             Dispose(true);
             GC.SuppressFinalize(this);
         }
@@ -454,12 +462,12 @@ namespace Microsoft.Azure.SignalR
 
         private async Task WriteServerIdsPingAsync()
         {
-            await WriteAsync(RuntimeServicePingMessage.GetServersPingMessage());
             if (Stopwatch.GetTimestamp() - _serverIdContext.Item2 > DefaultServersPingTimeoutTicks)
             {
                 // reset value if expired.
                 _serverIdContext = DefaultServerIdContext;
             }
+            await WriteAsync(RuntimeServicePingMessage.GetServersPingMessage());
         }
 
         private CustomizedPingTimer CreateServersPingTimer()
@@ -477,9 +485,10 @@ namespace Microsoft.Azure.SignalR
             private readonly TimeSpan _dueTime;
             private readonly TimeSpan _intervalTime;
 
-            // Considering parallel add endpoints to save time
-            // Add a counter control multiple time call Start() and Stop() correctly
-            private volatile int _counter = 0;
+            // Considering parallel add endpoints to save time,
+            // Add a counter control multiple time call Start() and Stop() correctly.
+            // Interlocked.Read() supports long type only.
+            private long _counter = 0;
 
             private TimerAwaitable _timer;
             private ILogger _logger { get; }
@@ -496,37 +505,34 @@ namespace Microsoft.Azure.SignalR
                 _timer = Init();
             }
 
-            public void Start()
+            public bool Start()
             {
-                if (_counter == 0)
+                if (Interlocked.Increment(ref _counter) == 1)
                 {
                     _timer.Start();
                     _ = PingAsync(_timer);
+                    return true;
                 }
-                Interlocked.Increment(ref _counter);
+                return false;
             }
 
             public void Stop()
             {
-                if (_counter == 0)
+                if (Interlocked.Read(ref _counter) == 0)
                 {
+                    // Avoid wrong Stop() to break _counter in further scale
                     Log.TimerAlreadyStopped(_logger, _pingName);
                     return;
                 }
-
-                if (_counter == 1)
+                if (Interlocked.Decrement(ref _counter) == 0)
                 {
                     _timer.Stop();
                 }
-                Interlocked.Decrement(ref _counter);
             }
 
             public void Dispose()
             {
-                if (_counter > 0)
-                {
-                    _timer.Stop();
-                }
+                 _timer.Stop();
             }
 
             private TimerAwaitable Init()
@@ -541,25 +547,22 @@ namespace Microsoft.Azure.SignalR
 
             private async Task PingAsync(TimerAwaitable timer)
             {
-                using (timer)
+                while (await timer)
                 {
-                    while (await timer)
+                    try
                     {
-                        try
+                        // Check if last send time is longer than default keep-alive ticks and then send ping
+                        if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendTimestamp) > _defaultPingTicks)
                         {
-                            // Check if last send time is longer than default keep-alive ticks and then send ping
-                            if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendTimestamp) > _defaultPingTicks)
-                            {
-                                await _writePing.Invoke();
+                            await _writePing.Invoke();
 
-                                Interlocked.Exchange(ref _lastSendTimestamp, Stopwatch.GetTimestamp());
-                                Log.SentPing(_logger, _pingName);
-                            }
+                            Interlocked.Exchange(ref _lastSendTimestamp, Stopwatch.GetTimestamp());
+                            Log.SentPing(_logger, _pingName);
                         }
-                        catch (Exception e)
-                        {
-                            Log.FailedSendingPing(_logger, _pingName, e);
-                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Log.FailedSendingPing(_logger, _pingName, e);
                     }
                 }
             }

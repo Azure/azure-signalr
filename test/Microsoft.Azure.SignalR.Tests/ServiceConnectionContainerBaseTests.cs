@@ -65,7 +65,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [InlineData(3, 3, 0)]
-        [InlineData(0, 1, 1)] // stop called more than start will have warn log
+        [InlineData(0, 1, 0)] // stop will be skipped if start never init value and no warn
+        [InlineData(1, 2, 1)] // stop more than start will log warn
         [InlineData(3, 1, 0)]
         public async Task TestServerIdsPing(int startCount, int stopCount, int expectedWarn)
         {
@@ -122,6 +123,86 @@ namespace Microsoft.Azure.SignalR.Tests
                 await Task.WhenAll(tasks);
             }
         }
+
+        [Theory]
+        [InlineData(1, 1, 3, 3, 0)]
+        [InlineData(1, 1, 0, 1, 1)] // wrong stop will not be skipped second time if first time already initialized
+        [InlineData(1, 1, 1, 0, 0)]
+        [InlineData(1, 3, 2, 2, 2)] // first time error stop won't break second time write.
+        public async Task TestServerIdsPingWorkSecondTime(int firstStart, int firstStop, int secondStart, int secondStop, int expectedWarn)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
+            {
+                var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
+                Assert.Equal(expectedWarn, warns.Count);
+                if (expectedWarn > 0)
+                {
+                    Assert.Contains(warns, s => s.Write.Message.Contains("Failed to stop Servers timer as it's not started"));
+                }
+                return true;
+            }))
+            {
+                List<IServiceConnection> connections = new List<IServiceConnection>
+                {
+                    new SimpleTestServiceConnection(),
+                    new SimpleTestServiceConnection(),
+                    new SimpleTestServiceConnection()
+                };
+                using TestServiceConnectionContainer container =
+                    new TestServiceConnectionContainer(
+                        connections,
+                        factory: new SimpleTestServiceConnectionFactory(),
+                        logger: loggerFactory.CreateLogger<TestServiceConnectionContainer>());
+
+                await container.StartAsync();
+
+                var tasks = new List<Task>();
+
+                // first time scale
+                while (firstStart > 0)
+                {
+                    tasks.Add(container.StartGetServersPing());
+                    firstStart--;
+                }
+                await Task.WhenAll(tasks);
+
+                tasks.Clear();
+                while (firstStop > 0)
+                {
+                    tasks.Add(container.StopGetServersPing());
+                    firstStop--;
+                }
+                await Task.WhenAll(tasks);
+
+                // second time scale
+                tasks.Clear();
+                while (secondStart > 0)
+                {
+                    tasks.Add(container.StartGetServersPing());
+                    secondStart--;
+                }
+                await Task.WhenAll(tasks);
+
+                // default interval is 5s, add 2s for delay, validate any one connection write servers ping.
+                if (tasks.Count > 0)
+                {
+                    await Task.WhenAny(connections.Select(c =>
+                    {
+                        var connection = c as SimpleTestServiceConnection;
+                        return connection.ServerIdsPingTask.OrTimeout(7000);
+                    }));
+                }
+
+                tasks.Clear();
+                while (secondStop > 0)
+                {
+                    tasks.Add(container.StopGetServersPing());
+                    secondStop--;
+                }
+                await Task.WhenAll(tasks);
+            }
+        }
+
 
         private sealed class SimpleTestServiceConnectionFactory : IServiceConnectionFactory
         {
