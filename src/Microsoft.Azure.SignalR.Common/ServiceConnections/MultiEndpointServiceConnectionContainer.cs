@@ -19,8 +19,10 @@ namespace Microsoft.Azure.SignalR
         private readonly ConcurrentDictionary<ServiceEndpoint, IServiceConnectionContainer> _connectionContainers =
                new ConcurrentDictionary<ServiceEndpoint, IServiceConnectionContainer>();
 
+        private readonly string _hubName;
         private readonly IMessageRouter _router;
         private readonly ILogger _logger;
+        private readonly IServiceEndpointManager _serviceEndpointManager;
 
         // <needRouter, endpoints>
         private (bool needRouter, IReadOnlyList<HubServiceEndpoint> endpoints) _routerEndpoints;
@@ -40,9 +42,11 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(generator));
             }
 
+            _hubName = hub;
             _router = router ?? throw new ArgumentNullException(nameof(router));
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
-
+            _serviceEndpointManager = endpointManager;
+            
             // provides a copy to the endpoint per container
             var endpoints = endpointManager.GetEndpoints(hub);
             // router will be used when there's customized MessageRouter or multiple endpoints
@@ -54,6 +58,10 @@ namespace Microsoft.Azure.SignalR
             {
                 _connectionContainers[endpoint] = generator(endpoint);
             }
+
+            _serviceEndpointManager.OnAdd += OnAdd;
+            _serviceEndpointManager.OnRemove += OnRemove;
+            _serviceEndpointManager.OnRename += OnRename;
         }
 
         public MultiEndpointServiceConnectionContainer(
@@ -226,6 +234,51 @@ namespace Microsoft.Azure.SignalR
             }
 
             return Task.WhenAll(routed);
+        }
+
+        private void OnAdd(HubServiceEndpoint endpoint)
+        {
+            if (!endpoint.Hub.Equals(_hubName, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+            _ = AddHubServiceEndpointAsync(endpoint);
+        }
+
+        private Task AddHubServiceEndpointAsync(HubServiceEndpoint endpoint)
+        {
+            // TODO: create container and trigger server ping.
+
+            // finally set task complete when timeout
+            endpoint.Ready.TrySetResult(true);
+            return Task.CompletedTask;
+        }
+
+        private void OnRemove(HubServiceEndpoint endpoint)
+        {
+            if (!endpoint.Hub.Equals(_hubName, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+            _ = RemoveHubServiceEndpointAsync(endpoint);
+        }
+
+        private Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint)
+        {
+            // TODO: trigger offline ping and wait to remove container.
+
+            // finally set task complete when timeout
+            endpoint.Offline.TrySetResult(true);
+            return Task.CompletedTask;
+        }
+
+        private void OnRename(HubServiceEndpoint endpoint)
+        {
+            if (!endpoint.Hub.Equals(_hubName, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+            // TODO: update local store names
         }
 
         private static class Log

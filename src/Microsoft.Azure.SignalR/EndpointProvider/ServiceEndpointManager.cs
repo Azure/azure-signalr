@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR
             return new ServiceEndpointProvider(endpoint, _options);
         }
 
-        private void OnChange(ServiceOptions options)
+        private async void OnChange(ServiceOptions options)
         {
             Log.DetectConfigurationChanges(_logger);
 
@@ -59,6 +59,12 @@ namespace Microsoft.Azure.SignalR
             Endpoints = endpoints;
 
             var updatedEndpoints = GetChangedEndpoints(Endpoints);
+
+            await RenameSerivceEndpoints(updatedEndpoints.RenamedEndpoints);
+
+            await AddServiceEndpointsAsync(updatedEndpoints.AddedEndpoints);
+
+            await RemoveServiceEndpointsAsync(updatedEndpoints.RemovedEndpoints);
 
             _endpointsStore = Endpoints;
         }
