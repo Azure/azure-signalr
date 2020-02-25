@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [InlineData(3, 3, 0)]
-        [InlineData(0, 1, 0)] // stop will be skipped if start never init value and no warn
+        [InlineData(0, 1, 1)] // stop more than start will log warn
         [InlineData(1, 2, 1)] // stop more than start will log warn
         [InlineData(3, 1, 0)]
         public async Task TestServerIdsPing(int startCount, int stopCount, int expectedWarn)
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [InlineData(1, 1, 3, 3, 0)]
-        [InlineData(1, 1, 0, 1, 1)] // wrong stop will not be skipped second time if first time already initialized
+        [InlineData(1, 1, 0, 1, 1)]
         [InlineData(1, 1, 1, 0, 0)]
         [InlineData(1, 3, 2, 2, 2)] // first time error stop won't break second time write.
         public async Task TestServerIdsPingWorkSecondTime(int firstStart, int firstStop, int secondStart, int secondStop, int expectedWarn)
