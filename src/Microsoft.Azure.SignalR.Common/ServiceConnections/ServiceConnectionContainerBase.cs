@@ -475,7 +475,7 @@ namespace Microsoft.Azure.SignalR
 
             // Considering parallel add endpoints to save time,
             // Add a counter control multiple time call Start() and Stop() correctly.
-            private int _counter = 0;
+            private long _counter = 0;
 
             private long _lastSendTimestamp = 0;
             private TimerAwaitable _timer;
@@ -508,13 +508,13 @@ namespace Microsoft.Azure.SignalR
                 // might be called by multi-thread, lock to ensure thread-safe for _counter update
                 lock (_lock)
                 {
-                    if (_counter == 0)
+                    if (Interlocked.Read(ref _counter) == 0)
                     {
                         // Avoid wrong Stop() to break _counter in further scale
                         Log.TimerAlreadyStopped(_logger, _pingName);
                         return;
                     }
-                    if (_counter-- == 0)
+                    if (Interlocked.Decrement(ref _counter) == 0)
                     {
                         _timer.Stop();
                     }
