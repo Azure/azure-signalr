@@ -41,8 +41,7 @@ namespace Microsoft.Azure.SignalR
         private readonly AckHandler _ackHandler;
 
         private readonly CustomizedPingTimer _statusPing;
-        // Use Lazy for serversPing cause only apply for multiple endpoints scaling cases.
-        private readonly Lazy<CustomizedPingTimer> _serversPing;
+        private readonly CustomizedPingTimer _serversPing;
 
         private volatile List<IServiceConnection> _fixedServiceConnections;
 
@@ -139,7 +138,7 @@ namespace Microsoft.Azure.SignalR
             _statusPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.ServiceStatus, WriteServiceStatusPingAsync, DefaultStatusPingInterval, DefaultStatusPingInterval);
             _statusPing.Start();
 
-            _serversPing = new Lazy<CustomizedPingTimer>(() => CreateServersPingTimer());
+            _serversPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServerIdsPingAsync, DefaultServersPingInterval, DefaultServersPingInterval);
         }
 
         public Task StartAsync() => Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
@@ -330,7 +329,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task StartGetServersPing()
         {
-            if (_serversPing.Value.Start())
+            if (_serversPing.Start())
             {
                 // reset old value when true start.
                 _serverIdContext = DefaultServerIdContext;
@@ -340,22 +339,15 @@ namespace Microsoft.Azure.SignalR
 
         public Task StopGetServersPing()
         {
-            if (_serversPing.IsValueCreated)
-            {
-                _serversPing.Value.Stop();
-            }
+            _serversPing.Stop();
             return Task.CompletedTask;
         }
 
         // Ready for scalable containers
         public void Dispose()
         {
-            if (_serversPing.IsValueCreated)
-            {
-                _serversPing.Value.Dispose();
-            }
-
-            _statusPing.Stop();
+            _statusPing.Dispose();
+            _serversPing.Dispose();
             Dispose(true);
             GC.SuppressFinalize(this);
         }
@@ -470,28 +462,23 @@ namespace Microsoft.Azure.SignalR
             await WriteAsync(RuntimeServicePingMessage.GetServersPingMessage());
         }
 
-        private CustomizedPingTimer CreateServersPingTimer()
-        {
-            return new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServerIdsPingAsync, DefaultServersPingInterval, DefaultServersPingInterval);
-        }
-
         private sealed class CustomizedPingTimer : IDisposable
         {
-            private long _lastSendTimestamp = 0;
+            private readonly object _lock = new object();
             private readonly long _defaultPingTicks;
 
             private readonly string _pingName;
             private readonly Func<Task> _writePing;
             private readonly TimeSpan _dueTime;
             private readonly TimeSpan _intervalTime;
+            private readonly ILogger _logger;
 
             // Considering parallel add endpoints to save time,
             // Add a counter control multiple time call Start() and Stop() correctly.
-            // Interlocked.Read() supports long type only.
-            private long _counter = 0;
+            private int _counter = 0;
 
+            private long _lastSendTimestamp = 0;
             private TimerAwaitable _timer;
-            private ILogger _logger { get; }
 
             public CustomizedPingTimer(ILogger logger, string pingName, Func<Task> writePing, TimeSpan dueTime, TimeSpan intervalTime)
             {
@@ -518,15 +505,19 @@ namespace Microsoft.Azure.SignalR
 
             public void Stop()
             {
-                if (Interlocked.Read(ref _counter) == 0)
+                // might be called by multi-thread, lock to ensure thread-safe for _counter update
+                lock (_lock)
                 {
-                    // Avoid wrong Stop() to break _counter in further scale
-                    Log.TimerAlreadyStopped(_logger, _pingName);
-                    return;
-                }
-                if (Interlocked.Decrement(ref _counter) == 0)
-                {
-                    _timer.Stop();
+                    if (_counter == 0)
+                    {
+                        // Avoid wrong Stop() to break _counter in further scale
+                        Log.TimerAlreadyStopped(_logger, _pingName);
+                        return;
+                    }
+                    if (_counter-- == 0)
+                    {
+                        _timer.Stop();
+                    }
                 }
             }
 
