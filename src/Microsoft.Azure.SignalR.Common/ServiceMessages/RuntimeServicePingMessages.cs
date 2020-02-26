@@ -84,11 +84,16 @@ namespace Microsoft.Azure.SignalR
 
         public static ServicePingMessage GetServersPingMessage() => GetServerIds;
 
+        // for test
         public static bool IsFin(this ServiceMessage serviceMessage) =>
             serviceMessage is ServicePingMessage ping && TryGetValue(ping, ShutdownKey, out var value) && (value == ShutdownFinValue || value == ShutdownFinMigratableValue);
 
         public static bool IsFinAck(this ServicePingMessage ping) =>
             TryGetValue(ping, ShutdownKey, out var value) && value == ShutdownFinAckValue;
+
+        // for test
+        public static bool IsGetServers(this ServiceMessage serviceMessage) =>
+            serviceMessage is ServicePingMessage ping && TryGetValue(ping, ServersKey, out _);
 
         internal static bool TryGetValue(ServicePingMessage pingMessage, string key, out string value)
         {

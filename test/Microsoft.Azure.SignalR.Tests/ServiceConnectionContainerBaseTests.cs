@@ -1,14 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.Logging;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    public class ServiceConnectionContainerBaseTests
+    public class ServiceConnectionContainerBaseTests : VerifiableLoggedTest
     {
+        public ServiceConnectionContainerBaseTests(ITestOutputHelper helper) : base(helper)
+        { }
+
+
         [Fact]
         public async Task TestIfConnectionWillRestartAfterShutdown()
         {
@@ -55,6 +63,147 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
+        [Theory]
+        [InlineData(3, 3, 0)]
+        [InlineData(0, 1, 1)] // stop more than start will log warn
+        [InlineData(1, 2, 1)] // stop more than start will log warn
+        [InlineData(3, 1, 0)]
+        public async Task TestServerIdsPing(int startCount, int stopCount, int expectedWarn)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
+            {
+                var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
+                Assert.Equal(expectedWarn, warns.Count);
+                if (expectedWarn > 0)
+                {
+                    Assert.Contains(warns, s => s.Write.Message.Contains("Failed to stop Servers timer as it's not started"));
+                }
+                return true;
+            }))
+            {
+                List<IServiceConnection> connections = new List<IServiceConnection>
+                {
+                    new SimpleTestServiceConnection(),
+                    new SimpleTestServiceConnection(),
+                    new SimpleTestServiceConnection()
+                };
+                using TestServiceConnectionContainer container = 
+                    new TestServiceConnectionContainer(
+                        connections, 
+                        factory: new SimpleTestServiceConnectionFactory(), 
+                        logger: loggerFactory.CreateLogger<TestServiceConnectionContainer>());
+
+                await container.StartAsync();
+
+                var tasks = new List<Task>();
+
+                while (startCount > 0)
+                {
+                    tasks.Add(container.StartGetServersPing());
+                    startCount--;
+                }
+                await Task.WhenAll(tasks);
+
+                // default interval is 5s, add 2s for delay, validate any one connection write servers ping.
+                if (tasks.Count > 0)
+                { 
+                    await Task.WhenAny(connections.Select(c =>
+                    {
+                        var connection = c as SimpleTestServiceConnection;
+                        return connection.ServerIdsPingTask.OrTimeout(7000);
+                    })); 
+                }
+
+                tasks.Clear();
+                while (stopCount > 0)
+                {
+                    tasks.Add(container.StopGetServersPing());
+                    stopCount--;
+                }
+                await Task.WhenAll(tasks);
+            }
+        }
+
+        [Theory]
+        [InlineData(1, 1, 3, 3, 0)]
+        [InlineData(1, 1, 0, 1, 1)]
+        [InlineData(1, 1, 1, 0, 0)]
+        [InlineData(1, 3, 2, 2, 2)] // first time error stop won't break second time write.
+        public async Task TestServerIdsPingWorkSecondTime(int firstStart, int firstStop, int secondStart, int secondStop, int expectedWarn)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
+            {
+                var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
+                Assert.Equal(expectedWarn, warns.Count);
+                if (expectedWarn > 0)
+                {
+                    Assert.Contains(warns, s => s.Write.Message.Contains("Failed to stop Servers timer as it's not started"));
+                }
+                return true;
+            }))
+            {
+                List<IServiceConnection> connections = new List<IServiceConnection>
+                {
+                    new SimpleTestServiceConnection(),
+                    new SimpleTestServiceConnection(),
+                    new SimpleTestServiceConnection()
+                };
+                using TestServiceConnectionContainer container =
+                    new TestServiceConnectionContainer(
+                        connections,
+                        factory: new SimpleTestServiceConnectionFactory(),
+                        logger: loggerFactory.CreateLogger<TestServiceConnectionContainer>());
+
+                await container.StartAsync();
+
+                var tasks = new List<Task>();
+
+                // first time scale
+                while (firstStart > 0)
+                {
+                    tasks.Add(container.StartGetServersPing());
+                    firstStart--;
+                }
+                await Task.WhenAll(tasks);
+
+                tasks.Clear();
+                while (firstStop > 0)
+                {
+                    tasks.Add(container.StopGetServersPing());
+                    firstStop--;
+                }
+                await Task.WhenAll(tasks);
+
+                // second time scale
+                tasks.Clear();
+                while (secondStart > 0)
+                {
+                    tasks.Add(container.StartGetServersPing());
+                    secondStart--;
+                }
+                await Task.WhenAll(tasks);
+
+                // default interval is 5s, add 2s for delay, validate any one connection write servers ping.
+                if (tasks.Count > 0)
+                {
+                    await Task.WhenAny(connections.Select(c =>
+                    {
+                        var connection = c as SimpleTestServiceConnection;
+                        return connection.ServerIdsPingTask.OrTimeout(7000);
+                    }));
+                }
+
+                tasks.Clear();
+                while (secondStop > 0)
+                {
+                    tasks.Add(container.StopGetServersPing());
+                    secondStop--;
+                }
+                await Task.WhenAll(tasks);
+            }
+        }
+
+
         private sealed class SimpleTestServiceConnectionFactory : IServiceConnectionFactory
         {
             public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type) => new SimpleTestServiceConnection();
@@ -67,8 +216,11 @@ namespace Microsoft.Azure.SignalR.Tests
             public ServiceConnectionStatus Status { get; set; } = ServiceConnectionStatus.Disconnected;
 
             private readonly TaskCompletionSource<bool> _offline = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+            private readonly TaskCompletionSource<bool> _serverIdsPing = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
 
             public Task ConnectionOfflineTask => _offline.Task;
+
+            public Task ServerIdsPingTask => _serverIdsPing.Task;
 
             public SimpleTestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Disconnected)
             {
@@ -97,6 +249,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 if (RuntimeServicePingMessage.IsFin(serviceMessage))
                 {
                     _offline.SetResult(true);
+                }
+                if (RuntimeServicePingMessage.IsGetServers(serviceMessage))
+                {
+                    _serverIdsPing.SetResult(true);
                 }
                 return Task.CompletedTask;
             }

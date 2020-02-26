@@ -12,7 +12,6 @@ namespace Microsoft.Azure.SignalR
         public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
 
         public const int DefaultShutdownTimeoutInSeconds = 30;
-        public const int DefaultStatusPingIntervalInSeconds = 10;
 
         public const string AsrsMigrateFrom = "Asrs-Migrate-From";
         public const string AsrsMigrateTo = "Asrs-Migrate-To";
@@ -62,6 +61,12 @@ namespace Microsoft.Azure.SignalR
             public const string OriginalPath = "asrs.op";
             public const string ConnectionRequestId = "asrs_request_id";
             public const string RequestCulture = "asrs_lang";
+        }
+
+        public static class CustomizedPingTimer
+        {
+            public const string ServiceStatus = "ServiceStatus";
+            public const string Servers = "Servers";
         }
     }
 }
