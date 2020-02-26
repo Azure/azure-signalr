@@ -18,6 +18,7 @@ namespace Microsoft.Azure.SignalR
         // Store the initial ServiceOptions for generating EndpointProvider use.
         // Only Endpoints value accept hot-reload and prevent changes of unexpected modification on other configurations.
         private readonly ServiceOptions _options;
+        private readonly TimeSpan _scaleTimeout;
         private IReadOnlyList<ServiceEndpoint> _endpointsStore;
 
         public ServiceEndpointManager(IOptionsMonitor<ServiceOptions> optionsMonitor, ILoggerFactory loggerFactory) :
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.SignalR
             // TODO: Enable optionsMonitor.OnChange when feature ready.
             // optionsMonitor.OnChange(OnChange);
             _endpointsStore = Endpoints;
+            _scaleTimeout = _options.ServiceScaleTimeout;
         }
 
         public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
@@ -62,9 +64,9 @@ namespace Microsoft.Azure.SignalR
 
             await RenameSerivceEndpoints(updatedEndpoints.RenamedEndpoints);
 
-            await AddServiceEndpointsAsync(updatedEndpoints.AddedEndpoints);
+            await AddServiceEndpointsAsync(updatedEndpoints.AddedEndpoints, _scaleTimeout);
 
-            await RemoveServiceEndpointsAsync(updatedEndpoints.RemovedEndpoints);
+            await RemoveServiceEndpointsAsync(updatedEndpoints.RemovedEndpoints, _scaleTimeout);
 
             _endpointsStore = Endpoints;
         }

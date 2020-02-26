@@ -7,10 +7,16 @@ namespace Microsoft.Azure.SignalR
 {
     internal class HubServiceEndpoint : ServiceEndpoint
     {
-        public HubServiceEndpoint(string hub, IServiceEndpointProvider provider, ServiceEndpoint endpoint) : base(endpoint)
+        public HubServiceEndpoint(
+            string hub, 
+            IServiceEndpointProvider provider, 
+            ServiceEndpoint endpoint, 
+            TaskCompletionSource<bool> scaleTcs = null
+            ) : base(endpoint)
         {
             Hub = hub;
             Provider = provider;
+            ScaleTcs = scaleTcs;
         }
 
         internal HubServiceEndpoint() : base() { }
@@ -20,13 +26,8 @@ namespace Microsoft.Azure.SignalR
         public IServiceEndpointProvider Provider { get; }
 
         /// <summary>
-        /// Task waiting for HubServiceEndpoint turn ready to add negotiation, use when live add ServiceEndpoint
+        /// Task waiting for HubServiceEndpoint turn ready when live add/remove endpoint
         /// </summary>
-        public TaskCompletionSource<bool> Ready { get; set; }
-
-        /// <summary>
-        /// Task waiting for HubServiceEndpoint turn offline without clients, use when live remove ServiceEndpoint
-        /// </summary>
-        public TaskCompletionSource<bool> Offline { get; set; }
+        public TaskCompletionSource<bool> ScaleTcs { get; }
     }
 }

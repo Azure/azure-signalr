@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Azure.SignalR.Common;
@@ -18,6 +19,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>> _endpointsPerHub = new ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>>();
 
         private readonly ILogger _logger;
+        private readonly TimeSpan DefaultScaleTimeout = TimeSpan.FromSeconds(Constants.DefaultScaleTimeoutInSeconds);
 
         // Filtered valuable endpoints from ServiceOptions
         public ServiceEndpoint[] Endpoints { get; protected set; }
@@ -98,27 +100,41 @@ namespace Microsoft.Azure.SignalR
             return groupedEndpoints.ToArray();
         }
 
-        protected async Task AddServiceEndpointsAsync(IReadOnlyList<ServiceEndpoint> endpoints)
+        protected async Task AddServiceEndpointsAsync(IReadOnlyList<ServiceEndpoint> endpoints, TimeSpan timeout)
         {
             if (endpoints.Count > 0)
             {
-                var hubEndpoints = CreateHubServiceEndpoints(endpoints);
+                try
+                {
+                    var hubEndpoints = CreateHubServiceEndpoints(endpoints, true);
 
-                await Task.WhenAll(hubEndpoints.Select(e => AddHubServiceEndpointAsync(e)));
+                    await Task.WhenAll(hubEndpoints.Select(e => AddHubServiceEndpointAsync(e, timeout)));
 
-                // TODO: update local store for negotiation
+                    // TODO: update local store for negotiation
+                }
+                catch
+                {
+                    Log.FailedAddingEndpoints(_logger);
+                }
             }
         }
 
-        protected async Task RemoveServiceEndpointsAsync(IReadOnlyList<ServiceEndpoint> endpoints)
+        protected async Task RemoveServiceEndpointsAsync(IReadOnlyList<ServiceEndpoint> endpoints, TimeSpan timeout)
         {
             if (endpoints.Count > 0)
             {
-                var hubEndpoints = CreateHubServiceEndpoints(endpoints);
+                try
+                {
+                    var hubEndpoints = CreateHubServiceEndpoints(endpoints, true);
 
-                // TODO: update local store for negotiation
+                    // TODO: update local store for negotiation
 
-                await Task.WhenAll(hubEndpoints.Select(e => RemoveHubServiceEndpointAsync(e)));
+                    await Task.WhenAll(hubEndpoints.Select(e => RemoveHubServiceEndpointAsync(e, timeout)));
+                }
+                catch
+                {
+                    Log.FailedRemovingEndpoints(_logger);
+                }
             }
         }
 
@@ -126,63 +142,90 @@ namespace Microsoft.Azure.SignalR
         {
             if (endpoints.Count > 0)
             {
-                var hubEndpoints = CreateHubServiceEndpoints(endpoints);
+                try
+                {
+                    var hubEndpoints = CreateHubServiceEndpoints(endpoints, false);
 
-                // TODO: update local store for negotiation
+                    // TODO: update local store for negotiation
 
-                return Task.WhenAll(hubEndpoints.Select(e => RenameHubServiceEndpoint(e)));
+                    return Task.WhenAll(hubEndpoints.Select(e => RenameHubServiceEndpoint(e)));
+                }
+                catch
+                {
+                    Log.FailedRenamingEndpoint(_logger);
+                }
             }
             return Task.CompletedTask;
         }
 
-        private HubServiceEndpoint CreateHubServiceEndpoint(string hub, ServiceEndpoint endpoint)
+        private HubServiceEndpoint CreateHubServiceEndpoint(string hub, ServiceEndpoint endpoint, bool needScaleTcs = false)
         {
             var provider = GetEndpointProvider(endpoint);
-            return new HubServiceEndpoint(hub, provider, endpoint);
+
+            TaskCompletionSource<bool> scaleTcs = null;
+            if (needScaleTcs)
+            {
+                scaleTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+
+            return new HubServiceEndpoint(hub, provider, endpoint, scaleTcs);
         }
 
-        private IReadOnlyList<HubServiceEndpoint> CreateHubServiceEndpoints(string hub, IEnumerable<ServiceEndpoint> endpoints)
+        private IReadOnlyList<HubServiceEndpoint> CreateHubServiceEndpoints(string hub, IEnumerable<ServiceEndpoint> endpoints, bool needScaleTcs)
         {
-            return endpoints.Select(e => CreateHubServiceEndpoint(hub, e)).ToList();
+            return endpoints.Select(e => CreateHubServiceEndpoint(hub, e, needScaleTcs)).ToList();
         }
 
-        private IReadOnlyList<HubServiceEndpoint> CreateHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints)
+        private IReadOnlyList<HubServiceEndpoint> CreateHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints, bool needScaleTcs)
         {
             var hubEndpoints = new List<HubServiceEndpoint>();
             var hubs = _endpointsPerHub.Keys;
             foreach (var hub in hubs)
             {
-                hubEndpoints.AddRange(CreateHubServiceEndpoints(hub, endpoints));
+                hubEndpoints.AddRange(CreateHubServiceEndpoints(hub, endpoints, needScaleTcs));
             }
             return hubEndpoints;
         }
 
-        private async Task AddHubServiceEndpointAsync(HubServiceEndpoint endpoint)
+        private async Task AddHubServiceEndpointAsync(HubServiceEndpoint endpoint, TimeSpan timeout)
         {
             Log.StartAddingEndpoint(_logger, endpoint.Endpoint, endpoint.Name);
-            endpoint.Ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             OnAdd?.Invoke(endpoint);
+
             // Wait for new endpoint turn Ready
-            await endpoint.Ready.Task;
+            await WaitScaleOrTimeout(endpoint.ScaleTcs.Task, timeout);
         }
 
-        private async Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint)
+        private async Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint, TimeSpan timeout)
         {
             Log.StartRemovingEndpoint(_logger, endpoint.Endpoint, endpoint.Name);
-            endpoint.Offline = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             OnRemove?.Invoke(endpoint);
+            
             // Wait for endpoint turn Offline
-            await endpoint.Offline.Task;
+            await WaitScaleOrTimeout(endpoint.ScaleTcs.Task, timeout);
         }
 
         private Task RenameHubServiceEndpoint(HubServiceEndpoint endpoint)
         {
-            Log.StartAddingEndpoint(_logger, endpoint.Endpoint, endpoint.Name);
+            Log.StartRenamingEndpoint(_logger, endpoint.Endpoint, endpoint.Name);
 
             OnRename?.Invoke(endpoint);
             return Task.CompletedTask;
+        }
+
+        private async Task WaitScaleOrTimeout(Task scaleTask, TimeSpan timeout)
+        {
+            var cts = new CancellationTokenSource();
+            var result = await Task.WhenAny(scaleTask, Task.Delay(timeout, cts.Token));
+
+            if (result == scaleTask)
+            {
+                cts.Cancel();
+                return;
+            }
+            Log.TimeoutWaitingForScale(_logger, timeout.Seconds);
         }
 
         private static class Log
@@ -191,14 +234,25 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define<int, string, string>(LogLevel.Warning, new EventId(1, "DuplicateEndpointFound"), "{count} endpoint configurations to '{endpoint}' found, use '{name}'.");
 
             private static readonly Action<ILogger, string, string, Exception> _startAddingEndpoint =
-                LoggerMessage.Define< string, string>(LogLevel.Debug, new EventId(2, "StartAddingEndpoint"), "Start adding endpoint: '{endpoint}', name: '{name}'.");
-
+                LoggerMessage.Define<string, string>(LogLevel.Debug, new EventId(2, "StartAddingEndpoint"), "Start adding endpoint: '{endpoint}', name: '{name}'.");
+            
             private static readonly Action<ILogger, string, string, Exception> _startRemovingEndpoint =
                 LoggerMessage.Define<string, string>(LogLevel.Debug, new EventId(3, "StartRemovingEndpoint"), "Start removing endpoint: '{endpoint}', name: '{name}'");
-            
+
             private static readonly Action<ILogger, string, string, Exception> _startRenamingEndpoint =
                 LoggerMessage.Define<string, string>(LogLevel.Debug, new EventId(4, "StartRenamingEndpoint"), "Start renaming endpoint: '{endpoint}', name: '{name}'");
 
+            private static readonly Action<ILogger, Exception> _failedAddingEndpoints =
+                LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailedAddingEndpoints"), "Failed adding endpoints.");
+
+            private static readonly Action<ILogger, Exception> _failedRemovingEndpoints =
+                LoggerMessage.Define(LogLevel.Error, new EventId(6, "FailedRemovingEndpoints"), "Failed removing endpoints.");
+
+            private static readonly Action<ILogger, Exception> _failedRenamingEndpoints =
+                LoggerMessage.Define(LogLevel.Error, new EventId(7, "StartRenamingEndpoints"), "Failed renaming endpoints.");
+
+            private static readonly Action<ILogger, int, Exception> _timeoutWaitingForScale =
+                LoggerMessage.Define<int>(LogLevel.Error, new EventId(8, "TimeoutWaitingForScale"), "Timeout  waiting '{timeout}' seconds for connection operations when scale endpoint.");
 
             public static void DuplicateEndpointFound(ILogger logger, int count, string endpoint, string name)
             {
@@ -218,6 +272,26 @@ namespace Microsoft.Azure.SignalR
             public static void StartRenamingEndpoint(ILogger logger, string endpoint, string name)
             {
                 _startRenamingEndpoint(logger, endpoint, name, null);
+            }
+
+            public static void FailedAddingEndpoints(ILogger logger)
+            {
+                _failedAddingEndpoints(logger, null);
+            }
+
+            public static void FailedRemovingEndpoints(ILogger logger)
+            {
+                _failedRemovingEndpoints(logger, null);
+            }
+
+            public static void FailedRenamingEndpoint(ILogger logger)
+            {
+                _failedRenamingEndpoints(logger, null);
+            }
+
+            public static void TimeoutWaitingForScale(ILogger logger, int timeout)
+            {
+                _timeoutWaitingForScale(logger, timeout, null);
             }
         }
     }
