@@ -25,6 +25,10 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public IReadOnlyDictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; }
 
+        public HashSet<string> GlobalServerIds => throw new NotSupportedException();
+
+        public bool HasClients => throw new NotSupportedException();
+
         public TestServiceConnectionContainer(ServiceConnectionStatus status)
         {
             Status = status;
@@ -66,6 +70,16 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         }
 
         public Task OfflineAsync(bool migratable)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task StartGetServersPing()
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task StopGetServersPing()
         {
             return Task.CompletedTask;
         }
