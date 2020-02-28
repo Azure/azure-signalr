@@ -7,16 +7,18 @@ namespace Microsoft.Azure.SignalR
 {
     internal class HubServiceEndpoint : ServiceEndpoint
     {
+        private readonly TaskCompletionSource<bool> _scaleTcs;
+
         public HubServiceEndpoint(
             string hub, 
             IServiceEndpointProvider provider, 
             ServiceEndpoint endpoint, 
-            TaskCompletionSource<bool> scaleTcs = null
+            bool needScaleTcs = false
             ) : base(endpoint)
         {
             Hub = hub;
             Provider = provider;
-            ScaleTcs = scaleTcs;
+            _scaleTcs = needScaleTcs ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : null;
         }
 
         internal HubServiceEndpoint() : base() { }
@@ -28,6 +30,11 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Task waiting for HubServiceEndpoint turn ready when live add/remove endpoint
         /// </summary>
-        public TaskCompletionSource<bool> ScaleTcs { get; }
+        public Task ScaleTask => _scaleTcs?.Task ?? Task.CompletedTask;
+
+        public void SetScaleTaskComplete()
+        {
+            _scaleTcs?.TrySetResult(true);
+        }
     }
 }

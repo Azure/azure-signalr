@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
@@ -64,9 +65,21 @@ namespace Microsoft.Azure.SignalR
 
             await RenameSerivceEndpoints(updatedEndpoints.RenamedEndpoints);
 
-            await AddServiceEndpointsAsync(updatedEndpoints.AddedEndpoints, _scaleTimeout);
+            using (var addCts = new CancellationTokenSource(options.ServiceScaleTimeout))
+            {
+                if (!await WaitTaskOrTimeout(AddServiceEndpointsAsync(updatedEndpoints.AddedEndpoints, addCts.Token), addCts))
+                {
+                    Log.TimeoutAddEndpoints(_logger);
+                }
+            }
 
-            await RemoveServiceEndpointsAsync(updatedEndpoints.RemovedEndpoints, _scaleTimeout);
+            using (var removeCts = new CancellationTokenSource(options.ServiceScaleTimeout))
+            {
+                if (!await WaitTaskOrTimeout(RemoveServiceEndpointsAsync(updatedEndpoints.RemovedEndpoints, removeCts.Token), removeCts))
+                {
+                    Log.TimeoutRemoveEndpoints(_logger);
+                }
+            }
 
             _endpointsStore = Endpoints;
         }
@@ -83,6 +96,19 @@ namespace Microsoft.Azure.SignalR
             var renamedEndpoints = updatedEndpoints.Except(originalEndpoints).Except(addedEndpoints).ToList();
 
             return (AddedEndpoints: addedEndpoints, RemovedEndpoints: removedEndpoints, RenamedEndpoints: renamedEndpoints);
+        }
+
+        private static async Task<bool> WaitTaskOrTimeout(Task task, CancellationTokenSource cts)
+        {
+            var completed = await Task.WhenAny(task, Task.Delay(Timeout.InfiniteTimeSpan, cts.Token));
+
+            if (completed == task)
+            {
+                return true;
+            }
+
+            cts.Cancel();
+            return false;
         }
 
         private sealed class ServiceEndpointWeakComparer : IEqualityComparer<ServiceEndpoint>
@@ -104,7 +130,16 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define(LogLevel.Debug, new EventId(1, "DetectConfigurationChanges"), "Dected configuration changes in configuration, start live-scale.");
 
             private static readonly Action<ILogger, Exception> _endpointNotFound =
-                LoggerMessage.Define(LogLevel.Error, new EventId(1, "EndpointNotFound"), "No connection string is specified. Skip scale operation.");
+                LoggerMessage.Define(LogLevel.Warning, new EventId(2, "EndpointNotFound"), "No connection string is specified. Skip scale operation.");
+
+            private static readonly Action<ILogger, Exception> _timeoutRenameEndpoints =
+                LoggerMessage.Define(LogLevel.Error, new EventId(3, "TimeoutRenameEndpoints"), "Timeout waiting for renaming endpoints.");
+
+            private static readonly Action<ILogger, Exception> _timeoutAddEndpoints =
+                LoggerMessage.Define(LogLevel.Error, new EventId(4, "TimeoutAddEndpoints"), "Timeout waiting for adding endpoints.");
+            
+            private static readonly Action<ILogger, Exception> _timeoutRemoveEndpoints =
+                LoggerMessage.Define(LogLevel.Error, new EventId(5, "TimeoutRemoveEndpoints"), "Timeout waiting for removing endpoints.");
 
             public static void DetectConfigurationChanges(ILogger logger)
             {
@@ -114,6 +149,21 @@ namespace Microsoft.Azure.SignalR
             public static void EndpointNotFound(ILogger logger)
             {
                 _endpointNotFound(logger, null);
+            }
+
+            public static void TimeoutRenameEndpoints(ILogger logger)
+            {
+                _timeoutRenameEndpoints(logger, null);
+            }
+
+            public static void TimeoutAddEndpoints(ILogger logger)
+            {
+                _timeoutAddEndpoints(logger, null);
+            }
+
+            public static void TimeoutRemoveEndpoints(ILogger logger)
+            {
+                _timeoutRemoveEndpoints(logger, null);
             }
         }
     }

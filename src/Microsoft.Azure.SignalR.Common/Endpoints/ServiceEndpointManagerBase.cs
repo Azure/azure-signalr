@@ -19,7 +19,6 @@ namespace Microsoft.Azure.SignalR
         private readonly ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>> _endpointsPerHub = new ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>>();
 
         private readonly ILogger _logger;
-        private readonly TimeSpan DefaultScaleTimeout = TimeSpan.FromSeconds(Constants.DefaultScaleTimeoutInSeconds);
 
         // Filtered valuable endpoints from ServiceOptions
         public ServiceEndpoint[] Endpoints { get; protected set; }
@@ -100,7 +99,7 @@ namespace Microsoft.Azure.SignalR
             return groupedEndpoints.ToArray();
         }
 
-        protected async Task AddServiceEndpointsAsync(IReadOnlyList<ServiceEndpoint> endpoints, TimeSpan timeout)
+        protected async Task AddServiceEndpointsAsync(IReadOnlyList<ServiceEndpoint> endpoints, CancellationToken cancellationToken)
         {
             if (endpoints.Count > 0)
             {
@@ -108,18 +107,18 @@ namespace Microsoft.Azure.SignalR
                 {
                     var hubEndpoints = CreateHubServiceEndpoints(endpoints, true);
 
-                    await Task.WhenAll(hubEndpoints.Select(e => AddHubServiceEndpointAsync(e, timeout)));
+                    await Task.WhenAll(hubEndpoints.Select(e => AddHubServiceEndpointAsync(e, cancellationToken)));
 
                     // TODO: update local store for negotiation
                 }
-                catch
+                catch (Exception ex)
                 {
-                    Log.FailedAddingEndpoints(_logger);
+                    Log.FailedAddingEndpoints(_logger, ex);
                 }
             }
         }
 
-        protected async Task RemoveServiceEndpointsAsync(IReadOnlyList<ServiceEndpoint> endpoints, TimeSpan timeout)
+        protected async Task RemoveServiceEndpointsAsync(IReadOnlyList<ServiceEndpoint> endpoints, CancellationToken cancellationToken)
         {
             if (endpoints.Count > 0)
             {
@@ -129,11 +128,11 @@ namespace Microsoft.Azure.SignalR
 
                     // TODO: update local store for negotiation
 
-                    await Task.WhenAll(hubEndpoints.Select(e => RemoveHubServiceEndpointAsync(e, timeout)));
+                    await Task.WhenAll(hubEndpoints.Select(e => RemoveHubServiceEndpointAsync(e, cancellationToken)));
                 }
-                catch
+                catch (Exception ex)
                 {
-                    Log.FailedRemovingEndpoints(_logger);
+                    Log.FailedRemovingEndpoints(_logger, ex);
                 }
             }
         }
@@ -150,9 +149,9 @@ namespace Microsoft.Azure.SignalR
 
                     return Task.WhenAll(hubEndpoints.Select(e => RenameHubServiceEndpoint(e)));
                 }
-                catch
+                catch (Exception ex)
                 {
-                    Log.FailedRenamingEndpoint(_logger);
+                    Log.FailedRenamingEndpoint(_logger, ex);
                 }
             }
             return Task.CompletedTask;
@@ -162,13 +161,7 @@ namespace Microsoft.Azure.SignalR
         {
             var provider = GetEndpointProvider(endpoint);
 
-            TaskCompletionSource<bool> scaleTcs = null;
-            if (needScaleTcs)
-            {
-                scaleTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            }
-
-            return new HubServiceEndpoint(hub, provider, endpoint, scaleTcs);
+            return new HubServiceEndpoint(hub, provider, endpoint, needScaleTcs);
         }
 
         private IReadOnlyList<HubServiceEndpoint> CreateHubServiceEndpoints(string hub, IEnumerable<ServiceEndpoint> endpoints, bool needScaleTcs)
@@ -187,24 +180,30 @@ namespace Microsoft.Azure.SignalR
             return hubEndpoints;
         }
 
-        private async Task AddHubServiceEndpointAsync(HubServiceEndpoint endpoint, TimeSpan timeout)
+        private async Task AddHubServiceEndpointAsync(HubServiceEndpoint endpoint, CancellationToken cancellationToken)
         {
             Log.StartAddingEndpoint(_logger, endpoint.Endpoint, endpoint.Name);
 
             OnAdd?.Invoke(endpoint);
 
-            // Wait for new endpoint turn Ready
-            await WaitScaleOrTimeout(endpoint.ScaleTcs.Task, timeout);
+            // Wait for new endpoint turn Ready or timeout getting cancelled
+            await Task.WhenAny(endpoint.ScaleTask, cancellationToken.AsTask());
+
+            // Set complete
+            endpoint.SetScaleTaskComplete();
         }
 
-        private async Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint, TimeSpan timeout)
+        private async Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint, CancellationToken cancellationToken)
         {
             Log.StartRemovingEndpoint(_logger, endpoint.Endpoint, endpoint.Name);
 
             OnRemove?.Invoke(endpoint);
             
-            // Wait for endpoint turn Offline
-            await WaitScaleOrTimeout(endpoint.ScaleTcs.Task, timeout);
+            // Wait for endpoint turn offline or timeout getting cancelled
+            await Task.WhenAny(endpoint.ScaleTask, cancellationToken.AsTask());
+
+            // Set complete
+            endpoint.SetScaleTaskComplete();
         }
 
         private Task RenameHubServiceEndpoint(HubServiceEndpoint endpoint)
@@ -213,19 +212,6 @@ namespace Microsoft.Azure.SignalR
 
             OnRename?.Invoke(endpoint);
             return Task.CompletedTask;
-        }
-
-        private async Task WaitScaleOrTimeout(Task scaleTask, TimeSpan timeout)
-        {
-            var cts = new CancellationTokenSource();
-            var result = await Task.WhenAny(scaleTask, Task.Delay(timeout, cts.Token));
-
-            if (result == scaleTask)
-            {
-                cts.Cancel();
-                return;
-            }
-            Log.TimeoutWaitingForScale(_logger, timeout.Seconds);
         }
 
         private static class Log
@@ -274,19 +260,19 @@ namespace Microsoft.Azure.SignalR
                 _startRenamingEndpoint(logger, endpoint, name, null);
             }
 
-            public static void FailedAddingEndpoints(ILogger logger)
+            public static void FailedAddingEndpoints(ILogger logger, Exception ex)
             {
-                _failedAddingEndpoints(logger, null);
+                _failedAddingEndpoints(logger, ex);
             }
 
-            public static void FailedRemovingEndpoints(ILogger logger)
+            public static void FailedRemovingEndpoints(ILogger logger, Exception ex)
             {
-                _failedRemovingEndpoints(logger, null);
+                _failedRemovingEndpoints(logger, ex);
             }
 
-            public static void FailedRenamingEndpoint(ILogger logger)
+            public static void FailedRenamingEndpoint(ILogger logger, Exception ex)
             {
-                _failedRenamingEndpoints(logger, null);
+                _failedRenamingEndpoints(logger, ex);
             }
 
             public static void TimeoutWaitingForScale(ILogger logger, int timeout)

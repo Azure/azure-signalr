@@ -249,8 +249,8 @@ namespace Microsoft.Azure.SignalR
         {
             // TODO: create container and trigger server ping.
 
-            // finally set task complete when timeout
-            endpoint.ScaleTcs.TrySetResult(true);
+            // do tasks when !endpoint.ScaleTask.IsCanceled or local timeout check not finish
+            endpoint.SetScaleTaskComplete();
             return Task.CompletedTask;
         }
 
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.SignalR
             // TODO: trigger offline ping and wait to remove container.
 
             // finally set task complete when timeout
-            endpoint.ScaleTcs.TrySetResult(true);
+            endpoint.SetScaleTaskComplete();
             return Task.CompletedTask;
         }
 
