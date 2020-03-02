@@ -5,6 +5,8 @@ using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR
 {
+    internal delegate void EndpointEventHandler(HubServiceEndpoint endpoint);
+
     internal interface IServiceEndpointManager
     {
         IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
@@ -12,5 +14,11 @@ namespace Microsoft.Azure.SignalR
         ServiceEndpoint[] Endpoints { get; }
 
         IReadOnlyList<HubServiceEndpoint> GetEndpoints(string hub);
+
+        event EndpointEventHandler OnAdd;
+
+        event EndpointEventHandler OnRemove;
+
+        event EndpointEventHandler OnRename;
     }
 }

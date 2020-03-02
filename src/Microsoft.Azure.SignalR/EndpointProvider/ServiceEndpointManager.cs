@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
@@ -18,6 +19,7 @@ namespace Microsoft.Azure.SignalR
         // Store the initial ServiceOptions for generating EndpointProvider use.
         // Only Endpoints value accept hot-reload and prevent changes of unexpected modification on other configurations.
         private readonly ServiceOptions _options;
+        private readonly TimeSpan _scaleTimeout;
         private IReadOnlyList<ServiceEndpoint> _endpointsStore;
 
         public ServiceEndpointManager(IOptionsMonitor<ServiceOptions> optionsMonitor, ILoggerFactory loggerFactory) :
@@ -33,6 +35,7 @@ namespace Microsoft.Azure.SignalR
             // TODO: Enable optionsMonitor.OnChange when feature ready.
             // optionsMonitor.OnChange(OnChange);
             _endpointsStore = Endpoints;
+            _scaleTimeout = _options.ServiceScaleTimeout;
         }
 
         public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
@@ -45,7 +48,7 @@ namespace Microsoft.Azure.SignalR
             return new ServiceEndpointProvider(endpoint, _options);
         }
 
-        private void OnChange(ServiceOptions options)
+        private async void OnChange(ServiceOptions options)
         {
             Log.DetectConfigurationChanges(_logger);
 
@@ -59,6 +62,24 @@ namespace Microsoft.Azure.SignalR
             Endpoints = endpoints;
 
             var updatedEndpoints = GetChangedEndpoints(Endpoints);
+
+            await RenameSerivceEndpoints(updatedEndpoints.RenamedEndpoints);
+
+            using (var addCts = new CancellationTokenSource(options.ServiceScaleTimeout))
+            {
+                if (!await WaitTaskOrTimeout(AddServiceEndpointsAsync(updatedEndpoints.AddedEndpoints, addCts.Token), addCts))
+                {
+                    Log.TimeoutAddEndpoints(_logger);
+                }
+            }
+
+            using (var removeCts = new CancellationTokenSource(options.ServiceScaleTimeout))
+            {
+                if (!await WaitTaskOrTimeout(RemoveServiceEndpointsAsync(updatedEndpoints.RemovedEndpoints, removeCts.Token), removeCts))
+                {
+                    Log.TimeoutRemoveEndpoints(_logger);
+                }
+            }
 
             _endpointsStore = Endpoints;
         }
@@ -75,6 +96,19 @@ namespace Microsoft.Azure.SignalR
             var renamedEndpoints = updatedEndpoints.Except(originalEndpoints).Except(addedEndpoints).ToList();
 
             return (AddedEndpoints: addedEndpoints, RemovedEndpoints: removedEndpoints, RenamedEndpoints: renamedEndpoints);
+        }
+
+        private static async Task<bool> WaitTaskOrTimeout(Task task, CancellationTokenSource cts)
+        {
+            var completed = await Task.WhenAny(task, Task.Delay(Timeout.InfiniteTimeSpan, cts.Token));
+
+            if (completed == task)
+            {
+                return true;
+            }
+
+            cts.Cancel();
+            return false;
         }
 
         private sealed class ServiceEndpointWeakComparer : IEqualityComparer<ServiceEndpoint>
@@ -96,7 +130,16 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define(LogLevel.Debug, new EventId(1, "DetectConfigurationChanges"), "Dected configuration changes in configuration, start live-scale.");
 
             private static readonly Action<ILogger, Exception> _endpointNotFound =
-                LoggerMessage.Define(LogLevel.Error, new EventId(1, "EndpointNotFound"), "No connection string is specified. Skip scale operation.");
+                LoggerMessage.Define(LogLevel.Warning, new EventId(2, "EndpointNotFound"), "No connection string is specified. Skip scale operation.");
+
+            private static readonly Action<ILogger, Exception> _timeoutRenameEndpoints =
+                LoggerMessage.Define(LogLevel.Error, new EventId(3, "TimeoutRenameEndpoints"), "Timeout waiting for renaming endpoints.");
+
+            private static readonly Action<ILogger, Exception> _timeoutAddEndpoints =
+                LoggerMessage.Define(LogLevel.Error, new EventId(4, "TimeoutAddEndpoints"), "Timeout waiting for adding endpoints.");
+            
+            private static readonly Action<ILogger, Exception> _timeoutRemoveEndpoints =
+                LoggerMessage.Define(LogLevel.Error, new EventId(5, "TimeoutRemoveEndpoints"), "Timeout waiting for removing endpoints.");
 
             public static void DetectConfigurationChanges(ILogger logger)
             {
@@ -106,6 +149,21 @@ namespace Microsoft.Azure.SignalR
             public static void EndpointNotFound(ILogger logger)
             {
                 _endpointNotFound(logger, null);
+            }
+
+            public static void TimeoutRenameEndpoints(ILogger logger)
+            {
+                _timeoutRenameEndpoints(logger, null);
+            }
+
+            public static void TimeoutAddEndpoints(ILogger logger)
+            {
+                _timeoutAddEndpoints(logger, null);
+            }
+
+            public static void TimeoutRemoveEndpoints(ILogger logger)
+            {
+                _timeoutRemoveEndpoints(logger, null);
             }
         }
     }
