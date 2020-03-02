@@ -146,7 +146,7 @@ API Version | HTTP Method | Request URL
 `1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/users/<user-id>`
 `1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups/<group-name>`
 
-<a name="check-user-existance"></a>
+<a name="check-user-existence"></a>
 
 ### Check user existence in a group
 
