@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public Task ScaleTask => _scaleTcs?.Task ?? Task.CompletedTask;
 
-        public void SetScaleTaskComplete()
+        public void CompleteScale()
         {
             _scaleTcs?.TrySetResult(true);
         }

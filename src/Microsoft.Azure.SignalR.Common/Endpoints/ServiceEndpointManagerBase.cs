@@ -190,7 +190,7 @@ namespace Microsoft.Azure.SignalR
             await Task.WhenAny(endpoint.ScaleTask, cancellationToken.AsTask());
 
             // Set complete
-            endpoint.SetScaleTaskComplete();
+            endpoint.CompleteScale();
         }
 
         private async Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint, CancellationToken cancellationToken)
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.SignalR
             await Task.WhenAny(endpoint.ScaleTask, cancellationToken.AsTask());
 
             // Set complete
-            endpoint.SetScaleTaskComplete();
+            endpoint.CompleteScale();
         }
 
         private Task RenameHubServiceEndpoint(HubServiceEndpoint endpoint)
