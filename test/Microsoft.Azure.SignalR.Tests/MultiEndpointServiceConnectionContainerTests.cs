@@ -23,8 +23,10 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string ConnectionStringFormatter = "Endpoint={0};AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string Url1 = "http://url1";
         private const string Url2 = "https://url2";
+        private const string Url3 = "http://url3";
         private readonly string ConnectionString1 = string.Format(ConnectionStringFormatter, Url1);
         private readonly string ConnectionString2 = string.Format(ConnectionStringFormatter, Url2);
+        private readonly string ConnectionString3 = string.Format(ConnectionStringFormatter, Url3);
         private static readonly JoinGroupWithAckMessage DefaultGroupMessage = new JoinGroupWithAckMessage("a", "a", -1);
 
         public TestEndpointServiceConnectionContainerTests(ITestOutputHelper output) : base(output)
@@ -746,6 +748,54 @@ namespace Microsoft.Azure.SignalR.Tests
             await TestEndpointOfflineInner(manager, new TestEndpointRouter(), migratable);
         }
 
+        [Fact]
+        public async Task TestEndpointManagerWithRenameEndpoints()
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2"),
+                new ServiceEndpoint(ConnectionString3, EndpointType.Primary, "3")
+                );
+            var endpoints = sem.Endpoints;
+            Assert.Equal(3, endpoints.Length);
+            Assert.Equal("1", endpoints[0].Name);
+            Assert.Equal("2", endpoints[1].Name);
+            Assert.Equal("3", endpoints[2].Name);
+
+            var router = new TestEndpointRouter();
+            var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestSimpleServiceConnection(),
+            }, e), sem, router, NullLoggerFactory.Instance);
+
+            var containerEps = container.ConnectionContainers.Keys.OrderBy(x => x.Name).ToArray();
+            Assert.Equal(3, containerEps.Length);
+            Assert.Equal("1", containerEps[0].Name);
+            Assert.Equal("2", containerEps[1].Name);
+            Assert.Equal("3", containerEps[2].Name);
+
+            var renamedEndpoint = new List<ServiceEndpoint>();
+            renamedEndpoint.Add(new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "11"));
+            renamedEndpoint.Add(new ServiceEndpoint(ConnectionString3, EndpointType.Primary, "33"));
+            await sem.TestRenameServiceEndpoints(renamedEndpoint);
+
+            await Task.Delay(100);
+
+            // validate container level updates
+            containerEps = container.ConnectionContainers.Keys.OrderBy(x => x.Name).ToArray();
+            Assert.Equal(3, containerEps.Length);
+            Assert.Equal("11", containerEps[0].Name);
+            Assert.Equal("2", containerEps[1].Name);
+            Assert.Equal("33", containerEps[2].Name);
+
+            // validate sem negotiation endpoints updated
+            var ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
+            Assert.Equal(3, ngoEps.Length);
+            Assert.Equal("11", ngoEps[0].Name);
+            Assert.Equal("2", ngoEps[1].Name);
+            Assert.Equal("33", ngoEps[2].Name);
+        }
+
         private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router, bool migratable)
         {
             var containers = new List<TestServiceConnectionContainer>();
@@ -819,6 +869,11 @@ namespace Microsoft.Azure.SignalR.Tests
             public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
             {
                 return null;
+            }
+
+            public Task TestRenameServiceEndpoints(IReadOnlyList<ServiceEndpoint> endpoint)
+            {
+                return RenameSerivceEndpoints(endpoint);
             }
         }
 
