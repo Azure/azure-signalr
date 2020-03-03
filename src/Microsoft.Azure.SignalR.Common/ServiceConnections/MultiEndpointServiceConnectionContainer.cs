@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -16,9 +15,6 @@ namespace Microsoft.Azure.SignalR
 {
     internal class MultiEndpointServiceConnectionContainer : IMultiEndpointServiceConnectionContainer
     {
-        private readonly ConcurrentDictionary<ServiceEndpoint, IServiceConnectionContainer> _connectionContainers =
-               new ConcurrentDictionary<ServiceEndpoint, IServiceConnectionContainer>();
-
         private readonly string _hubName;
         private readonly IMessageRouter _router;
         private readonly ILogger _logger;
@@ -28,7 +24,8 @@ namespace Microsoft.Azure.SignalR
         private (bool needRouter, IReadOnlyList<HubServiceEndpoint> endpoints) _routerEndpoints;
 
         // for test use
-        public IReadOnlyDictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers => _connectionContainers;
+        public IReadOnlyDictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers =>
+            _routerEndpoints.endpoints.ToDictionary(e => (ServiceEndpoint)e, e => e.ConnectionContainer);
 
         internal MultiEndpointServiceConnectionContainer(
             string hub,
@@ -56,7 +53,7 @@ namespace Microsoft.Azure.SignalR
 
             foreach (var endpoint in endpoints)
             {
-                _connectionContainers[endpoint] = generator(endpoint);
+                endpoint.ConnectionContainer = generator(endpoint);
             }
 
             _serviceEndpointManager.OnAdd += OnAdd;
@@ -83,7 +80,7 @@ namespace Microsoft.Azure.SignalR
 
         public IEnumerable<ServiceEndpoint> GetOnlineEndpoints()
         {
-            return _connectionContainers.Where(s => s.Key.Online).Select(s => s.Key);
+            return _routerEndpoints.endpoints.Where(s => s.Online);
         }
 
         private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, HubServiceEndpoint endpoint, int count, ILoggerFactory loggerFactory)
@@ -104,8 +101,8 @@ namespace Microsoft.Azure.SignalR
         {
             get
             {
-                return Task.WhenAll(from connection in _connectionContainers
-                                    select connection.Value.ConnectionInitializedTask);
+                return Task.WhenAll(from connection in _routerEndpoints.endpoints
+                                    select connection.ConnectionContainer.ConnectionInitializedTask);
             }
         }
 
@@ -115,25 +112,25 @@ namespace Microsoft.Azure.SignalR
 
         public Task StartAsync()
         {
-            return Task.WhenAll(_connectionContainers.Select(s =>
+            return Task.WhenAll(_routerEndpoints.endpoints.Select(s =>
             {
-                Log.StartingConnection(_logger, s.Key.Endpoint);
-                return s.Value.StartAsync();
+                Log.StartingConnection(_logger, s.Endpoint);
+                return s.ConnectionContainer.StartAsync();
             }));
         }
 
         public Task StopAsync()
         {
-            return Task.WhenAll(_connectionContainers.Select(s =>
+            return Task.WhenAll(_routerEndpoints.endpoints.Select(s =>
             {
-                Log.StoppingConnection(_logger, s.Key.Endpoint);
-                return s.Value.StopAsync();
+                Log.StoppingConnection(_logger, s.Endpoint);
+                return s.ConnectionContainer.StopAsync();
             }));
         }
 
         public Task OfflineAsync(bool migratable)
         {
-            return Task.WhenAll(_connectionContainers.Select(c => c.Value.OfflineAsync(migratable)));
+            return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.OfflineAsync(migratable)));
         }
 
         public Task WriteAsync(ServiceMessage serviceMessage)
@@ -213,13 +210,8 @@ namespace Microsoft.Azure.SignalR
             var routed = GetRoutedEndpoints(serviceMessage)?
                 .Select(endpoint =>
                 {
-                    if (_connectionContainers.TryGetValue(endpoint, out var connection))
-                    {
-                        return (e: endpoint, c: connection);
-                    }
-
-                    Log.EndpointNotExists(_logger, endpoint.ToString());
-                    return (e: endpoint, c: null);
+                    var connection = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == endpoint.Endpoint).ConnectionContainer;
+                    return (e: endpoint, c: connection);
                 })
                 .Where(c => c.c != null)
                 .Select(async s =>
