@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Azure.SignalR.Common.ServiceConnections;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
