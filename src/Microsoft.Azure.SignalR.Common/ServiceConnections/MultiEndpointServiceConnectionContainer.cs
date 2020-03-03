@@ -23,10 +23,6 @@ namespace Microsoft.Azure.SignalR
         // <needRouter, endpoints>
         private (bool needRouter, IReadOnlyList<HubServiceEndpoint> endpoints) _routerEndpoints;
 
-        // for test use
-        public IReadOnlyDictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers =>
-            _routerEndpoints.endpoints.ToDictionary(e => (ServiceEndpoint)e, e => e.ConnectionContainer);
-
         internal MultiEndpointServiceConnectionContainer(
             string hub,
             Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
@@ -165,12 +161,12 @@ namespace Microsoft.Azure.SignalR
 
         public Task StartGetServersPing()
         {
-            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StartGetServersPing()));
+            return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.StartGetServersPing()));
         }
 
         public Task StopGetServersPing()
         {
-            return Task.WhenAll(ConnectionContainers.Select(c => c.Value.StopGetServersPing()));
+            return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.StopGetServersPing()));
         }
 
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
