@@ -19,7 +19,6 @@ namespace Microsoft.Azure.SignalR
         private readonly ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>> _endpointsPerHub = new ConcurrentDictionary<string, IReadOnlyList<HubServiceEndpoint>>();
 
         private readonly ILogger _logger;
-        private readonly object _lock = new object();
 
         // Filtered valuable endpoints from ServiceOptions
         public ServiceEndpoint[] Endpoints { get; protected set; }
