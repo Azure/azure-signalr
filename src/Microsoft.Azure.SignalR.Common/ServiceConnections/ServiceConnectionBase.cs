@@ -316,7 +316,12 @@ namespace Microsoft.Azure.SignalR
             }
             catch (Exception ex)
             {
-                Log.FailedToConnect(Logger, HubEndpoint.ToString(), ConnectionId, ex);
+                if (target == null)
+                {
+                    // Log for required connections only to reduce noise for rebalance
+                    // connection failure usually due to service maintenance.
+                    Log.FailedToConnect(Logger, HubEndpoint.ToString(), ConnectionId, ex);
+                }
                 return null;
             }
         }
