@@ -205,7 +205,7 @@ namespace Microsoft.Azure.SignalR
             var routed = GetRoutedEndpoints(serviceMessage)?
                 .Select(endpoint =>
                 {
-                    var connection = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == endpoint.Endpoint).ConnectionContainer;
+                    var connection = (endpoint as HubServiceEndpoint)?.ConnectionContainer;
                     if (connection == null)
                     {
                         Log.EndpointNotExists(_logger, endpoint.ToString());
