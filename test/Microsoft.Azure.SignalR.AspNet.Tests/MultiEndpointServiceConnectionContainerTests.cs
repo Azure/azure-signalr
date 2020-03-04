@@ -202,7 +202,6 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
-            Assert.Equal(2, container.ConnectionContainers.Count);
         }
 
         [Fact]

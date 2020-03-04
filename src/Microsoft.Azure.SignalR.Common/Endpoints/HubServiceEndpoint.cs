@@ -27,6 +27,8 @@ namespace Microsoft.Azure.SignalR
 
         public IServiceEndpointProvider Provider { get; }
 
+        public IServiceConnectionContainer ConnectionContainer { get; set; }
+
         /// <summary>
         /// Task waiting for HubServiceEndpoint turn ready when live add/remove endpoint
         /// </summary>
