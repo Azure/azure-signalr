@@ -749,13 +749,15 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async Task TestEndpointManagerWithRenameEndpoints()
+        public async Task TestMultipleEndpointWithRenamesAndWriteAckableMessage()
         {
             var sem = new TestServiceEndpointManager(
                 new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2"),
-                new ServiceEndpoint(ConnectionString3, EndpointType.Primary, "3")
+                new ServiceEndpoint(ConnectionString3, EndpointType.Secondary, "3")
                 );
+
+            var writeTcs = new TaskCompletionSource<object>();
             var endpoints = sem.Endpoints;
             Assert.Equal(3, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
@@ -763,28 +765,37 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal("3", endpoints[2].Name);
 
             var router = new TestEndpointRouter();
+            var containers = new Dictionary<ServiceEndpoint, TestServiceConnectionContainer>();
             var container = new TestMultiEndpointServiceConnectionContainer("hub",
-                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
-                new TestSimpleServiceConnection(),
+                e => containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
             }, e), sem, router, NullLoggerFactory.Instance);
 
-            var containerEps = container.ConnectionContainers.Keys.OrderBy(x => x.Name).ToArray();
+            // All the connections started
+            _ = container.StartAsync();
+            await container.ConnectionInitializedTask;
+
+            var containerEps = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            var container1 = containerEps[0].ConnectionContainer;
             Assert.Equal(3, containerEps.Length);
             Assert.Equal("1", containerEps[0].Name);
             Assert.Equal("2", containerEps[1].Name);
             Assert.Equal("3", containerEps[2].Name);
 
+            // Trigger rename
             var renamedEndpoint = new List<ServiceEndpoint>();
             renamedEndpoint.Add(new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "11"));
-            renamedEndpoint.Add(new ServiceEndpoint(ConnectionString3, EndpointType.Primary, "33"));
+            renamedEndpoint.Add(new ServiceEndpoint(ConnectionString3, EndpointType.Secondary, "33"));
             await sem.TestRenameServiceEndpoints(renamedEndpoint);
 
-            await Task.Delay(100);
-
             // validate container level updates
-            containerEps = container.ConnectionContainers.Keys.OrderBy(x => x.Name).ToArray();
+            containerEps = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
             Assert.Equal(3, containerEps.Length);
             Assert.Equal("11", containerEps[0].Name);
+            // container1 keep same after rename
+            Assert.Equal(container1, containerEps[0].ConnectionContainer);
             Assert.Equal("2", containerEps[1].Name);
             Assert.Equal("33", containerEps[2].Name);
 
@@ -794,6 +805,12 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal("11", ngoEps[0].Name);
             Assert.Equal("2", ngoEps[1].Name);
             Assert.Equal("33", ngoEps[2].Name);
+
+            // write messages
+            var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
+            await writeTcs.Task.OrTimeout();
+            containers.First().Value.HandleAck(new AckMessage(1, (int)AckStatus.Ok));
+            await task.OrTimeout();
         }
 
         private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router, bool migratable)

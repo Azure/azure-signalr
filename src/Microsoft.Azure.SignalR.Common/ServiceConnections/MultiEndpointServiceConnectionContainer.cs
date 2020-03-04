@@ -74,7 +74,8 @@ namespace Microsoft.Azure.SignalR
         {
         }
 
-        public IEnumerable<ServiceEndpoint> GetOnlineEndpoints()
+        // for tests
+        public IEnumerable<HubServiceEndpoint> GetOnlineEndpoints()
         {
             return _routerEndpoints.endpoints.Where(s => s.Online);
         }
@@ -286,28 +287,33 @@ namespace Microsoft.Azure.SignalR
             }
 
             Log.StartRenamingEndpoint(_logger, endpoint.Endpoint);
-            var oldEndpoint = _connectionContainers.FirstOrDefault(e => e.Key.Endpoint == endpoint.Endpoint).Key;
-
-            if (oldEndpoint != null)
-            {
-                _connectionContainers.TryRemove(oldEndpoint, out var container);
-                _connectionContainers.TryAdd(endpoint, container);
-                UpdateEndpointsStore(endpoint, ScaleOperation.Rename);
-            }
+            
+            UpdateEndpointsStore(endpoint, ScaleOperation.Rename);
         }
 
         private void UpdateEndpointsStore(HubServiceEndpoint newEndpoint, ScaleOperation operation)
         {
-            // Use lock to ensure store updated safety as parallel changes triggered in container side. 
+            // Use lock to ensure store update safety as parallel changes triggered in container side. 
             lock (_lock)
             {
                 switch (operation)
                 { 
                     case ScaleOperation.Rename:
+                        var oldEndpoint = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == newEndpoint.Endpoint);
+                        if (oldEndpoint == null)
+                        {
+                            // should not happen
+                            Log.EndpointNotExists(_logger, newEndpoint.ToString());
+                            return;
+                        }
+                        // copy container
+                        newEndpoint.ConnectionContainer = oldEndpoint.ConnectionContainer;
+
+                        var updatedEndpoints = _routerEndpoints.endpoints.Where(e => e.Endpoint != newEndpoint.Endpoint).ToList();
+                        updatedEndpoints.Add(newEndpoint);
                         var needRouter = _routerEndpoints.needRouter;
-                        var endpoints = _routerEndpoints.endpoints.Where(e => e.Endpoint != newEndpoint.Endpoint).ToList();
-                        endpoints.Add(newEndpoint);
-                        _routerEndpoints = (needRouter, endpoints);
+
+                        _routerEndpoints = (needRouter, updatedEndpoints);
                         break;
                     default:
                         break;
