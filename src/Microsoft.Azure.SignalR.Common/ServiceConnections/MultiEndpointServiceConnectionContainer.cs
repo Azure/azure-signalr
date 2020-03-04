@@ -206,6 +206,10 @@ namespace Microsoft.Azure.SignalR
                 .Select(endpoint =>
                 {
                     var connection = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == endpoint.Endpoint).ConnectionContainer;
+                    if (connection == null)
+                    {
+                        Log.EndpointNotExists(_logger, endpoint.ToString());
+                    }
                     return (e: endpoint, c: connection);
                 })
                 .Where(c => c.c != null)
