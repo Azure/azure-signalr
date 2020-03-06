@@ -109,7 +109,7 @@ namespace Microsoft.Azure.SignalR
 
                     await Task.WhenAll(hubEndpoints.Select(e => AddHubServiceEndpointAsync(e, cancellationToken)));
 
-                    // TODO: update local store for negotiation
+                    UpdateNegotiationEndpointsStore(hubEndpoints, ScaleOperation.Add);
                 }
                 catch (Exception ex)
                 {
@@ -212,6 +212,26 @@ namespace Microsoft.Azure.SignalR
 
             OnRename?.Invoke(endpoint);
             return Task.CompletedTask;
+        }
+
+        private void UpdateNegotiationEndpointsStore(IReadOnlyList<HubServiceEndpoint> endpoints, ScaleOperation scaleOperation)
+        {
+            foreach (var hubEndpoint in _endpointsPerHub)
+            {
+                var updatedEndpoints = endpoints.Where(e => e.Hub == hubEndpoint.Key).ToList();
+                var oldEndpoints = hubEndpoint.Value;
+                var newEndpoints = new List<HubServiceEndpoint>();
+                switch (scaleOperation)
+                {
+                    case ScaleOperation.Add:
+                        newEndpoints = oldEndpoints.ToList();
+                        newEndpoints.AddRange(endpoints);
+                        break;
+                    default:
+                        break;
+                }
+                _endpointsPerHub.TryUpdate(hubEndpoint.Key, newEndpoints, oldEndpoints);
+            }
         }
 
         private static class Log

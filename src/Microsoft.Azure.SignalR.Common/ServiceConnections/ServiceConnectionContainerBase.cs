@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR
         private volatile ServiceConnectionStatus _status;
 
         // <serverIds, lastServerIdsTimestamp>
-        private volatile Tuple<HashSet<string>, long> _serverIdContext;
+        private volatile Tuple<HashSet<string>, long> _serverIdContext = DefaultServerIdContext;
         private volatile bool _hasClients;
         private volatile bool _terminated = false;
 
