@@ -746,6 +746,118 @@ namespace Microsoft.Azure.SignalR.Tests
             await TestEndpointOfflineInner(manager, new TestEndpointRouter(), migratable);
         }
 
+        [Fact]
+        public async Task TestEndpointManagerWithRemoveEndpointsWithNoClients()
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "22")
+                );
+            var endpoints = sem.Endpoints;
+            Assert.Equal(2, endpoints.Length);
+            Assert.Equal("1", endpoints[0].Name);
+            Assert.Equal("22", endpoints[1].Name);
+
+            var router = new TestEndpointRouter();
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
+            }, e), sem, router, NullLoggerFactory.Instance);
+
+            var hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, hubEndpoints.Length);
+            Assert.Equal("1", hubEndpoints[0].Name);
+            Assert.Equal("22", hubEndpoints[1].Name);
+
+            // mock inactive
+            var containers = container.GetTestOnlineContainers();
+            await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(false)));
+
+            var newEndpoint = new List<ServiceEndpoint>
+            {
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "22")
+            };
+            var timeoutToken = new CancellationTokenSource(1000).Token;
+            _ = sem.TestRemoveServiceEndpoints(newEndpoint, timeoutToken);
+
+            // delay check
+            await Task.Delay(100);
+
+            // validate container side task completes
+            hubEndpoints = container.GetOnlineEndpoints().ToArray();
+            Assert.Single(hubEndpoints);
+            Assert.Equal("1", hubEndpoints[0].Name);
+
+            // validate endpoint manager side update
+            var ngoEps = sem.GetEndpoints("hub").ToArray();
+            Assert.Single(ngoEps);
+            Assert.Equal("1", ngoEps[0].Name);
+        }
+
+        [Fact]
+        public async Task TestEndpointManagerWithRemovedEndpointsWithClients()
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "22")
+                );
+            var endpoints = sem.Endpoints;
+            Assert.Equal(2, endpoints.Length);
+            Assert.Equal("1", endpoints[0].Name);
+            Assert.Equal("22", endpoints[1].Name);
+
+            var router = new TestEndpointRouter();
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
+            }, e), sem, router, NullLoggerFactory.Instance);
+
+            var hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, hubEndpoints.Length);
+            Assert.Equal("1", hubEndpoints[0].Name);
+            Assert.Equal("22", hubEndpoints[1].Name);
+
+            // mock all active to emulate has clients
+            var containers = container.GetTestOnlineContainers();
+            await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(true)));
+
+            var newEndpoint = new List<ServiceEndpoint>
+            {
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "22")
+            };
+            var timeoutToken = new CancellationTokenSource(1000).Token;
+            _ = sem.TestRemoveServiceEndpoints(newEndpoint, timeoutToken);
+
+            // validate container side not updated
+            hubEndpoints = container.GetOnlineEndpoints().ToArray();
+            Assert.Equal(2, hubEndpoints.Length);
+            Assert.Equal("1", hubEndpoints[0].Name);
+
+            // validate endpoint manager side update
+            var ngoEps = sem.GetEndpoints("hub").ToArray();
+            Assert.Single(ngoEps);
+            Assert.Equal("1", ngoEps[0].Name);
+
+            // Mock client now drops and able to remove endpoints
+            await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(false)));
+            await Task.Delay(6000);
+
+            // validate container side updated
+            hubEndpoints = container.GetOnlineEndpoints().ToArray();
+            Assert.Single(hubEndpoints);
+            Assert.Equal("1", hubEndpoints[0].Name);
+        }
+
+        // TODO: Test Add/Remove endpoint for endpoint type change test
+        public async Task TestEndpointManagerWithEndpointTypeUpdate()
+        { }
+
         private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router, bool migratable)
         {
             var containers = new List<TestServiceConnectionContainer>();
@@ -805,6 +917,12 @@ namespace Microsoft.Azure.SignalR.Tests
                 ) : base(hub, generator, endpoint, router, loggerFactory)
             {
             }
+
+            public List<TestServiceConnectionContainer> GetTestOnlineContainers()
+            {
+                var endpoints = GetOnlineEndpoints();
+                return endpoints.Select(e => e.ConnectionContainer as TestServiceConnectionContainer).ToList();
+            }
         }
 
         private class TestServiceEndpointManager : ServiceEndpointManagerBase
@@ -819,6 +937,11 @@ namespace Microsoft.Azure.SignalR.Tests
             public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
             {
                 return null;
+            }
+
+            public async Task TestRemoveServiceEndpoints(IReadOnlyList<ServiceEndpoint> endpoint, CancellationToken cancellationToken = default)
+            {
+                await RemoveServiceEndpointsAsync(endpoint, cancellationToken);
             }
         }
 

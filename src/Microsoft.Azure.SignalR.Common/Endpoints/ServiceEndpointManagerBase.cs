@@ -126,7 +126,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     var hubEndpoints = CreateHubServiceEndpoints(endpoints, true);
 
-                    // TODO: update local store for negotiation
+                    UpdateNegotiationEndpointsStore(hubEndpoints, ScaleOperation.Remove);
 
                     await Task.WhenAll(hubEndpoints.Select(e => RemoveHubServiceEndpointAsync(e, cancellationToken)));
                 }
@@ -212,6 +212,38 @@ namespace Microsoft.Azure.SignalR
 
             OnRename?.Invoke(endpoint);
             return Task.CompletedTask;
+        }
+
+        private void UpdateNegotiationEndpointsStore(IReadOnlyList<HubServiceEndpoint> endpoints, ScaleOperation scaleOperation)
+        {
+            foreach (var hubEndpoint in _endpointsPerHub)
+            {
+                var updatedEndpoints = endpoints.Where(e => e.Hub == hubEndpoint.Key).ToList();
+                var oldEndpoints = hubEndpoint.Value;
+                var newEndpoints = new List<HubServiceEndpoint>();
+                switch (scaleOperation)
+                {
+                    case ScaleOperation.Remove:
+                        newEndpoints = oldEndpoints.Except(updatedEndpoints, new HubServiceEndpointWeakComparer()).ToList();
+                        break;
+                    default:
+                        break;
+                }
+                _endpointsPerHub.TryUpdate(hubEndpoint.Key, newEndpoints, oldEndpoints);
+            }
+        }
+
+        private sealed class HubServiceEndpointWeakComparer : IEqualityComparer<HubServiceEndpoint>
+        {
+            public bool Equals(HubServiceEndpoint x, HubServiceEndpoint y)
+            {
+                return x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType;
+            }
+
+            public int GetHashCode(HubServiceEndpoint obj)
+            {
+                return obj.Endpoint.GetHashCode() ^ obj.EndpointType.GetHashCode();
+            }
         }
 
         private static class Log

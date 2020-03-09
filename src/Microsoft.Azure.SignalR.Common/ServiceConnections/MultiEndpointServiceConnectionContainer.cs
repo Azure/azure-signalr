@@ -18,6 +18,9 @@ namespace Microsoft.Azure.SignalR
         private readonly IMessageRouter _router;
         private readonly ILogger _logger;
         private readonly IServiceEndpointManager _serviceEndpointManager;
+        private readonly object _lock = new object();
+        // TODO: pending merge to load from options.
+        private readonly TimeSpan _scaleTimeout = TimeSpan.FromSeconds(Constants.DefaultScaleTimeoutInSeconds);
 
         // <needRouter, endpoints>
         private (bool needRouter, IReadOnlyList<HubServiceEndpoint> endpoints) _routerEndpoints;
@@ -73,7 +76,7 @@ namespace Microsoft.Azure.SignalR
         {
         }
 
-        public IEnumerable<ServiceEndpoint> GetOnlineEndpoints()
+        public IEnumerable<HubServiceEndpoint> GetOnlineEndpoints()
         {
             return _routerEndpoints.endpoints.Where(s => s.Online);
         }
@@ -268,13 +271,31 @@ namespace Microsoft.Azure.SignalR
             _ = RemoveHubServiceEndpointAsync(endpoint);
         }
 
-        private Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint)
+        private async Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint)
         {
-            // TODO: trigger offline ping and wait to remove container.
+            try
+            {
+                var container = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == endpoint.Endpoint);
+                if (container == null)
+                {
+                    Log.EndpointNotExists(_logger, container.ToString());
+                    return;
+                }
 
-            // finally set task complete when timeout
-            endpoint.CompleteScale();
-            return Task.CompletedTask;
+                _ = container.ConnectionContainer.OfflineAsync(false);
+                await WaitForClientsDisconnect(container);
+                _ = container.ConnectionContainer.StopAsync();
+
+                UpdateEndpointsStore(endpoint, ScaleOperation.Remove);
+            }
+            catch (Exception ex)
+            {
+                Log.FailedRemovingConnectionForEndpoint(_logger, endpoint.ToString(), ex);
+            }
+            finally
+            {
+                endpoint.CompleteScale();
+            }
         }
 
         private void OnRename(HubServiceEndpoint endpoint)
@@ -284,6 +305,39 @@ namespace Microsoft.Azure.SignalR
                 return;
             }
             // TODO: update local store names
+        }
+
+        private void UpdateEndpointsStore(HubServiceEndpoint newEndpoint, ScaleOperation operation)
+        {
+            // Use lock to ensure store update safety as parallel changes triggered in container side. 
+            lock (_lock)
+            {
+                switch (operation)
+                {
+                    case ScaleOperation.Remove:
+                        var newEndpoints = _routerEndpoints.endpoints.Where(e => e.Endpoint != newEndpoint.Endpoint).ToList();
+                        var needRouter = newEndpoints.Count > 1;
+                        _routerEndpoints = (needRouter, newEndpoints);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        private async Task WaitForClientsDisconnect(HubServiceEndpoint endpoint)
+        {
+            var startTime = DateTime.UtcNow;
+            while (DateTime.UtcNow - startTime < _scaleTimeout)
+            {
+                if (!endpoint.ConnectionContainer.HasClients)
+                {
+                    return;
+                }
+                // status ping interval is 10 seconds, quick delay to do next check
+                await Task.Delay(5 * 1000);
+            }
+            Log.TimeoutWaitingClientsDisconnect(_logger, endpoint.ToString(), _scaleTimeout.Seconds);
         }
 
         private static class Log
@@ -302,6 +356,12 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, string, Exception> _failedWritingMessageToEndpoint =
                 LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(5, "FailedWritingMessageToEndpoint"), "Message {messageType} is not sent to endpoint {endpoint} because all connections to this endpoint are offline.");
+
+            private static readonly Action<ILogger, string, int, Exception> _timeoutWaitingClientsDisconnect =
+                LoggerMessage.Define<string, int>(LogLevel.Error, new EventId(9, "TimeoutWaitingClientsDisconnect"), "Timeout waiting for clients disconnect for {endpoint} in {timeoutSecond} seconds.");
+
+            private static readonly Action<ILogger, string, Exception> _failedRemovingConnectionForEndpoint =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(10, "FailedRemovingConnectionForEndpoint"), "Fail to stop server connections for endpoint {endpoint}.");
 
             public static void StartingConnection(ILogger logger, string endpoint)
             {
@@ -326,6 +386,16 @@ namespace Microsoft.Azure.SignalR
             public static void FailedWritingMessageToEndpoint(ILogger logger, string messageType, string endpoint)
             {
                 _failedWritingMessageToEndpoint(logger, messageType, endpoint, null);
+            }
+
+            public static void TimeoutWaitingClientsDisconnect(ILogger logger, string endpoint, int timeoutSecond)
+            {
+                _timeoutWaitingClientsDisconnect(logger, endpoint, timeoutSecond, null);
+            }
+
+            public static void FailedRemovingConnectionForEndpoint(ILogger logger, string endpoint, Exception ex)
+            {
+                _failedRemovingConnectionForEndpoint(logger, endpoint, ex);
             }
         }
     }
