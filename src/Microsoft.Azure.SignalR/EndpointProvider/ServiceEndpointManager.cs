@@ -48,16 +48,23 @@ namespace Microsoft.Azure.SignalR
             return new ServiceEndpointProvider(endpoint, _options);
         }
 
-        private async void OnChange(ServiceOptions options)
+        private void OnChange(ServiceOptions options)
         {
             Log.DetectConfigurationChanges(_logger);
 
+            // synchronize scale for quick and clean status sync
+            ReloadServiceEndpointsAsync(options.Endpoints).Wait();
+        }
+
+        // TODO: make public for non hot-reload plans
+        private async Task ReloadServiceEndpointsAsync(ServiceEndpoint[] serviceEndpoints)
+        {
             // Reset local cache and validate result
-            var endpoints = GetValuableEndpoints(GetEndpoints(options));
+            var endpoints = GetValuableEndpoints(serviceEndpoints);
             if (endpoints.Length == 0)
             {
                 Log.EndpointNotFound(_logger);
-                return; 
+                return;
             }
             Endpoints = endpoints;
 
@@ -65,7 +72,7 @@ namespace Microsoft.Azure.SignalR
 
             await RenameSerivceEndpoints(updatedEndpoints.RenamedEndpoints);
 
-            using (var addCts = new CancellationTokenSource(options.ServiceScaleTimeout))
+            using (var addCts = new CancellationTokenSource(_scaleTimeout))
             {
                 if (!await WaitTaskOrTimeout(AddServiceEndpointsAsync(updatedEndpoints.AddedEndpoints, addCts.Token), addCts))
                 {
@@ -73,7 +80,7 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
-            using (var removeCts = new CancellationTokenSource(options.ServiceScaleTimeout))
+            using (var removeCts = new CancellationTokenSource(_scaleTimeout))
             {
                 if (!await WaitTaskOrTimeout(RemoveServiceEndpointsAsync(updatedEndpoints.RemovedEndpoints, removeCts.Token), removeCts))
                 {
@@ -82,6 +89,8 @@ namespace Microsoft.Azure.SignalR
             }
 
             _endpointsStore = Endpoints;
+
+            Log.CompleteUpdateEndpoints(_logger);
         }
 
         private (IReadOnlyList<ServiceEndpoint> AddedEndpoints, 
@@ -141,6 +150,10 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, Exception> _timeoutRemoveEndpoints =
                 LoggerMessage.Define(LogLevel.Error, new EventId(5, "TimeoutRemoveEndpoints"), "Timeout waiting for removing endpoints.");
 
+            private static readonly Action<ILogger, Exception> _completeUpdateEndpoints =
+                LoggerMessage.Define(LogLevel.Debug, new EventId(6, "CompleteUpdateEndpoints"), "Complete updating endpoints.");
+
+
             public static void DetectConfigurationChanges(ILogger logger)
             {
                 _detectEndpointChanges(logger, null);
@@ -164,6 +177,11 @@ namespace Microsoft.Azure.SignalR
             public static void TimeoutRemoveEndpoints(ILogger logger)
             {
                 _timeoutRemoveEndpoints(logger, null);
+            }
+
+            public static void CompleteUpdateEndpoints(ILogger logger)
+            {
+                _completeUpdateEndpoints(logger, null);
             }
         }
     }

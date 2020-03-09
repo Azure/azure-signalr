@@ -268,10 +268,11 @@ namespace Microsoft.Azure.SignalR
             {
                 _ = container.StartAsync();
 
-                // Considering we'll add always, directly update store after start
+                // Update local store directly after start connection 
+                // to get a uniformed action on trigger servers ping
                 UpdateEndpointsStore(endpoint, ScaleOperation.Add);
 
-                await container.StartGetServersPing();
+                await StartGetServersPing();
                 await WaitForServerStable(container, endpoint);
             }
             catch (Exception ex)
@@ -280,7 +281,7 @@ namespace Microsoft.Azure.SignalR
             }
             finally
             {
-                _ = container.StopGetServersPing();
+                _ = StopGetServersPing();
                 endpoint.CompleteScale();
             }
         }
@@ -359,7 +360,9 @@ namespace Microsoft.Azure.SignalR
             // ensure strong consistency of server Ids for new endpoint towards exists
             foreach (var endpoint in _routerEndpoints.endpoints)
             {
-                allMatch = serversOnNew.SetEquals(endpoint.ConnectionContainer.GlobalServerIds) && allMatch;
+                allMatch = endpoint.ConnectionContainer.GlobalServerIds != null 
+                    && serversOnNew.SetEquals(endpoint.ConnectionContainer.GlobalServerIds) 
+                    && allMatch;
                 if (!allMatch)
                 {
                     return false;
