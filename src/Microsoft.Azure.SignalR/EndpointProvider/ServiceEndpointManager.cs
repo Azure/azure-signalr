@@ -53,7 +53,12 @@ namespace Microsoft.Azure.SignalR
             Log.DetectConfigurationChanges(_logger);
 
             // synchronize scale for quick and clean status sync
-            ReloadServiceEndpointsAsync(options.Endpoints).Wait();
+            ReloadServiceEndpoints(options.Endpoints);
+        }
+
+        private Task ReloadServiceEndpoints(ServiceEndpoint[] serviceEndpoints)
+        {
+            return ReloadServiceEndpointsAsync(serviceEndpoints);
         }
 
         // TODO: make public for non hot-reload plans
