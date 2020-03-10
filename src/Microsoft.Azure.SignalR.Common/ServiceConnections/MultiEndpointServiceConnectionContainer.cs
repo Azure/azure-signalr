@@ -299,21 +299,14 @@ namespace Microsoft.Azure.SignalR
                 switch (operation)
                 { 
                     case ScaleOperation.Rename:
-                        var oldEndpoint = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == newEndpoint.Endpoint);
-                        if (oldEndpoint == null)
+                        foreach (var item in _routerEndpoints.endpoints)
                         {
-                            // should not happen
-                            Log.EndpointNotExists(_logger, newEndpoint.ToString());
-                            return;
+                            if (item.Endpoint == newEndpoint.Endpoint)
+                            {
+                                item.Name = newEndpoint.Name;
+                                break;
+                            }
                         }
-                        // copy container
-                        newEndpoint.ConnectionContainer = oldEndpoint.ConnectionContainer;
-
-                        var updatedEndpoints = _routerEndpoints.endpoints.Where(e => e.Endpoint != newEndpoint.Endpoint).ToList();
-                        updatedEndpoints.Add(newEndpoint);
-                        var needRouter = _routerEndpoints.needRouter;
-
-                        _routerEndpoints = (needRouter, updatedEndpoints);
                         break;
                     default:
                         break;
