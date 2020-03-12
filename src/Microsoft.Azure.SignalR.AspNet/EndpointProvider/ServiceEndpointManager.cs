@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             base(options,
                 loggerFactory?.CreateLogger<ServiceEndpointManager>())
         {
-            if (Endpoints.Length == 0)
+            if (Endpoints.Count == 0)
             {
                 throw new ArgumentException(ServiceEndpointProvider.ConnectionStringNotFound);
             }

@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
                 );
-            var endpoints = sem.Endpoints;
+            var endpoints = sem.Endpoints.ToArray();
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
                 );
-            var endpoints = sem.Endpoints;
+            var endpoints = sem.Endpoints.ToArray();
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
@@ -758,7 +758,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 );
 
             var writeTcs = new TaskCompletionSource<object>();
-            var endpoints = sem.Endpoints;
+            var endpoints = sem.Endpoints.ToArray();
             Assert.Equal(3, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("2", endpoints[1].Name);
@@ -784,11 +784,14 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal("2", containerEps[1].Name);
             Assert.Equal("3", containerEps[2].Name);
 
-            // Trigger rename
-            var renamedEndpoint = new List<ServiceEndpoint>();
-            renamedEndpoint.Add(new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "11"));
-            renamedEndpoint.Add(new ServiceEndpoint(ConnectionString3, EndpointType.Secondary, "33"));
-            await sem.TestRenameServiceEndpoints(renamedEndpoint);
+            // Trigger reload to test rename
+            var renamedEndpoint = new ServiceEndpoint[]
+            {
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "11"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2"),
+                new ServiceEndpoint(ConnectionString3, EndpointType.Secondary, "33")
+            };
+            await sem.TestReloadServiceEndpoints(renamedEndpoint);
 
             // validate container level updates
             containerEps = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
@@ -812,6 +815,91 @@ namespace Microsoft.Azure.SignalR.Tests
             containers.First().Value.HandleAck(new AckMessage(1, (int)AckStatus.Ok));
             await task.OrTimeout();
         }
+
+        [Theory]
+        [MemberData(nameof(TestReloadEndpointsData))]
+        public void TestServiceEndpointManagerReloadEndpoints(ServiceEndpoint[] oldValue, ServiceEndpoint[] newValue)
+        {
+            var sem = new TestServiceEndpointManager(oldValue);
+
+            sem.TestReloadServiceEndpoints(newValue);
+
+            var endpoints = sem.Endpoints;
+
+            Assert.Equal(newValue, endpoints);
+        }
+
+        public static IEnumerable<object[]> TestReloadEndpointsData = new object[][]
+        {
+            // no change
+            new object[]
+            {
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                },
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                }
+            },
+            // add
+            new object[]
+            {
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1")
+                },
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                }
+            },
+            // remove
+            new object[]
+            {
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                },
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1")
+                }
+            },
+            // rename
+            new object[]
+            {
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                },
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "22"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "11")
+                }
+            },
+            // type
+            new object[]
+            {
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Secondary, "2")
+                },
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Secondary, "1"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                }
+            }
+        };
 
         private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router, bool migratable)
         {
@@ -888,9 +976,9 @@ namespace Microsoft.Azure.SignalR.Tests
                 return null;
             }
 
-            public Task TestRenameServiceEndpoints(IReadOnlyList<ServiceEndpoint> endpoint)
+            public Task TestReloadServiceEndpoints(ServiceEndpoint[] serviceEndpoints, int timeoutSec = 0)
             {
-                return RenameSerivceEndpoints(endpoint);
+                return ReloadServiceEndpointsAsync(serviceEndpoints, TimeSpan.FromSeconds(timeoutSec));
             }
         }
 

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ILogger _logger;
 
         // Filtered valuable endpoints from ServiceOptions
-        public ServiceEndpoint[] Endpoints { get; protected set; }
+        public HashSet<ServiceEndpoint> Endpoints { get; private set; } = new HashSet<ServiceEndpoint>(ServiceEndpointWeakComparer.Instance);
 
         public event EndpointEventHandler OnAdd;
         public event EndpointEventHandler OnRemove;
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR
 
             Endpoints = GetValuableEndpoints(endpoints);
 
-            if (Endpoints.Length > 0 && Endpoints.All(s => s.EndpointType != EndpointType.Primary))
+            if (Endpoints.Count > 0 && Endpoints.All(s => s.EndpointType != EndpointType.Primary))
             {
                 // Only throws when endpoint count > 0
                 throw new AzureSignalRNoPrimaryEndpointException();
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        protected ServiceEndpoint[] GetValuableEndpoints(IEnumerable<ServiceEndpoint> endpoints)
+        protected HashSet<ServiceEndpoint> GetValuableEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
             // select the most valuable endpoint with the same endpoint address
             var groupedEndpoints = endpoints.Distinct().GroupBy(s => s.Endpoint).Select(s =>
@@ -95,12 +95,46 @@ namespace Microsoft.Azure.SignalR
                 return item;
             });
 
-            return groupedEndpoints.ToArray();
+            return new HashSet<ServiceEndpoint>(groupedEndpoints, ServiceEndpointWeakComparer.Instance);
         }
 
-        protected async Task AddServiceEndpointsAsync(IReadOnlyList<ServiceEndpoint> endpoints, CancellationToken cancellationToken)
+        protected async Task ReloadServiceEndpointsAsync(ServiceEndpoint[] serviceEndpoints, TimeSpan scaleTimeout)
         {
-            if (endpoints.Count > 0)
+            var endpoints = GetValuableEndpoints(serviceEndpoints);
+            // Follow same check but log error only
+            if (endpoints.Count == 0)
+            {
+                Log.EndpointNotFound(_logger);
+                return;
+            }
+            if (endpoints.Count > 0 && endpoints.All(s => s.EndpointType != EndpointType.Primary))
+            {
+                Log.NoPrimaryEndpoint(_logger);
+                return;
+            }
+
+            UpdateEndpoints(endpoints, out var addedEndpoints, out var removedEndpoints);
+
+            using (var addCts = new CancellationTokenSource(scaleTimeout))
+            {
+                if (!await WaitTaskOrTimeout(AddServiceEndpointsAsync(addedEndpoints, addCts.Token), addCts))
+                {
+                    Log.TimeoutAddEndpoints(_logger);
+                }
+            }
+
+            using (var removeCts = new CancellationTokenSource(scaleTimeout))
+            {
+                if (!await WaitTaskOrTimeout(RemoveServiceEndpointsAsync(removedEndpoints, removeCts.Token), removeCts))
+                {
+                    Log.TimeoutRemoveEndpoints(_logger);
+                }
+            }
+        }
+
+        private async Task AddServiceEndpointsAsync(IEnumerable<ServiceEndpoint> endpoints, CancellationToken cancellationToken)
+        {
+            if (endpoints.Count() > 0)
             {
                 try
                 {
@@ -117,9 +151,9 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        protected async Task RemoveServiceEndpointsAsync(IReadOnlyList<ServiceEndpoint> endpoints, CancellationToken cancellationToken)
+        private async Task RemoveServiceEndpointsAsync(IEnumerable<ServiceEndpoint> endpoints, CancellationToken cancellationToken)
         {
-            if (endpoints.Count > 0)
+            if (endpoints.Count() > 0)
             {
                 try
                 {
@@ -134,26 +168,6 @@ namespace Microsoft.Azure.SignalR
                     Log.FailedRemovingEndpoints(_logger, ex);
                 }
             }
-        }
-
-        protected Task RenameSerivceEndpoints(IReadOnlyList<ServiceEndpoint> endpoints)
-        {
-            if (endpoints.Count > 0)
-            {
-                try
-                {
-                    var hubEndpoints = CreateHubServiceEndpoints(endpoints, false);
-
-                    UpdateNegotiationEndpointsStore(hubEndpoints, ScaleOperation.Rename);
-
-                    return Task.CompletedTask;
-                }
-                catch (Exception ex)
-                {
-                    Log.FailedRenamingEndpoint(_logger, ex);
-                }
-            }
-            return Task.CompletedTask;
         }
 
         private HubServiceEndpoint CreateHubServiceEndpoint(string hub, ServiceEndpoint endpoint, bool needScaleTcs = false)
@@ -197,7 +211,7 @@ namespace Microsoft.Azure.SignalR
             Log.StartRemovingEndpoint(_logger, endpoint.Endpoint, endpoint.Name);
 
             OnRemove?.Invoke(endpoint);
-            
+
             // Wait for endpoint turn offline or timeout getting cancelled
             await Task.WhenAny(endpoint.ScaleTask, cancellationToken.AsTask());
 
@@ -205,40 +219,67 @@ namespace Microsoft.Azure.SignalR
             endpoint.CompleteScale();
         }
 
-        private void UpdateNegotiationEndpointsStore(IReadOnlyList<HubServiceEndpoint> endpoints, ScaleOperation scaleOperation)
+        private void UpdateEndpoints(HashSet<ServiceEndpoint> updatedEndpoints,
+            out HashSet<ServiceEndpoint> addedEndpoints,
+            out HashSet<ServiceEndpoint> removedEndpoints)
         {
-            foreach (var hubEndpoint in _endpointsPerHub)
+            // Provide a copy of Endpoints to calculate removed
+            removedEndpoints = new HashSet<ServiceEndpoint>(Endpoints, ServiceEndpointWeakComparer.Instance);
+            addedEndpoints = new HashSet<ServiceEndpoint>();
+
+            foreach (var endpoint in updatedEndpoints)
             {
-                var updatedEndpoints = endpoints.Where(e => e.Hub == hubEndpoint.Key).OrderBy(e => e.Endpoint).ToList();
-                var oldEndpoints = hubEndpoint.Value;
-                var newEndpoints = new List<HubServiceEndpoint>();
-                switch (scaleOperation)
+                if (Endpoints.Contains(endpoint))
                 {
-                    case ScaleOperation.Rename:
-                        newEndpoints = oldEndpoints.Except(updatedEndpoints, new HubServiceEndpointWeakComparer()).ToList();
-                        // Find to be renamed ones and ordered update Name
-                        var deltaEndpoints = oldEndpoints.Except(newEndpoints).OrderBy(e => e.Endpoint).ToList();
-                        for (int i = 0; i < deltaEndpoints.Count; i++)
-                        {
-                            deltaEndpoints[i].Name = updatedEndpoints[i].Name;
-                        }
-                        newEndpoints.AddRange(deltaEndpoints);
-                        break;
-                    default:
-                        break;
+                    // Directly update name in original sets for renamed ones
+                    var oldValue = (Endpoints.Comparer as ServiceEndpointWeakComparer).Value;
+                    if (oldValue.Name != endpoint.Name)
+                    {
+                        oldValue.Name = endpoint.Name;
+                    }
                 }
-                _endpointsPerHub.TryUpdate(hubEndpoint.Key, newEndpoints, oldEndpoints);
+                else
+                {
+                    // added news
+                    Endpoints.Add(endpoint);
+                    addedEndpoints.Add(endpoint);
+                }
             }
+            
+            removedEndpoints.ExceptWith(updatedEndpoints);
+            Endpoints.ExceptWith(removedEndpoints);
         }
 
-        private sealed class HubServiceEndpointWeakComparer : IEqualityComparer<HubServiceEndpoint>
+        private static async Task<bool> WaitTaskOrTimeout(Task task, CancellationTokenSource cts)
         {
-            public bool Equals(HubServiceEndpoint x, HubServiceEndpoint y)
+            var completed = await Task.WhenAny(task, Task.Delay(Timeout.InfiniteTimeSpan, cts.Token));
+
+            if (completed == task)
             {
-                return x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType;
+                return true;
             }
 
-            public int GetHashCode(HubServiceEndpoint obj)
+            cts.Cancel();
+            return false;
+        }
+
+        protected sealed class ServiceEndpointWeakComparer : IEqualityComparer<ServiceEndpoint>
+        {
+            public static readonly ServiceEndpointWeakComparer Instance = new ServiceEndpointWeakComparer();
+
+            public ServiceEndpoint Value { get; private set; }
+
+            public bool Equals(ServiceEndpoint x, ServiceEndpoint y)
+            {
+                if (x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType)
+                {
+                    Value = x;
+                    return true;
+                }
+                return false;
+            }
+
+            public int GetHashCode(ServiceEndpoint obj)
             {
                 return obj.Endpoint.GetHashCode() ^ obj.EndpointType.GetHashCode();
             }
@@ -258,17 +299,23 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, string, Exception> _startRenamingEndpoint =
                 LoggerMessage.Define<string, string>(LogLevel.Debug, new EventId(4, "StartRenamingEndpoint"), "Start renaming endpoint: '{endpoint}', name: '{name}'");
 
+            private static readonly Action<ILogger, Exception> _endpointNotFound =
+                LoggerMessage.Define(LogLevel.Error, new EventId(5, "EndpointNotFound"), "No connection string is specified. Skip scale operation.");
+            
+            private static readonly Action<ILogger, Exception> _noPrimaryEndpoint =
+                LoggerMessage.Define(LogLevel.Error, new EventId(6, "NoPrimaryEndpoint"), "No primary endpoint found. Skip scale operation.");
+
+            private static readonly Action<ILogger, Exception> _timeoutAddEndpoints =
+                LoggerMessage.Define(LogLevel.Error, new EventId(7, "TimeoutAddEndpoints"), "Timeout waiting for adding endpoints.");
+
+            private static readonly Action<ILogger, Exception> _timeoutRemoveEndpoints =
+                LoggerMessage.Define(LogLevel.Error, new EventId(8, "TimeoutRemoveEndpoints"), "Timeout waiting for removing endpoints.");
+
             private static readonly Action<ILogger, Exception> _failedAddingEndpoints =
-                LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailedAddingEndpoints"), "Failed adding endpoints.");
+                LoggerMessage.Define(LogLevel.Error, new EventId(9, "FailedAddingEndpoints"), "Failed adding endpoints.");
 
             private static readonly Action<ILogger, Exception> _failedRemovingEndpoints =
-                LoggerMessage.Define(LogLevel.Error, new EventId(6, "FailedRemovingEndpoints"), "Failed removing endpoints.");
-
-            private static readonly Action<ILogger, Exception> _failedRenamingEndpoints =
-                LoggerMessage.Define(LogLevel.Error, new EventId(7, "StartRenamingEndpoints"), "Failed renaming endpoints.");
-
-            private static readonly Action<ILogger, int, Exception> _timeoutWaitingForScale =
-                LoggerMessage.Define<int>(LogLevel.Error, new EventId(8, "TimeoutWaitingForScale"), "Timeout  waiting '{timeout}' seconds for connection operations when scale endpoint.");
+                LoggerMessage.Define(LogLevel.Error, new EventId(10, "FailedRemovingEndpoints"), "Failed removing endpoints.");
 
             public static void DuplicateEndpointFound(ILogger logger, int count, string endpoint, string name)
             {
@@ -290,6 +337,26 @@ namespace Microsoft.Azure.SignalR
                 _startRenamingEndpoint(logger, endpoint, name, null);
             }
 
+            public static void EndpointNotFound(ILogger logger)
+            {
+                _endpointNotFound(logger, null);
+            }
+
+            public static void NoPrimaryEndpoint(ILogger logger)
+            {
+                _noPrimaryEndpoint(logger, null);
+            }
+
+            public static void TimeoutAddEndpoints(ILogger logger)
+            {
+                _timeoutAddEndpoints(logger, null);
+            }
+
+            public static void TimeoutRemoveEndpoints(ILogger logger)
+            {
+                _timeoutRemoveEndpoints(logger, null);
+            }
+
             public static void FailedAddingEndpoints(ILogger logger, Exception ex)
             {
                 _failedAddingEndpoints(logger, ex);
@@ -298,16 +365,6 @@ namespace Microsoft.Azure.SignalR
             public static void FailedRemovingEndpoints(ILogger logger, Exception ex)
             {
                 _failedRemovingEndpoints(logger, ex);
-            }
-
-            public static void FailedRenamingEndpoint(ILogger logger, Exception ex)
-            {
-                _failedRenamingEndpoints(logger, ex);
-            }
-
-            public static void TimeoutWaitingForScale(ILogger logger, int timeout)
-            {
-                _timeoutWaitingForScale(logger, timeout, null);
             }
         }
     }

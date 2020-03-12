@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
@@ -235,7 +236,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 }
 
                 // Endpoints from Endpoints and ConnectionString config are merged inside the EndpointManager
-                var endpoints = serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints;
+                var endpoints = serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints.ToArray();
                 if (secondaryValue == null)
                 {
                     // When no other connection string is defined, endpoints value is always connection string value
@@ -354,7 +355,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var endpoints = endpointManager.Endpoints;
 
-                Assert.Equal(expectedCount, endpoints.Length);
+                Assert.Equal(expectedCount, endpoints.Count);
 
                 Assert.Contains(endpoints,
                     s => s.ConnectionString == CustomValue && s.EndpointType == EndpointType.Primary);
