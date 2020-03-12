@@ -25,7 +25,6 @@ namespace Microsoft.Azure.SignalR
 
         public event EndpointEventHandler OnAdd;
         public event EndpointEventHandler OnRemove;
-        public event EndpointEventHandler OnRename;
 
         protected ServiceEndpointManagerBase(IServiceEndpointOptions options, ILogger logger) 
             : this(GetEndpoints(options), logger)
@@ -147,7 +146,7 @@ namespace Microsoft.Azure.SignalR
 
                     UpdateNegotiationEndpointsStore(hubEndpoints, ScaleOperation.Rename);
 
-                    return Task.WhenAll(hubEndpoints.Select(e => RenameHubServiceEndpoint(e)));
+                    return Task.CompletedTask;
                 }
                 catch (Exception ex)
                 {
@@ -206,26 +205,24 @@ namespace Microsoft.Azure.SignalR
             endpoint.CompleteScale();
         }
 
-        private Task RenameHubServiceEndpoint(HubServiceEndpoint endpoint)
-        {
-            Log.StartRenamingEndpoint(_logger, endpoint.Endpoint, endpoint.Name);
-
-            OnRename?.Invoke(endpoint);
-            return Task.CompletedTask;
-        }
-
         private void UpdateNegotiationEndpointsStore(IReadOnlyList<HubServiceEndpoint> endpoints, ScaleOperation scaleOperation)
         {
             foreach (var hubEndpoint in _endpointsPerHub)
             {
-                var updatedEndpoints = endpoints.Where(e => e.Hub == hubEndpoint.Key).ToList();
+                var updatedEndpoints = endpoints.Where(e => e.Hub == hubEndpoint.Key).OrderBy(e => e.Endpoint).ToList();
                 var oldEndpoints = hubEndpoint.Value;
                 var newEndpoints = new List<HubServiceEndpoint>();
                 switch (scaleOperation)
                 {
                     case ScaleOperation.Rename:
                         newEndpoints = oldEndpoints.Except(updatedEndpoints, new HubServiceEndpointWeakComparer()).ToList();
-                        newEndpoints.AddRange(updatedEndpoints);
+                        // Find to be renamed ones and ordered update Name
+                        var deltaEndpoints = oldEndpoints.Except(newEndpoints).OrderBy(e => e.Endpoint).ToList();
+                        for (int i = 0; i < deltaEndpoints.Count; i++)
+                        {
+                            deltaEndpoints[i].Name = updatedEndpoints[i].Name;
+                        }
+                        newEndpoints.AddRange(deltaEndpoints);
                         break;
                     default:
                         break;

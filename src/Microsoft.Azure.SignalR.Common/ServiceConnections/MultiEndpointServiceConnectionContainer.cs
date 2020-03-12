@@ -54,7 +54,6 @@ namespace Microsoft.Azure.SignalR
 
             _serviceEndpointManager.OnAdd += OnAdd;
             _serviceEndpointManager.OnRemove += OnRemove;
-            _serviceEndpointManager.OnRename += OnRename;
         }
 
         public MultiEndpointServiceConnectionContainer(
@@ -279,41 +278,6 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        private void OnRename(HubServiceEndpoint endpoint)
-        {
-            if (!endpoint.Hub.Equals(_hubName, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            Log.StartRenamingEndpoint(_logger, endpoint.Endpoint);
-            
-            UpdateEndpointsStore(endpoint, ScaleOperation.Rename);
-        }
-
-        private void UpdateEndpointsStore(HubServiceEndpoint newEndpoint, ScaleOperation operation)
-        {
-            // Use lock to ensure store update safety as parallel changes triggered in container side. 
-            lock (_lock)
-            {
-                switch (operation)
-                { 
-                    case ScaleOperation.Rename:
-                        foreach (var item in _routerEndpoints.endpoints)
-                        {
-                            if (item.Endpoint == newEndpoint.Endpoint)
-                            {
-                                item.Name = newEndpoint.Name;
-                                break;
-                            }
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-
         private static class Log
         {
             private static readonly Action<ILogger, string, Exception> _startingConnection =
@@ -330,9 +294,6 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, string, Exception> _failedWritingMessageToEndpoint =
                 LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(5, "FailedWritingMessageToEndpoint"), "Message {messageType} is not sent to endpoint {endpoint} because all connections to this endpoint are offline.");
-
-            private static readonly Action<ILogger, string, Exception> _startRenamingEndpoint =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(6, "StartRenamingEndpoint"), "Start renaming endpoint {endpoint}.");
 
             public static void StartingConnection(ILogger logger, string endpoint)
             {
@@ -357,11 +318,6 @@ namespace Microsoft.Azure.SignalR
             public static void FailedWritingMessageToEndpoint(ILogger logger, string messageType, string endpoint)
             {
                 _failedWritingMessageToEndpoint(logger, messageType, endpoint, null);
-            }
-
-            public static void StartRenamingEndpoint(ILogger logger, string endpoint)
-            {
-                _startRenamingEndpoint(logger, endpoint, null);
             }
         }
     }

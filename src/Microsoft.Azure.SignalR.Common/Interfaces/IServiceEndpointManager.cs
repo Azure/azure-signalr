@@ -18,7 +18,5 @@ namespace Microsoft.Azure.SignalR
         event EndpointEventHandler OnAdd;
 
         event EndpointEventHandler OnRemove;
-
-        event EndpointEventHandler OnRename;
     }
 }
