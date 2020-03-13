@@ -11,14 +11,12 @@ namespace Microsoft.Azure.SignalR
     {
         IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
 
-        ServiceEndpoint[] Endpoints { get; }
+        IReadOnlyDictionary<ServiceEndpoint, ServiceEndpoint> Endpoints { get; }
 
         IReadOnlyList<HubServiceEndpoint> GetEndpoints(string hub);
 
         event EndpointEventHandler OnAdd;
 
         event EndpointEventHandler OnRemove;
-
-        event EndpointEventHandler OnRename;
     }
 }
