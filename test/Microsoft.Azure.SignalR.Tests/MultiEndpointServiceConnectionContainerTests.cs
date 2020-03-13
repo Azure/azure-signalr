@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
                 );
-            var endpoints = sem.Endpoints.ToArray();
+            var endpoints = sem.Endpoints.Keys.OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
                 );
-            var endpoints = sem.Endpoints.ToArray();
+            var endpoints = sem.Endpoints.Keys.OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
@@ -119,11 +119,9 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void TestContainerWithNoEndpointDontThrowFromBaseClass()
+        public void TestContainerWithNoEndpointThrowNoEndpointException()
         {
-            var manager = new TestServiceEndpointManager();
-            var endpoints = manager.Endpoints;
-            Assert.Empty(endpoints);
+            Assert.Throws<AzureSignalRConfigurationNoEndpointException>(() => new TestServiceEndpointManager());
         }
 
         [Fact]
@@ -758,7 +756,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 );
 
             var writeTcs = new TaskCompletionSource<object>();
-            var endpoints = sem.Endpoints.ToArray();
+            var endpoints = sem.Endpoints.Keys.OrderBy(x => x.Name).ToArray();
             Assert.Equal(3, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("2", endpoints[1].Name);
@@ -824,9 +822,9 @@ namespace Microsoft.Azure.SignalR.Tests
 
             sem.TestReloadServiceEndpoints(newValue);
 
-            var endpoints = sem.Endpoints;
+            var endpoints = sem.Endpoints.Keys;
 
-            Assert.Equal(newValue, endpoints);
+            Assert.True(newValue.SequenceEqual(endpoints));
         }
 
         public static IEnumerable<object[]> TestReloadEndpointsData = new object[][]

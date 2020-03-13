@@ -155,7 +155,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
                 );
-            var endpoints = sem.Endpoints.ToArray();
+            var endpoints = sem.Endpoints.Keys.OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
                 );
-            var endpoints = sem.Endpoints.ToArray();
+            var endpoints = sem.Endpoints.Keys.OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
@@ -205,11 +205,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Fact]
-        public void TestContainerWithNoEndpointDontThrowFromBaseClass()
+        public void TestContainerWithNoEndpointThrowException()
         {
-            var manager = new TestServiceEndpointManager();
-            var endpoints = manager.Endpoints;
-            Assert.Empty(endpoints);
+            Assert.Throws<AzureSignalRConfigurationNoEndpointException>(() => new TestServiceEndpointManager());
         }
 
         [Fact]

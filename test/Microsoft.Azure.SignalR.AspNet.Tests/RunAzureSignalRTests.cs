@@ -14,6 +14,7 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.AspNet.SignalR.Transports;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public void TestRunAzureSignalRWithoutConnectionString()
         {
-            var exception = Assert.Throws<ArgumentException>(
+            var exception = Assert.Throws<AzureSignalRConfigurationNoEndpointException>(
                     () =>
                     {
                         using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName)))
@@ -190,7 +191,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Empty(options.Value.Endpoints);
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
-                    var endpoints = manager.Endpoints;
+                    var endpoints = manager.Endpoints.Keys;
                     Assert.Single(endpoints);
                     Assert.Equal(ConnectionString2, endpoints.First().ConnectionString);
                 }

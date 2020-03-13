@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR
     {
         IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
 
-        HashSet<ServiceEndpoint> Endpoints { get; }
+        IReadOnlyDictionary<ServiceEndpoint, ServiceEndpoint> Endpoints { get; }
 
         IReadOnlyList<HubServiceEndpoint> GetEndpoints(string hub);
 

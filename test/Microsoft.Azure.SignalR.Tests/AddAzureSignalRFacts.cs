@@ -236,7 +236,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 }
 
                 // Endpoints from Endpoints and ConnectionString config are merged inside the EndpointManager
-                var endpoints = serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints.ToArray();
+                var endpoints = serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints.Keys.ToArray();
                 if (secondaryValue == null)
                 {
                     // When no other connection string is defined, endpoints value is always connection string value
@@ -353,9 +353,9 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var endpointManager = serviceProvider.GetRequiredService<IServiceEndpointManager>();
 
-                var endpoints = endpointManager.Endpoints;
+                var endpoints = endpointManager.Endpoints.Keys;
 
-                Assert.Equal(expectedCount, endpoints.Count);
+                Assert.Equal(expectedCount, endpoints.Count());
 
                 Assert.Contains(endpoints,
                     s => s.ConnectionString == CustomValue && s.EndpointType == EndpointType.Primary);

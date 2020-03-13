@@ -21,10 +21,6 @@ namespace Microsoft.Azure.SignalR
         public ServiceEndpointManager(IOptionsMonitor<ServiceOptions> optionsMonitor, ILoggerFactory loggerFactory) :
             base(optionsMonitor.CurrentValue, loggerFactory.CreateLogger<ServiceEndpointManager>())
         {
-            if (Endpoints.Count == 0)
-            {
-                throw new ArgumentException(ServiceEndpointProvider.ConnectionStringNotFound);
-            }
             _options = optionsMonitor.CurrentValue;
             _logger = loggerFactory?.CreateLogger<ServiceEndpointManager>() ?? throw new ArgumentNullException(nameof(loggerFactory));
 
@@ -47,11 +43,11 @@ namespace Microsoft.Azure.SignalR
         {
             Log.DetectConfigurationChanges(_logger);
 
-            ReloadServiceEndpoints(options.Endpoints);
+            ReloadServiceEndpointsAsync(options.Endpoints);
         }
 
         // TODO: make public for non hot-reload plans
-        private Task ReloadServiceEndpoints(ServiceEndpoint[] serviceEndpoints)
+        private Task ReloadServiceEndpointsAsync(ServiceEndpoint[] serviceEndpoints)
         {
             return ReloadServiceEndpointsAsync(serviceEndpoints, _scaleTimeout);
         }

@@ -7,6 +7,7 @@ using System.Runtime.Versioning;
 using System.Threading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -139,7 +140,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 .BuildServiceProvider();
 
             var app = new ApplicationBuilder(serviceProvider);
-            var exception = Assert.Throws<ArgumentException>(() => app.UseAzureSignalR(routes =>
+            var exception = Assert.Throws<AzureSignalRConfigurationNoEndpointException>(() => app.UseAzureSignalR(routes =>
             {
                 routes.MapHub<TestHub>("/chat");
             }));

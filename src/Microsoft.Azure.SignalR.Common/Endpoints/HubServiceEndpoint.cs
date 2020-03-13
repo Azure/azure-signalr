@@ -23,7 +23,11 @@ namespace Microsoft.Azure.SignalR
             _scaleTcs = needScaleTcs ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : null;
         }
 
-        internal HubServiceEndpoint() : base() { }
+        // for tests
+        internal HubServiceEndpoint() : base() 
+        {
+            _endpoint = new ServiceEndpoint();
+        }
 
         public string Hub { get; }
 
