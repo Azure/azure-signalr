@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public string Generate(string audience, TimeSpan? lifetime = null)
         {
-            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, _claims, lifetime ?? Constants.DefaultAccessTokenLifetime);
+            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, _claims, lifetime ?? Constants.Periods.DefaultAccessTokenLifetime);
         }
 
         private static string GenerateServerName()

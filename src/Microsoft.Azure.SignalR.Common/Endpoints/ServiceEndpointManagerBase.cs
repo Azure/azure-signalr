@@ -159,7 +159,7 @@ namespace Microsoft.Azure.SignalR
         {
             foreach (var hubEndpoint in _endpointsPerHub)
             {
-                var updatedEndpoints = endpoints.Where(e => e.Hub == hubEndpoint.Key).ToList();
+                var updatedEndpoints = endpoints.Where(e => e.Hub == hubEndpoint.Key);
                 var oldEndpoints = hubEndpoint.Value;
                 var newEndpoints = oldEndpoints.ToList();
                 switch (scaleOperation)

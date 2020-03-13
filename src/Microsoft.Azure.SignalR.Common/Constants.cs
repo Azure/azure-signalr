@@ -11,9 +11,6 @@ namespace Microsoft.Azure.SignalR
         public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
         public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
 
-        public const int DefaultShutdownTimeoutInSeconds = 30;
-        public const int DefaultScaleTimeoutInSeconds = 300;
-
         public const string AsrsMigrateFrom = "Asrs-Migrate-From";
         public const string AsrsMigrateTo = "Asrs-Migrate-To";
 
@@ -31,8 +28,16 @@ namespace Microsoft.Azure.SignalR
 
         public static readonly string ConnectionStringSecondaryKeyPrefix = $"{ConnectionStringSecondaryKey}:";
 
-        // Default access token lifetime
-        public static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
+        public static class Periods
+        {
+            public static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
+            public static readonly TimeSpan DefaultScaleTimeout = TimeSpan.FromMinutes(5);
+            public static readonly TimeSpan DefaultShutdownTimeout = TimeSpan.FromSeconds(30);
+            public static readonly TimeSpan RemoveFromServiceTimeout = TimeSpan.FromSeconds(5);
+
+            public static readonly TimeSpan DefaultStatusPingInterval = TimeSpan.FromSeconds(10);
+            public static readonly TimeSpan DefaultServersPingInterval = TimeSpan.FromSeconds(5);
+        }
 
         public static class ClaimType
         {

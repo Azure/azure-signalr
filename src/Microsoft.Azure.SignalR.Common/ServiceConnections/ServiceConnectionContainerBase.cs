@@ -19,11 +19,8 @@ namespace Microsoft.Azure.SignalR
         private const int MaxRetryRemoveSeverConnection = 24;
 
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
-        private static readonly TimeSpan RemoveFromServiceTimeout = TimeSpan.FromSeconds(5);
-        private static readonly TimeSpan DefaultStatusPingInterval = TimeSpan.FromSeconds(10);
-        private static readonly TimeSpan DefaultServersPingInterval = TimeSpan.FromSeconds(5);
         // Give (interval * 3 + 1) delay when check value expire.
-        private static readonly long DefaultServersPingTimeoutTicks = Stopwatch.Frequency * (DefaultServersPingInterval.Seconds * 3 + 1);
+        private static readonly long DefaultServersPingTimeoutTicks = Stopwatch.Frequency * (Constants.Periods.DefaultServersPingInterval.Seconds * 3 + 1);
         private static readonly Tuple<HashSet<string>, long> DefaultServerIdContext = new Tuple<HashSet<string>, long>(null, 0);
 
         private static readonly PingMessage _shutdownFinMessage = RuntimeServicePingMessage.GetFinPingMessage(false);
@@ -135,10 +132,10 @@ namespace Microsoft.Azure.SignalR
             FixedConnectionCount = initial.Count;
             ConnectionStatusChanged += OnStatusChanged;
 
-            _statusPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.ServiceStatus, WriteServiceStatusPingAsync, DefaultStatusPingInterval, DefaultStatusPingInterval);
+            _statusPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.ServiceStatus, WriteServiceStatusPingAsync, Constants.Periods.DefaultStatusPingInterval, Constants.Periods.DefaultStatusPingInterval);
             _statusPing.Start();
 
-            _serversPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServerIdsPingAsync, DefaultServersPingInterval, DefaultServersPingInterval);
+            _serversPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServerIdsPingAsync, Constants.Periods.DefaultServersPingInterval, Constants.Periods.DefaultServersPingInterval);
         }
 
         public Task StartAsync() => Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
@@ -387,7 +384,7 @@ namespace Microsoft.Azure.SignalR
                 using var source = new CancellationTokenSource();
                 _ = WriteFinAsync(c, migratable);
 
-                var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(RemoveFromServiceTimeout, source.Token));
+                var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(Constants.Periods.RemoveFromServiceTimeout, source.Token));
 
                 if (task == c.ConnectionOfflineTask)
                 {

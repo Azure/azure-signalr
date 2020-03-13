@@ -20,7 +20,6 @@ namespace Microsoft.Azure.SignalR
         private readonly IServiceEndpointManager _serviceEndpointManager;
         private readonly TimeSpan _scaleTimeout;
         private readonly Func<HubServiceEndpoint, IServiceConnectionContainer> _generator;
-        private readonly int _scaleWaitIntervalInSeconds = 5;
         private readonly object _lock = new object();
 
         private (bool needRouter, IReadOnlyList<HubServiceEndpoint> endpoints) _routerEndpoints;
@@ -42,7 +41,7 @@ namespace Microsoft.Azure.SignalR
             _router = router ?? throw new ArgumentNullException(nameof(router));
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
             _serviceEndpointManager = endpointManager;
-            _scaleTimeout = scaleTimeout ?? TimeSpan.FromSeconds(Constants.DefaultScaleTimeoutInSeconds);
+            _scaleTimeout = scaleTimeout ?? Constants.Periods.DefaultScaleTimeout;
 
             // Reserve generator for potential scale use.
             _generator = generator;
@@ -332,8 +331,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     return;
                 }
-                // status ping interval is 5 seconds, delay to do next check
-                await Task.Delay(_scaleWaitIntervalInSeconds * 1000);
+                await Task.Delay(Constants.Periods.DefaultServersPingInterval);
             }
             Log.TimeoutWaitingForAddingEndpoint(_logger, endpoint.ToString(), _scaleTimeout.Seconds);
         }
