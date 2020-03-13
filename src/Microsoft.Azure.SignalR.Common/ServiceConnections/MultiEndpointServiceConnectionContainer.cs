@@ -61,7 +61,6 @@ namespace Microsoft.Azure.SignalR
 
             _serviceEndpointManager.OnAdd += OnAdd;
             _serviceEndpointManager.OnRemove += OnRemove;
-            _serviceEndpointManager.OnRename += OnRename;
         }
 
         public MultiEndpointServiceConnectionContainer(
@@ -82,6 +81,7 @@ namespace Microsoft.Azure.SignalR
         {
         }
 
+        // for tests
         public IEnumerable<HubServiceEndpoint> GetOnlineEndpoints()
         {
             return _routerEndpoints.endpoints.Where(s => s.Online);
@@ -302,15 +302,6 @@ namespace Microsoft.Azure.SignalR
             // finally set task complete when timeout
             endpoint.CompleteScale();
             return Task.CompletedTask;
-        }
-
-        private void OnRename(HubServiceEndpoint endpoint)
-        {
-            if (!endpoint.Hub.Equals(_hubName, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-            // TODO: update local store names
         }
 
         private void UpdateEndpointsStore(HubServiceEndpoint newEndpoint, ScaleOperation operation)
