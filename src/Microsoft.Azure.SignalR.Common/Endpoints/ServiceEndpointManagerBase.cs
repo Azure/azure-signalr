@@ -161,12 +161,11 @@ namespace Microsoft.Azure.SignalR
             {
                 var updatedEndpoints = endpoints.Where(e => e.Hub == hubEndpoint.Key).ToList();
                 var oldEndpoints = hubEndpoint.Value;
-                var newEndpoints = new List<HubServiceEndpoint>();
+                var newEndpoints = oldEndpoints.ToList();
                 switch (scaleOperation)
                 {
                     case ScaleOperation.Add:
-                        newEndpoints = oldEndpoints.ToList();
-                        newEndpoints.AddRange(endpoints);
+                        newEndpoints.AddRange(updatedEndpoints);
                         break;
                     default:
                         break;
