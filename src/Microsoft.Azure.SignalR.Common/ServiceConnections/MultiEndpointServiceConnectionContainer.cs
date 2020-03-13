@@ -18,6 +18,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IMessageRouter _router;
         private readonly ILogger _logger;
         private readonly IServiceEndpointManager _serviceEndpointManager;
+        private readonly object _lock = new object();
 
         // <needRouter, endpoints>
         private (bool needRouter, IReadOnlyList<HubServiceEndpoint> endpoints) _routerEndpoints;
@@ -53,7 +54,6 @@ namespace Microsoft.Azure.SignalR
 
             _serviceEndpointManager.OnAdd += OnAdd;
             _serviceEndpointManager.OnRemove += OnRemove;
-            _serviceEndpointManager.OnRename += OnRename;
         }
 
         public MultiEndpointServiceConnectionContainer(
@@ -73,7 +73,8 @@ namespace Microsoft.Azure.SignalR
         {
         }
 
-        public IEnumerable<ServiceEndpoint> GetOnlineEndpoints()
+        // for tests
+        public IEnumerable<HubServiceEndpoint> GetOnlineEndpoints()
         {
             return _routerEndpoints.endpoints.Where(s => s.Online);
         }
@@ -275,15 +276,6 @@ namespace Microsoft.Azure.SignalR
             // finally set task complete when timeout
             endpoint.CompleteScale();
             return Task.CompletedTask;
-        }
-
-        private void OnRename(HubServiceEndpoint endpoint)
-        {
-            if (!endpoint.Hub.Equals(_hubName, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-            // TODO: update local store names
         }
 
         private static class Log
