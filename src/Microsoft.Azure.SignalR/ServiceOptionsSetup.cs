@@ -44,20 +44,20 @@ namespace Microsoft.Azure.SignalR
 
         private (string AppName, string ConnectionString, ServerStickyMode StickyMode, ServiceEndpoint[] Endpoints) ParseConfiguration()
         {
-            var appName = _configuration[Constants.ApplicationNameDefaultKeyPrefix];
+            var appName = _configuration[Constants.Keys.ApplicationNameDefaultKeyPrefix];
             var stickyMode = ServerStickyMode.Disabled;
-            var mode = _configuration[Constants.ServerStickyModeDefaultKey];
+            var mode = _configuration[Constants.Keys.ServerStickyModeDefaultKey];
             if (!string.IsNullOrEmpty(mode))
             {
                 Enum.TryParse(mode, true, out stickyMode);
             }
 
-            var (connectionString, endpoints) = GetEndpoint(_configuration, Constants.ConnectionStringDefaultKey);
+            var (connectionString, endpoints) = GetEndpoint(_configuration, Constants.Keys.ConnectionStringDefaultKey);
 
             // Fallback to ConnectionStrings:Azure:SignalR:ConnectionString format when the default one is not available
             if (connectionString == null && endpoints.Length == 0)
             {
-                (connectionString, endpoints) = GetEndpoint(_configuration, Constants.ConnectionStringSecondaryKey);
+                (connectionString, endpoints) = GetEndpoint(_configuration, Constants.Keys.ConnectionStringSecondaryKey);
             }
 
             return (appName, connectionString, stickyMode, endpoints);

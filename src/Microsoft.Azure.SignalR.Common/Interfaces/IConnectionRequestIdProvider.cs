@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR
     {
         public string GetRequestId()
         {
-            return AuthenticationHelper.GenerateRequestId();
+            return AuthUtility.GenerateRequestId();
         }
     }
 }
