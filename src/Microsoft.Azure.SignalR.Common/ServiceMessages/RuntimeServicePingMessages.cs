@@ -62,18 +62,17 @@ namespace Microsoft.Azure.SignalR
             return true;
         }
 
-        public static bool TryGetServerIds(this ServicePingMessage ping, out HashSet<string> serverIds, out long updatedTime)
+        public static bool TryGetServerIds(this ServicePingMessage ping, out string serverIds, out long updatedTime)
         {
             // servers ping format: { "servers", "1234567890:server1;server2;server3" }
             if (!TryGetValue(ping, ServersKey, out var value) || string.IsNullOrEmpty(value)
                 || !long.TryParse(value.Substring(0, value.IndexOf(":")), out updatedTime))
             {
-                serverIds = null;
+                serverIds = string.Empty;
                 updatedTime = DateTime.MinValue.Ticks;
                 return false;
             }
-            var servers = value.Substring(value.IndexOf(":") + 1);
-            serverIds = new HashSet<string>(servers.Split(new char[] { ServerListSeparator }, StringSplitOptions.RemoveEmptyEntries));
+            serverIds = value.Substring(value.IndexOf(":") + 1);
             return true;
         }
 

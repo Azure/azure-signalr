@@ -109,7 +109,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public HashSet<string> GlobalServerIds => throw new NotSupportedException();
+        public string GlobalServerIds => throw new NotSupportedException();
 
         public bool HasClients => throw new NotSupportedException();
 
@@ -265,7 +265,7 @@ namespace Microsoft.Azure.SignalR
 
             try
             {
-                _ = container.StartAsync();
+                await container.StartAsync();
 
                 // Update local store directly after start connection 
                 // to get a uniformed action on trigger servers ping
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.SignalR
         private bool IsServerReady(IServiceConnectionContainer container)
         {
             var serversOnNew = container.GlobalServerIds;
-            var allMatch = serversOnNew?.Count > 0;
+            var allMatch = !string.IsNullOrEmpty(serversOnNew);
             if (!allMatch)
             {
                 // return directly if local server list is not set yet.
@@ -349,8 +349,8 @@ namespace Microsoft.Azure.SignalR
             // ensure strong consistency of server Ids for new endpoint towards exists
             foreach (var endpoint in _routerEndpoints.endpoints)
             {
-                allMatch = endpoint.ConnectionContainer.GlobalServerIds != null 
-                    && serversOnNew.SetEquals(endpoint.ConnectionContainer.GlobalServerIds) 
+                allMatch = !string.IsNullOrEmpty(endpoint.ConnectionContainer.GlobalServerIds) 
+                    && serversOnNew.Equals(endpoint.ConnectionContainer.GlobalServerIds, StringComparison.OrdinalIgnoreCase) 
                     && allMatch;
                 if (!allMatch)
                 {

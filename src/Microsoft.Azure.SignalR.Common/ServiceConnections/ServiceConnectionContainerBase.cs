@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
         // Give (interval * 3 + 1) delay when check value expire.
         private static readonly long DefaultServersPingTimeoutTicks = Stopwatch.Frequency * (Constants.Periods.DefaultServersPingInterval.Seconds * 3 + 1);
-        private static readonly Tuple<HashSet<string>, long> DefaultServerIdContext = new Tuple<HashSet<string>, long>(null, 0);
+        private static readonly Tuple<string, long> DefaultServerIdContext = new Tuple<string, long>(string.Empty, 0);
 
         private static readonly PingMessage _shutdownFinMessage = RuntimeServicePingMessage.GetFinPingMessage(false);
         private static readonly PingMessage _shutdownFinMigratableMessage = RuntimeServicePingMessage.GetFinPingMessage(true);
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR
         private volatile ServiceConnectionStatus _status;
 
         // <serverIds, lastServerIdsTimestamp>
-        private volatile Tuple<HashSet<string>, long> _serverIdContext = DefaultServerIdContext;
+        private volatile Tuple<string, long> _serverIdContext = DefaultServerIdContext;
         private volatile bool _hasClients;
         private volatile bool _terminated = false;
 
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.SignalR
 
         public event Action<StatusChange> ConnectionStatusChanged;
 
-        public HashSet<string> GlobalServerIds => _serverIdContext.Item1;
+        public string GlobalServerIds => _serverIdContext.Item1;
 
         public bool HasClients => _hasClients;
 
