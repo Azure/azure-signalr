@@ -99,20 +99,20 @@ namespace Microsoft.Azure.SignalR
 
         internal static (string, EndpointType) ParseKey(string key)
         {
-            if (key == Constants.ConnectionStringDefaultKey || key == Constants.ConnectionStringSecondaryKey)
+            if (key == Constants.Keys.ConnectionStringDefaultKey || key == Constants.Keys.ConnectionStringSecondaryKey)
             {
                 return (string.Empty, EndpointType.Primary);
             }
 
-            if (key.StartsWith(Constants.ConnectionStringKeyPrefix))
+            if (key.StartsWith(Constants.Keys.ConnectionStringKeyPrefix))
             {
                 // Azure:SignalR:ConnectionString:<name>:<type>
-                return ParseKeyWithPrefix(key, Constants.ConnectionStringKeyPrefix);
+                return ParseKeyWithPrefix(key, Constants.Keys.ConnectionStringKeyPrefix);
             }
 
-            if (key.StartsWith(Constants.ConnectionStringSecondaryKey))
+            if (key.StartsWith(Constants.Keys.ConnectionStringSecondaryKey))
             {
-                return ParseKeyWithPrefix(key, Constants.ConnectionStringSecondaryKey);
+                return ParseKeyWithPrefix(key, Constants.Keys.ConnectionStringSecondaryKey);
             }
 
             throw new ArgumentException($"Invalid format: {key}", nameof(key));
