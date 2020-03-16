@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR.Tests
             ServerNameProvider = new DefaultServerNameProvider();
 
             // these two lines should be located in the end of this constructor.
-            ServiceConnectionContainer = new StrongServiceConnectionContainer(this, connectionCount, new HubServiceEndpoint("", null, null), NullLogger.Instance);
+            ServiceConnectionContainer = new StrongServiceConnectionContainer(this, connectionCount, new HubServiceEndpoint(), NullLogger.Instance);
             ServiceMessageHandler = (StrongServiceConnectionContainer) ServiceConnectionContainer;
         }
 

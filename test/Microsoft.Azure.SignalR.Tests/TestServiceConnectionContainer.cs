@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -16,8 +17,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public bool MockOffline { get; set; } = false;
 
-        public TestServiceConnectionContainer(List<IServiceConnection> serviceConnections, HubServiceEndpoint endpoint = null, AckHandler ackHandler = null, IServiceConnectionFactory factory = null)
-            : base(factory, 0, endpoint, serviceConnections, ackHandler: ackHandler, logger: NullLogger.Instance)
+        public TestServiceConnectionContainer(List<IServiceConnection> serviceConnections, HubServiceEndpoint endpoint = null, AckHandler ackHandler = null, IServiceConnectionFactory factory = null, ILogger logger = null)
+            : base(factory, 0, endpoint, serviceConnections, ackHandler: ackHandler, logger: logger ?? NullLogger.Instance)
         {
         }
 

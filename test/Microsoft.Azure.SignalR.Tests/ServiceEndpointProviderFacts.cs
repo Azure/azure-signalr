@@ -204,5 +204,31 @@ namespace Microsoft.Azure.SignalR.Tests
 
             Assert.Equal(expectedTokenString, tokenString);
         }
+
+        [Theory]
+        [InlineData(AccessTokenAlgorithm.HS256)]
+        [InlineData(AccessTokenAlgorithm.HS512)]
+        public void GenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
+        {
+            var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
+            var generatedToken = provider.GenerateServerAccessToken("hub1", "user1");
+
+            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(generatedToken);
+
+            Assert.Equal(algorithm.ToString(), token.SignatureAlgorithm);
+        }
+
+        [Theory]
+        [InlineData(AccessTokenAlgorithm.HS256)]
+        [InlineData(AccessTokenAlgorithm.HS512)]
+        public void GenerateClientAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
+        {
+            var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
+            var generatedToken = provider.GenerateClientAccessToken("hub1");
+
+            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(generatedToken);
+
+            Assert.Equal(algorithm.ToString(), token.SignatureAlgorithm);
+        }
     }
 }

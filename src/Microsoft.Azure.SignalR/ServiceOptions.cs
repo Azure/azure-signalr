@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -42,6 +43,12 @@ namespace Microsoft.Azure.SignalR
         public TimeSpan AccessTokenLifetime { get; set; } = Constants.DefaultAccessTokenLifetime;
 
         /// <summary>
+        /// Gets or sets the access token generate algorithm, supports <see cref="SecurityAlgorithms.HmacSha256"/> or <see cref="SecurityAlgorithms.HmacSha512"/>
+        /// Default value is <see cref="SecurityAlgorithms.HmacSha256"/>
+        /// </summary>
+        public AccessTokenAlgorithm AccessTokenAlgorithm { get; set; } = AccessTokenAlgorithm.HS256;
+
+        /// <summary>
         /// Gets or sets list of endpoints
         /// </summary>
         public ServiceEndpoint[] Endpoints { get; set; }
@@ -76,5 +83,11 @@ namespace Microsoft.Azure.SignalR
         /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
         /// </summary>
         public IWebProxy Proxy { get; set; }
+
+        /// <summary>
+        /// Gets or sets timeout waiting when scale multiple Azure SignalR Service endpoints.
+        /// Default value is 5 minutes
+        /// </summary>
+        internal TimeSpan ServiceScaleTimeout { get; set; } = TimeSpan.FromSeconds(Constants.DefaultScaleTimeoutInSeconds);
     }
 }

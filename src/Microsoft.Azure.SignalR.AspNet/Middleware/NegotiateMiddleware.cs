@@ -43,6 +43,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly ServerStickyMode _mode;
         private readonly bool _enableDetailedErrors;
         private readonly int _endpointsCount;
+        private readonly AccessTokenAlgorithm _authAlgorithm;
 
         public NegotiateMiddleware(OwinMiddleware next, HubConfiguration configuration, string appName, IServiceEndpointManager endpointManager, IEndpointRouter router, ServiceOptions options, IServerNameProvider serverNameProvider, IConnectionRequestIdProvider connectionRequestIdProvider, ILoggerFactory loggerFactory)
             : base(next)
@@ -59,6 +60,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _mode = options.ServerStickyMode;
             _enableDetailedErrors = configuration.EnableDetailedErrors;
             _endpointsCount = options.Endpoints.Length;
+            _authAlgorithm = options.AccessTokenAlgorithm;
         }
 
         public override Task Invoke(IOwinContext owinContext)
