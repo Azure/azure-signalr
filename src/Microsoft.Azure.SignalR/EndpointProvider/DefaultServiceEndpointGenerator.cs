@@ -13,16 +13,13 @@ namespace Microsoft.Azure.SignalR
 
         public string Endpoint { get; }
 
-        public string AccessKey { get; }
-
         public string Version { get; }
 
         public int? Port { get; }
 
-        public DefaultServiceEndpointGenerator(string endpoint, string accessKey, string version, int? port)
+        public DefaultServiceEndpointGenerator(string endpoint, string version, int? port)
         {
             Endpoint = endpoint;
-            AccessKey = accessKey;
             Version = version;
             Port = port;
         }
