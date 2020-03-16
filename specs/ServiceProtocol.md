@@ -95,6 +95,22 @@ Service supports various scenarios in SignalR to send data from Server to multip
 - When Server wants to send data to a specific group, a `GroupBroadcastData` message is sent to Service.
 - When Server wants to send data to a couple of groups, a `MultiGroupBroadcastData` message is sent to Service.
 
+### SignalR service pings
+
+Service enable pings for various scenarios of feature support and status sync between server and service.
+
+Key | Value | Direction | Description
+---|---|---|---
+EMPTY | EMPTY | Both | Keep server connection alive ping
+`target` | `<instanceId>` | Service -> Server | Rebalance ping to request server connection to improve availability
+`status` | EMPTY | Server -> Service | Request to know whether service has clients
+`status` | `0` or `1` | Service -> Server | Response to `status` ping of whether service has clients
+`offline` | `fin:0` | Server -> Service | Request to drop clients for non-migratable server connections
+`offline` | `fin:1` | Server -> Service | Request to migrate client connections
+`offline` | `finack` | Service -> Server | Response of received `offline` request
+`servers` | EMPTY | Server -> Service | Request to get all server ids connect to the service 
+`servers` | `<timestamp>:<server1>;<server2>` | Service -> Server | Response of `servers` ping of all server ids
+
 ## Message Encodings
 
 In Azure SignalR Service Protocol, each message is represented as a single MessagePack array containing items that correspond to properties of the given service message.
@@ -132,9 +148,10 @@ MessagePack uses different formats to encode values. Refer to the [MessagePack F
 ### Ping Message
  `Ping` messages have the following structure.
 ```
-[3]
+[3, Messages]
 ```
 - 3 - Message Type, indicating this is a `Ping` message.
+- Messages - An `Array` of `String` indicates `Ping` message type and value.
 
 #### Example: TODO
 

@@ -4,9 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Linq;
 using System.Net;
 using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.Owin;
 
 namespace Microsoft.Azure.SignalR.AspNet
@@ -45,6 +45,12 @@ namespace Microsoft.Azure.SignalR.AspNet
         public TimeSpan AccessTokenLifetime { get; set; } = Constants.DefaultAccessTokenLifetime;
 
         /// <summary>
+        /// Gets or sets the access token generate algorithm, supports <see cref="SecurityAlgorithms.HmacSha256"/> or <see cref="SecurityAlgorithms.HmacSha512"/>
+        /// Default value is <see cref="SecurityAlgorithms.HmacSha256"/>
+        /// </summary>
+        public AccessTokenAlgorithm AccessTokenAlgorithm { get; set; } = AccessTokenAlgorithm.HS256;
+
+        /// <summary>
         /// Customize the multiple endpoints used
         /// </summary>
         public ServiceEndpoint[] Endpoints { get; set; }
@@ -69,11 +75,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 var setting = ConfigurationManager.ConnectionStrings[i];
 
-                if (setting.Name == Constants.ConnectionStringDefaultKey)
+                if (setting.Name == Constants.Keys.ConnectionStringDefaultKey)
                 {
                     connectionString = setting.ConnectionString;
                 }
-                else if (setting.Name.StartsWith(Constants.ConnectionStringKeyPrefix) && !string.IsNullOrEmpty(setting.ConnectionString))
+                else if (setting.Name.StartsWith(Constants.Keys.ConnectionStringKeyPrefix) && !string.IsNullOrEmpty(setting.ConnectionString))
                 {
                     endpoints.Add(new ServiceEndpoint(setting.Name, setting.ConnectionString));
                 }
@@ -84,11 +90,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 foreach (var key in ConfigurationManager.AppSettings.AllKeys)
                 {
-                    if (key == Constants.ConnectionStringDefaultKey)
+                    if (key == Constants.Keys.ConnectionStringDefaultKey)
                     {
                         connectionString = ConfigurationManager.AppSettings[key];
                     }
-                    else if (key.StartsWith(Constants.ConnectionStringKeyPrefix))
+                    else if (key.StartsWith(Constants.Keys.ConnectionStringKeyPrefix))
                     {
                         var value = ConfigurationManager.AppSettings[key];
                         if (!string.IsNullOrEmpty(value))

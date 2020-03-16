@@ -8,6 +8,7 @@ namespace Microsoft.Azure.SignalR
     internal class HubServiceEndpoint : ServiceEndpoint
     {
         private readonly TaskCompletionSource<bool> _scaleTcs;
+        private readonly ServiceEndpoint _endpoint;
 
         public HubServiceEndpoint(
             string hub, 
@@ -18,12 +19,19 @@ namespace Microsoft.Azure.SignalR
         {
             Hub = hub;
             Provider = provider;
+            _endpoint = endpoint;
             _scaleTcs = needScaleTcs ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : null;
         }
 
-        internal HubServiceEndpoint() : base() { }
+        // for tests
+        internal HubServiceEndpoint() : base() 
+        {
+            _endpoint = new ServiceEndpoint();
+        }
 
         public string Hub { get; }
+
+        public override string Name => _endpoint.Name;
 
         public IServiceEndpointProvider Provider { get; }
 
