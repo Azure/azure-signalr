@@ -127,6 +127,36 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             Assert.Equal(expectedEndpoint, clientEndpoint);
         }
 
+        [Theory]
+        [InlineData(AccessTokenAlgorithm.HS256)]
+        [InlineData(AccessTokenAlgorithm.HS512)]
+        public void TestGenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
+        {
+            var connectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
+            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
+            var generatedToken = provider.GenerateServerAccessToken("hub1", "user1");
+
+            var handler = new JwtSecurityTokenHandler();
+            var token = handler.ReadJwtToken(generatedToken);
+
+            Assert.Equal(algorithm.ToString(), token.SignatureAlgorithm);
+        }
+
+        [Theory]
+        [InlineData(AccessTokenAlgorithm.HS256)]
+        [InlineData(AccessTokenAlgorithm.HS512)]
+        public void TestGenerateClientAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
+        {
+            var connectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
+            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
+            var generatedToken = provider.GenerateClientAccessToken("hub1");
+
+            var handler = new JwtSecurityTokenHandler();
+            var token = handler.ReadJwtToken(generatedToken);
+
+            Assert.Equal(algorithm.ToString(), token.SignatureAlgorithm);
+        }
+
         [Fact(Skip = "Access token does not need to be unique")]
         public void GenerateMutlipleAccessTokenShouldBeUnique()
         {

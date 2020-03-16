@@ -26,13 +26,19 @@ namespace Microsoft.Azure.SignalR
             DateTime? expires = null,
             string signingKey = null,
             DateTime? issuedAt = null,
-            DateTime? notBefore = null)
+            DateTime? notBefore = null,
+            AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
         {
             var subject = claims == null ? null : new ClaimsIdentity(claims);
-            return GenerateJwtBearer(issuer, audience, subject, expires, signingKey, issuedAt, notBefore);
+            return GenerateJwtBearer(issuer, audience, subject, expires, signingKey, issuedAt, notBefore, algorithm);
         }
 
-        public static string GenerateAccessToken(string signingKey, string audience, IEnumerable<Claim> claims, TimeSpan lifetime)
+        public static string GenerateAccessToken(
+            string signingKey, 
+            string audience, 
+            IEnumerable<Claim> claims, 
+            TimeSpan lifetime,
+            AccessTokenAlgorithm algorithm)
         {
             var expire = DateTime.UtcNow.Add(lifetime);
 
@@ -40,7 +46,8 @@ namespace Microsoft.Azure.SignalR
                 audience: audience,
                 claims: claims,
                 expires: expire,
-                signingKey: signingKey
+                signingKey: signingKey,
+                algorithm: algorithm
             );
 
             if (jwtToken.Length > MaxTokenLength)
@@ -63,7 +70,8 @@ namespace Microsoft.Azure.SignalR
             DateTime? expires = null,
             string signingKey = null,
             DateTime? issuedAt = null,
-            DateTime? notBefore = null)
+            DateTime? notBefore = null,
+            AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
         {
             SigningCredentials credentials = null;
             if (!string.IsNullOrEmpty(signingKey))
@@ -72,7 +80,7 @@ namespace Microsoft.Azure.SignalR
                 // From version 5.5.0, SignatureProvider caching is turned On by default, assign KeyId to enable correct cache for same SigningKey
                 var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
                 securityKey.KeyId = signingKey;
-                credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+                credentials = new SigningCredentials(securityKey, GetSecurityAlgorithm(algorithm));
             }
 
             var token = JwtTokenHandler.CreateJwtSecurityToken(
@@ -84,6 +92,13 @@ namespace Microsoft.Azure.SignalR
                 issuedAt: issuedAt,
                 signingCredentials: credentials);
             return JwtTokenHandler.WriteToken(token);
+        }
+
+        private static string GetSecurityAlgorithm(AccessTokenAlgorithm algorithm)
+        {
+            return algorithm == AccessTokenAlgorithm.HS256 ?
+                SecurityAlgorithms.HmacSha256 :
+                SecurityAlgorithms.HmacSha512;
         }
     }
 }

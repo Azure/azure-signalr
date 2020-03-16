@@ -19,6 +19,7 @@ namespace Microsoft.Azure.SignalR
         private readonly string _appName;
         private readonly TimeSpan _accessTokenLifetime;
         private readonly IServiceEndpointGenerator _generator;
+        private readonly AccessTokenAlgorithm _algorithm;
 
         public IWebProxy Proxy { get; }
 
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.SignalR
             _accessTokenLifetime = serviceOptions.AccessTokenLifetime;
             _accessKey = endpoint.AccessKey;
             _appName = serviceOptions.ApplicationName;
+            _algorithm = serviceOptions.AccessTokenAlgorithm;
             Proxy = serviceOptions.Proxy;
 
             var port = endpoint.Port;
@@ -50,7 +52,7 @@ namespace Microsoft.Azure.SignalR
 
             var audience = _generator.GetClientAudience(hubName, _appName);
 
-            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime);
+            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
         public string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null)
@@ -63,7 +65,7 @@ namespace Microsoft.Azure.SignalR
             var audience = _generator.GetServerAudience(hubName, _appName);
             var claims = userId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, userId) } : null;
 
-            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime);
+            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
         public string GetClientEndpoint(string hubName, string originalPath, string queryString)
