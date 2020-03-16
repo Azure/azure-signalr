@@ -4,9 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Linq;
 using System.Net;
 using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.Owin;
 
 namespace Microsoft.Azure.SignalR.AspNet
@@ -43,6 +43,12 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// Default value is one hour.
         /// </summary>
         public TimeSpan AccessTokenLifetime { get; set; } = Constants.DefaultAccessTokenLifetime;
+
+        /// <summary>
+        /// Gets or sets the access token generate algorithm, supports <see cref="SecurityAlgorithms.HmacSha256"/> or <see cref="SecurityAlgorithms.HmacSha512"/>
+        /// Default value is <see cref="SecurityAlgorithms.HmacSha256"/>
+        /// </summary>
+        public AccessTokenAlgorithm AccessTokenAlgorithm { get; set; } = AccessTokenAlgorithm.HS256;
 
         /// <summary>
         /// Customize the multiple endpoints used
