@@ -3,8 +3,10 @@
 
 namespace Microsoft.Azure.SignalR
 {
-    interface IServiceConnectionContainerFactory
+    internal enum ScaleOperation
     {
-        IMultiEndpointServiceConnectionContainer Create(string hub);
+        Add,
+        Remove,
+        Rename
     }
 }

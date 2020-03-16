@@ -1,7 +1,7 @@
-﻿{
+{
   "iisSettings": {
-    "windowsAuthentication": false, 
-    "anonymousAuthentication": true, 
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
     "iisExpress": {
       "applicationUrl": "http://localhost:8080",
       "sslPort": 0
@@ -15,13 +15,12 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "ChatSample.Core3": {
+    "ChatSample": {
       "commandName": "Project",
       "launchBrowser": true,
-      "applicationUrl": "https://localhost:5050",
+      "applicationUrl": "http://localhost:5050",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.Azure.SignalR"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "ServerOnly": {

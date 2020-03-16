@@ -4,25 +4,28 @@
 >
 > Azure SignalR Service only supports REST API for ASP.NET CORE SignalR applications.
 
-- [REST API in Azure SignalR Service](#rest-api-in-azure-signalr-service)
-  - [Typical Server-less Architecture with Azure Functions](#typical-server-less-architecture-with-azure-functions)
-  - [API](#api)
-    - [Broadcast message to all clients](#broadcast-message-to-all-clients)
-    - [Broadcast message to a group](#broadcast-message-to-a-group)
-    - [Send message to a user](#send-message-to-a-user)
-    - [Add a connection to a group](#add-a-connection-to-a-group)
-    - [Remove a connection from a group](#remove-a-connection-from-a-group)
-    - [Add a user to a group](#add-a-user-to-a-group)
-    - [Remove a user from a group](#remove-a-user-from-a-group)
-    - [Remove a user from all groups](#remove-a-user-from-all-groups)
-    - [Check user existence in a group](#check-user-existence-in-a-group)
-  - [Using REST API](#using-rest-api)
-    - [Authentication](#authentication)
-      - [Signing Algorithm and Signature](#signing-algorithm-and-signature)
-      - [Claims](#claims)
-    - [Implement Negotiate Endpoint](#implement-negotiate-endpoint)
-    - [User-related REST API](#user-related-rest-api)
-    - [Sample](#sample)
+- [REST API in Azure SignalR Service](#REST-API-in-Azure-SignalR-Service)
+  - [Typical Server-less Architecture with Azure Functions](#Typical-Server-less-Architecture-with-Azure-Functions)
+  - [API](#API)
+    - [Broadcast message to all clients](#Broadcast-message-to-all-clients)
+    - [Broadcast message to a group](#Broadcast-message-to-a-group)
+    - [Send message to a user](#Send-message-to-a-user)
+    - [Send message to a connection](#Send-message-to-a-connection)
+    - [Add a connection to a group](#Add-a-connection-to-a-group)
+    - [Remove a connection from a group](#Remove-a-connection-from-a-group)
+    - [Add a user to a group](#Add-a-user-to-a-group)
+    - [Remove a user from a group](#Remove-a-user-from-a-group)
+    - [Check user existence in a group](#Check-user-existence-in-a-group)
+    - [Remove a user from all groups](#Remove-a-user-from-all-groups)
+    - [Close a client connection](#Close-a-client-connection)
+    - [Service Health](#Service-Health)
+  - [Using REST API](#Using-REST-API)
+    - [Authentication](#Authentication)
+      - [Signing Algorithm and Signature](#Signing-Algorithm-and-Signature)
+      - [Claims](#Claims)
+    - [Implement Negotiate Endpoint](#Implement-Negotiate-Endpoint)
+    - [User-related REST API](#User-related-REST-API)
+    - [Sample](#Sample)
 
 On top of classical client-server pattern, Azure SignalR Service provides a set of REST APIs, so that you can easily integrate real-time functionality into your server-less architecture.
 
@@ -60,9 +63,15 @@ API | `1.0-preview` | `1.0`
 Broadcast to a few groups | :heavy_check_mark: (Deprecated) | `N/A`
 [Send to a user](#send-user) | :heavy_check_mark: | :heavy_check_mark:
 Send to a few users | :heavy_check_mark: (Deprecated) | `N/A`
+[Send to a connection](#Send-message-to-a-connection) | `N/A` | :heavy_check_mark:
+[Add a connection to a group](#Add-a-connection-to-a-group) | `N/A` | :heavy_check_mark:
+[Remove a connection from a group](#Remove-a-connection-from-a-group) | `N/A` | :heavy_check_mark:
 [Add a user to a group](#add-user-to-group) | `N/A` | :heavy_check_mark:
 [Remove a user from a group](#remove-user-from-group) | `N/A` | :heavy_check_mark:
+[Check user existence](#Check-user-existence-in-a-group) | `N/A` | :heavy_check_mark:
 [Remove a user from all groups](#remove-user-from-all-groups) | `N/A` | :heavy_check_mark: 
+[Close a client connection](#Close-a-client-connection) | `N/A` | :heavy_check_mark:
+[Service Health](#Service-Health) | `N/A` | :heavy_check_mark:
 
 <a name="broadcast"></a>
 
@@ -74,6 +83,7 @@ API Version | HTTP Method | Request URL | Request Body
 `1.0` | `POST` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>` | Same as above
 
 <a name="broadcast-group"></a>
+
 ### Broadcast message to a group
 
 API Version | HTTP Method | Request URL | Request Body
@@ -82,6 +92,7 @@ API Version | HTTP Method | Request URL | Request Body
 `1.0` | `POST` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>` | Same as above
 
 <a name="send-user"></a>
+
 ### Send message to a user
 
 API Version | HTTP Method | Request URL | Request Body
@@ -89,7 +100,16 @@ API Version | HTTP Method | Request URL | Request Body
 `1.0-preview` | `POST` | `https://<instance-name>.service.signalr.net/api/v1-preview/hub/<hub-name>/user/<user-id>` | `{ "target":"<method-name>", "arguments":[ ... ] }`
 `1.0` | `POST` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>` | Same as above
 
+<a name="send-connection"></a>
+
+### Send message to a connection
+
+API Version | HTTP Method | Request URL | Request Body
+---|---|---|---
+`1.0` | `POST` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/connections/<connection-id>` | `{ "target":"<method-name>", "arguments":[ ... ] }`
+
 <a name="add-connection-to-group"></a>
+
 ### Add a connection to a group
 
 API Version | HTTP Method | Request URL
@@ -98,6 +118,7 @@ API Version | HTTP Method | Request URL
 `1.0` | `PUT` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/connections/<connection-id>/groups/<group-name>`
 
 <a name="remove-connection-from-group"></a>
+
 ### Remove a connection from a group
 
 API Version | HTTP Method | Request URL
@@ -106,6 +127,7 @@ API Version | HTTP Method | Request URL
 `1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/connections/<connection-id>/groups/<group-name>`
 
 <a name="add-user-to-group"></a>
+
 ### Add a user to a group
 
 API Version | HTTP Method | Request URL
@@ -124,20 +146,49 @@ API Version | HTTP Method | Request URL
 `1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/users/<user-id>`
 `1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups/<group-name>`
 
+<a name="check-user-existence"></a>
+
+### Check user existence in a group
+
+API Version | HTTP Method | Request URL
+---|---|---
+`1.0` | `GET` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups/<group-name>`
+`1.0` | `GET` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/users/<user-id>` 
+
+Response Status Code | Description
+---|---
+`200` | User exists
+`404` | User not exists
 
 <a name="remove-user-from-all-groups"></a>
 
 ### Remove a user from all groups
 
-| API Version | HTTP Method | Request URL                                                  |
-| ----------- | ----------- | ------------------------------------------------------------ |
-| `1.0`       | `DELETE`    | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups` |
+API Version | HTTP Method | Request URL
+---|---|---
+`1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups`
 
-### Check user existence in a group
-| API Version | HTTP Method | Request URL                                                  |
-| ----------- | ----------- | ------------------------------------------------------------ |
-| `1.0`       | `GET`    | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups/<group-name>` |
-| `1.0`       | `GET`    | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/users/<user-id>`  |
+<a name="close-connection"></a>
+
+### Close a client connection
+
+API Version | HTTP Method | Request URL
+---|---|---
+`1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/connections/<connection-id>`
+`1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/connections/<connection-id>?reason=<close-reason>`
+
+<a name="health-api"></a>
+
+### Service Health
+
+API Version | HTTP Method | Request URL
+---|---|---                             
+`1.0` | `GET` | `https://<instance-name>.service.signalr.net/api/v1/health`
+
+Response Status Code | Description
+---|---
+`200` | Service Good
+`503` | Service Unavailable
 
 ## Using REST API
 

@@ -7,21 +7,21 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class MultiEndpointServiceConnectionContainer : IServiceConnectionContainer
+    internal class MultiEndpointServiceConnectionContainer : IMultiEndpointServiceConnectionContainer
     {
+        private readonly string _hubName;
         private readonly IMessageRouter _router;
         private readonly ILogger _logger;
-        private readonly IServiceConnectionContainer _inner;
+        private readonly IServiceEndpointManager _serviceEndpointManager;
+        private readonly object _lock = new object();
 
-        private IReadOnlyList<HubServiceEndpoint> _endpoints;
-
-        public Dictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; }
+        // <needRouter, endpoints>
+        private (bool needRouter, IReadOnlyList<HubServiceEndpoint> endpoints) _routerEndpoints;
 
         internal MultiEndpointServiceConnectionContainer(
             string hub,
@@ -35,21 +35,25 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(generator));
             }
 
+            _hubName = hub;
+            _router = router ?? throw new ArgumentNullException(nameof(router));
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
-
+            _serviceEndpointManager = endpointManager;
+            
             // provides a copy to the endpoint per container
-            _endpoints = endpointManager.GetEndpoints(hub);
+            var endpoints = endpointManager.GetEndpoints(hub);
+            // router will be used when there's customized MessageRouter or multiple endpoints
+            var needRouter = endpoints.Count > 1 || !(_router is DefaultMessageRouter);
 
-            if (_endpoints.Count == 1)
+            _routerEndpoints = (needRouter, endpoints);
+
+            foreach (var endpoint in endpoints)
             {
-                _inner = generator(_endpoints[0]);
+                endpoint.ConnectionContainer = generator(endpoint);
             }
-            else
-            {
-                // router is required when endpoints > 1
-                _router = router ?? throw new ArgumentNullException(nameof(router));
-                ConnectionContainers = _endpoints.ToDictionary(s => (ServiceEndpoint)s, s => generator(s));
-            }
+
+            _serviceEndpointManager.OnAdd += OnAdd;
+            _serviceEndpointManager.OnRemove += OnRemove;
         }
 
         public MultiEndpointServiceConnectionContainer(
@@ -69,9 +73,10 @@ namespace Microsoft.Azure.SignalR
         {
         }
 
-        public IEnumerable<ServiceEndpoint> GetOnlineEndpoints()
+        // for tests
+        public IEnumerable<HubServiceEndpoint> GetOnlineEndpoints()
         {
-            return ConnectionContainers.Keys.Where(s => s.Online);
+            return _routerEndpoints.endpoints.Where(s => s.Online);
         }
 
         private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, HubServiceEndpoint endpoint, int count, ILoggerFactory loggerFactory)
@@ -92,72 +97,45 @@ namespace Microsoft.Azure.SignalR
         {
             get
             {
-                if (_inner != null)
-                {
-                    return _inner.ConnectionInitializedTask;
-                }
-
-                return Task.WhenAll(from connection in ConnectionContainers
-                                    select connection.Value.ConnectionInitializedTask);
+                return Task.WhenAll(from connection in _routerEndpoints.endpoints
+                                    select connection.ConnectionContainer.ConnectionInitializedTask);
             }
         }
 
+        public HashSet<string> GlobalServerIds => throw new NotSupportedException();
+
+        public bool HasClients => throw new NotSupportedException();
+
         public Task StartAsync()
         {
-            if (_inner != null)
+            return Task.WhenAll(_routerEndpoints.endpoints.Select(s =>
             {
-                return _inner.StartAsync();
-            }
-
-            return Task.WhenAll(ConnectionContainers.Select(s =>
-            {
-                Log.StartingConnection(_logger, s.Key.Endpoint);
-                return s.Value.StartAsync();
+                Log.StartingConnection(_logger, s.Endpoint);
+                return s.ConnectionContainer.StartAsync();
             }));
         }
 
         public Task StopAsync()
         {
-            if (_inner != null)
+            return Task.WhenAll(_routerEndpoints.endpoints.Select(s =>
             {
-                return _inner.StopAsync();
-            }
-
-            return Task.WhenAll(ConnectionContainers.Select(s =>
-            {
-                Log.StoppingConnection(_logger, s.Key.Endpoint);
-                return s.Value.StopAsync();
+                Log.StoppingConnection(_logger, s.Endpoint);
+                return s.ConnectionContainer.StopAsync();
             }));
         }
 
         public Task OfflineAsync(bool migratable)
         {
-            if (_inner != null)
-            {
-                return _inner.OfflineAsync(migratable);
-            }
-            else
-            {
-                return Task.WhenAll(ConnectionContainers.Select(c => c.Value.OfflineAsync(migratable)));
-            }
+            return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.OfflineAsync(migratable)));
         }
 
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
-            if (_inner != null)
-            {
-                return _inner.WriteAsync(serviceMessage);
-            }
             return WriteMultiEndpointMessageAsync(serviceMessage, connection => connection.WriteAsync(serviceMessage));
         }
 
         public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            if (_inner != null)
-            {
-                return await _inner.WriteAckableMessageAsync(serviceMessage, cancellationToken);
-            }
-
             // If we have multiple endpoints, we should wait to one of the following conditions hit
             // 1. One endpoint responses "OK" state
             // 2. All the endpoints response failed state including "NotFound", "Timeout" and waiting response to timeout
@@ -181,9 +159,23 @@ namespace Microsoft.Azure.SignalR
             return tcs.Task.IsCompleted;
         }
 
+        public Task StartGetServersPing()
+        {
+            return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.StartGetServersPing()));
+        }
+
+        public Task StopGetServersPing()
+        {
+            return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.StopGetServersPing()));
+        }
+
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
         {
-            var endpoints = _endpoints;
+            if (!_routerEndpoints.needRouter)
+            {
+                return _routerEndpoints.endpoints;
+            }
+            var endpoints = _routerEndpoints.endpoints;
             switch (message)
             {
                 case BroadcastDataMessage bdm:
@@ -214,13 +206,12 @@ namespace Microsoft.Azure.SignalR
             var routed = GetRoutedEndpoints(serviceMessage)?
                 .Select(endpoint =>
                 {
-                    if (ConnectionContainers.TryGetValue(endpoint, out var connection))
+                    var connection = (endpoint as HubServiceEndpoint)?.ConnectionContainer;
+                    if (connection == null)
                     {
-                        return (e: endpoint, c: connection);
+                        Log.EndpointNotExists(_logger, endpoint.ToString());
                     }
-
-                    Log.EndpointNotExists(_logger, endpoint.ToString());
-                    return (e: endpoint, c: null);
+                    return (e: endpoint, c: connection);
                 })
                 .Where(c => c.c != null)
                 .Select(async s =>
@@ -251,6 +242,42 @@ namespace Microsoft.Azure.SignalR
             return Task.WhenAll(routed);
         }
 
+        private void OnAdd(HubServiceEndpoint endpoint)
+        {
+            if (!endpoint.Hub.Equals(_hubName, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+            _ = AddHubServiceEndpointAsync(endpoint);
+        }
+
+        private Task AddHubServiceEndpointAsync(HubServiceEndpoint endpoint)
+        {
+            // TODO: create container and trigger server ping.
+
+            // do tasks when !endpoint.ScaleTask.IsCanceled or local timeout check not finish
+            endpoint.CompleteScale();
+            return Task.CompletedTask;
+        }
+
+        private void OnRemove(HubServiceEndpoint endpoint)
+        {
+            if (!endpoint.Hub.Equals(_hubName, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+            _ = RemoveHubServiceEndpointAsync(endpoint);
+        }
+
+        private Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint)
+        {
+            // TODO: trigger offline ping and wait to remove container.
+
+            // finally set task complete when timeout
+            endpoint.CompleteScale();
+            return Task.CompletedTask;
+        }
+
         private static class Log
         {
             private static readonly Action<ILogger, string, Exception> _startingConnection =
@@ -268,9 +295,6 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, string, Exception> _failedWritingMessageToEndpoint =
                 LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(5, "FailedWritingMessageToEndpoint"), "Message {messageType} is not sent to endpoint {endpoint} because all connections to this endpoint are offline.");
 
-            private static readonly Action<ILogger, string, Exception> _closingConnection =
-                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(6, "ClosingConnection"), "Closing connections for endpoint {endpoint}.");
-
             public static void StartingConnection(ILogger logger, string endpoint)
             {
                 _startingConnection(logger, endpoint, null);
@@ -279,11 +303,6 @@ namespace Microsoft.Azure.SignalR
             public static void StoppingConnection(ILogger logger, string endpoint)
             {
                 _stoppingConnection(logger, endpoint, null);
-            }
-
-            public static void ClosingConnection(ILogger logger, string endpoint)
-            {
-                _closingConnection(logger, endpoint, null);
             }
 
             public static void EndpointNotExists(ILogger logger, string endpoint)

@@ -3,8 +3,9 @@
 
 namespace Microsoft.Azure.SignalR
 {
-    interface IServiceConnectionContainerFactory
+    public enum AccessTokenAlgorithm
     {
-        IMultiEndpointServiceConnectionContainer Create(string hub);
+        HS256,
+        HS512
     }
 }

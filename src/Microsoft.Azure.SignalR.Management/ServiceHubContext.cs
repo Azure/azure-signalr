@@ -3,7 +3,7 @@
 
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Azure.SignalR.Common.ServiceConnections;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR.Management
