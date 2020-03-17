@@ -23,8 +23,10 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string ConnectionStringFormatter = "Endpoint={0};AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string Url1 = "http://url1";
         private const string Url2 = "https://url2";
+        private const string Url3 = "http://url3";
         private readonly string ConnectionString1 = string.Format(ConnectionStringFormatter, Url1);
         private readonly string ConnectionString2 = string.Format(ConnectionStringFormatter, Url2);
+        private readonly string ConnectionString3 = string.Format(ConnectionStringFormatter, Url3);
         private static readonly JoinGroupWithAckMessage DefaultGroupMessage = new JoinGroupWithAckMessage("a", "a", -1);
 
         public TestEndpointServiceConnectionContainerTests(ITestOutputHelper output) : base(output)
@@ -69,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
                 );
-            var endpoints = sem.Endpoints;
+            var endpoints = sem.Endpoints.Keys.OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
@@ -94,7 +96,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "11"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "12")
                 );
-            var endpoints = sem.Endpoints;
+            var endpoints = sem.Endpoints.Keys.OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("11", endpoints[1].Name);
@@ -117,11 +119,9 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void TestContainerWithNoEndpointDontThrowFromBaseClass()
+        public void TestContainerWithNoEndpointThrowNoEndpointException()
         {
-            var manager = new TestServiceEndpointManager();
-            var endpoints = manager.Endpoints;
-            Assert.Empty(endpoints);
+            Assert.Throws<AzureSignalRConfigurationNoEndpointException>(() => new TestServiceEndpointManager());
         }
 
         [Fact]
@@ -747,13 +747,195 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        public async Task TestMultipleEndpointWithRenamesAndWriteAckableMessage()
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2"),
+                new ServiceEndpoint(ConnectionString3, EndpointType.Secondary, "3")
+                );
+
+            var writeTcs = new TaskCompletionSource<object>();
+            var endpoints = sem.Endpoints.Keys.OrderBy(x => x.Name).ToArray();
+            Assert.Equal(3, endpoints.Length);
+            Assert.Equal("1", endpoints[0].Name);
+            Assert.Equal("2", endpoints[1].Name);
+            Assert.Equal("3", endpoints[2].Name);
+
+            var router = new TestEndpointRouter();
+            var containers = new Dictionary<ServiceEndpoint, TestServiceConnectionContainer>();
+            var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                e => containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
+            }, e), sem, router, NullLoggerFactory.Instance);
+
+            // All the connections started
+            _ = container.StartAsync();
+            await container.ConnectionInitializedTask;
+
+            var containerEps = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            var container1 = containerEps[0].ConnectionContainer;
+            Assert.Equal(3, containerEps.Length);
+            Assert.Equal("1", containerEps[0].Name);
+            Assert.Equal("2", containerEps[1].Name);
+            Assert.Equal("3", containerEps[2].Name);
+
+            // Trigger reload to test rename
+            var renamedEndpoint = new ServiceEndpoint[]
+            {
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "11"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2"),
+                new ServiceEndpoint(ConnectionString3, EndpointType.Secondary, "33")
+            };
+            await sem.TestReloadServiceEndpoints(renamedEndpoint);
+
+            // validate container level updates
+            containerEps = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(3, containerEps.Length);
+            Assert.Equal("11", containerEps[0].Name);
+            // container1 keep same after rename
+            Assert.Equal(container1, containerEps[0].ConnectionContainer);
+            Assert.Equal("2", containerEps[1].Name);
+            Assert.Equal("33", containerEps[2].Name);
+
+            // validate sem negotiation endpoints updated
+            var ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
+            Assert.Equal(3, ngoEps.Length);
+            Assert.Equal("11", ngoEps[0].Name);
+            Assert.Equal("2", ngoEps[1].Name);
+            Assert.Equal("33", ngoEps[2].Name);
+
+            // write messages
+            var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
+            await writeTcs.Task.OrTimeout();
+            containers.First().Value.HandleAck(new AckMessage(1, (int)AckStatus.Ok));
+            await task.OrTimeout();
+        }
+        
+        [Fact]
+        public async Task TestEndpointManagerWithAddEndpointsWithTimeoutCanPromote()
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1")
+                );
+            var endpoints = sem.Endpoints.Keys.ToArray();
+            Assert.Single(endpoints);
+            Assert.Equal("1", endpoints[0].Name);
+
+            var router = new TestEndpointRouter();
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
+            }, e), sem, router, NullLoggerFactory.Instance, TimeSpan.FromSeconds(10));
+
+            var hubEndpoints = container.GetOnlineEndpoints().ToArray();
+            Assert.Single(hubEndpoints);
+            Assert.Equal("1", hubEndpoints.First().Name);
+
+            var newEndpoints = new ServiceEndpoint[]
+            {
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2"),
+                new ServiceEndpoint(ConnectionString3, EndpointType.Primary, "3")
+            };
+            var timeoutToken = new CancellationTokenSource(1000).Token;
+            _ = sem.TestReloadServiceEndpoints(newEndpoints, 1);
+
+            // wait timeout then check added successfully
+            await Task.Delay(1100);
+
+            // validate container side updated
+            hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(3, hubEndpoints.Length);
+            Assert.Equal("1", hubEndpoints[0].Name);
+            Assert.Equal("2", hubEndpoints[1].Name);
+            Assert.NotNull(hubEndpoints[1].ConnectionContainer);
+            Assert.Equal("3", hubEndpoints[2].Name);
+            Assert.NotNull(hubEndpoints[2].ConnectionContainer);
+
+            // validate endpoint manager side update
+            var ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
+            Assert.Equal(3, ngoEps.Length);
+            Assert.Equal("1", ngoEps[0].Name);
+            Assert.Equal("2", ngoEps[1].Name);
+            Assert.Equal("3", ngoEps[2].Name);
+        }
+
+        [Fact]
+        public async Task TestEndpointManagerWithAddEndpointsWithServersTag()
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1")
+                );
+
+            var router = new TestEndpointRouter();
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
+            }, e), sem, router, NullLoggerFactory.Instance, TimeSpan.FromSeconds(10));
+
+            var endpoints = sem.GetEndpoints("hub").ToArray();
+            Assert.Single(endpoints);
+            Assert.Equal("1", endpoints[0].Name);
+
+            var hubEndpoints = container.GetOnlineEndpoints().ToArray();
+            Assert.Single(hubEndpoints);
+            Assert.Equal("1", hubEndpoints.First().Name);
+
+            var newEndpoints = new ServiceEndpoint[]
+            {
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2")
+            };
+            _ = sem.TestReloadServiceEndpoints(newEndpoints, 10);
+
+            // Wait a few time to let message router updated.
+            await Task.Delay(100);
+
+            hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, hubEndpoints.Length);
+            Assert.Equal("1", hubEndpoints[0].Name);
+            Assert.Equal("2", hubEndpoints[1].Name);
+
+            // without Ready, still single endpoint available in negotiation
+            var ngoEps = sem.GetEndpoints("hub").ToArray();
+            Assert.Single(ngoEps);
+
+            // Mock there're 3 servers SA,SB connected to EP1 and EP2
+            var containers = container.GetTestOnlineContainers();
+            var serversTag = "Server1;Server2;Server3";
+            await Task.WhenAll(containers.Select(c => c.MockReceivedServersPing(serversTag)));
+            
+            // wait one interval+ for Ready state and check negotiation is added.
+            await Task.Delay(6000);
+
+            ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, ngoEps.Length);
+            Assert.Equal("1", ngoEps[0].Name);
+            Assert.Equal("2", ngoEps[1].Name);
+
+            var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
+            await writeTcs.Task.OrTimeout();
+            containers.First().HandleAck(new AckMessage(1, (int)AckStatus.Ok));
+            await task.OrTimeout();
+        }
+        
+        [Fact]
         public async Task TestEndpointManagerWithRemoveEndpointsWithNoClients()
         {
             var sem = new TestServiceEndpointManager(
                 new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "22")
                 );
-            var endpoints = sem.Endpoints;
+            var endpoints = sem.Endpoints.Keys.ToArray();
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("22", endpoints[1].Name);
@@ -776,12 +958,11 @@ namespace Microsoft.Azure.SignalR.Tests
             var containers = container.GetTestOnlineContainers();
             await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(false)));
 
-            var newEndpoint = new List<ServiceEndpoint>
+            var newEndpoints = new ServiceEndpoint[]
             {
-                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "22")
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1")
             };
-            var timeoutToken = new CancellationTokenSource(1000).Token;
-            _ = sem.TestRemoveServiceEndpoints(newEndpoint, timeoutToken);
+            _ = sem.TestReloadServiceEndpoints(newEndpoints, 1);
 
             // delay check
             await Task.Delay(100);
@@ -804,7 +985,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
                 new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "22")
                 );
-            var endpoints = sem.Endpoints;
+            var endpoints = sem.Endpoints.Keys.ToArray();
             Assert.Equal(2, endpoints.Length);
             Assert.Equal("1", endpoints[0].Name);
             Assert.Equal("22", endpoints[1].Name);
@@ -827,12 +1008,11 @@ namespace Microsoft.Azure.SignalR.Tests
             var containers = container.GetTestOnlineContainers();
             await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(true)));
 
-            var newEndpoint = new List<ServiceEndpoint>
+            var newEndpoints = new ServiceEndpoint[]
             {
-                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "22")
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1")
             };
-            var timeoutToken = new CancellationTokenSource(1000).Token;
-            _ = sem.TestRemoveServiceEndpoints(newEndpoint, timeoutToken);
+            _ = sem.TestReloadServiceEndpoints(newEndpoints, 10);
 
             // validate container side not updated
             hubEndpoints = container.GetOnlineEndpoints().ToArray();
@@ -854,9 +1034,167 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal("1", hubEndpoints[0].Name);
         }
 
-        // TODO: Test Add/Remove endpoint for endpoint type change test
+        [Fact]
         public async Task TestEndpointManagerWithEndpointTypeUpdate()
-        { }
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "22")
+                );
+            var endpoints = sem.Endpoints.Keys.ToArray();
+            Assert.Equal(2, endpoints.Length);
+            Assert.Equal("1", endpoints[0].Name);
+            Assert.Equal("22", endpoints[1].Name);
+
+            var router = new TestEndpointRouter();
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
+            }, e), sem, router, NullLoggerFactory.Instance);
+
+            var hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, hubEndpoints.Length);
+            Assert.Equal("1", hubEndpoints[0].Name);
+            Assert.Equal("22", hubEndpoints[1].Name);
+
+            // mock all active to emulate has clients
+            var containers = container.GetTestOnlineContainers();
+            await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(true)));
+
+            var newEndpoints = new ServiceEndpoint[]
+            {
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "22")
+            };
+            _ = sem.TestReloadServiceEndpoints(newEndpoints, 15);
+
+            // validate container side update with news and have 3
+            await Task.Delay(100);
+            hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(3, hubEndpoints.Length);
+            var expectedNames = new string[] { "1", "22", "22" };
+            Assert.True(expectedNames.SequenceEqual(hubEndpoints.Select(e => e.Name).OrderBy(x => x)));
+            var expectedTypes = new EndpointType[] { EndpointType.Primary, EndpointType.Primary, EndpointType.Secondary };
+            Assert.True(expectedTypes.SequenceEqual(hubEndpoints.Select(e => e.EndpointType).OrderBy(x => x)));
+
+            // validate endpoint manager side not updated yet
+            var ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, ngoEps.Length);
+            Assert.Equal("1", ngoEps[0].Name);
+            Assert.Equal("22", ngoEps[1].Name);
+            Assert.Equal(EndpointType.Secondary, ngoEps[1].EndpointType);
+
+            // Mock add sync and validate negotiation side updated
+            containers = container.GetTestOnlineContainers();
+            await Task.WhenAll(containers.Select(x => x.MockReceivedServersPing("aaa;bbb")));
+            await Task.Delay(6000);
+
+            ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, ngoEps.Length);
+            Assert.Equal("1", ngoEps[0].Name);
+            Assert.Equal("22", ngoEps[1].Name);
+            Assert.Equal(EndpointType.Primary, ngoEps[1].EndpointType);
+
+            // Mock status offlined
+            containers = container.GetTestOnlineContainers();
+            await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(false)));
+            await Task.Delay(6000);
+
+            // validate container updated as well
+            hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, hubEndpoints.Length);
+            Assert.Equal("1", hubEndpoints[0].Name);
+            Assert.Equal("22", hubEndpoints[1].Name);
+            Assert.Equal(EndpointType.Primary, hubEndpoints[1].EndpointType);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestReloadEndpointsData))]
+        public void TestServiceEndpointManagerReloadEndpoints(ServiceEndpoint[] oldValue, ServiceEndpoint[] newValue)
+        {
+            var sem = new TestServiceEndpointManager(oldValue);
+
+            sem.TestReloadServiceEndpoints(newValue);
+
+            var endpoints = sem.Endpoints.Keys;
+
+            Assert.True(newValue.SequenceEqual(endpoints));
+        }
+
+        public static IEnumerable<object[]> TestReloadEndpointsData = new object[][]
+        {
+            // no change
+            new object[]
+            {
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                },
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                }
+            },
+            // add
+            new object[]
+            {
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1")
+                },
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                }
+            },
+            // remove
+            new object[]
+            {
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                },
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1")
+                }
+            },
+            // rename
+            new object[]
+            {
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                },
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "22"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "11")
+                }
+            },
+            // type
+            new object[]
+            {
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Primary, "1"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Secondary, "2")
+                },
+                new ServiceEndpoint[]
+                {
+                    new ServiceEndpoint("Endpoint=http://url1;AccessKey=ABCDEFG", EndpointType.Secondary, "1"),
+                    new ServiceEndpoint("Endpoint=http://url2;AccessKey=ABCDEFG", EndpointType.Primary, "2")
+                }
+            }
+        };
 
         private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router, bool migratable)
         {
@@ -912,11 +1250,12 @@ namespace Microsoft.Azure.SignalR.Tests
                                                           Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
                                                           IServiceEndpointManager endpoint,
                                                           IEndpointRouter router,
-                                                          ILoggerFactory loggerFactory
-
+                                                          ILoggerFactory loggerFactory,
+                                                          TimeSpan? scaleTimeout = null
                 ) : base(hub, generator, endpoint, router, loggerFactory)
             {
             }
+
 
             public List<TestServiceConnectionContainer> GetTestOnlineContainers()
             {
@@ -939,9 +1278,9 @@ namespace Microsoft.Azure.SignalR.Tests
                 return null;
             }
 
-            public async Task TestRemoveServiceEndpoints(IReadOnlyList<ServiceEndpoint> endpoint, CancellationToken cancellationToken = default)
+            public Task TestReloadServiceEndpoints(ServiceEndpoint[] serviceEndpoints, int timeoutSec = 0)
             {
-                await RemoveServiceEndpointsAsync(endpoint, cancellationToken);
+                return ReloadServiceEndpointsAsync(serviceEndpoints, TimeSpan.FromSeconds(timeoutSec));
             }
         }
 

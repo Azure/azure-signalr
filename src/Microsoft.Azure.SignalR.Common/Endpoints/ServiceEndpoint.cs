@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR
 
         public EndpointType EndpointType { get; }
 
-        public string Name { get; }
+        public virtual string Name { get; internal set; }
 
         /// <summary>
         /// Initial status as Online so that when the app server first starts, it can accept incoming negotiate requests, as for backward compatability
@@ -99,20 +99,20 @@ namespace Microsoft.Azure.SignalR
 
         internal static (string, EndpointType) ParseKey(string key)
         {
-            if (key == Constants.ConnectionStringDefaultKey || key == Constants.ConnectionStringSecondaryKey)
+            if (key == Constants.Keys.ConnectionStringDefaultKey || key == Constants.Keys.ConnectionStringSecondaryKey)
             {
                 return (string.Empty, EndpointType.Primary);
             }
 
-            if (key.StartsWith(Constants.ConnectionStringKeyPrefix))
+            if (key.StartsWith(Constants.Keys.ConnectionStringKeyPrefix))
             {
                 // Azure:SignalR:ConnectionString:<name>:<type>
-                return ParseKeyWithPrefix(key, Constants.ConnectionStringKeyPrefix);
+                return ParseKeyWithPrefix(key, Constants.Keys.ConnectionStringKeyPrefix);
             }
 
-            if (key.StartsWith(Constants.ConnectionStringSecondaryKey))
+            if (key.StartsWith(Constants.Keys.ConnectionStringSecondaryKey))
             {
-                return ParseKeyWithPrefix(key, Constants.ConnectionStringSecondaryKey);
+                return ParseKeyWithPrefix(key, Constants.Keys.ConnectionStringSecondaryKey);
             }
 
             throw new ArgumentException($"Invalid format: {key}", nameof(key));

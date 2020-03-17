@@ -7,12 +7,19 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class Constants
     {
-        public const string ServerStickyModeDefaultKey = "Azure:SignalR:ServerStickyMode";
-        public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
-        public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
+        public static class Keys
+        {
+            public const string ServerStickyModeDefaultKey = "Azure:SignalR:ServerStickyMode";
+            public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
+            public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
+            public const string AzureSignalREnabledKey = "Azure:SignalR:Enabled";
 
-        public const int DefaultShutdownTimeoutInSeconds = 30;
-        public const int DefaultScaleTimeoutInSeconds = 300;
+            public static readonly string ConnectionStringSecondaryKey =
+                $"ConnectionStrings:{ConnectionStringDefaultKey}";
+            public static readonly string ConnectionStringKeyPrefix = $"{ConnectionStringDefaultKey}:";
+            public static readonly string ApplicationNameDefaultKeyPrefix = $"{ApplicationNameDefaultKey}:";
+            public static readonly string ConnectionStringSecondaryKeyPrefix = $"{ConnectionStringSecondaryKey}:";
+        }
 
         public const string AsrsMigrateFrom = "Asrs-Migrate-From";
         public const string AsrsMigrateTo = "Asrs-Migrate-To";
@@ -20,19 +27,17 @@ namespace Microsoft.Azure.SignalR
         public const string AsrsUserAgent = "Asrs-User-Agent";
         public const string AsrsInstanceId = "Asrs-Instance-Id";
 
-        public const string AzureSignalREnabledKey = "Azure:SignalR:Enabled";
 
-        public static readonly string ConnectionStringSecondaryKey =
-            $"ConnectionStrings:{ConnectionStringDefaultKey}";
+        public static class Periods
+        {
+            public static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
+            public static readonly TimeSpan DefaultScaleTimeout = TimeSpan.FromMinutes(5);
+            public static readonly TimeSpan DefaultShutdownTimeout = TimeSpan.FromSeconds(30);
+            public static readonly TimeSpan RemoveFromServiceTimeout = TimeSpan.FromSeconds(5);
 
-        public static readonly string ConnectionStringKeyPrefix = $"{ConnectionStringDefaultKey}:";
-
-        public static readonly string ApplicationNameDefaultKeyPrefix = $"{ApplicationNameDefaultKey}:";
-
-        public static readonly string ConnectionStringSecondaryKeyPrefix = $"{ConnectionStringSecondaryKey}:";
-
-        // Default access token lifetime
-        public static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
+            public static readonly TimeSpan DefaultStatusPingInterval = TimeSpan.FromSeconds(10);
+            public static readonly TimeSpan DefaultServersPingInterval = TimeSpan.FromSeconds(5);
+        }
 
         public static class ClaimType
         {

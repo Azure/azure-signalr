@@ -3,9 +3,9 @@
 
 namespace Microsoft.Azure.SignalR
 {
-    internal enum ScaleOperation
+    public enum AccessTokenAlgorithm
     {
-        Add,
-        Remove
+        HS256,
+        HS512
     }
 }

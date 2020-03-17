@@ -14,6 +14,7 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.AspNet.SignalR.Transports;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Fact]
         public void TestRunAzureSignalRWithoutConnectionString()
         {
-            var exception = Assert.Throws<ArgumentException>(
+            var exception = Assert.Throws<AzureSignalRConfigurationNoEndpointException>(
                     () =>
                     {
                         using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName)))
@@ -167,7 +168,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
                     var endpoints = manager.Endpoints;
-                    Assert.Equal(4, endpoints.Length);
+                    Assert.Equal(4, endpoints.Count);
                 }
             }
         }
@@ -190,9 +191,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.Empty(options.Value.Endpoints);
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
-                    var endpoints = manager.Endpoints;
+                    var endpoints = manager.Endpoints.Keys;
                     Assert.Single(endpoints);
-                    Assert.Equal(ConnectionString2, endpoints[0].ConnectionString);
+                    Assert.Equal(ConnectionString2, endpoints.First().ConnectionString);
                 }
             }
         }
@@ -216,7 +217,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
                     var endpoints = manager.Endpoints;
-                    Assert.Equal(3, endpoints.Length);
+                    Assert.Equal(3, endpoints.Count);
                 }
             }
         }
@@ -245,7 +246,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
                     var endpoints = manager.Endpoints;
-                    Assert.Equal(4, endpoints.Length);
+                    Assert.Equal(4, endpoints.Count);
                 }
             }
         }
@@ -282,7 +283,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
                     var endpoints = manager.Endpoints;
-                    Assert.Equal(expectedCount, endpoints.Length);
+                    Assert.Equal(expectedCount, endpoints.Count);
                 }
             }
         }
@@ -316,7 +317,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
                     var endpoints = manager.Endpoints;
-                    Assert.Equal(4, endpoints.Length);
+                    Assert.Equal(4, endpoints.Count);
                 }
             }
         }
@@ -347,7 +348,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
                     var endpoints = manager.Endpoints;
-                    Assert.Equal(4, endpoints.Length);
+                    Assert.Equal(4, endpoints.Count);
                 }
             }
         }
@@ -379,7 +380,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
                     var endpoints = manager.Endpoints;
-                    Assert.Equal(4, endpoints.Length);
+                    Assert.Equal(4, endpoints.Count);
                 }
             }
         }
@@ -412,7 +413,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     var manager = hubConfig.Resolver.Resolve<IServiceEndpointManager>();
                     var endpoints = manager.Endpoints;
-                    Assert.Equal(4, endpoints.Length);
+                    Assert.Equal(4, endpoints.Count);
 
                     var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
                     var response = await client.GetAsync("/negotiate?endpoint=chosen");
@@ -779,13 +780,13 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             public AppSettingsConfigScope(string setting, params string[] additionalSettings)
             {
-                _originalSetting = ConfigurationManager.AppSettings[Constants.ConnectionStringDefaultKey];
-                ConfigurationManager.AppSettings[Constants.ConnectionStringDefaultKey] = setting;
+                _originalSetting = ConfigurationManager.AppSettings[Constants.Keys.ConnectionStringDefaultKey];
+                ConfigurationManager.AppSettings[Constants.Keys.ConnectionStringDefaultKey] = setting;
 
                 var newSettings = additionalSettings.Select(
                     s =>
                     new KeyValuePair<string, string>(
-                        Constants.ConnectionStringKeyPrefix + Guid.NewGuid().ToString("N")
+                        Constants.Keys.ConnectionStringKeyPrefix + Guid.NewGuid().ToString("N")
                         , s))
                     .ToList();
                 _originalAdditonalSettings = newSettings.Select(s =>
@@ -799,7 +800,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             public void Dispose()
             {
-                ConfigurationManager.AppSettings[Constants.ConnectionStringDefaultKey] = _originalSetting;
+                ConfigurationManager.AppSettings[Constants.Keys.ConnectionStringDefaultKey] = _originalSetting;
                 foreach (var pair in _originalAdditonalSettings)
                 {
                     ConfigurationManager.AppSettings[pair.Key] = pair.Value;
