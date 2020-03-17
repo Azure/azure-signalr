@@ -109,7 +109,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public string GlobalServerIds => throw new NotSupportedException();
+        public string ServersTag => throw new NotSupportedException();
 
         public bool HasClients => throw new NotSupportedException();
 
@@ -338,7 +338,7 @@ namespace Microsoft.Azure.SignalR
 
         private bool IsServerReady(IServiceConnectionContainer container)
         {
-            var serversOnNew = container.GlobalServerIds;
+            var serversOnNew = container.ServersTag;
             var allMatch = !string.IsNullOrEmpty(serversOnNew);
             if (!allMatch)
             {
@@ -349,8 +349,8 @@ namespace Microsoft.Azure.SignalR
             // ensure strong consistency of server Ids for new endpoint towards exists
             foreach (var endpoint in _routerEndpoints.endpoints)
             {
-                allMatch = !string.IsNullOrEmpty(endpoint.ConnectionContainer.GlobalServerIds) 
-                    && serversOnNew.Equals(endpoint.ConnectionContainer.GlobalServerIds, StringComparison.OrdinalIgnoreCase) 
+                allMatch = !string.IsNullOrEmpty(endpoint.ConnectionContainer.ServersTag) 
+                    && serversOnNew.Equals(endpoint.ConnectionContainer.ServersTag, StringComparison.OrdinalIgnoreCase) 
                     && allMatch;
                 if (!allMatch)
                 {

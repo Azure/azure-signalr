@@ -58,9 +58,9 @@ namespace Microsoft.Azure.SignalR.Tests
             return base.OnConnectionComplete(connection);
         }
 
-        public Task MockReceivedServerIdsPing(HashSet<string> serverIds)
+        public Task MockReceivedServersPing(string serversTag)
         {
-            var ping = new PingMessage { Messages = new[] { "servers", $"{DateTime.UtcNow.Ticks}:{string.Join(";",serverIds)}" } };
+            var ping = new PingMessage { Messages = new[] { "servers", $"{DateTime.UtcNow.Ticks}:{serversTag}" } };
             return base.HandlePingAsync(ping);
         }
     }

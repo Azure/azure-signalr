@@ -127,7 +127,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             return Task.WhenAll(GetConnections().Select(s => s.StopGetServersPing()));
         }
 
-        public string GlobalServerIds => throw new NotSupportedException();
+        public string ServersTag => throw new NotSupportedException();
 
         public bool HasClients => throw new NotSupportedException();
 

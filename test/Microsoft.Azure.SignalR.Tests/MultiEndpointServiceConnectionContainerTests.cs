@@ -867,7 +867,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async Task TestEndpointManagerWithAddEndpointsWithServerIds()
+        public async Task TestEndpointManagerWithAddEndpointsWithServersTag()
         {
             var sem = new TestServiceEndpointManager(
                 new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1")
@@ -909,10 +909,10 @@ namespace Microsoft.Azure.SignalR.Tests
             var ngoEps = sem.GetEndpoints("hub").ToArray();
             Assert.Single(ngoEps);
 
-            // Mock there're 2 servers SA,SB connected to EP1 and EP2
+            // Mock there're 3 servers SA,SB connected to EP1 and EP2
             var containers = container.GetTestOnlineContainers();
-            var serverIds = new HashSet<string> { "SA", "SB" };
-            await Task.WhenAll(containers.Select(c => c.MockReceivedServerIdsPing(serverIds)));
+            var serversTag = "Server1;Server2;Server3";
+            await Task.WhenAll(containers.Select(c => c.MockReceivedServersPing(serversTag)));
             
             // wait one interval+ for Ready state and check negotiation is added.
             await Task.Delay(6000);

@@ -144,7 +144,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     var hubEndpoints = CreateHubServiceEndpoints(endpoints, true);
 
-                    await Task.WhenAll(hubEndpoints.Select(e => AddHubServiceEndpointAsync(e, cancellationToken)));
+                    await Task.WhenAll(hubEndpoints.SelectMany(h => h.Value.Select(e => AddHubServiceEndpointAsync(e, cancellationToken))));
 
                     UpdateNegotiationEndpointsStore(hubEndpoints, ScaleOperation.Add);
                 }
@@ -155,12 +155,12 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private void UpdateNegotiationEndpointsStore(IReadOnlyList<HubServiceEndpoint> endpoints, ScaleOperation scaleOperation)
+        private void UpdateNegotiationEndpointsStore(Dictionary<string, List<HubServiceEndpoint>> endpoints, ScaleOperation scaleOperation)
         {
             foreach (var hubEndpoint in _endpointsPerHub)
             {
-                var updatedEndpoints = endpoints.Where(e => e.Hub == hubEndpoint.Key);
-                if (updatedEndpoints.Count() == 0)
+                var updatedEndpoints = endpoints[hubEndpoint.Key];
+                if (updatedEndpoints.Count == 0)
                 {
                     return;
                 }
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.SignalR
 
                     // TODO: update local store for negotiation
 
-                    await Task.WhenAll(hubEndpoints.Select(e => RemoveHubServiceEndpointAsync(e, cancellationToken)));
+                    await Task.WhenAll(hubEndpoints.SelectMany(h => h.Value.Select(e => RemoveHubServiceEndpointAsync(e, cancellationToken))));
                 }
                 catch (Exception ex)
                 {
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.SignalR
             return endpoints.Select(e => CreateHubServiceEndpoint(hub, e, needScaleTcs)).ToList();
         }
 
-        private IReadOnlyList<HubServiceEndpoint> CreateHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints, bool needScaleTcs)
+        private Dictionary<string, List<HubServiceEndpoint>> CreateHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints, bool needScaleTcs)
         {
             var hubEndpoints = new List<HubServiceEndpoint>();
             var hubs = _endpointsPerHub.Keys;
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.SignalR
             {
                 hubEndpoints.AddRange(CreateHubServiceEndpoints(hub, endpoints, needScaleTcs));
             }
-            return hubEndpoints;
+            return hubEndpoints.GroupBy(k => k.Hub).ToDictionary(k => k.Key, v => v.ToList());
         }
 
         private async Task AddHubServiceEndpointAsync(HubServiceEndpoint endpoint, CancellationToken cancellationToken)

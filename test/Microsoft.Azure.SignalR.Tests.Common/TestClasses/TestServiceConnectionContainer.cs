@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public IReadOnlyDictionary<ServiceEndpoint, IServiceConnectionContainer> ConnectionContainers { get; }
 
-        public string GlobalServerIds => throw new NotSupportedException();
+        public string ServersTag => throw new NotSupportedException();
 
         public bool HasClients => throw new NotSupportedException();
 

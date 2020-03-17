@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
         // Give (interval * 3 + 1) delay when check value expire.
         private static readonly long DefaultServersPingTimeoutTicks = Stopwatch.Frequency * (Constants.Periods.DefaultServersPingInterval.Seconds * 3 + 1);
-        private static readonly Tuple<string, long> DefaultServerIdContext = new Tuple<string, long>(string.Empty, 0);
+        private static readonly Tuple<string, long> DefaultServersTagContext = new Tuple<string, long>(string.Empty, 0);
 
         private static readonly PingMessage _shutdownFinMessage = RuntimeServicePingMessage.GetFinPingMessage(false);
         private static readonly PingMessage _shutdownFinMigratableMessage = RuntimeServicePingMessage.GetFinPingMessage(true);
@@ -44,8 +44,8 @@ namespace Microsoft.Azure.SignalR
 
         private volatile ServiceConnectionStatus _status;
 
-        // <serverIds, lastServerIdsTimestamp>
-        private volatile Tuple<string, long> _serverIdContext = DefaultServerIdContext;
+        // <serversTag, latestTimestamp>
+        private volatile Tuple<string, long> _serversTagContext = DefaultServersTagContext;
         private volatile bool _hasClients;
         private volatile bool _terminated = false;
 
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.SignalR
 
         public event Action<StatusChange> ConnectionStatusChanged;
 
-        public string GlobalServerIds => _serverIdContext.Item1;
+        public string ServersTag => _serversTagContext.Item1;
 
         public bool HasClients => _hasClients;
 
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.SignalR
             _statusPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.ServiceStatus, WriteServiceStatusPingAsync, Constants.Periods.DefaultStatusPingInterval, Constants.Periods.DefaultStatusPingInterval);
             _statusPing.Start();
 
-            _serversPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServerIdsPingAsync, Constants.Periods.DefaultServersPingInterval, Constants.Periods.DefaultServersPingInterval);
+            _serversPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServersPingAsync, Constants.Periods.DefaultServersPingInterval, Constants.Periods.DefaultServersPingInterval);
         }
 
         public Task StartAsync() => Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
@@ -174,12 +174,12 @@ namespace Microsoft.Azure.SignalR
                 Log.ReceivedServiceStatusPing(Logger, status, Endpoint);
                 _hasClients = status;
             }
-            else if (RuntimeServicePingMessage.TryGetServerIds(pingMessage, out var serverIds, out var updatedTime))
+            else if (RuntimeServicePingMessage.TryGetServersTag(pingMessage, out var serversTag, out var updatedTime))
             {
-                Log.ReceivedServerIdsPing(Logger, Endpoint);
-                if (updatedTime > _serverIdContext.Item2)
+                Log.ReceivedServersTagPing(Logger, Endpoint);
+                if (updatedTime > _serversTagContext.Item2)
                 {
-                    _serverIdContext = Tuple.Create(serverIds, updatedTime);
+                    _serversTagContext = Tuple.Create(serversTag, updatedTime);
                 }
             }
             return Task.CompletedTask;
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.SignalR
             if (_serversPing.Start())
             {
                 // reset old value when true start.
-                _serverIdContext = DefaultServerIdContext;
+                _serversTagContext = DefaultServersTagContext;
             }
             return Task.CompletedTask;
         }
@@ -449,12 +449,12 @@ namespace Microsoft.Azure.SignalR
             await WriteAsync(RuntimeServicePingMessage.GetStatusPingMessage(true));
         }
 
-        private async Task WriteServerIdsPingAsync()
+        private async Task WriteServersPingAsync()
         {
-            if (Stopwatch.GetTimestamp() - _serverIdContext.Item2 > DefaultServersPingTimeoutTicks)
+            if (Stopwatch.GetTimestamp() - _serversTagContext.Item2 > DefaultServersPingTimeoutTicks)
             {
                 // reset value if expired.
-                _serverIdContext = DefaultServerIdContext;
+                _serversTagContext = DefaultServersTagContext;
             }
             await WriteAsync(RuntimeServicePingMessage.GetServersPingMessage());
         }
@@ -582,8 +582,8 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, bool, ServiceEndpoint, string, Exception> _receivedServiceStatusPing =
                 LoggerMessage.Define<bool, ServiceEndpoint, string>(LogLevel.Debug, new EventId(8, "ReceivedServiceStatusPing"), "Received a service status active={isActive} from {endpoint} for hub {hub}.");
 
-            private static readonly Action<ILogger, ServiceEndpoint, string, Exception> _receivedServerIdsPing =
-                LoggerMessage.Define<ServiceEndpoint, string>(LogLevel.Debug, new EventId(9, "ReceivedServerIdsPing"), "Received a server ids ping from {endpoint} for hub {hub}.");
+            private static readonly Action<ILogger, ServiceEndpoint, string, Exception> _receivedServersTagPing =
+                LoggerMessage.Define<ServiceEndpoint, string>(LogLevel.Debug, new EventId(9, "ReceivedServersTagPing"), "Received a servers tag ping from {endpoint} for hub {hub}.");
 
             private static readonly Action<ILogger, string, Exception> _timerAlreadyStopped =
                 LoggerMessage.Define<string>(LogLevel.Warning, new EventId(10, "TimerAlreadyStopped"), "Failed to stop {pingName} timer as it's not started");
@@ -628,9 +628,9 @@ namespace Microsoft.Azure.SignalR
                 _receivedServiceStatusPing(logger, isActive, endpoint, endpoint.Hub, null);
             }
 
-            public static void ReceivedServerIdsPing(ILogger logger, HubServiceEndpoint endpoint)
+            public static void ReceivedServersTagPing(ILogger logger, HubServiceEndpoint endpoint)
             {
-                _receivedServerIdsPing(logger, endpoint, endpoint.Hub, null);
+                _receivedServersTagPing(logger, endpoint, endpoint.Hub, null);
             }
 
             public static void TimerAlreadyStopped(ILogger logger, string pingName)
