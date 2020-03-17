@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IConfiguration _configuration;
 
         private readonly bool _gracefulShutdownEnabled = false;
-        private readonly TimeSpan _shutdownTimeout = TimeSpan.FromSeconds(Constants.DefaultShutdownTimeoutInSeconds);
+        private readonly TimeSpan _shutdownTimeout = Constants.Periods.DefaultShutdownTimeout;
 
         public string Name => Options.DefaultName;
 

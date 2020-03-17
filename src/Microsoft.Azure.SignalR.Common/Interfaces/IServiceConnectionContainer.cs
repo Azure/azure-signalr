@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR
 
         Task ConnectionInitializedTask { get; }
 
-        HashSet<string> GlobalServerIds { get; }
+        string ServersTag { get; }
 
         bool HasClients { get; }
     }

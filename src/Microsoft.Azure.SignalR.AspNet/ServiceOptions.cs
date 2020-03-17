@@ -42,7 +42,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// Gets or sets the lifetime of auto-generated access token, which will be used to authenticate with Azure SignalR Service.
         /// Default value is one hour.
         /// </summary>
-        public TimeSpan AccessTokenLifetime { get; set; } = Constants.DefaultAccessTokenLifetime;
+        public TimeSpan AccessTokenLifetime { get; set; } = Constants.Periods.DefaultAccessTokenLifetime;
 
         /// <summary>
         /// Gets or sets the access token generate algorithm, supports <see cref="SecurityAlgorithms.HmacSha256"/> or <see cref="SecurityAlgorithms.HmacSha512"/>
