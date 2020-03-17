@@ -190,100 +190,6 @@ namespace Microsoft.Azure.SignalR
             _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status);
         }
 
-        /// <summary>
-        /// Create a connection for a specific service connection type
-        /// </summary>
-        protected IServiceConnection CreateServiceConnectionCore(ServiceConnectionType type)
-        {
-            var connection = ServiceConnectionFactory.Create(Endpoint, this, type);
-
-            connection.ConnectionStatusChanged += OnConnectionStatusChanged;
-            return connection;
-        }
-
-        protected virtual async Task OnConnectionComplete(IServiceConnection serviceConnection)
-        {
-            if (serviceConnection == null)
-            {
-                throw new ArgumentNullException(nameof(serviceConnection));
-            }
-
-            serviceConnection.ConnectionStatusChanged -= OnConnectionStatusChanged;
-
-            if (serviceConnection.Status == ServiceConnectionStatus.Connected)
-            {
-                return;
-            }
-
-            var index = FixedServiceConnections.IndexOf(serviceConnection);
-            if (index != -1)
-            {
-                await RestartServiceConnectionCoreAsync(index);
-            }
-        }
-
-        private void OnStatusChanged(StatusChange obj)
-        {
-            var online = obj.NewStatus == ServiceConnectionStatus.Connected;
-            Endpoint.Online = online;
-            if (!online)
-            {
-                Log.EndpointOffline(Logger, Endpoint);
-            }
-            else
-            {
-                Log.EndpointOnline(Logger, Endpoint);
-            }
-        }
-
-        private void OnConnectionStatusChanged(StatusChange obj)
-        {
-            if (obj.NewStatus == ServiceConnectionStatus.Connected && Status != ServiceConnectionStatus.Connected)
-            {
-                Status = GetStatus();
-            }
-            else if (obj.NewStatus == ServiceConnectionStatus.Disconnected && Status != ServiceConnectionStatus.Disconnected)
-            {
-                Status = GetStatus();
-            }
-        }
-
-        private async Task RestartServiceConnectionCoreAsync(int index)
-        {
-            Func<Task<bool>> tryNewConnection = async () =>
-            {
-                var connection = CreateServiceConnectionCore(InitialConnectionType);
-                ReplaceFixedConnections(index, connection);
-
-                _ = StartCoreAsync(connection);
-                await connection.ConnectionInitializedTask;
-
-                return connection.Status == ServiceConnectionStatus.Connected;
-            };
-            await _backOffPolicy.CallProbeWithBackOffAsync(tryNewConnection, GetRetryDelay);
-        }
-
-        internal static TimeSpan GetRetryDelay(int retryCount)
-        {
-            // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
-            // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
-            if (retryCount > 5)
-            {
-                return TimeSpan.FromMinutes(1) + ReconnectInterval;
-            }
-            return TimeSpan.FromSeconds(1 << retryCount) + ReconnectInterval;
-        }
-
-        protected void ReplaceFixedConnections(int index, IServiceConnection serviceConnection)
-        {
-            lock (_lock)
-            {
-                var newImmutableConnections = FixedServiceConnections.ToList();
-                newImmutableConnections[index] = serviceConnection;
-                FixedServiceConnections = newImmutableConnections;
-            }
-        }
-
         public Task ConnectionInitializedTask => Task.WhenAll(from connection in FixedServiceConnections
                                                               select connection.ConnectionInitializedTask);
 
@@ -349,6 +255,48 @@ namespace Microsoft.Azure.SignalR
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Create a connection for a specific service connection type
+        /// </summary>
+        protected IServiceConnection CreateServiceConnectionCore(ServiceConnectionType type)
+        {
+            var connection = ServiceConnectionFactory.Create(Endpoint, this, type);
+
+            connection.ConnectionStatusChanged += OnConnectionStatusChanged;
+            return connection;
+        }
+
+        protected virtual async Task OnConnectionComplete(IServiceConnection serviceConnection)
+        {
+            if (serviceConnection == null)
+            {
+                throw new ArgumentNullException(nameof(serviceConnection));
+            }
+
+            serviceConnection.ConnectionStatusChanged -= OnConnectionStatusChanged;
+
+            if (serviceConnection.Status == ServiceConnectionStatus.Connected)
+            {
+                return;
+            }
+
+            var index = FixedServiceConnections.IndexOf(serviceConnection);
+            if (index != -1)
+            {
+                await RestartServiceConnectionCoreAsync(index);
+            }
+        }
+
+        protected void ReplaceFixedConnections(int index, IServiceConnection serviceConnection)
+        {
+            lock (_lock)
+            {
+                var newImmutableConnections = FixedServiceConnections.ToList();
+                newImmutableConnections[index] = serviceConnection;
+                FixedServiceConnections = newImmutableConnections;
+            }
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
@@ -395,6 +343,58 @@ namespace Microsoft.Azure.SignalR
                 retry++;
             }
             Log.TimeoutWaitingForFinAck(Logger, retry);
+        }
+
+        internal static TimeSpan GetRetryDelay(int retryCount)
+        {
+            // retry count:   0, 1, 2, 3, 4,  5,  6,  ...
+            // delay seconds: 1, 2, 4, 8, 16, 32, 60, ...
+            if (retryCount > 5)
+            {
+                return TimeSpan.FromMinutes(1) + ReconnectInterval;
+            }
+            return TimeSpan.FromSeconds(1 << retryCount) + ReconnectInterval;
+        }
+
+        private void OnStatusChanged(StatusChange obj)
+        {
+            var online = obj.NewStatus == ServiceConnectionStatus.Connected;
+            Endpoint.Online = online;
+            if (!online)
+            {
+                Log.EndpointOffline(Logger, Endpoint);
+            }
+            else
+            {
+                Log.EndpointOnline(Logger, Endpoint);
+            }
+        }
+
+        private void OnConnectionStatusChanged(StatusChange obj)
+        {
+            if (obj.NewStatus == ServiceConnectionStatus.Connected && Status != ServiceConnectionStatus.Connected)
+            {
+                Status = GetStatus();
+            }
+            else if (obj.NewStatus == ServiceConnectionStatus.Disconnected && Status != ServiceConnectionStatus.Disconnected)
+            {
+                Status = GetStatus();
+            }
+        }
+
+        private async Task RestartServiceConnectionCoreAsync(int index)
+        {
+            Func<Task<bool>> tryNewConnection = async () =>
+            {
+                var connection = CreateServiceConnectionCore(InitialConnectionType);
+                ReplaceFixedConnections(index, connection);
+
+                _ = StartCoreAsync(connection);
+                await connection.ConnectionInitializedTask;
+
+                return connection.Status == ServiceConnectionStatus.Connected;
+            };
+            await _backOffPolicy.CallProbeWithBackOffAsync(tryNewConnection, GetRetryDelay);
         }
 
         private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)

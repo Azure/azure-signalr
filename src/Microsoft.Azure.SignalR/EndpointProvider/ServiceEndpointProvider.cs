@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR
     {
         public static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
-            $"Please specify a configuration entry for {Constants.ConnectionStringDefaultKey}, " +
+            $"Please specify a configuration entry for {Constants.Keys.ConnectionStringDefaultKey}, " +
             "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
         private readonly string _accessKey;
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR
             var port = endpoint.Port;
             var version = endpoint.Version;
 
-            _generator = new DefaultServiceEndpointGenerator(endpoint.Endpoint, _accessKey, version, port);
+            _generator = new DefaultServiceEndpointGenerator(endpoint.Endpoint, version, port);
         }
 
         public string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.SignalR
 
             var audience = _generator.GetClientAudience(hubName, _appName);
 
-            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
+            return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
         public string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null)
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR
             var audience = _generator.GetServerAudience(hubName, _appName);
             var claims = userId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, userId) } : null;
 
-            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
+            return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
         public string GetClientEndpoint(string hubName, string originalPath, string queryString)

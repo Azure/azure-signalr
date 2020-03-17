@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR.Tests
             string requestId)
         {
             
-            return AuthenticationHelper.GenerateJwtBearer(
+            return AuthUtility.GenerateJwtBearer(
                 issuer: null,
                 audience: audience,
                 claims: subject,

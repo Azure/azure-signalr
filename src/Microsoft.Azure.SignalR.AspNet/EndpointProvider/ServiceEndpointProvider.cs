@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.AspNet
     {
         public static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
-            $"Please specify a configuration entry for {Constants.ConnectionStringDefaultKey}, " +
+            $"Please specify a configuration entry for {Constants.Keys.ConnectionStringDefaultKey}, " +
             "or explicitly pass one using IAppBuilder.RunAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
         private const string ClientPath = "aspnetclient";
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         public string GenerateClientAccessToken(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
         {
             var audience = $"{_endpoint}/{ClientPath}";
-            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
+            return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
         public string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null)
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             var audience = $"{_endpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
 
-            return AuthenticationHelper.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
+            return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
         public string GetClientEndpoint(string hubName = null, string originalPath = null, string queryString = null)

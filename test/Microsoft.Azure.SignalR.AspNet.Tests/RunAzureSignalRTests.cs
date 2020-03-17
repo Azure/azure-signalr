@@ -780,13 +780,13 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             public AppSettingsConfigScope(string setting, params string[] additionalSettings)
             {
-                _originalSetting = ConfigurationManager.AppSettings[Constants.ConnectionStringDefaultKey];
-                ConfigurationManager.AppSettings[Constants.ConnectionStringDefaultKey] = setting;
+                _originalSetting = ConfigurationManager.AppSettings[Constants.Keys.ConnectionStringDefaultKey];
+                ConfigurationManager.AppSettings[Constants.Keys.ConnectionStringDefaultKey] = setting;
 
                 var newSettings = additionalSettings.Select(
                     s =>
                     new KeyValuePair<string, string>(
-                        Constants.ConnectionStringKeyPrefix + Guid.NewGuid().ToString("N")
+                        Constants.Keys.ConnectionStringKeyPrefix + Guid.NewGuid().ToString("N")
                         , s))
                     .ToList();
                 _originalAdditonalSettings = newSettings.Select(s =>
@@ -800,7 +800,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             public void Dispose()
             {
-                ConfigurationManager.AppSettings[Constants.ConnectionStringDefaultKey] = _originalSetting;
+                ConfigurationManager.AppSettings[Constants.Keys.ConnectionStringDefaultKey] = _originalSetting;
                 foreach (var pair in _originalAdditonalSettings)
                 {
                     ConfigurationManager.AppSettings[pair.Key] = pair.Value;
