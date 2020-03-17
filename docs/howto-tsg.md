@@ -159,4 +159,4 @@ You can check the health api for service health.
     * Wait for auto recover.
     * Or restart instance.
     
-    If both not work, please concract us.
+    If both not work, please contact us.
