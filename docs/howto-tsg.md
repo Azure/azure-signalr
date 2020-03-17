@@ -146,16 +146,17 @@ To diagnose connectivity issues in `Serverless` mode, the most straight forward 
 
 Troubleshooting `classic` mode connectivity and message delivary issues are similar to [troubleshooting default mode issues](#default_mode_tsg).
 
+<a name="service_health"></a>
 ## Service health
 
 You can check the health api for service health.
 
-* Address: `https://{instance_name}.service.signalr.net/v1/api/health`
-* Status code:
+* Request url: `https://{instance_name}.service.signalr.net/v1/api/health`
+* Response status code:
   * 200: healthy.
   * 503: your service is unhealthy.
     You can:
     * Wait for auto recover.
     * Or restart instance.
     
-    If either not work, please concract us.
+    If both not work, please concract us.
