@@ -255,7 +255,7 @@ namespace Microsoft.Azure.SignalR
             var endpoints = new Dictionary<ServiceEndpoint, ServiceEndpoint>();
             var added = new List<ServiceEndpoint>();
 
-            removedEndpoints = Endpoints.Keys.Except(updatedEndpoints.Keys).ToList();
+            removedEndpoints = Endpoints.Keys.Except(updatedEndpoints.Keys, new ServiceEndpointWeakComparer()).ToList();
 
             foreach (var endpoint in updatedEndpoints)
             {
