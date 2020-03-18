@@ -1035,7 +1035,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async Task TestEndpointManagerWithEndpointTypeUpdate()
+        public async Task TestEndpointManagerWithMultiHubsWithEndpointTypeUpdate()
         {
             var sem = new TestServiceEndpointManager(
                 new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
@@ -1055,6 +1055,13 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
             }, e), sem, router, NullLoggerFactory.Instance);
 
+            var container1 = new TestMultiEndpointServiceConnectionContainer("hub11",
+                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
+            }, e), sem, router, NullLoggerFactory.Instance);
+
             var hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, hubEndpoints.Length);
             Assert.Equal("1", hubEndpoints[0].Name);
@@ -1063,6 +1070,8 @@ namespace Microsoft.Azure.SignalR.Tests
             // mock all active to emulate has clients
             var containers = container.GetTestOnlineContainers();
             await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(true)));
+            var containers1 = container1.GetTestOnlineContainers();
+            await Task.WhenAll(containers1.Select(x => x.MockReceivedStatusPing(true)));
 
             var newEndpoints = new ServiceEndpoint[]
             {
@@ -1080,6 +1089,11 @@ namespace Microsoft.Azure.SignalR.Tests
             var expectedTypes = new EndpointType[] { EndpointType.Primary, EndpointType.Primary, EndpointType.Secondary };
             Assert.True(expectedTypes.SequenceEqual(hubEndpoints.Select(e => e.EndpointType).OrderBy(x => x)));
 
+            hubEndpoints = container1.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(3, hubEndpoints.Length);
+            Assert.True(expectedNames.SequenceEqual(hubEndpoints.Select(e => e.Name).OrderBy(x => x)));
+            Assert.True(expectedTypes.SequenceEqual(hubEndpoints.Select(e => e.EndpointType).OrderBy(x => x)));
+
             // validate endpoint manager side not updated yet
             var ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, ngoEps.Length);
@@ -1090,6 +1104,8 @@ namespace Microsoft.Azure.SignalR.Tests
             // Mock add sync and validate negotiation side updated
             containers = container.GetTestOnlineContainers();
             await Task.WhenAll(containers.Select(x => x.MockReceivedServersPing("aaa;bbb")));
+            containers1 = container1.GetTestOnlineContainers();
+            await Task.WhenAll(containers1.Select(x => x.MockReceivedServersPing("aaa;bbb")));
             await Task.Delay(6000);
 
             ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
@@ -1101,10 +1117,17 @@ namespace Microsoft.Azure.SignalR.Tests
             // Mock status offlined
             containers = container.GetTestOnlineContainers();
             await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(false)));
+            containers1 = container1.GetTestOnlineContainers();
+            await Task.WhenAll(containers1.Select(x => x.MockReceivedStatusPing(false)));
             await Task.Delay(6000);
 
             // validate container updated as well
             hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, hubEndpoints.Length);
+            Assert.Equal("1", hubEndpoints[0].Name);
+            Assert.Equal("22", hubEndpoints[1].Name);
+            Assert.Equal(EndpointType.Primary, hubEndpoints[1].EndpointType);
+            hubEndpoints = container1.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, hubEndpoints.Length);
             Assert.Equal("1", hubEndpoints[0].Name);
             Assert.Equal("22", hubEndpoints[1].Name);
