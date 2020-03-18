@@ -6,7 +6,6 @@ namespace Microsoft.Azure.SignalR
     internal enum ScaleOperation
     {
         Add,
-        Remove,
-        Rename
+        Remove
     }
 }

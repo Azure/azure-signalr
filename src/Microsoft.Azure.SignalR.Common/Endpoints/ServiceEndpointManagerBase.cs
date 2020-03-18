@@ -144,14 +144,37 @@ namespace Microsoft.Azure.SignalR
                 {
                     var hubEndpoints = CreateHubServiceEndpoints(endpoints, true);
 
-                    await Task.WhenAll(hubEndpoints.Select(e => AddHubServiceEndpointAsync(e, cancellationToken)));
+                    await Task.WhenAll(hubEndpoints.SelectMany(h => h.Value.Select(e => AddHubServiceEndpointAsync(e, cancellationToken))));
 
-                    // TODO: update local store for negotiation
+                    UpdateNegotiationEndpointsStore(hubEndpoints, ScaleOperation.Add);
                 }
                 catch (Exception ex)
                 {
                     Log.FailedAddingEndpoints(_logger, ex);
                 }
+            }
+        }
+
+        private void UpdateNegotiationEndpointsStore(Dictionary<string, List<HubServiceEndpoint>> endpoints, ScaleOperation scaleOperation)
+        {
+            foreach (var hubEndpoint in _endpointsPerHub)
+            {
+                var updatedEndpoints = endpoints[hubEndpoint.Key];
+                if (updatedEndpoints.Count == 0)
+                {
+                    return;
+                }
+                var oldEndpoints = hubEndpoint.Value;
+                var newEndpoints = oldEndpoints.ToList();
+                switch (scaleOperation)
+                {
+                    case ScaleOperation.Add:
+                        newEndpoints.AddRange(updatedEndpoints);
+                        break;
+                    default:
+                        break;
+                }
+                _endpointsPerHub.TryUpdate(hubEndpoint.Key, newEndpoints, oldEndpoints);
             }
         }
 
@@ -165,7 +188,7 @@ namespace Microsoft.Azure.SignalR
 
                     // TODO: update local store for negotiation
 
-                    await Task.WhenAll(hubEndpoints.Select(e => RemoveHubServiceEndpointAsync(e, cancellationToken)));
+                    await Task.WhenAll(hubEndpoints.SelectMany(h => h.Value.Select(e => RemoveHubServiceEndpointAsync(e, cancellationToken))));
                 }
                 catch (Exception ex)
                 {
@@ -186,7 +209,7 @@ namespace Microsoft.Azure.SignalR
             return endpoints.Select(e => CreateHubServiceEndpoint(hub, e, needScaleTcs)).ToList();
         }
 
-        private IReadOnlyList<HubServiceEndpoint> CreateHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints, bool needScaleTcs)
+        private Dictionary<string, List<HubServiceEndpoint>> CreateHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints, bool needScaleTcs)
         {
             var hubEndpoints = new List<HubServiceEndpoint>();
             var hubs = _endpointsPerHub.Keys;
@@ -194,7 +217,7 @@ namespace Microsoft.Azure.SignalR
             {
                 hubEndpoints.AddRange(CreateHubServiceEndpoints(hub, endpoints, needScaleTcs));
             }
-            return hubEndpoints;
+            return hubEndpoints.GroupBy(k => k.Hub).ToDictionary(k => k.Key, v => v.ToList());
         }
 
         private async Task AddHubServiceEndpointAsync(HubServiceEndpoint endpoint, CancellationToken cancellationToken)

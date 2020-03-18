@@ -813,6 +813,120 @@ namespace Microsoft.Azure.SignalR.Tests
             containers.First().Value.HandleAck(new AckMessage(1, (int)AckStatus.Ok));
             await task.OrTimeout();
         }
+        
+        [Fact]
+        public async Task TestEndpointManagerWithAddEndpointsWithTimeoutCanPromote()
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1")
+                );
+            var endpoints = sem.Endpoints.Keys.ToArray();
+            Assert.Single(endpoints);
+            Assert.Equal("1", endpoints[0].Name);
+
+            var router = new TestEndpointRouter();
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
+            }, e), sem, router, NullLoggerFactory.Instance, TimeSpan.FromSeconds(10));
+
+            var hubEndpoints = container.GetOnlineEndpoints().ToArray();
+            Assert.Single(hubEndpoints);
+            Assert.Equal("1", hubEndpoints.First().Name);
+
+            var newEndpoints = new ServiceEndpoint[]
+            {
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2"),
+                new ServiceEndpoint(ConnectionString3, EndpointType.Primary, "3")
+            };
+            var timeoutToken = new CancellationTokenSource(1000).Token;
+            _ = sem.TestReloadServiceEndpoints(newEndpoints, 1);
+
+            // wait timeout then check added successfully
+            await Task.Delay(1100);
+
+            // validate container side updated
+            hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(3, hubEndpoints.Length);
+            Assert.Equal("1", hubEndpoints[0].Name);
+            Assert.Equal("2", hubEndpoints[1].Name);
+            Assert.NotNull(hubEndpoints[1].ConnectionContainer);
+            Assert.Equal("3", hubEndpoints[2].Name);
+            Assert.NotNull(hubEndpoints[2].ConnectionContainer);
+
+            // validate endpoint manager side update
+            var ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
+            Assert.Equal(3, ngoEps.Length);
+            Assert.Equal("1", ngoEps[0].Name);
+            Assert.Equal("2", ngoEps[1].Name);
+            Assert.Equal("3", ngoEps[2].Name);
+        }
+
+        [Fact]
+        public async Task TestEndpointManagerWithAddEndpointsWithServersTag()
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1")
+                );
+
+            var router = new TestEndpointRouter();
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
+            }, e), sem, router, NullLoggerFactory.Instance, TimeSpan.FromSeconds(10));
+
+            var endpoints = sem.GetEndpoints("hub").ToArray();
+            Assert.Single(endpoints);
+            Assert.Equal("1", endpoints[0].Name);
+
+            var hubEndpoints = container.GetOnlineEndpoints().ToArray();
+            Assert.Single(hubEndpoints);
+            Assert.Equal("1", hubEndpoints.First().Name);
+
+            var newEndpoints = new ServiceEndpoint[]
+            {
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2")
+            };
+            _ = sem.TestReloadServiceEndpoints(newEndpoints, 10);
+
+            // Wait a few time to let message router updated.
+            await Task.Delay(100);
+
+            hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, hubEndpoints.Length);
+            Assert.Equal("1", hubEndpoints[0].Name);
+            Assert.Equal("2", hubEndpoints[1].Name);
+
+            // without Ready, still single endpoint available in negotiation
+            var ngoEps = sem.GetEndpoints("hub").ToArray();
+            Assert.Single(ngoEps);
+
+            // Mock there're 3 servers SA,SB connected to EP1 and EP2
+            var containers = container.GetTestOnlineContainers();
+            var serversTag = "Server1;Server2;Server3";
+            await Task.WhenAll(containers.Select(c => c.MockReceivedServersPing(serversTag)));
+            
+            // wait one interval+ for Ready state and check negotiation is added.
+            await Task.Delay(6000);
+
+            ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, ngoEps.Length);
+            Assert.Equal("1", ngoEps[0].Name);
+            Assert.Equal("2", ngoEps[1].Name);
+
+            var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
+            await writeTcs.Task.OrTimeout();
+            containers.First().HandleAck(new AckMessage(1, (int)AckStatus.Ok));
+            await task.OrTimeout();
+        }
 
         [Theory]
         [MemberData(nameof(TestReloadEndpointsData))]
@@ -953,10 +1067,17 @@ namespace Microsoft.Azure.SignalR.Tests
                                                           Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
                                                           IServiceEndpointManager endpoint,
                                                           IEndpointRouter router,
-                                                          ILoggerFactory loggerFactory
-
+                                                          ILoggerFactory loggerFactory,
+                                                          TimeSpan? scaleTimeout = null
                 ) : base(hub, generator, endpoint, router, loggerFactory)
             {
+            }
+
+
+            public List<TestServiceConnectionContainer> GetTestOnlineContainers()
+            {
+                var endpoints = GetOnlineEndpoints();
+                return endpoints.Select(e => e.ConnectionContainer as TestServiceConnectionContainer).ToList();
             }
         }
 

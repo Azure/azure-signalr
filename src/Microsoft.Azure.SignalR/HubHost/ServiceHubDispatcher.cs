@@ -110,7 +110,8 @@ namespace Microsoft.Azure.SignalR
                 _serviceEndpointManager,
                 _router,
                 _options,
-                _loggerFactory
+                _loggerFactory,
+                _options.ServiceScaleTimeout
             );
             return factory.Create(hub);
         }

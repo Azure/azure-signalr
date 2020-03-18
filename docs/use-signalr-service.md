@@ -84,6 +84,10 @@ The access token is returned in the response to client's negotiate request.
 - When `ServerSentEvent` or `LongPolling` is used as transport, client connection will be closed due to authentication failure after the expire time.
 You can increase this value to avoid client disconnect.
 
+#### `ApplicationName`	
+- Default value is `null`.	
+- This option can be useful when you want to share the same Azure SignalR instance for different app servers containing the same hub names. If not set, all the connected app servers are considered to be instances of the same application.
+
 #### `ClaimProvider`
 - Default value is `null`.
 - This option controls what claims you want to associate with the client connection.
