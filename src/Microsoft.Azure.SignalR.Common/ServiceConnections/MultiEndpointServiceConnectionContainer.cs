@@ -294,16 +294,34 @@ namespace Microsoft.Azure.SignalR
             _ = RemoveHubServiceEndpointAsync(endpoint);
         }
 
-        private Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint)
+        private async Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint)
         {
-            // TODO: trigger offline ping and wait to remove container.
+            try
+            {
+                var container = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == endpoint.Endpoint && e.EndpointType == endpoint.EndpointType);
+                if (container == null)
+                {
+                    Log.EndpointNotExists(_logger, container.ToString());
+                    return;
+                }
 
-            // finally set task complete when timeout
-            endpoint.CompleteScale();
-            return Task.CompletedTask;
+                _ = container.ConnectionContainer.OfflineAsync(false);
+                await WaitForClientsDisconnect(container);
+                _ = container.ConnectionContainer.StopAsync();
+
+                UpdateEndpointsStore(endpoint, ScaleOperation.Remove);
+            }
+            catch (Exception ex)
+            {
+                Log.FailedRemovingConnectionForEndpoint(_logger, endpoint.ToString(), ex);
+            }
+            finally
+            {
+                endpoint.CompleteScale();
+            }
         }
 
-        private void UpdateEndpointsStore(HubServiceEndpoint newEndpoint, ScaleOperation operation)
+        private void UpdateEndpointsStore(HubServiceEndpoint endpoint, ScaleOperation operation)
         {
             // Use lock to ensure store update safety as parallel changes triggered in container side. 
             lock (_lock)
@@ -311,11 +329,20 @@ namespace Microsoft.Azure.SignalR
                 switch (operation)
                 {
                     case ScaleOperation.Add:
-                        var newEndpoints = _routerEndpoints.endpoints.ToList();
-                        newEndpoints.Add(newEndpoint);
-                        var needRouter = newEndpoints.Count > 1;
-                        _routerEndpoints = (needRouter, newEndpoints);
-                        break;
+                        {
+                            var newEndpoints = _routerEndpoints.endpoints.ToList();
+                            newEndpoints.Add(endpoint);
+                            var needRouter = newEndpoints.Count > 1;
+                            _routerEndpoints = (needRouter, newEndpoints);
+                            break;
+                        }
+                    case ScaleOperation.Remove:
+                        {
+                            var newEndpoints = _routerEndpoints.endpoints.Where(e => e.Endpoint != endpoint.Endpoint || e.EndpointType != endpoint.EndpointType).ToList();
+                            var needRouter = newEndpoints.Count > 1;
+                            _routerEndpoints = (needRouter, newEndpoints);
+                            break;
+                        }
                     default:
                         break;
                 }
@@ -360,6 +387,21 @@ namespace Microsoft.Azure.SignalR
             return allMatch;
         }
 
+        private async Task WaitForClientsDisconnect(HubServiceEndpoint endpoint)
+        {
+            var startTime = DateTime.UtcNow;
+            while (DateTime.UtcNow - startTime < _scaleTimeout)
+            {
+                if (!endpoint.ConnectionContainer.HasClients)
+                {
+                    return;
+                }
+                // status ping interval is 10s, quick delay 5s to do next check
+                await Task.Delay(Constants.Periods.DefaultCloseDelayInterval);
+            }
+            Log.TimeoutWaitingClientsDisconnect(_logger, endpoint.ToString(), _scaleTimeout.Seconds);
+        }
+
         private static class Log
         {
             private static readonly Action<ILogger, string, Exception> _startingConnection =
@@ -382,6 +424,13 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, int, Exception> _timeoutWaitingForAddingEndpoint =
                 LoggerMessage.Define<string, int>(LogLevel.Error, new EventId(8, "TimeoutWaitingForAddingEndpoint"), "Timeout waiting for add a new endpoint {endpoint} in {timeoutSecond} seconds. Check if app configurations are consistant and restart app server.");
+
+            private static readonly Action<ILogger, string, int, Exception> _timeoutWaitingClientsDisconnect =
+               LoggerMessage.Define<string, int>(LogLevel.Error, new EventId(9, "TimeoutWaitingClientsDisconnect"), "Timeout waiting for clients disconnect for {endpoint} in {timeoutSecond} seconds.");
+
+            private static readonly Action<ILogger, string, Exception> _failedRemovingConnectionForEndpoint =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(10, "FailedRemovingConnectionForEndpoint"), "Fail to stop server connections for endpoint {endpoint}.");
+
 
             public static void StartingConnection(ILogger logger, string endpoint)
             {
@@ -416,6 +465,16 @@ namespace Microsoft.Azure.SignalR
             public static void TimeoutWaitingForAddingEndpoint(ILogger logger, string endpoint, int timeoutSecond)
             {
                 _timeoutWaitingForAddingEndpoint(logger, endpoint, timeoutSecond, null);
+            }
+
+            public static void TimeoutWaitingClientsDisconnect(ILogger logger, string endpoint, int timeoutSecond)
+            {
+                _timeoutWaitingClientsDisconnect(logger, endpoint, timeoutSecond, null);
+            }
+
+            public static void FailedRemovingConnectionForEndpoint(ILogger logger, string endpoint, Exception ex)
+            {
+                _failedRemovingConnectionForEndpoint(logger, endpoint, ex);
             }
         }
     }
