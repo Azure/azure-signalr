@@ -151,12 +151,14 @@ Troubleshooting `classic` mode connectivity and message delivary issues are simi
 
 You can check the health api for service health.
 
-* Request url: `https://{instance_name}.service.signalr.net/v1/api/health`
+* Request: GET `https://{instance_name}.service.signalr.net/v1/api/health`
 * Response status code:
   * 200: healthy.
   * 503: your service is unhealthy.
     You can:
-    * Wait for auto recover.
+    * Wait serval minutes for auto-recover.
     * Or restart instance.
     
-    If both not work, please contact us.
+    If both not work, please contact us (add new support request in azure portal).
+
+More about [disaster recovery](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-concept-disaster-recovery).
