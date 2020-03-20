@@ -156,15 +156,12 @@ For a SignalR persistent connection, it first `/negotiate` to Azure SignalR serv
 <a name="429_too_many_requests"></a>
 ## 429(Too Many Requests) returned for client requests
 
-For **Free** instances, there are 2 dimensions of limits, either can cause 429.
+429 returns if your **concurrent** connection count exceeds limit.
 
-1. **Concurrent** connection count <= 20
-2. **Total** message count sent per day <= 20K (refreshed every day at 12:00am UTC time).
+For **Free** instances, **Concurrent** connection count limit is 20
+For **Standard** instances, **concurrent** connection count limit **per unit** is 1K, which means Unit100 allows 100K **concurrent** connections.
 
-There is no message limit for **Standard** tiers.
-
-Check [Here](https://azure.microsoft.com/en-us/pricing/details/signalr-service/) for pricing detail.
-Check [Here](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-concept-messages-and-connections) for how messages and connections are calculated.
+The connections include both client and server connections. check [here](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-concept-messages-and-connections#how-connections-are-counted) for how connections are counted.
 
 <a name="500_error_when_negotiate"></a>
 ## 500 Error when negotiate: Azure SignalR Service is not connected yet, please try again later.
