@@ -101,7 +101,7 @@ You can increase this value to avoid client disconnect.
 
 #### `AccessTokenAlgorithm`
 - Default value is `HS256`
-- This option provides choice of [`SecurityAlgorithms`](https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/SecurityAlgorithms.cs) when generate access token. Now supported optional values are `HS256` and `HS512`.
+- This option provides choice of [`SecurityAlgorithms`](https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/SecurityAlgorithms.cs) when generate access token. Now supported optional values are `HS256` and `HS512`. Please note `HS512` is more secure but the generated token will be comparatively longer than `HS256`.
 
 #### `ApplicationName`	
 - Default value is `null`.	
@@ -192,7 +192,7 @@ You can increase this value to avoid client disconnect.
 
 #### `AccessTokenAlgorithm`
 - Default value is `HS256`
-- This option provides choice of [`SecurityAlgorithms`](https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/SecurityAlgorithms.cs) when generate access token. Now supported optional values are `HS256` and `HS512`.
+- This option provides choice of [`SecurityAlgorithms`](https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/SecurityAlgorithms.cs) when generate access token. Now supported optional values are `HS256` and `HS512`. Please note `HS512` is more secure but the generated token will be comparatively longer than `HS256`.
 
 #### `ClaimProvider`
 - Default value is `null`.
