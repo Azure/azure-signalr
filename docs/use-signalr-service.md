@@ -1,15 +1,30 @@
 # Use Azure SignalR Service
 
-- [Provision a Service Instance](#provision)
-- [Run ASP.NET CORE SignalR](#coresignalr)
-    - [Install and Use Service SDK](#use-sdk)
-    - [Configure Connection String](#connection-string)
-    - [Configure Service Options](#service-options)
-- [Run ASP.NET SignalR](#aspnetsignalr)
-    - [Install and Use Service SDK](#aspnetsignalr-use-sdk)
-    - [Configure Connection String](#aspnetsignalr-connection-string)
-    - [Configure Service Options](#aspnetsignalr-service-options)
-- [Scale Out Application Server](#scaleout)
+- [Use Azure SignalR Service](#use-azure-signalr-service)
+  - [Provision an Azure SignalR Service instance](#provision-an-azure-signalr-service-instance)
+  - [Run ASP.NET CORE SignalR](#run-aspnet-core-signalr)
+    - [1. Install and Use Service SDK](#1-install-and-use-service-sdk)
+    - [2. Configure Connection String](#2-configure-connection-string)
+    - [3. Configure Service Options](#3-configure-service-options)
+      - [`ConnectionCount`](#connectioncount)
+      - [`AccessTokenLifetime`](#accesstokenlifetime)
+      - [`AccessTokenAlgorithm`](#accesstokenalgorithm)
+      - [`ApplicationName`](#applicationname)
+      - [`ClaimProvider`](#claimprovider)
+      - [`ServerStickyMode`](#serverstickymode)
+      - [Sample](#sample)
+  - [Run ASP.NET SignalR](#run-aspnet-signalr)
+    - [1. Install and Use Service SDK](#1-install-and-use-service-sdk-1)
+    - [2. Configure Connection String](#2-configure-connection-string-1)
+    - [3. Configure Service Options](#3-configure-service-options-1)
+      - [`ConnectionCount`](#connectioncount-1)
+      - [`AccessTokenLifetime`](#accesstokenlifetime-1)
+      - [`AccessTokenAlgorithm`](#accesstokenalgorithm-1)
+      - [`ClaimProvider`](#claimprovider-1)
+      - [`ConnectionString`](#connectionstring)
+      - [`ServerStickyMode`](#serverstickymode-1)
+      - [Sample](#sample-1)
+  - [Scale Out Application Server](#scale-out-application-server)
 
 <a name="provision"></a>
 ## Provision an Azure SignalR Service instance
@@ -66,7 +81,7 @@ There are two approaches to configure SignalR Service's connection string in you
     ```
 
 <a name="service-options"></a>
-### 3.Configure Service Options
+### 3. Configure Service Options
 
 There are a few options you can customize when using Azure SignalR Service SDK.
 
@@ -83,6 +98,10 @@ For example, if you have 100,000 clients in total, the connection count can be i
 The access token is returned in the response to client's negotiate request.
 - When `ServerSentEvent` or `LongPolling` is used as transport, client connection will be closed due to authentication failure after the expire time.
 You can increase this value to avoid client disconnect.
+
+#### `AccessTokenAlgorithm`
+- Default value is `HS256`
+- This option provides choice of [`SecurityAlgorithms`](https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/SecurityAlgorithms.cs) when generate access token. Now supported optional values are `HS256` and `HS512`. Please note `HS512` is more secure but the generated token will be comparatively longer than that using `HS256`.
 
 #### `ApplicationName`	
 - Default value is `null`.	
@@ -153,7 +172,7 @@ Set the connection string in the `web.config` file, to the `connectionStrings` s
 ```
 
 <a name="aspnetsignalr-service-options"></a>
-### 3.Configure Service Options
+### 3. Configure Service Options
 
 There are a few [options](https://github.com/Azure/azure-signalr/blob/dev/src/Microsoft.Azure.SignalR.AspNet/ServiceOptions.cs) you can customize when using Azure SignalR Service SDK.
 
@@ -170,6 +189,10 @@ For example, if you have 100,000 clients in total, the connection count can be i
 The access token is returned in the response to client's negotiate request.
 - When `ServerSentEvent` or `LongPolling` is used as transport, client connection will be closed due to authentication failure after the expire time.
 You can increase this value to avoid client disconnect.
+
+#### `AccessTokenAlgorithm`
+- Default value is `HS256`
+- This option provides choice of [`SecurityAlgorithms`](https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/SecurityAlgorithms.cs) when generate access token. Now supported optional values are `HS256` and `HS512`. Please note `HS512` is more secure but the generated token will be comparatively longer than that using `HS256`.
 
 #### `ClaimProvider`
 - Default value is `null`.
