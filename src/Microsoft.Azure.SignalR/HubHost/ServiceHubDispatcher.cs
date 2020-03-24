@@ -109,10 +109,10 @@ namespace Microsoft.Azure.SignalR
                 _loggerFactory,
                 connectionDelegate,
                 _clientConnectionFactory,
-                _nameProvider,
-                _options.MigrationLevel)
+                _nameProvider)
             {
-                ConfigureContext = contextConfig
+                ConfigureContext = contextConfig,
+                MigrationLevel = _options.MigrationLevel
             };
 
             var factory = new ServiceConnectionContainerFactory(

@@ -15,7 +15,8 @@ namespace Microsoft.Azure.SignalR
         private readonly ConnectionDelegate _connectionDelegate;
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly IServerNameProvider _nameProvider;
-        private readonly ServerConnectionMigrationLevel _migrationLevel;
+
+        public ServerConnectionMigrationLevel MigrationLevel { get; set} = ServerConnectionMigrationLevel.Off;
 
         public Action<HttpContext> ConfigureContext { get; set; }
 
@@ -26,9 +27,8 @@ namespace Microsoft.Azure.SignalR
             ILoggerFactory loggerFactory,
             ConnectionDelegate connectionDelegate,
             IClientConnectionFactory clientConnectionFactory,
-            IServerNameProvider nameProvider,
-            ServerConnectionMigrationLevel migrationLevel = ServerConnectionMigrationLevel.Off
-            )
+            IServerNameProvider nameProvider
+        )
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
@@ -37,7 +37,6 @@ namespace Microsoft.Azure.SignalR
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
             _nameProvider = nameProvider;
-            _migrationLevel = migrationLevel;
         }
 
         public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
@@ -54,7 +53,7 @@ namespace Microsoft.Azure.SignalR
                 endpoint,
                 serviceMessageHandler,
                 type,
-                _migrationLevel
+                MigrationLevel
             )
             {
                 ConfigureContext = ConfigureContext
