@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly IServerNameProvider _nameProvider;
 
-        public ServerConnectionMigrationLevel MigrationLevel { get; set} = ServerConnectionMigrationLevel.Off;
+        public ServerConnectionMigrationLevel MigrationLevel { get; set; } = ServerConnectionMigrationLevel.Off;
 
         public Action<HttpContext> ConfigureContext { get; set; }
 

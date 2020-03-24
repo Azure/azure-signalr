@@ -58,8 +58,7 @@ namespace Microsoft.Azure.SignalR.Management
                             loggerFactory,
                             connectionDelegate,
                             clientConnectionFactory,
-                            new DefaultServerNameProvider(),
-                            ServerConnectionMigrationLevel.Off
+                            new DefaultServerNameProvider()
                             );
                         var weakConnectionContainer = new WeakServiceConnectionContainer(
                             serviceConnectionFactory,
