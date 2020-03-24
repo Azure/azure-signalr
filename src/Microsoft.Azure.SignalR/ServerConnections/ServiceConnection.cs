@@ -24,13 +24,11 @@ namespace Microsoft.Azure.SignalR
         // Fix issue: https://github.com/Azure/azure-signalr/issues/198
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
         private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
-        
+
         private const string ClientConnectionCountInHub = "#clientInHub";
         private const string ClientConnectionCountInServiceConnection = "#client";
 
-        private readonly ServerConnectionMigrationLevel _migrationLevel;
-
-        private bool EnableMigration => _migrationLevel != ServerConnectionMigrationLevel.Off;
+        private bool EnableMigration { get; set; }
 
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionFactory _clientConnectionFactory;
@@ -65,7 +63,8 @@ namespace Microsoft.Azure.SignalR
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
             _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
-            _migrationLevel = migrationLevel;
+
+            EnableMigration = migrationLevel != ServerConnectionMigrationLevel.Off;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)

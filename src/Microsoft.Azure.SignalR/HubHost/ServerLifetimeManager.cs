@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,9 +9,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServerLifetimeManager
     {
-        private readonly IList<Func<Task>> _shutdownHooks = new List<Func<Task>>();
-
-        private object _lock = new object();
+        private readonly ConcurrentBag<Func<Task>> _shutdownHooks = new ConcurrentBag<Func<Task>>();
 
         public ServerLifetimeManager(
             IServiceProvider provider
@@ -28,18 +26,12 @@ namespace Microsoft.Azure.SignalR
 
         internal void Register(Func<Task> func)
         {
-            lock (_lock)
-            {
-                _shutdownHooks.Add(func);
-            }
+            _shutdownHooks.Add(func);
         }
 
         private void Shutdown()
         {
-            lock (_lock)
-            {
-                Task.WaitAll(_shutdownHooks.Select(func => func()).ToArray());
-            }
+            Task.WaitAll(_shutdownHooks.Select(func => func()).ToArray());
         }
     }
 }
