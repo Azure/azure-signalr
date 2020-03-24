@@ -157,6 +157,7 @@ You can check the health api for service health.
   * 503: your service is unhealthy.
     You can:
     * Wait serval minutes for auto-recover.
+    * Check the ip address is same as the ip from portal.
     * Or restart instance.
     
     If both not work, please contact us (add new support request in azure portal).
