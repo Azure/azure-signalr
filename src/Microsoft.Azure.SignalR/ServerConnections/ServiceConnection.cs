@@ -28,8 +28,6 @@ namespace Microsoft.Azure.SignalR
         private const string ClientConnectionCountInHub = "#clientInHub";
         private const string ClientConnectionCountInServiceConnection = "#client";
 
-        private bool EnableMigration { get; set; }
-
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly int _closeTimeOutMilliseconds;
@@ -40,6 +38,8 @@ namespace Microsoft.Azure.SignalR
             new string[4] { ClientConnectionCountInHub, null, ClientConnectionCountInServiceConnection, null };
 
         private readonly ConnectionDelegate _connectionDelegate;
+
+        private readonly bool _enableMigration;
 
         public Action<HttpContext> ConfigureContext { get; set; }
 
@@ -63,8 +63,7 @@ namespace Microsoft.Azure.SignalR
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
             _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
-
-            EnableMigration = migrationLevel != ServerConnectionMigrationLevel.Off;
+            _enableMigration = migrationLevel != ServerConnectionMigrationLevel.Off;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -141,7 +140,7 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             var connectionId = closeConnectionMessage.ConnectionId;
-            if (EnableMigration && _clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
+            if (_enableMigration && _clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
             {
                 if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
                 {
