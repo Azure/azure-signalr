@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR
             $"Please specify a configuration entry for {Constants.Keys.ConnectionStringDefaultKey}, " +
             "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
-        private readonly string _accessKey;
+        private readonly AccessKey _accessKey;
         private readonly string _appName;
         private readonly TimeSpan _accessTokenLifetime;
         private readonly IServiceEndpointGenerator _generator;

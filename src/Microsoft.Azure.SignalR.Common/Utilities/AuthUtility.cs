@@ -23,19 +23,21 @@ namespace Microsoft.Azure.SignalR
             string audience = null,
             IEnumerable<Claim> claims = null,
             DateTime? expires = null,
-            string signingKey = null,
+            AccessKey signingKey = null,
             DateTime? issuedAt = null,
             DateTime? notBefore = null,
             AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
         {
             var subject = claims == null ? null : new ClaimsIdentity(claims);
             SigningCredentials credentials = null;
-            if (!string.IsNullOrEmpty(signingKey))
+            if (signingKey != null)
             {
                 // Refer: https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/releases/tag/5.5.0
                 // From version 5.5.0, SignatureProvider caching is turned On by default, assign KeyId to enable correct cache for same SigningKey
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
-                securityKey.KeyId = signingKey.GetHashCode().ToString();
+                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey.Value))
+                {
+                    KeyId = signingKey.Id
+                };
                 credentials = new SigningCredentials(securityKey, GetSecurityAlgorithm(algorithm));
             }
 
@@ -51,7 +53,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         public static string GenerateAccessToken(
-            string signingKey, 
+            AccessKey signingKey, 
             string audience, 
             IEnumerable<Claim> claims, 
             TimeSpan lifetime,

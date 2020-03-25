@@ -139,8 +139,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 token.ValidTo,
                 token.ValidFrom,
                 token.ValidFrom,
-                AccessKey,
-                string.Empty);
+                AccessKey
+            );
 
             Assert.Equal(expectedTokenString, tokenString);
         }
@@ -161,8 +161,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 token.ValidTo,
                 token.ValidFrom,
                 token.ValidFrom,
-                AccessKey,
-                string.Empty);
+                AccessKey
+            );
 
             Assert.Equal(expectedTokenString, tokenString);
         }
@@ -180,8 +180,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 token.ValidTo,
                 token.ValidFrom,
                 token.ValidFrom,
-                AccessKey,
-                requestId);
+                AccessKey
+            );
 
             Assert.Equal(expectedTokenString, tokenString);
         }
@@ -199,8 +199,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 token.ValidTo,
                 token.ValidFrom,
                 token.ValidFrom,
-                AccessKey,
-                requestId);
+                AccessKey
+            );
 
             Assert.Equal(expectedTokenString, tokenString);
         }
