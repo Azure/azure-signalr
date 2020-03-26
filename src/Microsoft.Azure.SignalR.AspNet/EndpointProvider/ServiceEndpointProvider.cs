@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private const string ServerPath = "aspnetserver";
 
         private readonly string _endpoint;
-        private readonly string _accessKey;
+        private readonly AccessKey _accessKey;
         private readonly string _appName;
         private readonly int? _port;
         private readonly TimeSpan _accessTokenLifetime;

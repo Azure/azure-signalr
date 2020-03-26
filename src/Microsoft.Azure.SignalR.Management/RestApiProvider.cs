@@ -17,11 +17,11 @@ namespace Microsoft.Azure.SignalR.Management
 
         public RestApiProvider(string connectionString, string hubName, string appName)
         {
-            string accessKey;
-            (_baseEndpoint, accessKey, _, _port) = ConnectionStringParser.Parse(connectionString);
+            string key;
+            (_baseEndpoint, key, _, _port) = ConnectionStringParser.Parse(connectionString);
             _hubName = hubName;
             _appName = appName;
-            _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(accessKey);
+            _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(new AccessKey(key));
             _requestPrefix = _port == null ? $"{_baseEndpoint}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}";
             _audiencePrefix = $"{_baseEndpoint}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}";
         }
