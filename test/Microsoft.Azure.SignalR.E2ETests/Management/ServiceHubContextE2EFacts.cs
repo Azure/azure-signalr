@@ -331,10 +331,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName, loggerFactory);
 
                 var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
-                var clientAccessTokens = from userName in _userNames
+                var tasks = from userName in _userNames
                                          select serviceManager.GenerateClientAccessToken(HubName, userName);
 
-                return (clientEndpoint, clientAccessTokens.ToArray(), serviceHubContext);
+                await Task.WhenAll(tasks);
+
+                var tokens = new List<string>();
+                foreach (var task in tasks)
+                {
+                    tokens.Add(task.Result);
+                }
+                return (clientEndpoint, tokens, serviceHubContext);
             }
         }
 

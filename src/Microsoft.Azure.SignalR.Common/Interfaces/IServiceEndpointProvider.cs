@@ -5,16 +5,17 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
     internal interface IServiceEndpointProvider
     {
-        string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null);
+        Task<string> GenerateClientAccessTokenAsync(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null);
 
         string GetClientEndpoint(string hubName, string originalPath, string queryString);
 
-        string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null);
+        Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null);
 
         string GetServerEndpoint(string hubName);
 

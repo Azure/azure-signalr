@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <param name="claims">The claim list to be put into access token.</param>
         /// <param name="lifeTime">The lifetime of the token. The default value is one hour.</param>
         /// <returns>Client access token to Azure SignalR Service.</returns>
-        string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null);
+        Task<string> GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null);
 
         /// <summary>
         /// Creates an client endpoint for SignalR hub connections to connect to Azure SignalR Service
