@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR
             NegotiationResponse negotiateResponse = null;
             try
             {
-                negotiateResponse = handler.Process(context, hubName);
+                negotiateResponse = await handler.Process(context, hubName);
 
                 if (context.Response.HasStarted)
                 {

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using Xunit;
 
@@ -107,7 +108,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact(Skip = "Access token does not need to be unique")]
-        internal void GenerateMultipleAccessTokenShouldBeUnique()
+        internal async Task GenerateMultipleAccessTokenShouldBeUnique()
         {
             var count = 1000;
             var sep = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName);
@@ -115,8 +116,8 @@ namespace Microsoft.Azure.SignalR.Tests
             var tokens = new List<string>();
             for (int i = 0; i < count; i++)
             {
-                tokens.Add(sep.GenerateClientAccessToken(nameof(TestHub)));
-                tokens.Add(sep.GenerateServerAccessToken(nameof(TestHub), userId));
+                tokens.Add(await sep.GenerateClientAccessTokenAsync(nameof(TestHub)));
+                tokens.Add(await sep.GenerateServerAccessTokenAsync(nameof(TestHub), userId));
             }
 
             var distinct = tokens.Distinct();
@@ -125,10 +126,10 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [MemberData(nameof(DefaultEndpointProviders))]
-        internal void GenerateServerAccessToken(IServiceEndpointProvider provider)
+        internal async Task GenerateServerAccessToken(IServiceEndpointProvider provider)
         {
             const string userId = "UserA";
-            var tokenString = provider.GenerateServerAccessToken(nameof(TestHub), userId);
+            var tokenString = await provider.GenerateServerAccessTokenAsync(nameof(TestHub), userId);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/server/?hub={HubName}",
@@ -147,10 +148,10 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [MemberData(nameof(DefaultEndpointProvidersPlusPrefix))]
-        internal void GenerateServerAccessTokenWithPrefix(IServiceEndpointProvider provider)
+        internal async Task GenerateServerAccessTokenWithPrefix(IServiceEndpointProvider provider)
         {
             const string userId = "UserA";
-            var tokenString = provider.GenerateServerAccessToken(nameof(TestHub), userId);
+            var tokenString = await provider.GenerateServerAccessTokenAsync(nameof(TestHub), userId);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/server/?hub={AppName}_{HubName}",
@@ -169,10 +170,10 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [MemberData(nameof(DefaultEndpointProviders))]
-        internal void GenerateClientAccessToken(IServiceEndpointProvider provider)
+        internal async Task GenerateClientAccessToken(IServiceEndpointProvider provider)
         {
             var requestId = Guid.NewGuid().ToString();
-            var tokenString = provider.GenerateClientAccessToken(HubName);
+            var tokenString = await provider.GenerateClientAccessTokenAsync(HubName);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/client/?hub={HubName}",
@@ -188,10 +189,9 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [MemberData(nameof(DefaultEndpointProvidersPlusPrefix))]
-        internal void GenerateClientAccessTokenWithPrefix(IServiceEndpointProvider provider)
+        internal async Task GenerateClientAccessTokenWithPrefix(IServiceEndpointProvider provider)
         {
-            var requestId = Guid.NewGuid().ToString();
-            var tokenString = provider.GenerateClientAccessToken(HubName);
+            var tokenString = await provider.GenerateClientAccessTokenAsync(HubName);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
             var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/client/?hub={AppName}_{HubName}",
@@ -208,10 +208,10 @@ namespace Microsoft.Azure.SignalR.Tests
         [Theory]
         [InlineData(AccessTokenAlgorithm.HS256)]
         [InlineData(AccessTokenAlgorithm.HS512)]
-        public void GenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
+        public async Task GenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
         {
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
-            var generatedToken = provider.GenerateServerAccessToken("hub1", "user1");
+            var generatedToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
 
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(generatedToken);
 
@@ -221,10 +221,10 @@ namespace Microsoft.Azure.SignalR.Tests
         [Theory]
         [InlineData(AccessTokenAlgorithm.HS256)]
         [InlineData(AccessTokenAlgorithm.HS512)]
-        public void GenerateClientAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
+        public async Task GenerateClientAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
         {
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
-            var generatedToken = provider.GenerateClientAccessToken("hub1");
+            var generatedToken = await provider.GenerateClientAccessTokenAsync("hub1");
 
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(generatedToken);
 

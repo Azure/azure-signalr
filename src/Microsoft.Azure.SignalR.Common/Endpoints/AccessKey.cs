@@ -1,17 +1,18 @@
-﻿namespace Microsoft.Azure.SignalR
+﻿using System.Threading.Tasks;
+
+namespace Microsoft.Azure.SignalR
 {
     internal class AccessKey
     {
-        public string Value { get; set; }
-        public string Id { get; set; }
+        public string Value { get; }
+        public string Id { get; }
 
-        public AccessKey(string key, string keyId = null)
+        public Task AuthorizedTask => Task.CompletedTask;
+
+        public AccessKey(string key)
         {
             Value = key;
-            if (string.IsNullOrEmpty(keyId))
-            {
-                Id = key.GetHashCode().ToString();
-            }
+            Id = key.GetHashCode().ToString();
         }
     }
 }
