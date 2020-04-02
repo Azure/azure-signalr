@@ -44,7 +44,7 @@ More samples on how to use Azure SignalR Service can be found [here](https://git
 
 > Note:
 >
-> Make sure ASP.NET SignalR client version is using 2.4.0 or above.
+> Please make sure ASP.NET SignalR client version is using 2.4.0 or above.
 
 Package [Microsoft.Azure.SignalR.AspNet](https://www.nuget.org/packages/Microsoft.Azure.SignalR.AspNet) is the one to use when you are using [ASP.NET SignalR](https://github.com/SignalR/SignalR). If you are not familiar with ASP.NET SignalR yet, we recommend you to read [ASP.NET SignalR's documentation](https://docs.microsoft.com/en-us/aspnet/signalr/) first.
 
