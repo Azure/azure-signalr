@@ -78,11 +78,6 @@ namespace Microsoft.Azure.SignalR
         // test only
         internal ServiceEndpoint() { }
 
-        internal void UpdateAccessKey(AccessKey key)
-        {
-            AccessKey = key;
-        }
-
         public override string ToString()
         {
             var prefix = string.IsNullOrEmpty(Name) ? "" : $"[{Name}]";

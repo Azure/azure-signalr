@@ -9,5 +9,6 @@ namespace Microsoft.Azure.SignalR
         string ApplicationName { get; }
         string ConnectionString { get; }
         int ConnectionCount { get; }
+        AzureAdOptions AzureAdOptions { get; }
     }
 }

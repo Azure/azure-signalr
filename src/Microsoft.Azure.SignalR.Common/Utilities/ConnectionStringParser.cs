@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR
                 dict.Add(key, kvp[1].Trim());
             }
 
-            if (!dict.ContainsKey(EndpointProperty) || !dict.ContainsKey(AccessKeyProperty))
+            if (!dict.ContainsKey(EndpointProperty))
             {
                 throw new ArgumentException(MissingRequiredProperty, nameof(connectionString));
             }
@@ -87,7 +87,14 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
-            return (dict[EndpointProperty].TrimEnd('/'), dict[AccessKeyProperty], version, port);
+            if (dict.TryGetValue(AccessKeyProperty, out var accessKey))
+            {
+                return (dict[EndpointProperty].TrimEnd('/'), accessKey, version, port);
+            }
+            else
+            {
+                return (dict[EndpointProperty].TrimEnd('/'), null, version, port);
+            }
         }
 
         internal static bool ValidateEndpoint(string endpoint)

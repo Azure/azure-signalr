@@ -60,6 +60,11 @@ namespace Microsoft.Azure.SignalR
         public ServerStickyMode ServerStickyMode { get; set; } = ServerStickyMode.Disabled;
 
         /// <summary>
+        /// 
+        /// </summary>
+        public AzureAdOptions AzureAdOptions { get; set; } = new AzureAdOptions();
+
+        /// <summary>
         /// Specifies if the client-connection assigned to this server can be migrated to another server.
         /// Default value is 0.
         /// 1: Only migrate client-connection if server was shutdown gracefully.

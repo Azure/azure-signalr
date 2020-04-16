@@ -27,6 +27,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.Protocols", "src\Microsoft.Azure.SignalR.Protocols\Microsoft.Azure.SignalR.Protocols.csproj", "{2EBFCD26-6E31-4855-ABF5-0A82E78F87C7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{2429FBD8-1FCE-4C42-AA28-DF32F7249E77}"
+	ProjectSection(SolutionItems) = preProject
+		test\Microsoft.Azure.SignalR.Common.Tests\AADHelperTest.cs = test\Microsoft.Azure.SignalR.Common.Tests\AADHelperTest.cs
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.Tests", "test\Microsoft.Azure.SignalR.Tests\Microsoft.Azure.SignalR.Tests.csproj", "{764DCFF5-D28D-4CEF-B186-B7A62FBB3E98}"
 EndProject

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.Azure.SignalR.Common.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -46,8 +47,13 @@ namespace Microsoft.Azure.SignalR.AspNet
             _port = endpoint.Port;
             _algorithm = options.AccessTokenAlgorithm;
             Proxy = options.Proxy;
-        }
 
+            if (!_accessKey.InitializedTask.IsCompleted)
+            {
+                var app = AADHelper.BuildApplication(options.AzureAdOptions);
+                _ = AccessKey.AuthorizeTask(app, _accessKey, endpoint.Endpoint, endpoint.Port);
+            }
+        }
 
         private string GetPrefixedHubName(string applicationName, string hubName)
         {
@@ -57,7 +63,8 @@ namespace Microsoft.Azure.SignalR.AspNet
         public async Task<string> GenerateClientAccessTokenAsync(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
         {
             var audience = $"{_endpoint}/{ClientPath}";
-            await _accessKey.AuthorizedTask;
+
+            await _accessKey.InitializedTask;
             return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
@@ -72,9 +79,9 @@ namespace Microsoft.Azure.SignalR.AspNet
                 };
             }
 
-            await _accessKey.AuthorizedTask;
             var audience = $"{_endpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
 
+            await _accessKey.InitializedTask;
             return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 

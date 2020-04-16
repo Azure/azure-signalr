@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.Azure.SignalR.Common.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -22,6 +23,8 @@ namespace Microsoft.Azure.SignalR
         private readonly IServiceEndpointGenerator _generator;
         private readonly AccessTokenAlgorithm _algorithm;
 
+        private readonly TimerAwaitable _timer;
+
         public IWebProxy Proxy { get; }
 
         public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions serviceOptions)
@@ -42,6 +45,33 @@ namespace Microsoft.Azure.SignalR
             var version = endpoint.Version;
 
             _generator = new DefaultServiceEndpointGenerator(endpoint.Endpoint, version, port);
+
+            if (!_accessKey.Initialized)
+            {
+                _timer = new TimerAwaitable(TimeSpan.FromMinutes(55), TimeSpan.FromMinutes(55));
+                _ = RefreshAccessKey(endpoint, _accessKey, serviceOptions.AzureAdOptions);
+            }
+        }
+
+        private async Task RefreshAccessKey(ServiceEndpoint endpoint, AccessKey key, AzureAdOptions options)
+        {
+            var app = AADHelper.BuildApplication(options);
+
+            while (await _timer)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    try
+                    {
+                        await AccessKey.AuthorizeTask(app, key, endpoint.Endpoint, endpoint.Port);
+                        break;
+                    }
+                    catch (Exception)
+                    {
+                        // Retry authorizing access key, up to 3 times.
+                    }
+                }
+            }
         }
 
         public async Task<string> GenerateClientAccessTokenAsync(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
@@ -53,7 +83,7 @@ namespace Microsoft.Azure.SignalR
 
             var audience = _generator.GetClientAudience(hubName, _appName);
 
-            await _accessKey.AuthorizedTask;
+            await _accessKey.InitializedTask;
             return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
@@ -67,7 +97,7 @@ namespace Microsoft.Azure.SignalR
             var audience = _generator.GetServerAudience(hubName, _appName);
             var claims = userId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, userId) } : null;
 
-            await _accessKey.AuthorizedTask;
+            await _accessKey.InitializedTask;
             return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 

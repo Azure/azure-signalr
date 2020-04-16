@@ -72,6 +72,8 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// </summary>
         public int? DisconnectTimeoutInSeconds { get; set; }
 
+        public AzureAdOptions AzureAdOptions { get; set; } = new AzureAdOptions();
+
         public ServiceOptions()
         {
             var count = ConfigurationManager.ConnectionStrings.Count;

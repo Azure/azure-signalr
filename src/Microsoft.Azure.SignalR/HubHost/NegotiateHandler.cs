@@ -51,7 +51,10 @@ namespace Microsoft.Azure.SignalR
             var request = context.Request;
             var cultureName = context.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture.Name;
             var originalPath = GetOriginalPath(request.Path);
-            var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(context, _endpointManager.GetEndpoints(hubName)));
+
+            var endpoints = _endpointManager.GetEndpoints(hubName);
+            var endpointRouter = _router.GetNegotiateEndpoint(context, endpoints);
+            var provider = _endpointManager.GetEndpointProvider(endpointRouter);
 
             if (provider == null)
             {
