@@ -13,18 +13,21 @@ namespace Microsoft.Azure.SignalR.Tests
     {
         public static readonly JwtSecurityTokenHandler JwtHandler = new JwtSecurityTokenHandler();
 
-        public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, AccessKey accessKey, IEnumerable<Claim> customClaims = null)
+        public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string accessKey, IEnumerable<Claim> customClaims = null)
         {
-            var requestId = token.Claims.FirstOrDefault(claim => claim.Type == Constants.ClaimType.Id)?.Value;
+            // use actual token's signingKey.Id
+            var signingKey = new AccessKey(accessKey);
+            signingKey.Id = token.Header.Kid;
 
+            // use actual token's user ID
+            var claims = new List<Claim>();
             var userClaimType = JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap[ClaimTypes.NameIdentifier];
             var userId = token.Claims.FirstOrDefault(claim => claim.Type == userClaimType)?.Value;
-
-            var claims = new List<Claim>();
             if (userId != null)
             {
                 claims.Add(new Claim(ClaimTypes.NameIdentifier, userId));
             }
+
             if (customClaims != null)
             {
                 claims.AddRange(customClaims.ToList());
@@ -35,15 +38,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 token.ValidTo,
                 token.ValidFrom,
                 token.ValidFrom,
-                accessKey
+                signingKey
             );
 
             return tokenString;
-        }
-
-        public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string key, IEnumerable<Claim> customClaims = null)
-        {
-            return GenerateExpectedAccessToken(token, audience, new AccessKey(key), customClaims: customClaims);
         }
 
         public static string GenerateJwtBearer(

@@ -5,7 +5,7 @@ namespace Microsoft.Azure.SignalR
     internal class AccessKey
     {
         public string Value { get; }
-        public string Id { get; }
+        public string Id { get; internal set; }
 
         public Task AuthorizedTask => Task.CompletedTask;
 

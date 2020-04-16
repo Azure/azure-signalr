@@ -24,13 +24,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         [Theory]
         [MemberData(nameof(GetTestData))]
-        public void RestApiTest(string audience, string tokenString, string expectedAudience)
+        public void RestApiTest(string actualAudience, string actualTokenString, string expectedAudience)
         {
-            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
-            string expectedTokenString = JwtTokenHelper.GenerateExpectedAccessToken(token, expectedAudience, _accessKey);
+            var actaulToken = JwtTokenHelper.JwtHandler.ReadJwtToken(actualTokenString);
+            string expectedTokenString = JwtTokenHelper.GenerateExpectedAccessToken(actaulToken, expectedAudience, _accessKey);
 
-            Assert.Equal(expectedAudience, audience);
-            Assert.Equal(expectedTokenString, tokenString);
+            Assert.Equal(expectedAudience, actualAudience);
+            Assert.Equal(expectedTokenString, actualTokenString);
         }
 
         public static IEnumerable<object[]> GetTestData()
