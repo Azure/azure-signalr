@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.Extensions.Primitives;
 using Xunit;
 
@@ -297,6 +298,20 @@ $@"Binary encoding changed from
 to
     [{actual}]
 Please verify the MsgPack output and update the baseline");
+        }
+
+        [Fact]
+        public void WriteAndParseLargeData()
+        {
+            var protocol = new ServiceProtocol();
+            var count = 70000;
+            var str = new string(Enumerable.Range(0, count).Select(s => 'a').ToArray());
+            var largeData = Encoding.UTF8.GetBytes(str);
+            var message = new ConnectionDataMessage("abc", largeData);
+            var bytes = protocol.GetMessageBytes(message);
+            var seq = new ReadOnlySequence<byte>(bytes);
+            var parsing = protocol.TryParseMessage(ref seq, out var result);
+            Assert.Equal(count, (result as ConnectionDataMessage).Payload.Length);
         }
 
         [Fact]
