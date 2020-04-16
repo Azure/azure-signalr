@@ -44,7 +44,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             return ServiceConnectionContainer.WriteAsync(
-                new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)));
+                new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args), MessageIdGenerator.Generate()));
         }
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             return ServiceConnectionContainer.WriteAsync(
-                new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)));
+                new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args), null)); // todo: wanl
         }
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)

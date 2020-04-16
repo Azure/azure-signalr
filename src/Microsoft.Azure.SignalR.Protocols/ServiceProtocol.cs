@@ -314,6 +314,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             writer.WriteArrayHeader(3);
             writer.Write(ServiceProtocolConstants.BroadcastDataMessageType);
+            writer.Write(message.MessageId);
             WriteStringArray(ref writer, message.ExcludedList);
             WritePayloads(ref writer, message.Payloads);
         }
@@ -560,10 +561,12 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static BroadcastDataMessage CreateBroadcastDataMessage(ref MessagePackReader reader)
         {
+
+            var messageId = ReadString(ref reader, "messageId");
             var excludedList = ReadStringArray(ref reader, "excludedList");
             var payloads = ReadPayloads(ref reader);
-
-            return new BroadcastDataMessage(excludedList, payloads);
+            
+            return new BroadcastDataMessage(excludedList, payloads, messageId);
         }
 
         private static JoinGroupMessage CreateJoinGroupMessage(ref MessagePackReader reader)

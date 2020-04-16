@@ -11,15 +11,21 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// </summary>
     public abstract class MulticastDataMessage : ServiceMessage
     {
-        protected MulticastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads)
+        protected MulticastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads, string messageId = null)
         {
             Payloads = payloads;
+            MessageId = messageId;
         }
 
         /// <summary>
         /// Gets or sets the payload dictionary which contains binary payload of multiple protocols.
         /// </summary>
         public IDictionary<string, ReadOnlyMemory<byte>> Payloads { get; set; }
+
+        /// <summary>
+        /// Gets or sets message Id to the payload
+        /// </summary>
+        public string MessageId { get; set; }
     }
 
     /// <summary>
@@ -100,7 +106,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Initializes a new instance of the <see cref="BroadcastDataMessage"/> class.
         /// </summary>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
-        public BroadcastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads) : this(null, payloads)
+        /// <param name="messageId">The message Id</param>
+        public BroadcastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads, string messageId) : this(null, payloads, messageId)
         {
         }
 
@@ -109,7 +116,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         /// <param name="excludedList">The list of excluded connection Ids.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
-        public BroadcastDataMessage(IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads) : base(payloads)
+        /// <param name="messageId">The message Id</param>
+        public BroadcastDataMessage(IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads, string messageId) : base(payloads, messageId)
         {
             ExcludedList = excludedList;
         }

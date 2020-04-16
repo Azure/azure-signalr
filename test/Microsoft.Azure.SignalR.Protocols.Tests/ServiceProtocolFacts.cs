@@ -171,8 +171,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 {
                     ["json"] = new byte[] {4, 5, 6, 7, 1, 2, 3},
                     ["messagepack"] = new byte[] {5, 6, 7, 1, 2, 3, 4}
-                }),
-                binary: "kwqQgqRqc29uxAcEBQYHAQIDq21lc3NhZ2VwYWNrxAcFBgcBAgME"),
+                }, "59f9f481-4a18-4ef5-ab4e-8d3ad372062a"),
+                binary: "kwrZJDU5ZjlmNDgxLTRhMTgtNGVmNS1hYjRlLThkM2FkMzcyMDYyYZCCpGpzb27EBwQFBgcBAgOrbWVzc2FnZXBhY2vEBwUGBwECAwQ="),
             new ProtocolTestData(
                 name: "BroadcastExcept",
                 message: new BroadcastDataMessage(new[] {"conn7", "conn8", "conn9"},
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     {
                         ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
-                    }),
+                    }, Guid.NewGuid().ToString()),
                 binary: "kwqTpWNvbm43pWNvbm44pWNvbm45gqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUG"),
             new ProtocolTestData(
                 name: "JoinGroup",

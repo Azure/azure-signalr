@@ -200,6 +200,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (!await SafeWriteAsync(serviceMessage))
             {
+                Log.FailedSendingMessage();
                 throw new ServiceConnectionNotActiveException(_errorMessage);
             }
         }
@@ -645,6 +646,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _receivedInstanceOfflinePing =
                 LoggerMessage.Define<string>(LogLevel.Information, new EventId(31, "ReceivedInstanceOfflinePing"), "Received instance offline service ping: {InstanceId}");
 
+            private static readonly Action<ILogger, string, Exception> _failedSengingMessage =
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(32, "FailedSendingMessage"), "Failed sending message: {messageId}");
+
             public static void FailedToWrite(ILogger logger, string serviceConnectionId, Exception exception)
             {
                 _failedToWrite(logger, exception.Message, serviceConnectionId, null);
@@ -738,6 +742,11 @@ namespace Microsoft.Azure.SignalR
                 _failedSendingPing(logger, serviceConnectionId, exception);
             }
 
+            public static void FailedSendingMessage(ILogger logger, string messageId, Exception exception)
+            {
+                _failedSendingPing(logger, messageId, exception);
+            }
+
             public static void ReceivedServiceErrorMessage(ILogger logger, string connectionId, string errorMessage)
             {
                 _receivedServiceErrorMessage(logger, connectionId, errorMessage, null);
@@ -753,9 +762,9 @@ namespace Microsoft.Azure.SignalR
                 _unexpectedExceptionInStop(logger, connectionId, exception);
             }
 
-            public static void ReceivedInstanceOfflinePing(ILogger logger, string instanceId)
+            public static void ReceivedInstanceOfflinePing(ILogger logger, string messageId)
             {
-                _receivedInstanceOfflinePing(logger, instanceId, null);
+                _receivedInstanceOfflinePing(logger, messageId, null);
             }
         }
     }

@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             // broadcast case
             if (TryGetName(message.Key, PrefixHelper.HubPrefix, out var hubName))
             {
-                yield return new HubMessage(hubName, new BroadcastDataMessage(excludedList: GetExcludedIds(message.Filter), payloads: GetPayloads(segment)), message);
+                yield return new HubMessage(hubName, new BroadcastDataMessage(excludedList: GetExcludedIds(message.Filter), payloads: GetPayloads(segment), null), message);// todo: wanl
             }
             // echo case
             else if (TryGetName(message.Key, PrefixHelper.HubConnectionIdPrefix, out _))
