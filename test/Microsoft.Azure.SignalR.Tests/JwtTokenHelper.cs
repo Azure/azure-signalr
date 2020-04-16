@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
@@ -15,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Tests
     {
         public static readonly JwtSecurityTokenHandler JwtHandler = new JwtSecurityTokenHandler();
 
-        public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string accessKey, IEnumerable<Claim> customClaims = null)
+        public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, AccessKey accessKey, IEnumerable<Claim> customClaims = null)
         {
             var requestId = token.Claims.FirstOrDefault(claim => claim.Type == Constants.ClaimType.Id)?.Value;
 
@@ -32,24 +30,31 @@ namespace Microsoft.Azure.SignalR.Tests
                 claims.AddRange(customClaims.ToList());
             }
 
-            var tokenString = GenerateJwtBearer(audience, claims, token.ValidTo,
+            var tokenString = GenerateJwtBearer(
+                audience, claims,
+                token.ValidTo,
                 token.ValidFrom,
                 token.ValidFrom,
-                accessKey,
-                requestId);
+                accessKey
+            );
 
             return tokenString;
         }
 
-        public static string GenerateJwtBearer(string audience,
+        public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string key, IEnumerable<Claim> customClaims = null)
+        {
+            return GenerateExpectedAccessToken(token, audience, new AccessKey(key), customClaims: customClaims);
+        }
+
+        public static string GenerateJwtBearer(
+            string audience,
             IEnumerable<Claim> subject,
             DateTime expires,
             DateTime notBefore,
             DateTime issueAt,
-            string signingKey,
-            string requestId)
+            AccessKey signingKey
+        )
         {
-            
             return AuthUtility.GenerateJwtBearer(
                 issuer: null,
                 audience: audience,
@@ -57,7 +62,20 @@ namespace Microsoft.Azure.SignalR.Tests
                 notBefore: notBefore,
                 expires: expires,
                 issuedAt: issueAt,
-                signingKey: signingKey);
+                signingKey: signingKey
+            );
+        }
+
+        public static string GenerateJwtBearer(
+            string audience,
+            IEnumerable<Claim> subject,
+            DateTime expires,
+            DateTime notBefore,
+            DateTime issueAt,
+            string signingKey
+        )
+        {
+            return GenerateJwtBearer(audience, subject, expires, notBefore, issueAt, new AccessKey(signingKey));
         }
     }
 }

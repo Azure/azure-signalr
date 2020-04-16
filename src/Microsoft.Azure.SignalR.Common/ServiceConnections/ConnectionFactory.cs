@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR
         {
             var provider = endpoint.Provider;
             var hubName = endpoint.Hub;
-            Func<Task<string>> accessTokenGenerater = () => Task.FromResult(provider.GenerateServerAccessToken(hubName, _userId));
+            Func<Task<string>> accessTokenGenerater = () => provider.GenerateServerAccessTokenAsync(hubName, _userId);
             var url = GetServiceUrl(provider, hubName, connectionId, target);
             var connectionOptions = new WebSocketConnectionOptions
             {

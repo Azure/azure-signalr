@@ -68,7 +68,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(0, 1, 1)] // stop more than start will log warn
         [InlineData(1, 2, 1)] // stop more than start will log warn
         [InlineData(3, 1, 0)]
-        public async Task TestServerIdsPing(int startCount, int stopCount, int expectedWarn)
+        public async Task TestServersPing(int startCount, int stopCount, int expectedWarn)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
             {
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     await Task.WhenAny(connections.Select(c =>
                     {
                         var connection = c as SimpleTestServiceConnection;
-                        return connection.ServerIdsPingTask.OrTimeout(7000);
+                        return connection.ServersPingTask.OrTimeout(7000);
                     })); 
                 }
 
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(1, 1, 0, 1, 1)]
         [InlineData(1, 1, 1, 0, 0)]
         [InlineData(1, 3, 2, 2, 2)] // first time error stop won't break second time write.
-        public async Task TestServerIdsPingWorkSecondTime(int firstStart, int firstStop, int secondStart, int secondStop, int expectedWarn)
+        public async Task TestServersPingWorkSecondTime(int firstStart, int firstStop, int secondStart, int secondStop, int expectedWarn)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
             {
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     await Task.WhenAny(connections.Select(c =>
                     {
                         var connection = c as SimpleTestServiceConnection;
-                        return connection.ServerIdsPingTask.OrTimeout(7000);
+                        return connection.ServersPingTask.OrTimeout(7000);
                     }));
                 }
 
@@ -216,11 +216,11 @@ namespace Microsoft.Azure.SignalR.Tests
             public ServiceConnectionStatus Status { get; set; } = ServiceConnectionStatus.Disconnected;
 
             private readonly TaskCompletionSource<bool> _offline = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
-            private readonly TaskCompletionSource<bool> _serverIdsPing = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+            private readonly TaskCompletionSource<bool> _serversPing = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
 
             public Task ConnectionOfflineTask => _offline.Task;
 
-            public Task ServerIdsPingTask => _serverIdsPing.Task;
+            public Task ServersPingTask => _serversPing.Task;
 
             public SimpleTestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Disconnected)
             {
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 }
                 if (RuntimeServicePingMessage.IsGetServers(serviceMessage))
                 {
-                    _serverIdsPing.SetResult(true);
+                    _serversPing.SetResult(true);
                 }
                 return Task.CompletedTask;
             }

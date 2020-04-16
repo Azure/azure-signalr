@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Globalization;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -23,7 +22,7 @@ namespace Microsoft.Azure.SignalR
 
         internal string Version { get; }
 
-        internal string AccessKey { get; }
+        internal AccessKey AccessKey { get; private set; }
 
         internal int? Port { get; }
 
@@ -40,7 +39,9 @@ namespace Microsoft.Azure.SignalR
             // The provider is responsible to check if the connection string is empty and throw correct error message
             if (!string.IsNullOrEmpty(connectionString))
             {
-                (Endpoint, AccessKey, Version, Port) = ConnectionStringParser.Parse(connectionString);
+                string key;
+                (Endpoint, key, Version, Port) = ConnectionStringParser.Parse(connectionString);
+                AccessKey = new AccessKey(key);
             }
 
             EndpointType = type;
@@ -62,8 +63,14 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+
         // test only
         internal ServiceEndpoint() { }
+
+        internal void UpdateAccessKey(AccessKey key)
+        {
+            AccessKey = key;
+        }
 
         public override string ToString()
         {
