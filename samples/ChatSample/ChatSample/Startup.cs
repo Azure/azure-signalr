@@ -13,6 +13,7 @@ namespace ChatSample.CoreApp3
         {
             services.AddMvc();
             services.AddSignalR()
+                .AddAzureSignalR()
                 .AddMessagePackProtocol();
         }
 
@@ -30,7 +31,7 @@ namespace ChatSample.CoreApp3
             app.UseEndpoints(routes =>
             {
                 routes.MapHub<Chat>("/chat");
-                routes.MapHub<NotificationHub>("/notificatons");
+                routes.MapHub<BenchHub>("/signalrbench");
             });
         }
     }

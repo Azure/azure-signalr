@@ -38,6 +38,7 @@ namespace Microsoft.Azure.SignalR
             ILoggerFactory loggerFactory,
             IEndpointRouter router,
             IServerNameProvider nameProvider,
+            ServerLifetimeManager serverLifetimeManager,
             IClientConnectionFactory clientConnectionFactory)
         {
             _serviceProtocol = serviceProtocol;
@@ -52,6 +53,8 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionFactory = clientConnectionFactory;
             _nameProvider = nameProvider;
             _hubName = typeof(THub).Name;
+
+            serverLifetimeManager?.Register(ShutdownAsync);
         }
 
         public void Start(ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
@@ -66,13 +69,18 @@ namespace Microsoft.Azure.SignalR
             _ = _serviceConnectionManager.StartAsync();
         }
 
-        public async Task ShutdownAsync(TimeSpan timeout)
+        public async Task ShutdownAsync()
         {
+            if (!_options.EnableGracefulShutdown)
+            {
+                return;
+            }
+
             using CancellationTokenSource source = new CancellationTokenSource();
 
             var expected = OfflineAndWaitForCompletedAsync(_options.MigrationLevel != ServerConnectionMigrationLevel.Off);
             var actual = await Task.WhenAny(
-                Task.Delay(timeout, source.Token), expected
+                Task.Delay(_options.ServerShutdownTimeout, source.Token), expected
             );
 
             if (actual != expected)
@@ -93,16 +101,18 @@ namespace Microsoft.Azure.SignalR
         private IMultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
         {
             var connectionFactory = new ConnectionFactory(_nameProvider, _loggerFactory);
-            var serviceConnectionFactory = new ServiceConnectionFactory(_serviceProtocol,
+
+            var serviceConnectionFactory = new ServiceConnectionFactory(
+                _serviceProtocol,
                 _clientConnectionManager,
                 connectionFactory,
                 _loggerFactory,
                 connectionDelegate,
                 _clientConnectionFactory,
-                _nameProvider
-                )
+                _nameProvider)
             {
-                ConfigureContext = contextConfig
+                ConfigureContext = contextConfig,
+                MigrationLevel = _options.MigrationLevel
             };
 
             var factory = new ServiceConnectionContainerFactory(
@@ -110,7 +120,8 @@ namespace Microsoft.Azure.SignalR
                 _serviceEndpointManager,
                 _router,
                 _options,
-                _loggerFactory
+                _loggerFactory,
+                _options.ServiceScaleTimeout
             );
             return factory.Create(hub);
         }

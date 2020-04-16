@@ -132,21 +132,19 @@ namespace Microsoft.Azure.SignalR
                 Log.ReloadEndpointsError(_logger, ex);
                 return;
             }
-
-            
         }
 
-        private async Task AddServiceEndpointsAsync(IEnumerable<ServiceEndpoint> endpoints, CancellationToken cancellationToken)
+        private async Task AddServiceEndpointsAsync(IReadOnlyList<ServiceEndpoint> endpoints, CancellationToken cancellationToken)
         {
-            if (endpoints.Count() > 0)
+            if (endpoints.Count > 0)
             {
                 try
                 {
                     var hubEndpoints = CreateHubServiceEndpoints(endpoints, true);
 
-                    await Task.WhenAll(hubEndpoints.Select(e => AddHubServiceEndpointAsync(e, cancellationToken)));
+                    await Task.WhenAll(hubEndpoints.SelectMany(h => h.Value.Select(e => AddHubServiceEndpointAsync(e, cancellationToken))));
 
-                    // TODO: update local store for negotiation
+                    AddEndpointsToNegotiationStore(hubEndpoints);
                 }
                 catch (Exception ex)
                 {
@@ -155,15 +153,13 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task RemoveServiceEndpointsAsync(IEnumerable<ServiceEndpoint> endpoints, CancellationToken cancellationToken)
+        private async Task RemoveServiceEndpointsAsync(IReadOnlyList<ServiceEndpoint> endpoints, CancellationToken cancellationToken)
         {
-            if (endpoints.Count() > 0)
+            if (endpoints.Count > 0)
             {
                 try
                 {
-                    var hubEndpoints = CreateHubServiceEndpoints(endpoints, true);
-
-                    // TODO: update local store for negotiation
+                    var hubEndpoints = UpdateAndGetRemovedHubServiceEndpoints(endpoints);
 
                     await Task.WhenAll(hubEndpoints.Select(e => RemoveHubServiceEndpointAsync(e, cancellationToken)));
                 }
@@ -172,6 +168,36 @@ namespace Microsoft.Azure.SignalR
                     Log.FailedRemovingEndpoints(_logger, ex);
                 }
             }
+        }
+
+        private void AddEndpointsToNegotiationStore(Dictionary<string, IReadOnlyList<HubServiceEndpoint>> endpoints)
+        {
+            foreach (var hub in _endpointsPerHub.Keys)
+            {
+                if (!endpoints.TryGetValue(hub, out var updatedEndpoints) 
+                    || updatedEndpoints.Count == 0)
+                {
+                    return;
+                }
+                var oldEndpoints = _endpointsPerHub[hub];
+                var newEndpoints = oldEndpoints.ToList();
+                newEndpoints.AddRange(updatedEndpoints);
+                _endpointsPerHub.TryUpdate(hub, newEndpoints, oldEndpoints);
+            }
+        }
+
+        private IReadOnlyList<HubServiceEndpoint> UpdateAndGetRemovedHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints)
+        {
+            var removedEndpoints = new List<HubServiceEndpoint>();
+            foreach (var hub in _endpointsPerHub.Keys)
+            {
+                var oldEndpoints = _endpointsPerHub[hub];
+                var updatedEndpoints = CreateHubServiceEndpoints(hub, endpoints, true);
+                removedEndpoints.AddRange(updatedEndpoints);
+                var newEndpoints = oldEndpoints.Except(updatedEndpoints, new HubServiceEndpointWeakComparer()).ToList();
+                _endpointsPerHub.TryUpdate(hub, newEndpoints, oldEndpoints);
+            }
+            return removedEndpoints;
         }
 
         private HubServiceEndpoint CreateHubServiceEndpoint(string hub, ServiceEndpoint endpoint, bool needScaleTcs = false)
@@ -186,13 +212,12 @@ namespace Microsoft.Azure.SignalR
             return endpoints.Select(e => CreateHubServiceEndpoint(hub, e, needScaleTcs)).ToList();
         }
 
-        private IReadOnlyList<HubServiceEndpoint> CreateHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints, bool needScaleTcs)
+        private Dictionary<string, IReadOnlyList<HubServiceEndpoint>> CreateHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints, bool needScaleTcs)
         {
-            var hubEndpoints = new List<HubServiceEndpoint>();
-            var hubs = _endpointsPerHub.Keys;
-            foreach (var hub in hubs)
+            var hubEndpoints = new Dictionary<string, IReadOnlyList<HubServiceEndpoint>>();
+            foreach (var hub in _endpointsPerHub.Keys)
             {
-                hubEndpoints.AddRange(CreateHubServiceEndpoints(hub, endpoints, needScaleTcs));
+                hubEndpoints.Add(hub, CreateHubServiceEndpoints(hub, endpoints, needScaleTcs));
             }
             return hubEndpoints;
         }
@@ -224,13 +249,13 @@ namespace Microsoft.Azure.SignalR
         }
 
         private void UpdateEndpoints(Dictionary<ServiceEndpoint, ServiceEndpoint> updatedEndpoints,
-            out IEnumerable<ServiceEndpoint> addedEndpoints,
-            out IEnumerable<ServiceEndpoint> removedEndpoints)
+            out IReadOnlyList<ServiceEndpoint> addedEndpoints,
+            out IReadOnlyList<ServiceEndpoint> removedEndpoints)
         {
             var endpoints = new Dictionary<ServiceEndpoint, ServiceEndpoint>();
             var added = new List<ServiceEndpoint>();
 
-            removedEndpoints = Endpoints.Keys.Except(updatedEndpoints.Keys);
+            removedEndpoints = Endpoints.Keys.Except(updatedEndpoints.Keys, new ServiceEndpointWeakComparer()).ToList();
 
             foreach (var endpoint in updatedEndpoints)
             {
@@ -277,6 +302,19 @@ namespace Microsoft.Azure.SignalR
             }
 
             public int GetHashCode(ServiceEndpoint obj)
+            {
+                return obj.Endpoint.GetHashCode() ^ obj.EndpointType.GetHashCode();
+            }
+        }
+
+        private sealed class HubServiceEndpointWeakComparer : IEqualityComparer<HubServiceEndpoint>
+        {
+            public bool Equals(HubServiceEndpoint x, HubServiceEndpoint y)
+            {
+                return x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType;
+            }
+
+            public int GetHashCode(HubServiceEndpoint obj)
             {
                 return obj.Endpoint.GetHashCode() ^ obj.EndpointType.GetHashCode();
             }

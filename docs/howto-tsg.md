@@ -12,6 +12,7 @@
         - [Service-side logs](#add_logs_service)
 - [Serverless mode troubleshooting](#serverless_mode_tsg)
 - [Classic mode troubleshooting](#classic_mode_tsg)
+- [Service health](#service_health)
 
 We encounter several times when users say "service is not working", however we need more information in detail to find out the root cause of the "not working" issue. This guidance is to introduce several ways to help do self-diagnosis to find the root cause directly or narrow down the issue and report it to us for further investigation.
 
@@ -144,3 +145,21 @@ To diagnose connectivity issues in `Serverless` mode, the most straight forward 
 `Classic` mode is obsoleted and is not encouraged to use. When in this mode, Azure SignalR service uses the connected *Server Connections* to determine if current service is in `default` mode or `serverless` mode. This can lead to some intermediate client connectivity issues because, when there is a sudden drop of all the connected *Server Connection* for example due to network instability, Azure SignalR believes it is now switched to `serverless` mode, and clients connected during this period will never be routed to the hosted app server. Enable [service-side logs](#add_logs_service) and check if there are any clients recorded as `ServerlessModeEntered` if you have hosted app server howevever some clients never reach the app server side. If there is any, [abort these client connections](#TODO_Add_REST_API) and let the clients restart can help.
 
 Troubleshooting `classic` mode connectivity and message delivary issues are similar to [troubleshooting default mode issues](#default_mode_tsg).
+
+<a name="service_health"></a>
+## Service health
+
+You can check the health api for service health.
+
+* Request: GET `https://{instance_name}.service.signalr.net/v1/api/health`
+* Response status code:
+  * 200: healthy.
+  * 503: your service is unhealthy.
+    You can:
+    * Wait serval minutes for auto-recover.
+    * Check the ip address is same as the ip from portal.
+    * Or restart instance.
+    
+    If both not work, please contact us (add new support request in azure portal).
+
+More about [disaster recovery](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-concept-disaster-recovery).

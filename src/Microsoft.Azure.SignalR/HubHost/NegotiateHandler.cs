@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.SignalR
             _endpointsCount = options.Value.Endpoints.Length;
         }
 
-        public NegotiationResponse Process(HttpContext context, string hubName)
+        public async Task<NegotiationResponse> Process(HttpContext context, string hubName)
         {
             var claims = BuildClaims(context);
             var request = context.Request;
@@ -60,7 +61,7 @@ namespace Microsoft.Azure.SignalR
             return new NegotiationResponse
             {
                 Url = provider.GetClientEndpoint(hubName, originalPath, queryString),
-                AccessToken = provider.GenerateClientAccessToken(hubName, claims),
+                AccessToken = await provider.GenerateClientAccessTokenAsync(hubName, claims),
                 // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
                 AvailableTransports = new List<AvailableTransport>()
             };

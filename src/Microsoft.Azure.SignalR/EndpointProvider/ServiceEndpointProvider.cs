@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -15,7 +16,7 @@ namespace Microsoft.Azure.SignalR
             $"Please specify a configuration entry for {Constants.Keys.ConnectionStringDefaultKey}, " +
             "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";
 
-        private readonly string _accessKey;
+        private readonly AccessKey _accessKey;
         private readonly string _appName;
         private readonly TimeSpan _accessTokenLifetime;
         private readonly IServiceEndpointGenerator _generator;
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.SignalR
             _generator = new DefaultServiceEndpointGenerator(endpoint.Endpoint, version, port);
         }
 
-        public string GenerateClientAccessToken(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
+        public async Task<string> GenerateClientAccessTokenAsync(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
         {
             if (string.IsNullOrEmpty(hubName))
             {
@@ -52,10 +53,11 @@ namespace Microsoft.Azure.SignalR
 
             var audience = _generator.GetClientAudience(hubName, _appName);
 
+            await _accessKey.AuthorizedTask;
             return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
-        public string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null)
+        public async Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
         {
             if (string.IsNullOrEmpty(hubName))
             {
@@ -65,6 +67,7 @@ namespace Microsoft.Azure.SignalR
             var audience = _generator.GetServerAudience(hubName, _appName);
             var claims = userId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, userId) } : null;
 
+            await _accessKey.AuthorizedTask;
             return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 

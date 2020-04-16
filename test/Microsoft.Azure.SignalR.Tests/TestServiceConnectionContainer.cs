@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
@@ -55,6 +56,18 @@ namespace Microsoft.Azure.SignalR.Tests
         public Task OnConnectionCompleteForTestShutdown(IServiceConnection connection)
         {
             return base.OnConnectionComplete(connection);
+        }
+
+        public Task MockReceivedServersPing(string serversTag)
+        {
+            var ping = new PingMessage { Messages = new[] { "servers", $"{DateTime.UtcNow.Ticks}:{serversTag}" } };
+            return base.HandlePingAsync(ping);
+        }
+
+        public Task MockReceivedStatusPing(bool isActive)
+        {
+            var ping = new PingMessage { Messages = new[] { "status", isActive ? "1" : "0" } };
+            return base.HandlePingAsync(ping);
         }
     }
 }

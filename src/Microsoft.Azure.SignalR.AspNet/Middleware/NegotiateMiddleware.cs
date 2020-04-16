@@ -82,7 +82,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private Task ProcessNegotiationRequest(IOwinContext owinContext, HostContext context)
         {
-            string accessToken = null;
             var claims = BuildClaims(owinContext, context.Request);
             
             var dispatcher = new HubDispatcher(_configuration);
@@ -173,18 +172,26 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             var url = provider.GetClientEndpoint(null, originalPath, queryString);
 
+            return GenerateClientAccessTokenAsync(provider, context, url, claims);
+        }
+
+        private async Task GenerateClientAccessTokenAsync(
+            IServiceEndpointProvider provider,
+            HostContext context,
+            string url,
+            IEnumerable<Claim> claims)
+        {
             try
             {
-                accessToken = provider.GenerateClientAccessToken(null, claims);
+                var accessToken = await provider.GenerateClientAccessTokenAsync(null, claims);
+                await SendJsonResponse(context, GetRedirectNegotiateResponse(url, accessToken));
             }
             catch (AzureSignalRAccessTokenTooLongException ex)
             {
                 Log.NegotiateFailed(_logger, ex.Message);
                 context.Response.StatusCode = 413;
-                return context.Response.End(ex.Message);
+                await context.Response.End(ex.Message);
             }
-
-            return SendJsonResponse(context, GetRedirectNegotiateResponse(url, accessToken));
         }
 
         private static string GetOriginalPath(string path)
