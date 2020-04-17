@@ -132,7 +132,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
-        public Task<string> GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)
+        public string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)
         {
             var claimsWithUserId = new List<Claim>();
             if (userId != null)
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 claimsWithUserId.AddRange(claims);
             }
-            return _endpointProvider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifeTime);
+            return _endpointProvider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifeTime).Result;
         }
 
         public string GetClientEndpoint(string hubName) => _endpointProvider.GetClientEndpoint(hubName, null, null);
