@@ -29,8 +29,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
             string expectedTokenString = JwtTokenHelper.GenerateExpectedAccessToken(token, expectedAudience, _accessKey);
 
+            // not change
             Assert.Equal(expectedAudience, audience);
-            Assert.Equal("", tokenString);
+            Assert.Equal(expectedTokenString, tokenString);
         }
 
         public static IEnumerable<object[]> GetTestData()
