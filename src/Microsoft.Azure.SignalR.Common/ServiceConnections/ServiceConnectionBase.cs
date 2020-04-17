@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
@@ -58,6 +59,8 @@ namespace Microsoft.Azure.SignalR
         protected string ConnectionId { get; }
 
         protected ILogger Logger { get; }
+        
+        protected ILogger MessagingLogger { get; }
 
         protected IServiceProtocol ServiceProtocol { get; }
 
@@ -97,7 +100,7 @@ namespace Microsoft.Azure.SignalR
             IServiceMessageHandler serviceMessageHandler,
             ServiceConnectionType connectionType,
             ServerConnectionMigrationLevel migrationLevel,
-            ILogger logger)
+            ILoggerFactory loggerFactory)
         {
             ServiceProtocol = serviceProtocol;
             ServerId = serverId;
@@ -112,7 +115,22 @@ namespace Microsoft.Azure.SignalR
                 _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType, (int)migrationLevel);
             }
 
-            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            Logger  = loggerFactory.CreateLogger($"{typeof(ServiceConnectionBase).Namespace}.ServiceConnection"); // keep original category name
+            /*
+             * Put all messaging log to Info level isn't appropriate, to Debug level, there are too many ping logs. So plan to put into a new category'
+             * Let CX filter messaging log by appsettings.json's logging filter: https://github.com/Azure/azure-signalr/blob/dev/docs/howto-tsg.md#add_logs_server_aspnetcore
+             * {
+                    "Logging": {
+                        "LogLevel": {
+                            ...
+                            "Microsoft.Azure.SignalR.Messaging": "Debug",
+                            ...
+                        }
+                    }
+                }
+             */
+            MessagingLogger = loggerFactory.CreateLogger($"{typeof(ServiceConnectionBase).Namespace}.Messaging");
+
             _serviceMessageHandler = serviceMessageHandler;
         }
 
@@ -228,7 +246,7 @@ namespace Microsoft.Azure.SignalR
                 var messageId = ServiceMessageHelper.GetMessageId(serviceMessage);
                 if (messageId != null)
                 {
-                    Log.SucceedToWrite(Logger, ConnectionId, messageId);
+                    Log.SucceedToWrite(MessagingLogger, ConnectionId, messageId);
                 }
                 
                 return true;
@@ -238,7 +256,7 @@ namespace Microsoft.Azure.SignalR
                 // We always mark the connection as Disconnected before dispose the underlying http connection
                 // So in theory this log should never trigger
                 var messageId = ServiceMessageHelper.GetMessageId(serviceMessage);
-                Log.FailedToWrite(Logger, messageId, ConnectionId, ex);
+                Log.FailedToWrite(MessagingLogger, messageId, ConnectionId, ex);
                 return false;
             }
             finally
@@ -654,7 +672,7 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define<string>(LogLevel.Information, new EventId(31, "ReceivedInstanceOfflinePing"), "Received instance offline service ping: {InstanceId}");
 
             private static readonly Action<ILogger, string, string, Exception> _succeedToWrite =
-                LoggerMessage.Define<string, string>(LogLevel.Information, new EventId(32, "Succeed to write"), "Succeed to send message to the service. Message ID: {messageId}, Service connection ID: {ServiceConnectionId}.");
+                LoggerMessage.Define<string, string>(LogLevel.Debug, new EventId(32, "Succeed to write"), "Succeed to send message to the service. Message ID: {messageId}, Service connection ID: {ServiceConnectionId}.");
 
             public static void FailedToWrite(ILogger logger, string messageId, string serviceConnectionId, Exception exception)
             {
