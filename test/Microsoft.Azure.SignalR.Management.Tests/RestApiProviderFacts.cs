@@ -3,11 +3,14 @@
 
 using System.Collections.Generic;
 using Microsoft.Azure.SignalR.Tests;
+using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.Logging;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
-    public class RestApiProviderFacts
+    public class RestApiProviderFacts: VerifiableLoggedTest
     {
         private const string _endpoint = "https://abc";
         private const string _accessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
@@ -22,16 +25,26 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private static readonly RestApiProvider _restApiProvider = new RestApiProvider(_connectionString, _hubName, _appName);
 
+        public RestApiProviderFacts(ITestOutputHelper output): base(output)
+        {
+
+        }
+
         [Theory]
         [MemberData(nameof(GetTestData))]
-        public void RestApiTest(string audience, string tokenString, string expectedAudience)
+        public void RestApiTest(string audience, RestApiEndpoint api, string expectedAudience)
         {
-            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
-            string expectedTokenString = JwtTokenHelper.GenerateExpectedAccessToken(token, expectedAudience, _accessKey);
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug,
+                expectedErrors: context => context.EventId == new EventId(2, "EndpointOffline")))
+            {
+                var token = JwtTokenHelper.JwtHandler.ReadJwtToken(api.Token);
+                string expectedTokenString = JwtTokenHelper.GenerateExpectedAccessToken(token, expectedAudience, _accessKey, out var accessKey);
 
-            // not change
-            Assert.Equal(expectedAudience, audience);
-            Assert.Equal(expectedTokenString, tokenString);
+                Assert.Equal(accessKey.Id, _restApiProvider.AccessKey.Id);
+                Assert.Equal(expectedAudience, audience);
+                Assert.Equal(expectedTokenString, api.Token);
+            }
+                
         }
 
         public static IEnumerable<object[]> GetTestData()
@@ -43,12 +56,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var sendToConnctionsApi = _restApiProvider.GetSendToConnectionEndpoint(_connectionId);
             var connectionGroupManagementApi = _restApiProvider.GetConnectionGroupManagementEndpoint(_connectionId, _groupName);
 
-            yield return new object[] { broadcastApi.Audience, broadcastApi.Token, _commonEndpoint };
-            yield return new object[] { sendToUserApi.Audience, sendToUserApi.Token,  $"{_commonEndpoint}/users/{_userId}"};
-            yield return new object[] { sendToGroupApi.Audience, sendToGroupApi.Token, $"{_commonEndpoint}/groups/{_groupName}"};
-            yield return new object[] { groupManagementApi.Audience, groupManagementApi.Token, $"{_commonEndpoint}/groups/{_groupName}/users/{_userId}"};
-            yield return new object[] { sendToConnctionsApi.Audience, sendToConnctionsApi.Token, $"{_commonEndpoint}/connections/{_connectionId}" };
-            yield return new object[] { connectionGroupManagementApi.Audience, connectionGroupManagementApi.Token, $"{_commonEndpoint}/groups/{_groupName}/connections/{_connectionId}" };
+            yield return new object[] { broadcastApi.Audience, broadcastApi, _commonEndpoint };
+            yield return new object[] { sendToUserApi.Audience, sendToUserApi,  $"{_commonEndpoint}/users/{_userId}"};
+            yield return new object[] { sendToGroupApi.Audience, sendToGroupApi, $"{_commonEndpoint}/groups/{_groupName}"};
+            yield return new object[] { groupManagementApi.Audience, groupManagementApi, $"{_commonEndpoint}/groups/{_groupName}/users/{_userId}"};
+            yield return new object[] { sendToConnctionsApi.Audience, sendToConnctionsApi, $"{_commonEndpoint}/connections/{_connectionId}" };
+            yield return new object[] { connectionGroupManagementApi.Audience, connectionGroupManagementApi, $"{_commonEndpoint}/groups/{_groupName}/connections/{_connectionId}" };
         }
     }
 }

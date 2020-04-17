@@ -14,6 +14,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly string _requestPrefix;
         private readonly string _audiencePrefix;
         private readonly int? _port;
+        internal AccessKey AccessKey;
 
         public RestApiProvider(string connectionString, string hubName, string appName)
         {
@@ -21,7 +22,8 @@ namespace Microsoft.Azure.SignalR.Management
             (_baseEndpoint, key, _, _port) = ConnectionStringParser.Parse(connectionString);
             _hubName = hubName;
             _appName = appName;
-            _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(new AccessKey(key));
+            AccessKey = new AccessKey(key);
+            _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(AccessKey);
             _requestPrefix = _port == null ? $"{_baseEndpoint}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}";
             _audiencePrefix = $"{_baseEndpoint}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}";
         }

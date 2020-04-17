@@ -41,9 +41,10 @@ namespace Microsoft.Azure.SignalR.Tests
             return tokenString;
         }
 
-        public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string key, IEnumerable<Claim> customClaims = null)
+        public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string key, out AccessKey outAccessKey, IEnumerable<Claim> customClaims = null)
         {
-            return GenerateExpectedAccessToken(token, audience, new AccessKey(key), customClaims: customClaims);
+            outAccessKey = new AccessKey(key);
+            return GenerateExpectedAccessToken(token, audience, outAccessKey, customClaims: customClaims);
         }
 
         public static string GenerateJwtBearer(

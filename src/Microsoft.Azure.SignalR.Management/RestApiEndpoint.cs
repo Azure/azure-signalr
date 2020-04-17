@@ -3,7 +3,7 @@
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class RestApiEndpoint
+    public class RestApiEndpoint
     {
         public string Audience { get; }
         public string Token { get; }
