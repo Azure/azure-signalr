@@ -40,7 +40,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 var token = JwtTokenHelper.JwtHandler.ReadJwtToken(api.Token);
                 string expectedTokenString = JwtTokenHelper.GenerateExpectedAccessToken(token, expectedAudience, _accessKey, out var accessKey);
 
-                Assert.Equal(accessKey.Id, _restApiProvider.AccessKey.Id);
+                var S = $"{accessKey.Id} {_restApiProvider.AccessKey.Id}";
+                var T = "";
+                Assert.Equal(S, T);
                 Assert.Equal(expectedAudience, audience);
                 Assert.Equal(expectedTokenString, api.Token);
             }
