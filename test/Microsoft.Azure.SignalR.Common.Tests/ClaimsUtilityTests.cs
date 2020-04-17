@@ -32,6 +32,9 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         {
             var claims = ClaimsUtility.BuildJwtClaims(null, null, null).ToList();
             Assert.Empty(claims);
+            // only for test
+            var s = "s";
+            Assert.Empty(s);
         }
 
         [Theory]
