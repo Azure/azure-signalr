@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             "serverId",
             Guid.NewGuid().ToString(),
             new HubServiceEndpoint(),
-            serviceMessageHandler, // TODO replace it with a NullMessageHandler
+            serviceMessageHandler,
             ServiceConnectionType.Default,
             ServerConnectionMigrationLevel.Off,
             logger ?? NullLogger.Instance

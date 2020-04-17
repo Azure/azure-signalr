@@ -365,16 +365,10 @@ namespace Microsoft.Azure.SignalR
                 var count = info.count;
                 count++;
                 _inactiveInfo = (count, last);
-                
+
                 // Inactive it only when it checks over 5 times and elapsed for over 10 minutes
-                if (count >= checkWindow && DateTime.UtcNow - last >= checkTimeSpan)
-                {
-                    return false;
-                }
-                else
-                {
-                    return true;
-                }
+                var inactive = count >= checkWindow && DateTime.UtcNow - last >= checkTimeSpan;
+                return !inactive;
             }
         }
 

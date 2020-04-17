@@ -22,12 +22,18 @@ namespace Microsoft.Azure.SignalR
         internal int? Port { get; }
 
         /// <summary>
-        /// When there are server connections connected to the target endpoint for current hub, the endpoint is considered as Online; otherwise, Offline.
+        /// When current app server instance has server connections connected to the target endpoint for current hub, it can deliver messages to that endpoint.
+        /// The endpoint is then considered as *Online*; otherwise, *Offline*.
+        /// Messages are not able to be delivered to an *Offline* endpoint.
         /// </summary>
         public bool Online { get; internal set; } = true;
 
         /// <summary>
-        /// When the target endpoint has client connections of current hub, the endpoint is considered as Active; otherwise, inactive.
+        /// When the target endpoint has hub clients connected, the endpoint is considered as an *Active* endpoint.
+        /// When the target endpoint has no hub clients connected for 10 minutes, the endpoint is considered as an *Inactive* one.
+        /// User can choose to not send messages to an *Inactive* endpoint to save network traffic.
+        /// But please note that as the *Active* status is reported to the server from remote service, there can be some delay when status changes.
+        /// Don't rely on this status if you don't expect any message lose once a client is connected.
         /// </summary>
         public bool IsActive { get; internal set; } = true;
 
