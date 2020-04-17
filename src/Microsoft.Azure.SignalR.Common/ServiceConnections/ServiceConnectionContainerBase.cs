@@ -15,6 +15,9 @@ namespace Microsoft.Azure.SignalR
 {
     internal abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler, IDisposable
     {
+        private const int CheckWindow = 5;
+        private static readonly TimeSpan CheckTimeSpan = TimeSpan.FromMinutes(10);
+
         // Give interval(5s) * 24 = 2min window for retry considering abnormal case.
         private const int MaxRetryRemoveSeverConnection = 24;
 
@@ -34,6 +37,8 @@ namespace Microsoft.Azure.SignalR
         private readonly object _lock = new object();
 
         private readonly object _statusLock = new object();
+
+        private (int count, DateTime? last) _inactiveInfo;
 
         private readonly AckHandler _ackHandler;
 
@@ -173,6 +178,7 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.ReceivedServiceStatusPing(Logger, status, Endpoint);
                 _hasClients = status;
+                Endpoint.IsActive = GetServiceStatus(status, CheckWindow, CheckTimeSpan);
             }
             else if (RuntimeServicePingMessage.TryGetServersTag(pingMessage, out var serversTag, out var updatedTime))
             {
@@ -343,6 +349,33 @@ namespace Microsoft.Azure.SignalR
                 retry++;
             }
             Log.TimeoutWaitingForFinAck(Logger, retry);
+        }
+
+        internal bool GetServiceStatus(bool active, int checkWindow, TimeSpan checkTimeSpan)
+        {
+            if (active)
+            {
+                _inactiveInfo = (0, null);
+                return true;
+            }
+            else
+            {
+                var info = _inactiveInfo;
+                var last = info.last ?? DateTime.UtcNow;
+                var count = info.count;
+                count++;
+                _inactiveInfo = (count, last);
+                
+                // Inactive it only when it checks over 5 times and elapsed for over 10 minutes
+                if (count >= checkWindow && DateTime.UtcNow - last >= checkTimeSpan)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
         }
 
         internal static TimeSpan GetRetryDelay(int retryCount)

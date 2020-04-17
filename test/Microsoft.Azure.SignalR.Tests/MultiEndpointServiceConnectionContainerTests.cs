@@ -33,6 +33,56 @@ namespace Microsoft.Azure.SignalR.Tests
         {
         }
 
+        [Fact(Skip = "Enable when custom interval is supported")]
+        public async Task TestStatusPingChangesEndpointStatus()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Trace))
+            {
+                var endpoints = new[]
+                {
+                    new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "strong"),
+                    new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "weak"),
+                };
+
+                var sem = new TestServiceEndpointManager(endpoints);
+
+                var router = new TestEndpointRouter();
+
+                var connectionFactory1 = new TestServiceConnectionFactory();
+
+                var hub1 = new MultiEndpointServiceConnectionContainer(connectionFactory1, "hub1", 2, sem, router,
+                    loggerFactory);
+
+                var connections = connectionFactory1.CreatedConnections.ToArray();
+                Assert.Equal(4, connections.Length);
+
+                var connection1 = connections[0] as TestServiceConnection;
+
+                Assert.NotNull(connection1);
+
+                // All the connections started
+                _ = hub1.StartAsync();
+                await hub1.ConnectionInitializedTask;
+
+                var protocol = new ServiceProtocol();
+                for (var i = 0; i < 6; i++)
+                {
+                    protocol.WriteMessage(RuntimeServicePingMessage.GetStatusPingMessage(false), connection1.Application.Output);
+                    await connection1.Application.Output.FlushAsync();
+                    await Task.Delay(1000);
+                }
+
+                await Task.Delay(1000);
+
+                var active = hub1.GetOnlineEndpoints().Where(s => s.IsActive).Count();
+                Assert.Equal(1, active);
+
+                // the original endpoints are not impacted
+                active = sem.Endpoints.Where(s => s.Value.IsActive).Count();
+                Assert.Equal(2, active);
+            }
+        }
+
         [Fact]
         public void TestGetRoutedEndpointsReturnDistinctResultForMultiMessages()
         {

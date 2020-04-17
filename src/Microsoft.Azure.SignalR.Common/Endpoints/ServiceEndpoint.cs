@@ -13,11 +13,6 @@ namespace Microsoft.Azure.SignalR
 
         public virtual string Name { get; internal set; }
 
-        /// <summary>
-        /// Initial status as Online so that when the app server first starts, it can accept incoming negotiate requests, as for backward compatability
-        /// </summary>
-        public bool Online { get; internal set; } = true;
-
         public string Endpoint { get; }
 
         internal string Version { get; }
@@ -25,6 +20,16 @@ namespace Microsoft.Azure.SignalR
         internal AccessKey AccessKey { get; private set; }
 
         internal int? Port { get; }
+
+        /// <summary>
+        /// When there are server connections connected to the target endpoint for current hub, the endpoint is considered as Online; otherwise, Offline.
+        /// </summary>
+        public bool Online { get; internal set; } = true;
+
+        /// <summary>
+        /// When the target endpoint has client connections of current hub, the endpoint is considered as Active; otherwise, inactive.
+        /// </summary>
+        public bool IsActive { get; internal set; } = true;
 
         public ServiceEndpoint(string key, string connectionString) : this(connectionString)
         {
