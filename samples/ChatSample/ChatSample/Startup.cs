@@ -27,7 +27,7 @@ namespace ChatSample.CoreApp3
             app.UseFileServer();
             app.UseRouting();
             app.UseAuthorization();
-
+            
             app.UseEndpoints(routes =>
             {
                 routes.MapHub<Chat>("/chat");

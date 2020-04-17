@@ -14,16 +14,14 @@ namespace Microsoft.Azure.SignalR
             return Guid.NewGuid().ToString();
         }
 
-        public static bool TryGetMessageId(ServiceMessage serviceMessage, out string messageId)
+        public static string GetMessageId(ServiceMessage serviceMessage)
         {
             if (serviceMessage is MulticastDataMessage multicastDataMessage)
             {
-                messageId = multicastDataMessage.MessageId;
-                return true;
+                return multicastDataMessage.MessageId;
             }
 
-            messageId = null;
-            return false;
+            return null;
         }
     }
 }
