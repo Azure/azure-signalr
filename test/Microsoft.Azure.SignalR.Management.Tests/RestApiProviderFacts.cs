@@ -24,30 +24,23 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         [Theory]
         [MemberData(nameof(GetTestData))]
-        public void RestApiTest(string audience, string tokenString, string expectedAudience)
+        internal void RestApiTest(RestApiEndpoint api, string expectedAudience)
         {
-            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
+            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(api.Token);
             string expectedTokenString = JwtTokenHelper.GenerateExpectedAccessToken(token, expectedAudience, _accessKey);
 
-            Assert.Equal(expectedAudience, audience);
-            Assert.Equal(expectedTokenString, tokenString);
+            Assert.Equal(expectedAudience, api.Audience);
+            Assert.Equal(expectedTokenString, api.Token);
         }
 
         public static IEnumerable<object[]> GetTestData()
         {
-            var broadcastApi = _restApiProvider.GetBroadcastEndpoint();
-            var sendToUserApi = _restApiProvider.GetSendToUserEndpoint(_userId);
-            var sendToGroupApi = _restApiProvider.GetSendToGroupEndpoint(_groupName);
-            var groupManagementApi = _restApiProvider.GetUserGroupManagementEndpoint(_userId, _groupName);
-            var sendToConnctionsApi = _restApiProvider.GetSendToConnectionEndpoint(_connectionId);
-            var connectionGroupManagementApi = _restApiProvider.GetConnectionGroupManagementEndpoint(_connectionId, _groupName);
-
-            yield return new object[] { broadcastApi.Audience, broadcastApi.Token, _commonEndpoint };
-            yield return new object[] { sendToUserApi.Audience, sendToUserApi.Token,  $"{_commonEndpoint}/users/{_userId}"};
-            yield return new object[] { sendToGroupApi.Audience, sendToGroupApi.Token, $"{_commonEndpoint}/groups/{_groupName}"};
-            yield return new object[] { groupManagementApi.Audience, groupManagementApi.Token, $"{_commonEndpoint}/groups/{_groupName}/users/{_userId}"};
-            yield return new object[] { sendToConnctionsApi.Audience, sendToConnctionsApi.Token, $"{_commonEndpoint}/connections/{_connectionId}" };
-            yield return new object[] { connectionGroupManagementApi.Audience, connectionGroupManagementApi.Token, $"{_commonEndpoint}/groups/{_groupName}/connections/{_connectionId}" };
+            yield return new object[]{_restApiProvider.GetBroadcastEndpoint(), _commonEndpoint };
+            yield return new object[] { _restApiProvider.GetSendToUserEndpoint(_userId), $"{_commonEndpoint}/users/{_userId}" };
+            yield return new object[] { _restApiProvider.GetSendToGroupEndpoint(_groupName), $"{_commonEndpoint}/groups/{_groupName}" };
+            yield return new object[] { _restApiProvider.GetUserGroupManagementEndpoint(_userId, _groupName), $"{_commonEndpoint}/groups/{_groupName}/users/{_userId}" };
+            yield return new object[] { _restApiProvider.GetSendToConnectionEndpoint(_connectionId), $"{_commonEndpoint}/connections/{_connectionId}" };
+            yield return new object[] { _restApiProvider.GetConnectionGroupManagementEndpoint(_connectionId, _groupName), $"{_commonEndpoint}/groups/{_groupName}/connections/{_connectionId}" };
         }
     }
 }
