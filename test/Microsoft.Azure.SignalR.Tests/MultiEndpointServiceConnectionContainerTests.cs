@@ -33,6 +33,76 @@ namespace Microsoft.Azure.SignalR.Tests
         {
         }
 
+        [Fact(Skip = "Enable when custom interval is supported")]
+        public async Task TestStatusPingChangesEndpointStatus()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Trace))
+            {
+                var endpoints = new[]
+                {
+                    new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "strong"),
+                    new ServiceEndpoint(ConnectionString2, EndpointType.Secondary, "weak"),
+                };
+
+                var sem = new TestServiceEndpointManager(endpoints);
+
+                var router = new TestEndpointRouter();
+
+                var connectionFactory1 = new TestServiceConnectionFactory();
+                var connectionFactory2 = new TestServiceConnectionFactory();
+
+                var hub1 = new MultiEndpointServiceConnectionContainer(connectionFactory1, "hub1", 2, sem, router,
+                    loggerFactory);
+                var hub2 = new MultiEndpointServiceConnectionContainer(connectionFactory2, "hub2", 2, sem, router,
+                    loggerFactory);
+
+                var connections = connectionFactory1.CreatedConnections.ToArray();
+                Assert.Equal(4, connections.Length);
+
+                var connection1 = connections[0] as TestServiceConnection;
+                var connection2 = connections[2] as TestServiceConnection;
+
+                Assert.NotNull(connection1);
+                Assert.NotNull(connection2);
+
+                // All the connections started
+                _ = hub1.StartAsync();
+                await hub1.ConnectionInitializedTask;
+                _ = hub2.StartAsync();
+                await hub2.ConnectionInitializedTask;
+
+                var protocol = new ServiceProtocol();
+                for (var i = 0; i < 5; i++)
+                {
+                    protocol.WriteMessage(RuntimeServicePingMessage.GetStatusPingMessage(false), connection1.Application.Output);
+                    await connection1.Application.Output.FlushAsync();
+                    await Task.Delay(100);
+                }
+
+                await Task.Delay(100);
+
+                var active = hub1.GetOnlineEndpoints().Where(s => s.IsActive).Count();
+                Assert.Equal(1, active);
+
+                active = hub2.GetOnlineEndpoints().Where(s => s.IsActive).Count();
+                Assert.Equal(2, active);
+
+                for (var i = 0; i < 5; i++)
+                {
+                    protocol.WriteMessage(RuntimeServicePingMessage.GetStatusPingMessage(false), connection2.Application.Output);
+                    await connection2.Application.Output.FlushAsync();
+                    await Task.Delay(100);
+                }
+
+                active = hub1.GetOnlineEndpoints().Where(s => s.IsActive).Count();
+                Assert.Equal(0, active);
+
+                // the original endpoints are not impacted
+                active = sem.Endpoints.Where(s => s.Value.IsActive).Count();
+                Assert.Equal(2, active);
+            }
+        }
+
         [Fact]
         public void TestGetRoutedEndpointsReturnDistinctResultForMultiMessages()
         {

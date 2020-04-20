@@ -26,12 +26,15 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public Task ConnectionCreated => _created.Task;
 
-        public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false, ILogger logger = null) : base(
+        public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false,
+            ILogger logger = null,
+            IServiceMessageHandler serviceMessageHandler = null
+            ) : base(
             new ServiceProtocol(),
             "serverId",
             Guid.NewGuid().ToString(),
             new HubServiceEndpoint(),
-            null, // TODO replace it with a NullMessageHandler
+            serviceMessageHandler,
             ServiceConnectionType.Default,
             ServerConnectionMigrationLevel.Off,
             logger ?? NullLogger.Instance
