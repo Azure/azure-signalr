@@ -7,23 +7,16 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestApiProvider
     {
+        private const string Version = "v1";
         private readonly RestApiAccessTokenGenerator _restApiAccessTokenGenerator;
         private readonly string _baseEndpoint;
-        private readonly string _hubName;
-        private readonly string _appName;
-        private readonly string _requestPrefix;
-        private readonly string _audiencePrefix;
         private readonly int? _port;
 
-        public RestApiProvider(string connectionString, string hubName, string appName)
+        public RestApiProvider(string connectionString)
         {
             string key;
             (_baseEndpoint, key, _, _port) = ConnectionStringParser.Parse(connectionString);
-            _hubName = hubName;
-            _appName = appName;
             _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(new AccessKey(key));
-            _requestPrefix = _port == null ? $"{_baseEndpoint}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}";
-            _audiencePrefix = $"{_baseEndpoint}/api/v1/hubs/{GetPrefixedHubName(_appName, _hubName)}";
         }
 
         private string GetPrefixedHubName(string applicationName, string hubName)
@@ -31,45 +24,54 @@ namespace Microsoft.Azure.SignalR.Management
             return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
         }
 
-        public RestApiEndpoint GetBroadcastEndpoint(TimeSpan? lifetime = null)
+        public RestApiEndpoint GetServiceHealthEndpoint()
         {
-            return GenerateRestApiEndpoint("", lifetime);
+            var url = $"{_baseEndpoint}/api/{Version}/health";
+            var token = _restApiAccessTokenGenerator.Generate(url);
+            return new RestApiEndpoint(url, token);
         }
 
-        public RestApiEndpoint GetUserGroupManagementEndpoint(string userId, string groupName, TimeSpan? lifetime = null)
+        public RestApiEndpoint GetBroadcastEndpoint(string appName, string hubName, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpoint($"/groups/{groupName}/users/{userId}", lifetime);
+            return GenerateRestApiEndpoint(appName, hubName, "", lifetime);
         }
 
-        public RestApiEndpoint GetSendToUserEndpoint(string userId, TimeSpan? lifetime = null)
+        public RestApiEndpoint GetUserGroupManagementEndpoint(string appName, string hubName, string userId, string groupName, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpoint($"/users/{userId}", lifetime);
+            return GenerateRestApiEndpoint(appName, hubName, $"/groups/{groupName}/users/{userId}", lifetime);
         }
 
-        public RestApiEndpoint GetSendToGroupEndpoint(string groupName, TimeSpan? lifetime = null)
+        public RestApiEndpoint GetSendToUserEndpoint(string appName, string hubName, string userId, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpoint($"/groups/{groupName}", lifetime);
+            return GenerateRestApiEndpoint(appName, hubName, $"/users/{userId}", lifetime);
         }
 
-        public RestApiEndpoint GetRemoveUserFromAllGroups(string userId, TimeSpan? lifetime = null)
+        public RestApiEndpoint GetSendToGroupEndpoint(string appName, string hubName, string groupName, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpoint($"/users/{userId}/groups", lifetime);
+            return GenerateRestApiEndpoint(appName, hubName, $"/groups/{groupName}", lifetime);
         }
 
-        public RestApiEndpoint GetSendToConnectionEndpoint(string connectionId, TimeSpan? lifetime = null)
+        public RestApiEndpoint GetRemoveUserFromAllGroups(string appName, string hubName, string userId, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpoint($"/connections/{connectionId}", lifetime);
+            return GenerateRestApiEndpoint(appName, hubName, $"/users/{userId}/groups", lifetime);
         }
 
-        public RestApiEndpoint GetConnectionGroupManagementEndpoint(string connectionId, string groupName, TimeSpan? lifetime = null)
+        public RestApiEndpoint GetSendToConnectionEndpoint(string appName, string hubName, string connectionId, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpoint($"/groups/{groupName}/connections/{connectionId}", lifetime);
+            return GenerateRestApiEndpoint(appName, hubName, $"/connections/{connectionId}", lifetime);
         }
 
-        private RestApiEndpoint GenerateRestApiEndpoint(string path, TimeSpan? lifetime = null)
+        public RestApiEndpoint GetConnectionGroupManagementEndpoint(string appName, string hubName, string connectionId, string groupName, TimeSpan? lifetime = null)
         {
-            var token = _restApiAccessTokenGenerator.Generate($"{_audiencePrefix}{path}", lifetime);
-            return new RestApiEndpoint($"{_requestPrefix}{path}", token);
+            return GenerateRestApiEndpoint(appName, hubName, $"/groups/{groupName}/connections/{connectionId}", lifetime);
+        }
+
+        private RestApiEndpoint GenerateRestApiEndpoint(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null)
+        {
+            var requestPrefixWithHub = _port == null ? $"{_baseEndpoint}/api/{Version}/hubs/{GetPrefixedHubName(appName, hubName)}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{GetPrefixedHubName(appName, hubName)}";
+            var audiencePrefixWithHub = $"{_baseEndpoint}/api/{Version}/hubs/{GetPrefixedHubName(appName, hubName)}";
+            var token = _restApiAccessTokenGenerator.Generate($"{audiencePrefixWithHub}{pathAfterHub}", lifetime);
+            return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token);
         }
     }
 }
