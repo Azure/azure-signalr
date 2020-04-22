@@ -124,8 +124,6 @@ namespace Microsoft.Azure.SignalR
 
             AddClientConnection(connection, message);
 
-            Console.WriteLine($"--``-- OnClientConnectedAsync on {GetHashCode ()}");
- 
             var scopeProperties = new ClientConnectionScopeProperties() 
             { 
                 ServiceConnection = this
