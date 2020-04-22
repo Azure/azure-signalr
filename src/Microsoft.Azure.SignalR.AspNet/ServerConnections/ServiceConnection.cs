@@ -85,18 +85,27 @@ namespace Microsoft.Azure.SignalR.AspNet
             var connectionId = openConnectionMessage.ConnectionId;
             var clientContext = new ClientContext(connectionId, GetInstanceId(openConnectionMessage.Headers));
 
-            if (_clientConnectionManager.TryAdd(connectionId, this))
+            var scopeProperties = new ClientConnectionScopeProperties()
             {
-                _clientConnections.TryAdd(connectionId, clientContext);
-                clientContext.ApplicationTask = ProcessMessageAsync(clientContext, clientContext.CancellationToken);
-                return ForwardMessageToApplication(connectionId, openConnectionMessage);
-            }
-            else
+                ServiceConnection = this
+                // todo add more properties here, e.g. message.Headers.TryGetValue("Tracing", ...)
+            };
+
+            using (new ServiceConnectionScopeInternal(scopeProperties))
             {
-                // the manager still contains this connectionId, probably this connection is not yet cleaned up
-                Log.DuplicateConnectionId(Logger, connectionId, null);
-                return SafeWriteAsync(
-                    new CloseConnectionMessage(connectionId, $"Duplicate connection ID {connectionId}"));
+                if (_clientConnectionManager.TryAdd(connectionId, this))
+                {
+                    _clientConnections.TryAdd(connectionId, clientContext);
+                    clientContext.ApplicationTask = ProcessMessageAsync(clientContext, clientContext.CancellationToken);
+                    return ForwardMessageToApplication(connectionId, openConnectionMessage);
+                }
+                else
+                {
+                    // the manager still contains this connectionId, probably this connection is not yet cleaned up
+                    Log.DuplicateConnectionId(Logger, connectionId, null);
+                    return SafeWriteAsync(
+                        new CloseConnectionMessage(connectionId, $"Duplicate connection ID {connectionId}"));
+                }
             }
         }
 

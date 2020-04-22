@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
@@ -123,7 +124,18 @@ namespace Microsoft.Azure.SignalR
 
             AddClientConnection(connection, message);
 
-            _ = ProcessClientConnectionAsync(connection);
+            Console.WriteLine($"--``-- OnClientConnectedAsync on {GetHashCode ()}");
+ 
+            var scopeProperties = new ClientConnectionScopeProperties() 
+            { 
+                ServiceConnection = this
+                // todo add more properties here, e.g. message.Headers.TryGetValue("Tracing", ...)
+            };
+
+            using (new ServiceConnectionScopeInternal(scopeProperties))
+            {
+                _ = ProcessClientConnectionAsync(connection);
+            }
 
             if (connection.IsMigrated)
             {
