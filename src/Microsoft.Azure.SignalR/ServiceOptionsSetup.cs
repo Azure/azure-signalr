@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
@@ -50,6 +51,13 @@ namespace Microsoft.Azure.SignalR
             if (!string.IsNullOrEmpty(mode))
             {
                 Enum.TryParse(mode, true, out stickyMode);
+            }
+
+            var diagnosticLogsSection = _configuration.get(Constants.Keys.DiagnosticLogsKey);
+            foreach (var entry in diagnosticLogsSection)
+            {
+                var k = entry.Key;
+                var v = entry.Value;
             }
 
             var (connectionString, endpoints) = GetEndpoint(_configuration, Constants.Keys.ConnectionStringDefaultKey);

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Azure.SignalR
@@ -83,6 +84,8 @@ namespace Microsoft.Azure.SignalR
         /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
         /// </summary>
         public IWebProxy Proxy { get; set; }
+
+        public IEnumerable<DiagnosticLog> DiagnosticLogs { get; set; }
 
         /// <summary>
         /// Gets or sets timeout waiting when scale multiple Azure SignalR Service endpoints.
