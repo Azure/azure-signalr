@@ -3,9 +3,18 @@
 
 namespace Microsoft.Azure.SignalR.Common
 {
+    /// <summary>
+    /// Log type of the diagnostic logs
+    /// </summary>
     public enum LogType
     {
+        /// <summary>
+        /// Connectivity logs provide detailed information of connections
+        /// </summary>
         Connectivity,
+        /// <summary>
+        /// Connectivity logs provide detailed information of messages
+        /// </summary>
         Messaging
     }
 }

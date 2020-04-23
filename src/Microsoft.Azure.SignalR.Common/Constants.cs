@@ -14,6 +14,8 @@ namespace Microsoft.Azure.SignalR
             public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
             public const string AzureSignalREnabledKey = "Azure:SignalR:Enabled";
             public const string DiagnosticLogsKey = "Azure:SignalR:DiagnosticLogs";
+            public const string DiagnosticLogsLogTypeSectionKey = "LogType";
+            public const string DiagnosticLogsAcceptTrackingClientSectionKey = "AcceptTrackingClient";
 
             public static readonly string ConnectionStringSecondaryKey =
                 $"ConnectionStrings:{ConnectionStringDefaultKey}";

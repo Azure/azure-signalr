@@ -36,6 +36,8 @@ namespace Microsoft.Azure.SignalR
 
             options.EnableGracefulShutdown = _gracefulShutdownEnabled;
             options.ServerShutdownTimeout = _shutdownTimeout;
+
+            options.DiagnosticLogs = configuration.DiagnosticLogs;
         }
 
         public IChangeToken GetChangeToken()
@@ -43,7 +45,7 @@ namespace Microsoft.Azure.SignalR
             return _configuration.GetReloadToken();
         }
 
-        private (string AppName, string ConnectionString, ServerStickyMode StickyMode, ServiceEndpoint[] Endpoints) ParseConfiguration()
+        private (string AppName, string ConnectionString, ServerStickyMode StickyMode, ServiceEndpoint[] Endpoints, DiagnosticLog[] DiagnosticLogs) ParseConfiguration()
         {
             var appName = _configuration[Constants.Keys.ApplicationNameDefaultKeyPrefix];
             var stickyMode = ServerStickyMode.Disabled;
@@ -51,13 +53,6 @@ namespace Microsoft.Azure.SignalR
             if (!string.IsNullOrEmpty(mode))
             {
                 Enum.TryParse(mode, true, out stickyMode);
-            }
-
-            var diagnosticLogsSection = _configuration.get(Constants.Keys.DiagnosticLogsKey);
-            foreach (var entry in diagnosticLogsSection)
-            {
-                var k = entry.Key;
-                var v = entry.Value;
             }
 
             var (connectionString, endpoints) = GetEndpoint(_configuration, Constants.Keys.ConnectionStringDefaultKey);
@@ -68,8 +63,22 @@ namespace Microsoft.Azure.SignalR
                 (connectionString, endpoints) = GetEndpoint(_configuration, Constants.Keys.ConnectionStringSecondaryKey);
             }
 
-            return (appName, connectionString, stickyMode, endpoints);
+            var diagnosticLogs = GetDiagnosticLogs(_configuration).ToArray();
+
+            return (appName, connectionString, stickyMode, endpoints, diagnosticLogs);
         }
+
+        private static IEnumerable<DiagnosticLog> GetDiagnosticLogs(IConfiguration configuration) =>
+            from children in configuration.GetSection(Constants.Keys.DiagnosticLogsKey).GetChildren()
+            let logTypeStr = children.GetSection(Constants.Keys.DiagnosticLogsLogTypeSectionKey).Value
+            let acceptTrackingClientStr = children.GetSection(Constants.Keys.DiagnosticLogsAcceptTrackingClientSectionKey).Value
+            let logType = (LogType) Enum.Parse(typeof(LogType), logTypeStr, ignoreCase: true)
+            let acceptTrackingClient = bool.Parse(acceptTrackingClientStr)
+            select new DiagnosticLog
+            {
+                LogType = logType,
+                AcceptTrackingClient = acceptTrackingClient
+            };
 
         private static (string, ServiceEndpoint[]) GetEndpoint(IConfiguration configuration, string key)
         {

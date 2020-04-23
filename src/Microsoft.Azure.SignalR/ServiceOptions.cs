@@ -85,6 +85,11 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public IWebProxy Proxy { get; set; }
 
+        /// <summary>
+        /// Gets or sets the diagnostic logs configuration.
+        /// todo: 1. discuss this option first
+        /// todo: 2. add a test for hot reload
+        /// </summary>
         public IEnumerable<DiagnosticLog> DiagnosticLogs { get; set; }
 
         /// <summary>
