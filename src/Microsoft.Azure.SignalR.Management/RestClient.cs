@@ -15,12 +15,18 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestClient
     {
-        public async Task SendAsync(RestApiEndpoint api, HttpMethod httpMethod, string productInfo, string methodName = null, object[] args = null, CancellationToken cancellationToken = default)
+        public async Task SendAsync(
+            RestApiEndpoint api,
+            HttpMethod httpMethod,
+            string productInfo,
+            string methodName = null,
+            object[] args = null,
+            Func<HttpRequestMessage, HttpResponseMessage, Task> handleResponse = null,
+            CancellationToken cancellationToken = default)
         {
             var httpClient = HttpClientFactory.CreateClient();
             var request = BuildRequest(api, httpMethod, productInfo, methodName, args);
             HttpResponseMessage response = null;
-            var detail = "";
 
             try
             {
@@ -31,25 +37,22 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), ex);
             }
 
-            try
+            if (handleResponse == null)
             {
-                detail = await response.Content.ReadAsStringAsync();
-                response.EnsureSuccessStatusCode();
+                await ThrowExceptionOnResponseFailureAsync(request, response);
             }
-            catch (HttpRequestException ex)
+            else
             {
-                ThrowExceptionOnResponseFailure(ex, response.StatusCode, request.RequestUri.ToString(), detail);
+                await handleResponse(request, response);
             }
-            finally
-            {
-                response.Dispose();
-            }
+
+            response.Dispose();
         }
 
         private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, string productInfo, string methodName = null, object[] args = null)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
-            return GenerateHttpRequest(api.Audience, httpMethod, payload, api.Token,  productInfo);
+            return GenerateHttpRequest(api.Audience, httpMethod, payload, api.Token, productInfo);
         }
 
         private HttpRequestMessage GenerateHttpRequest(string url, HttpMethod httpMethod, PayloadMessage payload, string tokenString, string productInfo)
@@ -62,26 +65,28 @@ namespace Microsoft.Azure.SignalR.Management
             return request;
         }
 
-        private static void ThrowExceptionOnResponseFailure(Exception innerException, HttpStatusCode? statusCode, string requestUri, string detail = null)
+        private static async Task ThrowExceptionOnResponseFailureAsync(HttpRequestMessage request, HttpResponseMessage response)
         {
-            switch (statusCode)
+            if (response.IsSuccessStatusCode)
+            {
+                return;
+            }
+            
+            var detail = await response.Content.ReadAsStringAsync();
+
+            var innerException = new HttpRequestException(
+                    $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})");
+
+            switch (response.StatusCode)
             {
                 case HttpStatusCode.BadRequest:
-                {
-                    throw new AzureSignalRInvalidArgumentException(requestUri, innerException, detail);
-                }
+                    throw new AzureSignalRInvalidArgumentException(request.RequestUri.ToString(), innerException, detail);
                 case HttpStatusCode.Unauthorized:
-                {
-                    throw new AzureSignalRUnauthorizedException(requestUri, innerException);
-                }
+                    throw new AzureSignalRUnauthorizedException(request.RequestUri.ToString(), innerException);
                 case HttpStatusCode.NotFound:
-                {
-                    throw new AzureSignalRInaccessibleEndpointException(requestUri, innerException);
-                }
+                    throw new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), innerException);
                 default:
-                {
-                    throw new AzureSignalRRuntimeException(requestUri, innerException);
-                }
+                    throw new AzureSignalRRuntimeException(request.RequestUri.ToString(), innerException);
             }
         }
     }
