@@ -88,7 +88,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             // broadcast case
             if (TryGetName(message.Key, PrefixHelper.HubPrefix, out var hubName))
             {
-                yield return new HubMessage(hubName, new BroadcastDataMessage(excludedList: GetExcludedIds(message.Filter), payloads: GetPayloads(segment)), message);
+                // todo [messagelog]: if inside a special server connection container, add message ID
+                yield return new HubMessage(hubName, new BroadcastDataMessage(GetExcludedIds(message.Filter), payloads: GetPayloads(segment)), message);
             }
             // echo case
             else if (TryGetName(message.Key, PrefixHelper.HubConnectionIdPrefix, out _))

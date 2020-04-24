@@ -175,6 +175,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 }),
                 binary: "kwqQgqRqc29uxAcEBQYHAQIDq21lc3NhZ2VwYWNrxAcFBgcBAgME"),
             new ProtocolTestData(
+                name: "BroadcastWithMessageId",
+                message: new BroadcastDataMessage("messageId", new Dictionary<string, ReadOnlyMemory<byte>>
+                {
+                    ["json"] = new byte[] {4, 5, 6, 7, 1, 2, 3},
+                    ["messagepack"] = new byte[] {5, 6, 7, 1, 2, 3, 4}
+                }),
+                binary: "k84AAYaqqW1lc3NhZ2VJZJCCpGpzb27EBwQFBgcBAgOrbWVzc2FnZXBhY2vEBwUGBwECAwQ="),
+            new ProtocolTestData(
                 name: "BroadcastExcept",
                 message: new BroadcastDataMessage(new[] {"conn7", "conn8", "conn9"},
                     new Dictionary<string, ReadOnlyMemory<byte>>

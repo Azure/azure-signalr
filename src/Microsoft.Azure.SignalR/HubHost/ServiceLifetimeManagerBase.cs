@@ -43,8 +43,9 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
+            // todo [messagelog]: if inside a special server connection container, add message ID
             return ServiceConnectionContainer.WriteAsync(
-                new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)));
+                new BroadcastDataMessage(SerializeAllProtocols(methodName, args)));
         }
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
@@ -54,6 +55,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
+            // todo [messagelog]: if inside a special server connection container, add message ID
             return ServiceConnectionContainer.WriteAsync(
                 new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)));
         }

@@ -65,6 +65,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateMultiUserDataMessage(ref reader);
                 case ServiceProtocolConstants.BroadcastDataMessageType:
                     return CreateBroadcastDataMessage(ref reader);
+                case ServiceProtocolConstants.BroadcastDataMessageWithMessageIdType:
+                    return CreateBroadcastDataMessage(ref reader, withMessageId: true);
                 case ServiceProtocolConstants.JoinGroupMessageType:
                     return CreateJoinGroupMessage(ref reader);
                 case ServiceProtocolConstants.LeaveGroupMessageType:
@@ -313,7 +315,15 @@ namespace Microsoft.Azure.SignalR.Protocol
         private static void WriteBroadcastDataMessage(ref MessagePackWriter writer, BroadcastDataMessage message)
         {
             writer.WriteArrayHeader(3);
-            writer.Write(ServiceProtocolConstants.BroadcastDataMessageType);
+            if (message.MessageId == null)
+            {
+                writer.Write(ServiceProtocolConstants.BroadcastDataMessageType);
+            }
+            else
+            {
+                writer.Write(ServiceProtocolConstants.BroadcastDataMessageWithMessageIdType);
+                writer.Write(message.MessageId);
+            }
             WriteStringArray(ref writer, message.ExcludedList);
             WritePayloads(ref writer, message.Payloads);
         }
@@ -558,12 +568,13 @@ namespace Microsoft.Azure.SignalR.Protocol
             return new MultiUserDataMessage(userList, payloads);
         }
 
-        private static BroadcastDataMessage CreateBroadcastDataMessage(ref MessagePackReader reader)
+        private static BroadcastDataMessage CreateBroadcastDataMessage(ref MessagePackReader reader, bool withMessageId = false)
         {
+            var messageId = withMessageId ? ReadString(ref reader, "messageId") : null;
             var excludedList = ReadStringArray(ref reader, "excludedList");
             var payloads = ReadPayloads(ref reader);
 
-            return new BroadcastDataMessage(excludedList, payloads);
+            return new BroadcastDataMessage(messageId, excludedList, payloads);
         }
 
         private static JoinGroupMessage CreateJoinGroupMessage(ref MessagePackReader reader)

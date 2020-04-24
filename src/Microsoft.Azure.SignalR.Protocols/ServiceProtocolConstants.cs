@@ -15,6 +15,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public const int UserDataMessageType = 8;
         public const int MultiUserDataMessageType = 9;
         public const int BroadcastDataMessageType = 10;
+        public const int BroadcastDataMessageWithMessageIdType = 100010; // 1xxxxx mean the message with ID, otherwise without ID
         public const int JoinGroupMessageType = 11;
         public const int LeaveGroupMessageType = 12;
         public const int GroupBroadcastDataMessageType = 13;
