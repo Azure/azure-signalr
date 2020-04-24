@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -194,6 +195,18 @@ namespace Microsoft.Azure.SignalR.Management
         {
             var api = _restApiProvider.GetRemoveUserFromAllGroups(_appName, _hubName, userId);
             return _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, cancellationToken: cancellationToken);
+        }
+
+        public async Task<bool> IsUserInGroup(string userId, string groupName, CancellationToken cancellationToken = default)
+        {
+            var isUserInGroup = false;
+            var api = _restApiProvider.GetUserGroupManagementEndpoint(_appName, _hubName, userId, groupName);
+            await _restClient.SendAsync(api, HttpMethod.Get, _productInfo, handleResponse: (request, response) =>
+                {
+                    isUserInGroup = response.StatusCode == HttpStatusCode.OK;
+                    return Task.CompletedTask;
+                }, cancellationToken: cancellationToken);
+            return isUserInGroup;
         }
 
         private static void ValidateUserIdAndGroupName(string userId, string groupName)
