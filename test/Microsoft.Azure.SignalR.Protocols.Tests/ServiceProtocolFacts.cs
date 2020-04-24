@@ -85,8 +85,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "lQEBAaNhYmMA"),
             new ProtocolTestData(
                 name: "HandshakeRequestWithMigratableStatus",
-                message: new HandshakeRequestMessage(1) { MigrationLevel = 1},
-                binary: "lQEBAKAB"),
+                message: new HandshakeRequestMessage(1) { Extras = new Dictionary<string, ReadOnlyMemory<byte>>()
+                {
+                    {"MigrationLevel", BitConverter.GetBytes(1) }
+                }},
+                binary: "lAEBAKCBrk1pZ3JhdGlvbkxldmVsxAQBAAAA"),
             new ProtocolTestData(
                 name: "HandshakeResponse",
                 message: new HandshakeResponseMessage(),

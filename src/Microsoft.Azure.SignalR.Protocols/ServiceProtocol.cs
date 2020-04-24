@@ -217,12 +217,14 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteHandshakeRequestMessage(ref MessagePackWriter writer, HandshakeRequestMessage message)
         {
-            writer.WriteArrayHeader(5);
+            writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.HandshakeRequestType);
             writer.Write(message.Version);
             writer.Write(message.ConnectionType);
             writer.Write(message.ConnectionType == 0 ? "" : message.Target ?? string.Empty);
-            writer.Write((int)message.MigrationLevel);
+            //writer.Write((int)message.MigrationLevel);
+            message.Extras["MigrationLevel"] = BitConverter.GetBytes(message.MigrationLevel);
+            WritePayloads(ref writer, message.Extras);
         }
 
         private static void WriteHandshakeResponseMessage(ref MessagePackWriter writer, HandshakeResponseMessage message)
@@ -473,7 +475,19 @@ namespace Microsoft.Azure.SignalR.Protocol
                 result.ConnectionType = ReadInt32(ref reader, "connectionType");
                 result.Target = ReadString(ref reader, "target");
             }
-            result.MigrationLevel = arrayLength >= 5 ? ReadInt32(ref reader, "migratableStatus") : 0;
+
+            result.Extras = ReadPayloads(ref reader);
+            //result.MigrationLevel = arrayLength >= 5 ? ReadInt32(ref reader, "migratableStatus") : 0;
+
+            if (result.Extras.TryGetValue("MigrationLevel", out var level))
+            {
+                result.MigrationLevel = BitConverter.ToInt32(level.ToArray(), 0);
+            }
+            else
+            {
+                result.MigrationLevel = 0;
+            }
+
             return result;
         }
 
