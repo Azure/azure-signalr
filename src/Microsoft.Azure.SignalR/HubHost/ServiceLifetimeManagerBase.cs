@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            // todo [messagelog]: if inside a special server connection container, add message ID
+            // todo [messagelog]: add message ID for all messages in the future
             return ServiceConnectionContainer.WriteAsync(
                 new BroadcastDataMessage(SerializeAllProtocols(methodName, args)));
         }
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            // todo [messagelog]: if inside a special server connection container, add message ID
+            // todo [messagelog]: add message ID for all messages in the future
             return ServiceConnectionContainer.WriteAsync(
                 new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)));
         }

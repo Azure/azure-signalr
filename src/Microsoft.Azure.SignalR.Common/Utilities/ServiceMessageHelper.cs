@@ -9,18 +9,17 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class ServiceMessageHelper
     {
+        private const int BufferLength = 8;
         private static readonly RNGCryptoServiceProvider _keyGenerator = new RNGCryptoServiceProvider();
         private static readonly char[] _padding = { '=' };
 
-        // todo: generate a shorter ID
-        public static string GenerateMessageId()
+        public static string GenerateMessageIdPrefix()
         {
-            // 128 bit buffer / 8 bits per byte = 16 bytes
-            Span<byte> buffer = stackalloc byte[16];
-            var bufferArray = buffer.ToArray();
-            _keyGenerator.GetBytes(bufferArray);
+            // 64 bit buffer / 8 bits per byte = 8 bytes
+            var buffer = new byte[BufferLength];
+            _keyGenerator.GetBytes(buffer);
             // Generate the id with RNGCrypto because we want a cryptographically random id, which GUID is not
-            return Base64UrlEncode(bufferArray);
+            return Base64UrlEncode(buffer);
         }
 
         public static string GetMessageId(ServiceMessage serviceMessage)

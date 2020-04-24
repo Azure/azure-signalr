@@ -64,9 +64,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ServiceProtocolConstants.MultiUserDataMessageType:
                     return CreateMultiUserDataMessage(ref reader);
                 case ServiceProtocolConstants.BroadcastDataMessageType:
-                    return CreateBroadcastDataMessage(ref reader);
-                case ServiceProtocolConstants.BroadcastDataMessageWithMessageIdType:
-                    return CreateBroadcastDataMessage(ref reader, withMessageId: true);
+                    return CreateBroadcastDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.JoinGroupMessageType:
                     return CreateJoinGroupMessage(ref reader);
                 case ServiceProtocolConstants.LeaveGroupMessageType:
@@ -314,18 +312,16 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteBroadcastDataMessage(ref MessagePackWriter writer, BroadcastDataMessage message)
         {
-            writer.WriteArrayHeader(3);
-            if (message.MessageId == null)
-            {
-                writer.Write(ServiceProtocolConstants.BroadcastDataMessageType);
-            }
-            else
-            {
-                writer.Write(ServiceProtocolConstants.BroadcastDataMessageWithMessageIdType);
-                writer.Write(message.MessageId);
-            }
+            var arrayLength = message.MessageId != null ? 4 : 3;
+            writer.WriteArrayHeader(arrayLength);
+            writer.Write(ServiceProtocolConstants.BroadcastDataMessageType);
             WriteStringArray(ref writer, message.ExcludedList);
             WritePayloads(ref writer, message.Payloads);
+
+            if (message.MessageId != null)
+            {
+                writer.Write(message.MessageId);
+            }
         }
 
         private static void WriteJoinGroupMessage(ref MessagePackWriter writer, JoinGroupMessage message)
@@ -568,11 +564,15 @@ namespace Microsoft.Azure.SignalR.Protocol
             return new MultiUserDataMessage(userList, payloads);
         }
 
-        private static BroadcastDataMessage CreateBroadcastDataMessage(ref MessagePackReader reader, bool withMessageId = false)
+        private static BroadcastDataMessage CreateBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
         {
-            var messageId = withMessageId ? ReadString(ref reader, "messageId") : null;
             var excludedList = ReadStringArray(ref reader, "excludedList");
             var payloads = ReadPayloads(ref reader);
+            string messageId = null;
+            if (arrayLength == 4)
+            {
+                messageId = ReadString(ref reader, "messageId");
+            }
 
             return new BroadcastDataMessage(messageId, excludedList, payloads);
         }
