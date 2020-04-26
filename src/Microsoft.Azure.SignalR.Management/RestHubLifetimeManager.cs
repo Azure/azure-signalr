@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -203,7 +204,17 @@ namespace Microsoft.Azure.SignalR.Management
             var api = _restApiProvider.GetUserGroupManagementEndpoint(_appName, _hubName, userId, groupName);
             await _restClient.SendAsync(api, HttpMethod.Get, _productInfo, handleResponse: (request, response) =>
                 {
-                    isUserInGroup = response.StatusCode == HttpStatusCode.OK;
+                    switch (response.StatusCode)
+                    {
+                        case HttpStatusCode.OK:
+                            isUserInGroup = true;
+                            break;
+                        case HttpStatusCode.NotFound:
+                            break;
+                        default:
+                            var innerException = _restClient.GenerateInnerExceptionOnResponseFailure(response.StatusCode, response.ReasonPhrase);
+                            throw new AzureSignalRRuntimeException(response.RequestMessage.RequestUri.ToString(), innerException);
+                    }
                     return Task.CompletedTask;
                 }, cancellationToken: cancellationToken);
             return isUserInGroup;

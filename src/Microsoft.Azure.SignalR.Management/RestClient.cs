@@ -49,6 +49,12 @@ namespace Microsoft.Azure.SignalR.Management
             response.Dispose();
         }
 
+        public HttpRequestException GenerateInnerExceptionOnResponseFailure(HttpStatusCode statusCode, string reason)
+        {
+            return new HttpRequestException(
+                $"Response status code does not indicate success: {(int)statusCode} ({reason})");
+        }
+
         private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, string productInfo, string methodName = null, object[] args = null)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
@@ -65,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Management
             return request;
         }
 
-        private static async Task ThrowExceptionOnResponseFailureAsync(HttpRequestMessage request, HttpResponseMessage response)
+        private async Task ThrowExceptionOnResponseFailureAsync(HttpRequestMessage request, HttpResponseMessage response)
         {
             if (response.IsSuccessStatusCode)
             {
@@ -74,8 +80,7 @@ namespace Microsoft.Azure.SignalR.Management
             
             var detail = await response.Content.ReadAsStringAsync();
 
-            var innerException = new HttpRequestException(
-                    $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})");
+            var innerException = GenerateInnerExceptionOnResponseFailure(response.StatusCode, response.ReasonPhrase);
 
             switch (response.StatusCode)
             {
