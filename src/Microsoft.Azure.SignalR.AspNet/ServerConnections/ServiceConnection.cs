@@ -51,7 +51,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                   serviceMessageHandler,
                   connectionType,
                   ServerConnectionMigrationLevel.Off,
-                  loggerFactory?.CreateLogger<ServiceConnection>())
+                  loggerFactory)
         {
             _connectionFactory = connectionFactory;
             _clientConnectionManager = clientConnectionManager;

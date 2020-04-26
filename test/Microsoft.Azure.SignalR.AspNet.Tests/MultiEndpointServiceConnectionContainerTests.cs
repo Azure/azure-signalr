@@ -331,13 +331,13 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 var router = new TestEndpointRouter(true);
                 var container = new TestMultiEndpointServiceConnectionContainer("hub",
                     e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
-                        new TestServiceConnection(logger: logger),
-                        new TestServiceConnection(logger: logger),
-                        new TestServiceConnection(logger: logger),
-                        new TestServiceConnection(logger: logger),
-                        new TestServiceConnection(logger: logger),
-                        new TestServiceConnection(logger: logger),
-                        new TestServiceConnection(logger: logger),
+                        new TestServiceConnection(loggerFactory: loggerFactory),
+                        new TestServiceConnection(loggerFactory: loggerFactory),
+                        new TestServiceConnection(loggerFactory: loggerFactory),
+                        new TestServiceConnection(loggerFactory: loggerFactory),
+                        new TestServiceConnection(loggerFactory: loggerFactory),
+                        new TestServiceConnection(loggerFactory: loggerFactory),
+                        new TestServiceConnection(loggerFactory: loggerFactory),
                     }, e, logger), sem, router, loggerFactory);
                 _ = Task.Run(container.StartAsync);
                 await container.ConnectionInitializedTask.OrTimeout();

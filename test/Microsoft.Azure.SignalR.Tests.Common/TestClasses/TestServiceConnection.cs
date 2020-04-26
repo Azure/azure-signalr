@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         public Task ConnectionCreated => _created.Task;
 
         public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false,
-            ILogger logger = null,
+            ILoggerFactory loggerFactory = null,
             IServiceMessageHandler serviceMessageHandler = null
             ) : base(
             new ServiceProtocol(),
@@ -37,12 +37,12 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             serviceMessageHandler,
             ServiceConnectionType.Default,
             ServerConnectionMigrationLevel.Off,
-            logger ?? NullLogger.Instance
+            loggerFactory
         )
         {
             _expectedStatus = status;
             _throws = throws;
-            _logger = logger ?? NullLogger.Instance;
+            _logger = loggerFactory == null ? NullLogger.Instance : loggerFactory.CreateLogger(nameof(TestServiceConnection));
         }
 
         public void SetStatus(ServiceConnectionStatus status)
