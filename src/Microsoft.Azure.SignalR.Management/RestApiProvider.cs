@@ -26,8 +26,10 @@ namespace Microsoft.Azure.SignalR.Management
 
         public RestApiEndpoint GetServiceHealthEndpoint()
         {
-            var url = $"{_baseEndpoint}/api/{Version}/health";
-            var token = _restApiAccessTokenGenerator.Generate(url);
+            var port = _port == null ? "" : $":{_port}";
+            var url = $"{_baseEndpoint}{port}/api/{Version}/health";
+            var audience = $"{_baseEndpoint}/api/{Version}/health";
+            var token = _restApiAccessTokenGenerator.Generate(audience);
             return new RestApiEndpoint(url, token);
         }
 
