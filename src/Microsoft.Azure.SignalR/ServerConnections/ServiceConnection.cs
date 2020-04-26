@@ -56,7 +56,7 @@ namespace Microsoft.Azure.SignalR
                                  ServiceConnectionType connectionType = ServiceConnectionType.Default,
                                  ServerConnectionMigrationLevel migrationLevel = ServerConnectionMigrationLevel.Off,
                                  int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds
-            ): base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, connectionType, migrationLevel, loggerFactory?.CreateLogger<ServiceConnection>())
+            ): base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, connectionType, migrationLevel, loggerFactory)
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
