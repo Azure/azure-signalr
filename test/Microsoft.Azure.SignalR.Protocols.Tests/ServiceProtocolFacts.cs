@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
+
 using Microsoft.Extensions.Primitives;
 using Xunit;
 
@@ -48,6 +49,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 }
             }
         }
+
         public static IDictionary<string, ProtocolTestData> TestCompatibilityData => new[] {
             new ProtocolTestData(
                 name: "CloseConnection",
@@ -78,23 +80,23 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             new ProtocolTestData(
                 name: "HandshakeRequest",
                 message: new HandshakeRequestMessage(1),
-                binary: "lQEBAKAA"),
+                binary: "lgEBAKAAkA=="),
             new ProtocolTestData(
                 name: "HandshakeRequestWithProperty",
                 message: new HandshakeRequestMessage(1) { ConnectionType = 1, Target = "abc" },
-                binary: "lQEBAaNhYmMA"),
+                binary: "lgEBAaNhYmMAkA=="),
             new ProtocolTestData(
                 name: "HandshakeRequestWithMigratableStatus",
                 message: new HandshakeRequestMessage(1) { MigrationLevel = 1},
-                binary: "lQEBAKAB"),
+                binary: "lgEBAKABkA=="),
             new ProtocolTestData(
                 name: "HandshakeResponse",
                 message: new HandshakeResponseMessage(),
-                binary: "kgKg"),
+                binary: "kwKgkA=="),
             new ProtocolTestData(
                 name: "HandshakeResponseWithError",
                 message: new HandshakeResponseMessage("Version mismatch."),
-                binary: "kgKxVmVyc2lvbiBtaXNtYXRjaC4="),
+                binary: "kwKxVmVyc2lvbiBtaXNtYXRjaC6Q"),
             new ProtocolTestData(
                 name: "Ping",
                 message: PingMessage.Instance,
@@ -106,11 +108,11 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             new ProtocolTestData(
                 name: "OpenConnection",
                 message: new OpenConnectionMessage("conn1", null),
-                binary: "lQSlY29ubjGAgKA="),
+                binary: "lgSlY29ubjGAgKCQ"),
             new ProtocolTestData(
                 name: "OpenConnectionWithClaims",
                 message: new OpenConnectionMessage("conn2", new [] {new Claim(ClaimTypes.NameIdentifier, "user1")}),
-                binary: "lQSlY29ubjKB2URodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllcqV1c2VyMYCg"),
+                binary: "lgSlY29ubjKB2URodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllcqV1c2VyMYCgkA=="),
             new ProtocolTestData(
                 name: "OpenConnectionWithHeaders",
                 message: new OpenConnectionMessage("conn3", null, new Dictionary<string, StringValues>
@@ -119,27 +121,31 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     {"header-key-2", new[] {"heaer-value-2a", "header-value-2b"}},
                     {"header-key-3", new[] {"heaer-value-3a", "header-value-3b", "header-value-3c"}}
                 }, string.Empty),
-                binary: "lQSlY29ubjOAg6xoZWFkZXIta2V5LTGRrmhlYWRlci12YWx1ZS0xrGhlYWRlci1rZXktMpKuaGVhZXItdmFsdWUtMmGvaGVhZGVyLXZhbHVlLTJirGhlYWRlci1rZXktM5OuaGVhZXItdmFsdWUtM2GvaGVhZGVyLXZhbHVlLTNir2hlYWRlci12YWx1ZS0zY6A="),
+                binary: "lgSlY29ubjOAg6xoZWFkZXIta2V5LTGRrmhlYWRlci12YWx1ZS0xrGhlYWRlci1rZXktMpKuaGVhZXItdmFsdWUtMmGvaGVhZGVyLXZhbHVlLTJirGhlYWRlci1rZXktM5OuaGVhZXItdmFsdWUtM2GvaGVhZGVyLXZhbHVlLTNir2hlYWRlci12YWx1ZS0zY6CQ"),
             new ProtocolTestData(
                 name: "OpenConnectionWithQueryString1",
                 message: new OpenConnectionMessage("conn4", null, new Dictionary<string, StringValues>(), "query1=value1"),
-                binary: "lQSlY29ubjSAgK1xdWVyeTE9dmFsdWUx"),
+                binary: "lgSlY29ubjSAgK1xdWVyeTE9dmFsdWUxkA=="),
             new ProtocolTestData(
                 name: "OpenConnectionWithQueryString2",
                 message: new OpenConnectionMessage("conn4", null, new Dictionary<string, StringValues>(), "query1=value1&query2=query2&query3=value3"),
-                binary: "lQSlY29ubjSAgNkpcXVlcnkxPXZhbHVlMSZxdWVyeTI9cXVlcnkyJnF1ZXJ5Mz12YWx1ZTM="),
+                binary: "lgSlY29ubjSAgNkpcXVlcnkxPXZhbHVlMSZxdWVyeTI9cXVlcnkyJnF1ZXJ5Mz12YWx1ZTOQ"),
             new ProtocolTestData(
                 name: "CloseConnection",
                 message: new CloseConnectionMessage("conn3"),
-                binary: "lAWlY29ubjOggA=="),
+                binary: "lQWlY29ubjOggJA="),
             new ProtocolTestData(
                 name: "CloseConnectionWithError",
                 message: new CloseConnectionMessage("conn4", "Error message."),
-                binary: "lAWlY29ubjSuRXJyb3IgbWVzc2FnZS6A"),
+                binary: "lQWlY29ubjSuRXJyb3IgbWVzc2FnZS6AkA=="),
             new ProtocolTestData(
                 name: "ConnectionData",
                 message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}),
-                binary: "kwalY29ubjXEBwECAwQFBgc="),
+                binary: "lAalY29ubjXEBwECAwQFBgeQ"),
+            new ProtocolTestData(
+                name: "ConnectionDataWithTracingId",
+                message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}) { TracingId = "test" },
+                binary: "lAalY29ubjXEBwECAwQFBgeSAaR0ZXN0"),
             new ProtocolTestData(
                 name: "MultiConnectionData",
                 message: new MultiConnectionDataMessage(new [] {"conn6", "conn7"}, new Dictionary<string, ReadOnlyMemory<byte>>
@@ -147,7 +153,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     ["json"] = new byte[] {2, 3, 4, 5, 6, 7, 1},
                     ["messagepack"] = new byte[] {3, 4, 5, 6, 7, 1, 2}
                 }),
-                binary: "kweSpWNvbm42pWNvbm43gqRqc29uxAcCAwQFBgcBq21lc3NhZ2VwYWNrxAcDBAUGBwEC"),
+                binary: "lAeSpWNvbm42pWNvbm43gqRqc29uxAcCAwQFBgcBq21lc3NhZ2VwYWNrxAcDBAUGBwECkA=="),
             new ProtocolTestData(
                 name: "UserData",
                 message: new UserDataMessage("user1",
@@ -156,7 +162,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }),
-                binary: "kwildXNlcjGCpGpzb27EBwYHAQIDBAWrbWVzc2FnZXBhY2vEBwcBAgMEBQY="),
+                binary: "lAildXNlcjGCpGpzb27EBwYHAQIDBAWrbWVzc2FnZXBhY2vEBwcBAgMEBQaQ"),
             new ProtocolTestData(
                 name: "MultiUserData",
                 message: new MultiUserDataMessage(new [] {"user1", "user2"},
@@ -165,7 +171,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }),
-                binary: "kwmSpXVzZXIxpXVzZXIygqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUG"),
+                binary: "lAmSpXVzZXIxpXVzZXIygqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGkA=="),
             new ProtocolTestData(
                 name: "Broadcast",
                 message: new BroadcastDataMessage(new Dictionary<string, ReadOnlyMemory<byte>>
@@ -173,7 +179,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     ["json"] = new byte[] {4, 5, 6, 7, 1, 2, 3},
                     ["messagepack"] = new byte[] {5, 6, 7, 1, 2, 3, 4}
                 }),
-                binary: "kwqQgqRqc29uxAcEBQYHAQIDq21lc3NhZ2VwYWNrxAcFBgcBAgME"),
+                binary: "lAqQgqRqc29uxAcEBQYHAQIDq21lc3NhZ2VwYWNrxAcFBgcBAgMEkA=="),
             new ProtocolTestData(
                 name: "BroadcastExcept",
                 message: new BroadcastDataMessage(new[] {"conn7", "conn8", "conn9"},
@@ -182,23 +188,23 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }),
-                binary: "kwqTpWNvbm43pWNvbm44pWNvbm45gqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUG"),
+                binary: "lAqTpWNvbm43pWNvbm44pWNvbm45gqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGkA=="),
             new ProtocolTestData(
                 name: "JoinGroup",
                 message: new JoinGroupMessage("conn10", "group1"),
-                binary: "kwumY29ubjEwpmdyb3VwMQ=="),
+                binary: "lAumY29ubjEwpmdyb3VwMZA="),
             new ProtocolTestData(
                 name: "LeaveGroup",
                 message: new LeaveGroupMessage("conn11", "group2"),
-                binary: "kwymY29ubjExpmdyb3VwMg=="),
+                binary: "lAymY29ubjExpmdyb3VwMpA="),
             new ProtocolTestData(
                 name: "UserJoinGroup",
                 message: new UserJoinGroupMessage("conn10", "group1"),
-                binary: "kxCmY29ubjEwpmdyb3VwMQ=="),
+                binary: "lBCmY29ubjEwpmdyb3VwMZA="),
             new ProtocolTestData(
                 name: "UserLeaveGroup",
                 message: new UserLeaveGroupMessage("conn11", "group2"),
-                binary: "kxGmY29ubjExpmdyb3VwMg=="),
+                binary: "lBGmY29ubjExpmdyb3VwMpA="),
             new ProtocolTestData(
                 name: "GroupBroadcast",
                 message: new GroupBroadcastDataMessage("group3",
@@ -207,7 +213,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }),
-                binary: "lA2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBg=="),
+                binary: "lQ2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBpA="),
             new ProtocolTestData(
                 name: "GroupBroadcastExcept",
                 message: new GroupBroadcastDataMessage("group3", new [] {"conn12", "conn13"},
@@ -216,7 +222,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }),
-                binary: "lA2mZ3JvdXAzkqZjb25uMTKmY29ubjEzgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUG"),
+                binary: "lQ2mZ3JvdXAzkqZjb25uMTKmY29ubjEzgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGkA=="),
             new ProtocolTestData(
                 name: "MultiGroupBroadcast",
                 message: new MultiGroupBroadcastDataMessage(new [] {"group4", "group5"},
@@ -225,7 +231,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["json"] = new byte[] {1, 2, 3, 4, 5, 6, 7, 8},
                         ["messagepack"] = new byte[] {7, 8, 1, 2, 3, 4, 5, 6}
                     }),
-                binary: "kw6Spmdyb3VwNKZncm91cDWCpGpzb27ECAECAwQFBgcIq21lc3NhZ2VwYWNrxAgHCAECAwQFBg=="),
+                binary: "lA6Spmdyb3VwNKZncm91cDWCpGpzb27ECAECAwQFBgcIq21lc3NhZ2VwYWNrxAgHCAECAwQFBpA="),
             new ProtocolTestData(
                 name: "ServiceError",
                 message: new ServiceErrorMessage("Maximum message count limit reached: 100000"),
@@ -233,19 +239,19 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             new ProtocolTestData(
                 name: "JoinGroupWithAck",
                 message: new JoinGroupWithAckMessage("conn14", "group1", 1), 
-                binary: "lBKmY29ubjE0pmdyb3VwMQE="),
+                binary: "lRKmY29ubjE0pmdyb3VwMQGQ"),
             new ProtocolTestData(
                 name: "LeaveGroupWithAck",
                 message: new LeaveGroupWithAckMessage("conn15", "group2", 1), 
-                binary: "lBOmY29ubjE1pmdyb3VwMgE="),
+                binary: "lROmY29ubjE1pmdyb3VwMgGQ"),
             new ProtocolTestData(
                 name: "Ack",
                 message: new AckMessage(1, 100), 
-                binary: "lBQBZKA="),
+                binary: "lRQBZKCQ"),
             new ProtocolTestData(
                 name: "AckWithMessage",
                 message: new AckMessage(2, 101, "Joined group successfully"),
-                binary: "lBQCZblKb2luZWQgZ3JvdXAgc3VjY2Vzc2Z1bGx5"),
+                binary: "lRQCZblKb2luZWQgZ3JvdXAgc3VjY2Vzc2Z1bGx5kA=="),
         }.ToDictionary(t => t.Name);
 
         [Theory]

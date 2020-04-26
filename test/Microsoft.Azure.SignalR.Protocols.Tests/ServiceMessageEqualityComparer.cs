@@ -100,7 +100,9 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         private bool ConnectionDataMessagesEqual(ConnectionDataMessage x, ConnectionDataMessage y)
         {
-            return StringEqual(x.ConnectionId, y.ConnectionId) && SequenceEqual(x.Payload.ToArray(), y.Payload.ToArray());
+            return StringEqual(x.ConnectionId, y.ConnectionId) &&
+                SequenceEqual(x.Payload.ToArray(), y.Payload.ToArray()) &&
+                StringEqual(x.TracingId, y.TracingId);
         }
 
         private bool MultiConnectionDataMessagesEqual(MultiConnectionDataMessage x, MultiConnectionDataMessage y)

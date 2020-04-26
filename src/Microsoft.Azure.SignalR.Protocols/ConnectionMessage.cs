@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// Base class of connection-specific messages between Azure SignalR Service and SDK.
     /// </summary>
-    public abstract class ConnectionMessage : ServiceMessage
+    public abstract class ConnectionMessage : ExtensibleServiceMessage
     {
         protected ConnectionMessage(string connectionId)
         {
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A connection data message.
     /// </summary>
-    public class ConnectionDataMessage : ConnectionMessage
+    public class ConnectionDataMessage : ConnectionMessage, IMessageWithTracingId
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionDataMessage"/> class.
@@ -136,5 +136,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the binary payload.
         /// </summary>
         public ReadOnlySequence<byte> Payload { get; set; }
+
+        public string TracingId { get; set; }
     }
 }

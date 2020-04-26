@@ -6,7 +6,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A join-group message.
     /// </summary>
-    public class JoinGroupMessage : ServiceMessage
+    public class JoinGroupMessage : ExtensibleServiceMessage
     {
         /// <summary>
         /// Gets or sets the connection Id.
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A leave-group message.
     /// </summary>
-    public class LeaveGroupMessage : ServiceMessage
+    public class LeaveGroupMessage : ExtensibleServiceMessage
     {
         /// <summary>
         /// Gets or sets the connection Id.
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A user-join-group message.
     /// </summary>
-    public class UserJoinGroupMessage : ServiceMessage
+    public class UserJoinGroupMessage : ExtensibleServiceMessage
     {
         /// <summary>
         /// Gets or sets the user Id.
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A user-leave-group message.
     /// </summary>
-    public class UserLeaveGroupMessage : ServiceMessage
+    public class UserLeaveGroupMessage : ExtensibleServiceMessage
     {
         /// <summary>
         /// Gets or sets the user Id.
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A waiting for ack join-group message.
     /// </summary>
-    public class JoinGroupWithAckMessage : ServiceMessage, IAckableMessage
+    public class JoinGroupWithAckMessage : ExtensibleServiceMessage, IAckableMessage
     {
         /// <summary>
         /// Gets or sets the connection Id.
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A waiting for ack leave-group message.
     /// </summary>
-    public class LeaveGroupWithAckMessage : ServiceMessage, IAckableMessage
+    public class LeaveGroupWithAckMessage : ExtensibleServiceMessage, IAckableMessage
     {
         /// <summary>
         /// Gets or sets the connection Id.
