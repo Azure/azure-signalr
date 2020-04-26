@@ -49,10 +49,29 @@ namespace Microsoft.Azure.SignalR.Management
             response.Dispose();
         }
 
-        public HttpRequestException GenerateInnerExceptionOnResponseFailure(HttpStatusCode statusCode, string reason)
+        public async Task ThrowExceptionOnResponseFailureAsync(HttpRequestMessage request, HttpResponseMessage response)
         {
-            return new HttpRequestException(
-                $"Response status code does not indicate success: {(int)statusCode} ({reason})");
+            if (response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            var detail = await response.Content.ReadAsStringAsync();
+
+            var innerException = new HttpRequestException(
+                $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})"); ;
+
+            switch (response.StatusCode)
+            {
+                case HttpStatusCode.BadRequest:
+                    throw new AzureSignalRInvalidArgumentException(request.RequestUri.ToString(), innerException, detail);
+                case HttpStatusCode.Unauthorized:
+                    throw new AzureSignalRUnauthorizedException(request.RequestUri.ToString(), innerException);
+                case HttpStatusCode.NotFound:
+                    throw new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), innerException);
+                default:
+                    throw new AzureSignalRRuntimeException(request.RequestUri.ToString(), innerException);
+            }
         }
 
         private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, string productInfo, string methodName = null, object[] args = null)
@@ -69,30 +88,6 @@ namespace Microsoft.Azure.SignalR.Management
             request.Headers.Add(Constants.AsrsUserAgent, productInfo);
             request.Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
             return request;
-        }
-
-        private async Task ThrowExceptionOnResponseFailureAsync(HttpRequestMessage request, HttpResponseMessage response)
-        {
-            if (response.IsSuccessStatusCode)
-            {
-                return;
-            }
-            
-            var detail = await response.Content.ReadAsStringAsync();
-
-            var innerException = GenerateInnerExceptionOnResponseFailure(response.StatusCode, response.ReasonPhrase);
-
-            switch (response.StatusCode)
-            {
-                case HttpStatusCode.BadRequest:
-                    throw new AzureSignalRInvalidArgumentException(request.RequestUri.ToString(), innerException, detail);
-                case HttpStatusCode.Unauthorized:
-                    throw new AzureSignalRUnauthorizedException(request.RequestUri.ToString(), innerException);
-                case HttpStatusCode.NotFound:
-                    throw new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), innerException);
-                default:
-                    throw new AzureSignalRRuntimeException(request.RequestUri.ToString(), innerException);
-            }
         }
     }
 }

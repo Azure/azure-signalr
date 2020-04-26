@@ -167,8 +167,8 @@ namespace Microsoft.Azure.SignalR.Management
 
             try
             {
-                await(all = Task.WhenAll(from userId in userIds
-                                         select SendUserAsync(userId, methodName, args, cancellationToken)));
+                await (all = Task.WhenAll(from userId in userIds
+                                          select SendUserAsync(userId, methodName, args, cancellationToken)));
             }
             catch
             {
@@ -208,14 +208,12 @@ namespace Microsoft.Azure.SignalR.Management
                     {
                         case HttpStatusCode.OK:
                             isUserInGroup = true;
-                            break;
+                            return Task.CompletedTask;
                         case HttpStatusCode.NotFound:
-                            break;
+                            return Task.CompletedTask;
                         default:
-                            var innerException = _restClient.GenerateInnerExceptionOnResponseFailure(response.StatusCode, response.ReasonPhrase);
-                            throw new AzureSignalRRuntimeException(response.RequestMessage.RequestUri.ToString(), innerException);
+                            return _restClient.ThrowExceptionOnResponseFailureAsync(request, response);
                     }
-                    return Task.CompletedTask;
                 }, cancellationToken: cancellationToken);
             return isUserInGroup;
         }
