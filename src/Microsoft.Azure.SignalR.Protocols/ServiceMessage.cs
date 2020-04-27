@@ -29,17 +29,19 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 count++;
             }
-            writer.WriteArrayHeader(count * 2);
+            // todo : count more optional fields.
+            writer.WriteMapHeader(count);
             if (!string.IsNullOrEmpty(tracingId))
             {
                 writer.Write(TracingId);
                 writer.Write(tracingId);
             }
+            // todo : write more optional fields.
         }
 
         internal void ReadExtensionMembers(ref MessagePackReader reader)
         {
-            int count = reader.ReadArrayHeader() / 2;
+            int count = reader.ReadMapHeader();
             for (int i = 0; i < count; i++)
             {
                 switch (reader.ReadInt32())
@@ -50,6 +52,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                             withTracingId.TracingId = reader.ReadString();
                         }
                         break;
+                        // todo : more optional fields
                     default:
                         break;
                 }
