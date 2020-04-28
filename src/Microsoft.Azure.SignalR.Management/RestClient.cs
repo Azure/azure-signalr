@@ -15,13 +15,36 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestClient
     {
+        public Task SendAsync(
+            RestApiEndpoint api,
+            HttpMethod httpMethod,
+            string productInfo,
+            string methodName = null,
+            object[] args = null,
+            Func<HttpRequestMessage, HttpResponseMessage, bool> handleExpectedResponse = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (handleExpectedResponse == null)
+            {
+                return SendAsync(api, httpMethod, productInfo, methodName, args, handleExpectedResponseAsync: null, cancellationToken);
+            }
+
+            Func<HttpRequestMessage, HttpResponseMessage, Task<bool>> handleExpectedResponseAsync =
+                (request, response) =>
+                {
+                    var result = handleExpectedResponse(request, response);
+                    return Task.FromResult(result);
+                };
+            return SendAsync(api, httpMethod, productInfo, methodName, args, handleExpectedResponseAsync, cancellationToken);
+        }
+
         public async Task SendAsync(
             RestApiEndpoint api,
             HttpMethod httpMethod,
             string productInfo,
             string methodName = null,
             object[] args = null,
-            Func<HttpRequestMessage, HttpResponseMessage, Task> handleResponse = null,
+            Func<HttpRequestMessage, HttpResponseMessage, Task<bool>> handleExpectedResponseAsync = null,
             CancellationToken cancellationToken = default)
         {
             var httpClient = HttpClientFactory.CreateClient();
@@ -37,13 +60,17 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), ex);
             }
 
-            if (handleResponse == null)
+            if (handleExpectedResponseAsync == null)
             {
                 await ThrowExceptionOnResponseFailureAsync(request, response);
             }
             else
             {
-                await handleResponse(request, response);
+                if (!await handleExpectedResponseAsync(request, response))
+                {
+                    await ThrowExceptionOnResponseFailureAsync(request, response);
+                }
+
             }
 
             response.Dispose();

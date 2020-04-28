@@ -158,18 +158,18 @@ namespace Microsoft.Azure.SignalR.Management
         {
             var isHealthy = false;
             var api = _restApiProvider.GetServiceHealthEndpoint();
-            await _restClient.SendAsync(api, HttpMethod.Get, _productInfo, handleResponse: (request, response) =>
+            await _restClient.SendAsync(api, HttpMethod.Get, _productInfo, handleExpectedResponse: (request, response) =>
                 {
                     switch (response.StatusCode)
                     {
                         case HttpStatusCode.OK:
                             isHealthy = true;
-                            return Task.CompletedTask;
+                            return true;
                         case HttpStatusCode.ServiceUnavailable:
                             isHealthy = false;
-                            return Task.CompletedTask;
+                            return true;
                         default:
-                            return _restClient.ThrowExceptionOnResponseFailureAsync(request, response);
+                            return false;
                     }
                 },
                 cancellationToken: cancellationToken);
