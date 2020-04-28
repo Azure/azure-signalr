@@ -201,7 +201,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             var isUserInGroup = false;
             var api = _restApiProvider.GetUserGroupManagementEndpoint(_appName, _hubName, userId, groupName);
-            await _restClient.SendAsync(api, HttpMethod.Get, _productInfo, handleExpectedResponse: (request, response) =>
+            await _restClient.SendAsync(api, HttpMethod.Get, _productInfo, handleExpectedResponse: response =>
                 {
                     switch (response.StatusCode)
                     {

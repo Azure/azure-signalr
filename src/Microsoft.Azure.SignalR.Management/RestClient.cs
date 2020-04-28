@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Management
             string productInfo,
             string methodName = null,
             object[] args = null,
-            Func<HttpRequestMessage, HttpResponseMessage, bool> handleExpectedResponse = null,
+            Func<HttpResponseMessage, bool> handleExpectedResponse = null,
             CancellationToken cancellationToken = default)
         {
             if (handleExpectedResponse == null)
@@ -29,13 +29,7 @@ namespace Microsoft.Azure.SignalR.Management
                 return SendAsync(api, httpMethod, productInfo, methodName, args, handleExpectedResponseAsync: null, cancellationToken);
             }
 
-            Func<HttpRequestMessage, HttpResponseMessage, Task<bool>> handleExpectedResponseAsync =
-                (request, response) =>
-                {
-                    var result = handleExpectedResponse(request, response);
-                    return Task.FromResult(result);
-                };
-            return SendAsync(api, httpMethod, productInfo, methodName, args, handleExpectedResponseAsync, cancellationToken);
+            return SendAsync(api, httpMethod, productInfo, methodName, args, response => Task.FromResult(handleExpectedResponse(response)), cancellationToken);
         }
 
         public async Task SendAsync(
@@ -44,7 +38,7 @@ namespace Microsoft.Azure.SignalR.Management
             string productInfo,
             string methodName = null,
             object[] args = null,
-            Func<HttpRequestMessage, HttpResponseMessage, Task<bool>> handleExpectedResponseAsync = null,
+            Func<HttpResponseMessage, Task<bool>> handleExpectedResponseAsync = null,
             CancellationToken cancellationToken = default)
         {
             var httpClient = HttpClientFactory.CreateClient();
@@ -62,21 +56,20 @@ namespace Microsoft.Azure.SignalR.Management
 
             if (handleExpectedResponseAsync == null)
             {
-                await ThrowExceptionOnResponseFailureAsync(request, response);
+                await ThrowExceptionOnResponseFailureAsync(response);
             }
             else
             {
-                if (!await handleExpectedResponseAsync(request, response))
+                if (!await handleExpectedResponseAsync(response))
                 {
-                    await ThrowExceptionOnResponseFailureAsync(request, response);
+                    await ThrowExceptionOnResponseFailureAsync(response);
                 }
-
             }
 
             response.Dispose();
         }
 
-        public async Task ThrowExceptionOnResponseFailureAsync(HttpRequestMessage request, HttpResponseMessage response)
+        public async Task ThrowExceptionOnResponseFailureAsync(HttpResponseMessage response)
         {
             if (response.IsSuccessStatusCode)
             {
@@ -91,13 +84,13 @@ namespace Microsoft.Azure.SignalR.Management
             switch (response.StatusCode)
             {
                 case HttpStatusCode.BadRequest:
-                    throw new AzureSignalRInvalidArgumentException(request.RequestUri.ToString(), innerException, detail);
+                    throw new AzureSignalRInvalidArgumentException(response.RequestMessage.RequestUri.ToString(), innerException, detail);
                 case HttpStatusCode.Unauthorized:
-                    throw new AzureSignalRUnauthorizedException(request.RequestUri.ToString(), innerException);
+                    throw new AzureSignalRUnauthorizedException(response.RequestMessage.RequestUri.ToString(), innerException);
                 case HttpStatusCode.NotFound:
-                    throw new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), innerException);
+                    throw new AzureSignalRInaccessibleEndpointException(response.RequestMessage.RequestUri.ToString(), innerException);
                 default:
-                    throw new AzureSignalRRuntimeException(request.RequestUri.ToString(), innerException);
+                    throw new AzureSignalRRuntimeException(response.RequestMessage.RequestUri.ToString(), innerException);
             }
         }
 
