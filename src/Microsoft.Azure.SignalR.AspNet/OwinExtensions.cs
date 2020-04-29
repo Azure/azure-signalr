@@ -193,7 +193,7 @@ namespace Owin
             if (options.DisconnectTimeoutInSeconds.HasValue
                 && (options.DisconnectTimeoutInSeconds < 1 || options.DisconnectTimeoutInSeconds > 300))
             {
-                throw new ArgumentOutOfRangeException("DisconnectTimeoutInSeconds");
+                throw new ArgumentOutOfRangeException("DisconnectTimeoutInSeconds", "Value should be [1,300].");
             }
 
             var loggerFactory = DispatcherHelper.GetLoggerFactory(configuration) ?? NullLoggerFactory.Instance;
