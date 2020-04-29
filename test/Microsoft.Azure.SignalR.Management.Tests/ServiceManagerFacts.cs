@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         internal void GenerateClientAccessTokenTest(string userId, Claim[] claims, string appName)
         {
             var manager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = _testConnectionString, ApplicationName = appName }, null);
-            var tokenString = manager.GenerateClientAccessToken(HubName, userId, claims, _tokenLifeTime);
+            var tokenString =  manager.GenerateClientAccessToken(HubName, userId, claims, _tokenLifeTime);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
             string expectedToken = JwtTokenHelper.GenerateExpectedAccessToken(token, GetExpectedClientEndpoint(appName), AccessKey, claims);

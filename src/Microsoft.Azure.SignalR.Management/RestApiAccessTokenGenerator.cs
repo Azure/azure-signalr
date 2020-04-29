@@ -8,10 +8,10 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestApiAccessTokenGenerator
     {
-        private string _accessKey;
+        private AccessKey _accessKey;
         private Claim[] _claims;
 
-        public RestApiAccessTokenGenerator(string accessKey)
+        public RestApiAccessTokenGenerator(AccessKey accessKey)
         {
             _accessKey = accessKey;
             _claims = new[]

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private const string ServerPath = "aspnetserver";
 
         private readonly string _endpoint;
-        private readonly string _accessKey;
+        private readonly AccessKey _accessKey;
         private readonly string _appName;
         private readonly int? _port;
         private readonly TimeSpan _accessTokenLifetime;
@@ -53,13 +54,14 @@ namespace Microsoft.Azure.SignalR.AspNet
             return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
         }
 
-        public string GenerateClientAccessToken(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
+        public async Task<string> GenerateClientAccessTokenAsync(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
         {
             var audience = $"{_endpoint}/{ClientPath}";
+            await _accessKey.AuthorizedTask;
             return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
-        public string GenerateServerAccessToken(string hubName, string userId, TimeSpan? lifetime = null)
+        public async Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
         {
             IEnumerable<Claim> claims = null;
             if (userId != null)
@@ -70,6 +72,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 };
             }
 
+            await _accessKey.AuthorizedTask;
             var audience = $"{_endpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
 
             return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);

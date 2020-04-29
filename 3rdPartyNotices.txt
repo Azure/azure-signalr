@@ -2,8 +2,8 @@ Portions of this repository comes from other repositories :
 
 ===================================================================================================================================================
 * https://github.com/neuecc/MessagePack-CSharp/ => /src/submodule/MessagePack-CSharp
-  Commit hash 2e421efb7bc53956fc66356565f9402d3271a588
-  License file : https://github.com/neuecc/MessagePack-CSharp/blob/2e421efb7bc53956fc66356565f9402d3271a588/LICENSE
+  Commit hash 38f095bf0d9b72e2f9e8484282937f433bf3dfcb
+  License file : https://github.com/neuecc/MessagePack-CSharp/blob/38f095bf0d9b72e2f9e8484282937f433bf3dfcb/LICENSE
 
 ===================================================================================================================================================
 Which provides this license: 

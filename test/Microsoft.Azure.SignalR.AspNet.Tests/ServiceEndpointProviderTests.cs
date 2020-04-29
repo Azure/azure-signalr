@@ -7,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.IdentityModel.Tokens;
 using Xunit;
 
@@ -23,11 +24,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost/aspnetclient")]
         [InlineData("Endpoint=http://localhost/;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost/aspnetclient")]
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetclient")]
-        public void TestGenerateClientAccessToken(string connectionString, string expectedAudience)
+        public async Task TestGenerateClientAccessToken(string connectionString, string expectedAudience)
         {
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
-            var clientToken = provider.GenerateClientAccessToken(null, new Claim[]
+            var clientToken = await provider.GenerateClientAccessTokenAsync(null, new Claim[]
             {
                 new Claim("type1", "value1")
             });
@@ -63,11 +64,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost/aspnetserver/?hub=hub1")]
         [InlineData("Endpoint=http://localhost/;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost/aspnetserver/?hub=hub1")]
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=hub1")]
-        public void TestGenerateServerAccessToken(string connectionString, string expectedAudience)
+        public async Task TestGenerateServerAccessToken(string connectionString, string expectedAudience)
         {
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
-            var clientToken = provider.GenerateServerAccessToken("hub1", "user1");
+            var clientToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
 
             var handler = new JwtSecurityTokenHandler();
             var principal = handler.ValidateToken(clientToken, new TokenValidationParameters
@@ -75,7 +76,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 ValidateIssuer = false,
                 IssuerSigningKey = SecurityKey,
                 ValidAudience = expectedAudience
-            }, out var token);
+            }, out _);
 
             Assert.Equal("user1", principal.FindFirst(ClaimTypes.NameIdentifier).Value);
         }
@@ -84,11 +85,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost/aspnetserver/?hub=prefix_hub1")]
         [InlineData("Endpoint=http://localhost/;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0", "http://localhost/aspnetserver/?hub=prefix_hub1")]
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=prefix_hub1")]
-        public void TestGenerateServerAccessTokenWIthPrefix(string connectionString, string expectedAudience)
+        public async Task TestGenerateServerAccessTokenWIthPrefix(string connectionString, string expectedAudience)
         {
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { ApplicationName = "prefix" });
 
-            var clientToken = provider.GenerateServerAccessToken("hub1", "user1");
+            var clientToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
 
             var handler = new JwtSecurityTokenHandler();
             var principal = handler.ValidateToken(clientToken, new TokenValidationParameters
@@ -130,11 +131,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Theory]
         [InlineData(AccessTokenAlgorithm.HS256)]
         [InlineData(AccessTokenAlgorithm.HS512)]
-        public void TestGenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
+        public async Task TestGenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
         {
             var connectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
-            var generatedToken = provider.GenerateServerAccessToken("hub1", "user1");
+            var generatedToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
 
             var handler = new JwtSecurityTokenHandler();
             var token = handler.ReadJwtToken(generatedToken);
@@ -145,11 +146,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [Theory]
         [InlineData(AccessTokenAlgorithm.HS256)]
         [InlineData(AccessTokenAlgorithm.HS512)]
-        public void TestGenerateClientAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
+        public async Task TestGenerateClientAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
         {
             var connectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
-            var generatedToken = provider.GenerateClientAccessToken("hub1");
+            var generatedToken = await provider.GenerateClientAccessTokenAsync("hub1");
 
             var handler = new JwtSecurityTokenHandler();
             var token = handler.ReadJwtToken(generatedToken);
@@ -158,7 +159,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Fact(Skip = "Access token does not need to be unique")]
-        public void GenerateMutlipleAccessTokenShouldBeUnique()
+        public async Task GenerateMutlipleAccessTokenShouldBeUnique()
         {
             var count = 1000;
             var sep = new ServiceEndpointProvider(new ServiceEndpoint(DefaultConnectionString), new ServiceOptions() { });
@@ -166,8 +167,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var tokens = new List<string>();
             for (int i = 0; i < count; i++)
             {
-                tokens.Add(sep.GenerateClientAccessToken());
-                tokens.Add(sep.GenerateServerAccessToken("test1", userId));
+                tokens.Add(await sep.GenerateClientAccessTokenAsync());
+                tokens.Add(await sep.GenerateServerAccessTokenAsync("test1", userId));
             }
 
             var distinct = tokens.Distinct();

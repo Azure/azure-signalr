@@ -40,5 +40,12 @@ namespace Microsoft.Azure.SignalR.Management
         /// <param name="hubName">The hub name.</param>
         /// <returns>Client endpoint to Azure SignalR Service.</returns>
         string GetClientEndpoint(string hubName);
+
+        /// <summary>
+        /// Checks the health status of the Azure SignalR Service.
+        /// </summary>
+        /// <param name="cancellationToken"> The cancellation token.</param>
+        /// <returns>The boolean indicates the health of the service</returns>
+        Task<bool> IsServiceHealthy(CancellationToken cancellationToken);
     }
 }

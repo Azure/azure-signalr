@@ -13,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Localization;
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(typeof(CustomUserIdProvider), CustomUserId)]
         [InlineData(typeof(NullUserIdProvider), null)]
         [InlineData(typeof(DefaultUserIdProvider), DefaultUserId)]
-        public void GenerateNegotiateResponseWithUserId(Type type, string expectedUserId)
+        public async Task GenerateNegotiateResponseWithUserId(Type type, string expectedUserId)
         {
             var config = new ConfigurationBuilder().Build();
             var serviceProvider = new ServiceCollection()
@@ -68,7 +69,7 @@ namespace Microsoft.Azure.SignalR.Tests
             };
 
             var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
-            var negotiateResponse = handler.Process(httpContext, "hub");
+            var negotiateResponse = await handler.Process(httpContext, "hub");
 
             Assert.NotNull(negotiateResponse);
             Assert.NotNull(negotiateResponse.Url);
@@ -86,7 +87,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void GenerateNegotiateResponseWithUserIdAndServerSticky()
+        public async Task GenerateNegotiateResponseWithUserIdAndServerSticky()
         {
             var name = nameof(GenerateNegotiateResponseWithUserIdAndServerSticky);
             var serverNameProvider = new TestServerNameProvider(name);
@@ -118,7 +119,7 @@ namespace Microsoft.Azure.SignalR.Tests
             };
 
             var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
-            var negotiateResponse = handler.Process(httpContext, "hub");
+            var negotiateResponse = await handler.Process(httpContext, "hub");
 
             Assert.NotNull(negotiateResponse);
             Assert.NotNull(negotiateResponse.Url);
@@ -143,7 +144,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData("/user/path/negotiate/", "", "a", "asrs.op=%2Fuser%2Fpath&asrs_request_id=a")]
         [InlineData("", "?customKey=customeValue", "?a=c", "customKey=customeValue&asrs_request_id=%3Fa%3Dc")]
         [InlineData("/user/path/negotiate", "?customKey=customeValue", "&", "asrs.op=%2Fuser%2Fpath&customKey=customeValue&asrs_request_id=%26")]
-        public void GenerateNegotiateResponseWithPathAndQuery(string path, string queryString, string id, string expectedQueryString)
+        public async Task GenerateNegotiateResponseWithPathAndQuery(string path, string queryString, string id, string expectedQueryString)
         {
             var requestIdProvider = new TestRequestIdProvider(id);
             var config = new ConfigurationBuilder().Build();
@@ -165,7 +166,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var httpContext = new DefaultHttpContext(features);
 
             var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
-            var negotiateResponse = handler.Process(httpContext, "chat");
+            var negotiateResponse = await handler.Process(httpContext, "chat");
 
             Assert.NotNull(negotiateResponse);
             Assert.EndsWith($"?hub=chat&{expectedQueryString}", negotiateResponse.Url);
@@ -174,7 +175,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [Theory]
         [InlineData("", "&", "?hub=chat&asrs_request_id=%26")]
         [InlineData("appName", "abc", "?hub=appname_chat&asrs_request_id=abc")]
-        public void GenerateNegotiateResponseWithAppName(string appName, string id, string expectedResponse)
+        public async Task GenerateNegotiateResponseWithAppName(string appName, string id, string expectedResponse)
         {
             var requestIdProvider = new TestRequestIdProvider(id);
             var config = new ConfigurationBuilder().Build();
@@ -198,7 +199,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var httpContext = new DefaultHttpContext(features);
 
             var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
-            var negotiateResponse = handler.Process(httpContext, "chat");
+            var negotiateResponse = await handler.Process(httpContext, "chat");
 
             Assert.NotNull(negotiateResponse);
             Assert.EndsWith(expectedResponse, negotiateResponse.Url);
@@ -209,7 +210,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(typeof(ConnectionAbortedTokenUserIdProvider), ServiceHubConnectionContext.ConnectionAbortedUnavailableError)]
         [InlineData(typeof(ItemsUserIdProvider), ServiceHubConnectionContext.ItemsUnavailableError)]
         [InlineData(typeof(ProtocolUserIdProvider), ServiceHubConnectionContext.ProtocolUnavailableError)]
-        public void CustomUserIdProviderAccessUnavailablePropertyThrowsException(Type type, string errorMessage)
+        public async Task CustomUserIdProviderAccessUnavailablePropertyThrowsException(Type type, string errorMessage)
         {
             var config = new ConfigurationBuilder().Build();
             var serviceProvider = new ServiceCollection().AddSignalR()
@@ -226,12 +227,12 @@ namespace Microsoft.Azure.SignalR.Tests
                 User = new ClaimsPrincipal()
             };
 
-            var exception = Assert.Throws<InvalidOperationException>(() => handler.Process(httpContext, "hub"));
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await handler.Process(httpContext, "hub"));
             Assert.Equal(errorMessage, exception.Message);
         }
 
         [Fact]
-        public void TestNegotiateHandlerWithMultipleEndpointsAndCustomerRouterAndAppName()
+        public async Task TestNegotiateHandlerWithMultipleEndpointsAndCustomerRouterAndAppName()
         {
             var requestIdProvider = new TestRequestIdProvider("a");
             var config = new ConfigurationBuilder().Build();
@@ -265,14 +266,14 @@ namespace Microsoft.Azure.SignalR.Tests
             var httpContext = new DefaultHttpContext(features);
 
             var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
-            var negotiateResponse = handler.Process(httpContext, "chat");
+            var negotiateResponse = await handler.Process(httpContext, "chat");
 
             Assert.NotNull(negotiateResponse);
             Assert.Equal($"http://localhost3/client/?hub=testprefix_chat&asrs.op=%2Fuser%2Fpath&endpoint=chosen&asrs_request_id=a", negotiateResponse.Url);
         }
 
         [Fact]
-        public void TestNegotiateHandlerWithMultipleEndpointsAndCustomRouter()
+        public async Task TestNegotiateHandlerWithMultipleEndpointsAndCustomRouter()
         {
             var requestIdProvider = new TestRequestIdProvider("a");
             var config = new ConfigurationBuilder().Build();
@@ -302,7 +303,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var httpContext = new DefaultHttpContext(features);
 
             var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
-            var negotiateResponse = handler.Process(httpContext, "chat");
+            var negotiateResponse = await handler.Process(httpContext, "chat");
 
             Assert.NotNull(negotiateResponse);
             Assert.Equal($"http://localhost3/client/?hub=chat&asrs.op=%2Fuser%2Fpath&endpoint=chosen&asrs_request_id=a", negotiateResponse.Url);
@@ -319,7 +320,7 @@ namespace Microsoft.Azure.SignalR.Tests
             httpContext = new DefaultHttpContext(features);
 
             handler = serviceProvider.GetRequiredService<NegotiateHandler>();
-            negotiateResponse = handler.Process(httpContext, "chat");
+            negotiateResponse = await handler.Process(httpContext, "chat");
 
             Assert.Null(negotiateResponse);
 
@@ -338,11 +339,11 @@ namespace Microsoft.Azure.SignalR.Tests
             httpContext = new DefaultHttpContext(features);
 
             handler = serviceProvider.GetRequiredService<NegotiateHandler>();
-            Assert.Throws<InvalidOperationException>(() => handler.Process(httpContext, "chat"));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Process(httpContext, "chat"));
         }
 
         [Fact]
-        public void TestNegotiateHandlerRespectClientRequestCulture()
+        public async Task TestNegotiateHandlerRespectClientRequestCulture()
         {
             var config = new ConfigurationBuilder().Build();
             var serviceProvider = new ServiceCollection()
@@ -373,7 +374,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var httpContext = new DefaultHttpContext(features);
 
             var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
-            var negotiateResponse = handler.Process(httpContext, "hub");
+            var negotiateResponse = await handler.Process(httpContext, "hub");
 
             var queryContainsCulture = negotiateResponse.Url.Contains($"{Constants.QueryParameter.RequestCulture}=ar-SA");
             Assert.True(queryContainsCulture);

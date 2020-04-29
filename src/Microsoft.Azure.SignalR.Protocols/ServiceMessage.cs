@@ -73,10 +73,12 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         /// <param name="version">version</param>
         /// <param name="connectionType">connection type</param>
-        public HandshakeRequestMessage(int version, int connectionType)
+        /// <param name="migrationLevel">migration level</param>
+        public HandshakeRequestMessage(int version, int connectionType, int migrationLevel)
         {
             Version = version;
             ConnectionType = connectionType;
+            MigrationLevel = migrationLevel;
         }
     }
 

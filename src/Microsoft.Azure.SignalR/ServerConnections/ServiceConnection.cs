@@ -24,8 +24,6 @@ namespace Microsoft.Azure.SignalR
         // Fix issue: https://github.com/Azure/azure-signalr/issues/198
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
         private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
-        
-        private readonly bool _enableConnectionMigration;
 
         private const string ClientConnectionCountInHub = "#clientInHub";
         private const string ClientConnectionCountInServiceConnection = "#client";
@@ -41,6 +39,8 @@ namespace Microsoft.Azure.SignalR
 
         private readonly ConnectionDelegate _connectionDelegate;
 
+        private readonly bool _enableMigration;
+
         public Action<HttpContext> ConfigureContext { get; set; }
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
@@ -54,16 +54,16 @@ namespace Microsoft.Azure.SignalR
                                  HubServiceEndpoint endpoint,
                                  IServiceMessageHandler serviceMessageHandler,
                                  ServiceConnectionType connectionType = ServiceConnectionType.Default,
-                                 int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds,
-                                 bool enableConnectionMigration = false) :
-            base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>())
+                                 ServerConnectionMigrationLevel migrationLevel = ServerConnectionMigrationLevel.Off,
+                                 int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds
+            ): base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, connectionType, migrationLevel, loggerFactory?.CreateLogger<ServiceConnection>())
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
             _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
-            _enableConnectionMigration = enableConnectionMigration;
+            _enableMigration = migrationLevel != ServerConnectionMigrationLevel.Off;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             var connectionId = closeConnectionMessage.ConnectionId;
-            if (_enableConnectionMigration && _clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
+            if (_enableMigration && _clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
             {
                 if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
                 {

@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Globalization;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -14,18 +13,29 @@ namespace Microsoft.Azure.SignalR
 
         public virtual string Name { get; internal set; }
 
-        /// <summary>
-        /// Initial status as Online so that when the app server first starts, it can accept incoming negotiate requests, as for backward compatability
-        /// </summary>
-        public bool Online { get; internal set; } = true;
-
         public string Endpoint { get; }
 
         internal string Version { get; }
 
-        internal string AccessKey { get; }
+        internal AccessKey AccessKey { get; private set; }
 
         internal int? Port { get; }
+
+        /// <summary>
+        /// When current app server instance has server connections connected to the target endpoint for current hub, it can deliver messages to that endpoint.
+        /// The endpoint is then considered as *Online*; otherwise, *Offline*.
+        /// Messages are not able to be delivered to an *Offline* endpoint.
+        /// </summary>
+        public bool Online { get; internal set; } = true;
+
+        /// <summary>
+        /// When the target endpoint has hub clients connected, the endpoint is considered as an *Active* endpoint.
+        /// When the target endpoint has no hub clients connected for 10 minutes, the endpoint is considered as an *Inactive* one.
+        /// User can choose to not send messages to an *Inactive* endpoint to save network traffic.
+        /// But please note that as the *Active* status is reported to the server from remote service, there can be some delay when status changes.
+        /// Don't rely on this status if you don't expect any message lose once a client is connected.
+        /// </summary>
+        public bool IsActive { get; internal set; } = true;
 
         public ServiceEndpoint(string key, string connectionString) : this(connectionString)
         {
@@ -40,7 +50,9 @@ namespace Microsoft.Azure.SignalR
             // The provider is responsible to check if the connection string is empty and throw correct error message
             if (!string.IsNullOrEmpty(connectionString))
             {
-                (Endpoint, AccessKey, Version, Port) = ConnectionStringParser.Parse(connectionString);
+                string key;
+                (Endpoint, key, Version, Port) = ConnectionStringParser.Parse(connectionString);
+                AccessKey = new AccessKey(key);
             }
 
             EndpointType = type;
@@ -62,8 +74,14 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+
         // test only
         internal ServiceEndpoint() { }
+
+        internal void UpdateAccessKey(AccessKey key)
+        {
+            AccessKey = key;
+        }
 
         public override string ToString()
         {

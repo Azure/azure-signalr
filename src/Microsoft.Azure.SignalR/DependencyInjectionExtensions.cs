@@ -2,12 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+#if !NETSTANDARD2_0
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
+#endif
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -77,6 +78,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton(typeof(IServiceEndpointManager), typeof(ServiceEndpointManager))
                 .AddSingleton(typeof(IServerNameProvider), typeof(DefaultServerNameProvider))
                 .AddSingleton(typeof(ServiceHubDispatcher<>))
+                .AddSingleton(typeof(ServerLifetimeManager))
                 .AddSingleton(typeof(AzureSignalRMarkerService))
                 .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
                 .AddSingleton<IHostedService, HeartBeat>()
