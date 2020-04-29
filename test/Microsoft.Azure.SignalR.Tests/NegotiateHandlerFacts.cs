@@ -398,14 +398,14 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddSingleton<IConfiguration>(config)
                 .BuildServiceProvider();
 
-            Assert.Throws<OptionsValidationException>(() => serviceProvider.GetRequiredService<NegotiateHandler>());
+            Assert.Throws<ArgumentOutOfRangeException>(() => serviceProvider.GetRequiredService<NegotiateHandler>());
         }
 
         [Theory]
         [InlineData(1)]
         [InlineData(15)]
         [InlineData(300)]
-        public void TestNegotiateHandlerResponseContainsValidDisconnectTimeout(int disconnectTimeout)
+        public async Task TestNegotiateHandlerResponseContainsValidDisconnectTimeout(int disconnectTimeout)
         {
             var config = new ConfigurationBuilder().Build();
             var serviceProvider = new ServiceCollection().AddSignalR()
@@ -431,7 +431,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var httpContext = new DefaultHttpContext(features);
 
             var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
-            var response = handler.Process(httpContext, "chat");
+            var response = await handler.Process(httpContext, "chat");
 
             Assert.Equal(200, responseFeature.StatusCode);
 
