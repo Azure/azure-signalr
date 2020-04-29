@@ -9,7 +9,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// Base class for multicast data messages between Azure SignalR Service and SDK.
     /// </summary>
-    public abstract class MulticastDataMessage : ServiceMessage
+    public abstract class MulticastDataMessage : ExtensibleServiceMessage
     {
         protected MulticastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads)
         {

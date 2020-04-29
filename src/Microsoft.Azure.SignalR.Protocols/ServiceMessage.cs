@@ -3,6 +3,8 @@
 
 using System;
 
+using MessagePack;
+
 namespace Microsoft.Azure.SignalR.Protocol
 {
     /// <summary>
@@ -10,6 +12,52 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// </summary>
     public abstract class ServiceMessage
     {
+    }
+
+    /// <summary>
+    /// Base class of messages between Azure SignalR Service and SDK.
+    /// </summary>
+    public abstract class ExtensibleServiceMessage : ServiceMessage
+    {
+        private const int TracingId = 1;
+
+        internal void WriteExtensionMembers(ref MessagePackWriter writer)
+        {
+            int count = 0;
+            var tracingId = (this as IMessageWithTracingId)?.TracingId;
+            if (!string.IsNullOrEmpty(tracingId))
+            {
+                count++;
+            }
+            // todo : count more optional fields.
+            writer.WriteMapHeader(count);
+            if (!string.IsNullOrEmpty(tracingId))
+            {
+                writer.Write(TracingId);
+                writer.Write(tracingId);
+            }
+            // todo : write more optional fields.
+        }
+
+        internal void ReadExtensionMembers(ref MessagePackReader reader)
+        {
+            int count = reader.ReadMapHeader();
+            for (int i = 0; i < count; i++)
+            {
+                switch (reader.ReadInt32())
+                {
+                    case TracingId:
+                        if (this is IMessageWithTracingId withTracingId)
+                        {
+                            withTracingId.TracingId = reader.ReadString();
+                        }
+                        break;
+                        // todo : more optional fields
+                    default:
+                        break;
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -23,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A handshake request message.
     /// </summary>
-    public class HandshakeRequestMessage : ServiceMessage
+    public class HandshakeRequestMessage : ExtensibleServiceMessage
     {
         /// <summary>
         /// Gets or sets the requested protocol version.
@@ -85,7 +133,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A handshake response message.
     /// </summary>
-    public class HandshakeResponseMessage : ServiceMessage
+    public class HandshakeResponseMessage : ExtensibleServiceMessage
     {
         /// <summary>
         /// Gets or sets the optional error message.
@@ -145,7 +193,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A ack message to response ack-able message
     /// </summary>
-    public class AckMessage : ServiceMessage
+    public class AckMessage : ExtensibleServiceMessage
     {
         /// <summary>
         /// Gets or sets the ack id.
