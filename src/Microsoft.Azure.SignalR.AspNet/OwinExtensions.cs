@@ -4,6 +4,7 @@
 using System;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Azure.SignalR.AspNet;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Owin
@@ -193,7 +194,7 @@ namespace Owin
             if (options.DisconnectTimeoutInSeconds.HasValue
                 && (options.DisconnectTimeoutInSeconds < 1 || options.DisconnectTimeoutInSeconds > 300))
             {
-                throw new ArgumentOutOfRangeException("DisconnectTimeoutInSeconds", "Value should be [1,300].");
+                throw new AzureSignalRInvalidServiceOptionsException("DisconnectTimeoutInSeconds", "[1,300]");
             }
 
             var loggerFactory = DispatcherHelper.GetLoggerFactory(configuration) ?? NullLoggerFactory.Instance;

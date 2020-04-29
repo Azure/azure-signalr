@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
+using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -12,7 +12,7 @@ namespace Microsoft.Azure.SignalR
             if (options.DisconnectTimeoutInSeconds.HasValue &&
                 (options.DisconnectTimeoutInSeconds < 1 || options.DisconnectTimeoutInSeconds > 300))
             {
-                throw new ArgumentOutOfRangeException("DisconnectTimeoutInSeconds", "Value should be [1,300].");
+                throw new AzureSignalRInvalidServiceOptionsException("DisconnectTimeoutInSeconds", "[1,300]");
             }
         }
     }

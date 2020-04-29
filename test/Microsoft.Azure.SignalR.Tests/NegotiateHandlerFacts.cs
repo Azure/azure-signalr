@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -398,7 +399,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 .AddSingleton<IConfiguration>(config)
                 .BuildServiceProvider();
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => serviceProvider.GetRequiredService<NegotiateHandler>());
+            Assert.Throws<AzureSignalRInvalidServiceOptionsException>(() => serviceProvider.GetRequiredService<NegotiateHandler>());
         }
 
         [Theory]

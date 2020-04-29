@@ -727,7 +727,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             var hubConfig = new HubConfiguration();
             hubConfig.Resolver = new DefaultDependencyResolver();
-            var exception = Assert.Throws<ArgumentOutOfRangeException>(
+            var exception = Assert.Throws<AzureSignalRInvalidServiceOptionsException>(
                     () =>
                     {
                         using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
