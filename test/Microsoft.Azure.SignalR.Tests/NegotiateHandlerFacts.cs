@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -376,6 +377,66 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var queryContainsCulture = negotiateResponse.Url.Contains($"{Constants.QueryParameter.RequestCulture}=ar-SA");
             Assert.True(queryContainsCulture);
+        }
+
+        [Theory]
+        [InlineData(-10)]
+        [InlineData(0)]
+        [InlineData(500)]
+        public void TestInvalidDisconnectTimeoutThrowsAfterBuild(int disconnectTimeout)
+        {
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR(o =>
+                {
+                    o.ConnectionString = DefaultConnectionString;
+                    o.DisconnectTimeoutInSeconds = disconnectTimeout;
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            Assert.Throws<OptionsValidationException>(() => serviceProvider.GetRequiredService<NegotiateHandler>());
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(15)]
+        [InlineData(300)]
+        public void TestNegotiateHandlerResponseContainsValidDisconnectTimeout(int disconnectTimeout)
+        {
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR(o =>
+                {
+                    o.ConnectionString = DefaultConnectionString;
+                    o.DisconnectTimeoutInSeconds = disconnectTimeout;
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var requestFeature = new HttpRequestFeature
+            {
+                Path = "/user/path/negotiate/",
+                QueryString = "?endpoint=chosen"
+            };
+            var responseFeature = new HttpResponseFeature();
+            var features = new FeatureCollection();
+            features.Set<IHttpRequestFeature>(requestFeature);
+            features.Set<IHttpResponseFeature>(responseFeature);
+            var httpContext = new DefaultHttpContext(features);
+
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            var response = handler.Process(httpContext, "chat");
+
+            Assert.Equal(200, responseFeature.StatusCode);
+
+            var tokens = JwtTokenHelper.JwtHandler.ReadJwtToken(response.AccessToken);
+
+            Assert.Contains(tokens.Claims, x => x.Type == Constants.ClaimType.DisconnectTimeout && x.Value == disconnectTimeout.ToString());
         }
 
         private sealed class TestServerNameProvider : IServerNameProvider

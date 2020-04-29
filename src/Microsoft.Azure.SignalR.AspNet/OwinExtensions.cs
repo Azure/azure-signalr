@@ -189,6 +189,19 @@ namespace Owin
                 throw new ArgumentException("A configuration object must be specified.");
             }
 
+            // ConnectionCount should be positive integer
+            if (options.ConnectionCount < 0)
+            {
+                throw new ArgumentOutOfRangeException("ConnectionCount");
+            }
+
+            // DisconnectTimeout should be [1,300]
+            if (options.DisconnectTimeoutInSeconds.HasValue
+                && (options.DisconnectTimeoutInSeconds < 1 || options.DisconnectTimeoutInSeconds > 300))
+            {
+                throw new ArgumentOutOfRangeException("DisconnectTimeoutInSeconds");
+            }
+
             var loggerFactory = DispatcherHelper.GetLoggerFactory(configuration) ?? NullLoggerFactory.Instance;
 
             var dispatcher = DispatcherHelper.PrepareAndGetDispatcher(builder, configuration, options, applicationName, loggerFactory);
