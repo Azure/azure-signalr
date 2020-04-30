@@ -158,6 +158,34 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        internal async Task CheckUserExistenceInGroupTest()
+        {
+            var serviceManager = new ServiceManagerBuilder()
+                .WithOptions(o => o.ConnectionString = TestConfiguration.Instance.ConnectionString)
+                .Build();
+            var hubName = nameof(CheckUserExistenceInGroupTest);
+            var endpoint = serviceManager.GetClientEndpoint(hubName);
+            var group = $"{nameof(CheckUserExistenceInGroupTest)}_group";
+            var user = $"{nameof(CheckUserExistenceInGroupTest)}_user";
+            var token = serviceManager.GenerateClientAccessToken(hubName, user);
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var serviceHubContext = await serviceManager.CreateHubContextAsync(hubName, loggerFactory);
+                var conn = CreateHubConnection(endpoint, token);
+                await conn.StartAsync().OrTimeout();
+                await Task.Delay(_timeout);
+                await serviceHubContext.UserGroups.AddToGroupAsync(user, group).OrTimeout();
+                await Task.Delay(_timeout);
+                Assert.True(await serviceHubContext.UserGroups.IsUserInGroup(user, group).OrTimeout());
+                await serviceHubContext.UserGroups.RemoveFromGroupAsync(user, group).OrTimeout();
+                await Task.Delay(_timeout);
+                Assert.False(await serviceHubContext.UserGroups.IsUserInGroup(user, group).OrTimeout());
+                await conn.StopAsync().OrTimeout();
+            }
+        }
+
         [Theory(Skip = "Not Ready")]
         [MemberData(nameof(TestData))]
         internal async Task SendToConnectionTest(ServiceTransportType serviceTransportType, string appName)
@@ -332,7 +360,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
                 var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
                 var tokens = from userName in _userNames
-                                         select serviceManager.GenerateClientAccessToken(HubName, userName);
+                             select serviceManager.GenerateClientAccessToken(HubName, userName);
                 return (clientEndpoint, tokens, serviceHubContext);
             }
         }
