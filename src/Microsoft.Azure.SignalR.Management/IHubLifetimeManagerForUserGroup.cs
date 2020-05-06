@@ -13,5 +13,7 @@ namespace Microsoft.Azure.SignalR.Management
         Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default);
 
         Task UserRemoveFromAllGroupsAsync(string userId, CancellationToken cancellationToken = default);
+
+        Task<bool> IsUserInGroup(string userId, string groupName, CancellationToken cancellationToken = default);
     }
 }
