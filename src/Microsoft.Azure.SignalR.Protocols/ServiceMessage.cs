@@ -20,6 +20,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public abstract class ExtensibleServiceMessage : ServiceMessage
     {
         private const int TracingId = 1;
+        private const int Ttl = 2;
 
         internal void WriteExtensionMembers(ref MessagePackWriter writer)
         {
@@ -29,12 +30,22 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 count++;
             }
+            var ttl = (this as IHasTtl)?.Ttl;
+            if (ttl != null)
+            {
+                count++;
+            }
             // todo : count more optional fields.
             writer.WriteMapHeader(count);
             if (!string.IsNullOrEmpty(tracingId))
             {
                 writer.Write(TracingId);
                 writer.Write(tracingId);
+            }
+            if (ttl != null)
+            {
+                writer.Write(Ttl);
+                writer.Write(ttl.Value);
             }
             // todo : write more optional fields.
         }
@@ -52,7 +63,13 @@ namespace Microsoft.Azure.SignalR.Protocol
                             withTracingId.TracingId = reader.ReadString();
                         }
                         break;
-                        // todo : more optional fields
+                    case Ttl:
+                        if (this is IHasTtl hasTtl)
+                        {
+                            hasTtl.Ttl = reader.ReadInt32();
+                        }
+                        break;
+                    // todo : more optional fields
                     default:
                         break;
                 }

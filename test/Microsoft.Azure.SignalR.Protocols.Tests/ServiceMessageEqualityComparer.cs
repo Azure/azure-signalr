@@ -151,7 +151,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             return StringEqual(x.UserId, y.UserId) && 
                    StringEqual(x.GroupName, y.GroupName) &&
-                   StringEqual(x.TracingId, y.TracingId);
+                   StringEqual(x.TracingId, y.TracingId) &&
+                   x.Ttl == y.Ttl;
         }
 
         private bool UserLeaveGroupMessagesEqual(UserLeaveGroupMessage x, UserLeaveGroupMessage y)
