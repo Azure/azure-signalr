@@ -74,7 +74,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A user-join-group message.
     /// </summary>
-    public class UserJoinGroupMessage : ExtensibleServiceMessage, IMessageWithTracingId
+    public class UserJoinGroupMessage : ExtensibleServiceMessage, IMessageWithTracingId, IHasTtl
     {
         /// <summary>
         /// Gets or sets the user Id.
@@ -90,6 +90,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the tracing Id
         /// </summary>
         public string TracingId { get; set; }
+
+        /// <summary>
+        /// Time to live for the user in the group.
+        /// </summary>
+        public int? Ttl { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UserJoinGroupMessage"/> class.

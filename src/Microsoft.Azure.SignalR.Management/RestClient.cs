@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -9,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -97,17 +99,47 @@ namespace Microsoft.Azure.SignalR.Management
         private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, string productInfo, string methodName = null, object[] args = null)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
-            return GenerateHttpRequest(api.Audience, httpMethod, payload, api.Token, productInfo);
+            return GenerateHttpRequest(api.Audience, api.Query, httpMethod, payload, api.Token, productInfo);
         }
 
-        private HttpRequestMessage GenerateHttpRequest(string url, HttpMethod httpMethod, PayloadMessage payload, string tokenString, string productInfo)
+        private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, PayloadMessage payload, string tokenString, string productInfo)
         {
-            var request = new HttpRequestMessage(httpMethod, url);
+            var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Headers.Add(Constants.AsrsUserAgent, productInfo);
             request.Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
             return request;
+        }
+
+        private static Uri GetUri(string url, IDictionary<string, StringValues> query)
+        {
+            if (query == null || query.Count == 0)
+            {
+                return new Uri(url);
+            }
+            var builder = new UriBuilder(url);
+            var sb = new StringBuilder(builder.Query);
+            if (sb.Length == 1 && sb[0] == '?')
+            {
+                sb.Clear();
+            }
+            else if (sb.Length > 0 && sb[0] != '?')
+            {
+                sb.Insert(0, '?');
+            }
+            foreach (var item in query)
+            {
+                foreach (var value in item.Value)
+                {
+                    sb.Append(sb.Length > 0 ? '&' : '?');
+                    sb.Append(Uri.EscapeDataString(item.Key));
+                    sb.Append('=');
+                    sb.Append(Uri.EscapeDataString(value));
+                }
+            }
+            builder.Query = sb.ToString();
+            return builder.Uri;
         }
     }
 }
