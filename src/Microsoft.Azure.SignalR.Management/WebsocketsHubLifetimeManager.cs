@@ -33,6 +33,26 @@ namespace Microsoft.Azure.SignalR.Management
             return ServiceConnectionContainer.WriteAsync(message);
         }
 
+        public Task UserAddToGroupAsync(string userId, string groupName, TimeSpan ttl, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
+            }
+
+            if (string.IsNullOrEmpty(groupName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
+            }
+
+            if (ttl < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(ttl), TtlOutOfRangeErrorMessage);
+            }
+            var message = new UserJoinGroupMessage(userId, groupName) { Ttl = (int)ttl.TotalSeconds };
+            return ServiceConnectionContainer.WriteAsync(message);
+        }
+
         public Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(userId))

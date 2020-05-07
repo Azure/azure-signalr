@@ -9,13 +9,17 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestHubLifetimeManager : HubLifetimeManager<Hub>, IHubLifetimeManagerForUserGroup
     {
         private const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
+        private const string TtlOutOfRangeErrorMessage = "Ttl cannot be less than 0.";
+
         private static readonly RestClient _restClient = new RestClient();
+
         private readonly RestApiProvider _restApiProvider;
         private readonly string _productInfo;
         private readonly string _hubName;
@@ -180,6 +184,22 @@ namespace Microsoft.Azure.SignalR.Management
             ValidateUserIdAndGroupName(userId, groupName);
 
             var api = _restApiProvider.GetUserGroupManagementEndpoint(_appName, _hubName, userId, groupName);
+            return _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
+        }
+
+        public Task UserAddToGroupAsync(string userId, string groupName, TimeSpan ttl, CancellationToken cancellationToken = default)
+        {
+            ValidateUserIdAndGroupName(userId, groupName);
+
+            if (ttl < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(ttl), TtlOutOfRangeErrorMessage);
+            }
+            var api = _restApiProvider.GetUserGroupManagementEndpoint(_appName, _hubName, userId, groupName);
+            api.Query = new Dictionary<string, StringValues>
+            {
+                ["ttl"] = ((int)ttl.TotalSeconds).ToString(),
+            };
             return _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
