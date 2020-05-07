@@ -63,7 +63,13 @@ namespace Microsoft.Azure.SignalR.Protocol
                             withTracingId.TracingId = reader.ReadString();
                         }
                         break;
-                        // todo : more optional fields
+                    case Ttl:
+                        if (this is IHasTtl hasTtl)
+                        {
+                            hasTtl.Ttl = reader.ReadInt32();
+                        }
+                        break;
+                    // todo : more optional fields
                     default:
                         break;
                 }
