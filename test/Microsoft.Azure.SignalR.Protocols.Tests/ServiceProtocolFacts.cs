@@ -357,6 +357,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new UserJoinGroupMessage("conn10", "group1"),
                 binary: "lBCmY29ubjEwpmdyb3VwMYA="),
             new ProtocolTestData(
+                name: "UserJoinGroupWithTtl",
+                message: new UserJoinGroupMessage("conn10", "group1") { Ttl = 100 },
+                binary: "lBCmY29ubjEwpmdyb3VwMYECZA=="),
+            new ProtocolTestData(
                 name: "UserLeaveGroup",
                 message: new UserLeaveGroupMessage("conn11", "group2"),
                 binary: "lBGmY29ubjExpmdyb3VwMoA="),
