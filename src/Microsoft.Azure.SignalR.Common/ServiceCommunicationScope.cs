@@ -18,13 +18,13 @@ namespace Microsoft.Azure.SignalR.Common
     public class ServiceCommunicationScope<TNestableProps> : IDisposable
     {
         private ScopePropertiesAccessor<TNestableProps> _previousScope;
-        private ServiceConnectionScopeInternal _serviceConnectionScope;
+        private ClientConnectionScopeInternal _serviceConnectionScope;
 
         protected ServiceCommunicationScope(TNestableProps properties)
         {
             _previousScope = ScopePropertiesAccessor<TNestableProps>.Current;
             ScopePropertiesAccessor<TNestableProps>.Current = new ScopePropertiesAccessor<TNestableProps>() { Properties = properties };
-            _serviceConnectionScope = new ServiceConnectionScopeInternal();
+            _serviceConnectionScope = new ClientConnectionScopeInternal();
         }
 
         /// <summary>

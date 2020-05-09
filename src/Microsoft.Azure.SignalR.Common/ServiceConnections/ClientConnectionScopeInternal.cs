@@ -27,15 +27,15 @@ namespace Microsoft.Azure.SignalR
     /// Represents a disposable scope able to carry connection properties along with the execution context flow
     /// </summary>
     /// Only allows to carry one copy of connection properties regardless of how many nested scopes are created
-    internal class ServiceConnectionScopeInternal : IDisposable
+    internal class ClientConnectionScopeInternal : IDisposable
     {
         private bool _needCleanup;
 
-        internal ServiceConnectionScopeInternal() : this(default)
+        internal ClientConnectionScopeInternal() : this(default)
         {
         }
 
-        protected internal ServiceConnectionScopeInternal(ClientConnectionScopeProperties properties)
+        protected internal ClientConnectionScopeInternal(ClientConnectionScopeProperties properties)
         {
             if (ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current == null)
             {

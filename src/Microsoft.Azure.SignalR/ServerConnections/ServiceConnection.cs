@@ -124,13 +124,13 @@ namespace Microsoft.Azure.SignalR
 
             AddClientConnection(connection, message);
 
-            var scopeProperties = new ServiceConnectionScopeInternal.ClientConnectionScopeProperties() 
+            var scopeProperties = new ClientConnectionScopeInternal.ClientConnectionScopeProperties() 
             { 
                 OutboundServiceConnection = this
                 // todo add more properties here, e.g. message.Headers.TryGetValue("Tracing", ...)
             };
 
-            using (new ServiceConnectionScopeInternal(scopeProperties))
+            using (new ClientConnectionScopeInternal(scopeProperties))
             {
                 _ = ProcessClientConnectionAsync(connection);
             }
