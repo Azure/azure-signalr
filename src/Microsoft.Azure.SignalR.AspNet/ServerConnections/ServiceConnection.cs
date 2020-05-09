@@ -85,9 +85,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             var connectionId = openConnectionMessage.ConnectionId;
             var clientContext = new ClientContext(connectionId, GetInstanceId(openConnectionMessage.Headers));
 
-            var scopeProperties = new ClientConnectionScopeProperties()
+            var scopeProperties = new ServiceConnectionScopeInternal.ClientConnectionScopeProperties()
             {
-                ServiceConnection = this
+                OutboundServiceConnection = this
                 // todo add more properties here, e.g. message.Headers.TryGetValue("Tracing", ...)
             };
 

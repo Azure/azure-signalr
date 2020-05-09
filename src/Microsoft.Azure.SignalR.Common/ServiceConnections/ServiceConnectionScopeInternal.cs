@@ -3,61 +3,67 @@
 
 using System;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Threading;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ClientConnectionScopeProperties
-    {
-        public IServiceConnection ServiceConnection { get; set; }
 
-        // todo: add additional properties to flow with the scope here
-    }
-
-    internal class ServiceConnectionScopeHolder
+    internal class ScopePropertiesAccessor<TProps>
     {
-        private static AsyncLocal<ServiceConnectionScopeHolder> s_AsyncLocalSCC = new AsyncLocal<ServiceConnectionScopeHolder>();
-        internal static ServiceConnectionScopeHolder Current
+        // Use async local with indirect reference to TProps to allow for deep cleanup
+        private static readonly AsyncLocal<ScopePropertiesAccessor<TProps>> s_currentAccessor = new AsyncLocal<ScopePropertiesAccessor<TProps>>();
+
+        internal protected static ScopePropertiesAccessor<TProps> Current
         {
-            get => s_AsyncLocalSCC.Value;
-            set => s_AsyncLocalSCC.Value = value;
+            get => s_currentAccessor.Value;
+            set => s_currentAccessor.Value = value;
         }
 
-        public ClientConnectionScopeProperties Properties { get; set; }
+        internal TProps Properties { get; set; }
     }
 
+    /// <summary>
+    /// Represents a disposable scope able to carry connection properties along with the execution context flow
+    /// </summary>
+    /// Only allows to carry one copy of connection properties regardless of how many nested scopes are created
     internal class ServiceConnectionScopeInternal : IDisposable
     {
-        readonly private bool _needCleanup = false;
+        private bool _needCleanup;
 
-        public ServiceConnectionScopeInternal() : this(default)
+        internal ServiceConnectionScopeInternal() : this(default)
         {
         }
 
-        internal ServiceConnectionScopeInternal(ClientConnectionScopeProperties properties)
+        protected internal ServiceConnectionScopeInternal(ClientConnectionScopeProperties properties)
         {
-            if (ServiceConnectionScopeHolder.Current == null)
+            if (ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current == null)
             {
-                ServiceConnectionScopeHolder.Current = new ServiceConnectionScopeHolder() { Properties = properties };
                 _needCleanup = true;
+                ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current = new ScopePropertiesAccessor<ClientConnectionScopeProperties>() { Properties = properties };
             }
-            else
-            {
-                Debug.Assert(properties == null,
-                    $"Attempt to replace existing connection scope  {ServiceConnectionScopeHolder.Current.Properties.ServiceConnection?.GetHashCode()} with new connection: {properties?.ServiceConnection?.GetHashCode()}");
+            else if (properties != null)
+            { 
+                Debug.Assert(false, "Attempt to replace an already established scope");
             }
         }
-
-        internal static ServiceConnectionScopeHolder Holder => ServiceConnectionScopeHolder.Current;
 
         public void Dispose()
         {
+            if (_needCleanup)
             {
-                if (_needCleanup)
-                {
-                    ServiceConnectionScopeHolder.Current = null;
-                }
+                // shallow cleanup since we don't want any execution contexts in unawaited tasks 
+                // to suddenly change behavior once we're done with disposing
+                ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current = null;
             }
+        }
+
+        internal static ScopePropertiesAccessor<ClientConnectionScopeProperties> CurrentScopeAccessor => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current;
+
+        internal class ClientConnectionScopeProperties
+        {
+            public IServiceConnection OutboundServiceConnection { get; set; }
+            // todo: extend with client connection tracking/logging settings
         }
     }
 }
