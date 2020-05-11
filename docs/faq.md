@@ -8,6 +8,7 @@
 - [Can I configure available transports at server side in Azure SignalR Service like ASP.NET Core SignalR?](#configure-transports)
 - [What is the meaning of metrics like message count or connection count showed in Azure portal? Which kind of aggregation type should I choose?](#metrics-meaning)
 - [What is the meaning of service mode `Default`/`Serverless`/`Classic`? How can I choose?](#service-mode)
+- [Any feature differences when using Azure SignalR for ASP.NET SignalR?](#diff-aspnet-signalr)
 
 <a name="production-use"></a>
 ## Is Azure SignalR Service ready for production use?
@@ -95,3 +96,18 @@ Choosing:
 1. No hub server, choose `Serverless`.
 1. All of hubs have hub servers, choose `Default`.
 1. Some of hubs have hub servers, others not, choose `Classic`, but this may cause some problem, the better way is create two instances, one is `Serverless`, another is `Default`.
+
+<a name="diff-aspnet-signalr"></a>
+## Any feature differences when using Azure SignalR for ASP.NET SignalR?
+When using Azure SignalR, some APIs and features of ASP.NET SignalR are no longer supported:
+- Automatic reconnects
+- Forever Frame transport
+- HubState
+- `PersistentConnection` class
+- `GlobalHost` object
+- `HubPipeline` module
+- Client-side Internet Explorer support before Microsoft Internet Explorer 11
+
+The support for ASP.NET SignalR is focused on compatibility, so not all new features from ASP.NET Core SignalR are supported. For example, **MessagePack**, **Streaming**, etc., are only available for ASP.NET Core SignalR applications.
+
+SignalR Service can be configured for different service mode: `Classic`/`Default`/`Serverles`s. In this ASP.NET support, the `Serverless` mode is not supported.
