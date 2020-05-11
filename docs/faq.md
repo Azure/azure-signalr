@@ -108,4 +108,4 @@ When using Azure SignalR, some APIs and features of ASP.NET SignalR are no longe
 
 The support for ASP.NET SignalR is focused on compatibility, so not all new features from ASP.NET Core SignalR are supported. For example, **MessagePack**, **Streaming**, etc., are only available for ASP.NET Core SignalR applications.
 
-SignalR Service can be configured for different service mode: `Classic`/`Default`/`Serverles`s. In this ASP.NET support, the `Serverless` mode is not supported. The data-plane REST Api is also not supported.
+SignalR Service can be configured for different service mode: `Classic`/`Default`/`Serverles`s. In this ASP.NET support, the `Serverless` mode is not supported. The data-plane REST API is also not supported.
