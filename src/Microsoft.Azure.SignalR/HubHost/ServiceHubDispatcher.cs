@@ -71,16 +71,16 @@ namespace Microsoft.Azure.SignalR
 
         public async Task ShutdownAsync()
         {
-            if (!_options.EnableGracefulShutdown)
+            if (_options.GracefulShutdown.Mode == GracefulShutdownMode.Off)
             {
                 return;
             }
 
             using CancellationTokenSource source = new CancellationTokenSource();
 
-            var expected = OfflineAndWaitForCompletedAsync(_options.MigrationLevel != ServerConnectionMigrationLevel.Off);
+            var expected = OfflineAndWaitForCompletedAsync(_options.GracefulShutdown.Mode);
             var actual = await Task.WhenAny(
-                Task.Delay(_options.ServerShutdownTimeout, source.Token), expected
+                Task.Delay(_options.GracefulShutdown.Timeout, source.Token), expected
             );
 
             if (actual != expected)
@@ -92,9 +92,9 @@ namespace Microsoft.Azure.SignalR
             await _serviceConnectionManager.StopAsync();
         }
 
-        private async Task OfflineAndWaitForCompletedAsync(bool migratable)
+        private async Task OfflineAndWaitForCompletedAsync(GracefulShutdownMode mode)
         {
-            await _serviceConnectionManager.OfflineAsync(migratable);
+            await _serviceConnectionManager.OfflineAsync(mode);
             await _clientConnectionManager.WhenAllCompleted();
         }
 
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.SignalR
                 _nameProvider)
             {
                 ConfigureContext = contextConfig,
-                MigrationLevel = _options.MigrationLevel
+                ShutdownMode = _options.GracefulShutdown.Mode
             };
 
             var factory = new ServiceConnectionContainerFactory(

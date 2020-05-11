@@ -39,9 +39,10 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task TestOffline(bool migratable)
+        [InlineData(GracefulShutdownMode.Off)]
+        [InlineData(GracefulShutdownMode.WaitForClientsClose)]
+        [InlineData(GracefulShutdownMode.MigrateClients)]
+        internal async Task TestOffline(GracefulShutdownMode mode)
         {
             List<IServiceConnection> connections = new List<IServiceConnection>
             {
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.False(c.ConnectionOfflineTask.IsCompleted);
             }
 
-            await container.OfflineAsync(migratable);
+            await container.OfflineAsync(mode);
 
             foreach (SimpleTestServiceConnection c in connections)
             {
