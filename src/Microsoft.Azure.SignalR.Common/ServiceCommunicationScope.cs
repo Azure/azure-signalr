@@ -7,7 +7,6 @@ namespace Microsoft.Azure.SignalR.Common
 {
     /// <summary>
     /// Represents a generic nestable scope for grouping operations with the same service communication policy.
-    /// Derived classes must ensure that the service protocol can understand and transmit this policy to the service.
     /// </summary>
     /// The following is ensured for all send operations to the service within the scope:
     /// -  the same service connection is used in ServiceTransportType.Persistent mode
