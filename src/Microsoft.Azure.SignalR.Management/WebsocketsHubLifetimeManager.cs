@@ -59,5 +59,10 @@ namespace Microsoft.Azure.SignalR.Management
             var message = new UserLeaveGroupMessage(userId, null);
             return ServiceConnectionContainer.WriteAsync(message);
         }
+
+        public Task<bool> IsUserInGroup(string userId, string groupName, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

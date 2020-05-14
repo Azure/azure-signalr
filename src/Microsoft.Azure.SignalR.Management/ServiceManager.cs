@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,6 +27,8 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IServerNameProvider _serverNameProvider;
         private readonly ServiceEndpoint _endpoint;
         private readonly string _productInfo;
+        private readonly RestClient _restClient;
+        private readonly RestApiProvider _restApiProvider;
 
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo)
         {
@@ -37,6 +41,8 @@ namespace Microsoft.Azure.SignalR.Management
             }).Value);
             _serverNameProvider = new DefaultServerNameProvider();
             _productInfo = productInfo;
+            _restClient = new RestClient();
+            _restApiProvider = new RestApiProvider(_serviceManagerOptions.ConnectionString);
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
@@ -147,5 +153,27 @@ namespace Microsoft.Azure.SignalR.Management
         }
 
         public string GetClientEndpoint(string hubName) => _endpointProvider.GetClientEndpoint(hubName, null, null);
+
+        public async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
+        {
+            var isHealthy = false;
+            var api = _restApiProvider.GetServiceHealthEndpoint();
+            await _restClient.SendAsync(api, HttpMethod.Get, _productInfo, handleExpectedResponse: response =>
+                {
+                    switch (response.StatusCode)
+                    {
+                        case HttpStatusCode.OK:
+                            isHealthy = true;
+                            return true;
+                        case HttpStatusCode.ServiceUnavailable:
+                            isHealthy = false;
+                            return true;
+                        default:
+                            return false;
+                    }
+                },
+                cancellationToken: cancellationToken);
+            return isHealthy;
+        }
     }
 }

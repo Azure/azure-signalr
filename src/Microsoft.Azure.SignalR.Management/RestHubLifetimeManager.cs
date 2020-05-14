@@ -6,26 +6,27 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Azure.SignalR.Common;
-using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestHubLifetimeManager : HubLifetimeManager<Hub>, IHubLifetimeManagerForUserGroup
     {
-        private readonly RestApiProvider _restApiProvider;
         private const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
+        private static readonly RestClient _restClient = new RestClient();
+        private readonly RestApiProvider _restApiProvider;
         private readonly string _productInfo;
+        private readonly string _hubName;
+        private readonly string _appName;
 
         public RestHubLifetimeManager(ServiceManagerOptions serviceManagerOptions, string hubName, string productInfo)
         {
-            _restApiProvider = new RestApiProvider(serviceManagerOptions.ConnectionString, hubName, serviceManagerOptions.ApplicationName);
+            _restApiProvider = new RestApiProvider(serviceManagerOptions.ConnectionString);
             _productInfo = productInfo;
+            _appName = serviceManagerOptions.ApplicationName;
+            _hubName = hubName;
         }
 
         public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -40,9 +41,8 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var api = _restApiProvider.GetConnectionGroupManagementEndpoint(connectionId, groupName);
-            var request = BuildRequest(api, HttpMethod.Put, null, null);
-            return CallRestApiAsync(request, cancellationToken);
+            var api = _restApiProvider.GetConnectionGroupManagementEndpoint(_appName, _hubName, connectionId, groupName);
+            return _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
@@ -67,9 +67,8 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var api = _restApiProvider.GetConnectionGroupManagementEndpoint(connectionId, groupName);
-            var request = BuildRequest(api, HttpMethod.Delete, null, null);
-            return CallRestApiAsync(request, cancellationToken);
+            var api = _restApiProvider.GetConnectionGroupManagementEndpoint(_appName, _hubName, connectionId, groupName);
+            return _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
         public override Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -79,9 +78,8 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var api = _restApiProvider.GetBroadcastEndpoint();
-            var request = BuildRequest(api, HttpMethod.Post, methodName, args);
-            return CallRestApiAsync(request, cancellationToken);
+            var api = _restApiProvider.GetBroadcastEndpoint(_appName, _hubName);
+            return _restClient.SendAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
@@ -101,9 +99,8 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
             }
 
-            var api = _restApiProvider.GetSendToConnectionEndpoint(connectionId);
-            var request = BuildRequest(api, HttpMethod.Post, methodName, args);
-            return CallRestApiAsync(request, cancellationToken);
+            var api = _restApiProvider.GetSendToConnectionEndpoint(_appName, _hubName, connectionId);
+            return _restClient.SendAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
         public override async Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -123,9 +120,8 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var api = _restApiProvider.GetSendToGroupEndpoint(groupName);
-            var request = BuildRequest(api, HttpMethod.Post, methodName, args);
-            return CallRestApiAsync(request, cancellationToken);
+            var api = _restApiProvider.GetSendToGroupEndpoint(_appName, _hubName, groupName);
+            return _restClient.SendAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
         public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
@@ -160,9 +156,8 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
             }
 
-            var api = _restApiProvider.GetSendToUserEndpoint(userId);
-            var request = BuildRequest(api, HttpMethod.Post, methodName, args);
-            return CallRestApiAsync(request, cancellationToken);
+            var api = _restApiProvider.GetSendToUserEndpoint(_appName, _hubName, userId);
+            return _restClient.SendAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
         public override async Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -171,8 +166,8 @@ namespace Microsoft.Azure.SignalR.Management
 
             try
             {
-                await(all = Task.WhenAll(from userId in userIds
-                                         select SendUserAsync(userId, methodName, args, cancellationToken)));
+                await (all = Task.WhenAll(from userId in userIds
+                                          select SendUserAsync(userId, methodName, args, cancellationToken)));
             }
             catch
             {
@@ -184,94 +179,42 @@ namespace Microsoft.Azure.SignalR.Management
         {
             ValidateUserIdAndGroupName(userId, groupName);
 
-            var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
-            var request = BuildRequest(api, HttpMethod.Put, null, null);
-            return CallRestApiAsync(request, cancellationToken);
+            var api = _restApiProvider.GetUserGroupManagementEndpoint(_appName, _hubName, userId, groupName);
+            return _restClient.SendAsync(api, HttpMethod.Put, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
         public Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
             ValidateUserIdAndGroupName(userId, groupName);
 
-            var api = _restApiProvider.GetUserGroupManagementEndpoint(userId, groupName);
-            var request = BuildRequest(api, HttpMethod.Delete, null, null);
-            return CallRestApiAsync(request, cancellationToken);
+            var api = _restApiProvider.GetUserGroupManagementEndpoint(_appName, _hubName, userId, groupName);
+            return _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
         public Task UserRemoveFromAllGroupsAsync(string userId, CancellationToken cancellationToken = default)
         {
-            var api = _restApiProvider.GetRemoveUserFromAllGroups(userId);
-            var request = BuildRequest(api, HttpMethod.Delete);
-            return CallRestApiAsync(request, cancellationToken);
+            var api = _restApiProvider.GetRemoveUserFromAllGroups(_appName, _hubName, userId);
+            return _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
-        private HttpRequestMessage GenerateHttpRequest(string url, PayloadMessage payload, string tokenString, HttpMethod httpMethod)
+        public async Task<bool> IsUserInGroup(string userId, string groupName, CancellationToken cancellationToken = default)
         {
-            var request = new HttpRequestMessage(httpMethod, url);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            request.Headers.Add(Constants.AsrsUserAgent, _productInfo);
-            request.Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
-            return request;
-        }
-
-        private static void ThrowExceptionOnResponseFailure(Exception innerException, HttpStatusCode? statusCode, string requestUri, string detail = null)
-        {
-            switch (statusCode)
-            {
-                case HttpStatusCode.BadRequest:
+            var isUserInGroup = false;
+            var api = _restApiProvider.GetUserGroupManagementEndpoint(_appName, _hubName, userId, groupName);
+            await _restClient.SendAsync(api, HttpMethod.Get, _productInfo, handleExpectedResponse: response =>
+                {
+                    switch (response.StatusCode)
                     {
-                        throw new AzureSignalRInvalidArgumentException(requestUri, innerException, detail);
+                        case HttpStatusCode.OK:
+                            isUserInGroup = true;
+                            return true;
+                        case HttpStatusCode.NotFound:
+                            return true;
+                        default:
+                            return false;
                     }
-                case HttpStatusCode.Unauthorized:
-                    {
-                        throw new AzureSignalRUnauthorizedException(requestUri, innerException);
-                    }
-                case HttpStatusCode.NotFound:
-                    {
-                        throw new AzureSignalRInaccessibleEndpointException(requestUri, innerException);
-                    }
-                default:
-                    {
-                        throw new AzureSignalRRuntimeException(requestUri, innerException);
-                    }
-            }
-        }
-
-        private HttpRequestMessage BuildRequest(RestApiEndpoint endpoint, HttpMethod httpMethod, string methodName = null, object[] args = null)
-        {
-            var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
-            return GenerateHttpRequest(endpoint.Audience, payload, endpoint.Token, httpMethod);
-        }
-
-        private static async Task CallRestApiAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
-        {
-            var httpClient = HttpClientFactory.CreateClient();
-            HttpResponseMessage response = null;
-            var detail = "";
-
-            try
-            {
-                response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            }
-            catch (HttpRequestException ex)
-            {
-                throw new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), ex);
-            }
-
-            try
-            {
-                detail = await response.Content.ReadAsStringAsync();
-                response.EnsureSuccessStatusCode();
-            }
-            catch (HttpRequestException ex)
-            {
-                ThrowExceptionOnResponseFailure(ex, response.StatusCode, request.RequestUri.ToString(), detail);
-            }
-            finally
-            {
-                response.Dispose();
-            }
+                }, cancellationToken: cancellationToken);
+            return isUserInGroup;
         }
 
         private static void ValidateUserIdAndGroupName(string userId, string groupName)
