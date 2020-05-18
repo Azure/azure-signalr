@@ -13,15 +13,18 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class ServiceHubDispatcherTests
     {
-        [Fact(Skip = "Disable high possibility failed cases until they are fixed")]
+        [Fact]
         public async void TestShutdown()
         {
             var clientManager = new TestClientConnectionManager();
             var serviceManager = new TestServiceConnectionManager<Hub>();
 
             var options = new TestOptions();
-            options.Value.EnableGracefulShutdown = true;
-            options.Value.ServerShutdownTimeout = TimeSpan.FromSeconds(1);
+            options.Value.GracefulShutdown = new GracefulShutdownOptions()
+            {
+                Timeout = TimeSpan.FromSeconds(1),
+                Mode = GracefulShutdownMode.WaitForClientsClose
+            };
 
             var dispatcher = new ServiceHubDispatcher<Hub>(
                 null,
@@ -104,7 +107,7 @@ namespace Microsoft.Azure.SignalR.Tests
             public DateTime offlineTime = new DateTime();
             public DateTime stopTime = new DateTime();
 
-            public async Task OfflineAsync(bool migratable)
+            public async Task OfflineAsync(GracefulShutdownMode mode)
             {
                 await Task.Delay(100);
                 offlineTime = DateTime.Now;

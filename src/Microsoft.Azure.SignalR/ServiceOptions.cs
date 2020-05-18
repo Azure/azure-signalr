@@ -60,24 +60,12 @@ namespace Microsoft.Azure.SignalR
         public ServerStickyMode ServerStickyMode { get; set; } = ServerStickyMode.Disabled;
 
         /// <summary>
-        /// Specifies if server will shutdown gracefully. 
-        /// Default value is false.
-        /// </summary>
-        internal bool EnableGracefulShutdown { get; set; } = false;
-
-        /// <summary>
-        /// Specifies the timeout of a graceful shutdown process (in seconds). 
-        /// Default value is 30 seconds.
-        /// </summary>
-        internal TimeSpan ServerShutdownTimeout { get; set; } = Constants.Periods.DefaultShutdownTimeout;
-
-        /// <summary>
         /// Specifies if the client-connection assigned to this server can be migrated to another server.
         /// Default value is 0.
         /// 1: Only migrate client-connection if server was shutdown gracefully.
         /// 2: Migrate client-connection even if server-connection was accidentally dropped. (Potential data losses)
         /// </summary>
-        internal ServerConnectionMigrationLevel MigrationLevel { get; set; } = ServerConnectionMigrationLevel.Off;
+        internal GracefulShutdownOptions GracefulShutdown { get; set; } = new GracefulShutdownOptions();
 
         /// <summary>
         /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.

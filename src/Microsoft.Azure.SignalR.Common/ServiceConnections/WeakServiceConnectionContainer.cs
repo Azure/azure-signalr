@@ -17,7 +17,7 @@ namespace Microsoft.Azure.SignalR.Common
         {
         }
 
-        public override Task OfflineAsync(bool migratable)
+        public override Task OfflineAsync(GracefulShutdownMode mode)
         {
             return Task.CompletedTask;
         }

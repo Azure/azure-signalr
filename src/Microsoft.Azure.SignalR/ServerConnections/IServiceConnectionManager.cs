@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
 
         Task StopAsync();
 
-        Task OfflineAsync(bool migratable);
+        Task OfflineAsync(GracefulShutdownMode mode);
 
         Task WriteAsync(ServiceMessage seviceMessage);
 
