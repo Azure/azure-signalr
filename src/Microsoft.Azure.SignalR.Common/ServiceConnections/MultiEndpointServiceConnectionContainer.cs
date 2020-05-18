@@ -301,7 +301,7 @@ namespace Microsoft.Azure.SignalR
                 var container = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == endpoint.Endpoint && e.EndpointType == endpoint.EndpointType);
                 if (container == null)
                 {
-                    Log.EndpointNotExists(_logger, container.ToString());
+                    Log.EndpointNotExists(_logger, endpoint.ToString());
                     return;
                 }
 
