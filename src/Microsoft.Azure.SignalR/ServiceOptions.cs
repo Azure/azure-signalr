@@ -77,5 +77,11 @@ namespace Microsoft.Azure.SignalR
         /// Default value is 5 minutes
         /// </summary>
         internal TimeSpan ServiceScaleTimeout { get; set; } = Constants.Periods.DefaultScaleTimeout;
+
+        /// <summary>
+        /// Gets or sets the interval in seconds used by the Azure SignalR Service to timeout idle connections
+        /// Default value is 5, limited to [1, 300].
+        /// </summary>
+        public int? DisconnectTimeoutInSeconds { get; set; }
     }
 }
