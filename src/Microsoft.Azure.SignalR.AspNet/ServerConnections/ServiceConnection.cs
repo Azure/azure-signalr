@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -85,13 +86,13 @@ namespace Microsoft.Azure.SignalR.AspNet
             var connectionId = openConnectionMessage.ConnectionId;
             var clientContext = new ClientContext(connectionId, GetInstanceId(openConnectionMessage.Headers));
 
-            var scopeProperties = new ClientConnectionScopeInternal.ClientConnectionScopeProperties()
+            var scopeProperties = new ClientConnectionScopeProperties()
             {
                 OutboundServiceConnection = this
                 // todo add more properties here, e.g. message.Headers.TryGetValue("Tracing", ...)
             };
 
-            using (new ClientConnectionScopeInternal(scopeProperties))
+            using (new ClientConnectionScope(scopeProperties))
             {
                 if (_clientConnectionManager.TryAdd(connectionId, this))
                 {

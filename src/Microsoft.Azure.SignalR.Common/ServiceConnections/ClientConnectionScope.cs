@@ -5,22 +5,22 @@ using Microsoft.Azure.SignalR.Common.Utilities;
 using System;
 using System.Diagnostics;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 {
     /// <summary>
     /// Represents a disposable scope able to carry connection properties along with the execution context flow
     /// </summary>
-    /// Only allows to carry one copy of connection properties regardless of how many nested scopes are created
-    internal class ClientConnectionScopeInternal : IDisposable
+    internal class ClientConnectionScope : IDisposable
     {
         private bool _needCleanup;
 
-        internal ClientConnectionScopeInternal() : this(default)
+        internal ClientConnectionScope() : this(default)
         {
         }
 
-        protected internal ClientConnectionScopeInternal(ClientConnectionScopeProperties properties)
+        protected internal ClientConnectionScope(ClientConnectionScopeProperties properties)
         {
+            // Only allow to carry one copy of connection properties regardless of how many nested scopes are created
             if (ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current == null)
             {
                 _needCleanup = true;
@@ -43,11 +43,5 @@ namespace Microsoft.Azure.SignalR
         }
 
         internal static ScopePropertiesAccessor<ClientConnectionScopeProperties> CurrentScopeAccessor => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current;
-
-        internal class ClientConnectionScopeProperties
-        {
-            public IServiceConnection OutboundServiceConnection { get; set; }
-            // todo: extend with client connection tracking/logging settings
-        }
     }
 }
