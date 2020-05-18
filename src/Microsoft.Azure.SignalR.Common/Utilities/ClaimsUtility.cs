@@ -25,7 +25,15 @@ namespace Microsoft.Azure.SignalR
         private static readonly string DefaultNameClaimType = DefaultClaimsIdentity.NameClaimType;
         private static readonly string DefaultRoleClaimType = DefaultClaimsIdentity.RoleClaimType;
 
-        public static IEnumerable<Claim> BuildJwtClaims(ClaimsPrincipal user, string userId, Func<IEnumerable<Claim>> claimsProvider, string serverName = null, ServerStickyMode mode = ServerStickyMode.Disabled, bool enableDetailedErrors = false, int endpointsCount = 1)
+        public static IEnumerable<Claim> BuildJwtClaims(
+            ClaimsPrincipal user, 
+            string userId, 
+            Func<IEnumerable<Claim>> claimsProvider, 
+            string serverName = null, 
+            ServerStickyMode mode = ServerStickyMode.Disabled, 
+            bool enableDetailedErrors = false, 
+            int endpointsCount = 1,
+            int? disconnectTimeout = null)
         {
             if (userId != null)
             {
@@ -72,6 +80,12 @@ namespace Microsoft.Azure.SignalR
                 {
                     yield return new Claim(Constants.ClaimType.RoleType, roleType);
                 }
+            }
+
+            // add claim if exists, validation is in DI  
+            if (disconnectTimeout.HasValue)
+            {
+                yield return new Claim(Constants.ClaimType.DisconnectTimeout, disconnectTimeout.Value.ToString());
             }
 
             // return customer's claims
