@@ -18,16 +18,20 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
         {
         }
 
-        protected internal ClientConnectionScope(ClientConnectionScopeProperties properties)
+        protected internal ClientConnectionScope(IServiceConnection outboundConnection)
         {
             // Only allow to carry one copy of connection properties regardless of how many nested scopes are created
             if (ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current == null)
             {
                 _needCleanup = true;
-                ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current = new ScopePropertiesAccessor<ClientConnectionScopeProperties>() { Properties = properties };
+                ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current =
+                    new ScopePropertiesAccessor<ClientConnectionScopeProperties>()
+                    {
+                        Properties = new ClientConnectionScopeProperties() { OutboundServiceConnection = outboundConnection }
+                    };
             }
-            else if (properties != null)
-            { 
+            else if (outboundConnection != null)
+            {
                 Debug.Assert(false, "Attempt to replace an already established scope");
             }
         }
@@ -42,6 +46,27 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             }
         }
 
-        internal static ScopePropertiesAccessor<ClientConnectionScopeProperties> CurrentScopeAccessor => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current;
+        internal static bool IsScopeEstablished => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current != null;
+
+        internal static IServiceConnection OutboundServiceConnection
+        {
+            get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties?.OutboundServiceConnection;
+            set 
+            {
+                var currentProps = ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties;
+                if (currentProps != null)
+                {
+                    currentProps.OutboundServiceConnection = value;
+                }
+            }
+        }
+
+        // todo: extend with client connection tracking/logging accessors
+
+        private class ClientConnectionScopeProperties
+        {
+            public IServiceConnection OutboundServiceConnection { get; set; }
+            // todo: extend with client connection tracking/logging settings
+        }
     }
 }
