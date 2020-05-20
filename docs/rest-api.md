@@ -188,7 +188,7 @@ API Version | HTTP Method | Request URL
 Response Status Code | Description
 ---|---
 `200` | Service Good
-`503` | Service Unavailable
+`502` and `503` | Service Unavailable
 
 ## Using REST API
 
