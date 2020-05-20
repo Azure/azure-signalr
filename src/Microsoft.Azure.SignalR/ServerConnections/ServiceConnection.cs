@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
+using Microsoft.Azure.SignalR.Common.Utilities;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -124,7 +126,10 @@ namespace Microsoft.Azure.SignalR
 
             AddClientConnection(connection, message);
 
-            _ = ProcessClientConnectionAsync(connection);
+            using (new ClientConnectionScope(outboundConnection: this))
+            {
+                _ = ProcessClientConnectionAsync(connection);
+            }
 
             if (connection.IsMigrated)
             {
