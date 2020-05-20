@@ -13,6 +13,9 @@
             "200": {
               "description": "Ok"
             },
+            "502": {
+              "description": "ServiceUnavailable"
+            },
             "503": {
               "description": "ServiceUnavailable"
             }
