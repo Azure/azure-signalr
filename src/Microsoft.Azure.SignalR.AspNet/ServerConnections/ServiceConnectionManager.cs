@@ -82,9 +82,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             return Task.WhenAll(GetConnections().Select(s => s.StopAsync()));
         }
 
-        public Task OfflineAsync(bool migratable)
+        public Task OfflineAsync(GracefulShutdownMode mode)
         {
-            return Task.WhenAll(GetConnections().Select(s => s.OfflineAsync(migratable)));
+            return Task.WhenAll(GetConnections().Select(s => s.OfflineAsync(mode)));
         }
 
         public IServiceConnectionContainer WithHub(string hubName)

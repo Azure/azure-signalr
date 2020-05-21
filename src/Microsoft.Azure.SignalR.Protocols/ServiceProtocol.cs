@@ -83,6 +83,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateJoinGroupWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.LeaveGroupWithAckMessageType:
                     return CreateLeaveGroupWithAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.CheckUserInGroupWithAckMessageType:
+                    return CreateCheckUserInGroupWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.AckMessageType:
                     return CreateAckMessage(ref reader, arrayLength);
                 default:
@@ -189,6 +191,9 @@ namespace Microsoft.Azure.SignalR.Protocol
                     break;
                 case LeaveGroupWithAckMessage leaveGroupWithAckMessage:
                     WriteLeaveGroupWithAckMessage(ref writer, leaveGroupWithAckMessage);
+                    break;
+                case CheckUserInGroupWithAckMessage checkUserInGroupWithAckMessage:
+                    WriteCheckUserInGroupWithAckMessage(ref writer, checkUserInGroupWithAckMessage);
                     break;
                 case UserJoinGroupMessage userJoinGroupMessage:
                     WriteUserJoinGroupMessage(ref writer, userJoinGroupMessage);
@@ -404,6 +409,16 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.WriteArrayHeader(5);
             writer.Write(ServiceProtocolConstants.LeaveGroupWithAckMessageType);
             writer.Write(message.ConnectionId);
+            writer.Write(message.GroupName);
+            writer.Write(message.AckId);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteCheckUserInGroupWithAckMessage(ref MessagePackWriter writer, CheckUserInGroupWithAckMessage message)
+        {
+            writer.WriteArrayHeader(5);
+            writer.Write(ServiceProtocolConstants.CheckUserInGroupWithAckMessageType);
+            writer.Write(message.UserId);
             writer.Write(message.GroupName);
             writer.Write(message.AckId);
             message.WriteExtensionMembers(ref writer);
@@ -734,6 +749,20 @@ namespace Microsoft.Azure.SignalR.Protocol
             var ackId = ReadInt32(ref reader, "ackId");
 
             var result = new LeaveGroupWithAckMessage(connectionId, groupName, ackId);
+            if (arrayLength >= 5)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
+        }
+
+        private static CheckUserInGroupWithAckMessage CreateCheckUserInGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var userId = ReadString(ref reader, "userId");
+            var groupName = ReadString(ref reader, "groupName");
+            var ackId = ReadInt32(ref reader, "ackId");
+
+            var result = new CheckUserInGroupWithAckMessage(userId, groupName, ackId);
             if (arrayLength >= 5)
             {
                 result.ReadExtensionMembers(ref reader);

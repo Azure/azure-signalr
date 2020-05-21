@@ -55,6 +55,7 @@ namespace Microsoft.Azure.SignalR
             public const string Version = AzureSignalRSysPrefix + "vn";
             public const string EnableDetailedErrors = AzureSignalRSysPrefix + "derror";
             public const string ServiceEndpointsCount = AzureSignalRSysPrefix + "secn";
+            public const string DisconnectTimeout = AzureSignalRSysPrefix + "ttl";
 
             public const string AzureSignalRUserPrefix = "asrs.u.";
         }

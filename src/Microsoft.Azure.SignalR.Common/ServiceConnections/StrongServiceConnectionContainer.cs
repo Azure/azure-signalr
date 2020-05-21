@@ -46,10 +46,10 @@ namespace Microsoft.Azure.SignalR
             );
         }
 
-        public override Task OfflineAsync(bool migratable)
+        public override Task OfflineAsync(GracefulShutdownMode mode)
         {
-            var task1 = base.OfflineAsync(migratable);
-            var task2 = Task.WhenAll(_onDemandServiceConnections.Select(c => RemoveConnectionAsync(c, migratable)));
+            var task1 = base.OfflineAsync(mode);
+            var task2 = Task.WhenAll(_onDemandServiceConnections.Select(c => RemoveConnectionAsync(c, mode)));
             return Task.WhenAll(task1, task2);
         }
 

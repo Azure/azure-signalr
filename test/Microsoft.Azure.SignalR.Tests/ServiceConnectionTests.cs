@@ -514,7 +514,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private class TestServiceConnection : ServiceConnection
+        private sealed class TestServiceConnection : ServiceConnection
         {
             public TestServiceConnection(IConnectionFactory serviceConnectionFactory,
                                          IClientConnectionFactory clientConnectionFactory,
@@ -530,7 +530,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 Guid.NewGuid().ToString("N"),
                 null,
                 null,
-                migrationLevel: ServerConnectionMigrationLevel.ShutdownOnly
+                mode: GracefulShutdownMode.MigrateClients
             )
             {
             }
