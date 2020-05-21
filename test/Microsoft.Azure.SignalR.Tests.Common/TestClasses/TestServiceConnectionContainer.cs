@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             return Task.CompletedTask;
         }
 
-        public Task OfflineAsync(bool migratable)
+        public Task OfflineAsync(GracefulShutdownMode mode)
         {
             return Task.CompletedTask;
         }

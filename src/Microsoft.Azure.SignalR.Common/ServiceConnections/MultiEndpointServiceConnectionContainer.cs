@@ -131,9 +131,9 @@ namespace Microsoft.Azure.SignalR
             }));
         }
 
-        public Task OfflineAsync(bool migratable)
+        public Task OfflineAsync(GracefulShutdownMode mode)
         {
-            return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.OfflineAsync(migratable)));
+            return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.OfflineAsync(mode)));
         }
 
         public Task WriteAsync(ServiceMessage serviceMessage)
@@ -301,11 +301,11 @@ namespace Microsoft.Azure.SignalR
                 var container = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == endpoint.Endpoint && e.EndpointType == endpoint.EndpointType);
                 if (container == null)
                 {
-                    Log.EndpointNotExists(_logger, container.ToString());
+                    Log.EndpointNotExists(_logger, endpoint.ToString());
                     return;
                 }
 
-                _ = container.ConnectionContainer.OfflineAsync(false);
+                _ = container.ConnectionContainer.OfflineAsync(GracefulShutdownMode.Off);
                 await WaitForClientsDisconnect(container);
                 _ = container.ConnectionContainer.StopAsync();
 

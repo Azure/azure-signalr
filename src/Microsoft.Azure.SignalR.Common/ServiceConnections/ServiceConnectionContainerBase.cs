@@ -26,9 +26,6 @@ namespace Microsoft.Azure.SignalR
         private static readonly long DefaultServersPingTimeoutTicks = Stopwatch.Frequency * (Constants.Periods.DefaultServersPingInterval.Seconds * 3 + 1);
         private static readonly Tuple<string, long> DefaultServersTagContext = new Tuple<string, long>(string.Empty, 0);
 
-        private static readonly PingMessage _shutdownFinMessage = RuntimeServicePingMessage.GetFinPingMessage(false);
-        private static readonly PingMessage _shutdownFinMigratableMessage = RuntimeServicePingMessage.GetFinPingMessage(true);
-
         private static TimeSpan ReconnectInterval =>
             TimeSpan.FromMilliseconds(StaticRandom.Next(MaxReconnectBackOffInternalInMilliseconds));
 
@@ -231,9 +228,9 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public virtual Task OfflineAsync(bool migratable)
+        public virtual Task OfflineAsync(GracefulShutdownMode mode)
         {
-            return Task.WhenAll(FixedServiceConnections.Select(c => RemoveConnectionAsync(c, migratable)));
+            return Task.WhenAll(FixedServiceConnections.Select(c => RemoveConnectionAsync(c, mode)));
         }
 
         public Task StartGetServersPing()
@@ -318,25 +315,19 @@ namespace Microsoft.Azure.SignalR
                 : ServiceConnectionStatus.Disconnected;
         }
 
-        protected async Task WriteFinAsync(IServiceConnection c, bool migratable)
+        protected async Task WriteFinAsync(IServiceConnection c, GracefulShutdownMode mode)
         {
-            if (migratable)
-            {
-                await c.WriteAsync(_shutdownFinMigratableMessage);
-            }
-            else
-            {
-                await c.WriteAsync(_shutdownFinMessage);
-            }
+            var message = RuntimeServicePingMessage.GetFinPingMessage(mode);
+            await c.WriteAsync(message);
         }
 
-        protected async Task RemoveConnectionAsync(IServiceConnection c, bool migratable)
+        protected async Task RemoveConnectionAsync(IServiceConnection c, GracefulShutdownMode mode)
         {
             var retry = 0;
             while (retry < MaxRetryRemoveSeverConnection)
             {
                 using var source = new CancellationTokenSource();
-                _ = WriteFinAsync(c, migratable);
+                _ = WriteFinAsync(c, mode);
 
                 var task = await Task.WhenAny(c.ConnectionOfflineTask, Task.Delay(Constants.Periods.RemoveFromServiceTimeout, source.Token));
 

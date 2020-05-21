@@ -165,6 +165,9 @@ namespace Microsoft.Azure.SignalR.Management
                         case HttpStatusCode.OK:
                             isHealthy = true;
                             return true;
+                        case HttpStatusCode.BadGateway:
+                            isHealthy = false;
+                            return true;
                         case HttpStatusCode.ServiceUnavailable:
                             isHealthy = false;
                             return true;

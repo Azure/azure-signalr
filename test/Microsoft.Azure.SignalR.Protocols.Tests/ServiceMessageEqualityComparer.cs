@@ -63,6 +63,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return JoinGroupWithAckMessageEqual(joinGroupWithAckMessage, (JoinGroupWithAckMessage)y);
                 case LeaveGroupWithAckMessage leaveGroupWithAckMessage:
                     return LeaveGroupWithAckMessageEqual(leaveGroupWithAckMessage, (LeaveGroupWithAckMessage)y);
+                case CheckUserInGroupWithAckMessage checkUserInGroupWithAckMessage:
+                    return CheckUserInGroupWithAckMessageEqual(checkUserInGroupWithAckMessage, (CheckUserInGroupWithAckMessage)y);
                 case AckMessage ackMessage:
                     return AckMessageEqual(ackMessage, (AckMessage)y);
                 default:
@@ -193,6 +195,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         private bool LeaveGroupWithAckMessageEqual(LeaveGroupWithAckMessage x, LeaveGroupWithAckMessage y)
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) &&
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   x.AckId == y.AckId &&
+                   StringEqual(x.TracingId, y.TracingId);
+        }
+
+        private bool CheckUserInGroupWithAckMessageEqual(CheckUserInGroupWithAckMessage x, CheckUserInGroupWithAckMessage y)
+        {
+            return StringEqual(x.UserId, y.UserId) &&
                    StringEqual(x.GroupName, y.GroupName) &&
                    x.AckId == y.AckId &&
                    StringEqual(x.TracingId, y.TracingId);
