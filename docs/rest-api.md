@@ -2,7 +2,7 @@
 
 > **NOTE**
 >
-> Azure SignalR Service only supports REST API for ASP.NET CORE SignalR applications.
+> Azure SignalR Service only supports using REST API to manage clients connected using ASP.NET Core SignalR. Clients connected using ASP.NET SignalR use a different data protocol and is now not supported.
 
 - [REST API in Azure SignalR Service](#REST-API-in-Azure-SignalR-Service)
   - [Typical Server-less Architecture with Azure Functions](#Typical-Server-less-Architecture-with-Azure-Functions)
