@@ -6,7 +6,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A join-group message.
     /// </summary>
-    public class JoinGroupMessage : ExtensibleServiceMessage, IMessageWithTracingId
+    public class JoinGroupMessage : ExtensibleServiceMessage, IMessageWithTracingId, IDiagTag
     {
         /// <summary>
         /// Gets or sets the connection Id.
@@ -22,6 +22,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the tracing Id
         /// </summary>
         public string TracingId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the diagnostic tag.
+        /// </summary>
+        public bool DiagTag { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinGroupMessage"/> class.

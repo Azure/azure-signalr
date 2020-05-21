@@ -21,20 +21,27 @@ namespace Microsoft.Azure.SignalR.Protocol
     {
         private const int TracingId = 1;
         private const int Ttl = 2;
+        private const int DiagTag = 3;
 
         internal void WriteExtensionMembers(ref MessagePackWriter writer)
         {
             int count = 0;
+
             var tracingId = (this as IMessageWithTracingId)?.TracingId;
             if (!string.IsNullOrEmpty(tracingId))
             {
                 count++;
             }
+
             var ttl = (this as IHasTtl)?.Ttl;
             if (ttl != null)
             {
                 count++;
             }
+
+            var diagTag = (this as IDiagTag)?.DiagTag;
+            count += diagTag == null ? 0 : 1;
+
             // todo : count more optional fields.
             writer.WriteMapHeader(count);
             if (!string.IsNullOrEmpty(tracingId))
@@ -46,6 +53,11 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 writer.Write(Ttl);
                 writer.Write(ttl.Value);
+            }
+            if (diagTag != null)
+            {
+                writer.Write(DiagTag);
+                writer.Write(diagTag.Value);
             }
             // todo : write more optional fields.
         }
@@ -67,6 +79,12 @@ namespace Microsoft.Azure.SignalR.Protocol
                         if (this is IHasTtl hasTtl)
                         {
                             hasTtl.Ttl = reader.ReadInt32();
+                        }
+                        break;
+                    case DiagTag:
+                        if (this is IDiagTag msgWithDiagTag)
+                        {
+                            msgWithDiagTag.DiagTag = reader.ReadBoolean();
                         }
                         break;
                     // todo : more optional fields
