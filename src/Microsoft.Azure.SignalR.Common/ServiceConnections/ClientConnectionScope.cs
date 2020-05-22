@@ -14,11 +14,11 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
     {
         private bool _needCleanup;
 
-        internal ClientConnectionScope() : this(default)
+        internal ClientConnectionScope() : this(default, default)
         {
         }
 
-        protected internal ClientConnectionScope(IServiceConnection outboundConnection)
+        protected internal ClientConnectionScope(IServiceConnection outboundConnection, bool IsDiagnosticClient)
         {
             // Only allow to carry one copy of connection properties regardless of how many nested scopes are created
             if (ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current == null)
@@ -27,10 +27,15 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
                 ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current =
                     new ScopePropertiesAccessor<ClientConnectionScopeProperties>()
                     {
-                        Properties = new ClientConnectionScopeProperties() { OutboundServiceConnection = outboundConnection }
+                        Properties = new ClientConnectionScopeProperties()
+                        {
+                            OutboundServiceConnection = outboundConnection,
+                            IsDiagnosticClient = IsDiagnosticClient
+                        }
                     };
             }
-            else if (outboundConnection != null)
+            else if (outboundConnection != null || 
+                ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current.Properties.IsDiagnosticClient != IsDiagnosticClient)
             {
                 Debug.Assert(false, "Attempt to replace an already established scope");
             }
@@ -61,12 +66,25 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             }
         }
 
-        // todo: extend with client connection tracking/logging accessors
+        internal static bool IsDiagnosticClient
+        {
+            get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties?.IsDiagnosticClient ?? false;
+            set
+            {
+                var currentProps = ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties;
+                if (currentProps != null)
+                {
+                    currentProps.IsDiagnosticClient = value;
+                }
+            }
+        }
 
+        // todo: extend with client connection tracking/logging accessors
         private class ClientConnectionScopeProperties
         {
             public IServiceConnection OutboundServiceConnection { get; set; }
-            // todo: extend with client connection tracking/logging settings
+
+            public bool IsDiagnosticClient { get; set; }
         }
     }
 }
