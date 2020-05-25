@@ -49,6 +49,7 @@ namespace Microsoft.Azure.SignalR
         // <serversTag, latestTimestamp>
         private volatile Tuple<string, long> _serversTagContext = DefaultServersTagContext;
         private volatile bool _hasClients;
+        private volatile bool _enableMessageLog = false;
         private volatile bool _terminated = false;
 
         protected ILogger Logger { get; }
@@ -185,6 +186,10 @@ namespace Microsoft.Azure.SignalR
                     _serversTagContext = Tuple.Create(serversTag, updatedTime);
                 }
             }
+            if (RuntimeServicePingMessage.TryGetMessageLogEnableFlag(pingMessage, out var enableMessageLog))
+            {
+                _enableMessageLog = enableMessageLog;
+            }
             return Task.CompletedTask;
         }
 
@@ -198,6 +203,12 @@ namespace Microsoft.Azure.SignalR
 
         public virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
+            if (_enableMessageLog && serviceMessage is IMessageWithTracingId msg)
+            {
+                // todo: msg.TracingId = TracingIdGenerator.Generate()
+                msg.TracingId = "";
+            }
+
             return WriteToRandomAvailableConnection(serviceMessage);
         }
 
