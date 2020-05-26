@@ -546,7 +546,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 Guid.NewGuid().ToString("N"),
                 null,
                 null,
-                mode: GracefulShutdownMode.MigrateClients
+                mode: mode
             )
             {
             }
