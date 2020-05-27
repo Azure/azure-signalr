@@ -132,15 +132,16 @@ They can be accessed at [`Hub.Context.User`](https://github.com/aspnet/SignalR/b
 
 - Default value is `Off`
 - When set to `WaitForClientsClose`, instead of stopping the server immediately, we remove it from the ASRS to prevent new client connections from being assigned to this server.
-- When set to `MigrateClients`, in addition to the steps we mentioned in `WaitForClientsClose`, we will try migrate client connection to another valid server at a proper time. 
-  You will receive a `CloseConnectionMessage` on the old server and an `OpenConnectionMessage` on the new server with connectionId unchanged.
-  Please visit our sample codes for usage.
+- When set to `MigrateClients`, in addition to the steps we mentioned in `WaitForClientsClose`, we will try migrate client connections to another valid server at a proper time. 
+  We could make sure the migration will only happen on the message boundaries, which means each of old/new servers will receive intact messages.
+  `OnConnected` and `OnDisconnected` will be triggered when connections be migrated in/out, and a `IConnectionMigrationFeature` will be set to help you determine if the connection has been migrated.
+  Please visit our sample codes for detail usage.
 
 
 ##### Timeout
 
 - Default value is `30 seconds`
-- This option specifies the longest wait time in waiting for clients close / migrating clients.
+- This option specifies the longest time in waiting for clients to be closed/migrated.
 
 #### Sample
 You can configure above options like the following sample code.
@@ -152,6 +153,9 @@ services.AddSignalR()
                 options.ConnectionCount = 10;
                 options.AccessTokenLifetime = TimeSpan.FromDays(1);
                 options.ClaimsProvider = context => context.User.Claims;
+
+                option.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
+                option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(10);
             });
 ```
 

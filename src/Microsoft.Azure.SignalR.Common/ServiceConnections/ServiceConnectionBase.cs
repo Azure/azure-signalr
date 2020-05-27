@@ -52,8 +52,6 @@ namespace Microsoft.Azure.SignalR
 
         private int _started;
 
-        internal HandshakeRequestMessage HandshakeRequestForTest => _handshakeRequest;
-
         protected HubServiceEndpoint HubEndpoint { get; }
 
         protected string ServerId { get; }
