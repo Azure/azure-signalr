@@ -18,26 +18,25 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
         {
         }
 
-        protected internal ClientConnectionScope(IServiceConnection outboundConnection, bool IsDiagnosticClient)
+        protected internal ClientConnectionScope(IServiceConnection outboundConnection, bool isDiagnosticClient)
         {
             // Only allow to carry one copy of connection properties regardless of how many nested scopes are created
-            if (ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current == null)
+            if (!IsScopeEstablished)
             {
                 _needCleanup = true;
                 ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current =
-                    new ScopePropertiesAccessor<ClientConnectionScopeProperties>()
-                    {
-                        Properties = new ClientConnectionScopeProperties()
-                        {
-                            OutboundServiceConnection = outboundConnection,
-                            IsDiagnosticClient = IsDiagnosticClient
-                        }
-                    };
+                            new ScopePropertiesAccessor<ClientConnectionScopeProperties>()
+                            {
+                                Properties = new ClientConnectionScopeProperties()
+                                {
+                                    OutboundServiceConnection = outboundConnection,
+                                    IsDiagnosticClient = isDiagnosticClient
+                                }
+                            };
             }
-            else if (outboundConnection != null || 
-                ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current.Properties.IsDiagnosticClient != IsDiagnosticClient)
+            else
             {
-                Debug.Assert(false, "Attempt to replace an already established scope");
+                Debug.Assert(outboundConnection == default && isDiagnosticClient == default, "Attempt to replace an already established scope");
             }
         }
 

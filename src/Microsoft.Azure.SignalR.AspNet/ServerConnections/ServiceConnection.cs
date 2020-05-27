@@ -92,7 +92,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault());
             }
 
-            using (new ClientConnectionScope(outboundConnection: this, IsDiagnosticClient: isDiagnosticClient))
+            using (new ClientConnectionScope(outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
             {
                 if (_clientConnectionManager.TryAdd(connectionId, this))
                 {
