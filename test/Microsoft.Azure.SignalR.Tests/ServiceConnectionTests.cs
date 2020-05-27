@@ -408,17 +408,17 @@ namespace Microsoft.Azure.SignalR.Tests
                 await connection.ConnectionInitializedTask.OrTimeout();
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
 
-                await Task.WhenAll(
-                    transportConnection.Application.Output.WriteAsync(
+                await transportConnection.Application.Output.WriteAsync(
                         protocol.GetMessageBytes(new OpenConnectionMessage(diagnosticClientConnectionId, null, new Dictionary<string, StringValues>
                         {
                             { Constants.AsrsIsDiagnosticClient, "true"}
-                        }, null))).AsTask(),
-                    transportConnection.Application.Output.WriteAsync(
-                        protocol.GetMessageBytes(new OpenConnectionMessage(normalClientConnectionId, null))).AsTask());
+                        }, null)));
 
-                var connections = await Task.WhenAll(ccm.WaitForClientConnectionAsync(normalClientConnectionId).OrTimeout(20000), 
-                    ccm.WaitForClientConnectionAsync(diagnosticClientConnectionId).OrTimeout(20000));
+                await transportConnection.Application.Output.WriteAsync(
+                    protocol.GetMessageBytes(new OpenConnectionMessage(normalClientConnectionId, null)));
+
+                var connections = await Task.WhenAll(ccm.WaitForClientConnectionAsync(normalClientConnectionId).OrTimeout(),
+                    ccm.WaitForClientConnectionAsync(diagnosticClientConnectionId).OrTimeout());
                 await Task.WhenAll(from c in connections select c.LifetimeTask.OrTimeout());
 
                 // complete reading to end the connection
