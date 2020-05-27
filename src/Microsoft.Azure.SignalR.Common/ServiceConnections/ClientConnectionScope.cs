@@ -78,7 +78,6 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             }
         }
 
-        // todo: extend with client connection tracking/logging accessors
         private class ClientConnectionScopeProperties
         {
             public IServiceConnection OutboundServiceConnection { get; set; }
