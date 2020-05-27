@@ -38,6 +38,7 @@ namespace Microsoft.Azure.SignalR
 
             public static readonly TimeSpan DefaultStatusPingInterval = TimeSpan.FromSeconds(10);
             public static readonly TimeSpan DefaultServersPingInterval = TimeSpan.FromSeconds(5);
+            public static readonly TimeSpan DefaultDiagnosticLogsPingInterval = TimeSpan.FromSeconds(30);
             // Depends on DefaultStatusPingInterval, make 1/2 to fast check.
             public static readonly TimeSpan DefaultCloseDelayInterval = TimeSpan.FromSeconds(5);
         }
@@ -77,6 +78,7 @@ namespace Microsoft.Azure.SignalR
         {
             public const string ServiceStatus = "ServiceStatus";
             public const string Servers = "Servers";
+            public const string DiagnosticLogs = "DiagnosticLogs";
         }
     }
 }

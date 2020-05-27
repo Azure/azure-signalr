@@ -999,7 +999,41 @@ namespace Microsoft.Azure.SignalR.Tests
             containers.First().HandleAck(new AckMessage(1, (int)AckStatus.Ok));
             await task.OrTimeout();
         }
-        
+
+        [Fact]
+        public async Task TestDiagnosticLogsPingMessage()
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "22")
+                );
+            var endpoints = sem.Endpoints.Keys.ToArray();
+            Assert.Equal(2, endpoints.Length);
+            Assert.Equal("1", endpoints[0].Name);
+            Assert.Equal("22", endpoints[1].Name);
+
+            var router = new TestEndpointRouter();
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
+            }, e), sem, router, NullLoggerFactory.Instance);
+
+            var hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, hubEndpoints.Length);
+            Assert.Equal("1", hubEndpoints[0].Name);
+            Assert.Equal("22", hubEndpoints[1].Name);
+
+            // mock inactive
+            var containers = container.GetTestOnlineContainers();
+            await containers[0].MockReceivedDiagnosticLogsPing();
+
+            Assert.True(containers[0].EnableMessageLog);
+            Assert.False(containers[1].EnableMessageLog);
+        }
+
         [Fact]
         public async Task TestEndpointManagerWithRemoveEndpointsWithNoClients()
         {

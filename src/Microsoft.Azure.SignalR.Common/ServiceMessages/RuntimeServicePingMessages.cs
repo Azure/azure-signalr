@@ -2,7 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using Microsoft.Azure.SignalR.Protocol;
+using Newtonsoft.Json.Linq;
 using ServicePingMessage = Microsoft.Azure.SignalR.Protocol.PingMessage;
 
 namespace Microsoft.Azure.SignalR
@@ -14,7 +16,9 @@ namespace Microsoft.Azure.SignalR
         private const string StatusKey = "status";
         private const string ShutdownKey = "shutdown";
         private const string ServersKey = "servers";
-        private const string EnableMessageLogKey = "enableMessageLog";
+        private const string DiagnosticLogsKey = "diag";
+        private const string DiagnosticLogsEnableLogTypeKey = "on";
+        private const string DiagnosticLogsMessagingTypeKey = "msg";
 
         private const string StatusActiveValue = "1";
         private const string StatusInactiveValue = "0";
@@ -47,11 +51,17 @@ namespace Microsoft.Azure.SignalR
         private static readonly ServicePingMessage ServersTag =
             new ServicePingMessage { Messages = new[] { ServersKey, string.Empty } };
 
+        private static readonly ServicePingMessage DiagnosticLogs =
+            new ServicePingMessage { Messages = new[] { DiagnosticLogsKey, string.Empty } };
+
         public static bool TryGetMessageLogEnableFlag(this ServicePingMessage ping, out bool enableMessageLog)
         {
-            if (TryGetValue(ping, EnableMessageLogKey, out var enableMessageLogStr))
+            if (TryGetValue(ping, DiagnosticLogsKey, out var diagnosticLogsValue))
             {
-                return bool.TryParse(enableMessageLogStr, out enableMessageLog);
+                var json = JObject.Parse(diagnosticLogsValue);
+                var enabledLogTypes = json.SelectToken(DiagnosticLogsEnableLogTypeKey).ToObject<IList<string>>();
+                enableMessageLog = enabledLogTypes.Contains(DiagnosticLogsMessagingTypeKey);
+                return true;
             }
             enableMessageLog = default;
             return false;
@@ -108,6 +118,8 @@ namespace Microsoft.Azure.SignalR
         public static ServicePingMessage GetFinAckPingMessage() => ShutdownFinAck;
 
         public static ServicePingMessage GetServersPingMessage() => ServersTag;
+
+        public static ServicePingMessage GetDiagnosticLogsMessage() => DiagnosticLogs;
 
         // for test
         public static bool IsFin(this ServiceMessage serviceMessage) =>

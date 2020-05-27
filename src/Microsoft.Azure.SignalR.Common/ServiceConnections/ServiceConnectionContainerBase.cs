@@ -41,6 +41,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly CustomizedPingTimer _statusPing;
         private readonly CustomizedPingTimer _serversPing;
+        private readonly CustomizedPingTimer _diagnosticLogsPing;
 
         private volatile List<IServiceConnection> _fixedServiceConnections;
 
@@ -53,6 +54,9 @@ namespace Microsoft.Azure.SignalR
         private volatile bool _terminated = false;
 
         protected ILogger Logger { get; }
+
+        // test
+        internal bool EnableMessageLog => _enableMessageLog;
 
         protected List<IServiceConnection> FixedServiceConnections
         {
@@ -139,6 +143,9 @@ namespace Microsoft.Azure.SignalR
             _statusPing.Start();
 
             _serversPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServersPingAsync, Constants.Periods.DefaultServersPingInterval, Constants.Periods.DefaultServersPingInterval);
+
+            _diagnosticLogsPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.DiagnosticLogs, WriteDiagnosticLogsPingAsync, TimeSpan.Zero, Constants.Periods.DefaultServersPingInterval);
+            _diagnosticLogsPing.Start();
         }
 
         public Task StartAsync() => Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
@@ -487,6 +494,9 @@ namespace Microsoft.Azure.SignalR
             }
             await WriteAsync(RuntimeServicePingMessage.GetServersPingMessage());
         }
+
+        private Task WriteDiagnosticLogsPingAsync() =>
+            WriteAsync(RuntimeServicePingMessage.GetDiagnosticLogsMessage());
 
         private sealed class CustomizedPingTimer : IDisposable
         {
