@@ -3,7 +3,7 @@
 
 namespace Microsoft.Azure.SignalR
 {
-    internal interface IConnectionMigrationFeature
+    public interface IConnectionMigrationFeature
     {
         string MigrateFrom { get; }
         string MigrateTo { get; }

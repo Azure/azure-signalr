@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
 
-        internal readonly HandshakeRequestMessage _handshakeRequest;
+        private readonly HandshakeRequestMessage _handshakeRequest;
 
         private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
 
@@ -51,6 +51,8 @@ namespace Microsoft.Azure.SignalR
         private ServiceConnectionStatus _status;
 
         private int _started;
+
+        internal HandshakeRequestMessage HandshakeRequestForTest => _handshakeRequest;
 
         protected HubServiceEndpoint HubEndpoint { get; }
 

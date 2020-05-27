@@ -125,6 +125,23 @@ They can be accessed at [`Hub.Context.User`](https://github.com/aspnet/SignalR/b
     - When `Preferred`, Azure SignalR tries to find the app server which the client first negotiates with in a way that no additional cost or global routing is needed. This one can be useful when your scenario is *send to connection*. *Send to connection* can have better performance and lower latency when the sender and the receiver are routed to the same app server.
     - When `Required`, Azure SignalR always tries to find the app server which the client first negotiates with. This options can be useful when some client context is fetched from `negotiate` step and stored in memory, and then to be used inside `Hub`s. However, this option may have performance drawbacks because it requires Azure SignalR to take additional efforts to find this particular app server globally, and to keep globally routing traffics between client and server.
 
+
+#### `GracefulShutdown`
+
+##### Mode
+
+- Default value is `Off`
+- When set to `WaitForClientsClose`, instead of stopping the server immediately, we remove it from the ASRS to prevent new client connections from being assigned to this server.
+- When set to `MigrateClients`, in addition to the steps we mentioned in `WaitForClientsClose`, we will try migrate client connection to another valid server at a proper time. 
+  You will receive a `CloseConnectionMessage` on the old server and an `OpenConnectionMessage` on the new server with connectionId unchanged.
+  Please visit our sample codes for usage.
+
+
+##### Timeout
+
+- Default value is `30 seconds`
+- This option specifies the longest wait time in waiting for clients close / migrating clients.
+
 #### Sample
 You can configure above options like the following sample code.
 
