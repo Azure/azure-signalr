@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading;
@@ -427,21 +428,6 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 connectionHandler.CancellationToken.Cancel();
             }
-        }
-
-        [Fact]
-        public void TestServiceConnectionWhenMigrationEnabled()
-        {
-            ServiceConnection connection;
-
-            connection = MockServiceConnection(mode: GracefulShutdownMode.Off);
-            // Assert.Equal(0, connection.HandshakeRequestForTest.MigrationLevel);
-
-            connection = MockServiceConnection(mode: GracefulShutdownMode.WaitForClientsClose);
-            // Assert.Equal(0, connection.HandshakeRequestForTest.MigrationLevel);
-
-            connection = MockServiceConnection(mode: GracefulShutdownMode.MigrateClients);
-            // Assert.Equal(1, connection.HandshakeRequestForTest.MigrationLevel);
         }
 
         [Fact]

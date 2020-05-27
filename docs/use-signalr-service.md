@@ -12,6 +12,7 @@
       - [`ApplicationName`](#applicationname)
       - [`ClaimProvider`](#claimprovider)
       - [`ServerStickyMode`](#serverstickymode)
+      - [`GracefulShutdown`](#gracefulshutdown)
       - [Sample](#sample)
   - [Run ASP.NET SignalR](#run-aspnet-signalr)
     - [1. Install and Use Service SDK](#1-install-and-use-service-sdk-1)
@@ -131,6 +132,7 @@ They can be accessed at [`Hub.Context.User`](https://github.com/aspnet/SignalR/b
 ##### Mode
 
 - Default value is `Off`
+- This option specifies the behavior after the app server receives a CTRL+C (SIGINT).
 - When set to `WaitForClientsClose`, instead of stopping the server immediately, we remove it from the ASRS to prevent new client connections from being assigned to this server.
 - When set to `MigrateClients`, in addition to the steps we mentioned in `WaitForClientsClose`, we will try migrate client connections to another valid server at a proper time. 
   We could make sure the migration will only happen on the message boundaries, which means each of old/new servers will receive intact messages.

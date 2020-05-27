@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Common.ServiceConnections;
-using Microsoft.Azure.SignalR.Common.Utilities;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -41,8 +40,6 @@ namespace Microsoft.Azure.SignalR
 
         private readonly ConnectionDelegate _connectionDelegate;
 
-        private readonly bool _enableMigration;
-
         public Action<HttpContext> ConfigureContext { get; set; }
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
@@ -65,8 +62,6 @@ namespace Microsoft.Azure.SignalR
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
             _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
-
-            _enableMigration = mode == GracefulShutdownMode.MigrateClients;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -146,16 +141,16 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             var connectionId = closeConnectionMessage.ConnectionId;
-            if (_enableMigration && _clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
+            if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
             {
-                if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
+                if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
                 {
                     context.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(ServerId, to));
+                    // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
+                    // Since all user-created messages will be sent to `ServiceConnection` directly.
+                    // We can simply ignore all messages came from the application pipe.
+                    context.Application.Input.CancelPendingRead();
                 }
-                // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
-                // Since all user-created messages will be sent to `ServiceConnection` directly.
-                // We can simply ignore all messages came from the application pipe.
-                context.Application.Input.CancelPendingRead();
             }
             return PerformDisconnectAsyncCore(connectionId);
         }
