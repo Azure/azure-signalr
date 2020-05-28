@@ -2,7 +2,7 @@
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class GracefulShutdownOptions
+    public class GracefulShutdownOptions
     {
         /// <summary>
         /// Specifies the timeout of a graceful shutdown process (in seconds). 
