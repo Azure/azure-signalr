@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR
         private const string ServersKey = "servers";
         private const string DiagnosticLogsKey = "diag";
         private const string DiagnosticLogsEnableLogTypeKey = "on";
-        private const string DiagnosticLogsMessagingTypeKey = "msg";
+        private const string DiagnosticLogsMessagingTypeKey = "MessagingLogs";
 
         private const string StatusActiveValue = "1";
         private const string StatusInactiveValue = "0";
