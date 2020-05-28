@@ -14,25 +14,29 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
     {
         private bool _needCleanup;
 
-        internal ClientConnectionScope() : this(default)
+        internal ClientConnectionScope() : this(default, default)
         {
         }
 
-        protected internal ClientConnectionScope(IServiceConnection outboundConnection)
+        protected internal ClientConnectionScope(IServiceConnection outboundConnection, bool isDiagnosticClient)
         {
             // Only allow to carry one copy of connection properties regardless of how many nested scopes are created
-            if (ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current == null)
+            if (!IsScopeEstablished)
             {
                 _needCleanup = true;
                 ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current =
-                    new ScopePropertiesAccessor<ClientConnectionScopeProperties>()
-                    {
-                        Properties = new ClientConnectionScopeProperties() { OutboundServiceConnection = outboundConnection }
-                    };
+                            new ScopePropertiesAccessor<ClientConnectionScopeProperties>()
+                            {
+                                Properties = new ClientConnectionScopeProperties()
+                                {
+                                    OutboundServiceConnection = outboundConnection,
+                                    IsDiagnosticClient = isDiagnosticClient
+                                }
+                            };
             }
-            else if (outboundConnection != null)
+            else
             {
-                Debug.Assert(false, "Attempt to replace an already established scope");
+                Debug.Assert(outboundConnection == default && isDiagnosticClient == default, "Attempt to replace an already established scope");
             }
         }
 
@@ -61,12 +65,24 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             }
         }
 
-        // todo: extend with client connection tracking/logging accessors
+        internal static bool IsDiagnosticClient
+        {
+            get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties?.IsDiagnosticClient ?? false;
+            set
+            {
+                var currentProps = ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties;
+                if (currentProps != null)
+                {
+                    currentProps.IsDiagnosticClient = value;
+                }
+            }
+        }
 
         private class ClientConnectionScopeProperties
         {
             public IServiceConnection OutboundServiceConnection { get; set; }
-            // todo: extend with client connection tracking/logging settings
+
+            public bool IsDiagnosticClient { get; set; }
         }
     }
 }

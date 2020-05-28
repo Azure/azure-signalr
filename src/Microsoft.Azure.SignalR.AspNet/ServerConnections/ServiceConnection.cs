@@ -85,7 +85,14 @@ namespace Microsoft.Azure.SignalR.AspNet
             var connectionId = openConnectionMessage.ConnectionId;
             var clientContext = new ClientContext(connectionId, GetInstanceId(openConnectionMessage.Headers));
 
-            using (new ClientConnectionScope(outboundConnection: this))
+            bool isDiagnosticClient = false;
+            openConnectionMessage.Headers.TryGetValue(Constants.AsrsIsDiagnosticClient, out var isDiagnosticClientValue);
+            if (!StringValues.IsNullOrEmpty(isDiagnosticClientValue))
+            {
+                isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault());
+            }
+
+            using (new ClientConnectionScope(outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
             {
                 if (_clientConnectionManager.TryAdd(connectionId, this))
                 {
