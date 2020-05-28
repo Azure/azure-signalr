@@ -134,10 +134,10 @@ They can be accessed at [`Hub.Context.User`](https://github.com/aspnet/SignalR/b
 - Default value is `Off`
 - This option specifies the behavior after the app server receives a CTRL+C (SIGINT).
 - When set to `WaitForClientsClose`, instead of stopping the server immediately, we remove it from the ASRS to prevent new client connections from being assigned to this server.
-- When set to `MigrateClients`, in addition to the steps we mentioned in `WaitForClientsClose`, we will try migrate client connections to another valid server at a proper time. 
+- When set to `MigrateClients`, in addition to the steps we mentioned in `WaitForClientsClose`, we will try migrating client connections to another valid server at a proper time. 
   We could make sure the migration will only happen on the message boundaries, which means each of old/new servers will receive intact messages.
   `OnConnected` and `OnDisconnected` will be triggered when connections be migrated in/out, and a `IConnectionMigrationFeature` will be set to help you determine if the connection has been migrated.
-  Please visit our sample codes for detail usage.
+  Please visit our [sample codes](https://github.com/Azure/azure-signalr/blob/dev/samples/ChatSample/ChatSample/Hub/Chat.cs) for detail usage.
 
 
 ##### Timeout

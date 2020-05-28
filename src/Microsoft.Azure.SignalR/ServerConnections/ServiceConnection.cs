@@ -141,16 +141,16 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             var connectionId = closeConnectionMessage.ConnectionId;
-            if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
+            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
             {
-                if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
+                if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
                 {
                     context.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(ServerId, to));
                     // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
                     // Since all user-created messages will be sent to `ServiceConnection` directly.
                     // We can simply ignore all messages came from the application pipe.
-                    context.Application.Input.CancelPendingRead();
                 }
+                context.Application.Input.CancelPendingRead();
             }
             return PerformDisconnectAsyncCore(connectionId);
         }
