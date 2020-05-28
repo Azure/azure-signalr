@@ -527,7 +527,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var factory = new TestClientConnectionFactory();
 
-            var connection = MockServiceConnection(null, factory);
+            var connection = MockServiceConnection(null, factory, mode: GracefulShutdownMode.MigrateClients);
 
             // create a connection with migration header.
             await connection.OnClientConnectedAsyncForTest(new OpenConnectionMessage("foo", new Claim[0]));
@@ -578,7 +578,8 @@ namespace Microsoft.Azure.SignalR.Tests
             public TestServiceConnection(IConnectionFactory serviceConnectionFactory,
                                          IClientConnectionFactory clientConnectionFactory,
                                          ILoggerFactory loggerFactory,
-                                         ConnectionDelegate handler) : base(
+                                         ConnectionDelegate handler,
+                                         GracefulShutdownMode mode = GracefulShutdownMode.Off) : base(
                 new ServiceProtocol(),
                 new TestClientConnectionManager(),
                 serviceConnectionFactory,
@@ -589,7 +590,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 Guid.NewGuid().ToString("N"),
                 null,
                 null,
-                mode: GracefulShutdownMode.MigrateClients
+                mode: mode
             )
             {
             }
@@ -607,7 +608,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private TestServiceConnection MockServiceConnection(IConnectionFactory serviceConnectionFactory = null,
                                                             IClientConnectionFactory clientConnectionFactory = null,
-                                                            ILoggerFactory loggerFactory = null)
+                                                            ILoggerFactory loggerFactory = null,
+                                                            GracefulShutdownMode mode = GracefulShutdownMode.Off)
         {
             clientConnectionFactory ??= new ClientConnectionFactory();
             serviceConnectionFactory ??= new TestConnectionFactory(conn => Task.CompletedTask);
@@ -624,7 +626,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 serviceConnectionFactory,
                 clientConnectionFactory,
                 loggerFactory,
-                handler
+                handler,
+                mode: mode
             );
         }
 

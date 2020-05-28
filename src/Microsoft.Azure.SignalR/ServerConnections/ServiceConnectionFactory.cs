@@ -27,8 +27,7 @@ namespace Microsoft.Azure.SignalR
             ILoggerFactory loggerFactory,
             ConnectionDelegate connectionDelegate,
             IClientConnectionFactory clientConnectionFactory,
-            IServerNameProvider nameProvider
-        )
+            IServerNameProvider nameProvider)
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
