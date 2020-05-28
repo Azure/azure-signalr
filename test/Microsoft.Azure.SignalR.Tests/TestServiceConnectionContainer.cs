@@ -72,7 +72,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public Task MockReceivedDiagnosticLogsPing()
         {
-            var ping = new PingMessage { Messages = new[] { "diag", "{'on':['msg']}"} };
+            var ping = new PingMessage { Messages = new[] { "MessagingLogs", null} };
             return base.HandlePingAsync(ping);
         }
     }

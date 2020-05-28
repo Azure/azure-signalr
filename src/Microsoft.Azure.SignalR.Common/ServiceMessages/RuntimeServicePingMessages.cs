@@ -17,7 +17,6 @@ namespace Microsoft.Azure.SignalR
         private const string ShutdownKey = "shutdown";
         private const string ServersKey = "servers";
         private const string DiagnosticLogsKey = "diag";
-        private const string DiagnosticLogsEnableLogTypeKey = "on";
         private const string DiagnosticLogsMessagingTypeKey = "MessagingLogs";
 
         private const string StatusActiveValue = "1";
@@ -56,11 +55,9 @@ namespace Microsoft.Azure.SignalR
 
         public static bool TryGetMessageLogEnableFlag(this ServicePingMessage ping, out bool enableMessageLog)
         {
-            if (TryGetValue(ping, DiagnosticLogsKey, out var diagnosticLogsValue))
+            if (TryGetValue(ping, DiagnosticLogsMessagingTypeKey, out _))
             {
-                var json = JObject.Parse(diagnosticLogsValue);
-                var enabledLogTypes = json.SelectToken(DiagnosticLogsEnableLogTypeKey).ToObject<IList<string>>();
-                enableMessageLog = enabledLogTypes.Contains(DiagnosticLogsMessagingTypeKey);
+                enableMessageLog = true;
                 return true;
             }
             enableMessageLog = default;
