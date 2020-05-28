@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR
 
         public static void UpdateTracingId(this IMessageWithTracingId msg)
         {
-            msg.TracingId = $"{(uint)_prefix}:{(uint)counter}";
+            msg.TracingId = $"{(uint)_prefix:X8}:{(uint)counter:X8}";
             Interlocked.Increment(ref counter);
         }
     }
