@@ -247,4 +247,45 @@ namespace Microsoft.Azure.SignalR.Protocol
             TracingId = tracingId;
         }
     }
+
+    /// <summary>
+    /// A waiting for ack check-user-in-group message.
+    /// </summary>
+    public class CheckUserInGroupWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
+    {
+        /// <summary>
+        /// Gets or sets the user Id.
+        /// </summary>
+        public string UserId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the group name.
+        /// </summary>
+        public string GroupName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ack id.
+        /// </summary>
+        public int AckId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the tracing Id
+        /// </summary>
+        public string TracingId { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LeaveGroupWithAckMessage"/> class.
+        /// </summary>
+        /// <param name="userId">The connection Id.</param>
+        /// <param name="groupName">The group name, from which the connection will leave.</param>
+        /// <param name="ackId">The ack Id</param>
+        /// <param name="tracingId">The tracing Id of the message.</param>
+        public CheckUserInGroupWithAckMessage(string userId, string groupName, int ackId = 0, string tracingId = null)
+        {
+            UserId = userId;
+            GroupName = groupName;
+            TracingId = tracingId;
+            AckId = ackId;
+        }
+    }
 }

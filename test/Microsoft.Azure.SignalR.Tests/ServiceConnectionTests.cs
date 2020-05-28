@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading;
@@ -11,6 +12,7 @@ using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
@@ -373,6 +375,63 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        public async Task ClientConnectionWithDiagnosticClientTagTest()
+        {
+            using (StartVerifiableLog(out var loggerFactory))
+            {
+                var ccm = new TestClientConnectionManager();
+                var ccf = new ClientConnectionFactory();
+                var protocol = new ServiceProtocol();
+                TestConnection transportConnection = null;
+                var connectionFactory = new TestConnectionFactory(conn =>
+                {
+                    transportConnection = conn;
+                    return Task.CompletedTask;
+                });
+
+                var diagnosticClientConnectionId = "diagnosticClient";
+                var normalClientConnectionId = "normalClient";
+
+                var services = new ServiceCollection();
+                var connectionHandler = new DiagnosticClientConnectionHandler(diagnosticClientConnectionId);
+                services.AddSingleton(connectionHandler);
+                var builder = new ConnectionBuilder(services.BuildServiceProvider());
+                builder.UseConnectionHandler<DiagnosticClientConnectionHandler>();
+                ConnectionDelegate handler = builder.Build();
+
+                var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
+                    "serverId", Guid.NewGuid().ToString("N"), null, null, closeTimeOutMilliseconds: 500);
+
+                var connectionTask = connection.StartAsync();
+
+                // completed handshake
+                await connection.ConnectionInitializedTask.OrTimeout();
+                Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
+
+                await transportConnection.Application.Output.WriteAsync(
+                        protocol.GetMessageBytes(new OpenConnectionMessage(diagnosticClientConnectionId, null, new Dictionary<string, StringValues>
+                        {
+                            { Constants.AsrsIsDiagnosticClient, "true"}
+                        }, null)));
+
+                await transportConnection.Application.Output.WriteAsync(
+                    protocol.GetMessageBytes(new OpenConnectionMessage(normalClientConnectionId, null)));
+
+                var connections = await Task.WhenAll(ccm.WaitForClientConnectionAsync(normalClientConnectionId).OrTimeout(),
+                    ccm.WaitForClientConnectionAsync(diagnosticClientConnectionId).OrTimeout());
+                await Task.WhenAll(from c in connections select c.LifetimeTask.OrTimeout());
+
+                // complete reading to end the connection
+                transportConnection.Application.Output.Complete();
+
+                // 1s for application task to timeout
+                await connectionTask.OrTimeout(1000);
+                Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
+                Assert.Empty(ccm.ClientConnections);
+            }
+        }
+
+        [Fact]
         public async Task ClientConnectionLastWillCanSendOut()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
@@ -514,7 +573,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private class TestServiceConnection : ServiceConnection
+        private sealed class TestServiceConnection : ServiceConnection
         {
             public TestServiceConnection(IConnectionFactory serviceConnectionFactory,
                                          IClientConnectionFactory clientConnectionFactory,
@@ -530,7 +589,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 Guid.NewGuid().ToString("N"),
                 null,
                 null,
-                migrationLevel: ServerConnectionMigrationLevel.ShutdownOnly
+                mode: GracefulShutdownMode.MigrateClients
             )
             {
             }
@@ -610,6 +669,22 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 var ex = await _throwTcs.Task;
                 throw ex;
+            }
+        }
+
+        private sealed class DiagnosticClientConnectionHandler : ConnectionHandler
+        {
+            private string _diagnosticClient;
+
+            public DiagnosticClientConnectionHandler(string diagnosticClient)
+            {
+                _diagnosticClient = diagnosticClient;
+            }
+
+            public override Task OnConnectedAsync(ConnectionContext connection)
+            {
+                Assert.Equal(ClientConnectionScope.IsDiagnosticClient, connection.ConnectionId == _diagnosticClient);
+                return Task.CompletedTask;
             }
         }
 

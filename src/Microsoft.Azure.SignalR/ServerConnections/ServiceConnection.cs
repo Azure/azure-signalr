@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
+using Microsoft.Azure.SignalR.Common.Utilities;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -54,16 +56,17 @@ namespace Microsoft.Azure.SignalR
                                  HubServiceEndpoint endpoint,
                                  IServiceMessageHandler serviceMessageHandler,
                                  ServiceConnectionType connectionType = ServiceConnectionType.Default,
-                                 ServerConnectionMigrationLevel migrationLevel = ServerConnectionMigrationLevel.Off,
+                                 GracefulShutdownMode mode = GracefulShutdownMode.Off,
                                  int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds
-            ): base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, connectionType, migrationLevel, loggerFactory?.CreateLogger<ServiceConnection>())
+            ): base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode)
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
             _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
-            _enableMigration = migrationLevel != ServerConnectionMigrationLevel.Off;
+
+            _enableMigration = mode == GracefulShutdownMode.MigrateClients;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -123,7 +126,17 @@ namespace Microsoft.Azure.SignalR
 
             AddClientConnection(connection, message);
 
-            _ = ProcessClientConnectionAsync(connection);
+            bool isDiagnosticClient = false;
+            message.Headers.TryGetValue(Constants.AsrsIsDiagnosticClient, out var isDiagnosticClientValue);
+            if (!StringValues.IsNullOrEmpty(isDiagnosticClientValue))
+            {
+                isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault());
+            }
+
+            using (new ClientConnectionScope(outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
+            {
+                _ = ProcessClientConnectionAsync(connection);
+            }
 
             if (connection.IsMigrated)
             {

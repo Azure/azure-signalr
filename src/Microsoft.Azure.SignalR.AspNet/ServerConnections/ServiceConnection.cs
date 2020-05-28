@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -50,7 +51,6 @@ namespace Microsoft.Azure.SignalR.AspNet
                   endpoint,
                   serviceMessageHandler,
                   connectionType,
-                  ServerConnectionMigrationLevel.Off,
                   loggerFactory?.CreateLogger<ServiceConnection>())
         {
             _connectionFactory = connectionFactory;
@@ -85,18 +85,28 @@ namespace Microsoft.Azure.SignalR.AspNet
             var connectionId = openConnectionMessage.ConnectionId;
             var clientContext = new ClientContext(connectionId, GetInstanceId(openConnectionMessage.Headers));
 
-            if (_clientConnectionManager.TryAdd(connectionId, this))
+            bool isDiagnosticClient = false;
+            openConnectionMessage.Headers.TryGetValue(Constants.AsrsIsDiagnosticClient, out var isDiagnosticClientValue);
+            if (!StringValues.IsNullOrEmpty(isDiagnosticClientValue))
             {
-                _clientConnections.TryAdd(connectionId, clientContext);
-                clientContext.ApplicationTask = ProcessMessageAsync(clientContext, clientContext.CancellationToken);
-                return ForwardMessageToApplication(connectionId, openConnectionMessage);
+                isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault());
             }
-            else
+
+            using (new ClientConnectionScope(outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
             {
-                // the manager still contains this connectionId, probably this connection is not yet cleaned up
-                Log.DuplicateConnectionId(Logger, connectionId, null);
-                return SafeWriteAsync(
-                    new CloseConnectionMessage(connectionId, $"Duplicate connection ID {connectionId}"));
+                if (_clientConnectionManager.TryAdd(connectionId, this))
+                {
+                    _clientConnections.TryAdd(connectionId, clientContext);
+                    clientContext.ApplicationTask = ProcessMessageAsync(clientContext, clientContext.CancellationToken);
+                    return ForwardMessageToApplication(connectionId, openConnectionMessage);
+                }
+                else
+                {
+                    // the manager still contains this connectionId, probably this connection is not yet cleaned up
+                    Log.DuplicateConnectionId(Logger, connectionId, null);
+                    return SafeWriteAsync(
+                        new CloseConnectionMessage(connectionId, $"Duplicate connection ID {connectionId}"));
+                }
             }
         }
 

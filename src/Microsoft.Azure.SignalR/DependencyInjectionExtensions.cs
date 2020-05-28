@@ -31,9 +31,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder)
         {
-            builder.Services.AddSingleton<ServiceOptionsSetup>();
-            builder.Services.AddSingleton<IConfigureOptions<ServiceOptions>>(s => s.GetService<ServiceOptionsSetup>());
-            builder.Services.AddSingleton<IOptionsChangeTokenSource<ServiceOptions>>(s => s.GetService<ServiceOptionsSetup>());
+            builder.Services
+                .AddSingleton<ServiceOptionsSetup>()
+                .AddSingleton<IConfigureOptions<ServiceOptions>>(s => s.GetService<ServiceOptionsSetup>())
+                .AddSingleton<IOptionsChangeTokenSource<ServiceOptions>>(s => s.GetService<ServiceOptionsSetup>());
 
             return builder.AddAzureSignalRCore();
         }
@@ -61,7 +62,8 @@ namespace Microsoft.Extensions.DependencyInjection
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder, Action<ServiceOptions> configure)
         {
             builder.AddAzureSignalR()
-                   .Services.Configure(configure);
+                   .Services.Configure(configure)
+                   .PostConfigure<ServiceOptions>(o => o.Validate());
 
             return builder;
         }

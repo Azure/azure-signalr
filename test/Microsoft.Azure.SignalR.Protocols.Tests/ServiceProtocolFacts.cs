@@ -493,6 +493,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "LeaveGroupWithAckWithTracingId",
                 message: new LeaveGroupWithAckMessage("conn15", "group2", 1, tracingId: "test"),
                 binary: "lROmY29ubjE1pmdyb3VwMgGBAaR0ZXN0"),
+            new ProtocolTestData(
+                name: "CheckUserInGroupWithAckWithMessage",
+                message: new CheckUserInGroupWithAckMessage("user", "group", 3, "test"), 
+                binary: "lRWkdXNlcqVncm91cAOBAaR0ZXN0"),
         }.ToDictionary(t => t.Name);
 
         [Theory]
