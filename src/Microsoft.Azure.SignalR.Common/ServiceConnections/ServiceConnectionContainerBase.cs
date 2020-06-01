@@ -198,12 +198,6 @@ namespace Microsoft.Azure.SignalR
 
         public virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
-            // todo: determine whether we need to add tracing id
-            if (serviceMessage is IMessageWithTracingId msg)
-            {
-                msg.UpdateTracingId();
-            }
-
             return WriteToRandomAvailableConnection(serviceMessage);
         }
 
