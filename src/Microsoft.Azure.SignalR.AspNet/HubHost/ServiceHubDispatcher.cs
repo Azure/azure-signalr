@@ -3,9 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -19,21 +18,30 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IReadOnlyList<string> _hubNames;
         private readonly IServiceConnectionManager _serviceConnectionManager;
         private readonly IServiceConnectionContainerFactory _serviceConnectionContainerFactory;
+        private readonly IClientConnectionManager _clientConnectionManager;
         private readonly string _name;
 
-        public ServiceHubDispatcher(IReadOnlyList<string> hubNames,
+        public ServiceHubDispatcher(
+            IReadOnlyList<string> hubNames,
             IServiceConnectionManager serviceConnectionManager, 
             IServiceConnectionContainerFactory serviceConnectionContainerFactory,
+            IServerLifetimeManager serverLifetimeManager,
+            IClientConnectionManager clientConnectionManager,
             IOptions<ServiceOptions> options, 
             ILoggerFactory loggerFactory)
         {
             _hubNames = hubNames;
             _name = $"{nameof(ServiceHubDispatcher)}[{string.Join(",", hubNames)}]";
-            _loggerFactory = loggerFactory;
+
             _serviceConnectionManager = serviceConnectionManager ?? throw new ArgumentNullException(nameof(serviceConnectionManager));
+            _clientConnectionManager = clientConnectionManager ?? throw new ArgumentNullException(nameof(clientConnectionManager));
             _serviceConnectionContainerFactory = serviceConnectionContainerFactory;
             _options = options?.Value;
+
+            _loggerFactory = loggerFactory;
             _logger = _loggerFactory.CreateLogger<ServiceHubDispatcher>();
+
+            serverLifetimeManager?.Register(ShutdownAsync);
         }
 
         public Task StartAsync()
@@ -43,6 +51,35 @@ namespace Microsoft.Azure.SignalR.AspNet
             Log.StartingConnection(_logger, _name, _options.ConnectionCount, _hubNames.Count);
 
             return _serviceConnectionManager.StartAsync();
+        }
+
+        public async Task ShutdownAsync()
+        {
+            if (_options.GracefulShutdown.Mode == GracefulShutdownMode.Off)
+            {
+                return;
+            }
+
+            using CancellationTokenSource source = new CancellationTokenSource();
+
+            var expected = OfflineAndWaitForCompletedAsync(_options.GracefulShutdown.Mode);
+            var actual = await Task.WhenAny(
+                Task.Delay(_options.GracefulShutdown.Timeout, source.Token), expected
+            );
+
+            if (actual != expected)
+            {
+                // TODO log timeout.
+            }
+
+            source.Cancel();
+            await _serviceConnectionManager.StopAsync();
+        }
+
+        private async Task OfflineAndWaitForCompletedAsync(GracefulShutdownMode mode)
+        {
+            await _serviceConnectionManager.OfflineAsync(mode);
+            await _clientConnectionManager.WhenAllCompleted();
         }
 
         private static class Log

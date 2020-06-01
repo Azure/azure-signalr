@@ -33,12 +33,12 @@ namespace Microsoft.Azure.SignalR
             IServiceProtocol serviceProtocol,
             IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
+            IServerLifetimeManager serverLifetimeManager,
             IServiceEndpointManager serviceEndpointManager,
             IOptions<ServiceOptions> options,
             ILoggerFactory loggerFactory,
             IEndpointRouter router,
             IServerNameProvider nameProvider,
-            ServerLifetimeManager serverLifetimeManager,
             IClientConnectionFactory clientConnectionFactory)
         {
             _serviceProtocol = serviceProtocol;

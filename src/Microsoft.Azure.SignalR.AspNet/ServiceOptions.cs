@@ -62,6 +62,15 @@ namespace Microsoft.Azure.SignalR.AspNet
         public ServerStickyMode ServerStickyMode { get; set; }
 
         /// <summary>
+        /// Specifies if the client-connection assigned to this server can be migrated to another server.
+        /// Default value is 0.
+        /// 1: Only migrate client-connection if server was shutdown gracefully.
+        /// 2: Migrate client-connection even if server-connection was accidentally dropped. (Potential data losses)
+        /// </summary>
+        public GracefulShutdownOptions GracefulShutdown { get; set; } = new GracefulShutdownOptions();
+
+
+        /// <summary>
         /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
         /// </summary>
         public IWebProxy Proxy { get; set; }

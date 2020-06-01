@@ -1,8 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics;
 using Microsoft.AspNet.SignalR;
+using Microsoft.Azure.SignalR;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Owin;
@@ -17,7 +17,10 @@ namespace AspNet.ChatSample.SelfHostServer
         {
             // app.MapSignalR();
             app.UseCors(CorsOptions.AllowAll);
-            app.MapAzureSignalR(GetType().FullName);
+            app.MapAzureSignalR(GetType().FullName, new HubConfiguration(), (option) =>
+            {
+                option.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
+            });
         }
     }
 }

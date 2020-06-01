@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
@@ -112,13 +113,12 @@ namespace Microsoft.Azure.SignalR.AspNet
         internal static string GetContentAndDispose(MemoryStream stream)
         {
             stream.Seek(0, SeekOrigin.Begin);
-            using (var reader = new StreamReader(stream))
-            {
-                return reader.ReadToEnd();
-            }
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
         }
 
-        public Task WhenAllCompleted() => Task.CompletedTask;
+        // TODO wait until all messages are processed.
+        public Task WhenAllCompleted() => Task.WhenAll(_clientConnections.Values.Select(c => c.ConnectionOfflineTask));
 
 
         private sealed class ClientConnectionHubDispatcher : HubDispatcher

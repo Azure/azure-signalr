@@ -18,7 +18,6 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var clientManager = new TestClientConnectionManager();
             var serviceManager = new TestServiceConnectionManager<Hub>();
-
             var options = new TestOptions();
             options.Value.GracefulShutdown = new GracefulShutdownOptions()
             {
@@ -31,10 +30,10 @@ namespace Microsoft.Azure.SignalR.Tests
                 serviceManager,
                 clientManager,
                 null,
+                null,
                 options,
                 NullLoggerFactory.Instance,
                 new TestRouter(),
-                null,
                 null,
                 null
             );

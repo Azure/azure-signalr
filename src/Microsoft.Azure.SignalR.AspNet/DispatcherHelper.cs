@@ -130,9 +130,15 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             var sccf = new ServiceConnectionContainerFactory(scf, endpoint, router, options, loggerFactory);
 
+            var slm = configuration.Resolver.Resolve<IServerLifetimeManager>();
+            if (slm == null)
+            {
+                slm = new ServerLifetimeManager();
+            }
+
             if (hubs?.Count > 0)
             {
-                return new ServiceHubDispatcher(hubs, scm, sccf, serviceOptions, loggerFactory);
+                return new ServiceHubDispatcher(hubs, scm, sccf, slm, ccm, serviceOptions, loggerFactory);
             }
             else
             {

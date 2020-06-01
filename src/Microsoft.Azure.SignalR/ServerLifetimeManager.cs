@@ -7,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServerLifetimeManager
+    internal class ServerLifetimeManager : IServerLifetimeManager
     {
         private readonly ConcurrentBag<Func<Task>> _shutdownHooks = new ConcurrentBag<Func<Task>>();
 
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR
             lifetime?.ApplicationStopping.Register(Shutdown);
         }
 
-        internal void Register(Func<Task> func)
+        public void Register(Func<Task> func)
         {
             _shutdownHooks.Add(func);
         }
