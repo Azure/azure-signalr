@@ -6,15 +6,12 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal static class ExtensibleServiceMessageExtensions
+    internal static class IMessageWithTracingIdExtensions
     {
-        public static ExtensibleServiceMessage WithMessageId(this ExtensibleServiceMessage message)
+        public static ExtensibleServiceMessage WithMessageId<T>(this T message) where T : ExtensibleServiceMessage, IMessageWithTracingId
         {
             var id = MessageIdHelper.Generate(ClientConnectionScope.IsDiagnosticClient);
-            if (message is IMessageWithTracingId messageWithId)
-            {
-                messageWithId.TracingId = id;
-            }
+            message.TracingId = id;
             return message;
         }
     }

@@ -26,11 +26,9 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         public void TestAssginMessageId()
         {
             var msg1 = new BroadcastDataMessage(null).WithMessageId();
-            var msg2 = new AckMessage(0, 0).WithMessageId();
 
             Assert.NotNull(msg1 as IMessageWithTracingId);
             Assert.False(string.IsNullOrEmpty((msg1 as IMessageWithTracingId).TracingId));
-            Assert.Null(msg2 as IMessageWithTracingId);
         }
     }
 }
