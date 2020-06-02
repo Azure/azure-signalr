@@ -19,7 +19,9 @@ namespace Microsoft.Azure.SignalR
         // 8 hex digits: message index
         public static string Generate(bool isFromTracingClient)
         {
-            ulong id = (((ulong)_prefix | (ulong)(isFromTracingClient ? 0x1000_0000 : 0)) << 32) + (ulong)_index;
+            ulong prefixWithPreserve = (ulong)_prefix & 0x0FFF_FFFF;
+            ulong trackingClientMask = (ulong)(isFromTracingClient ? 0x1000_0000 : 0);
+            var id = ((prefixWithPreserve | trackingClientMask) << 32) + (ulong)_index;
             Interlocked.Increment(ref _index);
             return id.ToString();
         }
