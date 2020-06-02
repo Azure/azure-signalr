@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler, IDisposable
+    internal abstract class ServiceConnectionContainerBase : IServiceConnectionContainer, IServiceMessageHandler
     {
         private const int CheckWindow = 5;
         private static readonly TimeSpan CheckTimeSpan = TimeSpan.FromMinutes(10);
@@ -145,6 +145,7 @@ namespace Microsoft.Azure.SignalR
         public virtual Task StopAsync()
         {
             _terminated = true;
+            _statusPing.Stop();
             return Task.WhenAll(FixedServiceConnections.Select(c => c.StopAsync()));
         }
 

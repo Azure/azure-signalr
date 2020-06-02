@@ -176,6 +176,14 @@ namespace Microsoft.Azure.SignalR
             return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.StopGetServersPing()));
         }
 
+        public void Dispose()
+        {
+            foreach(var container in _routerEndpoints.endpoints)
+            {
+                container.ConnectionContainer.Dispose();
+            }
+        }
+
         internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
         {
             if (!_routerEndpoints.needRouter)
@@ -265,7 +273,9 @@ namespace Microsoft.Azure.SignalR
 
             try
             {
-                await container.StartAsync();
+                _ = container.StartAsync();
+
+                await container.ConnectionInitializedTask;
 
                 // Update local store directly after start connection 
                 // to get a uniformed action on trigger servers ping
@@ -307,9 +317,12 @@ namespace Microsoft.Azure.SignalR
 
                 _ = container.ConnectionContainer.OfflineAsync(GracefulShutdownMode.Off);
                 await WaitForClientsDisconnect(container);
-                _ = container.ConnectionContainer.StopAsync();
 
                 UpdateEndpointsStore(endpoint, ScaleOperation.Remove);
+
+                // Clean up
+                await container.ConnectionContainer.StopAsync();
+                container.ConnectionContainer.Dispose();
             }
             catch (Exception ex)
             {

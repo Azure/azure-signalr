@@ -229,7 +229,12 @@ namespace Microsoft.Azure.SignalR
             OnAdd?.Invoke(endpoint);
 
             // Wait for new endpoint turn Ready or timeout getting cancelled
-            await Task.WhenAny(endpoint.ScaleTask, cancellationToken.AsTask());
+            var task = await Task.WhenAny(endpoint.ScaleTask, cancellationToken.AsTask());
+
+            if (task == endpoint.ScaleTask)
+            {
+                Log.SucceedAddingEndpoint(_logger, endpoint.ToString());
+            }
 
             // Set complete
             endpoint.CompleteScale();
@@ -242,7 +247,12 @@ namespace Microsoft.Azure.SignalR
             OnRemove?.Invoke(endpoint);
 
             // Wait for endpoint turn offline or timeout getting cancelled
-            await Task.WhenAny(endpoint.ScaleTask, cancellationToken.AsTask());
+            var task = await Task.WhenAny(endpoint.ScaleTask, cancellationToken.AsTask());
+
+            if (task == endpoint.ScaleTask)
+            {
+                Log.SucceedRemovingEndpoint(_logger, endpoint.ToString());
+            }
 
             // Set complete
             endpoint.CompleteScale();
@@ -349,6 +359,12 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, Exception> _failedRemovingEndpoints =
                 LoggerMessage.Define(LogLevel.Error, new EventId(9, "FailedRemovingEndpoints"), "Failed removing endpoints.");
 
+            private static readonly Action<ILogger, string, Exception> _succeedAddingEndpoints =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(10, "SucceedAddingEndpoint"), "Succeed in adding endpoint: '{endpoint}'");
+
+            private static readonly Action<ILogger, string, Exception> _succeedRemovingEndpoints =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(11, "SucceedRemovingEndpoint"), "Succeed in removing endpoint: '{endpoint}'");
+
             public static void DuplicateEndpointFound(ILogger logger, int count, string endpoint, string name)
             {
                 _duplicateEndpointFound(logger, count, endpoint, name, null);
@@ -392,6 +408,16 @@ namespace Microsoft.Azure.SignalR
             public static void FailedRemovingEndpoints(ILogger logger, Exception ex)
             {
                 _failedRemovingEndpoints(logger, ex);
+            }
+
+            public static void SucceedAddingEndpoint(ILogger logger, string endpoint)
+            {
+                _succeedAddingEndpoints(logger, endpoint, null);
+            }
+
+            public static void SucceedRemovingEndpoint(ILogger logger, string endpoint)
+            {
+                _succeedRemovingEndpoints(logger, endpoint, null);
             }
         }
     }
