@@ -232,26 +232,30 @@ namespace Microsoft.Azure.SignalR.Tests
             return tcs.Task;
         }
 
-        public void AddClientConnection(ClientConnectionContext clientConnection)
+        public bool TryAddClientConnection(ClientConnectionContext clientConnection)
         {
-            ClientConnectionManager.AddClientConnection(clientConnection);
-
-            if (_waitForConnectionOpen.TryGetValue(clientConnection.ConnectionId, out var tcs))
+            if (ClientConnectionManager.TryAddClientConnection(clientConnection))
             {
-                tcs.TrySetResult(clientConnection);
+                if (_waitForConnectionOpen.TryGetValue(clientConnection.ConnectionId, out var tcs))
+                {
+                    tcs.TrySetResult(clientConnection);
+                }
+                return true;
             }
+            return false;
         }
 
-        public ClientConnectionContext RemoveClientConnection(string connectionId)
+        public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext context)
         {
-            var connection = ClientConnectionManager.RemoveClientConnection(connectionId);
-
-            if (_waitForConnectionClose.TryGetValue(connectionId, out var tcs))
+            if (ClientConnectionManager.TryRemoveClientConnection(connectionId, out context))
             {
-                tcs.TrySetResult(null);
+                if (_waitForConnectionClose.TryGetValue(connectionId, out var tcs))
+                {
+                    tcs.TrySetResult(null);
+                }
+                return true;
             }
-
-            return connection;
+            return false;
         }
 
         public ClientConnectionContext CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)

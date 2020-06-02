@@ -13,15 +13,14 @@ namespace Microsoft.Azure.SignalR
         private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections =
             new ConcurrentDictionary<string, ClientConnectionContext>();
 
-        public void AddClientConnection(ClientConnectionContext clientConnection)
+        public bool TryAddClientConnection(ClientConnectionContext clientConnection)
         {
-            _clientConnections[clientConnection.ConnectionId] = clientConnection;
+            return _clientConnections.TryAdd(clientConnection.ConnectionId, clientConnection);
         }
 
-        public ClientConnectionContext RemoveClientConnection(string connectionId)
+        public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext context)
         {
-            _clientConnections.TryRemove(connectionId, out var connection);
-            return connection;
+            return _clientConnections.TryRemove(connectionId, out context);
         }
 
         public Task WhenAllCompleted() => Task.WhenAll(_clientConnections.Select(c => c.Value.LifetimeTask));

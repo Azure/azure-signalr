@@ -80,10 +80,10 @@ namespace Microsoft.Azure.SignalR.AspNet
                     }
                     break;
                 case ConnectionDataMessage connectionDataMessage:
-                    if (_clientConnectionManager.TryGetServiceConnection(connectionDataMessage.ConnectionId, out var serviceConnection))
+                    if (_clientConnectionManager.ClientConnections.TryGetValue(connectionDataMessage.ConnectionId, out var context))
                     {
                         // If the client connection is connected to local server connection, send back directly from the established server connection
-                        await serviceConnection.WriteAsync(message);
+                        await context.ServiceConnection.WriteAsync(message);
                     }
                     else
                     {

@@ -721,24 +721,27 @@ namespace Microsoft.Azure.SignalR.Tests
                 return tcs.Task;
             }
 
-            public void AddClientConnection(ClientConnectionContext clientConnection)
+            public bool TryAddClientConnection(ClientConnectionContext clientConnection)
             {
                 var tcs = _tcs.GetOrAdd(clientConnection.ConnectionId,
                     s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
                         .RunContinuationsAsynchronously));
-                _ccm.AddClientConnection(clientConnection);
+                _ccm.TryAddClientConnection(clientConnection);
                 tcs.SetResult(clientConnection);
+                return true;
             }
 
-            public ClientConnectionContext RemoveClientConnection(string connectionId)
+            public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext context)
             {
                 var tcs = _tcsForRemoval.GetOrAdd(connectionId,
                     s => new TaskCompletionSource<ClientConnectionContext>(TaskCreationOptions
                         .RunContinuationsAsynchronously));
                 _tcs.TryRemove(connectionId, out _);
-                var connection = _ccm.RemoveClientConnection(connectionId);
-                tcs.TrySetResult(connection);
-                return connection;
+
+                _ccm.TryRemoveClientConnection(connectionId, out context);
+
+                tcs.TrySetResult(context);
+                return true;
             }
 
             public Task WhenAllCompleted()

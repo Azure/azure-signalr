@@ -297,8 +297,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.True(message is CloseConnectionMessage);
 
                     // Verify client connection is not created due to authorized failure.
-                    ccm.TryGetServiceConnection(clientConnection, out var serviceConnection);
-                    Assert.Null(serviceConnection);
+                    Assert.False(ccm.ClientConnections.TryGetValue(clientConnection, out var _));
                 }
             }
         }
@@ -336,8 +335,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.True(message is CloseConnectionMessage);
 
                     // Verify client connection is not created due to authorized failure.
-                    ccm.TryGetServiceConnection(clientConnection, out var serviceConnection);
-                    Assert.Null(serviceConnection);
+                    Assert.False(ccm.ClientConnections.TryGetValue(clientConnection, out var _));
                 }
             }
         }

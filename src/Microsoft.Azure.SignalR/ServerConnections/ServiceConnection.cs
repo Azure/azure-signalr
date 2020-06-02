@@ -367,7 +367,7 @@ namespace Microsoft.Azure.SignalR
         private void AddClientConnection(ClientConnectionContext connection, OpenConnectionMessage message)
         {
             var instanceId = GetInstanceId(message.Headers);
-            _clientConnectionManager.AddClientConnection(connection);
+            _clientConnectionManager.TryAddClientConnection(connection);
             _connectionIds.TryAdd(connection.ConnectionId, instanceId);
         }
 
@@ -440,7 +440,11 @@ namespace Microsoft.Azure.SignalR
         private ClientConnectionContext RemoveClientConnection(string connectionId)
         {
             _connectionIds.TryRemove(connectionId, out _);
-            return _clientConnectionManager.RemoveClientConnection(connectionId);
+
+            if (_clientConnectionManager.TryRemoveClientConnection(connectionId, out var context)) {
+                return context;
+            }
+            return null;
         }
 
         private string GetInstanceId(IDictionary<string, StringValues> header)

@@ -80,12 +80,12 @@ namespace Microsoft.Azure.SignalR.Tests
 
             public DateTime completeTime = new DateTime();
 
-            public void AddClientConnection(ClientConnectionContext clientConnection)
+            public bool TryAddClientConnection(ClientConnectionContext context)
             {
                 throw new NotImplementedException();
             }
 
-            public ClientConnectionContext RemoveClientConnection(string connectionId)
+            public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext context)
             {
                 throw new NotImplementedException();
             }

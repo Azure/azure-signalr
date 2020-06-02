@@ -18,10 +18,10 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class ClientConnectionManager : IClientConnectionManager
     {
+        private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections = new ConcurrentDictionary<string, ClientConnectionContext>();
         private readonly HubConfiguration _configuration;
         private readonly ILogger _logger;
-
-        private readonly ConcurrentDictionary<string, IServiceConnection> _clientConnections = new ConcurrentDictionary<string, IServiceConnection>();
+        public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _clientConnections;
 
         public ClientConnectionManager(HubConfiguration configuration, ILoggerFactory loggerFactory)
         {
@@ -29,7 +29,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             _logger = loggerFactory?.CreateLogger<ClientConnectionManager>() ?? NullLogger<ClientConnectionManager>.Instance;
         }
 
-        public async Task<IServiceTransport> CreateConnection(OpenConnectionMessage message,
+        public async Task<IServiceTransport> CreateConnection(
+            OpenConnectionMessage message,
             IServiceConnection serviceConnection)
         {
             var dispatcher = new ClientConnectionHubDispatcher(_configuration, message.ConnectionId);
@@ -58,22 +59,24 @@ namespace Microsoft.Azure.SignalR.AspNet
             throw new InvalidOperationException("Unable to authorize request");
         }
 
-        public bool TryAdd(string connectionId, IServiceConnection serviceConnection)
+        public bool TryAddClientConnection(ClientConnectionContext context)
         {
-            return _clientConnections.TryAdd(connectionId, serviceConnection);
+            return _clientConnections.TryAdd(context.ConnectionId, context);
         }
 
-        public bool TryGetServiceConnection(string key, out IServiceConnection serviceConnection)
+        public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext context)
         {
-            return _clientConnections.TryGetValue(key, out serviceConnection);
+            return _clientConnections.TryRemove(connectionId, out context);
         }
 
-        public bool TryRemoveServiceConnection(string connectionId, out IServiceConnection connection)
-        {
-            return _clientConnections.TryRemove(connectionId, out connection);
-        }
+        public Task WhenAllCompleted() => Task.CompletedTask;
 
-        public IReadOnlyDictionary<string, IServiceConnection> ClientConnections => _clientConnections;
+        internal static string GetContentAndDispose(MemoryStream stream)
+        {
+            stream.Seek(0, SeekOrigin.Begin);
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
+        }
 
         internal HostContext GetHostContext(OpenConnectionMessage message, Stream responseStream, IServiceConnection serviceConnection)
         {
@@ -112,16 +115,16 @@ namespace Microsoft.Azure.SignalR.AspNet
             return new HostContext(context.Environment);
         }
 
-        internal static string GetContentAndDispose(MemoryStream stream)
+        private static class Log
         {
-            stream.Seek(0, SeekOrigin.Begin);
-            using (var reader = new StreamReader(stream))
+            private static readonly Action<ILogger, string, string, Exception> _processRequestError =
+                LoggerMessage.Define<string, string>(LogLevel.Debug, new EventId(1, "ProcessRequestError"), "ProcessRequest for {connectionId} fails with {queryString} ");
+
+            public static void ProcessRequestError(ILogger logger, string connectionId, string queryString)
             {
-                return reader.ReadToEnd();
+                _processRequestError(logger, connectionId, queryString, null);
             }
         }
-
-        public Task WhenAllCompleted() => Task.CompletedTask;
 
         private sealed class ClientConnectionHubDispatcher : HubDispatcher
         {
@@ -138,17 +141,6 @@ namespace Microsoft.Azure.SignalR.AspNet
                 message = null;
                 statusCode = 200;
                 return true;
-            }
-        }
-
-        private static class Log
-        {
-            private static readonly Action<ILogger, string, string, Exception> _processRequestError =
-                LoggerMessage.Define<string, string>(LogLevel.Debug, new EventId(1, "ProcessRequestError"), "ProcessRequest for {connectionId} fails with {queryString} ");
-
-            public static void ProcessRequestError(ILogger logger, string connectionId, string queryString)
-            {
-                _processRequestError(logger, connectionId, queryString, null);
             }
         }
     }
