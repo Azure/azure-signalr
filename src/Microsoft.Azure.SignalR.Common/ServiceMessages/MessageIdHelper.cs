@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class MessageIdHelper
     {
-        private static readonly int _prefix = Guid.NewGuid().GetHashCode();
+        internal static int Prefix { get; set; } = Guid.NewGuid().GetHashCode();
         private static int _index = 0;
 
         // todo: returns ulong
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR
         // 8 hex digits: message index
         public static string Generate(bool isFromTracingClient)
         {
-            ulong prefixWithPreserve = (ulong)_prefix & 0x0FFF_FFFF;
+            ulong prefixWithPreserve = (ulong)Prefix & 0x0FFF_FFFF;
             ulong trackingClientMask = (ulong)(isFromTracingClient ? 0x1000_0000 : 0);
             var id = ((prefixWithPreserve | trackingClientMask) << 32) + (ulong)_index;
             Interlocked.Increment(ref _index);
