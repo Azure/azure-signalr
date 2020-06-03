@@ -10,7 +10,23 @@ namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class ClientConnectionContext
     {
-        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        private readonly CancellationTokenSource _source = new CancellationTokenSource();
+
+        public Task ApplicationTask { get; set; }
+
+        public CancellationToken CancellationToken => _source.Token;
+
+        public string ConnectionId { get; }
+
+        public ChannelReader<ServiceMessage> Input { get; }
+
+        public string InstanceId { get; }
+
+        public ChannelWriter<ServiceMessage> Output { get; }
+
+        public IServiceConnection ServiceConnection { get; set; }
+
+        public IServiceTransport Transport { get; set; }
 
         public ClientConnectionContext(string connectionId, string instanceId = null)
         {
@@ -21,23 +37,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             Output = channel.Writer;
         }
 
-        public Task ApplicationTask { get; set; }
-
-        public CancellationToken CancellationToken => _cancellationTokenSource.Token;
-
         public void CancelPendingRead()
         {
-            _cancellationTokenSource.Cancel();
+            _source.Cancel();
         }
-
-        public string ConnectionId { get; }
-
-        public string InstanceId { get; }
-
-        public ChannelReader<ServiceMessage> Input { get; }
-
-        public ChannelWriter<ServiceMessage> Output { get; }
-
-        public IServiceTransport Transport { get; set; }
     }
 }

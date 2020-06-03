@@ -12,7 +12,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public static class Context
         {
-            public const string AzureServiceConnectionKey = "azure.serviceconnection";
             public const string AzureSignalRTransportKey = "signalr.transport";
         }
     }

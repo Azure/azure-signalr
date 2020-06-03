@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
@@ -10,18 +11,19 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 {
     internal sealed class TestClientConnectionManager : IClientConnectionManager
     {
-        private readonly IServiceConnection _serverConnection;
-
-        private readonly bool _contains;
+        private readonly IServiceConnection _serviceConnection;
 
         private readonly ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>> _waitForConnectionOpen = new ConcurrentDictionary<string, TaskCompletionSource<ConnectionContext>>();
 
         public ConcurrentDictionary<string, TestTransport> CurrentTransports = new ConcurrentDictionary<string, TestTransport>();
 
-        public TestClientConnectionManager(IServiceConnection serverConnection = null, bool contains = false)
+        private ConcurrentDictionary<string, ClientConnectionContext> _connections = new ConcurrentDictionary<string, ClientConnectionContext>();
+
+        public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _connections;
+
+        public TestClientConnectionManager(IServiceConnection serviceConnection = null)
         {
-            _serverConnection = serverConnection;
-            _contains = contains;
+            _serviceConnection = serviceConnection;
         }
 
         public Task WhenAllCompleted()
@@ -29,7 +31,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             return Task.CompletedTask;
         }
 
-        public Task<IServiceTransport> CreateConnection(OpenConnectionMessage message, IServiceConnection serviceConnection)
+        public Task<IServiceTransport> CreateConnection(OpenConnectionMessage message)
         {
             var transport = new TestTransport
             {
@@ -44,21 +46,28 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             return Task.FromResult<IServiceTransport>(transport);
         }
 
-        public bool TryAdd(string connectionId, IServiceConnection serviceConnection)
+        public bool TryAddClientConnection(ClientConnectionContext connection)
         {
-            return true;
+            return _connections.TryAdd(connection.ConnectionId, connection);
         }
 
-        public bool TryGetServiceConnection(string key, out IServiceConnection serviceConnection)
-        {
-            serviceConnection = _serverConnection;
-            return _contains;
-        }
-
-        public bool TryRemoveServiceConnection(string connectionId, out IServiceConnection connection)
+        public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
         {
             connection = null;
             return CurrentTransports.TryRemove(connectionId, out _);
+        }
+
+        public bool TryGetClientConnection(string connectionId, out ClientConnectionContext connection)
+        {
+            if (_serviceConnection != null)
+            {
+                connection = new ClientConnectionContext(connectionId)
+                {
+                    ServiceConnection = _serviceConnection
+                };
+                return true;
+            }
+            return _connections.TryGetValue(connectionId, out connection);
         }
 
         public Task WaitForClientConnectAsync(string connectionId)

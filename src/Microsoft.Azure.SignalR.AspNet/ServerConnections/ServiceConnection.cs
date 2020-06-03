@@ -93,7 +93,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             using (new ClientConnectionScope(outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
             {
-                if (_clientConnectionManager.TryAdd(connectionId, this))
+                if (_clientConnectionManager.TryAddClientConnection(clientContext))
                 {
                     _clientConnections.TryAdd(connectionId, clientContext);
                     clientContext.ApplicationTask = ProcessMessageAsync(clientContext, clientContext.CancellationToken);
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private async Task PerformDisconnectCore(string connectionId, bool waitForApplicationTask, bool closeGracefully = true)
         {
             // remove the connection from the global store so that a connection with the same connectionId can be added from elsewhere
-            if (_clientConnectionManager.TryRemoveServiceConnection(connectionId, out _))
+            if (_clientConnectionManager.TryRemoveClientConnection(connectionId, out _))
             {
                 if (_clientConnections.TryRemove(connectionId, out var clientContext))
                 {
@@ -213,8 +213,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             var connectionId = message.ConnectionId;
             try
             {
-                clientContext.Transport =
-                    await _clientConnectionManager.CreateConnection(message, this);
+                clientContext.Transport = await _clientConnectionManager.CreateConnection(message);
+                clientContext.ServiceConnection = this;
                 Log.ConnectedStarting(Logger, connectionId);
             }
             catch (Exception e)

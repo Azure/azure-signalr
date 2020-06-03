@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public async Task TestCreateConnectionAlwaysUsesConnectionIdInOpenConnectionMessage(string queryString, string expectedConnectionId)
         {
             var message = new OpenConnectionMessage(expectedConnectionId, new Claim[0], null, queryString);
-            var connection = await _clientConnectionManager.CreateConnection(message, null);
+            var connection = await _clientConnectionManager.CreateConnection(message);
             Assert.Equal(expectedConnectionId, connection.ConnectionId);
         }
 
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public async Task TestCreateConnectionWithInvalidQueryStringThrows(string queryString)
         {
             var message = new OpenConnectionMessage(Guid.NewGuid().ToString("N"), new Claim[0], null, queryString);
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _clientConnectionManager.CreateConnection(message, null));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _clientConnectionManager.CreateConnection(message));
         }
 
         [Theory]
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 }
                 , queryString);
             var response = new MemoryStream();
-            var context = _clientConnectionManager.GetHostContext(message, response, null);
+            var context = _clientConnectionManager.GetHostContext(message, response);
             Assert.Equal(200, context.Response.StatusCode);
             Assert.Equal("", ClientConnectionManager.GetContentAndDispose(response));
             Assert.Equal("value1", context.Request.Headers["custom1"]);
