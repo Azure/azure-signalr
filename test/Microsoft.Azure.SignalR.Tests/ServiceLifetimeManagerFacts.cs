@@ -198,7 +198,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var context = new ClientConnectionContext(new OpenConnectionMessage("conn1", new Claim[] { }));
             var connection = new TestServiceConnectionPrivate();
             context.ServiceConnection = connection;
-            clientConnectionManager.AddClientConnection(context);
+            clientConnectionManager.TryAddClientConnection(context);
 
             var manager = MockLifetimeManager(serviceConnectionManager, clientConnectionManager);
 
