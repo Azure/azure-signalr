@@ -35,8 +35,9 @@ namespace Microsoft.Azure.SignalR
         private readonly TaskCompletionSource<object> _serviceConnectionOfflineTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private readonly ServiceConnectionType _connectionType;
-
-        private readonly IServiceMessageHandler _serviceMessageHandler;
+        
+        // todo: readonly. only for test for now
+        private IServiceMessageHandler _serviceMessageHandler;
         private readonly object _statusLock = new object();
 
         private volatile string _errorMessage;
@@ -116,6 +117,13 @@ namespace Microsoft.Azure.SignalR
 
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _serviceMessageHandler = serviceMessageHandler;
+        }
+
+
+        // test
+        internal void SetServiceMessageHandler(IServiceMessageHandler smh)
+        {
+            _serviceMessageHandler = smh;
         }
 
         /// <summary>

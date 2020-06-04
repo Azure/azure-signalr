@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -15,6 +16,7 @@ using Microsoft.Azure.SignalR.Common.Utilities;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
+using static Microsoft.Azure.SignalR.Common.ServiceConnections.ClientConnectionScope;
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
@@ -114,7 +116,12 @@ namespace Microsoft.Azure.SignalR
                 });
         }
 
-        protected override Task OnClientConnectedAsync(OpenConnectionMessage message)
+        internal Task OnClientConnectedAsyncForTest(OpenConnectionMessage message)
+        {
+            return OnClientConnectedAsync(message);
+        }
+
+        protected override async Task OnClientConnectedAsync(OpenConnectionMessage message)
         {
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
             connection.ServiceConnection = this;
@@ -132,9 +139,19 @@ namespace Microsoft.Azure.SignalR
             {
                 isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault());
             }
+            await Task.Yield();
 
-            using (new ClientConnectionScope(outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
+            var diagnosticLogsContext = new DiagnosticLogsContext();
+
+            using (new ClientConnectionScope(outboundConnection: this, isDiagnosticClient: isDiagnosticClient, isServiceEnableMessageLog: diagnosticLogsContext))
             {
+                if (HubEndpoint != null)
+                {
+                    HubEndpoint.EnableMessageLogEventHandler += enableMessageLog =>
+                    {
+                        diagnosticLogsContext.IsServiceEnableMessageLog = enableMessageLog;
+                    };
+                }
                 _ = ProcessClientConnectionAsync(connection);
             }
 
@@ -147,7 +164,7 @@ namespace Microsoft.Azure.SignalR
                 Log.ConnectedStarting(Logger, connection.ConnectionId);
             }
 
-            return Task.CompletedTask;
+            //return Task.CompletedTask;
         }
 
         protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)

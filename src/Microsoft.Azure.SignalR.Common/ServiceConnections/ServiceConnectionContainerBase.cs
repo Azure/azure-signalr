@@ -193,9 +193,9 @@ namespace Microsoft.Azure.SignalR
                     _serversTagContext = Tuple.Create(serversTag, updatedTime);
                 }
             }
-            if (RuntimeServicePingMessage.TryGetMessageLogEnableFlag(pingMessage, out var enableMessageLog))
+            else if (RuntimeServicePingMessage.TryGetMessageLogEnableFlag(pingMessage, out var enableMessageLog))
             {
-                _enableMessageLog = enableMessageLog;
+                Endpoint.UpdateEnableMessageLogEvent(enableMessageLog);
             }
             return Task.CompletedTask;
         }
@@ -210,12 +210,6 @@ namespace Microsoft.Azure.SignalR
 
         public virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
-            if (_enableMessageLog && serviceMessage is IMessageWithTracingId msg)
-            {
-                // todo: msg.TracingId = TracingIdGenerator.Generate()
-                msg.TracingId = "";
-            }
-
             return WriteToRandomAvailableConnection(serviceMessage);
         }
 

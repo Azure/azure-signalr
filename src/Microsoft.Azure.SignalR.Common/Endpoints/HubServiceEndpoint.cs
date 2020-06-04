@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
@@ -11,9 +13,9 @@ namespace Microsoft.Azure.SignalR
         private readonly ServiceEndpoint _endpoint;
 
         public HubServiceEndpoint(
-            string hub, 
-            IServiceEndpointProvider provider, 
-            ServiceEndpoint endpoint, 
+            string hub,
+            IServiceEndpointProvider provider,
+            ServiceEndpoint endpoint,
             bool needScaleTcs = false
             ) : base(endpoint)
         {
@@ -24,7 +26,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         // for tests
-        internal HubServiceEndpoint() : base() 
+        internal HubServiceEndpoint() : base()
         {
             _endpoint = new ServiceEndpoint();
         }
@@ -36,6 +38,13 @@ namespace Microsoft.Azure.SignalR
         public IServiceEndpointProvider Provider { get; }
 
         public IServiceConnectionContainer ConnectionContainer { get; set; }
+
+        public event Action<bool> EnableMessageLogEventHandler;
+
+        public void UpdateEnableMessageLogEvent(bool enableMessageLog)
+        {
+            EnableMessageLogEventHandler?.Invoke(enableMessageLog);
+        }
 
         /// <summary>
         /// Task waiting for HubServiceEndpoint turn ready when live add/remove endpoint

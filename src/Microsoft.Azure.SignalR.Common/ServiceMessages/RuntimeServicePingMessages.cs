@@ -19,6 +19,9 @@ namespace Microsoft.Azure.SignalR
         private const string DiagnosticLogsKey = "diag";
         private const string DiagnosticLogsMessagingTypeKey = "MessagingLogs";
 
+
+        private const string MessagingLogEnableValue = "1";
+
         private const string StatusActiveValue = "1";
         private const string StatusInactiveValue = "0";
 
@@ -55,9 +58,9 @@ namespace Microsoft.Azure.SignalR
 
         public static bool TryGetMessageLogEnableFlag(this ServicePingMessage ping, out bool enableMessageLog)
         {
-            if (TryGetValue(ping, DiagnosticLogsMessagingTypeKey, out _))
+            if (TryGetValue(ping, DiagnosticLogsMessagingTypeKey, out var value))
             {
-                enableMessageLog = true;
+                enableMessageLog = value == MessagingLogEnableValue;
                 return true;
             }
             enableMessageLog = default;

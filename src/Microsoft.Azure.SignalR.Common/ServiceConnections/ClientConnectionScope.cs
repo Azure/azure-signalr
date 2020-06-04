@@ -14,11 +14,11 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
     {
         private bool _needCleanup;
 
-        internal ClientConnectionScope() : this(default, default)
+        internal ClientConnectionScope() : this(default, default, default)
         {
         }
 
-        protected internal ClientConnectionScope(IServiceConnection outboundConnection, bool isDiagnosticClient)
+        protected internal ClientConnectionScope(IServiceConnection outboundConnection, bool isDiagnosticClient, IDiagnosticLogsContext isServiceEnableMessageLog)
         {
             // Only allow to carry one copy of connection properties regardless of how many nested scopes are created
             if (!IsScopeEstablished)
@@ -30,7 +30,8 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
                                 Properties = new ClientConnectionScopeProperties()
                                 {
                                     OutboundServiceConnection = outboundConnection,
-                                    IsDiagnosticClient = isDiagnosticClient
+                                    IsDiagnosticClient = isDiagnosticClient,
+                                    IsServiceEnableMessageLog = isServiceEnableMessageLog,
                                 }
                             };
             }
@@ -67,7 +68,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 
         internal static bool IsDiagnosticClient
         {
-            get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties?.IsDiagnosticClient ?? false;
+            get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current.Properties?.IsDiagnosticClient ?? false;
             set
             {
                 var currentProps = ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties;
@@ -78,11 +79,38 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             }
         }
 
-        private class ClientConnectionScopeProperties
+        internal static IDiagnosticLogsContext IsServiceEnableMessageLog
+        {
+            get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties?.IsServiceEnableMessageLog ?? default;
+            set
+            {
+                var currentProps = ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties;
+                if (currentProps != null)
+                {
+                    currentProps.IsServiceEnableMessageLog = value;
+                }
+            }
+        }
+
+        internal class ClientConnectionScopeProperties
         {
             public IServiceConnection OutboundServiceConnection { get; set; }
 
             public bool IsDiagnosticClient { get; set; }
+
+            public IDiagnosticLogsContext IsServiceEnableMessageLog { get; set; }
+        }
+
+        // todo: make it a single file
+        public interface IDiagnosticLogsContext
+        {
+            bool IsServiceEnableMessageLog { get; set; }
+        }
+        
+        // todo: make it a single file
+        public class DiagnosticLogsContext : IDiagnosticLogsContext
+        {
+            public bool IsServiceEnableMessageLog { get; set; } = false;
         }
     }
 }

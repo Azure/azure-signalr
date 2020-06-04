@@ -7,14 +7,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using Xunit.Abstractions;
+using static Microsoft.Azure.SignalR.Common.ServiceConnections.ClientConnectionScope;
+using static Microsoft.Azure.SignalR.Tests.ServiceConnectionTests;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
@@ -1253,6 +1258,143 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.True(newValue.SequenceEqual(endpoints));
         }
 
+        [Fact]
+        public async Task ClientConnectionWithPingUpdateTest()
+        {
+            using (StartVerifiableLog(out var loggerFactory))
+            {
+                // prepare containers
+                var ccm = new TestClientConnectionManager();
+                var ccf = new ClientConnectionFactory();
+                var protocol = new ServiceProtocol();
+                TestConnection transportConnection = null;
+                var connectionFactory = new TestConnectionFactory(conn =>
+                {
+                    transportConnection = conn;
+                    return Task.CompletedTask;
+                });
+
+                (var connectionHandler1, var connectionDelegate1) = GetConnectionDelegate();
+                (var connectionHandler2, var connectionDelegate2) = GetConnectionDelegate();
+                (var connectionHandler22, var connectionDelegate22) = GetConnectionDelegate();
+
+                var ConnectionStringFormatter = "Endpoint={0};AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+                var Url1 = "http://url1";
+                var Url2 = "http://url2";
+                var Url22 = "http://url22";
+                var ConnectionString1 = string.Format(ConnectionStringFormatter, Url1);
+                var ConnectionString2 = string.Format(ConnectionStringFormatter, Url2);
+                var ConnectionString22 = string.Format(ConnectionStringFormatter, Url22);
+
+                var sem = new TestServiceEndpointManager(
+                    new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                    new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2")
+                    );
+                var endpoints = sem.GetEndpoints("hub");
+                var connection1 = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, connectionDelegate1, ccf,
+                                    "serverId", "server-conn-1", endpoints[0], null, closeTimeOutMilliseconds: 500);
+
+                var connection2 = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, connectionDelegate2, ccf,
+                                    "serverId", "server-conn-2", endpoints[1], null, closeTimeOutMilliseconds: 500);
+
+                var connection22 = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, connectionDelegate22, ccf,
+                                    "serverId", "server-conn-22", endpoints[1], null, closeTimeOutMilliseconds: 500);
+
+                var router = new TestEndpointRouter();
+
+                var multiContainer = new TestMultiEndpointServiceConnectionContainer("hub",
+                    e =>
+                    {
+                        return e == endpoints[0] ?
+                        new TestServiceConnectionContainer(new List<IServiceConnection> { connection1 }, e) :
+                        new TestServiceConnectionContainer(new List<IServiceConnection> { connection2, connection22 }, e);
+                    }, sem, router, NullLoggerFactory.Instance);
+
+                var containers = multiContainer.GetTestOnlineContainers();
+                connection1.SetServiceMessageHandler(containers[0]);
+                connection2.SetServiceMessageHandler(containers[1]);
+                connection22.SetServiceMessageHandler(containers[1]);
+
+                var conn1Res = new bool[2];
+                var conn2Res = new bool[2];
+                var conn22Res = new bool[2];
+
+                var ct1FinishTcs = new TaskCompletionSource<bool>();
+                var ct2FinishTcs = new TaskCompletionSource<bool>();
+                var ct22FinishTcs = new TaskCompletionSource<bool>();
+
+                // container 1
+                ThreadPool.QueueUserWorkItem(async state =>
+                {
+                    // a client connected
+                    await ((ServiceConnection)containers[0].Connections[0]).OnClientConnectedAsyncForTest(new OpenConnectionMessage("client1", null));
+
+                    // server receives ping message 1
+                    await containers[0].BaseHandlePingAsync(
+                        new PingMessage { Messages = new[] { "MessagingLogs", "1" } });
+                    connectionHandler1.WaitPingTcs1.SetResult(true);
+                    conn1Res[0] = (await connectionHandler1.EnableMessageLogTcs1.Task).IsServiceEnableMessageLog;
+
+                    // server receives ping message 2
+                    await containers[0].BaseHandlePingAsync(
+                        new PingMessage { Messages = new[] { "MessagingLogs", "0" } });
+                    connectionHandler1.WaitPingTcs2.SetResult(true);
+                    conn1Res[1] = (await connectionHandler1.EnableMessageLogTcs2.Task).IsServiceEnableMessageLog;
+
+                    ct1FinishTcs.SetResult(true);
+                });
+
+                // container 2 sends pings
+                ThreadPool.QueueUserWorkItem(async state =>
+                {
+                    // clients connected
+                    await ((ServiceConnection)containers[1].Connections[0]).OnClientConnectedAsyncForTest(new OpenConnectionMessage("client2", null));
+                    await ((ServiceConnection)containers[1].Connections[1]).OnClientConnectedAsyncForTest(new OpenConnectionMessage("client22", null));
+
+                    // server receives ping message 1
+                    await containers[1].BaseHandlePingAsync(
+                        new PingMessage { Messages = new[] { "MessagingLogs", "0" } });
+                    connectionHandler2.WaitPingTcs1.SetResult(true);
+                    connectionHandler22.WaitPingTcs1.SetResult(true);
+
+                    // server receives ping message 2
+                    await containers[1].BaseHandlePingAsync(
+                        new PingMessage { Messages = new[] { "MessagingLogs", "1" } });
+                    connectionHandler2.WaitPingTcs2.SetResult(true);
+                    connectionHandler22.WaitPingTcs2.SetResult(true);
+
+                    ct2FinishTcs.SetResult(true);
+                });
+
+                // container 2 receives pings
+                ThreadPool.QueueUserWorkItem(async state =>
+                {
+                    // server receives ping message 1
+                    conn2Res[0] = (await connectionHandler2.EnableMessageLogTcs1.Task).IsServiceEnableMessageLog;
+                    conn22Res[0] = (await connectionHandler22.EnableMessageLogTcs1.Task).IsServiceEnableMessageLog;
+
+                    // server receives ping message 2
+                    conn22Res[1] = (await connectionHandler22.EnableMessageLogTcs2.Task).IsServiceEnableMessageLog;
+                    conn2Res[1] = (await connectionHandler2.EnableMessageLogTcs2.Task).IsServiceEnableMessageLog;
+
+                    ct22FinishTcs.SetResult(true);
+                });
+
+                await ct1FinishTcs.Task;
+                await ct2FinishTcs.Task;
+                await ct22FinishTcs.Task;
+
+                Assert.True(conn1Res[0]);
+                Assert.False(conn1Res[1]);
+
+                Assert.False(conn2Res[0]);
+                Assert.True(conn2Res[1]);
+
+                Assert.False(conn22Res[0]);
+                Assert.True(conn22Res[1]);
+            }
+        }
+
         public static IEnumerable<object[]> TestReloadEndpointsData = new object[][]
         {
             // no change
@@ -1325,6 +1467,17 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         };
 
+
+        private (PingConnectionHandler, ConnectionDelegate) GetConnectionDelegate()
+        {
+            var services = new ServiceCollection();
+            var connectionHandler = new PingConnectionHandler();
+            services.AddSingleton(connectionHandler);
+            var builder = new ConnectionBuilder(services.BuildServiceProvider());
+            builder.UseConnectionHandler<PingConnectionHandler>();
+            return (connectionHandler, builder.Build());
+        }
+
         private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router, GracefulShutdownMode mode)
         {
             var containers = new List<TestServiceConnectionContainer>();
@@ -1360,6 +1513,37 @@ namespace Microsoft.Azure.SignalR.Tests
 
         }
 
+        private sealed class PingConnectionHandler : ConnectionHandler
+        {
+            public TaskCompletionSource<bool> WaitPingTcs1 = new TaskCompletionSource<bool>();
+            public TaskCompletionSource<bool> WaitPingTcs2 = new TaskCompletionSource<bool>();
+            public TaskCompletionSource<IDiagnosticLogsContext> EnableMessageLogTcs1 = new TaskCompletionSource<IDiagnosticLogsContext>();
+            public TaskCompletionSource<IDiagnosticLogsContext> EnableMessageLogTcs2 = new TaskCompletionSource<IDiagnosticLogsContext>();
+
+            public PingConnectionHandler()
+            {
+            }
+
+            public override Task OnConnectedAsync(ConnectionContext connection)
+            {
+                _ = CheckSettings1Async();
+                _ = CheckSettings2Async();
+                return Task.CompletedTask;
+            }
+
+            private async Task CheckSettings1Async()
+            {
+                await WaitPingTcs1.Task;
+                EnableMessageLogTcs1.SetResult(IsServiceEnableMessageLog);
+            }
+
+            private async Task CheckSettings2Async()
+            {
+                await WaitPingTcs2.Task;
+                EnableMessageLogTcs2.SetResult(IsServiceEnableMessageLog);
+            }
+        }
+
         private class NotExistEndpointRouter : EndpointRouterDecorator
         {
             public override IEnumerable<ServiceEndpoint> GetEndpointsForConnection(string connectionId, IEnumerable<ServiceEndpoint> endpoints)
@@ -1373,7 +1557,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private sealed class TestMultiEndpointServiceConnectionContainer : MultiEndpointServiceConnectionContainer
+        internal sealed class TestMultiEndpointServiceConnectionContainer : MultiEndpointServiceConnectionContainer
         {
             public TestMultiEndpointServiceConnectionContainer(string hub,
                                                           Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
@@ -1393,7 +1577,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private class TestServiceEndpointManager : ServiceEndpointManagerBase
+        internal class TestServiceEndpointManager : ServiceEndpointManagerBase
         {
             private readonly ServiceEndpoint[] _endpoints;
 
@@ -1413,7 +1597,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private class TestEndpointRouter : EndpointRouterDecorator
+        internal class TestEndpointRouter : EndpointRouterDecorator
         {
             private readonly Exception _ex;
             private readonly bool _broken;

@@ -417,7 +417,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 await transportConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(normalClientConnectionId, null)));
 
-                var connections = await Task.WhenAll(ccm.WaitForClientConnectionAsync(normalClientConnectionId).OrTimeout(),
+                var connections = await Task.WhenAll(
+                    ccm.WaitForClientConnectionAsync(normalClientConnectionId).OrTimeout(),
                     ccm.WaitForClientConnectionAsync(diagnosticClientConnectionId).OrTimeout());
                 await Task.WhenAll(from c in connections select c.LifetimeTask.OrTimeout());
 
@@ -688,7 +689,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private sealed class TestClientConnectionManager : IClientConnectionManager
+        internal sealed class TestClientConnectionManager : IClientConnectionManager
         {
             private readonly ClientConnectionManager _ccm = new ClientConnectionManager();
 
