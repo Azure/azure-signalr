@@ -82,7 +82,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             // Create empty transport with only channel for async processing messages
             var connectionId = openConnectionMessage.ConnectionId;
-            var clientContext = new ClientConnectionContext(connectionId, GetInstanceId(openConnectionMessage.Headers));
+            var clientContext = new ClientConnectionContext(this, connectionId, GetInstanceId(openConnectionMessage.Headers));
 
             bool isDiagnosticClient = false;
             openConnectionMessage.Headers.TryGetValue(Constants.AsrsIsDiagnosticClient, out var isDiagnosticClientValue);
@@ -214,7 +214,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             try
             {
                 clientContext.Transport = await _clientConnectionManager.CreateConnection(message);
-                clientContext.ServiceConnection = this;
                 Log.ConnectedStarting(Logger, connectionId);
             }
             catch (Exception e)

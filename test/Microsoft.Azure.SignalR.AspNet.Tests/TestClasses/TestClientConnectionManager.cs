@@ -61,10 +61,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             if (_serviceConnection != null)
             {
-                connection = new ClientConnectionContext(connectionId)
-                {
-                    ServiceConnection = _serviceConnection
-                };
+                connection = new ClientConnectionContext(_serviceConnection, connectionId);
                 return true;
             }
             return _connections.TryGetValue(connectionId, out connection);

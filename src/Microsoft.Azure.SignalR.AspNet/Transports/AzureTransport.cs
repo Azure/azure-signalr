@@ -101,10 +101,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             if (_clientConnectionManager.TryGetClientConnection(ConnectionId, out var connection))
             {
-                if (connection.ServiceConnection != null)
-                {
-                    return connection.ServiceConnection.WriteAsync(ConnectionId, value, _serviceProtocol, _serializer, _pool);
-                }
+                return connection.WriteAsync(ConnectionId, value, _serviceProtocol, _serializer, _pool);
             }
             throw new InvalidOperationException("No service connection found when sending message");
         }

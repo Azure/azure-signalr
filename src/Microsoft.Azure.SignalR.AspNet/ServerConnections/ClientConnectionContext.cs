@@ -12,6 +12,8 @@ namespace Microsoft.Azure.SignalR.AspNet
     {
         private readonly CancellationTokenSource _source = new CancellationTokenSource();
 
+        private readonly IServiceConnection _serviceConnection;
+
         public Task ApplicationTask { get; set; }
 
         public CancellationToken CancellationToken => _source.Token;
@@ -24,17 +26,22 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public ChannelWriter<ServiceMessage> Output { get; }
 
-        public IServiceConnection ServiceConnection { get; set; }
-
         public IServiceTransport Transport { get; set; }
 
-        public ClientConnectionContext(string connectionId, string instanceId = null)
+        public ClientConnectionContext(IServiceConnection sc, string connectionId, string instanceId = null)
         {
+            _serviceConnection = sc;
+
             ConnectionId = connectionId;
             InstanceId = instanceId;
             var channel = Channel.CreateUnbounded<ServiceMessage>();
             Input = channel.Reader;
             Output = channel.Writer;
+        }
+
+        public async Task WriteMessageAsync(ConnectionDataMessage message)
+        {
+            await _serviceConnection.WriteAsync(message);
         }
 
         public void CancelPendingRead()
