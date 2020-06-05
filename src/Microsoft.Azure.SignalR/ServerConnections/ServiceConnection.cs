@@ -5,18 +5,14 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.Azure.SignalR.Common.ServiceConnections;
-using Microsoft.Azure.SignalR.Common.Utilities;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
-using static Microsoft.Azure.SignalR.Common.ServiceConnections.ClientConnectionScope;
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
@@ -141,7 +137,7 @@ namespace Microsoft.Azure.SignalR
             }
             await Task.Yield();
 
-            var diagnosticLogsContext = new DiagnosticLogsContext();
+            var diagnosticLogsContext = new ClientConnectionScope.DiagnosticLogsContext();
 
             using (new ClientConnectionScope(outboundConnection: this, isDiagnosticClient: isDiagnosticClient, isServiceEnableMessageLog: diagnosticLogsContext))
             {

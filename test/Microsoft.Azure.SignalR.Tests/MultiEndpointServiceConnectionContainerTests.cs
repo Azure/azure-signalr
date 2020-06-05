@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
@@ -18,7 +19,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using Xunit.Abstractions;
-using static Microsoft.Azure.SignalR.Common.ServiceConnections.ClientConnectionScope;
 using static Microsoft.Azure.SignalR.Tests.ServiceConnectionTests;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -1256,10 +1256,10 @@ namespace Microsoft.Azure.SignalR.Tests
                     );
                 var endpoints = sem.GetEndpoints("hub");
                 var connection1 = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, connectionDelegate, ccf,
-                                    "serverId", "server-conn-1", endpoints[0], null, closeTimeOutMilliseconds: 500);
+                                    "serverId", "server-conn-1", endpoints[0], endpoints[0].ConnectionContainer as IServiceMessageHandler, closeTimeOutMilliseconds: 500);
 
                 var connection2 = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, connectionDelegate, ccf,
-                                    "serverId", "server-conn-2", endpoints[1], null, closeTimeOutMilliseconds: 500);
+                                    "serverId", "server-conn-2", endpoints[1], endpoints[1].ConnectionContainer as IServiceMessageHandler, closeTimeOutMilliseconds: 500);
 
                 var connection22 = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, connectionDelegate, ccf,
                                     "serverId", "server-conn-22", endpoints[1], null, closeTimeOutMilliseconds: 500);
@@ -1275,17 +1275,10 @@ namespace Microsoft.Azure.SignalR.Tests
                     }, sem, router, NullLoggerFactory.Instance);
 
                 var containers = multiContainer.GetTestOnlineContainers();
-                connection1.SetServiceMessageHandler(containers[0]);
-                connection2.SetServiceMessageHandler(containers[1]);
-                connection22.SetServiceMessageHandler(containers[1]);
-
-
                 try
                 {
-                    var tcs1 = new TaskCompletionSource<bool>();
-
                     // container 1
-                    ThreadPool.QueueUserWorkItem(async state =>
+                    var taskCt1 = Task.Run(async () =>
                     {
                         // a client connected
                         await ((ServiceConnection)containers[0].Connections[0]).OnClientConnectedAsyncForTest(new OpenConnectionMessage("client1", null));
@@ -1303,16 +1296,13 @@ namespace Microsoft.Azure.SignalR.Tests
 
                         await ccm.ClientConnections["client1"].WriteMessageAsync(new ReadOnlySequence<byte>(new byte[] { 0x20 }));
                         await Task.Delay(100);
-                        
-                        tcs1.SetResult(true);
                     });
 
                     var tcs21 = new TaskCompletionSource<bool>();
                     var tcs22 = new TaskCompletionSource<bool>();
                     var tcs2Write = new TaskCompletionSource<bool>();
 
-                    // container 2 sends pings
-                    ThreadPool.QueueUserWorkItem(async state =>
+                    var taskCt2SendPings = Task.Run(async () =>
                     {
                         // clients connected
                         await ((ServiceConnection)containers[1].Connections[0]).OnClientConnectedAsyncForTest(new OpenConnectionMessage("client2", null));
@@ -1330,10 +1320,7 @@ namespace Microsoft.Azure.SignalR.Tests
                         tcs22.SetResult(true);
                     });
 
-                    var tcs2 = new TaskCompletionSource<bool>();
-
-                    // container 2 receives pings
-                    ThreadPool.QueueUserWorkItem(async state =>
+                    var taskCt2ReceivePings = Task.Run(async () =>
                     {
                         await tcs21.Task;
                         await ccm.ClientConnections["client2"].WriteMessageAsync(new ReadOnlySequence<byte>(new byte[] { 0x20, 0x20 }));
@@ -1345,12 +1332,9 @@ namespace Microsoft.Azure.SignalR.Tests
                         await ccm.ClientConnections["client2"].WriteMessageAsync(new ReadOnlySequence<byte>(new byte[] { 0x20, 0x20 }));
                         await ccm.ClientConnections["client22"].WriteMessageAsync(new ReadOnlySequence<byte>(new byte[] { 0x20, 0x20, 0x20 }));
                         await Task.Delay(100);
-
-                        tcs2.SetResult(true);
                     });
 
-                    await tcs1.Task;
-                    await tcs2.Task;
+                    await Task.WhenAll(taskCt1, taskCt2SendPings, taskCt2ReceivePings);
                 }
                 finally
                 {
@@ -1511,9 +1495,9 @@ namespace Microsoft.Azure.SignalR.Tests
                     else
                     {
                         Result.AddOrUpdate(connection.ConnectionId,
-                            new List<bool> { DiagnosticLogContext.IsServiceEnableMessageLog }, (key, old) =>
+                            new List<bool> { ClientConnectionScope.DiagnosticLogContext.IsServiceEnableMessageLog }, (key, old) =>
                              {
-                                 old.Add(DiagnosticLogContext.IsServiceEnableMessageLog);
+                                 old.Add(ClientConnectionScope.DiagnosticLogContext.IsServiceEnableMessageLog);
                                  return old;
                              });
                     }
