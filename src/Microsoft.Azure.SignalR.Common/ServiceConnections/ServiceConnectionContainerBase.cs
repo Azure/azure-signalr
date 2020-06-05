@@ -148,6 +148,7 @@ namespace Microsoft.Azure.SignalR
             _diagnosticLogsPing.Start();
         }
 
+        // todo: maybe create a new container-level ServiceConnectionContainerScope here, to reduce duplicate events on client-level.
         public Task StartAsync() => Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
 
         public virtual Task StopAsync()

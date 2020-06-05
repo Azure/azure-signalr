@@ -79,7 +79,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
             }
         }
 
-        internal static IDiagnosticLogsContext IsServiceEnableMessageLog
+        internal static IDiagnosticLogsContext DiagnosticLogContext
         {
             get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties?.IsServiceEnableMessageLog ?? default;
             set
