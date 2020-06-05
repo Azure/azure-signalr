@@ -35,7 +35,7 @@ namespace Microsoft.Azure.SignalR
         private readonly TaskCompletionSource<object> _serviceConnectionOfflineTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private readonly ServiceConnectionType _connectionType;
-        
+
         private readonly IServiceMessageHandler _serviceMessageHandler;
         private readonly object _statusLock = new object();
 

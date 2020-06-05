@@ -1519,7 +1519,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        internal sealed class TestMultiEndpointServiceConnectionContainer : MultiEndpointServiceConnectionContainer
+        private sealed class TestMultiEndpointServiceConnectionContainer : MultiEndpointServiceConnectionContainer
         {
             public TestMultiEndpointServiceConnectionContainer(string hub,
                                                           Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
@@ -1539,7 +1539,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        internal class TestServiceEndpointManager : ServiceEndpointManagerBase
+        private class TestServiceEndpointManager : ServiceEndpointManagerBase
         {
             private readonly ServiceEndpoint[] _endpoints;
 
@@ -1559,7 +1559,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        internal class TestEndpointRouter : EndpointRouterDecorator
+        private class TestEndpointRouter : EndpointRouterDecorator
         {
             private readonly Exception _ex;
             private readonly bool _broken;

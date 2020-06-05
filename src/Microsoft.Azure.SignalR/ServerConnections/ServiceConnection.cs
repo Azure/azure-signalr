@@ -159,8 +159,6 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.ConnectedStarting(Logger, connection.ConnectionId);
             }
-
-            //return Task.CompletedTask;
         }
 
         protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
