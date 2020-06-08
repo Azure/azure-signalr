@@ -118,7 +118,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         }
 
         // TODO wait until all messages are processed.
-        public Task WhenAllCompleted() => Task.WhenAll(_clientConnections.Values.Select(c => c.ConnectionOfflineTask));
+        public Task WhenAllCompleted() => Task.WhenAll(_clientConnections.Values.Select(c => c.ApplicationTask));
 
 
         private sealed class ClientConnectionHubDispatcher : HubDispatcher
