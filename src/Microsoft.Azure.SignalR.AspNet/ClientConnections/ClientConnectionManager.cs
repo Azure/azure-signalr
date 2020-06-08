@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly HubConfiguration _configuration;
         private readonly ILogger _logger;
 
-        private readonly ConcurrentDictionary<string, IServiceConnection> _clientConnections = new ConcurrentDictionary<string, IServiceConnection>();
+        private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections = new ConcurrentDictionary<string, ClientConnectionContext>();
 
         public ClientConnectionManager(HubConfiguration configuration, ILoggerFactory loggerFactory)
         {
@@ -29,14 +29,13 @@ namespace Microsoft.Azure.SignalR.AspNet
             _logger = loggerFactory?.CreateLogger<ClientConnectionManager>() ?? NullLogger<ClientConnectionManager>.Instance;
         }
 
-        public async Task<IServiceTransport> CreateConnection(OpenConnectionMessage message,
-            IServiceConnection serviceConnection)
+        public async Task<IServiceTransport> CreateConnection(OpenConnectionMessage message)
         {
             var dispatcher = new ClientConnectionHubDispatcher(_configuration, message.ConnectionId);
             dispatcher.Initialize(_configuration.Resolver);
 
             var responseStream = new MemoryStream();
-            var hostContext = GetHostContext(message, responseStream, serviceConnection);
+            var hostContext = GetHostContext(message, responseStream);
 
             if (dispatcher.Authorize(hostContext.Request))
             {
@@ -58,24 +57,24 @@ namespace Microsoft.Azure.SignalR.AspNet
             throw new InvalidOperationException("Unable to authorize request");
         }
 
-        public bool TryAdd(string connectionId, IServiceConnection serviceConnection)
+        public bool TryAddClientConnection(ClientConnectionContext connection)
         {
-            return _clientConnections.TryAdd(connectionId, serviceConnection);
+            return _clientConnections.TryAdd(connection.ConnectionId, connection);
         }
 
-        public bool TryGetServiceConnection(string key, out IServiceConnection serviceConnection)
-        {
-            return _clientConnections.TryGetValue(key, out serviceConnection);
-        }
-
-        public bool TryRemoveServiceConnection(string connectionId, out IServiceConnection connection)
+        public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
         {
             return _clientConnections.TryRemove(connectionId, out connection);
         }
 
-        public IReadOnlyDictionary<string, IServiceConnection> ClientConnections => _clientConnections;
+        public bool TryGetClientConnection(string connectionId, out ClientConnectionContext connection)
+        {
+            return _clientConnections.TryGetValue(connectionId, out connection);
+        }
 
-        internal HostContext GetHostContext(OpenConnectionMessage message, Stream responseStream, IServiceConnection serviceConnection)
+        public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => _clientConnections;
+
+        internal HostContext GetHostContext(OpenConnectionMessage message, Stream responseStream)
         {
             var connectionId = message.ConnectionId;
             var context = new OwinContext();
@@ -107,8 +106,6 @@ namespace Microsoft.Azure.SignalR.AspNet
                     request.Headers.Add(pair.Key, pair.Value);
                 }
             }
-
-            context.Environment[AspNetConstants.Context.AzureServiceConnectionKey] = serviceConnection;
             return new HostContext(context.Environment);
         }
 
@@ -122,6 +119,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         }
 
         public Task WhenAllCompleted() => Task.CompletedTask;
+
 
         private sealed class ClientConnectionHubDispatcher : HubDispatcher
         {

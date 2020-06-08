@@ -2,10 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Messaging;
@@ -141,7 +138,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                         }
                     });
 
-            var ccm = new TestClientConnectionManager(anotherSCM, true);
+            var ccm = new TestClientConnectionManager(anotherSCM);
             dr.Register(typeof(IClientConnectionManager), () => ccm);
 
             using (var bus = new ServiceMessageBus(dr))
