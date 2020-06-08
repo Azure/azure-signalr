@@ -20,6 +20,7 @@ namespace Microsoft.Azure.SignalR
 #elif NETSTANDARD
             var lifetime = provider.GetService<IApplicationLifetime>();
 #endif
+
             lifetime?.ApplicationStopping.Register(Shutdown);
         }
 

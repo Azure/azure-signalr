@@ -26,7 +26,6 @@ namespace Microsoft.Azure.SignalR
 
         public AccessKey(string key = null)
         {
-
             if (!string.IsNullOrEmpty(key))
             {
                 _accessKey = key;

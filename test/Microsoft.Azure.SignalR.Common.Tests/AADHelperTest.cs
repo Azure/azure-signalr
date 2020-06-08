@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.Common
         [Fact]
         public async Task TestAsync()
         {
-            var app = AADHelper.BuildApplication(new AzureAdOptions(
+            var app = AadHelper.BuildApplication(new AzureAdOptions(
                 "70f09175-ecf3-477e-ad90-bb5dec839250",
                 "Y29V=Uw4@FUIX5gHfw?TmQRDyN=D:C-r",
                 "c8a86907-dd80-4e5d-994d-36e0694e4913"

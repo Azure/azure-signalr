@@ -1,13 +1,13 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Azure.SignalR.Common.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Common.Utilities;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             if (!_accessKey.InitializedTask.IsCompleted)
             {
-                var app = AADHelper.BuildApplication(options.AzureAdOptions);
+                var app = AadHelper.BuildApplication(options.AzureAdOptions);
                 _ = AccessKey.AuthorizeTask(app, _accessKey, endpoint.Endpoint, endpoint.Port);
             }
         }

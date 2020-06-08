@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace Microsoft.Azure.SignalR.Common.Utilities
 {
-    internal class AADHelper
+    internal class AadHelper
     {
         public static IConfidentialClientApplication BuildApplication(AzureAdOptions options)
         {

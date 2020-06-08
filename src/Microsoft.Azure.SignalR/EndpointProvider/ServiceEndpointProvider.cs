@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Azure.SignalR.Common.Utilities;
+using Microsoft.Identity.Client;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.SignalR
 
         private async Task RefreshAccessKey(ServiceEndpoint endpoint, AccessKey key, AzureAdOptions options)
         {
-            var app = AADHelper.BuildApplication(options);
+            var app = AadHelper.BuildApplication(options);
 
             while (await _timer)
             {

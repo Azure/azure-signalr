@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Azure.SignalR
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// 
         /// </summary>
-        public AzureAdOptions AzureAdOptions { get; set; } = new AzureAdOptions();
+        public AzureAdOptions AzureAdOptions { get; set; } = null;
 
         /// <summary>
         /// Specifies if the client-connection assigned to this server can be migrated to another server.
