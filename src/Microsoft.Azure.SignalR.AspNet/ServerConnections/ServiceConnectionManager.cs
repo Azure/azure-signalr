@@ -82,9 +82,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             return Task.WhenAll(GetConnections().Select(s => s.StopAsync()));
         }
 
-        public Task OfflineAsync(bool migratable)
+        public Task OfflineAsync(GracefulShutdownMode mode)
         {
-            return Task.WhenAll(GetConnections().Select(s => s.OfflineAsync(migratable)));
+            return Task.WhenAll(GetConnections().Select(s => s.OfflineAsync(mode)));
         }
 
         public IServiceConnectionContainer WithHub(string hubName)
@@ -130,6 +130,10 @@ namespace Microsoft.Azure.SignalR.AspNet
         public string ServersTag => throw new NotSupportedException();
 
         public bool HasClients => throw new NotSupportedException();
+
+        public void Dispose()
+        {
+        }
 
         private IEnumerable<IServiceConnectionContainer> GetConnections()
         {

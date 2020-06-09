@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using Microsoft.Azure.SignalR.Protocol;
 using ServicePingMessage = Microsoft.Azure.SignalR.Protocol.PingMessage;
 
@@ -18,8 +17,11 @@ namespace Microsoft.Azure.SignalR
 
         private const string StatusActiveValue = "1";
         private const string StatusInactiveValue = "0";
+
+        private const string ShutdownFinKeepAliveValue = "fin:2";
         private const string ShutdownFinMigratableValue = "fin:1";
         private const string ShutdownFinValue = "fin:0";
+
         private const string ShutdownFinAckValue = "finack";
         private const char ServerListSeparator = ';';
 
@@ -34,6 +36,9 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly ServicePingMessage ShutdownFinMigratable =
             new ServicePingMessage { Messages = new[] { ShutdownKey, ShutdownFinMigratableValue } };
+
+        private static readonly ServicePingMessage ShutdownFinKeepAlive =
+            new ServicePingMessage { Messages = new[] { ShutdownKey, ShutdownFinKeepAliveValue } };
 
         private static readonly ServicePingMessage ShutdownFinAck =
             new ServicePingMessage { Messages = new[] { ShutdownKey, ShutdownFinAckValue } };
@@ -79,8 +84,15 @@ namespace Microsoft.Azure.SignalR
             return false;
         }
 
-        public static ServicePingMessage GetFinPingMessage(bool migratable) =>
-            migratable ? ShutdownFinMigratable : ShutdownFin;
+        public static ServicePingMessage GetFinPingMessage(GracefulShutdownMode mode = GracefulShutdownMode.Off)
+        {
+            return mode switch
+            {
+                GracefulShutdownMode.WaitForClientsClose => ShutdownFinKeepAlive,
+                GracefulShutdownMode.MigrateClients => ShutdownFinMigratable,
+                _ => ShutdownFin,
+            };
+        }
 
         public static ServicePingMessage GetFinAckPingMessage() => ShutdownFinAck;
 
@@ -88,7 +100,13 @@ namespace Microsoft.Azure.SignalR
 
         // for test
         public static bool IsFin(this ServiceMessage serviceMessage) =>
-            serviceMessage is ServicePingMessage ping && TryGetValue(ping, ShutdownKey, out var value) && (value == ShutdownFinValue || value == ShutdownFinMigratableValue);
+            serviceMessage is ServicePingMessage ping && TryGetValue(ping, ShutdownKey, out var value) && (value switch
+            {
+                ShutdownFinValue => true,
+                ShutdownFinMigratableValue => true,
+                ShutdownFinKeepAliveValue => true,
+                _ => false,
+            });
 
         public static bool IsFinAck(this ServicePingMessage ping) =>
             TryGetValue(ping, ShutdownKey, out var value) && value == ShutdownFinAckValue;

@@ -9,10 +9,12 @@ namespace Microsoft.Azure.SignalR.Tests.Common
     internal class TestServiceConnectionContainerFactory : IServiceConnectionContainerFactory
     {
         private readonly SortedList<string, ServiceMessage> _messages;
+
         public TestServiceConnectionContainerFactory(SortedList<string, ServiceMessage> output)
         {
             _messages = output;
         }
+
         public IMultiEndpointServiceConnectionContainer Create(string hub)
         {
             return new TestServiceConnectionContainer(hub,

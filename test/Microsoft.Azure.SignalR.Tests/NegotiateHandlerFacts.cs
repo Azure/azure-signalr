@@ -18,8 +18,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -377,6 +379,66 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var queryContainsCulture = negotiateResponse.Url.Contains($"{Constants.QueryParameter.RequestCulture}=ar-SA");
             Assert.True(queryContainsCulture);
+        }
+
+        [Theory]
+        [InlineData(-10)]
+        [InlineData(0)]
+        [InlineData(500)]
+        public void TestInvalidDisconnectTimeoutThrowsAfterBuild(int maxPollInterval)
+        {
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR(o =>
+                {
+                    o.ConnectionString = DefaultConnectionString;
+                    o.MaxPollIntervalInSeconds = maxPollInterval;
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            Assert.Throws<AzureSignalRInvalidServiceOptionsException>(() => serviceProvider.GetRequiredService<NegotiateHandler>());
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(15)]
+        [InlineData(300)]
+        public async Task TestNegotiateHandlerResponseContainsValidMaxPollInterval(int maxPollInterval)
+        {
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR(o =>
+                {
+                    o.ConnectionString = DefaultConnectionString;
+                    o.MaxPollIntervalInSeconds = maxPollInterval;
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var requestFeature = new HttpRequestFeature
+            {
+                Path = "/user/path/negotiate/",
+                QueryString = "?endpoint=chosen"
+            };
+            var responseFeature = new HttpResponseFeature();
+            var features = new FeatureCollection();
+            features.Set<IHttpRequestFeature>(requestFeature);
+            features.Set<IHttpResponseFeature>(responseFeature);
+            var httpContext = new DefaultHttpContext(features);
+
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            var response = await handler.Process(httpContext, "chat");
+
+            Assert.Equal(200, responseFeature.StatusCode);
+
+            var tokens = JwtTokenHelper.JwtHandler.ReadJwtToken(response.AccessToken);
+
+            Assert.Contains(tokens.Claims, x => x.Type == Constants.ClaimType.MaxPollInterval && x.Value == maxPollInterval.ToString());
         }
 
         private sealed class TestServerNameProvider : IServerNameProvider

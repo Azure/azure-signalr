@@ -21,8 +21,8 @@ namespace Microsoft.Azure.SignalR.Tests
             var c1 = new ClientConnectionContext(new Protocol.OpenConnectionMessage("foo", new Claim[0]));
             var c2 = new ClientConnectionContext(new Protocol.OpenConnectionMessage("bar", new Claim[0]));
 
-            manager.AddClientConnection(c1);
-            manager.AddClientConnection(c2);
+            manager.TryAddClientConnection(c1);
+            manager.TryAddClientConnection(c2);
 
             _ = RemoveConnection(manager, c1);
             _ = RemoveConnection(manager, c2);

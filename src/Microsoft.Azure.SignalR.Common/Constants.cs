@@ -27,6 +27,7 @@ namespace Microsoft.Azure.SignalR
         public const string AsrsUserAgent = "Asrs-User-Agent";
         public const string AsrsInstanceId = "Asrs-Instance-Id";
 
+        public const string AsrsIsDiagnosticClient = "Asrs-Is-Diagnostic-Client";
 
         public static class Periods
         {
@@ -55,6 +56,7 @@ namespace Microsoft.Azure.SignalR
             public const string Version = AzureSignalRSysPrefix + "vn";
             public const string EnableDetailedErrors = AzureSignalRSysPrefix + "derror";
             public const string ServiceEndpointsCount = AzureSignalRSysPrefix + "secn";
+            public const string MaxPollInterval = AzureSignalRSysPrefix + "ttl";
 
             public const string AzureSignalRUserPrefix = "asrs.u.";
         }

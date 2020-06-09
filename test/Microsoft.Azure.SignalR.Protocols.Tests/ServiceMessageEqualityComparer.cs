@@ -63,6 +63,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return JoinGroupWithAckMessageEqual(joinGroupWithAckMessage, (JoinGroupWithAckMessage)y);
                 case LeaveGroupWithAckMessage leaveGroupWithAckMessage:
                     return LeaveGroupWithAckMessageEqual(leaveGroupWithAckMessage, (LeaveGroupWithAckMessage)y);
+                case CheckUserInGroupWithAckMessage checkUserInGroupWithAckMessage:
+                    return CheckUserInGroupWithAckMessageEqual(checkUserInGroupWithAckMessage, (CheckUserInGroupWithAckMessage)y);
                 case AckMessage ackMessage:
                     return AckMessageEqual(ackMessage, (AckMessage)y);
                 default:
@@ -87,7 +89,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         private bool OpenConnectionMessagesEqual(OpenConnectionMessage x, OpenConnectionMessage y)
         {
-            return StringEqual(x.ConnectionId, y.ConnectionId) && 
+            return StringEqual(x.ConnectionId, y.ConnectionId) &&
                    ClaimsEqual(x.Claims, y.Claims) &&
                    HeadersEqual(x.Headers, y.Headers) &&
                    StringEqual(x.QueryString, y.QueryString);
@@ -100,60 +102,81 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         private bool ConnectionDataMessagesEqual(ConnectionDataMessage x, ConnectionDataMessage y)
         {
-            return StringEqual(x.ConnectionId, y.ConnectionId) && SequenceEqual(x.Payload.ToArray(), y.Payload.ToArray());
+            return StringEqual(x.ConnectionId, y.ConnectionId) &&
+                SequenceEqual(x.Payload.ToArray(), y.Payload.ToArray()) &&
+                StringEqual(x.TracingId, y.TracingId);
         }
 
         private bool MultiConnectionDataMessagesEqual(MultiConnectionDataMessage x, MultiConnectionDataMessage y)
         {
-            return SequenceEqual(x.ConnectionList, y.ConnectionList) && PayloadsEqual(x.Payloads, y.Payloads);
+            return SequenceEqual(x.ConnectionList, y.ConnectionList) &&
+                   PayloadsEqual(x.Payloads, y.Payloads) &&
+                   StringEqual(x.TracingId, y.TracingId);
         }
 
         private bool UserDataMessagesEqual(UserDataMessage x, UserDataMessage y)
         {
-            return StringEqual(x.UserId, y.UserId) && PayloadsEqual(x.Payloads, y.Payloads);
+            return StringEqual(x.UserId, y.UserId) &&
+                   PayloadsEqual(x.Payloads, y.Payloads) &&
+                   StringEqual(x.TracingId, y.TracingId);
         }
 
         private bool MultiUserDataMessagesEqual(MultiUserDataMessage x, MultiUserDataMessage y)
         {
-            return SequenceEqual(x.UserList, y.UserList) && PayloadsEqual(x.Payloads, y.Payloads);
+            return SequenceEqual(x.UserList, y.UserList) &&
+                   PayloadsEqual(x.Payloads, y.Payloads) &&
+                   StringEqual(x.TracingId, y.TracingId);
         }
 
         private bool BroadcastDataMessagesEqual(BroadcastDataMessage x, BroadcastDataMessage y)
         {
             return SequenceEqual(x.ExcludedList, y.ExcludedList) &&
-                   PayloadsEqual(x.Payloads, y.Payloads);
+                   PayloadsEqual(x.Payloads, y.Payloads) &&
+                   StringEqual(x.TracingId, y.TracingId);
         }
 
         private bool JoinGroupMessagesEqual(JoinGroupMessage x, JoinGroupMessage y)
         {
-            return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.GroupName, y.GroupName);
+            return StringEqual(x.ConnectionId, y.ConnectionId) && 
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   StringEqual(x.TracingId, y.TracingId);
         }
 
         private bool LeaveGroupMessagesEqual(LeaveGroupMessage x, LeaveGroupMessage y)
         {
-            return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.GroupName, y.GroupName);
+            return StringEqual(x.ConnectionId, y.ConnectionId) && 
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   StringEqual(x.TracingId, y.TracingId);
         }
 
         private bool UserJoinGroupMessagesEqual(UserJoinGroupMessage x, UserJoinGroupMessage y)
         {
-            return StringEqual(x.UserId, y.UserId) && StringEqual(x.GroupName, y.GroupName);
+            return StringEqual(x.UserId, y.UserId) && 
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   StringEqual(x.TracingId, y.TracingId) &&
+                   x.Ttl == y.Ttl;
         }
 
         private bool UserLeaveGroupMessagesEqual(UserLeaveGroupMessage x, UserLeaveGroupMessage y)
         {
-            return StringEqual(x.UserId, y.UserId) && StringEqual(x.GroupName, y.GroupName);
+            return StringEqual(x.UserId, y.UserId) && 
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   StringEqual(x.TracingId, y.TracingId);
         }
         private bool GroupBroadcastDataMessagesEqual(GroupBroadcastDataMessage x, GroupBroadcastDataMessage y)
         {
             return StringEqual(x.GroupName, y.GroupName) &&
                    SequenceEqual(x.ExcludedList, y.ExcludedList) &&
-                   PayloadsEqual(x.Payloads, y.Payloads);
+                   PayloadsEqual(x.Payloads, y.Payloads) &&
+                   StringEqual(x.TracingId, y.TracingId);
         }
 
         private bool MultiGroupBroadcastDataMessagesEqual(MultiGroupBroadcastDataMessage x,
             MultiGroupBroadcastDataMessage y)
         {
-            return SequenceEqual(x.GroupList, y.GroupList) && PayloadsEqual(x.Payloads, y.Payloads);
+            return SequenceEqual(x.GroupList, y.GroupList) && 
+                   PayloadsEqual(x.Payloads, y.Payloads) &&
+                   StringEqual(x.TracingId, y.TracingId);
         }
 
         private bool ServiceErrorMessageEqual(ServiceErrorMessage x, ServiceErrorMessage y)
@@ -165,14 +188,24 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) &&
                    StringEqual(x.GroupName, y.GroupName) &&
-                   x.AckId == y.AckId;
+                   x.AckId == y.AckId &&
+                   StringEqual(x.TracingId, y.TracingId);
         }
 
         private bool LeaveGroupWithAckMessageEqual(LeaveGroupWithAckMessage x, LeaveGroupWithAckMessage y)
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) &&
                    StringEqual(x.GroupName, y.GroupName) &&
-                   x.AckId == y.AckId;
+                   x.AckId == y.AckId &&
+                   StringEqual(x.TracingId, y.TracingId);
+        }
+
+        private bool CheckUserInGroupWithAckMessageEqual(CheckUserInGroupWithAckMessage x, CheckUserInGroupWithAckMessage y)
+        {
+            return StringEqual(x.UserId, y.UserId) &&
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   x.AckId == y.AckId &&
+                   StringEqual(x.TracingId, y.TracingId);
         }
 
         private bool AckMessageEqual(AckMessage x, AckMessage y)

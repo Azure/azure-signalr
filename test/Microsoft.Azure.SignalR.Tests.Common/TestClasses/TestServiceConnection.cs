@@ -13,16 +13,15 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 {
     internal class TestServiceConnection : ServiceConnectionBase
     {
-        private readonly bool _throws;
-        private readonly ILogger _logger;
+        private readonly TaskCompletionSource<object> _created = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        private ServiceConnectionStatus _expectedStatus;
+        private readonly bool _throws;
 
         private ConnectionContext _connection;
 
-        public IDuplexPipe Application { get; private set; }
+        private ServiceConnectionStatus _expectedStatus;
 
-        private TaskCompletionSource<object> _created = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        public IDuplexPipe Application { get; private set; }
 
         public Task ConnectionCreated => _created.Task;
 
@@ -36,19 +35,22 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             new HubServiceEndpoint(),
             serviceMessageHandler,
             ServiceConnectionType.Default,
-            ServerConnectionMigrationLevel.Off,
             logger ?? NullLogger.Instance
         )
         {
             _expectedStatus = status;
             _throws = throws;
-            _logger = logger ?? NullLogger.Instance;
         }
 
         public void SetStatus(ServiceConnectionStatus status)
         {
             Status = status;
             _expectedStatus = status;
+        }
+
+        public void Stop()
+        {
+            _connection?.Transport.Input.CancelPendingRead();
         }
 
         protected override Task CleanupClientConnections(string fromInstanceId = null)
@@ -71,18 +73,17 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             });
         }
 
+        protected override Task DisposeConnection(ConnectionContext connection)
+        {
+            return Task.CompletedTask;
+        }
+
         protected override async Task<bool> HandshakeAsync(ConnectionContext connection)
         {
             _connection = connection;
             await Task.Yield();
             return _expectedStatus == ServiceConnectionStatus.Connected;
         }
-
-        protected override Task DisposeConnection(ConnectionContext connection)
-        {
-            return Task.CompletedTask;
-        }
-
         protected override Task OnClientConnectedAsync(OpenConnectionMessage openConnectionMessage)
         {
             return Task.CompletedTask;
@@ -98,11 +99,6 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             return Task.CompletedTask;
         }
 
-        protected Task WriteAsyncBase(ServiceMessage serviceMessage)
-        {
-            return base.WriteAsync(serviceMessage);
-        }
-
         protected override Task<bool> SafeWriteAsync(ServiceMessage serviceMessage)
         {
             if (_throws)
@@ -113,9 +109,9 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             return Task.FromResult(true);
         }
 
-        public void Stop()
+        protected Task WriteAsyncBase(ServiceMessage serviceMessage)
         {
-            _connection?.Transport.Input.CancelPendingRead();
+            return base.WriteAsync(serviceMessage);
         }
     }
 }
