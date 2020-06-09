@@ -723,7 +723,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData(-10)]
         [InlineData(0)]
         [InlineData(500)]
-        public void TestRunAzureSignalRWithInvalidDisconnectTimeoutThrows(int disconnectTimeout)
+        public void TestRunAzureSignalRWithInvalidMaxPollIntervalThrows(int maxPollInterval)
         {
             var hubConfig = new HubConfiguration();
             hubConfig.Resolver = new DefaultDependencyResolver();
@@ -733,30 +733,30 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                         using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
                         {
                             options.ConnectionString = ConnectionString;
-                            options.DisconnectTimeoutInSeconds = disconnectTimeout;
+                            options.MaxPollIntervalInSeconds = maxPollInterval;
                         })))
                         {
                         }
                     });
-            Assert.Contains("DisconnectTimeoutInSeconds", exception.Message);
+            Assert.Contains("MaxPollIntervalInSeconds", exception.Message);
         }
 
         [Theory]
         [InlineData(1)]
         [InlineData(15)]
         [InlineData(300)]
-        public async Task TestRunAzureSignalRRespectValidDisconnectTimeout(int timeout)
+        public async Task TestRunAzureSignalRRespectValidMaxPollInterval(int timeout)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
-                var name = nameof(TestRunAzureSignalRRespectValidDisconnectTimeout);
+                var name = nameof(TestRunAzureSignalRRespectValidMaxPollInterval);
                 var hubConfiguration = Utility.GetTestHubConfig(loggerFactory);
                 var serverNameProvider = new TestServerNameProvider(name);
                 hubConfiguration.Resolver.Register(typeof(IServerNameProvider), () => serverNameProvider);
                 using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, hubConfiguration, options =>
                 {
                     options.ConnectionString = ConnectionString;
-                    options.DisconnectTimeoutInSeconds = timeout;
+                    options.MaxPollIntervalInSeconds = timeout;
                 })))
                 {
                     var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
@@ -767,7 +767,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var responseObject = JsonConvert.DeserializeObject<ResponseMessage>(message);
 
                     var token = JwtSecurityTokenHandler.ReadJwtToken(responseObject.AccessToken);
-                    Assert.Contains(token.Claims, x => x.Type == Constants.ClaimType.DisconnectTimeout && x.Value == timeout.ToString());
+                    Assert.Contains(token.Claims, x => x.Type == Constants.ClaimType.MaxPollInterval && x.Value == timeout.ToString());
                 }
             }
         }

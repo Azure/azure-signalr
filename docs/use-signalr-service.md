@@ -16,6 +16,7 @@
         - [Mode](#mode)
         - [Timeout](#timeout)
       - [`ServiceScaleTimeout`](#servicescaletimeout)
+      - [`MaxPollIntervalInSeconds`](#maxpollintervalinseconds)
       - [Sample](#sample)
   - [Run ASP.NET SignalR](#run-aspnet-signalr)
     - [1. Install and Use Service SDK](#1-install-and-use-service-sdk-1)
@@ -27,6 +28,7 @@
       - [`ClaimProvider`](#claimprovider-1)
       - [`ConnectionString`](#connectionstring)
       - [`ServerStickyMode`](#serverstickymode-1)
+      - [`MaxPollIntervalInSeconds`](#maxpollintervalinseconds-1)
       - [Sample](#sample-1)
   - [Scale Out Application Server](#scale-out-application-server)
 
@@ -154,6 +156,13 @@ They can be accessed at [`Hub.Context.User`](https://github.com/aspnet/SignalR/b
 - Default value is `5 minutes`
 - This option specifies the longest time in waiting for dynamic scaling service endpoints, that to affect online clients at minimum. Normally the dynamic scale between single app server and a service endpoint can be finished in seconds, while considering if you have multiple app servers and multiple service endpoints with network jitter and would like to ensure client stability, you can configure this value accordingly.
 
+
+#### `MaxPollIntervalInSeconds`
+
+- Default value is `5`
+- This option specifies the longest time in Azure SignalR Service to cleanup idle `LongPolling` connections that useful in scenarios that clients have extra long time between 2 poll requests. Notes that Azure SignalR Service will also clean up connections when cached waiting to write buffer size is greater than `1Mb` to ensure service performance.
+- The value is limited to `[1, 300]`.
+
 #### Sample
 You can configure above options like the following sample code.
 
@@ -240,6 +249,11 @@ By default, all claims from `IOwinContext.Authentication.User` of the negotiate 
 #### `ServerStickyMode`
 - Default value is `Disabled`.
 - Refer to [ServerStickyMode](#server-sticky-mode) for details.
+
+#### `MaxPollIntervalInSeconds`
+- Default value is `5`
+- This option specifies the longest time in Azure SignalR Service to cleanup idle `LongPolling` connections that useful in scenarios that clients have extra long time between 2 poll requests. Notes that Azure SignalR Service will also clean up connections when cached waiting to write buffer size is greater than `1Mb` to ensure service performance.
+- The value is limited to `[1, 300]`.
 
 #### Sample
 You can configure above options like the following sample code.
