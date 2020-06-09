@@ -9,10 +9,10 @@ namespace Microsoft.Azure.SignalR
     {
         public static void Validate(this ServiceOptions options)
         {
-            if (options.DisconnectTimeoutInSeconds.HasValue &&
-                (options.DisconnectTimeoutInSeconds < 1 || options.DisconnectTimeoutInSeconds > 300))
+            if (options.MaxPollIntervalInSeconds.HasValue &&
+                (options.MaxPollIntervalInSeconds < 1 || options.MaxPollIntervalInSeconds > 300))
             {
-                throw new AzureSignalRInvalidServiceOptionsException("DisconnectTimeoutInSeconds", "[1,300]");
+                throw new AzureSignalRInvalidServiceOptionsException("MaxPollIntervalInSeconds", "[1,300]");
             }
         }
     }
