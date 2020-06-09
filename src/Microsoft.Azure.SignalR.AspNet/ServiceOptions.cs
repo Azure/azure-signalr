@@ -76,10 +76,10 @@ namespace Microsoft.Azure.SignalR.AspNet
         public IWebProxy Proxy { get; set; }
 
         /// <summary>
-        /// Gets or sets the interval in seconds used by the Azure SignalR Service to timeout idle connections
+        /// Gets or sets the interval in seconds used by the Azure SignalR Service to timeout idle LongPolling connections
         /// Default value is 5, limited to [1, 300].
         /// </summary>
-        public int? DisconnectTimeoutInSeconds { get; set; }
+        public int? MaxPollIntervalInSeconds { get; set; }
 
         public ServiceOptions()
         {

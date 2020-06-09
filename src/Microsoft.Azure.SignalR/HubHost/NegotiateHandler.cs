@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ServerStickyMode _mode;
         private readonly bool _enableDetailedErrors;
         private readonly int _endpointsCount;
-        private readonly int? _disconnectTimeout;
+        private readonly int? _maxPollInterval;
 
         public NegotiateHandler(
             IOptions<HubOptions> hubOptions,
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.SignalR
             _mode = options.Value.ServerStickyMode;
             _enableDetailedErrors = hubOptions.Value.EnableDetailedErrors == true;
             _endpointsCount = options.Value.Endpoints.Length;
-            _disconnectTimeout = options.Value.DisconnectTimeoutInSeconds;
+            _maxPollInterval = options.Value.MaxPollIntervalInSeconds;
         }
 
         public async Task<NegotiationResponse> Process(HttpContext context, string hubName)
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.SignalR
         private IEnumerable<Claim> BuildClaims(HttpContext context)
         {
             var userId = _userIdProvider.GetUserId(new ServiceHubConnectionContext(context));
-            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, _mode, _enableDetailedErrors, _endpointsCount, _disconnectTimeout).ToList();
+            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, _mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval).ToList();
         }
 
         private Func<IEnumerable<Claim>> GetClaimsProvider(HttpContext context)

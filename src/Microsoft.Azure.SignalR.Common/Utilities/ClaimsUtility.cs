@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR
             ServerStickyMode mode = ServerStickyMode.Disabled, 
             bool enableDetailedErrors = false, 
             int endpointsCount = 1,
-            int? disconnectTimeout = null)
+            int? maxPollInterval = null)
         {
             if (userId != null)
             {
@@ -83,9 +83,9 @@ namespace Microsoft.Azure.SignalR
             }
 
             // add claim if exists, validation is in DI  
-            if (disconnectTimeout.HasValue)
+            if (maxPollInterval.HasValue)
             {
-                yield return new Claim(Constants.ClaimType.DisconnectTimeout, disconnectTimeout.Value.ToString());
+                yield return new Claim(Constants.ClaimType.MaxPollInterval, maxPollInterval.Value.ToString());
             }
 
             // return customer's claims

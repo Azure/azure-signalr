@@ -76,12 +76,12 @@ namespace Microsoft.Azure.SignalR
         /// Gets or sets timeout waiting when scale multiple Azure SignalR Service endpoints.
         /// Default value is 5 minutes
         /// </summary>
-        internal TimeSpan ServiceScaleTimeout { get; set; } = Constants.Periods.DefaultScaleTimeout;
+        public TimeSpan ServiceScaleTimeout { get; set; } = Constants.Periods.DefaultScaleTimeout;
 
         /// <summary>
-        /// Gets or sets the interval in seconds used by the Azure SignalR Service to timeout idle connections
+        /// Gets or sets the interval in seconds used by the Azure SignalR Service to timeout idle LongPolling connections.
         /// Default value is 5, limited to [1, 300].
         /// </summary>
-        public int? DisconnectTimeoutInSeconds { get; set; }
+        public int? MaxPollIntervalInSeconds { get; set; }
     }
 }
