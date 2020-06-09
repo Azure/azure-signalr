@@ -285,11 +285,11 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     // start the server connection
                     await proxy.StartServiceAsync().OrTimeout();
 
-                    var clientConnection = Guid.NewGuid().ToString("N");
-                    var connectTask = proxy.WaitForOutgoingMessageAsync(clientConnection).OrTimeout();
+                    var connectionId = Guid.NewGuid().ToString("N");
+                    var connectTask = proxy.WaitForOutgoingMessageAsync(connectionId).OrTimeout();
 
                     // Application layer sends OpenConnectionMessage to an authorized hub from anonymous user
-                    var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null, "?transport=webSockets&connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
+                    var openConnectionMessage = new OpenConnectionMessage(connectionId, new Claim[0], null, "?transport=webSockets&connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
                     await proxy.WriteMessageAsync(openConnectionMessage);
 
                     var message = await connectTask;
@@ -297,8 +297,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.True(message is CloseConnectionMessage);
 
                     // Verify client connection is not created due to authorized failure.
-                    ccm.TryGetServiceConnection(clientConnection, out var serviceConnection);
-                    Assert.Null(serviceConnection);
+                    Assert.False(ccm.ClientConnections.TryGetValue(connectionId, out var connection));
                 }
             }
         }
@@ -323,12 +322,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     // start the server connection
                     await proxy.StartServiceAsync().OrTimeout();
 
-                    var clientConnection = Guid.NewGuid().ToString("N");
+                    var connectionId = Guid.NewGuid().ToString("N");
 
-                    var connectTask = proxy.WaitForOutgoingMessageAsync(clientConnection).OrTimeout();
+                    var connectTask = proxy.WaitForOutgoingMessageAsync(connectionId).OrTimeout();
 
                     // Application layer sends OpenConnectionMessage to an authorized hub from anonymous user
-                    var openConnectionMessage = new OpenConnectionMessage(clientConnection, new Claim[0], null, "?transport=webSockets&connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
+                    var openConnectionMessage = new OpenConnectionMessage(connectionId, new Claim[0], null, "?transport=webSockets&connectionData=%5B%7B%22name%22%3A%22authchat%22%7D%5D");
                     await proxy.WriteMessageAsync(openConnectionMessage);
 
                     var message = await connectTask;
@@ -336,8 +335,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     Assert.True(message is CloseConnectionMessage);
 
                     // Verify client connection is not created due to authorized failure.
-                    ccm.TryGetServiceConnection(clientConnection, out var serviceConnection);
-                    Assert.Null(serviceConnection);
+                    Assert.False(ccm.ClientConnections.TryGetValue(connectionId, out var connection));
                 }
             }
         }
