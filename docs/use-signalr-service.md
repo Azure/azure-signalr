@@ -160,7 +160,7 @@ They can be accessed at [`Hub.Context.User`](https://github.com/aspnet/SignalR/b
 #### `MaxPollIntervalInSeconds`
 
 - Default value is `5`
-- This option specifies the longest time in Azure SignalR Service to cleanup idle `LongPolling` connections that useful in scenarios that clients have extra long time between 2 poll requests. Notes that Azure SignalR Service will also clean up connections when cached waiting to write buffer size is greater than `1Mb` to ensure service performance.
+- This option defines the max poll interval allowed for `LongPolling` connections in Azure SignalR Service. If the next poll request does not come in within `MaxPollIntervalInSeconds`, Azure SignalR Service cleans up the client connection. Notes that Azure SignalR Service will also clean up connections when cached waiting to write buffer size is greater than `1Mb` to ensure service performance.
 - The value is limited to `[1, 300]`.
 
 #### Sample
@@ -252,7 +252,7 @@ By default, all claims from `IOwinContext.Authentication.User` of the negotiate 
 
 #### `MaxPollIntervalInSeconds`
 - Default value is `5`
-- This option specifies the longest time in Azure SignalR Service to cleanup idle `LongPolling` connections that useful in scenarios that clients have extra long time between 2 poll requests. Notes that Azure SignalR Service will also clean up connections when cached waiting to write buffer size is greater than `1Mb` to ensure service performance.
+- This option defines the max poll interval allowed for `LongPolling` connections in Azure SignalR Service. If the next poll request does not come in within `MaxPollIntervalInSeconds`, Azure SignalR Service cleans up the client connection. Notes that Azure SignalR Service will also clean up connections when cached waiting to write buffer size is greater than `1Mb` to ensure service performance.
 - The value is limited to `[1, 300]`.
 
 #### Sample
