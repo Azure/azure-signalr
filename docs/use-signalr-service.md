@@ -13,6 +13,9 @@
       - [`ClaimProvider`](#claimprovider)
       - [`ServerStickyMode`](#serverstickymode)
       - [`GracefulShutdown`](#gracefulshutdown)
+        - [Mode](#mode)
+        - [Timeout](#timeout)
+      - [`ServiceScaleTimeout`](#servicescaletimeout)
       - [Sample](#sample)
   - [Run ASP.NET SignalR](#run-aspnet-signalr)
     - [1. Install and Use Service SDK](#1-install-and-use-service-sdk-1)
@@ -144,6 +147,12 @@ They can be accessed at [`Hub.Context.User`](https://github.com/aspnet/SignalR/b
 
 - Default value is `30 seconds`
 - This option specifies the longest time in waiting for clients to be closed/migrated.
+
+
+#### `ServiceScaleTimeout`
+
+- Default value is `5 minutes`
+- This option specifies the longest time in waiting for dynamic scaling service endpoints, that to affect online clients at minimum. Normally the dynamic scale between single app server and a service endpoint can be finished in seconds, while considering if you have multiple app servers and multiple service endpoints with network jitter and would like to ensure client stability, you can configure this value accordingly.
 
 #### Sample
 You can configure above options like the following sample code.

@@ -131,6 +131,10 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public bool HasClients => throw new NotSupportedException();
 
+        public void Dispose()
+        {
+        }
+
         private IEnumerable<IServiceConnectionContainer> GetConnections()
         {
             if (_appConnection != null)
