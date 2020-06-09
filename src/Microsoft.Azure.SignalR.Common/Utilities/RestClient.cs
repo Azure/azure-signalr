@@ -13,7 +13,7 @@ using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 
-namespace Microsoft.Azure.SignalR.Management
+namespace Microsoft.Azure.SignalR
 {
     internal class RestClient
     {
@@ -83,33 +83,13 @@ namespace Microsoft.Azure.SignalR.Management
             var innerException = new HttpRequestException(
                 $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})"); ;
 
-            switch (response.StatusCode)
+            throw response.StatusCode switch
             {
-                case HttpStatusCode.BadRequest:
-                    throw new AzureSignalRInvalidArgumentException(response.RequestMessage.RequestUri.ToString(), innerException, detail);
-                case HttpStatusCode.Unauthorized:
-                    throw new AzureSignalRUnauthorizedException(response.RequestMessage.RequestUri.ToString(), innerException);
-                case HttpStatusCode.NotFound:
-                    throw new AzureSignalRInaccessibleEndpointException(response.RequestMessage.RequestUri.ToString(), innerException);
-                default:
-                    throw new AzureSignalRRuntimeException(response.RequestMessage.RequestUri.ToString(), innerException);
-            }
-        }
-
-        private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, string productInfo, string methodName = null, object[] args = null)
-        {
-            var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
-            return GenerateHttpRequest(api.Audience, api.Query, httpMethod, payload, api.Token, productInfo);
-        }
-
-        private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, PayloadMessage payload, string tokenString, string productInfo)
-        {
-            var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            request.Headers.Add(Constants.AsrsUserAgent, productInfo);
-            request.Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
-            return request;
+                HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(response.RequestMessage.RequestUri.ToString(), innerException, detail),
+                HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(response.RequestMessage.RequestUri.ToString(), innerException),
+                HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(response.RequestMessage.RequestUri.ToString(), innerException),
+                _ => new AzureSignalRRuntimeException(response.RequestMessage.RequestUri.ToString(), innerException),
+            };
         }
 
         private static Uri GetUri(string url, IDictionary<string, StringValues> query)
@@ -140,6 +120,22 @@ namespace Microsoft.Azure.SignalR.Management
             }
             builder.Query = sb.ToString();
             return builder.Uri;
+        }
+
+        private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, string productInfo, string methodName = null, object[] args = null)
+        {
+            var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
+            return GenerateHttpRequest(api.Audience, api.Query, httpMethod, payload, api.Token, productInfo);
+        }
+
+        private HttpRequestMessage GenerateHttpRequest(string url, IDictionary<string, StringValues> query, HttpMethod httpMethod, PayloadMessage payload, string tokenString, string productInfo)
+        {
+            var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Add(Constants.AsrsUserAgent, productInfo);
+            request.Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
+            return request;
         }
     }
 }

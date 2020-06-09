@@ -8,6 +8,9 @@
     <MicrosoftAspNetCoreHttpConnectionsClientPackage3_0Version>3.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackage3_0Version>
     <MicrosoftExtensionsLoggingAbstractionsPackageVersion>1.0.0</MicrosoftExtensionsLoggingAbstractionsPackageVersion>
     <MicrosoftExtensionsLoggingAbstractionsPackage3_0Version>3.0.0</MicrosoftExtensionsLoggingAbstractionsPackage3_0Version>
+    <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0</MicrosoftExtensionsDependencyInjectionPackageVersion>
+    <MicrosoftExtensionsDependencyInjectionPackage3_0Version>3.0.0</MicrosoftExtensionsDependencyInjectionPackage3_0Version>
+    <MicrosoftExtensionHttpVersion>2.1.0</MicrosoftExtensionHttpVersion>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.0</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackage3_0Version>3.0.0</MicrosoftAspNetCoreConnectionsAbstractionsPackage3_0Version>
     <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0</MicrosoftAspNetCoreSignalRPackageVersion>
@@ -18,7 +21,6 @@
     <SystemMemoryPackageVersion>4.5.3</SystemMemoryPackageVersion>
     <SystemRuntimeCompilerServicesUnsafePackageVersion>4.5.2</SystemRuntimeCompilerServicesUnsafePackageVersion>
     <SystemIdentityModelTokensJwtPackageVersion>5.5.0</SystemIdentityModelTokensJwtPackageVersion>
-    <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0</MicrosoftExtensionsDependencyInjectionPackageVersion>
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.0</MicrosoftExtensionsPrimitivesPackageVersion>
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>
@@ -35,7 +37,6 @@
     <MicrosoftConfigurationFileExtensionVersion>2.2.0</MicrosoftConfigurationFileExtensionVersion>
     <MicrosoftConfigurationUserSecretVersion>2.2.0</MicrosoftConfigurationUserSecretVersion>
     <MicrosoftConfigurationEnvironmentVariablesVersion>2.2.0</MicrosoftConfigurationEnvironmentVariablesVersion>
-    <MicrosoftExtensionHttpVersion>2.2.0</MicrosoftExtensionHttpVersion>
     <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.0.11</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
 
     <!-- Signing -->

@@ -4,12 +4,12 @@
 using System;
 using System.Security.Claims;
 
-namespace Microsoft.Azure.SignalR.Management
+namespace Microsoft.Azure.SignalR
 {
     internal class RestApiAccessTokenGenerator
     {
-        private AccessKey _accessKey;
-        private Claim[] _claims;
+        private readonly AccessKey _accessKey;
+        private readonly Claim[] _claims;
 
         public RestApiAccessTokenGenerator(AccessKey accessKey)
         {
