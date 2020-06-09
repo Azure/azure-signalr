@@ -64,7 +64,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     try
                     {
-                        await AccessKey.AuthorizeTask(app, key, endpoint.Endpoint, endpoint.Port);
+                        await AccessKey.AuthorizeAsync(app, key, endpoint.Endpoint, endpoint.Port);
                         break;
                     }
                     catch (Exception)

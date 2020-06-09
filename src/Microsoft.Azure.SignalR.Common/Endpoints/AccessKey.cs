@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public static async Task AuthorizeTask(IConfidentialClientApplication app, AccessKey key, string endpoint, int? port)
+        public static async Task AuthorizeAsync(IConfidentialClientApplication app, AccessKey key, string endpoint, int? port)
         {
             var scopes = new string[] { ".default" };
             var token = await app.AcquireTokenForClient(scopes).WithSendX5C(true).ExecuteAsync();
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR
 
         private async Task Authorize(string endpoint, int? port, string accessToken)
         {
-            using var client = new HttpClient();
+            var client = HttpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             var query = HttpUtility.ParseQueryString(string.Empty);

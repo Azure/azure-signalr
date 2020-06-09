@@ -72,7 +72,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// </summary>
         public int? DisconnectTimeoutInSeconds { get; set; }
 
-        public AzureAdOptions AzureAdOptions { get; set; } = new AzureAdOptions();
+        public AzureAdOptions AzureAdOptions { get; set; } = AzureAdOptions.Disabled;
 
         public ServiceOptions()
         {

@@ -12,11 +12,13 @@ namespace Microsoft.Azure.SignalR
 
         public string TenantId { get; private set; }
 
-        public bool Enabled { get; } = false;
+        public bool Enabled { get; private set; } = false;
 
         public string Instance { get; set; } = "https://login.microsoftonline.com/{0}";
 
-        public AzureAdOptions()
+        public static AzureAdOptions Disabled = new AzureAdOptions();
+
+        private AzureAdOptions()
         {
         }
 

@@ -28,6 +28,8 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly TimeSpan _accessTokenLifetime;
         private readonly AccessTokenAlgorithm _algorithm;
 
+        private readonly TimerAwaitable _timer;
+
         public IWebProxy Proxy { get; }
 
         public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions options)
@@ -48,10 +50,31 @@ namespace Microsoft.Azure.SignalR.AspNet
             _algorithm = options.AccessTokenAlgorithm;
             Proxy = options.Proxy;
 
-            if (!_accessKey.InitializedTask.IsCompleted)
+            if (!_accessKey.Initialized)
             {
-                var app = AadHelper.BuildApplication(options.AzureAdOptions);
-                _ = AccessKey.AuthorizeTask(app, _accessKey, endpoint.Endpoint, endpoint.Port);
+                _timer = new TimerAwaitable(TimeSpan.FromMinutes(55), TimeSpan.FromMinutes(55));
+                _ = RefreshAccessKey(endpoint, _accessKey, options.AzureAdOptions);
+            }
+        }
+
+        private async Task RefreshAccessKey(ServiceEndpoint endpoint, AccessKey key, AzureAdOptions options)
+        {
+            var app = AadHelper.BuildApplication(options);
+
+            while (await _timer)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    try
+                    {
+                        await AccessKey.AuthorizeAsync(app, key, endpoint.Endpoint, endpoint.Port);
+                        break;
+                    }
+                    catch (Exception)
+                    {
+                        // Retry authorizing access key, up to 3 times.
+                    }
+                }
             }
         }
 
