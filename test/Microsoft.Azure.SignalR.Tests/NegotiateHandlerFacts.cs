@@ -385,14 +385,14 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(-10)]
         [InlineData(0)]
         [InlineData(500)]
-        public void TestInvalidDisconnectTimeoutThrowsAfterBuild(int disconnectTimeout)
+        public void TestInvalidDisconnectTimeoutThrowsAfterBuild(int maxPollInterval)
         {
             var config = new ConfigurationBuilder().Build();
             var serviceProvider = new ServiceCollection().AddSignalR()
                 .AddAzureSignalR(o =>
                 {
                     o.ConnectionString = DefaultConnectionString;
-                    o.DisconnectTimeoutInSeconds = disconnectTimeout;
+                    o.MaxPollIntervalInSeconds = maxPollInterval;
                 })
                 .Services
                 .AddLogging()
@@ -406,14 +406,14 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(1)]
         [InlineData(15)]
         [InlineData(300)]
-        public async Task TestNegotiateHandlerResponseContainsValidDisconnectTimeout(int disconnectTimeout)
+        public async Task TestNegotiateHandlerResponseContainsValidMaxPollInterval(int maxPollInterval)
         {
             var config = new ConfigurationBuilder().Build();
             var serviceProvider = new ServiceCollection().AddSignalR()
                 .AddAzureSignalR(o =>
                 {
                     o.ConnectionString = DefaultConnectionString;
-                    o.DisconnectTimeoutInSeconds = disconnectTimeout;
+                    o.MaxPollIntervalInSeconds = maxPollInterval;
                 })
                 .Services
                 .AddLogging()
@@ -438,7 +438,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var tokens = JwtTokenHelper.JwtHandler.ReadJwtToken(response.AccessToken);
 
-            Assert.Contains(tokens.Claims, x => x.Type == Constants.ClaimType.DisconnectTimeout && x.Value == disconnectTimeout.ToString());
+            Assert.Contains(tokens.Claims, x => x.Type == Constants.ClaimType.MaxPollInterval && x.Value == maxPollInterval.ToString());
         }
 
         private sealed class TestServerNameProvider : IServerNameProvider

@@ -190,11 +190,11 @@ namespace Owin
                 throw new ArgumentException("A configuration object must be specified.");
             }
 
-            // DisconnectTimeout should be [1,300]
-            if (options.DisconnectTimeoutInSeconds.HasValue
-                && (options.DisconnectTimeoutInSeconds < 1 || options.DisconnectTimeoutInSeconds > 300))
+            // MaxPollInterval should be [1,300] seconds
+            if (options.MaxPollIntervalInSeconds.HasValue
+                && (options.MaxPollIntervalInSeconds < 1 || options.MaxPollIntervalInSeconds > 300))
             {
-                throw new AzureSignalRInvalidServiceOptionsException("DisconnectTimeoutInSeconds", "[1,300]");
+                throw new AzureSignalRInvalidServiceOptionsException("MaxPollIntervalInSeconds", "[1,300]");
             }
 
             var loggerFactory = DispatcherHelper.GetLoggerFactory(configuration) ?? NullLoggerFactory.Instance;
