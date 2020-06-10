@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestApiProvider
     {

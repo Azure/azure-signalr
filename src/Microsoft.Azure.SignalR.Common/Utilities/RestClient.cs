@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR
         {
             var httpClient = HttpClientFactory.CreateClient();
             var request = BuildRequest(api, httpMethod, productInfo, methodName, args);
-            HttpResponseMessage response = null;
+            HttpResponseMessage response;
 
             try
             {
