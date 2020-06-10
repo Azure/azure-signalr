@@ -719,6 +719,59 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             Assert.Equal(name, testLoggerProvider.Loggers[0]);
         }
 
+        [Theory]
+        [InlineData(-10)]
+        [InlineData(0)]
+        [InlineData(500)]
+        public void TestRunAzureSignalRWithInvalidMaxPollIntervalThrows(int maxPollInterval)
+        {
+            var hubConfig = new HubConfiguration();
+            hubConfig.Resolver = new DefaultDependencyResolver();
+            var exception = Assert.Throws<AzureSignalRInvalidServiceOptionsException>(
+                    () =>
+                    {
+                        using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, hubConfig, options =>
+                        {
+                            options.ConnectionString = ConnectionString;
+                            options.MaxPollIntervalInSeconds = maxPollInterval;
+                        })))
+                        {
+                        }
+                    });
+            Assert.Contains("MaxPollIntervalInSeconds", exception.Message);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(15)]
+        [InlineData(300)]
+        public async Task TestRunAzureSignalRRespectValidMaxPollInterval(int timeout)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var name = nameof(TestRunAzureSignalRRespectValidMaxPollInterval);
+                var hubConfiguration = Utility.GetTestHubConfig(loggerFactory);
+                var serverNameProvider = new TestServerNameProvider(name);
+                hubConfiguration.Resolver.Register(typeof(IServerNameProvider), () => serverNameProvider);
+                using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, hubConfiguration, options =>
+                {
+                    options.ConnectionString = ConnectionString;
+                    options.MaxPollIntervalInSeconds = timeout;
+                })))
+                {
+                    var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
+                    var response = await client.GetAsync("/negotiate");
+
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    var message = await response.Content.ReadAsStringAsync();
+                    var responseObject = JsonConvert.DeserializeObject<ResponseMessage>(message);
+
+                    var token = JwtSecurityTokenHandler.ReadJwtToken(responseObject.AccessToken);
+                    Assert.Contains(token.Claims, x => x.Type == Constants.ClaimType.MaxPollInterval && x.Value == timeout.ToString());
+                }
+            }
+        }
+
         private sealed class TestLoggerProvider : ILoggerProvider
         {
             public List<string> Loggers { get; } = new List<string>();

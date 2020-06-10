@@ -119,6 +119,44 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
         [MemberData(nameof(TestData))]
+        internal async Task TestAddUserToGroupWithTtl(ServiceTransportType serviceTransportType, string appName)
+        {
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            try
+            {
+                var userGroupDict = GenerateUserGroupDict(_userNames, _groupNames);
+                var receivedMessageDict = new ConcurrentDictionary<int, int>();
+                await RunTestCore(
+                    clientEndpoint,
+                    clientAccessTokens,
+                    () => SendToGroupCore(serviceHubContext, userGroupDict, SendAsync, (c, d) => AddUserToGroupWithTtlAsync(c, d, TimeSpan.FromSeconds(10)), Empty),
+                    _userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length,
+                    receivedMessageDict);
+
+                await Task.Delay(TimeSpan.FromSeconds(10));
+                receivedMessageDict.Clear();
+                await RunTestCore(
+                    clientEndpoint,
+                    clientAccessTokens,
+                    () => SendToGroupCore(serviceHubContext, userGroupDict, SendAsync, Empty, UserRemoveFromGroupsOneByOneAsync),
+                    0,
+                    receivedMessageDict);
+            }
+            finally
+            {
+                await serviceHubContext.DisposeAsync();
+            }
+
+            Task SendAsync() =>
+                serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
+
+            static Task Empty(IServiceHubContext context, IDictionary<string, List<string>> dict) =>
+                Task.CompletedTask;
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [MemberData(nameof(TestData))]
         internal async Task SendToGroupsTest(ServiceTransportType serviceTransportType, string appName)
         {
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
@@ -155,6 +193,34 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             finally
             {
                 await serviceHubContext.DisposeAsync();
+            }
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        internal async Task CheckUserExistenceInGroupTest()
+        {
+            var serviceManager = new ServiceManagerBuilder()
+                .WithOptions(o => o.ConnectionString = TestConfiguration.Instance.ConnectionString)
+                .Build();
+            var hubName = nameof(CheckUserExistenceInGroupTest);
+            var endpoint = serviceManager.GetClientEndpoint(hubName);
+            var group = $"{nameof(CheckUserExistenceInGroupTest)}_group";
+            var user = $"{nameof(CheckUserExistenceInGroupTest)}_user";
+            var token = serviceManager.GenerateClientAccessToken(hubName, user);
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var serviceHubContext = await serviceManager.CreateHubContextAsync(hubName, loggerFactory);
+                var conn = CreateHubConnection(endpoint, token);
+                await conn.StartAsync().OrTimeout();
+                await Task.Delay(_timeout);
+                await serviceHubContext.UserGroups.AddToGroupAsync(user, group).OrTimeout();
+                await Task.Delay(_timeout);
+                Assert.True(await serviceHubContext.UserGroups.IsUserInGroup(user, group).OrTimeout());
+                await serviceHubContext.UserGroups.RemoveFromGroupAsync(user, group).OrTimeout();
+                await Task.Delay(_timeout);
+                Assert.False(await serviceHubContext.UserGroups.IsUserInGroup(user, group).OrTimeout());
+                await conn.StopAsync().OrTimeout();
             }
         }
 
@@ -254,6 +320,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                                                     select serviceHubContext.UserGroups.AddToGroupAsync(usergroup.Key, grp)));
         }
 
+        private static Task AddUserToGroupWithTtlAsync(IServiceHubContext serviceHubContext, IDictionary<string, List<string>> userGroupDict, TimeSpan ttl)
+        {
+            return Task.WhenAll(from usergroup in userGroupDict
+                                select Task.WhenAll(from grp in usergroup.Value
+                                                    select serviceHubContext.UserGroups.AddToGroupAsync(usergroup.Key, grp, ttl)));
+        }
+
         private static Task UserRemoveFromGroupsOneByOneAsync(IServiceHubContext serviceHubContext, IDictionary<string, List<string>> userGroupDict)
         {
             return Task.WhenAll(from usergroup in userGroupDict
@@ -332,7 +405,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
                 var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
                 var tokens = from userName in _userNames
-                                         select serviceManager.GenerateClientAccessToken(HubName, userName);
+                             select serviceManager.GenerateClientAccessToken(HubName, userName);
                 return (clientEndpoint, tokens, serviceHubContext);
             }
         }

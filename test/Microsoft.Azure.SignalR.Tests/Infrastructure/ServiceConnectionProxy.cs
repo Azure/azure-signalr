@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -232,26 +233,30 @@ namespace Microsoft.Azure.SignalR.Tests
             return tcs.Task;
         }
 
-        public void AddClientConnection(ClientConnectionContext clientConnection)
+        public bool TryAddClientConnection(ClientConnectionContext connection)
         {
-            ClientConnectionManager.AddClientConnection(clientConnection);
-
-            if (_waitForConnectionOpen.TryGetValue(clientConnection.ConnectionId, out var tcs))
+            if (ClientConnectionManager.TryAddClientConnection(connection))
             {
-                tcs.TrySetResult(clientConnection);
+                if (_waitForConnectionOpen.TryGetValue(connection.ConnectionId, out var tcs))
+                {
+                    tcs.TrySetResult(connection);
+                }
+                return true;
             }
+            return false;
         }
 
-        public ClientConnectionContext RemoveClientConnection(string connectionId)
+        public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
         {
-            var connection = ClientConnectionManager.RemoveClientConnection(connectionId);
-
-            if (_waitForConnectionClose.TryGetValue(connectionId, out var tcs))
+            if (ClientConnectionManager.TryRemoveClientConnection(connectionId, out connection))
             {
-                tcs.TrySetResult(null);
+                if (_waitForConnectionClose.TryGetValue(connectionId, out var tcs))
+                {
+                    tcs.TrySetResult(null);
+                }
+                return true;
             }
-
-            return connection;
+            return false;
         }
 
         public ClientConnectionContext CreateConnection(OpenConnectionMessage message, Action<HttpContext> configureContext = null)

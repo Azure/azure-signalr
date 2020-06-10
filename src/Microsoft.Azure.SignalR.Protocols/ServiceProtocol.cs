@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ServiceProtocolConstants.HandshakeRequestType:
                     return CreateHandshakeRequestMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.HandshakeResponseType:
-                    return CreateHandshakeResponseMessage(ref reader);
+                    return CreateHandshakeResponseMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.PingMessageType:
                     return CreatePingMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.OpenConnectionMessageType:
@@ -56,35 +56,37 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ServiceProtocolConstants.CloseConnectionMessageType:
                     return CreateCloseConnectionMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.ConnectionDataMessageType:
-                    return CreateConnectionDataMessage(ref reader);
+                    return CreateConnectionDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.MultiConnectionDataMessageType:
-                    return CreateMultiConnectionDataMessage(ref reader);
+                    return CreateMultiConnectionDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.UserDataMessageType:
-                    return CreateUserDataMessage(ref reader);
+                    return CreateUserDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.MultiUserDataMessageType:
-                    return CreateMultiUserDataMessage(ref reader);
+                    return CreateMultiUserDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.BroadcastDataMessageType:
-                    return CreateBroadcastDataMessage(ref reader);
+                    return CreateBroadcastDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.JoinGroupMessageType:
-                    return CreateJoinGroupMessage(ref reader);
+                    return CreateJoinGroupMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.LeaveGroupMessageType:
-                    return CreateLeaveGroupMessage(ref reader);
+                    return CreateLeaveGroupMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.UserJoinGroupMessageType:
-                    return CreateUserJoinGroupMessage(ref reader);
+                    return CreateUserJoinGroupMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.UserLeaveGroupMessageType:
-                    return CreateUserLeaveGroupMessage(ref reader);
+                    return CreateUserLeaveGroupMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.GroupBroadcastDataMessageType:
-                    return CreateGroupBroadcastDataMessage(ref reader);
+                    return CreateGroupBroadcastDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.MultiGroupBroadcastDataMessageType:
-                    return CreateMultiGroupBroadcastDataMessage(ref reader);
+                    return CreateMultiGroupBroadcastDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.ServiceErrorMessageType:
                     return CreateServiceErrorMessage(ref reader);
                 case ServiceProtocolConstants.JoinGroupWithAckMessageType:
-                    return CreateJoinGroupWithAckMessage(ref reader);
+                    return CreateJoinGroupWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.LeaveGroupWithAckMessageType:
-                    return CreateLeaveGroupWithAckMessage(ref reader);
+                    return CreateLeaveGroupWithAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.CheckUserInGroupWithAckMessageType:
+                    return CreateCheckUserInGroupWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.AckMessageType:
-                    return CreateAckMessage(ref reader);
+                    return CreateAckMessage(ref reader, arrayLength);
                 default:
                     // Future protocol changes can add message types, old clients can ignore them
                     return null;
@@ -190,6 +192,9 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case LeaveGroupWithAckMessage leaveGroupWithAckMessage:
                     WriteLeaveGroupWithAckMessage(ref writer, leaveGroupWithAckMessage);
                     break;
+                case CheckUserInGroupWithAckMessage checkUserInGroupWithAckMessage:
+                    WriteCheckUserInGroupWithAckMessage(ref writer, checkUserInGroupWithAckMessage);
+                    break;
                 case UserJoinGroupMessage userJoinGroupMessage:
                     WriteUserJoinGroupMessage(ref writer, userJoinGroupMessage);
                     break;
@@ -217,19 +222,21 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteHandshakeRequestMessage(ref MessagePackWriter writer, HandshakeRequestMessage message)
         {
-            writer.WriteArrayHeader(5);
+            writer.WriteArrayHeader(6);
             writer.Write(ServiceProtocolConstants.HandshakeRequestType);
             writer.Write(message.Version);
             writer.Write(message.ConnectionType);
             writer.Write(message.ConnectionType == 0 ? "" : message.Target ?? string.Empty);
             writer.Write((int)message.MigrationLevel);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteHandshakeResponseMessage(ref MessagePackWriter writer, HandshakeResponseMessage message)
         {
-            writer.WriteArrayHeader(2);
+            writer.WriteArrayHeader(3);
             writer.Write(ServiceProtocolConstants.HandshakeResponseType);
             writer.Write(message.ErrorMessage);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WritePingMessage(ref MessagePackWriter writer, PingMessage message)
@@ -244,7 +251,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteOpenConnectionMessage(ref MessagePackWriter writer, OpenConnectionMessage message)
         {
-            writer.WriteArrayHeader(5);
+            writer.WriteArrayHeader(6);
             writer.Write(ServiceProtocolConstants.OpenConnectionMessageType);
             writer.Write(message.ConnectionId);
 
@@ -264,107 +271,120 @@ namespace Microsoft.Azure.SignalR.Protocol
             WriteHeaders(ref writer, message.Headers);
 
             writer.Write(message.QueryString);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteCloseConnectionMessage(ref MessagePackWriter writer, CloseConnectionMessage message)
         {
-            writer.WriteArrayHeader(4);
+            writer.WriteArrayHeader(5);
             writer.Write(ServiceProtocolConstants.CloseConnectionMessageType);
             writer.Write(message.ConnectionId);
             writer.Write(message.ErrorMessage);
             WriteHeaders(ref writer, message.Headers);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteConnectionDataMessage(ref MessagePackWriter writer, ConnectionDataMessage message)
         {
-            writer.WriteArrayHeader(3);
+            writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.ConnectionDataMessageType);
             writer.Write(message.ConnectionId);
 
             /************ REVIEW ************/
             // REVIEW : PREVIOUS CODE WAS writing every bytes manualy, not sure if this is the strict equivalent in term of serialization
             writer.Write(message.Payload);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteMultiConnectionDataMessage(ref MessagePackWriter writer, MultiConnectionDataMessage message)
         {
-            writer.WriteArrayHeader(3);
+            writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.MultiConnectionDataMessageType);
             WriteStringArray(ref writer, message.ConnectionList);
             WritePayloads(ref writer, message.Payloads);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteUserDataMessage(ref MessagePackWriter writer, UserDataMessage message)
         {
-            writer.WriteArrayHeader(3);
+            writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.UserDataMessageType);
             writer.Write(message.UserId);
             WritePayloads(ref writer, message.Payloads);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteMultiUserDataMessage(ref MessagePackWriter writer, MultiUserDataMessage message)
         {
-            writer.WriteArrayHeader(3);
+            writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.MultiUserDataMessageType);
             WriteStringArray(ref writer, message.UserList);
             WritePayloads(ref writer, message.Payloads);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteBroadcastDataMessage(ref MessagePackWriter writer, BroadcastDataMessage message)
         {
-            writer.WriteArrayHeader(3);
+            writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.BroadcastDataMessageType);
             WriteStringArray(ref writer, message.ExcludedList);
             WritePayloads(ref writer, message.Payloads);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteJoinGroupMessage(ref MessagePackWriter writer, JoinGroupMessage message)
         {
-            writer.WriteArrayHeader(3);
+            writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.JoinGroupMessageType);
             writer.Write(message.ConnectionId);
             writer.Write(message.GroupName);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteLeaveGroupMessage(ref MessagePackWriter writer, LeaveGroupMessage message)
         {
-            writer.WriteArrayHeader(3);
+            writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.LeaveGroupMessageType);
             writer.Write(message.ConnectionId);
             writer.Write(message.GroupName);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteUserJoinGroupMessage(ref MessagePackWriter writer, UserJoinGroupMessage message)
         {
-            writer.WriteArrayHeader(3);
+            writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.UserJoinGroupMessageType);
             writer.Write(message.UserId);
             writer.Write(message.GroupName);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteUserLeaveGroupMessage(ref MessagePackWriter writer, UserLeaveGroupMessage message)
         {
-            writer.WriteArrayHeader(3);
+            writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.UserLeaveGroupMessageType);
             writer.Write(message.UserId);
             writer.Write(message.GroupName);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteGroupBroadcastDataMessage(ref MessagePackWriter writer, GroupBroadcastDataMessage message)
         {
-            writer.WriteArrayHeader(4);
+            writer.WriteArrayHeader(5);
             writer.Write(ServiceProtocolConstants.GroupBroadcastDataMessageType);
             writer.Write(message.GroupName);
             WriteStringArray(ref writer, message.ExcludedList);
             WritePayloads(ref writer, message.Payloads);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteMultiGroupBroadcastDataMessage(ref MessagePackWriter writer, MultiGroupBroadcastDataMessage message)
         {
-            writer.WriteArrayHeader(3);
+            writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.MultiGroupBroadcastDataMessageType);
             WriteStringArray(ref writer, message.GroupList);
             WritePayloads(ref writer, message.Payloads);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteServiceErrorMessage(ref MessagePackWriter writer, ServiceErrorMessage message)
@@ -376,29 +396,42 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteJoinGroupWithAckMessage(ref MessagePackWriter writer, JoinGroupWithAckMessage message)
         {
-            writer.WriteArrayHeader(4);
+            writer.WriteArrayHeader(5);
             writer.Write(ServiceProtocolConstants.JoinGroupWithAckMessageType);
             writer.Write(message.ConnectionId);
             writer.Write(message.GroupName);
             writer.Write(message.AckId);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteLeaveGroupWithAckMessage(ref MessagePackWriter writer, LeaveGroupWithAckMessage message)
         {
-            writer.WriteArrayHeader(4);
+            writer.WriteArrayHeader(5);
             writer.Write(ServiceProtocolConstants.LeaveGroupWithAckMessageType);
             writer.Write(message.ConnectionId);
             writer.Write(message.GroupName);
             writer.Write(message.AckId);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteCheckUserInGroupWithAckMessage(ref MessagePackWriter writer, CheckUserInGroupWithAckMessage message)
+        {
+            writer.WriteArrayHeader(5);
+            writer.Write(ServiceProtocolConstants.CheckUserInGroupWithAckMessageType);
+            writer.Write(message.UserId);
+            writer.Write(message.GroupName);
+            writer.Write(message.AckId);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteAckMessage(ref MessagePackWriter writer, AckMessage message)
         {
-            writer.WriteArrayHeader(4);
+            writer.WriteArrayHeader(5);
             writer.Write(ServiceProtocolConstants.AckMessageType);
             writer.Write(message.AckId);
             writer.Write(message.Status);
             writer.Write(message.Message);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteStringArray(ref MessagePackWriter writer, IReadOnlyList<string> array)
@@ -474,14 +507,22 @@ namespace Microsoft.Azure.SignalR.Protocol
                 result.Target = ReadString(ref reader, "target");
             }
             result.MigrationLevel = arrayLength >= 5 ? ReadInt32(ref reader, "migratableStatus") : 0;
+            if (arrayLength >= 6)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
             return result;
         }
 
-        private static HandshakeResponseMessage CreateHandshakeResponseMessage(ref MessagePackReader reader)
+        private static HandshakeResponseMessage CreateHandshakeResponseMessage(ref MessagePackReader reader, int arrayLength)
         {
             var errorMessage = ReadString(ref reader, "errorMessage");
-
-            return new HandshakeResponseMessage(errorMessage);
+            var result = new HandshakeResponseMessage(errorMessage);
+            if (arrayLength >= 3)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
         private static PingMessage CreatePingMessage(ref MessagePackReader reader, int arrayLength)
@@ -506,11 +547,16 @@ namespace Microsoft.Azure.SignalR.Protocol
             var claims = ReadClaims(ref reader);
 
             // Backward compatible with old versions
-            if (arrayLength > 3)
+            if (arrayLength >= 5)
             {
                 var headers = ReadHeaders(ref reader);
                 var queryString = ReadString(ref reader, "queryString");
-                return new OpenConnectionMessage(connectionId, claims, headers, queryString);
+                var result = new OpenConnectionMessage(connectionId, claims, headers, queryString);
+                if (arrayLength >= 6)
+                {
+                    result.ReadExtensionMembers(ref reader);
+                }
+                return result;
             }
             else
             {
@@ -522,97 +568,157 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             var connectionId = ReadString(ref reader, "connectionId");
             var errorMessage = ReadString(ref reader, "errorMessage");
-            var headers = arrayLength > 3 ? ReadHeaders(ref reader) : new Dictionary<string, StringValues>();
-            return new CloseConnectionMessage(connectionId, errorMessage, headers);
+            var headers = arrayLength >= 4 ? ReadHeaders(ref reader) : new Dictionary<string, StringValues>();
+            var result = new CloseConnectionMessage(connectionId, errorMessage, headers);
+            if (arrayLength >= 5)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
-        private static ConnectionDataMessage CreateConnectionDataMessage(ref MessagePackReader reader)
+        private static ConnectionDataMessage CreateConnectionDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var connectionId = ReadString(ref reader, "connectionId");
             var payload = ReadBytes(ref reader, "payload");
 
-            return new ConnectionDataMessage(connectionId, payload);
+            var result = new ConnectionDataMessage(connectionId, payload);
+            if (arrayLength >= 4)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
-        private static MultiConnectionDataMessage CreateMultiConnectionDataMessage(ref MessagePackReader reader)
+        private static MultiConnectionDataMessage CreateMultiConnectionDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var connectionList = ReadStringArray(ref reader, "connectionList");
             var payloads = ReadPayloads(ref reader);
 
-            return new MultiConnectionDataMessage(connectionList, payloads);
+            var result = new MultiConnectionDataMessage(connectionList, payloads);
+            if (arrayLength >= 4)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
-        private static ServiceMessage CreateUserDataMessage(ref MessagePackReader reader)
+        private static ServiceMessage CreateUserDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var userId = ReadString(ref reader, "userId");
             var payloads = ReadPayloads(ref reader);
 
-            return new UserDataMessage(userId, payloads);
+            var result = new UserDataMessage(userId, payloads);
+            if (arrayLength >= 4)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
-        private static MultiUserDataMessage CreateMultiUserDataMessage(ref MessagePackReader reader)
+        private static MultiUserDataMessage CreateMultiUserDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var userList = ReadStringArray(ref reader, "userList");
             var payloads = ReadPayloads(ref reader);
 
-            return new MultiUserDataMessage(userList, payloads);
+            var result = new MultiUserDataMessage(userList, payloads);
+            if (arrayLength >= 4)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
-        private static BroadcastDataMessage CreateBroadcastDataMessage(ref MessagePackReader reader)
+        private static BroadcastDataMessage CreateBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var excludedList = ReadStringArray(ref reader, "excludedList");
             var payloads = ReadPayloads(ref reader);
 
-            return new BroadcastDataMessage(excludedList, payloads);
+            var result = new BroadcastDataMessage(excludedList, payloads);
+            if (arrayLength >= 4)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
-        private static JoinGroupMessage CreateJoinGroupMessage(ref MessagePackReader reader)
+        private static JoinGroupMessage CreateJoinGroupMessage(ref MessagePackReader reader, int arrayLength)
         {
             var connectionId = ReadString(ref reader, "connectionId");
             var groupName = ReadString(ref reader, "groupName");
 
-            return new JoinGroupMessage(connectionId, groupName);
+            var result = new JoinGroupMessage(connectionId, groupName);
+            if (arrayLength >= 4)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
-        private static LeaveGroupMessage CreateLeaveGroupMessage(ref MessagePackReader reader)
+        private static LeaveGroupMessage CreateLeaveGroupMessage(ref MessagePackReader reader, int arrayLength)
         {
             var connectionId = ReadString(ref reader, "connectionId");
             var groupName = ReadString(ref reader, "groupName");
 
-            return new LeaveGroupMessage(connectionId, groupName);
+            var result = new LeaveGroupMessage(connectionId, groupName);
+            if (arrayLength >= 4)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
-        private static UserJoinGroupMessage CreateUserJoinGroupMessage(ref MessagePackReader reader)
+        private static UserJoinGroupMessage CreateUserJoinGroupMessage(ref MessagePackReader reader, int arrayLength)
         {
             var userId = ReadString(ref reader, "userId");
             var groupName = ReadString(ref reader, "groupName");
 
-            return new UserJoinGroupMessage(userId, groupName);
+            var result = new UserJoinGroupMessage(userId, groupName);
+            if (arrayLength >= 4)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
-        private static UserLeaveGroupMessage CreateUserLeaveGroupMessage(ref MessagePackReader reader)
+        private static UserLeaveGroupMessage CreateUserLeaveGroupMessage(ref MessagePackReader reader, int arrayLength)
         {
             var userId = ReadString(ref reader, "userId");
             var groupName = ReadString(ref reader, "groupName");
 
-            return new UserLeaveGroupMessage(userId, groupName);
+            var result = new UserLeaveGroupMessage(userId, groupName);
+            if (arrayLength >= 4)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
-        private static GroupBroadcastDataMessage CreateGroupBroadcastDataMessage(ref MessagePackReader reader)
+        private static GroupBroadcastDataMessage CreateGroupBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var groupName = ReadString(ref reader, "groupName");
             var excludedList = ReadStringArray(ref reader, "excludedList");
             var payloads = ReadPayloads(ref reader);
 
-            return new GroupBroadcastDataMessage(groupName, excludedList, payloads);
+            var result = new GroupBroadcastDataMessage(groupName, excludedList, payloads);
+            if (arrayLength >= 5)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
-        private static MultiGroupBroadcastDataMessage CreateMultiGroupBroadcastDataMessage(ref MessagePackReader reader)
+        private static MultiGroupBroadcastDataMessage CreateMultiGroupBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var groupList = ReadStringArray(ref reader, "groupList");
             var payloads = ReadPayloads(ref reader);
 
-            return new MultiGroupBroadcastDataMessage(groupList, payloads);
+            var result = new MultiGroupBroadcastDataMessage(groupList, payloads);
+            if (arrayLength >= 4)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
         private static ServiceErrorMessage CreateServiceErrorMessage(ref MessagePackReader reader)
@@ -622,31 +728,60 @@ namespace Microsoft.Azure.SignalR.Protocol
             return new ServiceErrorMessage(errorMessage);
         }
 
-        private static JoinGroupWithAckMessage CreateJoinGroupWithAckMessage(ref MessagePackReader reader)
+        private static JoinGroupWithAckMessage CreateJoinGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
             var connectionId = ReadString(ref reader, "connectionId");
             var groupName = ReadString(ref reader, "groupName");
             var ackId = ReadInt32(ref reader, "ackId");
 
-            return new JoinGroupWithAckMessage(connectionId, groupName, ackId);
+            var result = new JoinGroupWithAckMessage(connectionId, groupName, ackId);
+            if (arrayLength >= 5)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
-        private static LeaveGroupWithAckMessage CreateLeaveGroupWithAckMessage(ref MessagePackReader reader)
+        private static LeaveGroupWithAckMessage CreateLeaveGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
             var connectionId = ReadString(ref reader, "connectionId");
             var groupName = ReadString(ref reader, "groupName");
             var ackId = ReadInt32(ref reader, "ackId");
 
-            return new LeaveGroupWithAckMessage(connectionId, groupName, ackId);
+            var result = new LeaveGroupWithAckMessage(connectionId, groupName, ackId);
+            if (arrayLength >= 5)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
-        private static AckMessage CreateAckMessage(ref MessagePackReader reader)
+        private static CheckUserInGroupWithAckMessage CreateCheckUserInGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var userId = ReadString(ref reader, "userId");
+            var groupName = ReadString(ref reader, "groupName");
+            var ackId = ReadInt32(ref reader, "ackId");
+
+            var result = new CheckUserInGroupWithAckMessage(userId, groupName, ackId);
+            if (arrayLength >= 5)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
+        }
+
+        private static AckMessage CreateAckMessage(ref MessagePackReader reader, int arrayLength)
         {
             var ackId = ReadInt32(ref reader, "ackId");
             var status = ReadInt32(ref reader, "status");
             var message = ReadString(ref reader, "message");
 
-            return new AckMessage(ackId, status, message);
+            var result = new AckMessage(ackId, status, message);
+            if (arrayLength >= 5)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
         }
 
         private static Claim[] ReadClaims(ref MessagePackReader reader)

@@ -14,11 +14,12 @@ namespace Microsoft.Azure.SignalR
 {
     internal abstract class ServiceLifetimeManagerBase<THub> : HubLifetimeManager<THub> where THub : Hub
     {
+        protected const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
+        protected const string TtlOutOfRangeErrorMessage = "Ttl cannot be less than 0.";
+
         private readonly DefaultHubMessageSerializer _messageSerializer;
 
         protected readonly IServiceConnectionManager<THub> ServiceConnectionContainer;
-
-        protected const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
 
         public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver, IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions)
         {

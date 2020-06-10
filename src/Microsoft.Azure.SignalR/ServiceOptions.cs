@@ -60,24 +60,12 @@ namespace Microsoft.Azure.SignalR
         public ServerStickyMode ServerStickyMode { get; set; } = ServerStickyMode.Disabled;
 
         /// <summary>
-        /// Specifies if server will shutdown gracefully. 
-        /// Default value is false.
-        /// </summary>
-        internal bool EnableGracefulShutdown { get; set; } = false;
-
-        /// <summary>
-        /// Specifies the timeout of a graceful shutdown process (in seconds). 
-        /// Default value is 30 seconds.
-        /// </summary>
-        internal TimeSpan ServerShutdownTimeout { get; set; } = Constants.Periods.DefaultShutdownTimeout;
-
-        /// <summary>
         /// Specifies if the client-connection assigned to this server can be migrated to another server.
         /// Default value is 0.
         /// 1: Only migrate client-connection if server was shutdown gracefully.
         /// 2: Migrate client-connection even if server-connection was accidentally dropped. (Potential data losses)
         /// </summary>
-        internal ServerConnectionMigrationLevel MigrationLevel { get; set; } = ServerConnectionMigrationLevel.Off;
+        public GracefulShutdownOptions GracefulShutdown { get; set; } = new GracefulShutdownOptions();
 
         /// <summary>
         /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
@@ -88,6 +76,12 @@ namespace Microsoft.Azure.SignalR
         /// Gets or sets timeout waiting when scale multiple Azure SignalR Service endpoints.
         /// Default value is 5 minutes
         /// </summary>
-        internal TimeSpan ServiceScaleTimeout { get; set; } = Constants.Periods.DefaultScaleTimeout;
+        public TimeSpan ServiceScaleTimeout { get; set; } = Constants.Periods.DefaultScaleTimeout;
+
+        /// <summary>
+        /// Gets or sets the interval in seconds used by the Azure SignalR Service to timeout idle LongPolling connections.
+        /// Default value is 5, limited to [1, 300].
+        /// </summary>
+        public int? MaxPollIntervalInSeconds { get; set; }
     }
 }

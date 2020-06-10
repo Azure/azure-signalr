@@ -4,6 +4,7 @@
 using System;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Azure.SignalR.AspNet;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Owin
@@ -187,6 +188,13 @@ namespace Owin
             {
                 // Keep the same as SignalR's exception
                 throw new ArgumentException("A configuration object must be specified.");
+            }
+
+            // MaxPollInterval should be [1,300] seconds
+            if (options.MaxPollIntervalInSeconds.HasValue
+                && (options.MaxPollIntervalInSeconds < 1 || options.MaxPollIntervalInSeconds > 300))
+            {
+                throw new AzureSignalRInvalidServiceOptionsException("MaxPollIntervalInSeconds", "[1,300]");
             }
 
             var loggerFactory = DispatcherHelper.GetLoggerFactory(configuration) ?? NullLoggerFactory.Instance;

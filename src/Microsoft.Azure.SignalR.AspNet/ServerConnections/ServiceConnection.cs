@@ -9,9 +9,9 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -27,8 +27,8 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private static readonly TimeSpan CloseApplicationTimeout = TimeSpan.FromSeconds(5);
 
-        private readonly ConcurrentDictionary<string, ClientContext> _clientConnections =
-            new ConcurrentDictionary<string, ClientContext>(StringComparer.Ordinal);
+        private readonly ConcurrentDictionary<string, ClientConnectionContext> _clientConnections =
+            new ConcurrentDictionary<string, ClientConnectionContext>(StringComparer.Ordinal);
 
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionManager _clientConnectionManager;
@@ -50,7 +50,6 @@ namespace Microsoft.Azure.SignalR.AspNet
                   endpoint,
                   serviceMessageHandler,
                   connectionType,
-                  ServerConnectionMigrationLevel.Off,
                   loggerFactory?.CreateLogger<ServiceConnection>())
         {
             _connectionFactory = connectionFactory;
@@ -83,20 +82,30 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             // Create empty transport with only channel for async processing messages
             var connectionId = openConnectionMessage.ConnectionId;
-            var clientContext = new ClientContext(connectionId, GetInstanceId(openConnectionMessage.Headers));
+            var clientContext = new ClientConnectionContext(this, connectionId, GetInstanceId(openConnectionMessage.Headers));
 
-            if (_clientConnectionManager.TryAdd(connectionId, this))
+            bool isDiagnosticClient = false;
+            openConnectionMessage.Headers.TryGetValue(Constants.AsrsIsDiagnosticClient, out var isDiagnosticClientValue);
+            if (!StringValues.IsNullOrEmpty(isDiagnosticClientValue))
             {
-                _clientConnections.TryAdd(connectionId, clientContext);
-                clientContext.ApplicationTask = ProcessMessageAsync(clientContext, clientContext.CancellationToken);
-                return ForwardMessageToApplication(connectionId, openConnectionMessage);
+                isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault());
             }
-            else
+
+            using (new ClientConnectionScope(outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
             {
-                // the manager still contains this connectionId, probably this connection is not yet cleaned up
-                Log.DuplicateConnectionId(Logger, connectionId, null);
-                return SafeWriteAsync(
-                    new CloseConnectionMessage(connectionId, $"Duplicate connection ID {connectionId}"));
+                if (_clientConnectionManager.TryAddClientConnection(clientContext))
+                {
+                    _clientConnections.TryAdd(connectionId, clientContext);
+                    clientContext.ApplicationTask = ProcessMessageAsync(clientContext, clientContext.CancellationToken);
+                    return ForwardMessageToApplication(connectionId, openConnectionMessage);
+                }
+                else
+                {
+                    // the manager still contains this connectionId, probably this connection is not yet cleaned up
+                    Log.DuplicateConnectionId(Logger, connectionId, null);
+                    return SafeWriteAsync(
+                        new CloseConnectionMessage(connectionId, $"Duplicate connection ID {connectionId}"));
+                }
             }
         }
 
@@ -145,7 +154,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-        private async Task WaitForApplicationTask(ClientContext clientContext, bool closeGracefully)
+        private async Task WaitForApplicationTask(ClientConnectionContext clientContext, bool closeGracefully)
         {
             clientContext.Output.TryComplete();
             var app = clientContext.ApplicationTask;
@@ -184,7 +193,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private async Task PerformDisconnectCore(string connectionId, bool waitForApplicationTask, bool closeGracefully = true)
         {
             // remove the connection from the global store so that a connection with the same connectionId can be added from elsewhere
-            if (_clientConnectionManager.TryRemoveServiceConnection(connectionId, out _))
+            if (_clientConnectionManager.TryRemoveClientConnection(connectionId, out _))
             {
                 if (_clientConnections.TryRemove(connectionId, out var clientContext))
                 {
@@ -199,13 +208,12 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-        private async Task OnConnectedAsyncCore(ClientContext clientContext, OpenConnectionMessage message)
+        private async Task OnConnectedAsyncCore(ClientConnectionContext clientContext, OpenConnectionMessage message)
         {
             var connectionId = message.ConnectionId;
             try
             {
-                clientContext.Transport =
-                    await _clientConnectionManager.CreateConnection(message, this);
+                clientContext.Transport = await _clientConnectionManager.CreateConnection(message);
                 Log.ConnectedStarting(Logger, connectionId);
             }
             catch (Exception e)
@@ -217,7 +225,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-        private void ProcessOutgoingMessages(ClientContext clientContext, ConnectionDataMessage connectionDataMessage)
+        private void ProcessOutgoingMessages(ClientConnectionContext clientContext, ConnectionDataMessage connectionDataMessage)
         {
             var connectionId = connectionDataMessage.ConnectionId;
             try
@@ -240,7 +248,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
         }
 
-        private async Task ProcessMessageAsync(ClientContext clientContext, CancellationToken cancellation)
+        private async Task ProcessMessageAsync(ClientConnectionContext clientContext, CancellationToken cancellation)
         {
             var connectionId = clientContext.ConnectionId;
             try
@@ -303,39 +311,6 @@ namespace Microsoft.Azure.SignalR.AspNet
                 return instanceId;
             }
             return null;
-        }
-
-        private sealed class ClientContext
-        {
-            private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-
-            public ClientContext(string connectionId, string instanceId = null)
-            {
-                ConnectionId = connectionId;
-                InstanceId = instanceId;
-                var channel = Channel.CreateUnbounded<ServiceMessage>();
-                Input = channel.Reader;
-                Output = channel.Writer;
-            }
-
-            public Task ApplicationTask { get; set; }
-
-            public CancellationToken CancellationToken => _cancellationTokenSource.Token;
-
-            public void CancelPendingRead()
-            {
-                _cancellationTokenSource.Cancel();
-            }
-
-            public string ConnectionId { get; }
-
-            public string InstanceId { get; }
-
-            public ChannelReader<ServiceMessage> Input { get; }
-
-            public ChannelWriter<ServiceMessage> Output { get; }
-
-            public IServiceTransport Transport { get; set; }
         }
     }
 }

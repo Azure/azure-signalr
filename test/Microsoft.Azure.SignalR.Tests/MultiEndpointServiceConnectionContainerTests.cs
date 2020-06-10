@@ -794,26 +794,28 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task TestSingleEndpointOffline(bool migratable)
+        [InlineData(GracefulShutdownMode.Off)]
+        [InlineData(GracefulShutdownMode.WaitForClientsClose)]
+        [InlineData(GracefulShutdownMode.MigrateClients)]
+        internal async Task TestSingleEndpointOffline(GracefulShutdownMode mode)
         {
             var manager = new TestServiceEndpointManager(
                 new ServiceEndpoint(ConnectionString1)
             );
-            await TestEndpointOfflineInner(manager, new TestEndpointRouter(), migratable);
+            await TestEndpointOfflineInner(manager, new TestEndpointRouter(), mode);
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task TestMultiEndpointOffline(bool migratable)
+        [InlineData(GracefulShutdownMode.Off)]
+        [InlineData(GracefulShutdownMode.WaitForClientsClose)]
+        [InlineData(GracefulShutdownMode.MigrateClients)]
+        internal async Task TestMultiEndpointOffline(GracefulShutdownMode mode)
         {
             var manager = new TestServiceEndpointManager(
                 new ServiceEndpoint(ConnectionString1),
                 new ServiceEndpoint(ConnectionString2)
             );
-            await TestEndpointOfflineInner(manager, new TestEndpointRouter(), migratable);
+            await TestEndpointOfflineInner(manager, new TestEndpointRouter(), mode);
         }
 
         [Fact]
@@ -1289,7 +1291,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         };
 
-        private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router, bool migratable)
+        private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router, GracefulShutdownMode mode)
         {
             var containers = new List<TestServiceConnectionContainer>();
 
@@ -1310,7 +1312,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.False(c.IsOffline);
             }
 
-            var expected = container.OfflineAsync(migratable);
+            var expected = container.OfflineAsync(mode);
             var actual = await Task.WhenAny(
                 expected,
                 Task.Delay(TimeSpan.FromSeconds(1))

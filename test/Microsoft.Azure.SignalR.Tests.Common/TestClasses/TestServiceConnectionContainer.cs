@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             return Task.CompletedTask;
         }
 
-        public Task OfflineAsync(bool migratable)
+        public Task OfflineAsync(GracefulShutdownMode mode)
         {
             return Task.CompletedTask;
         }
@@ -82,6 +82,10 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         public Task StopGetServersPing()
         {
             return Task.CompletedTask;
+        }
+
+        public void Dispose()
+        {
         }
     }
 }

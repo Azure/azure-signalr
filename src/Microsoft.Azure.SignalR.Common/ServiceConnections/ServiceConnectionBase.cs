@@ -27,6 +27,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly long DefaultKeepAliveTicks = DefaultKeepAliveInterval.Seconds * Stopwatch.Frequency;
 
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
+
         private readonly HandshakeRequestMessage _handshakeRequest;
 
         private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
@@ -96,8 +97,8 @@ namespace Microsoft.Azure.SignalR
             HubServiceEndpoint endpoint,
             IServiceMessageHandler serviceMessageHandler,
             ServiceConnectionType connectionType,
-            ServerConnectionMigrationLevel migrationLevel,
-            ILogger logger)
+            ILogger logger,
+            GracefulShutdownMode mode = GracefulShutdownMode.Off)
         {
             ServiceProtocol = serviceProtocol;
             ServerId = serverId;
@@ -109,7 +110,9 @@ namespace Microsoft.Azure.SignalR
             if (serviceProtocol != null)
             {
                 _cachedPingBytes = serviceProtocol.GetMessageBytes(PingMessage.Instance);
-                _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType, (int)migrationLevel);
+
+                var migrationLevel = mode == GracefulShutdownMode.MigrateClients ? 1 : 0;
+                _handshakeRequest = new HandshakeRequestMessage(serviceProtocol.Version, (int)connectionType, migrationLevel);
             }
 
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));

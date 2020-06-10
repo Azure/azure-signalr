@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private const string _connectionId = "ConnectionA";
         private static readonly string _commonEndpoint = $"{_endpoint}/api/v1/hubs/{_appName.ToLower()}_{_hubName}";
 
-        private static readonly RestApiProvider _restApiProvider = new RestApiProvider(_connectionString, _hubName, _appName);
+        private static readonly RestApiProvider _restApiProvider = new RestApiProvider(_connectionString);
 
         [Theory]
         [MemberData(nameof(GetTestData))]
@@ -35,12 +35,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         public static IEnumerable<object[]> GetTestData()
         {
-            yield return new object[]{_restApiProvider.GetBroadcastEndpoint(), _commonEndpoint };
-            yield return new object[] { _restApiProvider.GetSendToUserEndpoint(_userId), $"{_commonEndpoint}/users/{_userId}" };
-            yield return new object[] { _restApiProvider.GetSendToGroupEndpoint(_groupName), $"{_commonEndpoint}/groups/{_groupName}" };
-            yield return new object[] { _restApiProvider.GetUserGroupManagementEndpoint(_userId, _groupName), $"{_commonEndpoint}/groups/{_groupName}/users/{_userId}" };
-            yield return new object[] { _restApiProvider.GetSendToConnectionEndpoint(_connectionId), $"{_commonEndpoint}/connections/{_connectionId}" };
-            yield return new object[] { _restApiProvider.GetConnectionGroupManagementEndpoint(_connectionId, _groupName), $"{_commonEndpoint}/groups/{_groupName}/connections/{_connectionId}" };
+            yield return new object[]{_restApiProvider.GetBroadcastEndpoint(_appName, _hubName), _commonEndpoint };
+            yield return new object[] { _restApiProvider.GetSendToUserEndpoint(_appName, _hubName, _userId), $"{_commonEndpoint}/users/{_userId}" };
+            yield return new object[] { _restApiProvider.GetSendToGroupEndpoint(_appName, _hubName, _groupName), $"{_commonEndpoint}/groups/{_groupName}" };
+            yield return new object[] { _restApiProvider.GetUserGroupManagementEndpoint(_appName, _hubName, _userId, _groupName), $"{_commonEndpoint}/groups/{_groupName}/users/{_userId}" };
+            yield return new object[] { _restApiProvider.GetSendToConnectionEndpoint(_appName, _hubName, _connectionId), $"{_commonEndpoint}/connections/{_connectionId}" };
+            yield return new object[] { _restApiProvider.GetConnectionGroupManagementEndpoint(_appName, _hubName, _connectionId, _groupName), $"{_commonEndpoint}/groups/{_groupName}/connections/{_connectionId}" };
         }
     }
 }

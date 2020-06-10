@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -39,8 +40,6 @@ namespace Microsoft.Azure.SignalR
 
         private readonly ConnectionDelegate _connectionDelegate;
 
-        private readonly bool _enableMigration;
-
         public Action<HttpContext> ConfigureContext { get; set; }
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
@@ -54,16 +53,15 @@ namespace Microsoft.Azure.SignalR
                                  HubServiceEndpoint endpoint,
                                  IServiceMessageHandler serviceMessageHandler,
                                  ServiceConnectionType connectionType = ServiceConnectionType.Default,
-                                 ServerConnectionMigrationLevel migrationLevel = ServerConnectionMigrationLevel.Off,
+                                 GracefulShutdownMode mode = GracefulShutdownMode.Off,
                                  int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds
-            ): base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, connectionType, migrationLevel, loggerFactory?.CreateLogger<ServiceConnection>())
+            ): base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode)
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
             _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
-            _enableMigration = migrationLevel != ServerConnectionMigrationLevel.Off;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -123,7 +121,17 @@ namespace Microsoft.Azure.SignalR
 
             AddClientConnection(connection, message);
 
-            _ = ProcessClientConnectionAsync(connection);
+            bool isDiagnosticClient = false;
+            message.Headers.TryGetValue(Constants.AsrsIsDiagnosticClient, out var isDiagnosticClientValue);
+            if (!StringValues.IsNullOrEmpty(isDiagnosticClientValue))
+            {
+                isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault());
+            }
+
+            using (new ClientConnectionScope(outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
+            {
+                _ = ProcessClientConnectionAsync(connection);
+            }
 
             if (connection.IsMigrated)
             {
@@ -140,15 +148,15 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             var connectionId = closeConnectionMessage.ConnectionId;
-            if (_enableMigration && _clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
+            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
             {
                 if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
                 {
                     context.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(ServerId, to));
+                    // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
+                    // Since all user-created messages will be sent to `ServiceConnection` directly.
+                    // We can simply ignore all messages came from the application pipe.
                 }
-                // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
-                // Since all user-created messages will be sent to `ServiceConnection` directly.
-                // We can simply ignore all messages came from the application pipe.
                 context.Application.Input.CancelPendingRead();
             }
             return PerformDisconnectAsyncCore(connectionId);
@@ -359,7 +367,7 @@ namespace Microsoft.Azure.SignalR
         private void AddClientConnection(ClientConnectionContext connection, OpenConnectionMessage message)
         {
             var instanceId = GetInstanceId(message.Headers);
-            _clientConnectionManager.AddClientConnection(connection);
+            _clientConnectionManager.TryAddClientConnection(connection);
             _connectionIds.TryAdd(connection.ConnectionId, instanceId);
         }
 
@@ -432,7 +440,8 @@ namespace Microsoft.Azure.SignalR
         private ClientConnectionContext RemoveClientConnection(string connectionId)
         {
             _connectionIds.TryRemove(connectionId, out _);
-            return _clientConnectionManager.RemoveClientConnection(connectionId);
+            _clientConnectionManager.TryRemoveClientConnection(connectionId, out var connection);
+            return connection;
         }
 
         private string GetInstanceId(IDictionary<string, StringValues> header)

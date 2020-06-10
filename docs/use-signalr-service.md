@@ -12,6 +12,11 @@
       - [`ApplicationName`](#applicationname)
       - [`ClaimProvider`](#claimprovider)
       - [`ServerStickyMode`](#serverstickymode)
+      - [`GracefulShutdown`](#gracefulshutdown)
+        - [Mode](#mode)
+        - [Timeout](#timeout)
+      - [`ServiceScaleTimeout`](#servicescaletimeout)
+      - [`MaxPollIntervalInSeconds`](#maxpollintervalinseconds)
       - [Sample](#sample)
   - [Run ASP.NET SignalR](#run-aspnet-signalr)
     - [1. Install and Use Service SDK](#1-install-and-use-service-sdk-1)
@@ -23,6 +28,7 @@
       - [`ClaimProvider`](#claimprovider-1)
       - [`ConnectionString`](#connectionstring)
       - [`ServerStickyMode`](#serverstickymode-1)
+      - [`MaxPollIntervalInSeconds`](#maxpollintervalinseconds-1)
       - [Sample](#sample-1)
   - [Scale Out Application Server](#scale-out-application-server)
 
@@ -125,6 +131,38 @@ They can be accessed at [`Hub.Context.User`](https://github.com/aspnet/SignalR/b
     - When `Preferred`, Azure SignalR tries to find the app server which the client first negotiates with in a way that no additional cost or global routing is needed. This one can be useful when your scenario is *send to connection*. *Send to connection* can have better performance and lower latency when the sender and the receiver are routed to the same app server.
     - When `Required`, Azure SignalR always tries to find the app server which the client first negotiates with. This options can be useful when some client context is fetched from `negotiate` step and stored in memory, and then to be used inside `Hub`s. However, this option may have performance drawbacks because it requires Azure SignalR to take additional efforts to find this particular app server globally, and to keep globally routing traffics between client and server.
 
+
+#### `GracefulShutdown`
+
+##### Mode
+
+- Default value is `Off`
+- This option specifies the behavior after the app server receives a CTRL+C (SIGINT).
+- When set to `WaitForClientsClose`, instead of stopping the server immediately, we remove it from the ASRS to prevent new client connections from being assigned to this server.
+- When set to `MigrateClients`, in addition to the steps we mentioned in `WaitForClientsClose`, we will try migrating client connections to another valid server at a proper time. 
+  We could make sure the migration will only happen on the message boundaries, which means each of old/new servers will receive intact messages.
+  `OnConnected` and `OnDisconnected` will be triggered when connections be migrated in/out, and a `IConnectionMigrationFeature` will be set to help you determine if the connection has been migrated.
+  Please visit our [sample codes](https://github.com/Azure/azure-signalr/blob/dev/samples/ChatSample/ChatSample/Hub/Chat.cs) for detail usage.
+
+
+##### Timeout
+
+- Default value is `30 seconds`
+- This option specifies the longest time in waiting for clients to be closed/migrated.
+
+
+#### `ServiceScaleTimeout`
+
+- Default value is `5 minutes`
+- This option specifies the longest time in waiting for dynamic scaling service endpoints, that to affect online clients at minimum. Normally the dynamic scale between single app server and a service endpoint can be finished in seconds, while considering if you have multiple app servers and multiple service endpoints with network jitter and would like to ensure client stability, you can configure this value accordingly.
+
+
+#### `MaxPollIntervalInSeconds`
+
+- Default value is `5`
+- This option defines the max poll interval allowed for `LongPolling` connections in Azure SignalR Service. If the next poll request does not come in within `MaxPollIntervalInSeconds`, Azure SignalR Service cleans up the client connection. Note that Azure SignalR Service will also clean up connections when cached waiting to write buffer size is greater than `1Mb` to ensure service performance.
+- The value is limited to `[1, 300]`.
+
 #### Sample
 You can configure above options like the following sample code.
 
@@ -135,6 +173,9 @@ services.AddSignalR()
                 options.ConnectionCount = 10;
                 options.AccessTokenLifetime = TimeSpan.FromDays(1);
                 options.ClaimsProvider = context => context.User.Claims;
+
+                option.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
+                option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(10);
             });
 ```
 
@@ -208,6 +249,11 @@ By default, all claims from `IOwinContext.Authentication.User` of the negotiate 
 #### `ServerStickyMode`
 - Default value is `Disabled`.
 - Refer to [ServerStickyMode](#server-sticky-mode) for details.
+
+#### `MaxPollIntervalInSeconds`
+- Default value is `5`
+- This option defines the max poll interval allowed for `LongPolling` connections in Azure SignalR Service. If the next poll request does not come in within `MaxPollIntervalInSeconds`, Azure SignalR Service cleans up the client connection. Note that Azure SignalR Service will also clean up connections when cached waiting to write buffer size is greater than `1Mb` to ensure service performance.
+- The value is limited to `[1, 300]`.
 
 #### Sample
 You can configure above options like the following sample code.

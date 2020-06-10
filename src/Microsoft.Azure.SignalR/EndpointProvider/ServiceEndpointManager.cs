@@ -24,8 +24,7 @@ namespace Microsoft.Azure.SignalR
             _options = optionsMonitor.CurrentValue;
             _logger = loggerFactory?.CreateLogger<ServiceEndpointManager>() ?? throw new ArgumentNullException(nameof(loggerFactory));
 
-            // TODO: Enable optionsMonitor.OnChange when feature ready.
-            // optionsMonitor.OnChange(OnChange);
+            optionsMonitor.OnChange(OnChange);
             _scaleTimeout = _options.ServiceScaleTimeout;
         }
 
@@ -46,7 +45,6 @@ namespace Microsoft.Azure.SignalR
             ReloadServiceEndpointsAsync(options.Endpoints);
         }
 
-        // TODO: make public for non hot-reload plans
         private Task ReloadServiceEndpointsAsync(ServiceEndpoint[] serviceEndpoints)
         {
             return ReloadServiceEndpointsAsync(serviceEndpoints, _scaleTimeout);

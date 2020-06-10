@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly IServerNameProvider _nameProvider;
 
-        public ServerConnectionMigrationLevel MigrationLevel { get; set; } = ServerConnectionMigrationLevel.Off;
+        public GracefulShutdownMode ShutdownMode { get; set; } = GracefulShutdownMode.Off;
 
         public Action<HttpContext> ConfigureContext { get; set; }
 
@@ -27,8 +27,7 @@ namespace Microsoft.Azure.SignalR
             ILoggerFactory loggerFactory,
             ConnectionDelegate connectionDelegate,
             IClientConnectionFactory clientConnectionFactory,
-            IServerNameProvider nameProvider
-        )
+            IServerNameProvider nameProvider)
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
@@ -53,7 +52,7 @@ namespace Microsoft.Azure.SignalR
                 endpoint,
                 serviceMessageHandler,
                 type,
-                MigrationLevel
+                ShutdownMode
             )
             {
                 ConfigureContext = ConfigureContext
