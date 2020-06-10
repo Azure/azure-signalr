@@ -4,7 +4,7 @@
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.Azure.SignalR.Management
+namespace Microsoft.Azure.SignalR
 {
     internal class HttpClientFactory
     {
