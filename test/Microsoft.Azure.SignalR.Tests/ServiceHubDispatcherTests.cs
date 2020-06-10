@@ -41,9 +41,11 @@ namespace Microsoft.Azure.SignalR.Tests
 
             await dispatcher.ShutdownAsync();
 
-            Assert.True(clientManager.completeTime.Subtract(serviceManager.offlineTime) > TimeSpan.FromMilliseconds(100));
-            Assert.True(clientManager.completeTime.Subtract(serviceManager.stopTime) < -TimeSpan.FromMilliseconds(100));
-            Assert.True(serviceManager.offlineTime != serviceManager.stopTime);
+            DateTime now = DateTime.Now;
+
+            Assert.True(now > serviceManager.StopTime);
+            Assert.True(serviceManager.StopTime > clientManager.CompleteTime);
+            Assert.True(clientManager.CompleteTime> serviceManager.OfflineTime);
         }
 
         private sealed class TestRouter : IEndpointRouter
@@ -78,12 +80,12 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => throw new NotImplementedException();
 
-            public DateTime completeTime = new DateTime();
+            public DateTime CompleteTime = new DateTime();
 
             public async Task WhenAllCompleted()
             {
-                await Task.Delay(100);
-                completeTime = DateTime.Now;
+                await Task.Yield();
+                CompleteTime = DateTime.Now;
             }
 
             public bool TryAddClientConnection(ClientConnectionContext connection)
@@ -104,13 +106,13 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private sealed class TestServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
         {
-            public DateTime offlineTime = new DateTime();
-            public DateTime stopTime = new DateTime();
+            public DateTime OfflineTime = new DateTime();
+            public DateTime StopTime = new DateTime();
 
             public async Task OfflineAsync(GracefulShutdownMode mode)
             {
-                await Task.Delay(100);
-                offlineTime = DateTime.Now;
+                await Task.Yield();
+                OfflineTime = DateTime.Now;
             }
 
             public void SetServiceConnection(IServiceConnectionContainer serviceConnection)
@@ -125,8 +127,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
             public async Task StopAsync()
             {
-                await Task.Delay(100);
-                stopTime = DateTime.Now;
+                await Task.Yield();
+                StopTime = DateTime.Now;
             }
 
             public Task WriteAckableMessageAsync(ServiceMessage seviceMessage, CancellationToken cancellationToken = default)
