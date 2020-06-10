@@ -77,18 +77,13 @@ namespace Microsoft.Azure.SignalR
             }
 
             using CancellationTokenSource source = new CancellationTokenSource();
+            source.CancelAfter(_options.GracefulShutdown.Timeout);
 
-            var expected = OfflineAndWaitForCompletedAsync(_options.GracefulShutdown.Mode);
-            var actual = await Task.WhenAny(
-                Task.Delay(_options.GracefulShutdown.Timeout, source.Token), expected
+            await Task.WhenAny(
+                OfflineAndWaitForCompletedAsync(_options.GracefulShutdown.Mode),
+                Task.Delay(TimeSpan.FromHours(1), source.Token)
             );
 
-            if (actual != expected)
-            {
-                // TODO log timeout.
-            }
-
-            source.Cancel();
             await _serviceConnectionManager.StopAsync();
         }
 
