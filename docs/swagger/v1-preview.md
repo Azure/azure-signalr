@@ -5,12 +5,12 @@
 
 | API | Path |
 | ---- | ---------- | 
-| [post /api/v1-preview/hub/{hub}/user/{id}](#post-undefined) | `POST /api/v1-preview/hub/{hub}/user/{id}` |
-| [post /api/v1-preview/hub/{hub}/users/{userList}](#post-undefined) | `POST /api/v1-preview/hub/{hub}/users/{userList}` |
-| [post /api/v1-preview/hub/{hub}](#post-undefined) | `POST /api/v1-preview/hub/{hub}` |
-| [post /api/v1-preview/hub/{hub}/group/{group}](#post-undefined) | `POST /api/v1-preview/hub/{hub}/group/{group}` |
-| [post /api/v1-preview/hub/{hub}/groups/{groupList}](#post-undefined) | `POST /api/v1-preview/hub/{hub}/groups/{groupList}` |
-<a name="post-undefined"></a>
+| [post /api/v1-preview/hub/{hub}/user/{id}](#post-post-api-v1-preview-hub-hub-user-id) | `POST /api/v1-preview/hub/{hub}/user/{id}` |
+| [post /api/v1-preview/hub/{hub}/users/{userList}](#post-post-api-v1-preview-hub-hub-users-userlist) | `POST /api/v1-preview/hub/{hub}/users/{userList}` |
+| [post /api/v1-preview/hub/{hub}](#post-post-api-v1-preview-hub-hub) | `POST /api/v1-preview/hub/{hub}` |
+| [post /api/v1-preview/hub/{hub}/group/{group}](#post-post-api-v1-preview-hub-hub-group-group) | `POST /api/v1-preview/hub/{hub}/group/{group}` |
+| [post /api/v1-preview/hub/{hub}/groups/{groupList}](#post-post-api-v1-preview-hub-hub-groups-grouplist) | `POST /api/v1-preview/hub/{hub}/groups/{groupList}` |
+<a name="post-post-api-v1-preview-hub-hub-user-id"></a>
 ### post /api/v1-preview/hub/{hub}/user/{id}
 
 `POST /api/v1-preview/hub/{hub}/user/{id}`
@@ -32,7 +32,7 @@ Send a message to a single user.
 | ---- | ----------- |
 | 202 | Accepted |
 
-<a name="post-undefined"></a>
+<a name="post-post-api-v1-preview-hub-hub-users-userlist"></a>
 ### post /api/v1-preview/hub/{hub}/users/{userList}
 
 `POST /api/v1-preview/hub/{hub}/users/{userList}`
@@ -54,7 +54,7 @@ Send a message to multiple users.
 | ---- | ----------- |
 | 202 | Accepted |
 
-<a name="post-undefined"></a>
+<a name="post-post-api-v1-preview-hub-hub"></a>
 ### post /api/v1-preview/hub/{hub}
 
 `POST /api/v1-preview/hub/{hub}`
@@ -75,7 +75,7 @@ Broadcast a message to all clients connected to target hub.
 | ---- | ----------- |
 | 202 | Accepted |
 
-<a name="post-undefined"></a>
+<a name="post-post-api-v1-preview-hub-hub-group-group"></a>
 ### post /api/v1-preview/hub/{hub}/group/{group}
 
 `POST /api/v1-preview/hub/{hub}/group/{group}`
@@ -97,7 +97,7 @@ Broadcast a message to all clients within the target group.
 | ---- | ----------- |
 | 202 | Accepted |
 
-<a name="post-undefined"></a>
+<a name="post-post-api-v1-preview-hub-hub-groups-grouplist"></a>
 ### post /api/v1-preview/hub/{hub}/groups/{groupList}
 
 `POST /api/v1-preview/hub/{hub}/groups/{groupList}`
