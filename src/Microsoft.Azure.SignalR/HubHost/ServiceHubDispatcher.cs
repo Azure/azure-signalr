@@ -17,17 +17,17 @@ namespace Microsoft.Azure.SignalR
     {
         private static readonly string Name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
 
-        private readonly ILoggerFactory _loggerFactory;
+        protected readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<ServiceHubDispatcher<THub>> _logger;
         private readonly ServiceOptions _options;
         private readonly IServiceEndpointManager _serviceEndpointManager;
         private readonly IServiceConnectionManager<THub> _serviceConnectionManager;
-        private readonly IClientConnectionManager _clientConnectionManager;
-        private readonly IServiceProtocol _serviceProtocol;
-        private readonly IClientConnectionFactory _clientConnectionFactory;
+        protected readonly IClientConnectionManager _clientConnectionManager;
+        protected readonly IServiceProtocol _serviceProtocol;
+        protected readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly IEndpointRouter _router;
         private readonly string _hubName;
-        private readonly IServerNameProvider _nameProvider;
+        protected readonly IServerNameProvider _nameProvider;
 
         public ServiceHubDispatcher(
             IServiceProtocol serviceProtocol,
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR
 
         public void Start(ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
         {
-            // Simply create a couple of connections which connect to Azure SignalR
+            // Create connections to Azure SignalR
             var serviceConnection = GetMultiEndpointServiceConnectionContainer(_hubName, connectionDelegate, contextConfig);
 
             _serviceConnectionManager.SetServiceConnection(serviceConnection);
@@ -97,7 +97,25 @@ namespace Microsoft.Azure.SignalR
         {
             var connectionFactory = new ConnectionFactory(_nameProvider, _loggerFactory);
 
-            var serviceConnectionFactory = new ServiceConnectionFactory(
+            var serviceConnectionFactory = GetServiceConnectionFactory(connectionFactory, connectionDelegate, contextConfig);
+
+            var factory = new ServiceConnectionContainerFactory(
+                serviceConnectionFactory,
+                _serviceEndpointManager,
+                _router,
+                _options,
+                _loggerFactory,
+                _options.ServiceScaleTimeout
+            );
+            return factory.Create(hub);
+        }
+
+        internal virtual ServiceConnectionFactory GetServiceConnectionFactory(
+            ConnectionFactory connectionFactory,
+            ConnectionDelegate connectionDelegate,
+            Action<HttpContext> contextConfig)
+        { 
+            return new ServiceConnectionFactory(
                 _serviceProtocol,
                 _clientConnectionManager,
                 connectionFactory,
@@ -109,16 +127,6 @@ namespace Microsoft.Azure.SignalR
                 ConfigureContext = contextConfig,
                 ShutdownMode = _options.GracefulShutdown.Mode
             };
-
-            var factory = new ServiceConnectionContainerFactory(
-                serviceConnectionFactory,
-                _serviceEndpointManager,
-                _router,
-                _options,
-                _loggerFactory,
-                _options.ServiceScaleTimeout
-            );
-            return factory.Create(hub);
         }
 
         private static class Log
