@@ -1,0 +1,14 @@
+name: Line Endings Check
+on:
+ pull_request:
+   branches: 
+     - dev
+jobs:
+  line-endings-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Check for CRLF endings
+      run: git submodule update --init --recursive
+      uses: erclu/check-crlf@v1
