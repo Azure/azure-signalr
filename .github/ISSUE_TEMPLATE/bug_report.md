@@ -24,4 +24,5 @@ Include the exception you get when facing this issue
 
 ### Further technical details
 - Your Azure SignalR SDK version
+- Your Server ASPNETCORE version or Assembly version of `Microsoft.AspNetCore.SignalR` 
 - Your SignalR Client SDK version
