@@ -1,13 +1,31 @@
 name: Gated-Ubuntu
 on: 
  push:
+   paths:
+    - 'src/**'
+    - 'test/**'
+    - '*.cmd'
+    - '*.ps1'
+    - '*.props'
+    - '*.targets'
+    - '*.sh'
+    - '*.sln'
    branches: 
-     - master
-     - dev
+    - master
+    - dev
  pull_request:
+   paths:
+    - 'src/**'
+    - 'test/**'
+    - '*.cmd'
+    - '*.ps1'
+    - '*.props'
+    - '*.targets'
+    - '*.sh'
+    - '*.sln'
    branches: 
-     - master
-     - dev
+    - master
+    - dev
 jobs:
   build_ubuntu:
     runs-on: ubuntu-latest
