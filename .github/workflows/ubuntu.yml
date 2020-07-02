@@ -31,9 +31,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-
+    - uses: dorny/paths-filter@v2.2.0
+      id: filter
+      with:
+        filters: 
+          src:
+          - 'src/**'
+          - 'test/**'
+          - '*.cmd'
+          - '*.ps1'
+          - '*.props'
+          - '*.targets'
+          - '*.sh'
+          - '*.sln'
     - name: Update SubModules
       run: git submodule update --init --recursive
-    
+      if: steps.filter.outputs.src == 'true'
     - name: Build with dotnet
       run:  "./build.sh --ci /p:DisableNet461Tests=true"
+      if: steps.filter.outputs.src == 'true'
