@@ -118,7 +118,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="payload">Binary data to be delivered.</param>
         /// <param name="tracingId">The tracing Id of the message</param>
-        public ConnectionDataMessage(string connectionId, ReadOnlyMemory<byte> payload, string tracingId = null) : base(connectionId)
+        public ConnectionDataMessage(string connectionId, ReadOnlyMemory<byte> payload, long tracingId = 0) : base(connectionId)
         {
             Payload = new ReadOnlySequence<byte>(payload);
             TracingId = tracingId;
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="payload">Binary data to be delivered.</param>
         /// <param name="tracingId">The tracing Id of the message</param>
-        public ConnectionDataMessage(string connectionId, ReadOnlySequence<byte> payload, string tracingId = null) : base(connectionId)
+        public ConnectionDataMessage(string connectionId, ReadOnlySequence<byte> payload, long tracingId = 0) : base(connectionId)
         {
             Payload = payload;
             TracingId = tracingId;
@@ -145,6 +145,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the message ID
         /// </summary>
-        public string TracingId { get; set; }
+        public long TracingId { get; set; }
     }
 }

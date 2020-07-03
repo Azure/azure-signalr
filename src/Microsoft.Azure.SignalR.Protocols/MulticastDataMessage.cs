@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// </summary>
     public abstract class MulticastDataMessage : ExtensibleServiceMessage, IMessageWithTracingId
     {
-        protected MulticastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads, string tracingId = null)
+        protected MulticastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads, long tracingId = 0)
         {
             Payloads = payloads;
             TracingId = tracingId;
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Gets or sets the tracing Id
         /// </summary>
-        public string TracingId { get; set; }
+        public long TracingId { get; set; }
     }
 
     /// <summary>
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
         public MultiConnectionDataMessage(IReadOnlyList<string> connectionList,
-            IDictionary<string, ReadOnlyMemory<byte>> payloads, string tracingId = null) : base(payloads, tracingId)
+            IDictionary<string, ReadOnlyMemory<byte>> payloads, long tracingId = 0) : base(payloads, tracingId)
         {
             ConnectionList = connectionList;
         }
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="userId">The user Id.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public UserDataMessage(string userId, IDictionary<string, ReadOnlyMemory<byte>> payloads, string tracingId = null) : base(payloads, tracingId)
+        public UserDataMessage(string userId, IDictionary<string, ReadOnlyMemory<byte>> payloads, long tracingId = 0) : base(payloads, tracingId)
         {
             UserId = userId;
         }
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="userList">The list of user Ids.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public MultiUserDataMessage(IReadOnlyList<string> userList, IDictionary<string, ReadOnlyMemory<byte>> payloads, string tracingId = null) : base(payloads, tracingId)
+        public MultiUserDataMessage(IReadOnlyList<string> userList, IDictionary<string, ReadOnlyMemory<byte>> payloads, long tracingId = 0) : base(payloads, tracingId)
         {
             UserList = userList;
         }
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public BroadcastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads, string tracingId = null) : this(null, payloads, tracingId)
+        public BroadcastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads, long tracingId = 0) : this(null, payloads, tracingId)
         {
         }
 
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="excludedList">The list of excluded connection Ids.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public BroadcastDataMessage(IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads, string tracingId = null) : base(payloads, tracingId)
+        public BroadcastDataMessage(IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads, long tracingId = 0) : base(payloads, tracingId)
         {
             ExcludedList = excludedList;
         }
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="groupName">The group name.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public GroupBroadcastDataMessage(string groupName, IDictionary<string, ReadOnlyMemory<byte>> payloads, string tracingId = null)
+        public GroupBroadcastDataMessage(string groupName, IDictionary<string, ReadOnlyMemory<byte>> payloads, long tracingId = 0)
             : this(groupName, null, payloads, tracingId)
         {
         }
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="excludedList">The list of excluded connection Ids.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public GroupBroadcastDataMessage(string groupName, IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads, string tracingId = null)
+        public GroupBroadcastDataMessage(string groupName, IReadOnlyList<string> excludedList, IDictionary<string, ReadOnlyMemory<byte>> payloads, long tracingId = 0)
             : base(payloads, tracingId)
         {
             GroupName = groupName;
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="groupList">The list of group names.</param>
         /// <param name="payloads">The payload dictionary which contains binary payload of multiple protocols.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public MultiGroupBroadcastDataMessage(IReadOnlyList<string> groupList, IDictionary<string, ReadOnlyMemory<byte>> payloads, string tracingId = null) : base(payloads, tracingId)
+        public MultiGroupBroadcastDataMessage(IReadOnlyList<string> groupList, IDictionary<string, ReadOnlyMemory<byte>> payloads, long tracingId = 0) : base(payloads, tracingId)
         {
             GroupList = groupList;
         }
