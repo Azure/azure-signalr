@@ -416,7 +416,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             new ProtocolTestData(
                 name: "ConnectionDataWithTracingId",
                 message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}, tracingId: 1234L),
-                binary: "lAalY29ubjXEBwECAwQFBgeBAdMAAAAAAAAE0g=="),
+                binary: "lAalY29ubjXEBwECAwQFBgeBAc0E0g=="),
             new ProtocolTestData(
                 name: "MultiConnectionDataWithTracingId",
                 message: new MultiConnectionDataMessage(new [] {"conn6", "conn7"}, new Dictionary<string, ReadOnlyMemory<byte>>
@@ -424,7 +424,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     ["json"] = new byte[] {2, 3, 4, 5, 6, 7, 1},
                     ["messagepack"] = new byte[] {3, 4, 5, 6, 7, 1, 2}
                 }, tracingId: 1234L),
-                binary: "lAeSpWNvbm42pWNvbm43gqRqc29uxAcCAwQFBgcBq21lc3NhZ2VwYWNrxAcDBAUGBwECgQHTAAAAAAAABNI="),
+                binary: "lAeSpWNvbm42pWNvbm43gqRqc29uxAcCAwQFBgcBq21lc3NhZ2VwYWNrxAcDBAUGBwECgQHNBNI="),
             new ProtocolTestData(
                 name: "UserDataWithTracingId",
                 message: new UserDataMessage("user1",
@@ -433,7 +433,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }, tracingId: 1234L),
-                binary: "lAildXNlcjGCpGpzb27EBwYHAQIDBAWrbWVzc2FnZXBhY2vEBwcBAgMEBQaBAdMAAAAAAAAE0g=="),
+                binary: "lAildXNlcjGCpGpzb27EBwYHAQIDBAWrbWVzc2FnZXBhY2vEBwcBAgMEBQaBAc0E0g=="),
             new ProtocolTestData(
                 name: "MultiUserDataWithTracingId",
                 message: new MultiUserDataMessage(new [] {"user1", "user2"},
@@ -442,7 +442,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }, tracingId: 1234L),
-                binary: "lAmSpXVzZXIxpXVzZXIygqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgQHTAAAAAAAABNI="),
+                binary: "lAmSpXVzZXIxpXVzZXIygqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgQHNBNI="),
             new ProtocolTestData(
                 name: "BroadcastWithTracingId",
                 message: new BroadcastDataMessage(new Dictionary<string, ReadOnlyMemory<byte>>
@@ -450,23 +450,23 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     ["json"] = new byte[] {4, 5, 6, 7, 1, 2, 3},
                     ["messagepack"] = new byte[] {5, 6, 7, 1, 2, 3, 4}
                 }, tracingId: 1234L),
-                binary: "lAqQgqRqc29uxAcEBQYHAQIDq21lc3NhZ2VwYWNrxAcFBgcBAgMEgQHTAAAAAAAABNI="),
+                binary: "lAqQgqRqc29uxAcEBQYHAQIDq21lc3NhZ2VwYWNrxAcFBgcBAgMEgQHNBNI="),
             new ProtocolTestData(
                 name: "JoinGroupWithTracingId",
                 message: new JoinGroupMessage("conn10", "group1", tracingId: 1234L),
-                binary: "lAumY29ubjEwpmdyb3VwMYEB0wAAAAAAAATS"),
+                binary: "lAumY29ubjEwpmdyb3VwMYEBzQTS"),
             new ProtocolTestData(
                 name: "LeaveGroupWithTracingId",
                 message: new LeaveGroupMessage("conn11", "group2", tracingId: 1234L),
-                binary: "lAymY29ubjExpmdyb3VwMoEB0wAAAAAAAATS"),
+                binary: "lAymY29ubjExpmdyb3VwMoEBzQTS"),
             new ProtocolTestData(
                 name: "UserJoinGroupWithTracingId",
                 message: new UserJoinGroupMessage("conn10", "group1", tracingId: 1234L),
-                binary: "lBCmY29ubjEwpmdyb3VwMYEB0wAAAAAAAATS"),
+                binary: "lBCmY29ubjEwpmdyb3VwMYEBzQTS"),
             new ProtocolTestData(
                 name: "UserLeaveGroupWithTracingId",
                 message: new UserLeaveGroupMessage("conn11", "group2", tracingId: 1234L),
-                binary: "lBGmY29ubjExpmdyb3VwMoEB0wAAAAAAAATS"),
+                binary: "lBGmY29ubjExpmdyb3VwMoEBzQTS"),
             new ProtocolTestData(
                 name: "GroupBroadcastWithTracingId",
                 message: new GroupBroadcastDataMessage("group3",
@@ -475,7 +475,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }, tracingId: 1234L),
-                binary: "lQ2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoEB0wAAAAAAAATS"),
+                binary: "lQ2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoEBzQTS"),
             new ProtocolTestData(
                 name: "MultiGroupBroadcastWithTracingId",
                 message: new MultiGroupBroadcastDataMessage(new [] {"group4", "group5"},
@@ -484,19 +484,19 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["json"] = new byte[] {1, 2, 3, 4, 5, 6, 7, 8},
                         ["messagepack"] = new byte[] {7, 8, 1, 2, 3, 4, 5, 6}
                     }, tracingId: 1234L),
-                binary: "lA6Spmdyb3VwNKZncm91cDWCpGpzb27ECAECAwQFBgcIq21lc3NhZ2VwYWNrxAgHCAECAwQFBoEB0wAAAAAAAATS"),
+                binary: "lA6Spmdyb3VwNKZncm91cDWCpGpzb27ECAECAwQFBgcIq21lc3NhZ2VwYWNrxAgHCAECAwQFBoEBzQTS"),
             new ProtocolTestData(
                 name: "JoinGroupWithAckWithTracingId",
                 message: new JoinGroupWithAckMessage("conn14", "group1", 1, tracingId: 1234L),
-                binary: "lRKmY29ubjE0pmdyb3VwMQGBAdMAAAAAAAAE0g=="),
+                binary: "lRKmY29ubjE0pmdyb3VwMQGBAc0E0g=="),
             new ProtocolTestData(
                 name: "LeaveGroupWithAckWithTracingId",
                 message: new LeaveGroupWithAckMessage("conn15", "group2", 1, tracingId: 1234L),
-                binary: "lROmY29ubjE1pmdyb3VwMgGBAdMAAAAAAAAE0g=="),
+                binary: "lROmY29ubjE1pmdyb3VwMgGBAc0E0g=="),
             new ProtocolTestData(
                 name: "CheckUserInGroupWithAckWithMessage",
-                message: new CheckUserInGroupWithAckMessage("user", "group", 3, 1234L), 
-                binary: "lRWkdXNlcqVncm91cAOBAdMAAAAAAAAE0g=="),
+                message: new CheckUserInGroupWithAckMessage("user", "group", 3, 1234L),
+                binary: "lRWkdXNlcqVncm91cAOBAc0E0g=="),
         }.ToDictionary(t => t.Name);
 
         [Theory]

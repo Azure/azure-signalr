@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             if (tracingId != null && tracingId.Value != 0)
             {
                 writer.Write(TracingId);
-                writer.WriteInt64(tracingId.Value);
+                writer.Write(tracingId.Value);
             }
             if (ttl != null)
             {
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                     case TracingId:
                         if (this is IMessageWithTracingId withTracingId)
                         {
-                            withTracingId.TracingId = reader.ReadInt64();
+                            withTracingId.TracingId = reader.ReadUInt64();
                         }
                         break;
                     case Ttl:
