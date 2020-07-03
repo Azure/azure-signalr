@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             int count = 0;
             var tracingId = (this as IMessageWithTracingId)?.TracingId;
-            if (!string.IsNullOrEmpty(tracingId))
+            if (tracingId != null)
             {
                 count++;
             }
@@ -37,10 +37,10 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
             // todo : count more optional fields.
             writer.WriteMapHeader(count);
-            if (!string.IsNullOrEmpty(tracingId))
+            if (tracingId != null)
             {
                 writer.Write(TracingId);
-                writer.Write(tracingId);
+                writer.Write(tracingId.Value);
             }
             if (ttl != null)
             {
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                     case TracingId:
                         if (this is IMessageWithTracingId withTracingId)
                         {
-                            withTracingId.TracingId = reader.ReadString();
+                            withTracingId.TracingId = reader.ReadUInt64();
                         }
                         break;
                     case Ttl:
