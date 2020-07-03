@@ -8,13 +8,12 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 {
-
     /// <summary>
-    /// Encapsulates the actual ConnectionContext to facilitate sync up of MockService & SDK connections
+    /// Encapsulates the actual ConnectionContext to facilitate sync up of MockService and SDK connections
     /// </summary>
     internal class MockServiceConnection : IServiceConnection
     {
-        IServiceConnection _serviceConnection;
+        private readonly IServiceConnection _serviceConnection;
         IMockService _mockService;
         internal MockServiceConnection(IMockService mockService, IServiceConnection serviceConnection)
         {

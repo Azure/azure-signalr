@@ -14,6 +14,11 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 {
     internal class MockServiceHubDispatcher<THub> : ServiceHubDispatcher<THub> where THub : Hub
     {
+        ILoggerFactory _loggerFactory;
+        IClientConnectionManager _clientConnectionManager;
+        IServiceProtocol _serviceProtocol;
+        IClientConnectionFactory _clientConnectionFactory;
+
         public MockServiceHubDispatcher(
             IServiceProtocol serviceProtocol,
             IServiceConnectionManager<THub> serviceConnectionManager,
@@ -37,6 +42,12 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
                 clientConnectionFactory)
         {
             MockService = new MockServiceMock();
+
+            // just store copies of these locally to keep the base class' accessor modifiers intact
+            _loggerFactory = loggerFactory;
+            _clientConnectionManager = clientConnectionManager;
+            _serviceProtocol = serviceProtocol;
+            _clientConnectionFactory = clientConnectionFactory;
         }
 
         internal override ServiceConnectionFactory GetServiceConnectionFactory(
