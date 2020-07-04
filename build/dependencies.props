@@ -60,6 +60,7 @@
     <MicrosoftOwinTestingPackageVersion>4.0.0</MicrosoftOwinTestingPackageVersion>
     <MicrosoftAspNetCoreTestingVersion>2.1.0</MicrosoftAspNetCoreTestingVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.3</SystemThreadingTasksExtensionsVersion>
+    <MicrosoftAspNetCoreTestHostPackageVersion>3.0.3</MicrosoftAspNetCoreTestHostPackageVersion>
     <E2eTestUserSecretId>E2eTestUserSecret</E2eTestUserSecretId>
   </PropertyGroup>
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition=" '$(DotNetPackageVersionPropsPath)' != '' " />

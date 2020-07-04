@@ -10,15 +10,14 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
     // This is just a mock of the ServiceMock (overly simplistic to shorten the current PR)
     public class MockServiceMock : IMockService
     {
+        private Task _processIncoming;
+        private static readonly ServiceProtocol _servicePro = new ServiceProtocol();
+
         public TaskCompletionSource<bool> CompletedServiceConnectionHandshake { get; } = new TaskCompletionSource<bool>();
         public IDuplexPipe MockServicePipe { get; set; }
 
-        Task _processIncoming;
-
         public Task StartAsync()
         {
-            var servicePro = new ServiceProtocol();
-
             _processIncoming = Task.Run(async () =>
             {
                 while (true)
@@ -35,12 +34,12 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                     {
                         if (!buffer.IsEmpty)
                         {
-                            while (servicePro.TryParseMessage(ref buffer, out var message))
+                            while (_servicePro.TryParseMessage(ref buffer, out var message))
                             {
                                 if (message is HandshakeRequestMessage)
                                 {
                                     var handshakeResponse = new HandshakeResponseMessage("");
-                                    servicePro.WriteMessage(handshakeResponse, MockServicePipe.Output);
+                                    _servicePro.WriteMessage(handshakeResponse, MockServicePipe.Output);
                                     var flushResult = await MockServicePipe.Output.FlushAsync();
                                     if (flushResult.IsCanceled || flushResult.IsCompleted)
                                     {
