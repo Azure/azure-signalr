@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.Extensions.Options;
 using Xunit;
 
@@ -29,18 +30,20 @@ namespace Microsoft.Azure.SignalR.Tests
         private static readonly ServiceOptions _optionsWithoutAppName = Options.Create(new ServiceOptions()).Value;
         private static readonly ServiceOptions _optionsWithAppName = Options.Create(new ServiceOptions { ApplicationName = AppName }).Value;
 
+        private static readonly IServerNameProvider _provider = new DefaultServerNameProvider();
+
         private static readonly ServiceEndpointProvider[] EndpointProviderArray =
         {
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithoutAppName),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithoutAppName)
+            new ServiceEndpointProvider(_provider, new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithoutAppName),
+            new ServiceEndpointProvider(_provider, new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName),
+            new ServiceEndpointProvider(_provider, new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithoutAppName)
         };
 
         private static readonly ServiceEndpointProvider[] EndpointProviderArrayWithPrefix =
         {
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithAppName),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithAppName),
-            new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithAppName)
+            new ServiceEndpointProvider(_provider, new ServiceEndpoint(ConnectionStringWithoutVersion), _optionsWithAppName),
+            new ServiceEndpointProvider(_provider, new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithAppName),
+            new ServiceEndpointProvider(_provider, new ServiceEndpoint(ConnectionStringWithV1Version), _optionsWithAppName)
         };
 
         private static readonly (string path, string queryString, string expectedQuery)[] PathAndQueryArray =
@@ -111,7 +114,7 @@ namespace Microsoft.Azure.SignalR.Tests
         internal async Task GenerateMultipleAccessTokenShouldBeUnique()
         {
             var count = 1000;
-            var sep = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName);
+            var sep = new ServiceEndpointProvider(new DefaultServerNameProvider(), new ServiceEndpoint(ConnectionStringWithPreviewVersion), _optionsWithoutAppName);
             var userId = Guid.NewGuid().ToString();
             var tokens = new List<string>();
             for (int i = 0; i < count; i++)
@@ -210,7 +213,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(AccessTokenAlgorithm.HS512)]
         public async Task GenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
+            var provider = new ServiceEndpointProvider(new DefaultServerNameProvider(), new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
             var generatedToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
 
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(generatedToken);
@@ -223,7 +226,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData(AccessTokenAlgorithm.HS512)]
         public async Task GenerateClientAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
+            var provider = new ServiceEndpointProvider(new DefaultServerNameProvider(), new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
             var generatedToken = await provider.GenerateClientAccessTokenAsync("hub1");
 
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(generatedToken);
