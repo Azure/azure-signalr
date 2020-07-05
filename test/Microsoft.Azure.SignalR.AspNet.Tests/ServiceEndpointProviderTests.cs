@@ -89,10 +89,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             var provider = new ServiceEndpointProvider(new DefaultServerNameProvider(), new ServiceEndpoint(connectionString), new ServiceOptions() { ApplicationName = "prefix" });
 
-            var clientToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
+            var serverToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
 
             var handler = new JwtSecurityTokenHandler();
-            var principal = handler.ValidateToken(clientToken, new TokenValidationParameters
+            var principal = handler.ValidateToken(serverToken, new TokenValidationParameters
             {
                 ValidateIssuer = false,
                 IssuerSigningKey = SecurityKey,

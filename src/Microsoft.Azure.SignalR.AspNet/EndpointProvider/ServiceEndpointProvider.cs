@@ -21,6 +21,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private const string ServerPath = "aspnetserver";
 
         private readonly string _endpoint;
+        private readonly TimerAwaitable _timer;
         private readonly AccessKey _accessKey;
         private readonly string _appName;
         private readonly int? _port;
@@ -51,8 +52,32 @@ namespace Microsoft.Azure.SignalR.AspNet
             _provider = provider;
 
             Proxy = options.Proxy;
+
+            if (!_accessKey.Initialized)
+            {
+                _timer = new TimerAwaitable(TimeSpan.FromMinutes(55), TimeSpan.FromMinutes(55));
+                _ = RefreshAccessKey(endpoint, _accessKey, options.AuthOptions);
+            }
         }
 
+        private async Task RefreshAccessKey(ServiceEndpoint endpoint, AccessKey key, AuthOptions options)
+        {
+            while (await _timer)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    try
+                    {
+                        await key.AuthorizeAsync(endpoint.Endpoint, endpoint.Port, _provider.GetName(), options);
+                        break;
+                    }
+                    catch (Exception)
+                    {
+                        // Retry authorizing access key, up to 3 times.
+                    }
+                }
+            }
+        }
 
         private string GetPrefixedHubName(string applicationName, string hubName)
         {
@@ -77,9 +102,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                 };
             }
 
-            await _accessKey.InitializedTask;
             var audience = $"{_endpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
-
+            await _accessKey.InitializedTask;
             return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 

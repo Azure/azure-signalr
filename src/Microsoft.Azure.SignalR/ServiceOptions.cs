@@ -62,7 +62,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Gets or sets options for Authentication via third party.
         /// </summary>
-        internal AuthOptions AuthOptions { get; set; }
+        public AuthOptions AuthOptions { get; set; }
 
         /// <summary>
         /// Specifies if the client-connection assigned to this server can be migrated to another server.
