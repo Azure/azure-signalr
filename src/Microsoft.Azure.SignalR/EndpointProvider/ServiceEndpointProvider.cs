@@ -22,9 +22,11 @@ namespace Microsoft.Azure.SignalR
         private readonly IServiceEndpointGenerator _generator;
         private readonly AccessTokenAlgorithm _algorithm;
 
+        private readonly IServerNameProvider _provider;
+
         public IWebProxy Proxy { get; }
 
-        public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions serviceOptions)
+        public ServiceEndpointProvider(IServerNameProvider provider, ServiceEndpoint endpoint, ServiceOptions serviceOptions)
         {
             var connectionString = endpoint.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
@@ -36,6 +38,9 @@ namespace Microsoft.Azure.SignalR
             _accessKey = endpoint.AccessKey;
             _appName = serviceOptions.ApplicationName;
             _algorithm = serviceOptions.AccessTokenAlgorithm;
+
+            _provider = provider;
+
             Proxy = serviceOptions.Proxy;
 
             var port = endpoint.Port;

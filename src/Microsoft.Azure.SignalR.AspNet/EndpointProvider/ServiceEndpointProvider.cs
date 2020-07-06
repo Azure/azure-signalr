@@ -27,9 +27,11 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly TimeSpan _accessTokenLifetime;
         private readonly AccessTokenAlgorithm _algorithm;
 
+        private readonly IServerNameProvider _provider;
+
         public IWebProxy Proxy { get; }
 
-        public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions options)
+        public ServiceEndpointProvider(IServerNameProvider provider, ServiceEndpoint endpoint, ServiceOptions options)
         {
             var connectionString = endpoint.ConnectionString;
             if (string.IsNullOrEmpty(connectionString))
@@ -45,6 +47,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             _appName = options.ApplicationName;
             _port = endpoint.Port;
             _algorithm = options.AccessTokenAlgorithm;
+
+            _provider = provider;
+
             Proxy = options.Proxy;
         }
 

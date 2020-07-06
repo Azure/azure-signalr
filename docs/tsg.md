@@ -58,22 +58,6 @@ services.MapAzureSignalR(GetType().FullName, options =>
             });
 ```
 
-### Tips:
-<a name="view_request"></a>
-* How to view the outgoing request from client?
-Take ASP.NET Core one for example (ASP.NET one is similar):
-    1. From browser:
-
-        Take Chrome as an example, you can use **F12** to open the console window, and switch to **Network** tab. You might need to refresh the page using **F5** to capture the network from the very beginning.
-        
-        ![Chrome View Network](./images/chrome_network.gif)
-
-    2. From C# client:
-
-        You can view local web traffics using [Fiddler](https://www.telerik.com/fiddler). WebSocket traffics are supported since Fiddler 4.5.
-
-        ![Fiddler View Network](./images/fiddler_view_network.png)
-
 <a name="tls_1.2_required"></a>
 ## TLS 1.2 required
 
@@ -132,16 +116,7 @@ For ASP.NET SignalR, the client sends a `/ping` KeepAlive request to the service
 
 For security concerns, extend TTL is not encouraged. We suggest adding reconnect logic from the client to restart the connection when such 401 occurs. When the client restarts the connection, it will negotiate with app server to get the JWT token again and get a renewed token.
 
-<a name="restart_connection"></a>
-[Sample code](../samples/) contains restarting connection logic with *ALWAYS RETRY* strategy:
-
-* [ASP.NET Core C# Client](../samples/ChatSample/ChatSample.CSharpClient/Program.cs#L64)
-
-* [ASP.NET Core JavaScript Client](../samples/ChatSample/ChatSample/wwwroot/index.html#L164)
-
-* [ASP.NET C# Client](../samples/AspNet.ChatSample/AspNet.ChatSample.CSharpClient/Program.cs#L78)
-
-* [ASP.NET JavaScript Client](../samples/AspNet.ChatSample/AspNet.ChatSample.JavaScriptClient/wwwroot/index.html#L71)
+Check [here](#restart_connection) for how to restart client connections.
 
 <a name="random_404_returned_for_client_requests"></a>
 ## 404 returned for client requests
@@ -307,3 +282,35 @@ Server-service connection is closed by **ASRS**(**A**zure **S**ignal**R** **S**e
 1. Open app server-side log to see if anything abnormal took place
 2. Check app server-side event log to see if the app server restarted
 3. Create an issue to us providing the time frame, and email the resource name to us
+
+## Tips
+
+<a name="view_request"></a>
+* How to view the outgoing request from client?
+Take ASP.NET Core one for example (ASP.NET one is similar):
+    1. From browser:
+
+        Take Chrome as an example, you can use **F12** to open the console window, and switch to **Network** tab. You might need to refresh the page using **F5** to capture the network from the very beginning.
+        
+        ![Chrome View Network](./images/chrome_network.gif)
+
+    2. From C# client:
+
+        You can view local web traffics using [Fiddler](https://www.telerik.com/fiddler). WebSocket traffics are supported since Fiddler 4.5.
+
+        ![Fiddler View Network](./images/fiddler_view_network.png)
+	
+
+<a name="restart_connection"></a>
+* How to restart client connection?
+	
+	Here are the [Sample codes](../samples/) containing restarting connection logic with *ALWAYS RETRY* strategy:
+
+	* [ASP.NET Core C# Client](../samples/ChatSample/ChatSample.CSharpClient/Program.cs#L64)
+
+	* [ASP.NET Core JavaScript Client](../samples/ChatSample/ChatSample/wwwroot/index.html#L164)
+
+	* [ASP.NET C# Client](../samples/AspNet.ChatSample/AspNet.ChatSample.CSharpClient/Program.cs#L78)
+
+	* [ASP.NET JavaScript Client](../samples/AspNet.ChatSample/AspNet.ChatSample.JavaScriptClient/wwwroot/index.html#L71)
+
