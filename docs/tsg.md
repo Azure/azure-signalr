@@ -116,7 +116,7 @@ For ASP.NET SignalR, the client sends a `/ping` KeepAlive request to the service
 
 For security concerns, extend TTL is not encouraged. We suggest adding reconnect logic from the client to restart the connection when such 401 occurs. When the client restarts the connection, it will negotiate with app server to get the JWT token again and get a renewed token.
 
-Check [here](#restart_connection) for how to implement restart logic for client connections.
+Check [here](#restart_connection) for how to restart client connections.
 
 <a name="random_404_returned_for_client_requests"></a>
 ## 404 returned for client requests
