@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal class HttpClientFactory
     {
-        internal static IHttpClientFactory ClientFactory { get; }
+        private readonly static IHttpClientFactory _httpClientFactory;
 
         static HttpClientFactory()
         {
@@ -16,13 +16,12 @@ namespace Microsoft.Azure.SignalR
             serviceCollection.AddHttpClient();
             var services = serviceCollection.BuildServiceProvider();
 
-            ClientFactory = services.GetRequiredService<IHttpClientFactory>();
+            _httpClientFactory = services.GetRequiredService<IHttpClientFactory>();
         }
 
         public static HttpClient CreateClient()
         {
-            return ClientFactory.CreateClient();
+            return _httpClientFactory.CreateClient();
         }
-
     }
 }

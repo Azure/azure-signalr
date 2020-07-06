@@ -24,6 +24,7 @@
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.0</MicrosoftExtensionsPrimitivesPackageVersion>
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>
+    <MicrosoftIdentityClientVersion>4.9.0</MicrosoftIdentityClientVersion>
 
     <!-- Azure ASP.NET SignalR -->
     <MicrosoftAspNetSignalRPackageVersion>2.4.1</MicrosoftAspNetSignalRPackageVersion>
