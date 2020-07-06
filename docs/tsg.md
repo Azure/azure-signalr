@@ -303,7 +303,8 @@ Take ASP.NET Core one for example (ASP.NET one is similar):
 
 <a name="restart_connection"></a>
 * How to restart client connection?
-Here are the [Sample codes](../samples/) containing restarting connection logic with *ALWAYS RETRY* strategy:
+	
+	Here are the [Sample codes](../samples/) containing restarting connection logic with *ALWAYS RETRY* strategy:
 
 	* [ASP.NET Core C# Client](../samples/ChatSample/ChatSample.CSharpClient/Program.cs#L64)
 
