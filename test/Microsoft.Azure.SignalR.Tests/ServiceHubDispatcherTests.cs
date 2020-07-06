@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -16,8 +17,9 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async void TestShutdown()
         {
-            var clientManager = new TestClientConnectionManager();
-            var serviceManager = new TestServiceConnectionManager<Hub>();
+            var index = new StrongBox<int>();
+            var clientManager = new TestClientConnectionManager(index);
+            var serviceManager = new TestServiceConnectionManager<Hub>(index);
 
             var options = new TestOptions();
             options.Value.GracefulShutdown = new GracefulShutdownOptions()
@@ -41,11 +43,9 @@ namespace Microsoft.Azure.SignalR.Tests
 
             await dispatcher.ShutdownAsync();
 
-            DateTime now = DateTime.Now;
-
-            Assert.True(now > serviceManager.StopTime);
-            Assert.True(serviceManager.StopTime > clientManager.CompleteTime);
-            Assert.True(clientManager.CompleteTime> serviceManager.OfflineTime);
+            Assert.Equal(3, serviceManager.StopIndex);
+            Assert.Equal(2, clientManager.CompleteIndex);
+            Assert.Equal(1, serviceManager.OfflineIndex);
         }
 
         private sealed class TestRouter : IEndpointRouter
@@ -80,12 +80,19 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             public IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections => throw new NotImplementedException();
 
-            public DateTime CompleteTime = new DateTime();
+            public int CompleteIndex = -1;
+
+            private readonly StrongBox<int> _index;
+
+            public TestClientConnectionManager(StrongBox<int> index)
+            {
+                _index = index;
+            }
 
             public async Task WhenAllCompleted()
             {
                 await Task.Yield();
-                CompleteTime = DateTime.Now;
+                CompleteIndex = Interlocked.Increment(ref _index.Value);
             }
 
             public bool TryAddClientConnection(ClientConnectionContext connection)
@@ -106,13 +113,20 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private sealed class TestServiceConnectionManager<THub> : IServiceConnectionManager<THub> where THub : Hub
         {
-            public DateTime OfflineTime = new DateTime();
-            public DateTime StopTime = new DateTime();
+            private readonly StrongBox<int> _index;
+
+            public int OfflineIndex = -1;
+            public int StopIndex = -1;
+
+            public TestServiceConnectionManager(StrongBox<int> index)
+            {
+                _index = index;
+            }
 
             public async Task OfflineAsync(GracefulShutdownMode mode)
             {
                 await Task.Yield();
-                OfflineTime = DateTime.Now;
+                OfflineIndex = Interlocked.Increment(ref _index.Value);
             }
 
             public void SetServiceConnection(IServiceConnectionContainer serviceConnection)
@@ -128,7 +142,7 @@ namespace Microsoft.Azure.SignalR.Tests
             public async Task StopAsync()
             {
                 await Task.Yield();
-                StopTime = DateTime.Now;
+                StopIndex = Interlocked.Increment(ref _index.Value);
             }
 
             public Task WriteAckableMessageAsync(ServiceMessage seviceMessage, CancellationToken cancellationToken = default)
