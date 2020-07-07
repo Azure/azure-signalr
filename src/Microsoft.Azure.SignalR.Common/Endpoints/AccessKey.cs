@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -7,7 +10,7 @@ namespace Microsoft.Azure.SignalR
         public string Value { get; }
         public string Id { get; }
 
-        public Task AuthorizedTask => Task.CompletedTask;
+        public Task InitializedTask => Task.CompletedTask;
 
         public AccessKey(string key)
         {

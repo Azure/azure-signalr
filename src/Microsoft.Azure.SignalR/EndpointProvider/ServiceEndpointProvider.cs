@@ -58,7 +58,7 @@ namespace Microsoft.Azure.SignalR
 
             var audience = _generator.GetClientAudience(hubName, _appName);
 
-            await _accessKey.AuthorizedTask;
+            await _accessKey.InitializedTask;
             return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.SignalR
             var audience = _generator.GetServerAudience(hubName, _appName);
             var claims = userId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, userId) } : null;
 
-            await _accessKey.AuthorizedTask;
+            await _accessKey.InitializedTask;
             return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
