@@ -40,11 +40,15 @@ namespace Microsoft.Azure.SignalR
         private readonly AckHandler _ackHandler;
 
         private readonly CustomizedPingTimer _statusPing;
+
         private readonly CustomizedPingTimer _serversPing;
+
+        private readonly ServiceDiagnosticLogsContext _serviceDiagnosticLogsContext = new ServiceDiagnosticLogsContext { EnableMessageLog = false };
 
         private volatile List<IServiceConnection> _fixedServiceConnections;
 
         private volatile ServiceConnectionStatus _status;
+
 
         // <serversTag, latestTimestamp>
         private volatile Tuple<string, long> _serversTagContext = DefaultServersTagContext;
@@ -140,7 +144,13 @@ namespace Microsoft.Azure.SignalR
             _serversPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServersPingAsync, Constants.Periods.DefaultServersPingInterval, Constants.Periods.DefaultServersPingInterval);
         }
 
-        public Task StartAsync() => Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
+        public async Task StartAsync()
+        {
+            using (new ServiceConnectionContainerScope(_serviceDiagnosticLogsContext))
+            {
+                await Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
+            }
+        }
 
         public virtual Task StopAsync()
         {
@@ -185,6 +195,10 @@ namespace Microsoft.Azure.SignalR
                 {
                     _serversTagContext = Tuple.Create(serversTag, updatedTime);
                 }
+            }
+            else if (RuntimeServicePingMessage.TryGetMessageLogEnableFlag(pingMessage, out var enableMessageLog))
+            {
+                _serviceDiagnosticLogsContext.EnableMessageLog = enableMessageLog;
             }
             return Task.CompletedTask;
         }
@@ -539,7 +553,7 @@ namespace Microsoft.Azure.SignalR
 
             public void Dispose()
             {
-                 _timer.Stop();
+                _timer.Stop();
             }
 
             private TimerAwaitable Init()

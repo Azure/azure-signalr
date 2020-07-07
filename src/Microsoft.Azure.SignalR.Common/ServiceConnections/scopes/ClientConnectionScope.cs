@@ -5,7 +5,7 @@ using Microsoft.Azure.SignalR.Common.Utilities;
 using System;
 using System.Diagnostics;
 
-namespace Microsoft.Azure.SignalR.Common.ServiceConnections
+namespace Microsoft.Azure.SignalR
 {
     /// <summary>
     /// Represents a disposable scope able to carry connection properties along with the execution context flow

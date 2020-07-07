@@ -48,6 +48,11 @@ namespace Microsoft.Azure.SignalR.Tests
             return Task.CompletedTask;
         }
 
+        public Task BaseHandlePingAsync(PingMessage pingMessage)
+        {
+            return base.HandlePingAsync(pingMessage);
+        }
+
         protected override Task OnConnectionComplete(IServiceConnection connection)
         {
             return Task.CompletedTask;

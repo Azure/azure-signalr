@@ -14,6 +14,9 @@ namespace Microsoft.Azure.SignalR
         private const string StatusKey = "status";
         private const string ShutdownKey = "shutdown";
         private const string ServersKey = "servers";
+        private const string DiagnosticLogsMessagingTypeKey = "d-m";
+
+        private const string MessagingLogEnableValue = "1";
 
         private const string StatusActiveValue = "1";
         private const string StatusInactiveValue = "0";
@@ -45,6 +48,17 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly ServicePingMessage ServersTag =
             new ServicePingMessage { Messages = new[] { ServersKey, string.Empty } };
+
+        public static bool TryGetMessageLogEnableFlag(this ServicePingMessage ping, out bool enableMessageLog)
+        {
+            if (TryGetValue(ping, DiagnosticLogsMessagingTypeKey, out var value))
+            {
+                enableMessageLog = value == MessagingLogEnableValue;
+                return true;
+            }
+            enableMessageLog = default;
+            return false;
+        }
 
         public static bool TryGetOffline(this ServicePingMessage ping, out string instanceId) =>
             TryGetValue(ping, OfflineKey, out instanceId);
