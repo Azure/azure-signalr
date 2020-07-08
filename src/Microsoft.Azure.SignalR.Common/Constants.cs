@@ -57,6 +57,7 @@ namespace Microsoft.Azure.SignalR
             public const string EnableDetailedErrors = AzureSignalRSysPrefix + "derror";
             public const string ServiceEndpointsCount = AzureSignalRSysPrefix + "secn";
             public const string MaxPollInterval = AzureSignalRSysPrefix + "ttl";
+            public const string TrackingClient = AzureSignalRSysPrefix + "tc";
 
             public const string AzureSignalRUserPrefix = "asrs.u.";
         }
