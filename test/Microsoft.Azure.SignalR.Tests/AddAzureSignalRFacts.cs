@@ -91,22 +91,22 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.Equal(1, options.ConnectionCount);
                 Assert.Equal(TimeSpan.FromHours(1), options.AccessTokenLifetime);
                 Assert.Null(options.ClaimsProvider);
-                Assert.Null(options.TrackingClientFilter);
+                Assert.Null(options.TracingClientFilter);
             }
         }
 
         [Fact]
-        public void AddAzureWithTrackingClientRuleProvider()
+        public void AddAzureWithTracingClientRuleProvider()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
-                Func<HttpContext, bool> trackingClientFilter = context => context.Request.Query["track"][0] != null;
+                Func<HttpContext, bool> tracingClientFilter = context => context.Request.Query["tracing"][0] != null;
                 var services = new ServiceCollection();
                 var config = new ConfigurationBuilder().Build();
                 var serviceProvider = services.AddSignalR()
                     .AddAzureSignalR(o =>
                     {
-                        o.TrackingClientFilter = trackingClientFilter;
+                        o.TracingClientFilter = tracingClientFilter;
                     })
                     .Services
                     .AddSingleton<IConfiguration>(config)
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
 
-                Assert.Equal(trackingClientFilter, options.TrackingClientFilter);
+                Assert.Equal(tracingClientFilter, options.TracingClientFilter);
             }
         }
 

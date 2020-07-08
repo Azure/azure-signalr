@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR
             bool enableDetailedErrors = false, 
             int endpointsCount = 1,
             int? maxPollInterval = null,
-            bool isTrackingClient = false)
+            bool isTracingClient = false)
         {
             if (userId != null)
             {
@@ -47,9 +47,9 @@ namespace Microsoft.Azure.SignalR
                 yield return new Claim(Constants.ClaimType.ServerStickyMode, mode.ToString());
             }
 
-            if (isTrackingClient)
+            if (isTracingClient)
             {
-                yield return new Claim(Constants.ClaimType.TrackingClient, "true");
+                yield return new Claim(Constants.ClaimType.TracingClient, "true");
             }
 
             var authenticationType = user?.Identity?.AuthenticationType;
