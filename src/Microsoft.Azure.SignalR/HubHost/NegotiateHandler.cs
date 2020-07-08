@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IUserIdProvider _userIdProvider;
         private readonly IConnectionRequestIdProvider _connectionRequestIdProvider;
         private readonly Func<HttpContext, IEnumerable<Claim>> _claimsProvider;
-        private readonly Func<HttpContext, bool> _tracingClientFilter;
+        private readonly Func<HttpContext, bool> _diagnosticClientFilter;
         private readonly IServiceEndpointManager _endpointManager;
         private readonly IEndpointRouter _router;
         private readonly string _serverName;
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR
             _userIdProvider = userIdProvider ?? throw new ArgumentNullException(nameof(userIdProvider));
             _connectionRequestIdProvider = connectionRequestIdProvider ?? throw new ArgumentNullException(nameof(connectionRequestIdProvider));
             _claimsProvider = options?.Value?.ClaimsProvider;
-            _tracingClientFilter = options?.Value?.TracingClientFilter;
+            _diagnosticClientFilter = options?.Value?.DiagnosticClientFilter;
             _mode = options.Value.ServerStickyMode;
             _enableDetailedErrors = hubOptions.Value.EnableDetailedErrors == true;
             _endpointsCount = options.Value.Endpoints.Length;
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.SignalR
         private IEnumerable<Claim> BuildClaims(HttpContext context)
         {
             var userId = _userIdProvider.GetUserId(new ServiceHubConnectionContext(context));
-            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, _mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsTracingClient(context)).ToList();
+            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, _mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(context)).ToList();
         }
 
         private Func<IEnumerable<Claim>> GetClaimsProvider(HttpContext context)
@@ -106,9 +106,9 @@ namespace Microsoft.Azure.SignalR
             return () => _claimsProvider.Invoke(context);
         }
 
-        private bool IsTracingClient(HttpContext context)
+        private bool IsDiagnosticClient(HttpContext context)
         {
-            return _tracingClientFilter != null && _tracingClientFilter(context);
+            return _diagnosticClientFilter != null && _diagnosticClientFilter(context);
         }
 
         private static string GetOriginalPath(string path)

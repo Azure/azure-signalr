@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private readonly string _appName;
         private readonly Func<IOwinContext, IEnumerable<Claim>> _claimsProvider;
-        private readonly Func<IOwinContext, bool> _tracingClientFilter;
+        private readonly Func<IOwinContext, bool> _diagnosticClientFilter;
         private readonly ILogger _logger;
 
         private readonly IServiceEndpointManager _endpointManager;
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _provider = configuration.Resolver.Resolve<IUserIdProvider>();
             _appName = appName ?? throw new ArgumentNullException(nameof(appName));
             _claimsProvider = options?.ClaimsProvider;
-            _tracingClientFilter = options?.TracingClientFilter;
+            _diagnosticClientFilter = options?.DiagnosticClientFilter;
             _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
             _router = router ?? throw new ArgumentNullException(nameof(router));
             _connectionRequestIdProvider = connectionRequestIdProvider ?? throw new ArgumentNullException(nameof(connectionRequestIdProvider));
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             yield return new Claim(Constants.ClaimType.AppName, _appName);
             var user = owinContext.Authentication?.User;
             var userId = _provider?.GetUserId(request);
-            var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext), _serverName, _mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsTracingClient(owinContext));
+            var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext), _serverName, _mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(owinContext));
 
             yield return new Claim(Constants.ClaimType.Version, AssemblyVersion);
 
@@ -230,9 +230,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             return () => _claimsProvider.Invoke(context);
         }
 
-        private bool IsTracingClient(IOwinContext context)
+        private bool IsDiagnosticClient(IOwinContext context)
         {
-            return _tracingClientFilter != null && _tracingClientFilter(context);
+            return _diagnosticClientFilter != null && _diagnosticClientFilter(context);
         }
 
         private static string GetRedirectNegotiateResponse(string url, string token)

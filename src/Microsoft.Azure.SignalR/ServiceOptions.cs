@@ -37,10 +37,10 @@ namespace Microsoft.Azure.SignalR
         public Func<HttpContext, IEnumerable<Claim>> ClaimsProvider { get; set; } = null;
 
         /// <summary>
-        /// Gets or sets the func to set tracing client filter from <see cref="HttpContext" />.
-        /// The clients will be regarded as tracing client only if the function returns true.
+        /// Gets or sets the func to set diagnostic client filter from <see cref="HttpContext" />.
+        /// The clients will be regarded as diagnostic client only if the function returns true.
         /// </summary>
-        public Func<HttpContext, bool> TracingClientFilter { get; set; } = null;
+        public Func<HttpContext, bool> DiagnosticClientFilter { get; set; } = null;
 
         /// <summary>
         /// Gets or sets the lifetime of auto-generated access token, which will be used to authenticate with Azure SignalR Service.
