@@ -11,7 +11,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -90,7 +89,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault());
             }
-
+            
+            // todo: ignore asp.net for now
             using (new ClientConnectionScope(outboundConnection: this, isDiagnosticClient: isDiagnosticClient))
             {
                 if (_clientConnectionManager.TryAddClientConnection(clientContext))
