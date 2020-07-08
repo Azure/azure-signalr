@@ -39,6 +39,12 @@ namespace Microsoft.Azure.SignalR.AspNet
         public Func<IOwinContext, IEnumerable<Claim>> ClaimsProvider { get; set; } = null;
 
         /// <summary>
+        /// Gets or sets the func to set diagnostic client filter from <see cref="IOwinContext" />.
+        /// The clients will be regarded as diagnostic client only if the function returns true.
+        /// </summary>
+        public Func<IOwinContext, bool> DiagnosticClientFilter { get; set; } = null;
+
+        /// <summary>
         /// Gets or sets the lifetime of auto-generated access token, which will be used to authenticate with Azure SignalR Service.
         /// Default value is one hour.
         /// </summary>

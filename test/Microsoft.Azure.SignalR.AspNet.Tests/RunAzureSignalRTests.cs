@@ -21,6 +21,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Owin;
 using Microsoft.Owin.Hosting;
 using Newtonsoft.Json;
 using Owin;
@@ -632,6 +633,31 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     var enableDetailedErrors = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.EnableDetailedErrors);
                     Assert.Equal("True", enableDetailedErrors.Value);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestDiagnosticClientProviderInServiceOptionsTakeEffect()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                Func<IOwinContext, bool> diagnosticClientFilter = context => context.Request.Query["diag"] != null;
+                var hubConfiguration = Utility.GetTestHubConfig(loggerFactory);
+                hubConfiguration.EnableDetailedErrors = true;
+                using (WebApp.Start(ServiceUrl, a => a.RunAzureSignalR(AppName, hubConfiguration, options =>
+                {
+                    options.ConnectionString = ConnectionString;
+                    options.DiagnosticClientFilter = diagnosticClientFilter;
+                })))
+                {
+                    var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
+                    var response = await client.GetAsync("/negotiate?diag=true");
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    var message = await response.Content.ReadAsStringAsync();
+                    var responseObject = JsonConvert.DeserializeObject<ResponseMessage>(message);
+                    var token = JwtSecurityTokenHandler.ReadJwtToken(responseObject.AccessToken);
+                    Assert.Equal("true", token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.DiagnosticClient)?.Value);
                 }
             }
         }

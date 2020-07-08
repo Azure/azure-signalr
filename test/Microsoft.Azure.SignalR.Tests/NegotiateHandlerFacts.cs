@@ -88,6 +88,38 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        public async Task GenerateNegotiateResponseWithDiagnosticClient()
+        {
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection()
+                .AddSignalR(o => o.EnableDetailedErrors = false)
+                .AddAzureSignalR(
+                o =>
+                {
+                    o.ConnectionString = DefaultConnectionString;
+                    o.AccessTokenLifetime = TimeSpan.FromDays(1);
+                    o.DiagnosticClientFilter = ctx => { return ctx.Request.Query["diag"].FirstOrDefault() != default; } ;
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.QueryString = new QueryString("?diag");
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            var negotiateResponse = await handler.Process(httpContext, "hub");
+
+            Assert.NotNull(negotiateResponse);
+            Assert.NotNull(negotiateResponse.AccessToken);
+
+            var token = JwtSecurityTokenHandler.ReadJwtToken(negotiateResponse.AccessToken);
+            var tc = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.DiagnosticClient);
+            Assert.NotNull(tc);
+            Assert.Equal("true", tc.Value);
+        }
+
+        [Fact]
         public async Task GenerateNegotiateResponseWithUserIdAndServerSticky()
         {
             var name = nameof(GenerateNegotiateResponseWithUserIdAndServerSticky);
