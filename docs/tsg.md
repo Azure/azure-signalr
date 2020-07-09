@@ -7,6 +7,7 @@ This guidance is to provide useful troubleshooting guide based on the common iss
 - [400 Bad Request returned for client requests](#400_bad_request)
 - [401 Unauthorized returned for client requests](#401_unauthorized_returned_for_client_requests)
 - [404 returned for client requests](#random_404_returned_for_client_requests)
+- [404 returned for ASP.NET SignalR's reconnect request](#reconnect_404)
 - [429 Too Many Requests returned for client requests](#429_too_many_requests)
 - [500 Error when negotiate](#500_error_when_negotiate)
 - [Client connection drops](#client_connection_drop)
@@ -127,6 +128,10 @@ For a SignalR persistent connection, it first `/negotiate` to Azure SignalR serv
 1. Following [How to view outgoing requests](#view_request) to get the request from the client to the service.
 1. Check the URL of the request when 404 occurs. If the URL is targeting to your web app, and similar to `{your_web_app}/hubs/{hubName}`, check if the client `SkipNegotiation` is `true`. When using Azure SignalR, the client receives redirect URL when it first negotiates with the app server. The client should **NOT** skip negotiation when using Azure SignalR.
 1. Another 404 can happen when the connect request is handled more than **5** seconds after `/negotiate` is called. Check the timestamp of the client request, and open an issue to us if the request to the service has a very slow response.
+
+<a name="reconnect_404"></a>
+## 404 returned for ASP.NET SignalR's reconnect request
+For ASP.NET SignalR, when the [client connection drops](#client_connection_drop), it reconnects using the same `connectionId` for 3 times before stopping the connection. `/reconnect` can help if the connection is dropped due to network intermittent issues that `/reconnect` can reestablish the persistent connection successfully. Under other circumstances, for example, the client connection is dropped due to the routed server connection is dropped, or SignalR Service has some internal errors like instance restart/failover/deployment, the connection no longer exists, thus `/reconnect` returns `404`. It is the expected behavior for `/reconnect` and after 3 times retry the connection stops. We suggest having [connection restart](#restart_connection) logic when connection stops.
 
 <a name="429_too_many_requests"></a>
 ## 429(Too Many Requests) returned for client requests
