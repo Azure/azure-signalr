@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Common
     {
         private const string IssuerEndpoint = "https://sts.windows.net/";
 
-        [Fact(Skip="Provide a valid aad options")]
+        [Fact(Skip = "Provide a valid aad options")]
         public async Task TestGetAzureAdTokenAndAuthenticate()
         {
             var options = new AzureActiveDirectoryOptions(
@@ -22,12 +22,8 @@ namespace Microsoft.Azure.SignalR.Common
                 "<tenantId>"
             );
 
-            var app = AzureActiveDirectoryHelper.BuildApplication(options);
-
-            var token = await app.AcquireTokenForClient(AzureActiveDirectoryOptions.DefaultScopes).WithSendX5C(true).ExecuteAsync();
-
             ConfigurationManager<OpenIdConnectConfiguration> configManager = new ConfigurationManager<OpenIdConnectConfiguration>(
-                options.BuildMetadataAddress(),
+                options.BuildMetadataAddress().ToString(),
                 new OpenIdConnectConfigurationRetriever()
             );
             var keys = configManager.GetConfigurationAsync().Result.SigningKeys;
@@ -51,9 +47,24 @@ namespace Microsoft.Azure.SignalR.Common
 
             var handler = new JwtSecurityTokenHandler();
             IdentityModelEventSource.ShowPII = true;
-            var claims = handler.ValidateToken(token.AccessToken, p, out var validToken);
+
+            var accessToken = await options.AcquireAccessToken();
+            var claims = handler.ValidateToken(accessToken, p, out var validToken);
 
             Assert.NotNull(validToken);
+        }
+
+        [Fact(Skip = "Provide a valid aad options")]
+        public async Task TestGetAccessToken()
+        {
+            var options = new AzureActiveDirectoryOptions(
+                "70f09175-ecf3-477e-ad90-bb5dec839250",
+                "tWI.0t.CT8iA2~e9vaQRXlkIB1VpYsAyb.",
+                "c8a86907-dd80-4e5d-994d-36e0694e4913"
+            );
+
+            var token = await options.AcquireAccessToken();
+            Console.WriteLine(token);
         }
 
         [Fact]
