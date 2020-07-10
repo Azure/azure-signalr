@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
@@ -21,10 +22,13 @@ namespace Microsoft.Azure.SignalR
 
         protected readonly IServiceConnectionManager<THub> ServiceConnectionContainer;
 
-        public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver, IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions)
+        protected ILogger Logger { get; }
+
+        public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver, IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILogger logger)
         {
             ServiceConnectionContainer = serviceConnectionManager;
             _messageSerializer = new DefaultHubMessageSerializer(protocolResolver, globalHubOptions.Value.SupportedProtocols, hubOptions.Value.SupportedProtocols);
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
@@ -45,8 +49,8 @@ namespace Microsoft.Azure.SignalR
             }
 
             //return ServiceConnectionContainer.WriteAsync(
-            //    new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args), 
-            //    tracingId: ServiceConnectionContainerScope.IsEnableMessageLog ? "id": null));
+            //    new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args),
+            //    tracingId: ServiceConnectionContainerScope.EnableMessageLog ? "id" : null));
 
             return ServiceConnectionContainer.WriteAsync(
                 new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)));
@@ -234,6 +238,13 @@ namespace Microsoft.Azure.SignalR
                 payloads.Add(serializedMessage.ProtocolName, serializedMessage.Serialized);
             }
             return payloads;
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, string, string, Exception> _failedToWrite =
+                LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(1, "FailedToWrite"), "Failed to send message to the service: {message}. Id: {ServiceConnectionId}");
+
         }
     }
 }

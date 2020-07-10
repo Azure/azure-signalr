@@ -16,8 +16,6 @@ namespace Microsoft.Azure.SignalR
         private const string MarkerNotConfiguredError =
             "'AddAzureSignalR(...)' was called without a matching call to 'IApplicationBuilder.UseAzureSignalR(...)'.";
 
-        private readonly ILogger<ServiceLifetimeManager<THub>> _logger;
-
         private readonly IClientConnectionManager _clientConnectionManager;
 
         public ServiceLifetimeManager(
@@ -32,7 +30,7 @@ namespace Microsoft.Azure.SignalR
                   serviceConnectionManager,
                   protocolResolver,
                   globalHubOptions,
-                  hubOptions)
+                  hubOptions, logger)
         {
             // after core 3.0 UseAzureSignalR() is not required.
 #if NETSTANDARD2_0
@@ -42,7 +40,6 @@ namespace Microsoft.Azure.SignalR
             }
 #endif
             _clientConnectionManager = clientConnectionManager;
-            _logger = logger;
         }
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
