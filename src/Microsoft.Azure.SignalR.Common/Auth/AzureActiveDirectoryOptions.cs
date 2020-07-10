@@ -3,41 +3,58 @@
 
 using System;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
+using Microsoft.Azure.Services.AppAuthentication;
 
 namespace Microsoft.Azure.SignalR
 {
     public class AzureActiveDirectoryOptions : AuthOptions
     {
-        public static string[] DefaultScopes = new string[] { "https://signalr.azure.com/.default" };
+        internal const string Audience = "https://signalr.azure.com";
 
-        internal const string ChinaFormat = "https://login.chinacloudapi.cn/{0}";
-        internal const string DogfoodFormat = "https://login.windows-ppe.net/{0}";
-        internal const string GermanyFormat = "https://login.microsoftonline.de/{0}";
-        internal const string GlobalFormat = "https://login.microsoftonline.com/{0}";
-        internal const string USGovernmentFormat = "https://login.microsoftonline.us/{0}";
+        internal const string ChinaInstance = "https://login.chinacloudapi.cn/";
 
-        private string _format = GlobalFormat;
+        internal const string DogfoodInstance = "https://login.windows-ppe.net/";
+
+        internal const string GermanyInstance = "https://login.microsoftonline.de/";
+
+        internal const string GlobalInstance = "https://login.microsoftonline.com/";
+
+        internal const string USGovernmentInstance = "https://login.microsoftonline.us/";
+
+        private static readonly string[] DefaultScopes = new string[] { $"{Audience}/.default" };
+
+        private readonly TokenKind _tokenMethod;
 
         public X509Certificate2 ClientCert { get; }
 
         public string ClientId { get; }
+
         public string ClientSecret { get; }
+
         public string TenantId { get; }
 
         internal override string AuthType => "AzureActiveDirectory";
 
+        private string AzureActiveDirectoryInstance { get; set; } = GlobalInstance;
+
+        public AzureActiveDirectoryOptions()
+        {
+            _tokenMethod = TokenKind.FromManagedIdentity;
+        }
+
         public AzureActiveDirectoryOptions(string clientId, string clientSecret, string tenantId) : this(clientId, tenantId)
         {
+            _tokenMethod = TokenKind.FromClientSecret;
+
             ClientSecret = clientSecret;
         }
 
         public AzureActiveDirectoryOptions(string clientId, X509Certificate2 clientCert, string tenantId) : this(clientId, tenantId)
         {
-            ClientCert = clientCert;
-        }
+            _tokenMethod = TokenKind.FromClientCert;
 
-        private AzureActiveDirectoryOptions()
-        {
+            ClientCert = clientCert;
         }
 
         private AzureActiveDirectoryOptions(string clientId, string tenantId)
@@ -50,45 +67,69 @@ namespace Microsoft.Azure.SignalR
             ClientId = clientId;
         }
 
+        private enum TokenKind
+        {
+            FromManagedIdentity,
+            FromClientSecret,
+            FromClientCert,
+        }
+
+        public async Task<string> AcquireAccessToken()
+        {
+            switch (_tokenMethod)
+            {
+                case TokenKind.FromManagedIdentity:
+                    var azureServiceTokenProvider = new AzureServiceTokenProvider(azureAdInstance: AzureActiveDirectoryInstance);
+                    return await azureServiceTokenProvider.GetAccessTokenAsync(Audience);
+                case TokenKind.FromClientCert:
+                case TokenKind.FromClientSecret:
+                    var result = await AzureActiveDirectoryHelper.BuildApplication(this).AcquireTokenForClient(DefaultScopes).WithSendX5C(true).ExecuteAsync();
+                    return result.AccessToken;
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
         public Uri BuildAuthority()
         {
-            string uri = string.Format(_format, TenantId);
-            return new Uri(uri);
+            return GetUri(AzureActiveDirectoryInstance, TenantId);
         }
 
         public AzureActiveDirectoryOptions WithChina()
         {
-            _format = ChinaFormat;
+            AzureActiveDirectoryInstance = ChinaInstance;
             return this;
         }
 
         public AzureActiveDirectoryOptions WithDogfood()
         {
-            _format = DogfoodFormat;
+            AzureActiveDirectoryInstance = DogfoodInstance;
             return this;
         }
 
         public AzureActiveDirectoryOptions WithGermany()
         {
-            _format = GermanyFormat;
+            AzureActiveDirectoryInstance = GermanyInstance;
             return this;
         }
 
         public AzureActiveDirectoryOptions WithGlobal()
         {
-            _format = GlobalFormat;
+            AzureActiveDirectoryInstance = GlobalInstance;
             return this;
         }
 
         public AzureActiveDirectoryOptions WithUSGovernment()
         {
-            _format = USGovernmentFormat;
+            AzureActiveDirectoryInstance = USGovernmentInstance;
             return this;
         }
 
-        internal string BuildMetadataAddress()
+        internal Uri BuildMetadataAddress()
         {
-            return string.Format(_format, "common/v2.0/.well-known/openid-configuration");
+            return GetUri(AzureActiveDirectoryInstance, "common/v2.0/.well-known/openid-configuration");
         }
+
+        private Uri GetUri(string baseUri, string path) => new Uri(new Uri(baseUri), path);
     }
 }
