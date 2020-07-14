@@ -13,7 +13,12 @@ namespace Microsoft.Azure.SignalR
 
         // message tracing id is constructed in the format:
         // from most significant digit to least significant digit:
-        // 1 hex digits: isFromTracingClient (unused bit are preserved),
+        // 1 hex digits:
+        //      1st lowest bit: isFromTracingClient
+        //      2nd lowest bit: 
+        //          direction:       
+        //              0: server to client
+        //              1: client to server
         // 7 hex digits: prefix of the server
         // 8 hex digits: message index
         public static ulong Generate(bool isFromTracingClient)
