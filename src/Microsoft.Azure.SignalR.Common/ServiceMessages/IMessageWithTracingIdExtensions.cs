@@ -7,7 +7,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class IMessageWithTracingIdExtensions
     {
-        public static ExtensibleServiceMessage WithTracingId<T>(this T message) where T : ExtensibleServiceMessage, IMessageWithTracingId
+        public static T WithTracingId<T>(this T message) where T : IMessageWithTracingId
         {
             if (ServiceConnectionContainerScope.EnableMessageLog || ClientConnectionScope.IsDiagnosticClient)
             {
