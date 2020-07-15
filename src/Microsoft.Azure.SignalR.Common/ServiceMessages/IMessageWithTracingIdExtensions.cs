@@ -13,7 +13,6 @@ namespace Microsoft.Azure.SignalR
             {
                 var id = MessageWithTracingIdHelper.Generate(ClientConnectionScope.IsDiagnosticClient);
                 message.TracingId = id;
-                return message;
             }
             return message;
         }
