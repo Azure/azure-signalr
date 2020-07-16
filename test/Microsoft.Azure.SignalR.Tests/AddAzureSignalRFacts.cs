@@ -3,9 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
@@ -13,8 +11,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -260,7 +256,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     Assert.Single(options.Endpoints);
                     Assert.Equal(secondaryValue, options.Endpoints[0].ConnectionString);
                 }
-
+                
                 // Endpoints from Endpoints and ConnectionString config are merged inside the EndpointManager
                 var endpoints = serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints.Keys.ToArray();
                 if (secondaryValue == null)
@@ -397,6 +393,45 @@ namespace Microsoft.Azure.SignalR.Tests
                 {
                     Assert.Contains(endpoints,
                         s => s.ConnectionString == expected && s.EndpointType == EndpointType.Primary);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("", true)]
+        [InlineData("c_0", true)]
+        [InlineData("C_0", true)]
+        [InlineData("0c", false)]
+        [InlineData("_c", false)]
+        [InlineData("c-d", false)]
+        public void AddAzureSignalRCustomizedServiceOptions(String appName, Boolean isValid)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var propertyName = "ApplicationName";
+                var validScope = "prefixed with alphabetic characters and only contain alpha-numeric characters or underscore.";
+                ServiceProvider serviceProvider = null;
+                var config = new ConfigurationBuilder().Build();
+                serviceProvider = new ServiceCollection().AddSignalR()
+                            .AddAzureSignalR(o =>
+                            {
+                                o.ApplicationName = appName;
+                            }).Services
+                            .AddSingleton(loggerFactory)
+                            .AddSingleton<IConfiguration>(config)
+                            .BuildServiceProvider();
+                if (isValid)
+                {
+                    var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
+                    Assert.Equal(appName, options.ApplicationName);
+                }
+                else
+                {
+                    var e = Assert.Throws<AzureSignalRInvalidServiceOptionsException>(() =>
+                    {
+                        var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
+                    });
+                    Assert.Equal($"Property '{propertyName}' value should be {validScope}.", e.Message);
                 }
             }
         }
