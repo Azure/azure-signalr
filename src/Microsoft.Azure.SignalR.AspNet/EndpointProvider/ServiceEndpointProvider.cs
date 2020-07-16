@@ -33,12 +33,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public ServiceEndpointProvider(IServerNameProvider provider, ServiceEndpoint endpoint, ServiceOptions options)
         {
-            var connectionString = endpoint.ConnectionString;
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                throw new ArgumentException(ConnectionStringNotFound);
-            }
-
             _accessTokenLifetime = options.AccessTokenLifetime;
 
             // Version is ignored for aspnet signalr case
