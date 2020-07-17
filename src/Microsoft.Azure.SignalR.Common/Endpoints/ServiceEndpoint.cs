@@ -37,6 +37,17 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public bool IsActive { get; internal set; } = true;
 
+        internal ServiceEndpoint(string resourceName, AuthOptions authOptions)
+        {
+            Endpoint = string.Format("https://{0}.service.signalr.net", resourceName);
+            AccessKey = new AccessKey(authOptions);
+
+            // TODO make these fields configurable later.
+            Version = "1.0";
+            Port = 443;
+            Name = "";
+        }
+
         public ServiceEndpoint(string key, string connectionString) : this(connectionString)
         {
             if (!string.IsNullOrEmpty(key))
@@ -73,7 +84,6 @@ namespace Microsoft.Azure.SignalR
                 Port = endpoint.Port;
             }
         }
-
 
         // test only
         internal ServiceEndpoint() { }

@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal class AzureActiveDirectoryHelper
     {
-        public static IConfidentialClientApplication BuildApplication(AzureActiveDirectoryOptions options)
+        public static IConfidentialClientApplication BuildApplication(AadApplicationOptions options)
         {
             if (options == null)
             {
@@ -21,9 +21,13 @@ namespace Microsoft.Azure.SignalR
             {
                 builder.WithCertificate(options.ClientCert);
             }
-            else
+            else if (!string.IsNullOrEmpty(options.ClientSecret))
             {
                 builder.WithClientSecret(options.ClientSecret);
+            }
+            else
+            {
+                throw new ArgumentNullException("Neither clientCert not clientSecret has been provided.");
             }
             return builder.Build();
         }
