@@ -78,7 +78,45 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 Assert.Equal("App name should not be the same as hub name.", ex.Message);
             }
         }
+        /*
+        [Fact]
+        public void TestRunAzureSignalRWithEmptyAppNameThrows()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                var ex = Assert.Throws<ArgumentException>(() => WebApp.Start(ServiceUrl, app => app.RunAzureSignalR("", ConnectionString, hubConfig)));
+                Assert.StartsWith("Empty application name is not allowed.", ex.Message);
+            }
+        }
 
+        [Theory]
+        [InlineData("c_0", true)]
+        [InlineData("C_0", true)]
+        [InlineData("0c", false)]
+        [InlineData("_c", false)]
+        [InlineData("c-d", false)]
+        public void TestRunAzureSignalRWithInvalidAppNameThrows(string appName,bool isValid)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                if (isValid)
+                {
+                    using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(appName, ConnectionString, hubConfig)))
+                    {
+                        var options = hubConfig.Resolver.Resolve<IOptions<ServiceOptions>>();
+                        Assert.Equal(appName, options.Value.ApplicationName);
+                    }
+                }
+                else
+                {
+                    var ex = Assert.Throws<ArgumentException>(() => WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(appName, ConnectionString, hubConfig)));
+                    Assert.StartsWith("Application name should prefixed with alphabetic characters and only contain alpha-numeric characters or underscore.", ex.Message);
+                }
+            }
+        }
+        */
         [Fact]
         public void TestRunAzureSignalRWithoutConnectionString()
         {

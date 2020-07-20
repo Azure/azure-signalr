@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Text.RegularExpressions;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Azure.SignalR.AspNet;
 using Microsoft.Azure.SignalR.Common;
@@ -182,6 +183,11 @@ namespace Owin
                 throw new ArgumentException("Empty application name is not allowed.", nameof(applicationName));
             }
 
+            if (!Regex.IsMatch(applicationName, "^[a-zA-Z][a-zA-Z0-9_]*$"))
+            {
+                throw new ArgumentException("Application name should prefixed with alphabetic characters and only contain alpha-numeric characters or underscore.", nameof(applicationName));
+            }
+
             options.ApplicationName = applicationName;
 
             if (configuration == null)
@@ -196,7 +202,7 @@ namespace Owin
             {
                 throw new AzureSignalRInvalidServiceOptionsException("MaxPollIntervalInSeconds", "[1,300]");
             }
-
+          
             var loggerFactory = DispatcherHelper.GetLoggerFactory(configuration) ?? NullLoggerFactory.Instance;
 
             var dispatcher = DispatcherHelper.PrepareAndGetDispatcher(builder, configuration, options, applicationName, loggerFactory);
