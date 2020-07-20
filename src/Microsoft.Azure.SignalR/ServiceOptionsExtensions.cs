@@ -17,7 +17,7 @@ namespace Microsoft.Azure.SignalR
             }
             if (!string.IsNullOrEmpty(options.ApplicationName) && !Regex.IsMatch(options.ApplicationName, "^[a-zA-Z][a-zA-Z0-9_]*$"))
             {
-                throw new AzureSignalRInvalidServiceOptionsException("ApplicationName", "prefixed with alphabetic characters and only contain alpha-numeric characters or underscore.");
+                throw new AzureSignalRInvalidServiceOptionsException("ApplicationName", "prefixed with alphabetic characters and only contain alpha-numeric characters or underscore");
             }
         }
     }

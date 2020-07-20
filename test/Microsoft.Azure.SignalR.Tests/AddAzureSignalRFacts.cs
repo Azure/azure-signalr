@@ -404,12 +404,12 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData("0c", false)]
         [InlineData("_c", false)]
         [InlineData("c-d", false)]
-        public void AddAzureSignalRCustomizedServiceOptions(String appName, Boolean isValid)
+        public void AddAzureSignalRCustomizedServiceOptions(string appName, bool isValid)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
                 var propertyName = "ApplicationName";
-                var validScope = "prefixed with alphabetic characters and only contain alpha-numeric characters or underscore.";
+                var validScope = "prefixed with alphabetic characters and only contain alpha-numeric characters or underscore";
                 ServiceProvider serviceProvider = null;
                 var config = new ConfigurationBuilder().Build();
                 serviceProvider = new ServiceCollection().AddSignalR()
