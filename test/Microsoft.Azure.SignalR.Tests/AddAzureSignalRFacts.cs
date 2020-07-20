@@ -398,13 +398,33 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [InlineData("", true)]
-        [InlineData("c_0", true)]
-        [InlineData("C_0", true)]
-        [InlineData("0c", false)]
-        [InlineData("_c", false)]
-        [InlineData("c-d", false)]
-        public void AddAzureSignalRCustomizedServiceOptions(string appName, bool isValid)
+        [InlineData("")]
+        [InlineData("c_0")]
+        [InlineData("C_0")]
+        public void AddAzureSignalRWithValidAppName(string appName)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                ServiceProvider serviceProvider = null;
+                var config = new ConfigurationBuilder().Build();
+                serviceProvider = new ServiceCollection().AddSignalR()
+                            .AddAzureSignalR(o =>
+                            {
+                                o.ApplicationName = appName;
+                            }).Services
+                            .AddSingleton(loggerFactory)
+                            .AddSingleton<IConfiguration>(config)
+                            .BuildServiceProvider();
+                var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
+                Assert.Equal(appName, options.ApplicationName);
+            }
+        }
+
+        [Theory]
+        [InlineData("0c")]
+        [InlineData("_c")]
+        [InlineData("c-d")]
+        public void AddAzureSignalRWithInValidAppName(string appName)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
@@ -420,19 +440,11 @@ namespace Microsoft.Azure.SignalR.Tests
                             .AddSingleton(loggerFactory)
                             .AddSingleton<IConfiguration>(config)
                             .BuildServiceProvider();
-                if (isValid)
+                var e = Assert.Throws<AzureSignalRInvalidServiceOptionsException>(() =>
                 {
                     var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
-                    Assert.Equal(appName, options.ApplicationName);
-                }
-                else
-                {
-                    var e = Assert.Throws<AzureSignalRInvalidServiceOptionsException>(() =>
-                    {
-                        var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
-                    });
-                    Assert.Equal($"Property '{propertyName}' value should be {validScope}.", e.Message);
-                }
+                });
+                Assert.Equal($"Property '{propertyName}' value should be {validScope}.", e.Message);
             }
         }
     }
