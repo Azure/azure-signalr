@@ -68,11 +68,6 @@ namespace Microsoft.Azure.SignalR.AspNet
         public ServerStickyMode ServerStickyMode { get; set; }
 
         /// <summary>
-        /// Gets or sets options for Authentication via third party.
-        /// </summary>
-        internal AuthOptions AuthOptions { get; set; }
-
-        /// <summary>
         /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
         /// </summary>
         public IWebProxy Proxy { get; set; }

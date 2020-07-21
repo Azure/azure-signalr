@@ -28,12 +28,6 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceEndpointProvider(IServerNameProvider provider, ServiceEndpoint endpoint, ServiceOptions serviceOptions)
         {
-            var connectionString = endpoint.ConnectionString;
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                throw new ArgumentException(ConnectionStringNotFound);
-            }
-
             _accessTokenLifetime = serviceOptions.AccessTokenLifetime;
             _accessKey = endpoint.AccessKey;
             _appName = serviceOptions.ApplicationName;

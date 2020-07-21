@@ -44,9 +44,9 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
+            //// usage:
             //return ServiceConnectionContainer.WriteAsync(
-            //    new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args), 
-            //    tracingId: ServiceConnectionContainerScope.IsEnableMessageLog ? "id": null));
+            //    new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)).WithTracingId());
 
             return ServiceConnectionContainer.WriteAsync(
                 new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)));

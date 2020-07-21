@@ -13,14 +13,14 @@ namespace Microsoft.Azure.SignalR.Common
     {
         private const string IssuerEndpoint = "https://sts.windows.net/";
 
+        private const string TestClientId = "";
+        private const string TestClientSecret = "";
+        private const string TestTenantId = "";
+
         [Fact(Skip = "Provide a valid aad options")]
         public async Task TestGetAzureAdTokenAndAuthenticate()
         {
-            var options = new AzureActiveDirectoryOptions(
-                "<clientId>",
-                "<clientSecret>",
-                "<tenantId>"
-            );
+            var options = new AadApplicationOptions(TestClientId, TestTenantId).WithClientSecret(TestClientSecret);
 
             ConfigurationManager<OpenIdConnectConfiguration> configManager = new ConfigurationManager<OpenIdConnectConfiguration>(
                 options.BuildMetadataAddress().ToString(),
@@ -57,12 +57,7 @@ namespace Microsoft.Azure.SignalR.Common
         [Fact(Skip = "Provide a valid aad options")]
         public async Task TestGetAccessToken()
         {
-            var options = new AzureActiveDirectoryOptions(
-                "70f09175-ecf3-477e-ad90-bb5dec839250",
-                "tWI.0t.CT8iA2~e9vaQRXlkIB1VpYsAyb.",
-                "c8a86907-dd80-4e5d-994d-36e0694e4913"
-            );
-
+            var options = new AadApplicationOptions(TestClientId, TestTenantId).WithClientSecret(TestClientSecret);
             var token = await options.AcquireAccessToken();
             Console.WriteLine(token);
         }
@@ -70,21 +65,22 @@ namespace Microsoft.Azure.SignalR.Common
         [Fact]
         public void TestBuildAuthority()
         {
-            AzureActiveDirectoryOptions options;
+            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", ""));
+            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", "An invalid tenant id"));
+            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", ".00000000-0000-0000-0000-000000000000"));
+            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", "00000000-0000-0000-0000-000000000000."));
+            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", "00000000-0000-0000-θθθθ-000000000000"));
+            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", "0000-0000-0000-θθθθθθθθ-000000000000"));
+            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", "00000000-abcd-efgh-0000-000000000000"));
+            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", "00000000-ABCD-EFGH-0000-000000000000"));
 
-            Assert.Throws<FormatException>(() => new AzureActiveDirectoryOptions("foo", "bar", ""));
-            Assert.Throws<FormatException>(() => new AzureActiveDirectoryOptions("foo", "bar", "a invalid tenant id"));
-            Assert.Throws<FormatException>(() => new AzureActiveDirectoryOptions("foo", "bar", ".00000000-0000-0000-0000-000000000000"));
-            Assert.Throws<FormatException>(() => new AzureActiveDirectoryOptions("foo", "bar", "00000000-0000-0000-0000-000000000000."));
-            Assert.Throws<FormatException>(() => new AzureActiveDirectoryOptions("foo", "bar", "00000000-0000-0000-θθθθ-000000000000"));
-            Assert.Throws<FormatException>(() => new AzureActiveDirectoryOptions("foo", "bar", "0000-0000-0000-θθθθθθθθ-000000000000"));
-            Assert.Throws<FormatException>(() => new AzureActiveDirectoryOptions("foo", "bar", "00000000-abcd-efgh-0000-000000000000"));
-            Assert.Throws<FormatException>(() => new AzureActiveDirectoryOptions("foo", "bar", "00000000-ABCD-EFGH-0000-000000000000"));
+            AadApplicationOptions options;
 
-            options = new AzureActiveDirectoryOptions("foo", "bar", "00000000-0000-0000-0000-000000000000");
+            options = new AadApplicationOptions("foo", "00000000-0000-0000-0000-000000000000");
             Assert.Equal("https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000", options.BuildAuthority().ToString());
 
-            options = new AzureActiveDirectoryOptions("foo", "bar", "00000000-abcd-efab-cdef-000000000000").WithDogfood();
+            options = new AadApplicationOptions("foo", "00000000-abcd-efab-cdef-000000000000");
+            options.WithDogfood();
             Assert.Equal("https://login.windows-ppe.net/00000000-abcd-efab-cdef-000000000000", options.BuildAuthority().ToString());
         }
     }
