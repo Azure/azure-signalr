@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class ServiceOptionsExtensions
     {
-        private static Regex appNameRegex = new Regex("^[a-zA-Z][a-zA-Z0-9_]*$", RegexOptions.Compiled);
+        private static readonly Regex AppNameRegex = new Regex("^[a-zA-Z][a-zA-Z0-9_]*$", RegexOptions.Compiled);
         public static void Validate(this ServiceOptions options)
         {
             if (options.MaxPollIntervalInSeconds.HasValue &&
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new AzureSignalRInvalidServiceOptionsException("MaxPollIntervalInSeconds", "[1,300]");
             }
-            if (!string.IsNullOrEmpty(options.ApplicationName) && !appNameRegex.IsMatch(options.ApplicationName))
+            if (!string.IsNullOrEmpty(options.ApplicationName) && !AppNameRegex.IsMatch(options.ApplicationName))
             {
                 throw new AzureSignalRInvalidServiceOptionsException("ApplicationName", "prefixed with alphabetic characters and only contain alpha-numeric characters or underscore");
             }
