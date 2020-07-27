@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Microsoft.Azure.SignalR
+namespace Microsoft.Azure.SignalR.Common.Auth
 {
     internal interface IAadAuthOptions
     {

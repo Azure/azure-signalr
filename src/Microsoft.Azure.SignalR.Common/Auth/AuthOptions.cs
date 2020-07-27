@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+
 namespace Microsoft.Azure.SignalR
 {
     public abstract class AuthOptions
@@ -48,6 +50,13 @@ namespace Microsoft.Azure.SignalR
             AzureActiveDirectoryInstance = USGovernmentInstance;
             return this;
         }
+
+        internal Uri BuildMetadataAddress()
+        {
+            return GetUri(AzureActiveDirectoryInstance, "common/v2.0/.well-known/openid-configuration");
+        }
+
+        protected Uri GetUri(string baseUri, string path) => new Uri(new Uri(baseUri), path);
 
         internal abstract string AuthType { get; }
     }
