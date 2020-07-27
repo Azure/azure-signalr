@@ -35,6 +35,7 @@ namespace Microsoft.Azure.SignalR
                 Proxy = provider.Proxy,
             };
             var connection = new WebSocketConnectionContext(connectionOptions, _loggerFactory, accessTokenGenerater);
+
             try
             {
                 await connection.StartAsync(url, cancellationToken);

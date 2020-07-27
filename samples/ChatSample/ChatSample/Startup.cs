@@ -1,4 +1,3 @@
-using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.SignalR;
@@ -14,13 +13,12 @@ namespace ChatSample.CoreApp3
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
-            services.AddSignalR()
-                .AddAzureSignalR(option =>
-                {
-                    option.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
-                    option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(10);
-                })
-                .AddMessagePackProtocol();
+            services.AddSignalR().AddAzureSignalR(option =>
+            {
+                var authOptions = new AadManagedIdentityOptions();
+                var endpoint = new ServiceEndpoint("http://localhost", authOptions, port: 8080);
+                option.Endpoints = new ServiceEndpoint[] { endpoint };
+            }).AddMessagePackProtocol();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

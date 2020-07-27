@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceEndpointProvider : IServiceEndpointProvider
+    internal class ServiceEndpointProvider : IServiceEndpointProvider, IDisposable
     {
         public static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
@@ -22,9 +22,9 @@ namespace Microsoft.Azure.SignalR
         private readonly IServiceEndpointGenerator _generator;
         private readonly AccessTokenAlgorithm _algorithm;
 
-        private readonly IServerNameProvider _provider;
-
         public IWebProxy Proxy { get; }
+
+        private TimerAwaitable _timer = new TimerAwaitable(TimeSpan.Zero, TimeSpan.FromMinutes(55));
 
         public ServiceEndpointProvider(IServerNameProvider provider, ServiceEndpoint endpoint, ServiceOptions serviceOptions)
         {
@@ -33,14 +33,26 @@ namespace Microsoft.Azure.SignalR
             _appName = serviceOptions.ApplicationName;
             _algorithm = serviceOptions.AccessTokenAlgorithm;
 
-            _provider = provider;
-
             Proxy = serviceOptions.Proxy;
 
             var port = endpoint.Port;
             var version = endpoint.Version;
 
             _generator = new DefaultServiceEndpointGenerator(endpoint.Endpoint, version, port);
+
+            if (endpoint.AccessKey is AadAccessKey key)
+            {
+                _ = UpdateAccessKeyAsync(endpoint, key, provider.GetName());
+            }
+        }
+
+        private async Task UpdateAccessKeyAsync(ServiceEndpoint endpoint, AadAccessKey key, string serverId)
+        {
+            _timer.Start();
+            while (await _timer)
+            {
+                _ = key.AuthorizeAsync(endpoint.Endpoint, endpoint.Port, serverId);
+            }
         }
 
         public async Task<string> GenerateClientAccessTokenAsync(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
@@ -52,22 +64,31 @@ namespace Microsoft.Azure.SignalR
 
             var audience = _generator.GetClientAudience(hubName, _appName);
 
-            await _accessKey.InitializedTask;
+            if (_accessKey is AadAccessKey key)
+            {
+                await key.AuthorizeTask;
+            }
             return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
         public async Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
         {
-            if (string.IsNullOrEmpty(hubName))
+            if (_accessKey is AadAccessKey key)
             {
-                throw new ArgumentNullException(nameof(hubName));
+                return await key.GenerateAccessToken();
             }
+            else
+            {
+                if (string.IsNullOrEmpty(hubName))
+                {
+                    throw new ArgumentNullException(nameof(hubName));
+                }
 
-            var audience = _generator.GetServerAudience(hubName, _appName);
-            var claims = userId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, userId) } : null;
+                var audience = _generator.GetServerAudience(hubName, _appName);
+                var claims = userId != null ? new[] { new Claim(ClaimTypes.NameIdentifier, userId) } : null;
 
-            await _accessKey.InitializedTask;
-            return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
+                return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
+            }
         }
 
         public string GetClientEndpoint(string hubName, string originalPath, string queryString)
@@ -88,6 +109,11 @@ namespace Microsoft.Azure.SignalR
             }
 
             return _generator.GetServerEndpoint(hubName, _appName);
+        }
+
+        public void Dispose()
+        {
+            ((IDisposable)_timer).Dispose();
         }
     }
 }

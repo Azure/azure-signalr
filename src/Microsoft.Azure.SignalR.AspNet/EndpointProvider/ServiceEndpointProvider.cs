@@ -56,7 +56,11 @@ namespace Microsoft.Azure.SignalR.AspNet
         public async Task<string> GenerateClientAccessTokenAsync(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
         {
             var audience = $"{_endpoint}/{ClientPath}";
-            await _accessKey.InitializedTask;
+
+            if (_accessKey is AadAccessKey key)
+            {
+                await key.AuthorizeTask;
+            }
             return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
@@ -71,7 +75,10 @@ namespace Microsoft.Azure.SignalR.AspNet
                 };
             }
 
-            await _accessKey.InitializedTask;
+            if (_accessKey is AadAccessKey key)
+            {
+                await key.AuthorizeTask;
+            }
             var audience = $"{_endpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
 
             return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);

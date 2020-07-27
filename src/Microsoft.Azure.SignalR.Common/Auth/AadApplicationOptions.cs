@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR
             return this;
         }
 
-        public AadApplicationOptions WithClientCert(X509Certificate2 cert)
+        public AadApplicationOptions WIthCertificate(X509Certificate2 cert)
         {
             ClientCert = cert;
             return this;
@@ -54,12 +54,5 @@ namespace Microsoft.Azure.SignalR
             var result = await AzureActiveDirectoryHelper.BuildApplication(this).AcquireTokenForClient(DefaultScopes).WithSendX5C(true).ExecuteAsync();
             return result.AccessToken;
         }
-
-        internal Uri BuildMetadataAddress()
-        {
-            return GetUri(AzureActiveDirectoryInstance, "common/v2.0/.well-known/openid-configuration");
-        }
-
-        private Uri GetUri(string baseUri, string path) => new Uri(new Uri(baseUri), path);
     }
 }
