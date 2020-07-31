@@ -26,7 +26,8 @@ namespace Microsoft.Azure.SignalR
         public int ConnectionCount { get; set; } = 5;
 
         /// <summary>
-        /// Gets or sets the prefix to apply to each hub name
+        /// Gets applicationName, which will be used as a prefix to apply to each hub name. 
+        /// Should be prefixed with alphabetic characters and only contain alpha-numeric characters or underscore.
         /// </summary>
         public string ApplicationName { get; set; }
 
