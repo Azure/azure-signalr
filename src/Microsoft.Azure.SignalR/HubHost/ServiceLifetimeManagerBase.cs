@@ -44,12 +44,8 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            //// usage:
-            //return ServiceConnectionContainer.WriteAsync(
-            //    new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)).WithTracingId());
-
             return ServiceConnectionContainer.WriteAsync(
-                new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)));
+                new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)).WithTracingId());
         }
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
@@ -60,7 +56,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             return ServiceConnectionContainer.WriteAsync(
-                new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)));
+                new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)).WithTracingId());
         }
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -76,7 +72,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             return ServiceConnectionContainer.WriteAsync(
-                new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)));
+                new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)).WithTracingId());
         }
 
         public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -92,7 +88,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             return ServiceConnectionContainer.WriteAsync(
-                new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)));
+                new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)).WithTracingId());
         }
 
         public override Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -107,7 +103,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args));
+            var message = new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args)).WithTracingId();
 
             return ServiceConnectionContainer.WriteAsync(message);
         }
@@ -127,7 +123,7 @@ namespace Microsoft.Azure.SignalR
             // Send this message from a random service connection because this message involves of multiple groups.
             // Unless we send message for each group one by one, we can not guarantee the message order for all groups.
             return ServiceConnectionContainer.WriteAsync(
-                new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)));
+                new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)).WithTracingId());
         }
 
         public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
@@ -142,7 +138,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args));
+            var message = new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args)).WithTracingId();
 
             return ServiceConnectionContainer.WriteAsync(message);
         }
@@ -160,7 +156,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             return ServiceConnectionContainer.WriteAsync(
-                new UserDataMessage(userId, SerializeAllProtocols(methodName, args)));
+                new UserDataMessage(userId, SerializeAllProtocols(methodName, args)).WithTracingId());
         }
 
         public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args,
@@ -177,7 +173,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             return ServiceConnectionContainer.WriteAsync(
-                new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)));
+                new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)).WithTracingId());
         }
 
         public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -192,7 +188,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new JoinGroupWithAckMessage(connectionId, groupName);
+            var message = new JoinGroupWithAckMessage(connectionId, groupName).WithTracingId();
 
             return ServiceConnectionContainer.WriteAckableMessageAsync(message, cancellationToken);
         }
@@ -209,7 +205,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new LeaveGroupWithAckMessage(connectionId, groupName);
+            var message = new LeaveGroupWithAckMessage(connectionId, groupName).WithTracingId();
 
             return ServiceConnectionContainer.WriteAckableMessageAsync(message, cancellationToken);
         }
