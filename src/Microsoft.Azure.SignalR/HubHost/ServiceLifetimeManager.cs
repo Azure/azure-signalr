@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR
 
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var serviceConnectionContext))
             {
-                var message = new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args));
+                var message = new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)).WithTracingId();
                 // Write directly to this connection
                 return serviceConnectionContext.ServiceConnection.WriteAsync(message);
             }

@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new UserJoinGroupMessage(userId, groupName);
+            var message = new UserJoinGroupMessage(userId, groupName).WithTracingId();
             return ServiceConnectionContainer.WriteAsync(message);
         }
 
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 throw new ArgumentOutOfRangeException(nameof(ttl), TtlOutOfRangeErrorMessage);
             }
-            var message = new UserJoinGroupMessage(userId, groupName) { Ttl = (int)ttl.TotalSeconds };
+            var message = new UserJoinGroupMessage(userId, groupName) { Ttl = (int)ttl.TotalSeconds }.WithTracingId();
             return ServiceConnectionContainer.WriteAsync(message);
         }
 
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new UserLeaveGroupMessage(userId, groupName);
+            var message = new UserLeaveGroupMessage(userId, groupName).WithTracingId();
             return ServiceConnectionContainer.WriteAsync(message);
         }
 
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
             }
 
-            var message = new UserLeaveGroupMessage(userId, null);
+            var message = new UserLeaveGroupMessage(userId, null).WithTracingId();
             return ServiceConnectionContainer.WriteAsync(message);
         }
 
