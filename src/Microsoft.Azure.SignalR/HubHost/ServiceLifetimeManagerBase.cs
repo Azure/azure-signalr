@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
@@ -16,13 +17,14 @@ namespace Microsoft.Azure.SignalR
     {
         protected const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
         protected const string TtlOutOfRangeErrorMessage = "Ttl cannot be less than 0.";
+        protected readonly IServiceConnectionManager<THub> ServiceConnectionContainer;
+        protected ILogger Logger { get; set; }
 
         private readonly DefaultHubMessageSerializer _messageSerializer;
 
-        protected readonly IServiceConnectionManager<THub> ServiceConnectionContainer;
-
-        public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver, IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions)
+        public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver, IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILogger logger)
         {
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             ServiceConnectionContainer = serviceConnectionManager;
             _messageSerializer = new DefaultHubMessageSerializer(protocolResolver, globalHubOptions.Value.SupportedProtocols, hubOptions.Value.SupportedProtocols);
         }
@@ -46,6 +48,7 @@ namespace Microsoft.Azure.SignalR
 
             return ServiceConnectionContainer.WriteAsync(
                 new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)).WithTracingId());
+            Log.StartToSendServiceMessage(Logger, );
         }
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
@@ -230,6 +233,17 @@ namespace Microsoft.Azure.SignalR
                 payloads.Add(serializedMessage.ProtocolName, serializedMessage.Serialized);
             }
             return payloads;
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, ulong?, Exception> _startToSendServiceMessage =
+                    LoggerMessage.Define<ulong?>(LogLevel.Trace, new EventId(0, nameof(StartToSendServiceMessage)), "Start to send service message {tracingId}.");
+
+            public static void StartToSendServiceMessage(ILogger logger, ulong? tracingId)
+            {
+                _startToSendServiceMessage(logger, tracingId, null);
+            }
         }
     }
 }
