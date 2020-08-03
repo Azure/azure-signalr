@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR
             IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
             IHubProtocolResolver protocolResolver,
-            ILogger logger,
+            ILogger<ServiceLifetimeManager<THub>> logger,
             AzureSignalRMarkerService marker,
             IOptions<HubOptions> globalHubOptions,
             IOptions<HubOptions<THub>> hubOptions)
@@ -57,6 +57,7 @@ namespace Microsoft.Azure.SignalR
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var serviceConnectionContext))
             {
                 var message = new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)).WithTracingId();
+                Log.StartToSendMessageToConnections(Logger, message);
                 // Write directly to this connection
                 return serviceConnectionContext.ServiceConnection.WriteAsync(message);
             }
