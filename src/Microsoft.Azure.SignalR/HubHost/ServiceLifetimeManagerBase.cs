@@ -1,9 +1,8 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
@@ -49,7 +48,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)).WithTracingId();
             Log.StartToBroadcastMessage(Logger, message);
-            return ServiceConnectionContainer.WriteAsync(message);
+            return WriteAsync(message);
         }
 
         public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
@@ -61,7 +60,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)).WithTracingId();
             Log.StartToBroadcastMessage(Logger, message);
-            return ServiceConnectionContainer.WriteAsync(message);
+            return WriteAsync(message);
         }
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -78,7 +77,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)).WithTracingId();
             Log.StartToSendMessageToConnections(Logger, message);
-            return ServiceConnectionContainer.WriteAsync(message);
+            return WriteAsync(message);
         }
 
         public override Task SendConnectionsAsync(IReadOnlyList<string> connectionIds, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -95,7 +94,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)).WithTracingId();
             Log.StartToSendMessageToConnections(Logger, message);
-            return ServiceConnectionContainer.WriteAsync(message);
+            return WriteAsync(message);
         }
 
         public override Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -112,7 +111,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args)).WithTracingId();
             Log.StartToBroadcastMessageToGroup(Logger, message);
-            return ServiceConnectionContainer.WriteAsync(message);
+            return WriteAsync(message);
         }
 
         public override Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -131,7 +130,7 @@ namespace Microsoft.Azure.SignalR
             Log.StartToBroadcastMessageToGroups(Logger, message);
             // Send this message from a random service connection because this message involves of multiple groups.
             // Unless we send message for each group one by one, we can not guarantee the message order for all groups.
-            return ServiceConnectionContainer.WriteAsync(message);
+            return WriteAsync(message);
         }
 
         public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedIds, CancellationToken cancellationToken = default)
@@ -148,7 +147,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args)).WithTracingId();
             Log.StartToBroadcastMessageToGroup(Logger, message);
-            return ServiceConnectionContainer.WriteAsync(message);
+            return WriteAsync(message);
         }
 
         public override Task SendUserAsync(string userId, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -165,7 +164,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new UserDataMessage(userId, SerializeAllProtocols(methodName, args)).WithTracingId();
             Log.StartToSendMessageToUser(Logger, message);
-            return ServiceConnectionContainer.WriteAsync(message);
+            return WriteAsync(message);
         }
 
         public override Task SendUsersAsync(IReadOnlyList<string> userIds, string methodName, object[] args,
@@ -183,7 +182,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)).WithTracingId();
             Log.StartToSendMessageToUsers(Logger, message);
-            return ServiceConnectionContainer.WriteAsync(message);
+            return WriteAsync(message);
         }
 
         public override Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -200,7 +199,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new JoinGroupWithAckMessage(connectionId, groupName).WithTracingId();
             Log.StartToAddConnectionToGroup(Logger, message);
-            return ServiceConnectionContainer.WriteAckableMessageAsync(message, cancellationToken);
+            return WriteAckableMessageAsync(message);
         }
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -217,8 +216,14 @@ namespace Microsoft.Azure.SignalR
 
             var message = new LeaveGroupWithAckMessage(connectionId, groupName).WithTracingId();
             Log.StartToRemoveConnectionFromGroup(Logger, message);
-            return ServiceConnectionContainer.WriteAckableMessageAsync(message, cancellationToken);
+            return WriteAckableMessageAsync(message);
         }
+
+        protected Task WriteAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId =>
+            WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAsync(message));
+
+        protected Task WriteAckableMessageAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId => 
+            WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAckableMessageAsync(m));
 
         protected static bool IsInvalidArgument(string value)
         {
@@ -242,6 +247,20 @@ namespace Microsoft.Azure.SignalR
             return payloads;
         }
 
+        private async Task WriteCoreAsync<T>(T message, Func<T, Task> task) where T : ServiceMessage, IMessageWithTracingId
+        {
+            try
+            {
+                await task(message);
+            }
+            catch (Exception ex)
+            {
+                Log.FailedToSendMessage(Logger, message, ex);
+                throw;
+            }
+            Log.SucceededToSendMessage(Logger, message);
+        }
+
         internal static class Log
         {
             public const string StartToBroadcastMessageTemplate = "Start to broadcast message {0}.";
@@ -258,6 +277,8 @@ namespace Microsoft.Azure.SignalR
             public const string StartToAddUserToGroupWithTtlTemplate = "Start to send message {0} to add user {1} to group {2} with TTL {3} seconds.";
             public const string StartToRemoveUserFromGroupTemplate = "Start to send message {0} to remove user {1} from group {2}.";
             public const string StartToRemoveUserFromAllGroupsTemplate = "Start to send message {0} to remove user {1} from all groups.";
+            public const string FailedToSendMessageTemplate = "Failed to send message {0}.";
+            public const string SucceededToSendMessageTemplate = "Succeeded to send message {0}.";
 
             private static readonly Action<ILogger, ulong?, Exception> _startToBroadcastMessage =
                 LoggerMessage.Define<ulong?>(
@@ -342,6 +363,38 @@ namespace Microsoft.Azure.SignalR
                     LogLevel.Information,
                     new EventId(91, "StartToRemoveUserFromAllGroups"),
                     StartToRemoveUserFromAllGroupsTemplate);
+
+            private static readonly Action<ILogger, ulong?, Exception> _failedToSendMessage =
+                LoggerMessage.Define<ulong?>(
+                    LogLevel.Warning,
+                    new EventId(100, "FailedToSendMessage"),
+                    FailedToSendMessageTemplate);
+
+            private static readonly Action<ILogger, ulong?, Exception> _succeededToSendMessage =
+                LoggerMessage.Define<ulong?>(
+                    LogLevel.Information,
+                    new EventId(110, "SucceededToSendMessage"),
+                    SucceededToSendMessageTemplate);
+
+            public static void SucceededToSendMessage<T>(ILogger logger, T message) where T : ServiceMessage, IMessageWithTracingId
+            {
+                if (!Enabled())
+                {
+                    return;
+                }
+
+                _succeededToSendMessage(logger, message.TracingId, null);
+            }
+
+            public static void FailedToSendMessage<T>(ILogger logger, T message, Exception ex) where T : ServiceMessage, IMessageWithTracingId
+            {
+                if (!Enabled())
+                {
+                    return;
+                }
+
+                _failedToSendMessage(logger, message.TracingId, ex);
+            }
 
             public static void StartToBroadcastMessage(ILogger logger, BroadcastDataMessage message)
             {
