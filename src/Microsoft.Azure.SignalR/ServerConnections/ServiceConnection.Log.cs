@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
@@ -38,11 +39,11 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, Exception> _applicationTaskFailed =
                 LoggerMessage.Define(LogLevel.Error, new EventId(8, "ApplicationTaskFailed"), "Application task failed.");
 
-            private static readonly Action<ILogger, string, Exception> _failToWriteMessageToApplication =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(9, "FailToWriteMessageToApplication"), "Failed to write message to {TransportConnectionId}.");
+            private static readonly Action<ILogger, ulong?, string, Exception> _failToWriteMessageToApplication =
+                LoggerMessage.Define<ulong?, string>(LogLevel.Error, new EventId(9, "FailToWriteMessageToApplication"), "Failed to write message {tracingId} to {TransportConnectionId}.");
 
-            private static readonly Action<ILogger, string, Exception> _receivedMessageForNonExistentConnection =
-                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(10, "ReceivedMessageForNonExistentConnection"), "Received message for connection {TransportConnectionId} which does not exist.");
+            private static readonly Action<ILogger, ulong?, string, Exception> _receivedMessageForNonExistentConnection =
+                LoggerMessage.Define<ulong?, string>(LogLevel.Warning, new EventId(10, "ReceivedMessageForNonExistentConnection"), "Received message {tracingId} for connection {TransportConnectionId} which does not exist.");
 
             private static readonly Action<ILogger, string, Exception> _connectedStarting =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(11, "ConnectedStarting"), "Connection {TransportConnectionId} started.");
@@ -70,6 +71,20 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, Exception> _processConnectionFailed =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(24, "ProcessConnectionFailed"), "Error processing the connection {TransportConnectionId}.");
+
+            private static readonly Action<ILogger, ulong?, string, Exception> _receivedMessageFromService =
+                LoggerMessage.Define<ulong?, string>(
+                    LogLevel.Information,
+                    new EventId(25, "RecieveMessageFromService"),
+                    "Received message {tracingId} from client connection {connectionId}.");
+
+            public static void RecieveMessageFromService(ILogger logger, ConnectionDataMessage message)
+            {
+                if (ClientConnectionScope.IsDiagnosticClient)
+                {
+                    _receivedMessageFromService(logger, message.TracingId, message.ConnectionId, null);
+                }
+            }
 
             public static void WaitingForTransport(ILogger logger)
             {
@@ -116,14 +131,14 @@ namespace Microsoft.Azure.SignalR
                 _applicationTaskFailed(logger, exception);
             }
 
-            public static void FailToWriteMessageToApplication(ILogger logger, string connectionId, Exception exception)
+            public static void FailToWriteMessageToApplication(ILogger logger, ConnectionDataMessage message, Exception exception)
             {
-                _failToWriteMessageToApplication(logger, connectionId, exception);
+                _failToWriteMessageToApplication(logger, message.TracingId, message.ConnectionId, exception);
             }
 
-            public static void ReceivedMessageForNonExistentConnection(ILogger logger, string connectionId)
+            public static void ReceivedMessageForNonExistentConnection(ILogger logger, ConnectionDataMessage message)
             {
-                _receivedMessageForNonExistentConnection(logger, connectionId, null);
+                _receivedMessageForNonExistentConnection(logger, message.TracingId, message.ConnectionId, null);
             }
 
             public static void ConnectedStarting(ILogger logger, string connectionId)

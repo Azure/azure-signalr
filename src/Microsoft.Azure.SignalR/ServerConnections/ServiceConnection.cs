@@ -163,6 +163,7 @@ namespace Microsoft.Azure.SignalR
 
         protected override async Task OnClientMessageAsync(ConnectionDataMessage connectionDataMessage)
         {
+            Log.RecieveMessageFromService(Logger, connectionDataMessage);
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionDataMessage.ConnectionId, out var connection))
             {
                 try
@@ -173,13 +174,13 @@ namespace Microsoft.Azure.SignalR
                 }
                 catch (Exception ex)
                 {
-                    Log.FailToWriteMessageToApplication(Logger, connectionDataMessage.ConnectionId, ex);
+                    Log.FailToWriteMessageToApplication(Logger, connectionDataMessage, ex);
                 }
             }
             else
             {
                 // Unexpected error
-                Log.ReceivedMessageForNonExistentConnection(Logger, connectionDataMessage.ConnectionId);
+                Log.ReceivedMessageForNonExistentConnection(Logger, connectionDataMessage);
             }
         }
 
