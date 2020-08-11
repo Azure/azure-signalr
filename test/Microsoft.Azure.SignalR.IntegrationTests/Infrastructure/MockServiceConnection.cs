@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 using Microsoft.Azure.SignalR.Protocol;
@@ -13,12 +14,15 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
     /// </summary>
     internal class MockServiceConnection : IServiceConnection
     {
+        static int s_num = 0;
+
         private readonly IServiceConnection _serviceConnection;
         IMockService _mockService;
         internal MockServiceConnection(IMockService mockService, IServiceConnection serviceConnection)
         {
             _mockService = mockService;
             _serviceConnection = serviceConnection;
+            Interlocked.Increment(ref s_num);
         }
 
         public ServiceConnectionStatus Status => _serviceConnection.Status;
