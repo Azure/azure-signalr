@@ -130,7 +130,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     clientEndpoint,
                     clientAccessTokens,
                     () => SendToGroupCore(serviceHubContext, userGroupDict, SendAsync, (c, d) => AddUserToGroupWithTtlAsync(c, d, TimeSpan.FromSeconds(10)), Empty),
-                    _userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length,
+                    (_userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length) * 2,
                     receivedMessageDict);
 
                 await Task.Delay(TimeSpan.FromSeconds(10));
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 await RunTestCore(
                     clientEndpoint,
                     clientAccessTokens,
-                    () => SendToGroupCore(serviceHubContext, userGroupDict, SendAsync, Empty, UserRemoveFromGroupsOneByOneAsync),
+                    () => SendToGroupCore(serviceHubContext, userGroupDict, SendAsync, Empty, Empty),
                     0,
                     receivedMessageDict);
             }
