@@ -180,8 +180,9 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                     {
                         // This effectively defines the order of the calls
                         await Task.Delay(currentProbe.InitialDelay);
-
-                        testData.Results[index].ActualResult = await policy.CallProbeWithBackOffAsync(probeFunc, testData.BkOffFunc);
+                        var t = policy.CallProbeWithBackOffAsync(probeFunc, testData.BkOffFunc);
+                        await t;
+                        testData.Results[index].ActualResult = t.Result;
                     }
                     catch (Exception ex)
                     {
