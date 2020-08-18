@@ -158,6 +158,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             {
                 int index = i;
                 var currentProbe = testData.Params[index];
+                testData.Results[index] = new ProbeResult();
 
                 Func<Task<bool>> probeFunc = async () =>
                 {
@@ -176,7 +177,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 
                 Func<Task> testFunc = async () =>
                 {
-                    testData.Results[index] = new ProbeResult();
                     try
                     {
                         // This delay effectively defines the order of the calls
