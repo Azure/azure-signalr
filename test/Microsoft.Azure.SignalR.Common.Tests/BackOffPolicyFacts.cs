@@ -161,7 +161,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 
                 Func<Task<bool>> probeFunc = async () =>
                 {
-                    var result = (testData.Results[index] = new ProbeResult());
+                    var result = testData.Results[index];
                     result.ActualCallTime = DateTime.UtcNow - startTime;
                     result.ActualCallOrder = Interlocked.Increment(ref _funcCallNumber);
                     Interlocked.Increment(ref result.ActualNumberOfCalls);
@@ -176,13 +176,12 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 
                 Func<Task> testFunc = async () =>
                 {
+                    testData.Results[index] = new ProbeResult();
                     try
                     {
-                        // This effectively defines the order of the calls
+                        // This delay effectively defines the order of the calls
                         await Task.Delay(currentProbe.InitialDelay);
-                        var t = policy.CallProbeWithBackOffAsync(probeFunc, testData.BkOffFunc);
-                        await t;
-                        testData.Results[index].ActualResult = t.Result;
+                        testData.Results[index].ActualResult = policy.CallProbeWithBackOffAsync(probeFunc, testData.BkOffFunc);
                     }
                     catch (Exception ex)
                     {
