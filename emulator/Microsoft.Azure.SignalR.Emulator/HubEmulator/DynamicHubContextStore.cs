@@ -21,6 +21,8 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
         private readonly string _hubNamespace = "TempNamespace";
         private readonly IServiceProvider _provider;
 
+        private readonly object _lock = new object();
+
         public DynamicHubContextStore(IServiceProvider provider)
         {
             _provider = provider;
@@ -45,8 +47,13 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 
         private DynamicHubContext CreateHubContextImpl(string hub)
         {
-            var htb = _hubModule.DefineType($"{_hubNamespace}.{hub}",
-                    TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed, typeof(Hub));
+            TypeBuilder htb;
+            lock (_lock)
+            {
+                htb = _hubModule.DefineType($"{_hubNamespace}.{hub}",
+                        TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed, typeof(Hub));
+            }
+
             htb.DefineDefaultConstructor(MethodAttributes.Public);
             var hubType = htb.CreateType();
             var context = typeof(IHubContext<>).MakeGenericType(hubType);
