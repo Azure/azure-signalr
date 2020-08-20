@@ -21,12 +21,14 @@ namespace Microsoft.Azure.SignalR
         protected ILogger Logger { get; set; }
 
         private readonly DefaultHubMessageSerializer _messageSerializer;
+        private readonly IClientConnectionManager _clientConnectionManager;
 
-        public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver, IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILogger logger)
+        public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver, IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, IClientConnectionManager clientConnectionManager, ILogger logger)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             ServiceConnectionContainer = serviceConnectionManager;
             _messageSerializer = new DefaultHubMessageSerializer(protocolResolver, globalHubOptions.Value.SupportedProtocols, hubOptions.Value.SupportedProtocols);
+            _clientConnectionManager = clientConnectionManager;
         }
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
@@ -199,7 +201,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new JoinGroupWithAckMessage(connectionId, groupName).WithTracingId();
             Log.StartToAddConnectionToGroup(Logger, message);
-            return WriteAckableMessageAsync(message);
+            return WriteAckableMessageAsync(message, connectionId);
         }
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -216,14 +218,14 @@ namespace Microsoft.Azure.SignalR
 
             var message = new LeaveGroupWithAckMessage(connectionId, groupName).WithTracingId();
             Log.StartToRemoveConnectionFromGroup(Logger, message);
-            return WriteAckableMessageAsync(message);
+            return WriteAckableMessageAsync(message, connectionId);
         }
 
         protected Task WriteAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId =>
-            WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAsync(message));
+            WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAsync(m));
 
-        protected Task WriteAckableMessageAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId => 
-            WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAckableMessageAsync(m));
+        protected Task WriteAckableMessageAsync<T>(T message, string connectionId) where T : ServiceMessage, IMessageWithTracingId => 
+            WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAckableMessageAsync(m), connectionId);
 
         protected static bool IsInvalidArgument(string value)
         {
@@ -247,11 +249,20 @@ namespace Microsoft.Azure.SignalR
             return payloads;
         }
 
-        private async Task WriteCoreAsync<T>(T message, Func<T, Task> task) where T : ServiceMessage, IMessageWithTracingId
+        private async Task WriteCoreAsync<T>(T message, Func<T, Task> task, string connectionId = null) where T : ServiceMessage, IMessageWithTracingId
         {
             try
             {
                 await task(message);
+            }
+            catch (TimeoutException ex)
+            {
+                // Regard the case connection already disconnected when send group message got timeout as success
+                if (connectionId == null || _clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var connection))
+                {
+                    Log.FailedToSendMessage(Logger, message, ex);
+                    throw;
+                }
             }
             catch (Exception ex)
             {

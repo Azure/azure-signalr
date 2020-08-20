@@ -215,6 +215,83 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.True(false);
         }
 
+        [Fact]
+        public async void TestSendAckMessageWithTimeoutWhenClientConnectedThrowsExcetpion()
+        {
+            var proxy = new ServiceConnectionProxy();
+            
+            var serviceConnectionManager = new ServiceConnectionManager<TestHub>();
+            serviceConnectionManager.SetServiceConnection(proxy.ServiceConnectionContainer);
+            
+            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+                proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions);
+            
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
+            _ = proxy.StartAsync();
+            await proxy.WaitForServerConnectionsInited().OrTimeout();
+            await serverTask.OrTimeout();
+
+            var context = new ClientConnectionContext(new OpenConnectionMessage(TestConnectionIds[0], new Claim[] { }));
+            var connection = new TestServiceConnectionPrivate();
+            context.ServiceConnection = connection;
+            proxy.ClientConnectionManager.TryAddClientConnection(context);
+
+            var task = proxy.WaitForApplicationMessageAsync(typeof(JoinGroupWithAckMessage));
+            
+            var invokeTask = InvokeMethod(serviceLifetimeManager, "AddToGroupAsync");
+            
+            if (typeof(IAckableMessage).IsAssignableFrom(typeof(JoinGroupWithAckMessage)))
+            {
+                await proxy.WriteMessageAsync(new AckMessage(1, (int)AckStatus.Timeout));
+            }
+
+            await Assert.ThrowsAsync<TimeoutException>(async () => await invokeTask.OrTimeout());
+            
+            var message = await task.OrTimeout();
+            
+            VerifyServiceMessage("AddToGroupAsync", message);
+        }
+
+        [Fact]
+        public async void TestSendAckMessageWithTimeoutWhenClientDisconnectedNoException()
+        {
+            var proxy = new ServiceConnectionProxy();
+
+            var serviceConnectionManager = new ServiceConnectionManager<TestHub>();
+            serviceConnectionManager.SetServiceConnection(proxy.ServiceConnectionContainer);
+
+            var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
+                proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions);
+
+            var serverTask = proxy.WaitForServerConnectionAsync(1);
+            _ = proxy.StartAsync();
+            await proxy.WaitForServerConnectionsInited().OrTimeout();
+            await serverTask.OrTimeout();
+
+            var context = new ClientConnectionContext(new OpenConnectionMessage(TestConnectionIds[0], new Claim[] { }));
+            var connection = new TestServiceConnectionPrivate();
+            context.ServiceConnection = connection;
+            proxy.ClientConnectionManager.TryAddClientConnection(context);
+
+            var task = proxy.WaitForApplicationMessageAsync(typeof(JoinGroupWithAckMessage));
+
+            var invokeTask = InvokeMethod(serviceLifetimeManager, "AddToGroupAsync");
+
+            // client quickly leaves
+            proxy.ClientConnectionManager.TryRemoveClientConnection(TestConnectionIds[0], out var conn);
+
+            if (typeof(IAckableMessage).IsAssignableFrom(typeof(JoinGroupWithAckMessage)))
+            {
+                await proxy.WriteMessageAsync(new AckMessage(1, (int)AckStatus.Timeout));
+            }
+
+            await invokeTask.OrTimeout();
+
+            var message = await task.OrTimeout();
+
+            VerifyServiceMessage("AddToGroupAsync", message);
+        }
+
         private HubLifetimeManager<TestHub> MockLifetimeManager(IServiceConnectionManager<TestHub> serviceConnectionManager, IClientConnectionManager clientConnectionManager = null)
         {
             clientConnectionManager ??= new ClientConnectionManager();

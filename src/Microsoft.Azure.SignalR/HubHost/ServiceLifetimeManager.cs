@@ -30,7 +30,9 @@ namespace Microsoft.Azure.SignalR
                   serviceConnectionManager,
                   protocolResolver,
                   globalHubOptions,
-                  hubOptions, logger)
+                  hubOptions,
+                  clientConnectionManager,
+                  logger)
         {
             // after core 3.0 UseAzureSignalR() is not required.
 #if NETSTANDARD2_0

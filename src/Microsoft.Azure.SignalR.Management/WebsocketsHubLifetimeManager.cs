@@ -14,8 +14,8 @@ namespace Microsoft.Azure.SignalR.Management
     internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IHubLifetimeManagerForUserGroup where THub : Hub
     {
         public WebSocketsHubLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver,
-            IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILoggerFactory loggerFactory) :
-            base(serviceConnectionManager, protocolResolver, globalHubOptions, hubOptions, loggerFactory?.CreateLogger(nameof(WebSocketsHubLifetimeManager<Hub>)))
+            IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory) :
+            base(serviceConnectionManager, protocolResolver, globalHubOptions, hubOptions, clientConnectionManager, loggerFactory?.CreateLogger(nameof(WebSocketsHubLifetimeManager<Hub>)))
         {
         }
 
