@@ -61,7 +61,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData("SendGroupsAsync", typeof(MultiGroupBroadcastDataMessage))]
         [InlineData("SendUserAsync", typeof(UserDataMessage))]
         [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
-        public async void ServiceLifetimeManagerTest(string functionName, Type type)
+        public async Task ServiceLifetimeManagerTest(string functionName, Type type)
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData("SendGroupExceptAsync", typeof(GroupBroadcastDataMessage))]
         [InlineData("AddToGroupAsync", typeof(JoinGroupWithAckMessage))]
         [InlineData("RemoveFromGroupAsync", typeof(LeaveGroupWithAckMessage))]
-        public async void ServiceLifetimeManagerGroupTest(string functionName, Type type)
+        public async Task ServiceLifetimeManagerGroupTest(string functionName, Type type)
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
         [InlineData("AddToGroupAsync", typeof(JoinGroupWithAckMessage))]
         [InlineData("RemoveFromGroupAsync", typeof(LeaveGroupWithAckMessage))]
-        public async void ServiceLifetimeManagerIntegrationTest(string methodName, Type messageType)
+        public async Task ServiceLifetimeManagerIntegrationTest(string methodName, Type messageType)
         {
             var proxy = new ServiceConnectionProxy();
 
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData("SendGroupsAsync", typeof(MultiGroupBroadcastDataMessage))]
         [InlineData("SendUserAsync", typeof(UserDataMessage))]
         [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
-        public async void ServiceLifetimeManagerIgnoreBlazorHubProtocolTest(string functionName, Type type)
+        public async Task ServiceLifetimeManagerIgnoreBlazorHubProtocolTest(string functionName, Type type)
         {
             var protocolResolver = new DefaultHubProtocolResolver(new IHubProtocol[]
                 {
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.SignalR.Tests
         [InlineData("SendGroupsAsync", typeof(MultiGroupBroadcastDataMessage))]
         [InlineData("SendUserAsync", typeof(UserDataMessage))]
         [InlineData("SendUsersAsync", typeof(MultiUserDataMessage))]
-        public async void ServiceLifetimeManagerOnlyBlazorHubProtocolTest(string functionName, Type type)
+        public async Task ServiceLifetimeManagerOnlyBlazorHubProtocolTest(string functionName, Type type)
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = MockLifetimeManager(serviceConnectionManager);
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async void TestSendConnectionAsyncisOverwrittenWhenClientConnectionExisted()
+        public async Task TestSendConnectionAsyncisOverwrittenWhenClientConnectionExisted()
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var clientConnectionManager = new ClientConnectionManager();
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async void TestSendAckMessageWithTimeoutWhenClientConnectedThrowsExcetpion()
+        public async Task TestSendAckMessageWithTimeoutWhenClientConnectedThrowsExcetpion()
         {
             var proxy = new ServiceConnectionProxy();
             
@@ -240,10 +240,7 @@ namespace Microsoft.Azure.SignalR.Tests
             
             var invokeTask = InvokeMethod(serviceLifetimeManager, "AddToGroupAsync");
             
-            if (typeof(IAckableMessage).IsAssignableFrom(typeof(JoinGroupWithAckMessage)))
-            {
-                await proxy.WriteMessageAsync(new AckMessage(1, (int)AckStatus.Timeout));
-            }
+            await proxy.WriteMessageAsync(new AckMessage(1, (int)AckStatus.Timeout));
 
             await Assert.ThrowsAsync<TimeoutException>(async () => await invokeTask.OrTimeout());
             
@@ -253,7 +250,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async void TestSendAckMessageWithTimeoutWhenClientDisconnectedNoException()
+        public async Task TestSendAckMessageWithTimeoutWhenClientDisconnectedNoException()
         {
             var proxy = new ServiceConnectionProxy();
 
@@ -280,10 +277,7 @@ namespace Microsoft.Azure.SignalR.Tests
             // client quickly leaves
             proxy.ClientConnectionManager.TryRemoveClientConnection(TestConnectionIds[0], out var conn);
 
-            if (typeof(IAckableMessage).IsAssignableFrom(typeof(JoinGroupWithAckMessage)))
-            {
-                await proxy.WriteMessageAsync(new AckMessage(1, (int)AckStatus.Timeout));
-            }
+            await proxy.WriteMessageAsync(new AckMessage(1, (int)AckStatus.Timeout));
 
             await invokeTask.OrTimeout();
 
