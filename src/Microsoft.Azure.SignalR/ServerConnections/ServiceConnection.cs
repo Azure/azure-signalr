@@ -156,8 +156,8 @@ namespace Microsoft.Azure.SignalR
                     // Since all user-created messages will be sent to `ServiceConnection` directly.
                     // We can simply ignore all messages came from the application pipe.
                 }
-                context.Application.Input.CancelPendingRead();
             }
+
             return PerformDisconnectAsyncCore(connectionId);
         }
 
