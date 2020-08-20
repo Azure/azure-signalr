@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         public async Task TestAcquireAccessToken()
         {
             var options = new AadApplicationOptions(TestClientId, TestTenantId).WithClientSecret(TestClientSecret);
-            var token = await options.AcquireAccessToken();
+            var token = await options.GenerateAccessToken();
         }
 
         [Fact(Skip = "Managed Identity required")]
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             var handler = new JwtSecurityTokenHandler();
             IdentityModelEventSource.ShowPII = true;
 
-            var accessToken = await options.AcquireAccessToken();
+            var accessToken = await options.GenerateAccessToken();
             var claims = handler.ValidateToken(accessToken, p, out var validToken);
 
             Assert.NotNull(validToken);

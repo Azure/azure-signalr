@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR
             return GetUri(AzureActiveDirectoryInstance, TenantId);
         }
 
-        public async Task<string> AcquireAccessToken()
+        public async Task<string> GenerateAccessToken()
         {
             var result = await AzureActiveDirectoryHelper.BuildApplication(this).AcquireTokenForClient(DefaultScopes).WithSendX5C(true).ExecuteAsync();
             return result.AccessToken;

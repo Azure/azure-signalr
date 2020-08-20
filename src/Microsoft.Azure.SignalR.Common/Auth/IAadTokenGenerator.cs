@@ -4,6 +4,6 @@ namespace Microsoft.Azure.SignalR
 {
     internal interface IAadTokenGenerator
     {
-        Task<string> AcquireAccessToken();
+        Task<string> GenerateAccessToken();
     }
 }
