@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public RestHubLifetimeManager(ServiceManagerOptions serviceManagerOptions, string hubName, string productInfo)
         {
-            _restApiProvider = new RestApiProvider(serviceManagerOptions.ConnectionString);
+            _restApiProvider = new RestApiProvider(serviceManagerOptions.ServiceEndpoint);
             _productInfo = productInfo;
             _appName = serviceManagerOptions.ApplicationName;
             _hubName = hubName;
