@@ -88,7 +88,8 @@ namespace Microsoft.Azure.SignalR.Management
                             .AddSingleton(typeof(IConnectionFactory), sp => connectionFactory)
                             .AddSingleton(typeof(HubLifetimeManager<>), typeof(WebSocketsHubLifetimeManager<>))
                             .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
-                            .AddSingleton(typeof(IServiceConnectionContainer), sp => weakConnectionContainer);
+                            .AddSingleton(typeof(IServiceConnectionContainer), sp => weakConnectionContainer)
+                            .AddSingleton(typeof(IClientConnectionManager), sp => clientConnectionManager);
 
                         var success = false;
                         ServiceProvider serviceProvider = null;
