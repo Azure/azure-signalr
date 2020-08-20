@@ -5,9 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Common.Auth;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
 
@@ -45,7 +43,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task AuthenticateAsync(string endpoint, int? port, string serverId)
         {
-            if (_authOptions is ITokenBasedAuthOptions options)
+            if (_authOptions is IAadTokenGenerator options)
             {
                 var token = await options.AcquireAccessToken();
                 await AuthenticateWithTokenAsync(endpoint, port, serverId, token);

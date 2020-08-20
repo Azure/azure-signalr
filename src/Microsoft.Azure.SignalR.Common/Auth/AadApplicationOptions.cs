@@ -4,11 +4,10 @@
 using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Common.Auth;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class AadApplicationOptions : AuthOptions, ITokenBasedAuthOptions
+    public class AadApplicationOptions : AuthOptions, IAadTokenGenerator
     {
         private static readonly string[] DefaultScopes = new string[] { $"{Audience}/.default" };
 
