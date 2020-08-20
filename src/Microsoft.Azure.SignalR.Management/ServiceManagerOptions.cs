@@ -11,17 +11,27 @@ namespace Microsoft.Azure.SignalR.Management
     /// </summary>
     public class ServiceManagerOptions
     {
+        private ServiceEndpoint _serviceEndpoint = null;
+
         /// <summary>
-        /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
+        /// Gets or sets the ApplicationName which will be prefixed to each hub name
         /// </summary>
-        public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
+        public string ApplicationName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 1.
+        /// </summary>
+        public int ConnectionCount { get; set; } = 1;
 
         /// <summary>
         /// Gets or sets the connection string of Azure SignalR Service instance.
         /// </summary>
         public string ConnectionString { get; set; } = null;
 
-        private ServiceEndpoint _serviceEndpoint = null;
+        /// <summary>
+        /// Gets or sets the proxy used when ServiceManager will attempt to connect to Azure SignalR Service.
+        /// </summary>
+        public IWebProxy Proxy { get; set; }
 
         /// <summary>
         /// Gets or sets the service endpoint for accessing Azure SignalR Service.
@@ -43,19 +53,9 @@ namespace Microsoft.Azure.SignalR.Management
         }
 
         /// <summary>
-        /// Gets or sets the ApplicationName which will be prefixed to each hub name
+        /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
         /// </summary>
-        public string ApplicationName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 1.
-        /// </summary>
-        public int ConnectionCount { get; set; } = 1;
-
-        /// <summary>
-        /// Gets or sets the proxy used when ServiceManager will attempt to connect to Azure SignalR Service.
-        /// </summary>
-        public IWebProxy Proxy { get; set; }
+        public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
 
         internal void ValidateOptions()
         {

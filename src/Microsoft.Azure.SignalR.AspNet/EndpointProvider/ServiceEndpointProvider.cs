@@ -62,10 +62,10 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
         {
-            if (_accessKey is AadAccessKey key)
-            {
-                return key.GenerateAadToken();
-            }
+            // if (_accessKey is AadAccessKey key)
+            // {
+            //     return key.GenerateAadToken();
+            // }
 
             IEnumerable<Claim> claims = null;
             if (userId != null)
