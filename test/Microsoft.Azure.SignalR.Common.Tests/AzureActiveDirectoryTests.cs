@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR.Common
             var handler = new JwtSecurityTokenHandler();
             IdentityModelEventSource.ShowPII = true;
 
-            var accessToken = await options.AcquireAccessToken();
+            var accessToken = await options.GenerateAadToken();
             var claims = handler.ValidateToken(accessToken, p, out var validToken);
 
             Assert.NotNull(validToken);
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.SignalR.Common
         public async Task TestGetAccessToken()
         {
             var options = new AadApplicationOptions(TestClientId, TestTenantId).WithClientSecret(TestClientSecret);
-            var token = await options.AcquireAccessToken();
+            var token = await options.GenerateAadToken();
             Console.WriteLine(token);
         }
 
