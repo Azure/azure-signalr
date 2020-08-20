@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (_authOptions is IAadTokenGenerator options)
             {
-                return options.AcquireAccessToken();
+                return options.GenerateAccessToken();
             }
             throw new InvalidOperationException("This accesskey is not able to generate AccessToken, a TokenBasedAuthOptions is required.");
         }
