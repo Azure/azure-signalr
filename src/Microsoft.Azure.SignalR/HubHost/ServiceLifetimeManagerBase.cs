@@ -201,7 +201,7 @@ namespace Microsoft.Azure.SignalR
 
             var message = new JoinGroupWithAckMessage(connectionId, groupName).WithTracingId();
             Log.StartToAddConnectionToGroup(Logger, message);
-            return WriteAckableMessageAsync(message, connectionId);
+            return WriteAckableMessageAsync(message);
         }
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -218,14 +218,14 @@ namespace Microsoft.Azure.SignalR
 
             var message = new LeaveGroupWithAckMessage(connectionId, groupName).WithTracingId();
             Log.StartToRemoveConnectionFromGroup(Logger, message);
-            return WriteAckableMessageAsync(message, connectionId);
+            return WriteAckableMessageAsync(message);
         }
 
         protected Task WriteAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId =>
             WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAsync(m));
 
-        protected Task WriteAckableMessageAsync<T>(T message, string connectionId) where T : ServiceMessage, IMessageWithTracingId => 
-            WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAckableMessageAsync(m), connectionId);
+        protected Task WriteAckableMessageAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId => 
+            WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAckableMessageAsync(m));
 
         protected static bool IsInvalidArgument(string value)
         {
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.SignalR
             return payloads;
         }
 
-        private async Task WriteCoreAsync<T>(T message, Func<T, Task> task, string connectionId = null) where T : ServiceMessage, IMessageWithTracingId
+        private async Task WriteCoreAsync<T>(T message, Func<T, Task> task) where T : ServiceMessage, IMessageWithTracingId
         {
             try
             {
@@ -257,6 +257,19 @@ namespace Microsoft.Azure.SignalR
             }
             catch (TimeoutException ex)
             {
+                string connectionId = null;
+                switch (message)
+                {
+                    case JoinGroupWithAckMessage jmg:
+                        connectionId = jmg.ConnectionId;
+                        break;
+                    case LeaveGroupWithAckMessage lmg:
+                        connectionId = lmg.ConnectionId;
+                        break;
+                    default:
+                        break;
+                }  
+                
                 // Regard the case connection already disconnected when send group message got timeout as success
                 if (connectionId == null || _clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var connection))
                 {
