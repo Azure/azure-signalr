@@ -51,6 +51,11 @@
     <NewtonsoftJsonPackageVersion>11.0.2</NewtonsoftJsonPackageVersion>
     <MicrosoftOwinPackageVersion>2.1.0</MicrosoftOwinPackageVersion>
     <OwinPackageVersion>1.0.0</OwinPackageVersion>
+    
+    <!--Emulator -->
+    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>3.1.5</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
+    <MicrosoftAspNetCoreMvcNewtonsoftJsonPackageVersion>3.1.5</MicrosoftAspNetCoreMvcNewtonsoftJsonPackageVersion>
+    <MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>3.1.5</MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>
 
     <!--Testing -->
     <MicrosoftAspNetCoreSignalRProtocolsMessagePackTestPackageVersion>3.0.0-preview6.19307.2</MicrosoftAspNetCoreSignalRProtocolsMessagePackTestPackageVersion>

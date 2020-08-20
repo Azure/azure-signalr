@@ -29,8 +29,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private const int ClientConnectionCount = 4;
         private const int GroupCount = 2;
         private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(1);
-        private static readonly string[] _userNames = GetTestStringList("User", ClientConnectionCount);
-        private static readonly string[] _groupNames = GetTestStringList("Group", GroupCount);
         private static readonly ServiceTransportType[] _serviceTransportType = new ServiceTransportType[] { ServiceTransportType.Transient, ServiceTransportType.Persistent };
         private static readonly string[] _appNames = new string[] { "appName", "", null };
         private readonly ITestServerFactory _testServerFactory;
@@ -49,8 +47,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestData))]
         internal async Task BroadcastTest(ServiceTransportType serviceTransportType, string appName)
         {
+            var userNames = GenerateRandomNames(ClientConnectionCount);
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
-            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName, userNames);
             try
             {
                 await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.All.SendAsync(MethodName, Message), ClientConnectionCount, receivedMessageDict);
@@ -66,11 +65,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestData))]
         internal async Task SendToUserTest(ServiceTransportType serviceTransportType, string appName)
         {
+            var userNames = GenerateRandomNames(ClientConnectionCount);
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
-            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName, userNames);
             try
             {
-                await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.User(_userNames[0]).SendAsync(MethodName, Message), 1, receivedMessageDict);
+                await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.User(userNames[0]).SendAsync(MethodName, Message), 1, receivedMessageDict);
             }
             finally
             {
@@ -83,11 +83,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestData))]
         internal async Task SendToUsersTest(ServiceTransportType serviceTransportType, string appName)
         {
+            var userNames = GenerateRandomNames(ClientConnectionCount);
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
-            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName, userNames);
             try
             {
-                await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.Users(_userNames).SendAsync(MethodName, Message), ClientConnectionCount, receivedMessageDict);
+                await RunTestCore(clientEndpoint, clientAccessTokens, () => serviceHubContext.Clients.Users(userNames).SendAsync(MethodName, Message), ClientConnectionCount, receivedMessageDict);
             }
             finally
             {
@@ -100,15 +101,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestData))]
         internal async Task SendToGroupTest(ServiceTransportType serviceTransportType, string appName)
         {
+            var userNames = GenerateRandomNames(ClientConnectionCount);
+            var groupNames = GenerateRandomNames(GroupCount);
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
-            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName, userNames);
             try
             {
-                Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
-                var userGroupDict = GenerateUserGroupDict(_userNames, _groupNames);
+                Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Group(groupNames[0]).SendAsync(MethodName, Message);
+                var userGroupDict = GenerateUserGroupDict(userNames, groupNames);
                 await RunTestCore(clientEndpoint, clientAccessTokens,
                     () => SendToGroupCore(serviceHubContext, userGroupDict, sendTaskFunc, AddUserToGroupAsync, UserRemoveFromGroupsOneByOneAsync),
-                    _userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length, receivedMessageDict);
+                    userNames.Length / groupNames.Length + userNames.Length % groupNames.Length, receivedMessageDict);
             }
             finally
             {
@@ -121,19 +124,21 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestData))]
         internal async Task TestAddUserToGroupWithTtl(ServiceTransportType serviceTransportType, string appName)
         {
-            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            var userNames = GenerateRandomNames(ClientConnectionCount);
+            var groupNames = GenerateRandomNames(GroupCount);
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName, userNames);
             try
             {
-                var userGroupDict = GenerateUserGroupDict(_userNames, _groupNames);
+                var userGroupDict = GenerateUserGroupDict(userNames, groupNames);
                 var receivedMessageDict = new ConcurrentDictionary<int, int>();
                 await RunTestCore(
                     clientEndpoint,
                     clientAccessTokens,
                     () => SendToGroupCore(serviceHubContext, userGroupDict, SendAsync, (c, d) => AddUserToGroupWithTtlAsync(c, d, TimeSpan.FromSeconds(10)), Empty),
-                    (_userNames.Length / _groupNames.Length + _userNames.Length % _groupNames.Length) * 2,
+                    (userNames.Length / groupNames.Length + userNames.Length % groupNames.Length) * 2,
                     receivedMessageDict);
 
-                await Task.Delay(TimeSpan.FromSeconds(10));
+                await Task.Delay(TimeSpan.FromSeconds(30));
                 receivedMessageDict.Clear();
                 await RunTestCore(
                     clientEndpoint,
@@ -148,7 +153,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
 
             Task SendAsync() =>
-                serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
+                serviceHubContext.Clients.Group(groupNames[0]).SendAsync(MethodName, Message);
 
             static Task Empty(IServiceHubContext context, IDictionary<string, List<string>> dict) =>
                 Task.CompletedTask;
@@ -159,12 +164,14 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestData))]
         internal async Task SendToGroupsTest(ServiceTransportType serviceTransportType, string appName)
         {
+            var userNames = GenerateRandomNames(ClientConnectionCount);
+            var groupNames = GenerateRandomNames(GroupCount);
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
-            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName, userNames);
             try
             {
-                Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(_groupNames).SendAsync(MethodName, Message);
-                var userGroupDict = GenerateUserGroupDict(_userNames, _groupNames);
+                Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(groupNames).SendAsync(MethodName, Message);
+                var userGroupDict = GenerateUserGroupDict(userNames, groupNames);
                 await RunTestCore(clientEndpoint, clientAccessTokens,
                     () => SendToGroupCore(serviceHubContext, userGroupDict, sendTaskFunc, AddUserToGroupAsync, UserRemoveFromGroupsOneByOneAsync),
                     ClientConnectionCount, receivedMessageDict);
@@ -180,15 +187,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestData))]
         internal async Task RemoveUserFromAllGroupsTest(ServiceTransportType serviceTransportType, string appName)
         {
+            var userNames = GenerateRandomNames(ClientConnectionCount);
+            var groupNames = GenerateRandomNames(GroupCount);
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
-            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName, userNames);
             try
             {
-                Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(_groupNames).SendAsync(MethodName, Message);
-                var userGroupDict = new Dictionary<string, List<string>> { { _userNames[0], _groupNames.ToList() } };
+                Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(groupNames).SendAsync(MethodName, Message);
+                var userGroupDict = new Dictionary<string, List<string>> { { userNames[0], groupNames.ToList() } };
                 await RunTestCore(clientEndpoint, clientAccessTokens,
                     () => SendToGroupCore(serviceHubContext, userGroupDict, sendTaskFunc, AddUserToGroupAsync, UserRemoveFromAllGroupsAsync),
-                    _groupNames.Length, receivedMessageDict);
+                    groupNames.Length, receivedMessageDict);
             }
             finally
             {
@@ -228,13 +237,14 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestData))]
         internal async Task SendToConnectionTest(ServiceTransportType serviceTransportType, string appName)
         {
+            var userNames = GenerateRandomNames(ClientConnectionCount);
             var testServer = _testServerFactory.Create(TestOutputHelper);
             await testServer.StartAsync(new Dictionary<string, string> { [TestStartup.ApplicationName] = appName });
 
             var task = testServer.HubConnectionManager.WaitForConnectionCountAsync(1);
 
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
-            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName, userNames);
             try
             {
                 await RunTestCore(clientEndpoint, clientAccessTokens,
@@ -261,20 +271,22 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             var task = testServer.HubConnectionManager.WaitForConnectionCountAsync(1);
 
+            var userNames = GenerateRandomNames(ClientConnectionCount);
+            var groupNames = GenerateRandomNames(GroupCount);
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
-            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName);
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName, userNames);
             try
             {
                 await RunTestCore(clientEndpoint, clientAccessTokens,
                     async () =>
                     {
                         var connectionId = await task.OrTimeout();
-                        await serviceHubContext.Groups.AddToGroupAsync(connectionId, _groupNames[0]);
-                        await serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
+                        await serviceHubContext.Groups.AddToGroupAsync(connectionId, groupNames[0]);
+                        await serviceHubContext.Clients.Group(groupNames[0]).SendAsync(MethodName, Message);
                         // We can't guarantee the order between the send group and the following leave group
                         await Task.Delay(_timeout);
-                        await serviceHubContext.Groups.RemoveFromGroupAsync(connectionId, _groupNames[0]);
-                        await serviceHubContext.Clients.Group(_groupNames[0]).SendAsync(MethodName, Message);
+                        await serviceHubContext.Groups.RemoveFromGroupAsync(connectionId, groupNames[0]);
+                        await serviceHubContext.Clients.Group(groupNames[0]).SendAsync(MethodName, Message);
                     },
                     1, receivedMessageDict);
             }
@@ -395,7 +407,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     select $"{prefix}{i}").ToArray();
         }
 
-        private async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType, string appName)
+        private async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType, string appName, IEnumerable<string> userNames)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
@@ -404,10 +416,20 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName, loggerFactory);
 
                 var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
-                var tokens = from userName in _userNames
+                var tokens = from userName in userNames
                              select serviceManager.GenerateClientAccessToken(HubName, userName);
                 return (clientEndpoint, tokens, serviceHubContext);
             }
+        }
+
+        private static string[] GenerateRandomNames(int count)
+        {
+            var names = new string[count];
+            for (var i = 0; i < count; i++)
+            {
+                names[i] = Guid.NewGuid().ToString();
+            }
+            return names;
         }
 
         private static async Task<IList<HubConnection>> CreateAndStartClientConnections(string clientEndpoint, IEnumerable<string> clientAccessTokens)
