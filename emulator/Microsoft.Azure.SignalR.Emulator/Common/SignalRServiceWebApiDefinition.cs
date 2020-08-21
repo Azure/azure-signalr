@@ -3,10 +3,13 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Microsoft.Azure.SignalR.Controllers.Common
 {
+    [Authorize]
     [Route("api/v1")]
     [Consumes("application/json")]
     internal abstract class SignalRServiceWebApiDefinition : ControllerBase
