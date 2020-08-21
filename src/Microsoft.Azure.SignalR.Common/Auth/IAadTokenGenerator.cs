@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace Microsoft.Azure.SignalR.Common.Auth
+namespace Microsoft.Azure.SignalR
 {
-    internal interface ITokenBasedAuthOptions
+    internal interface IAadTokenGenerator
     {
         Task<string> AcquireAccessToken();
     }

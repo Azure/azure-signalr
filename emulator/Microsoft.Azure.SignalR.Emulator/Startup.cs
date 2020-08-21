@@ -1,12 +1,20 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Linq;
+using System.Reflection;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.Azure.SignalR.Emulator.Controllers;
 using Microsoft.Azure.SignalR.Emulator.HubEmulator;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Emulator
@@ -27,7 +35,10 @@ namespace Microsoft.Azure.SignalR.Emulator
             services.AddJwtBearerAuth(Configuration);
             services.AddAuthorization();
 
-            services.AddControllers().AddNewtonsoftJson();
+            services.AddControllers().AddNewtonsoftJson().ConfigureApplicationPartManager(manager =>
+            {
+                manager.FeatureProviders.Add(new CustomControllerFeatureProvider());
+            });
             services.AddSignalREmulator();
             services.AddLogging(services =>
             {
@@ -37,11 +48,28 @@ namespace Microsoft.Azure.SignalR.Emulator
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime lifetime)
         {
+            lifetime.ApplicationStarted.Register(() =>
+               {
+                   var address = new Uri(app.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First());
+                   Console.WriteLine(@$"
+===================================================
+The Azure SignalR Emulator was successfully started.
+Use the below value inside *********** block as its ConnectionString:
+***********
+
+Endpoint={address.Scheme}://{address.Host};Port={address.Port};AccessKey={AppBuilderExtensions.AccessKey};Version=1.0;
+
+***********
+
+===================================================
+");
+               });
             app.UseRouting();
             app.UseWebSockets();
             app.UseAllowAllCors();
+
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>
@@ -52,6 +80,15 @@ namespace Microsoft.Azure.SignalR.Emulator
 
                 endpoints.MapControllers();
             });
+        }
+
+        private sealed class CustomControllerFeatureProvider : ControllerFeatureProvider
+        {
+            protected override bool IsController(TypeInfo typeInfo)
+            {
+                var isCustomController = !typeInfo.IsAbstract && typeof(SignalRServiceEmulatorWebApi).IsAssignableFrom(typeInfo);
+                return isCustomController || base.IsController(typeInfo);
+            }
         }
     }
 }
