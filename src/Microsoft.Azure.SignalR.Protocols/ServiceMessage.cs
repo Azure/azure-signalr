@@ -86,6 +86,14 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
+    /// Interface of connection ack-able message 
+    /// </summary>
+    public interface IConnectionAckableMessage : IAckableMessage
+    {
+        string ConnectionId { get; set; }
+    }
+
+    /// <summary>
     /// A handshake request message.
     /// </summary>
     public class HandshakeRequestMessage : ExtensibleServiceMessage

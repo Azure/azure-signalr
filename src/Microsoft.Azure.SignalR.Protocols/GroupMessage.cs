@@ -147,7 +147,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A waiting for ack join-group message.
     /// </summary>
-    public class JoinGroupWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
+    public class JoinGroupWithAckMessage : ExtensibleServiceMessage, IConnectionAckableMessage, IMessageWithTracingId
     {
         /// <summary>
         /// Gets or sets the connection Id.
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A waiting for ack leave-group message.
     /// </summary>
-    public class LeaveGroupWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
+    public class LeaveGroupWithAckMessage : ExtensibleServiceMessage, IConnectionAckableMessage, IMessageWithTracingId
     {
         /// <summary>
         /// Gets or sets the connection Id.

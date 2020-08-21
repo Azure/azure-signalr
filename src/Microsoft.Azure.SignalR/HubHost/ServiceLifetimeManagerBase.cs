@@ -258,18 +258,11 @@ namespace Microsoft.Azure.SignalR
             catch (TimeoutException ex)
             {
                 string connectionId = null;
-                switch (message)
+                if (message is IConnectionAckableMessage msg)
                 {
-                    case JoinGroupWithAckMessage jmg:
-                        connectionId = jmg.ConnectionId;
-                        break;
-                    case LeaveGroupWithAckMessage lmg:
-                        connectionId = lmg.ConnectionId;
-                        break;
-                    default:
-                        break;
-                }  
-                
+                    connectionId = msg.ConnectionId;
+                }
+
                 // Regard the case connection already disconnected when send group message got timeout as success
                 if (connectionId == null || _clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var connection))
                 {
