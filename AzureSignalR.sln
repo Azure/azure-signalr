@@ -71,7 +71,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.Int
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "emulator", "emulator", "{ADD61A03-340D-426C-BA51-DBBC096434ED}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.SignalR.Emulator", "emulator\Microsoft.Azure.SignalR.Emulator\Microsoft.Azure.SignalR.Emulator.csproj", "{ABAAAEA8-40B3-4178-A7FD-09779A5DC757}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.SignalR.Emulator", "src\Microsoft.Azure.SignalR.Emulator\Microsoft.Azure.SignalR.Emulator.csproj", "{ABAAAEA8-40B3-4178-A7FD-09779A5DC757}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

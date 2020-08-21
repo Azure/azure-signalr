@@ -40,5 +40,12 @@
     <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Common.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
     <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Management.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
     <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Protocols.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Emulator.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+    <SignedPackageFile Include="$(PublishDir)MessagePack.dll" Certificate="None" Visible="false" />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.*.dll" Certificate="None" Visible="false" />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Extensions.*.dll" Certificate="None" Visible="false" />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.IdentityModel.*.dll" Certificate="None" Visible="false" />
+    <SignedPackageFile Include="$(PublishDir)Newtonsoft.*.dll" Certificate="None" Visible="false" />
+    <SignedPackageFile Include="$(PublishDir)System.*.dll" Certificate="None" Visible="false" />
   </ItemGroup>
 </Project>
