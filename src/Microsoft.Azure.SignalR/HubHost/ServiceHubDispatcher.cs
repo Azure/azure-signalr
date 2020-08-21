@@ -76,20 +76,34 @@ namespace Microsoft.Azure.SignalR
                 return;
             }
 
-            using CancellationTokenSource source = new CancellationTokenSource();
-            source.CancelAfter(_options.GracefulShutdown.Timeout);
+            try
+            {
+                var source = new CancellationTokenSource(_options.GracefulShutdown.Timeout);
 
-            await Task.WhenAny(
-                OfflineAndWaitForCompletedAsync(_options.GracefulShutdown.Mode),
-                Task.Delay(TimeSpan.FromHours(1), source.Token)
-            );
+                _logger.LogInformation("[GracefulShutdown] Started.");
 
-            await _serviceConnectionManager.StopAsync();
+                await Task.WhenAny(
+                    OfflineAndWaitForCompletedAsync(_options.GracefulShutdown.Mode),
+                    Task.Delay(Timeout.InfiniteTimeSpan, source.Token)
+                );
+
+                await Task.WhenAny(
+                    _serviceConnectionManager.StopAsync(),
+                    Task.Delay(Timeout.InfiniteTimeSpan, source.Token)
+                );
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning($"[GracefulShutdown] Timeout ({_options.GracefulShutdown.Timeout.TotalMilliseconds}ms) reached, existing connections will be dropped immediately.");
+            }
         }
 
         private async Task OfflineAndWaitForCompletedAsync(GracefulShutdownMode mode)
         {
+            _logger.LogInformation("[GracefulShutdown] Unloading server connections.");
             await _serviceConnectionManager.OfflineAsync(mode);
+
+            _logger.LogInformation("[GracefulShutdown] Waiting client connections to complete.");
             await _clientConnectionManager.WhenAllCompleted();
         }
 

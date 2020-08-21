@@ -18,6 +18,8 @@ namespace Microsoft.Azure.SignalR.Emulator
 {
     internal static class AppBuilderExtensions
     {
+        internal const string AccessKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH";
+        private static readonly SecurityKey[] ValidKeys = new SecurityKey[] { new SymmetricSecurityKey(Encoding.UTF8.GetBytes(AccessKey)) };
         private static readonly MediaTypeHeaderValue EventStreamMediaType = new MediaTypeHeaderValue("text/event-stream");
         private const string AllowAllCors = nameof(AllowAllCors);
 
@@ -38,10 +40,6 @@ namespace Microsoft.Azure.SignalR.Emulator
 
         public static IServiceCollection AddJwtBearerAuth(this IServiceCollection services, IConfiguration configuration)
         {
-            var accessKey = configuration.GetValue<string>("AccessKey");
-            var keyBytes = string.IsNullOrEmpty(accessKey) ? Array.Empty<byte>() : Encoding.UTF8.GetBytes(accessKey);
-            var key = new SecurityKey[] { new SymmetricSecurityKey(keyBytes) };
-            
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
@@ -51,7 +49,7 @@ namespace Microsoft.Azure.SignalR.Emulator
                     ValidateAudience = false,
                     ValidateLifetime = false,
                     ValidateIssuerSigningKey = false,
-                    IssuerSigningKeyResolver = (t, s, k, v) => key,
+                    IssuerSigningKeyResolver = (t, s, k, v) => ValidKeys,
                 };
 
                 options.Events = new JwtBearerEvents
