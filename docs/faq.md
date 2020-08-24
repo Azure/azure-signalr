@@ -87,7 +87,7 @@ take the aggregation type [here](https://docs.microsoft.com/en-us/azure/azure-mo
 
 Modes:
 * `Default` mode **requires** hub server. When there is no server connection available for the hub, the client tries to connect to this hub fails.
-* `Serverless` mode does **NOT** allow any server connection, i.e. it will reject all server connections, all clients must in serverless mode.
+* `Serverless` mode does **NOT** allow any server connection. Clients connect to Azure SignalR, and users usually use serverless technologies such as **Azure Function** to handle hub logics. Here is a simple example using Azure SignalR's Serverless mode: https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-quickstart-azure-functions-javascript?WT.mc_id=signalrquickstart-github-antchu
 * `Classic` mode is a mixed status. When a hub has server connection, the new client will be routed to hub server, if not, client will enter serverless mode.
 
   This may cause some problem, for example, all of server connections are lost for a moment, some clients will enter serverless mode, instead of route to hub server.
