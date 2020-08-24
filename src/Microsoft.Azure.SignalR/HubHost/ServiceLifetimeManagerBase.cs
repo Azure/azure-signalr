@@ -257,18 +257,15 @@ namespace Microsoft.Azure.SignalR
             }
             catch (TimeoutException ex)
             {
-                string connectionId = null;
-                if (message is IConnectionAckableMessage msg)
+                // Regard the case connection already disconnected when send group message got timeout as success
+                if (message is IAckableMessageWithConnectionId msg && !_clientConnectionManager.ClientConnections.TryGetValue(msg.ConnectionId, out var connection))
                 {
-                    connectionId = msg.ConnectionId;
+                    Log.SucceededToSendMessage(Logger, message);
+                    return;
                 }
 
-                // Regard the case connection already disconnected when send group message got timeout as success
-                if (connectionId == null || _clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var connection))
-                {
-                    Log.FailedToSendMessage(Logger, message, ex);
-                    throw;
-                }
+                Log.FailedToSendMessage(Logger, message, ex);
+                throw;
             }
             catch (Exception ex)
             {

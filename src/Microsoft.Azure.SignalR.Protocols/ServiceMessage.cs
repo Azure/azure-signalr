@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// Interface of connection ack-able message 
     /// </summary>
-    public interface IConnectionAckableMessage : IAckableMessage
+    public interface IAckableMessageWithConnectionId : IAckableMessage
     {
         string ConnectionId { get; set; }
     }
