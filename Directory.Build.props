@@ -26,6 +26,7 @@
     <LangVersion>latest</LangVersion>
     <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>
     <AssemblySigningCertName>Microsoft400</AssemblySigningCertName>
+    <ThirdPartyAssemblySigningCertName>3PartySHA2</ThirdPartyAssemblySigningCertName>
     <PackageSigningCertName>NuGet</PackageSigningCertName>
   </PropertyGroup>
   
@@ -41,5 +42,6 @@
     <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Management.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
     <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Protocols.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
     <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Emulator.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+    <SignedPackageFile Include="$(PublishDir)MessagePack.dll" Certificate="$(ThirdPartyAssemblySigningCertName)" Visible="false" />
   </ItemGroup>
 </Project>
