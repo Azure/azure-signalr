@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -24,55 +25,55 @@ namespace Microsoft.Azure.SignalR.Management
             return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
         }
 
-        public RestApiEndpoint GetServiceHealthEndpoint()
+        public async Task<RestApiEndpoint> GetServiceHealthEndpointAsync()
         {
             var port = _port == null ? "" : $":{_port}";
             var url = $"{_baseEndpoint}{port}/api/{Version}/health";
             var audience = $"{_baseEndpoint}/api/{Version}/health";
-            var token = _restApiAccessTokenGenerator.Generate(audience);
+            var token = await _restApiAccessTokenGenerator.Generate(audience);
             return new RestApiEndpoint(url, token);
         }
 
-        public RestApiEndpoint GetBroadcastEndpoint(string appName, string hubName, TimeSpan? lifetime = null)
+        public Task<RestApiEndpoint> GetBroadcastEndpointAsync(string appName, string hubName, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpoint(appName, hubName, "", lifetime);
+            return GenerateRestApiEndpointAsync(appName, hubName, "", lifetime);
         }
 
-        public RestApiEndpoint GetUserGroupManagementEndpoint(string appName, string hubName, string userId, string groupName, TimeSpan? lifetime = null)
+        public Task<RestApiEndpoint> GetUserGroupManagementEndpointAsync(string appName, string hubName, string userId, string groupName, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpoint(appName, hubName, $"/groups/{groupName}/users/{userId}", lifetime);
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{groupName}/users/{userId}", lifetime);
         }
 
-        public RestApiEndpoint GetSendToUserEndpoint(string appName, string hubName, string userId, TimeSpan? lifetime = null)
+        public Task<RestApiEndpoint> GetSendToUserEndpointAsync(string appName, string hubName, string userId, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpoint(appName, hubName, $"/users/{userId}", lifetime);
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/users/{userId}", lifetime);
         }
 
-        public RestApiEndpoint GetSendToGroupEndpoint(string appName, string hubName, string groupName, TimeSpan? lifetime = null)
+        public Task<RestApiEndpoint> GetSendToGroupEndpointAsync(string appName, string hubName, string groupName, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpoint(appName, hubName, $"/groups/{groupName}", lifetime);
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{groupName}", lifetime);
         }
 
-        public RestApiEndpoint GetRemoveUserFromAllGroups(string appName, string hubName, string userId, TimeSpan? lifetime = null)
+        public Task<RestApiEndpoint> GetRemoveUserFromAllGroupsAsync(string appName, string hubName, string userId, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpoint(appName, hubName, $"/users/{userId}/groups", lifetime);
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/users/{userId}/groups", lifetime);
         }
 
-        public RestApiEndpoint GetSendToConnectionEndpoint(string appName, string hubName, string connectionId, TimeSpan? lifetime = null)
+        public Task<RestApiEndpoint> GetSendToConnectionEndpointAsync(string appName, string hubName, string connectionId, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpoint(appName, hubName, $"/connections/{connectionId}", lifetime);
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/connections/{connectionId}", lifetime);
         }
 
-        public RestApiEndpoint GetConnectionGroupManagementEndpoint(string appName, string hubName, string connectionId, string groupName, TimeSpan? lifetime = null)
+        public Task<RestApiEndpoint> GetConnectionGroupManagementEndpointAsync(string appName, string hubName, string connectionId, string groupName, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpoint(appName, hubName, $"/groups/{groupName}/connections/{connectionId}", lifetime);
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{groupName}/connections/{connectionId}", lifetime);
         }
 
-        private RestApiEndpoint GenerateRestApiEndpoint(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null)
+        private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null)
         {
             var requestPrefixWithHub = _port == null ? $"{_baseEndpoint}/api/{Version}/hubs/{GetPrefixedHubName(appName, hubName)}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{GetPrefixedHubName(appName, hubName)}";
             var audiencePrefixWithHub = $"{_baseEndpoint}/api/{Version}/hubs/{GetPrefixedHubName(appName, hubName)}";
-            var token = _restApiAccessTokenGenerator.Generate($"{audiencePrefixWithHub}{pathAfterHub}", lifetime);
+            var token = await _restApiAccessTokenGenerator.Generate($"{audiencePrefixWithHub}{pathAfterHub}", lifetime);
             return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token);
         }
     }

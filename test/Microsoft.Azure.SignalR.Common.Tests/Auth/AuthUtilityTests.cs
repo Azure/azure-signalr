@@ -9,9 +9,9 @@ using System.Text;
 using Xunit;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Microsoft.Azure.SignalR.Common.Tests
+namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 {
-    public class AuthenticationHelperTest
+    public class AuthUtilityTests
     {
         private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         private const string Audience = "https://localhost/aspnetclient?hub=testhub";

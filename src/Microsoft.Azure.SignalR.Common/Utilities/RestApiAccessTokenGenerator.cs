@@ -3,13 +3,17 @@
 
 using System;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
     internal class RestApiAccessTokenGenerator
     {
         private readonly AccessKey _accessKey;
+
         private readonly Claim[] _claims;
+
+        private const AccessTokenAlgorithm DefaultAlgorithm = AccessTokenAlgorithm.HS256;
 
         public RestApiAccessTokenGenerator(AccessKey accessKey)
         {
@@ -17,12 +21,21 @@ namespace Microsoft.Azure.SignalR
             _claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, GenerateServerName())
-            }; ;
+            };
         }
 
-        public string Generate(string audience, TimeSpan? lifetime = null)
+        public Task<string> Generate(string audience, TimeSpan? lifetime = null)
         {
-            return AuthUtility.GenerateAccessToken(_accessKey, audience, _claims, lifetime ?? Constants.Periods.DefaultAccessTokenLifetime, AccessTokenAlgorithm.HS256);
+            if (_accessKey is AadAccessKey key)
+            {
+                return key.GenerateAadToken();
+            }
+
+            return _accessKey.GenerateAccessToken(
+                audience,
+                _claims,
+                lifetime ?? Constants.Periods.DefaultAccessTokenLifetime,
+                DefaultAlgorithm);
         }
 
         private static string GenerateServerName()
