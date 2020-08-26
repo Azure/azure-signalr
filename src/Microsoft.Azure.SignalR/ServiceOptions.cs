@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR
         /// Gets or sets the func to set diagnostic client filter from <see cref="HttpContext" />.
         /// The clients will be regarded as diagnostic client only if the function returns true.
         /// </summary>
-        public Func<HttpContext, bool> DiagnosticClientFilter { get; set; } = null;
+        internal Func<HttpContext, bool> DiagnosticClientFilter { get; set; } = null;
 
         /// <summary>
         /// Gets or sets the lifetime of auto-generated access token, which will be used to authenticate with Azure SignalR Service.
