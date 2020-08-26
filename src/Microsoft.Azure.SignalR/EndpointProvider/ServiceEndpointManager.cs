@@ -11,6 +11,7 @@ namespace Microsoft.Azure.SignalR
     internal class ServiceEndpointManager : ServiceEndpointManagerBase
     {
         private readonly ILogger _logger;
+        private readonly ILoggerFactory _loggerFactory;
 
         // Store the initial ServiceOptions for generating EndpointProvider use.
         // Only Endpoints value accept hot-reload and prevent changes of unexpected modification on other configurations.
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.SignalR
         {
             _options = optionsMonitor.CurrentValue;
             _logger = loggerFactory?.CreateLogger<ServiceEndpointManager>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _loggerFactory = loggerFactory;
 
             optionsMonitor.OnChange(OnChange);
             _scaleTimeout = _options.ServiceScaleTimeout;
@@ -42,7 +44,7 @@ namespace Microsoft.Azure.SignalR
                 return null;
             }
 
-            return new ServiceEndpointProvider(_provider, endpoint, _options);
+            return new ServiceEndpointProvider(_provider, endpoint, _options, loggerFactory: _loggerFactory);
         }
 
         private void OnChange(ServiceOptions options)
