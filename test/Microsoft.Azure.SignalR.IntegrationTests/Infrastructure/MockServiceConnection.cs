@@ -18,12 +18,16 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 
         private readonly IServiceConnection _serviceConnection;
         IMockService _mockService;
+        
         internal MockServiceConnection(IMockService mockService, IServiceConnection serviceConnection)
         {
             _mockService = mockService;
             _serviceConnection = serviceConnection;
-            Interlocked.Increment(ref s_num);
+            ConnectionNumber = Interlocked.Increment(ref s_num);
+            _mockService.RegisterSDKConnection(this);
         }
+
+        public int ConnectionNumber { get; private set; }
 
         public ServiceConnectionStatus Status => _serviceConnection.Status;
 
@@ -31,7 +35,13 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 
         public Task ConnectionOfflineTask => _serviceConnection.ConnectionOfflineTask;
 
-        public Task StartAsync(string target = null) => _serviceConnection.StartAsync(target);
+        public Task StartAsync(string target = null)
+        {
+            var tag = $"svc_{ConnectionNumber}_";
+            //target = target == null ? tag : tag + target;
+            target = tag + target;
+            return _serviceConnection.StartAsync(target);
+        }
 
         public Task StopAsync() => _serviceConnection.StopAsync();
 

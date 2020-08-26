@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
     /// Not a general purpose producer-consumer async queue implementation
     /// Thread safe for only single concurrent reader + single concurrent writer
     /// </summary>
-    class MessageQueue<T> where T : class
+    internal class MessageQueue<T> where T : class
     {
         private object _lock = new object();
         private ConcurrentQueue<T> _queue = new ConcurrentQueue<T>();

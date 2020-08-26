@@ -11,9 +11,11 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 {
     internal interface IMockService
     {
-        public MockServiceSideConnection RegisterSDKConnection(MockServiceConnectionContext sdkSIdeConnCtx, HubServiceEndpoint endpoint, string target, IDuplexPipe pipe);
+        public MockServiceSideConnection RegisterSDKConnectionContext(MockServiceConnectionContext sdkSIdeConnCtx, HubServiceEndpoint endpoint, string target, IDuplexPipe pipe);
+        public void RegisterSDKConnection(MockServiceConnection sdkSideConnection);
         public Task StopConnectionAsync(MockServiceSideConnection conn);
         List<MockServiceSideConnection> ServiceSideConnections { get; }
         IInvocationBinder CurrentInvocationBinder { get; set; }
+        Task AllInitialFixedConnectionsEstablished();
     }
 }

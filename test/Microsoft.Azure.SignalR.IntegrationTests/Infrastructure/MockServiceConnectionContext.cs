@@ -33,12 +33,14 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
             Transport = duplexPipePair.Transport;
 
             _mockService = mockService;
-            _svcSideConnection = _mockService.RegisterSDKConnection(this, endpoint, target, duplexPipePair.Application);
+            _svcSideConnection = _mockService.RegisterSDKConnectionContext(this, endpoint, target, duplexPipePair.Application);
         }
 
         public override async ValueTask DisposeAsync()
         {
             await _mockService.StopConnectionAsync(_svcSideConnection);
         }
+
+        public MockServiceConnection MyMockServiceConnetion { get; set; }
     }
 }

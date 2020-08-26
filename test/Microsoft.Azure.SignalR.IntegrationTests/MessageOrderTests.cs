@@ -24,7 +24,6 @@ using AspNetTestServer = Microsoft.AspNetCore.TestHost.TestServer;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests
 {
-
     public class MessageOrderTests : VerifiableLoggedTest
     {
         const bool MessageOrderFixed = false;
@@ -49,19 +48,14 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
             using(var server = new AspNetTestServer(builder))
             {
                 var mockSvc = (server.Host.Services.GetRequiredService<ServiceHubDispatcher<TestHub>>() as MockServiceHubDispatcher<TestHub>).MockService;
-                List<MockServiceSideConnection> allSvcConns = null;
-                int endpointCount = 0;
+                await mockSvc.AllInitialFixedConnectionsEstablished();
+                List<MockServiceSideConnection> allSvcConns = mockSvc.ServiceSideConnections;
 
-                // wait for all connections to get established
-                // todo: extension/utility method?
-                do 
-                {
-                    await Task.Delay(10);
-                    allSvcConns = mockSvc.ServiceSideConnections;
-                    // count endpoints (primary and secondary)
-                    endpointCount = allSvcConns.Distinct(new MockServiceSideConnectionEndpointComparer()).Count();
-                }
-                while (endpointCount != RealMockServiceE2ETestParams.ServiceEndpoints.Length);
+                // A few extra checks (just for this initial test to verify more invariants)
+                // Each ServiceEndpoints will have ConnectionCount connections
+                Assert.Equal(allSvcConns.Count, RealMockServiceE2ETestParams.ConnectionCount * RealMockServiceE2ETestParams.ServiceEndpoints.Length);
+                int endpointCount = allSvcConns.Distinct(new MockServiceSideConnectionEndpointComparer()).Count();
+                Assert.Equal(endpointCount, RealMockServiceE2ETestParams.ServiceEndpoints.Length);
 
                 // specify invocation binder before making calls
                 // todo: maybe there is a better way?
@@ -97,10 +91,10 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
                     counts[conn] = ++msgCount;
 
                     // parse each BroadcastDataMessage and verify this is the correct message
-                    var hubMessage = ParseBrDaMeJson(peekMsg, mockSvc.CurrentInvocationBinder);
+                    var hubMessage = ParseBroadcastDataMessageJson(peekMsg, mockSvc.CurrentInvocationBinder);
                     Assert.True(hubMessage is InvocationMessage);
                     var invMsg = hubMessage as InvocationMessage;
-                    Assert.True(invMsg.Target == "Callback");
+                    Assert.Equal("Callback", invMsg.Target);
 
                     // finally, get ready to verify the order of messages
                     int actualCallbackNum = (int)invMsg.Arguments[0];
@@ -138,7 +132,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
         }
 
         private static readonly JsonHubProtocol _signalRPro = new JsonHubProtocol();
-        private static HubMessage ParseBrDaMeJson(BroadcastDataMessage bdm, IInvocationBinder binder)
+        private static HubMessage ParseBroadcastDataMessageJson(BroadcastDataMessage bdm, IInvocationBinder binder)
         {
             foreach (var payload in bdm.Payloads)
             {
