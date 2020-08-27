@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../Common/REST/**/*.cs"/> 
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Microsoft.Azure.SignalR.Protocols\Microsoft.Azure.SignalR.Protocols.csproj" />
   </ItemGroup>
 
@@ -18,6 +22,7 @@
     <PackageReference Include="Microsoft.Identity.Client" Version="$(MicrosoftIdentityClientVersion)" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="$(SystemIdentityModelTokensJwtPackageVersion)" />
     <PackageReference Include="System.IO.Pipelines" Version="$(SystemIOPipelinesPackageVersion)" />
+	  <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="$(MicrosoftRestClientRuntimePackageVersion)" />
   </ItemGroup>
 
   <!-- TDOO: Fix in next minor release: Note to not reference Microsoft.AspNetCore.Http.Connections.Client as it has breaking changes from .NETSTANDARD2.0 to NETCOREAPP3.0-->
