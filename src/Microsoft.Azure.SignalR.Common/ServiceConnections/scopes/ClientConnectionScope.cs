@@ -5,7 +5,7 @@ using Microsoft.Azure.SignalR.Common.Utilities;
 using System;
 using System.Diagnostics;
 
-namespace Microsoft.Azure.SignalR.Common.ServiceConnections
+namespace Microsoft.Azure.SignalR
 {
     /// <summary>
     /// Represents a disposable scope able to carry connection properties along with the execution context flow
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
                             {
                                 Properties = new ClientConnectionScopeProperties()
                                 {
-                                    OutboundServiceConnection = outboundConnection,
+                                    OutboundServiceConnection = new WeakReference<IServiceConnection>(outboundConnection),
                                     IsDiagnosticClient = isDiagnosticClient
                                 }
                             };
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 
         internal static bool IsScopeEstablished => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current != null;
 
-        internal static IServiceConnection OutboundServiceConnection
+        internal static WeakReference<IServiceConnection> OutboundServiceConnection
         {
             get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties?.OutboundServiceConnection;
             set 
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
 
         private class ClientConnectionScopeProperties
         {
-            public IServiceConnection OutboundServiceConnection { get; set; }
+            public WeakReference<IServiceConnection> OutboundServiceConnection { get; set; }
 
             public bool IsDiagnosticClient { get; set; }
         }

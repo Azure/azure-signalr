@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR
             _nameProvider = nameProvider;
         }
 
-        public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
+        public virtual IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
         {
             return new ServiceConnection(
                 _serviceProtocol,

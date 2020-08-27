@@ -3,18 +3,23 @@
 
 using System;
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using Xunit.Abstractions;
+using static Microsoft.Azure.SignalR.Tests.ServiceConnectionTests;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
@@ -239,13 +244,13 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
                 Assert.Single(warns);
-                Assert.Contains(warns, s => s.Write.Message.Contains("Message JoinGroupWithAckMessage is not sent to endpoint (Primary)http://url1 because all connections to this endpoint are offline."));
+                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointServiceConnectionContainer.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
                 return true;
             }))
-            { 
+            {
                 var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
                 var router = new DefaultEndpointRouter();
-            
+
                 var container = new TestMultiEndpointServiceConnectionContainer("hub",
                     e => new TestServiceConnectionContainer(new List<IServiceConnection> {
                     new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
@@ -357,7 +362,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
                 Assert.Equal(2, warns.Count);
-                Assert.Contains(warns, s => s.Write.Message.Contains("Message JoinGroupWithAckMessage is not sent to endpoint (Primary)http://url1 because all connections to this endpoint are offline."));
+                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointServiceConnectionContainer.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
                 return true;
             }))
             {
@@ -391,7 +396,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
                 Assert.Equal(2, warns.Count);
-                Assert.Contains(warns, s => s.Write.Message.Contains("Message JoinGroupWithAckMessage is not sent to endpoint (Primary)http://url1 because all connections to this endpoint are offline."));
+                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointServiceConnectionContainer.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
                 return true;
             }))
             {
@@ -885,7 +890,7 @@ namespace Microsoft.Azure.SignalR.Tests
             containers.First().Value.HandleAck(new AckMessage(1, (int)AckStatus.Ok));
             await task.OrTimeout();
         }
-        
+
         [Fact]
         public async Task TestEndpointManagerWithAddEndpointsWithTimeoutCanPromote()
         {
@@ -985,7 +990,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var containers = container.GetTestOnlineContainers();
             var serversTag = "Server1;Server2;Server3";
             await Task.WhenAll(containers.Select(c => c.MockReceivedServersPing(serversTag)));
-            
+
             // wait one interval+ for Ready state and check negotiation is added.
             await Task.Delay(6000);
 
@@ -999,7 +1004,7 @@ namespace Microsoft.Azure.SignalR.Tests
             containers.First().HandleAck(new AckMessage(1, (int)AckStatus.Ok));
             await task.OrTimeout();
         }
-        
+
         [Fact]
         public async Task TestEndpointManagerWithRemoveEndpointsWithNoClients()
         {
@@ -1219,6 +1224,171 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.True(newValue.SequenceEqual(endpoints));
         }
 
+        [Fact]
+        public async Task ServiceConnectionContainerScopeWithPingUpdateTest()
+        {
+            using (StartVerifiableLog(out var loggerFactory))
+            {
+                // prepare containers
+                var ccm = new TestClientConnectionManager();
+                var ccf = new ClientConnectionFactory();
+                var protocol = new ServiceProtocol();
+                TestConnection transportConnection1 = null;
+                TestConnection transportConnection2 = null;
+                TestConnection transportConnection22 = null;
+                var connectionFactory1 = new TestConnectionFactory(conn =>
+                {
+                    transportConnection1 = conn;
+                    return Task.CompletedTask;
+                });
+                var connectionFactory2 = new TestConnectionFactory(conn =>
+                {
+                    transportConnection2 = conn;
+                    return Task.CompletedTask;
+                });
+                var connectionFactory22 = new TestConnectionFactory(conn =>
+                {
+                    transportConnection22 = conn;
+                    return Task.CompletedTask;
+                });
+
+                (var connectionHandler, var connectionDelegate) = GetConnectionDelegate();
+
+                var ConnectionStringFormatter = "Endpoint={0};AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+                var Url1 = "http://url1";
+                var Url2 = "http://url2";
+                var Url22 = "http://url22";
+                var ConnectionString1 = string.Format(ConnectionStringFormatter, Url1);
+                var ConnectionString2 = string.Format(ConnectionStringFormatter, Url2);
+                var ConnectionString22 = string.Format(ConnectionStringFormatter, Url22);
+
+                var sem = new TestServiceEndpointManager(
+                    new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                    new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2")
+                    );
+                var endpoints = sem.GetEndpoints("hub");
+                var connection1 = new ServiceConnection(protocol, ccm, connectionFactory1, loggerFactory, connectionDelegate, ccf,
+                                    "serverId", "server-conn-1", endpoints[0], endpoints[0].ConnectionContainer as IServiceMessageHandler, closeTimeOutMilliseconds: 500);
+
+                var connection2 = new ServiceConnection(protocol, ccm, connectionFactory2, loggerFactory, connectionDelegate, ccf,
+                                    "serverId", "server-conn-2", endpoints[1], endpoints[1].ConnectionContainer as IServiceMessageHandler, closeTimeOutMilliseconds: 500);
+
+                var connection22 = new ServiceConnection(protocol, ccm, connectionFactory22, loggerFactory, connectionDelegate, ccf,
+                                    "serverId", "server-conn-22", endpoints[1], endpoints[1].ConnectionContainer as IServiceMessageHandler, closeTimeOutMilliseconds: 500);
+
+                var router = new TestEndpointRouter();
+
+                var multiContainer = new TestMultiEndpointServiceConnectionContainer("hub",
+                    e =>
+                    {
+                        return e.Endpoint == endpoints[0].Endpoint ?
+                         new TestServiceConnectionContainer(new List<IServiceConnection> { connection1 }, e) :
+                        new TestServiceConnectionContainer(new List<IServiceConnection> { connection2, connection22 }, e);
+                    }, sem, router, NullLoggerFactory.Instance);
+
+                var containers = multiContainer.GetTestOnlineContainers();
+                try
+                {
+
+                    await Task.Run(async () =>
+                    {
+                        _ = multiContainer.StartAsync();
+                        await multiContainer.ConnectionInitializedTask;
+                    });
+
+                    // container 1
+                    var taskCt1 = Task.Run(async () =>
+                    {
+                        // a client connected
+                        await transportConnection1.Application.Output.WriteAsync(
+                            protocol.GetMessageBytes(new OpenConnectionMessage("client1", null)));
+
+                        _ = await ccm.WaitForClientConnectionAsync("client1").OrTimeout();
+
+                        // server receives ping message 1
+                        await containers[0].BaseHandlePingAsync(
+                                new PingMessage { Messages = new[] { "d-m", "0" } });
+
+                        await transportConnection1.Application.Output.WriteAsync(
+                            protocol.GetMessageBytes(
+                                new ConnectionDataMessage("client1", new ReadOnlySequence<byte>(new byte[] { 0x20 }))));
+                        await Task.Delay(100);
+
+                        // server receives ping message 2
+                        await containers[0].BaseHandlePingAsync(
+                                new PingMessage { Messages = new[] { "d-m", "1" } });
+
+                        await transportConnection1.Application.Output.WriteAsync(
+                            protocol.GetMessageBytes(
+                                new ConnectionDataMessage("client1", new ReadOnlySequence<byte>(new byte[] { 0x20 }))));
+                        await Task.Delay(100);
+                    });
+
+                    var tcs21 = new TaskCompletionSource<bool>();
+                    var tcs22 = new TaskCompletionSource<bool>();
+                    var tcs2Write = new TaskCompletionSource<bool>();
+
+                    var taskCt2SendPings = Task.Run(async () =>
+                    {
+                        // clients connected
+                        await transportConnection2.Application.Output.WriteAsync(
+                            protocol.GetMessageBytes(new OpenConnectionMessage("client2", null)));
+
+                        await transportConnection22.Application.Output.WriteAsync(
+                            protocol.GetMessageBytes(new OpenConnectionMessage("client22", null)));
+
+                        _ = await ccm.WaitForClientConnectionAsync("client2").OrTimeout();
+                        _ = await ccm.WaitForClientConnectionAsync("client22").OrTimeout();
+
+
+                        // server receives ping message 1
+                        await containers[1].BaseHandlePingAsync(
+                                new PingMessage { Messages = new[] { "d-m", "1" } });
+                        tcs21.SetResult(true);
+
+                        // server receives ping message 2
+                        await tcs2Write.Task;
+                        await containers[1].BaseHandlePingAsync(
+                                new PingMessage { Messages = new[] { "d-m", "0" } });
+                        tcs22.SetResult(true);
+                    });
+
+                    var taskCt2ReceivePings = Task.Run(async () =>
+                    {
+                        await tcs21.Task;
+                        await transportConnection2.Application.Output.WriteAsync(
+                            protocol.GetMessageBytes(
+                                new ConnectionDataMessage("client2", new ReadOnlySequence<byte>(new byte[] { 0x20, 0x20 }))));
+                        await transportConnection22.Application.Output.WriteAsync(
+                            protocol.GetMessageBytes(
+                                new ConnectionDataMessage("client22", new ReadOnlySequence<byte>(new byte[] { 0x20, 0x20, 0x20 }))));
+                        await Task.Delay(100);
+                        tcs2Write.SetResult(true);
+
+                        await tcs22.Task;
+                        await transportConnection2.Application.Output.WriteAsync(
+                            protocol.GetMessageBytes(
+                                new ConnectionDataMessage("client2", new ReadOnlySequence<byte>(new byte[] { 0x20, 0x20 }))));
+                        await transportConnection22.Application.Output.WriteAsync(
+                             protocol.GetMessageBytes(
+                                 new ConnectionDataMessage("client22", new ReadOnlySequence<byte>(new byte[] { 0x20, 0x20, 0x20 }))));
+                        await Task.Delay(100);
+                    });
+
+                    await Task.WhenAll(taskCt1, taskCt2SendPings, taskCt2ReceivePings);
+                }
+                finally
+                {
+                    connectionHandler.Cts.Cancel();
+                }
+
+                Assert.Equal(3, connectionHandler.Result.Count);
+                Assert.Equal(new List<bool> { false, true }, connectionHandler.Result["client1"]);
+                Assert.Equal(new List<bool> { true, false }, connectionHandler.Result["client2"]);
+                Assert.Equal(new List<bool> { true, false }, connectionHandler.Result["client22"]);
+            }
+        }
+
         public static IEnumerable<object[]> TestReloadEndpointsData = new object[][]
         {
             // no change
@@ -1291,6 +1461,16 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         };
 
+        private (PingConnectionHandler, ConnectionDelegate) GetConnectionDelegate()
+        {
+            var services = new ServiceCollection();
+            var connectionHandler = new PingConnectionHandler();
+            services.AddSingleton(connectionHandler);
+            var builder = new ConnectionBuilder(services.BuildServiceProvider());
+            builder.UseConnectionHandler<PingConnectionHandler>();
+            return (connectionHandler, builder.Build());
+        }
+
         private async Task TestEndpointOfflineInner(IServiceEndpointManager manager, IEndpointRouter router, GracefulShutdownMode mode)
         {
             var containers = new List<TestServiceConnectionContainer>();
@@ -1324,6 +1504,46 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.True(c.IsOffline);
             }
 
+        }
+
+        private sealed class PingConnectionHandler : ConnectionHandler
+        {
+            public ConcurrentDictionary<string, IList<bool>> Result = new ConcurrentDictionary<string, IList<bool>>();
+            public CancellationTokenSource Cts { get; } = new CancellationTokenSource();
+            public PingConnectionHandler()
+            {
+            }
+
+            public override async Task OnConnectedAsync(ConnectionContext connection)
+            {
+                _ = ReadMessagesAsync(connection);
+                while (!Cts.IsCancellationRequested)
+                {
+                    await Task.Delay(200);
+                }
+            }
+            private async Task ReadMessagesAsync(ConnectionContext connection)
+            {
+                while (!Cts.IsCancellationRequested)
+                {
+                    var result = await connection.Transport.Input.ReadAsync();
+                    var buffer = result.Buffer;
+                    if (result.IsCompleted || result.IsCanceled)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        Result.AddOrUpdate(connection.ConnectionId,
+                            new List<bool> { ServiceConnectionContainerScope.EnableMessageLog }, (key, old) =>
+                            {
+                                old.Add(ServiceConnectionContainerScope.EnableMessageLog);
+                                return old;
+                            });
+                    }
+                    connection.Transport.Input.AdvanceTo(buffer.Start, buffer.End);
+                }
+            }
         }
 
         private class NotExistEndpointRouter : EndpointRouterDecorator

@@ -2,6 +2,6 @@
 {
     public interface IMessageWithTracingId
     {
-        string TracingId { get; set; }
+        ulong? TracingId { get; set; }
     }
 }

@@ -2,20 +2,35 @@ name: Gated-OSX
 on:
  push:
    branches: 
-     - master
-     - dev
+    - master
+    - dev
  pull_request:
    branches: 
-     - master
-     - dev
+    - master
+    - dev
 jobs:
   build_osx:
     runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v2
+    - uses: dorny/paths-filter@v2.2.0
+      id: filter
+      with:
+        filters: |
+          src:
+          - 'src/**'
+          - 'test/**'
+          - '*.cmd'
+          - '*.ps1'
+          - '*.props'
+          - '*.targets'
+          - '*.sh'
+          - '*.sln'
 
     - name: Update SubModules
+      if: steps.filter.outputs.src == 'true'
       run: git submodule update --init --recursive
     
     - name: Build with dotnet
+      if: steps.filter.outputs.src == 'true'
       run:  "./build.sh --ci /p:DisableNet461Tests=true"

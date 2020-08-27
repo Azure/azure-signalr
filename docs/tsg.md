@@ -7,6 +7,7 @@ This guidance is to provide useful troubleshooting guide based on the common iss
 - [400 Bad Request returned for client requests](#400_bad_request)
 - [401 Unauthorized returned for client requests](#401_unauthorized_returned_for_client_requests)
 - [404 returned for client requests](#random_404_returned_for_client_requests)
+- [404 returned for ASP.NET SignalR's reconnect request](#reconnect_404)
 - [429 Too Many Requests returned for client requests](#429_too_many_requests)
 - [500 Error when negotiate](#500_error_when_negotiate)
 - [Client connection drops](#client_connection_drop)
@@ -57,22 +58,6 @@ services.MapAzureSignalR(GetType().FullName, options =>
                 options.ClaimsProvider = context.Authentication?.User.Claims.Where(...);
             });
 ```
-
-### Tips:
-<a name="view_request"></a>
-* How to view the outgoing request from client?
-Take ASP.NET Core one for example (ASP.NET one is similar):
-    1. From browser:
-
-        Take Chrome as an example, you can use **F12** to open the console window, and switch to **Network** tab. You might need to refresh the page using **F5** to capture the network from the very beginning.
-        
-        ![Chrome View Network](./images/chrome_network.gif)
-
-    2. From C# client:
-
-        You can view local web traffics using [Fiddler](https://www.telerik.com/fiddler). WebSocket traffics are supported since Fiddler 4.5.
-
-        ![Fiddler View Network](./images/fiddler_view_network.png)
 
 <a name="tls_1.2_required"></a>
 ## TLS 1.2 required
@@ -132,16 +117,7 @@ For ASP.NET SignalR, the client sends a `/ping` KeepAlive request to the service
 
 For security concerns, extend TTL is not encouraged. We suggest adding reconnect logic from the client to restart the connection when such 401 occurs. When the client restarts the connection, it will negotiate with app server to get the JWT token again and get a renewed token.
 
-<a name="restart_connection"></a>
-[Sample code](../samples/) contains restarting connection logic with *ALWAYS RETRY* strategy:
-
-* [ASP.NET Core C# Client](../samples/ChatSample/ChatSample.CSharpClient/Program.cs#L64)
-
-* [ASP.NET Core JavaScript Client](../samples/ChatSample/ChatSample/wwwroot/index.html#L164)
-
-* [ASP.NET C# Client](../samples/AspNet.ChatSample/AspNet.ChatSample.CSharpClient/Program.cs#L78)
-
-* [ASP.NET JavaScript Client](../samples/AspNet.ChatSample/AspNet.ChatSample.JavaScriptClient/wwwroot/index.html#L71)
+Check [here](#restart_connection) for how to restart client connections.
 
 <a name="random_404_returned_for_client_requests"></a>
 ## 404 returned for client requests
@@ -152,6 +128,10 @@ For a SignalR persistent connection, it first `/negotiate` to Azure SignalR serv
 1. Following [How to view outgoing requests](#view_request) to get the request from the client to the service.
 1. Check the URL of the request when 404 occurs. If the URL is targeting to your web app, and similar to `{your_web_app}/hubs/{hubName}`, check if the client `SkipNegotiation` is `true`. When using Azure SignalR, the client receives redirect URL when it first negotiates with the app server. The client should **NOT** skip negotiation when using Azure SignalR.
 1. Another 404 can happen when the connect request is handled more than **5** seconds after `/negotiate` is called. Check the timestamp of the client request, and open an issue to us if the request to the service has a very slow response.
+
+<a name="reconnect_404"></a>
+## 404 returned for ASP.NET SignalR's reconnect request
+For ASP.NET SignalR, when the [client connection drops](#client_connection_drop), it reconnects using the same `connectionId` for 3 times before stopping the connection. `/reconnect` can help if the connection is dropped due to network intermittent issues that `/reconnect` can reestablish the persistent connection successfully. Under other circumstances, for example, the client connection is dropped due to the routed server connection is dropped, or SignalR Service has some internal errors like instance restart/failover/deployment, the connection no longer exists, thus `/reconnect` returns `404`. It is the expected behavior for `/reconnect` and after 3 times retry the connection stops. We suggest having [connection restart](#restart_connection) logic when connection stops.
 
 <a name="429_too_many_requests"></a>
 ## 429(Too Many Requests) returned for client requests
@@ -307,3 +287,35 @@ Server-service connection is closed by **ASRS**(**A**zure **S**ignal**R** **S**e
 1. Open app server-side log to see if anything abnormal took place
 2. Check app server-side event log to see if the app server restarted
 3. Create an issue to us providing the time frame, and email the resource name to us
+
+## Tips
+
+<a name="view_request"></a>
+* How to view the outgoing request from client?
+Take ASP.NET Core one for example (ASP.NET one is similar):
+    1. From browser:
+
+        Take Chrome as an example, you can use **F12** to open the console window, and switch to **Network** tab. You might need to refresh the page using **F5** to capture the network from the very beginning.
+        
+        ![Chrome View Network](./images/chrome_network.gif)
+
+    2. From C# client:
+
+        You can view local web traffics using [Fiddler](https://www.telerik.com/fiddler). WebSocket traffics are supported since Fiddler 4.5.
+
+        ![Fiddler View Network](./images/fiddler_view_network.png)
+	
+
+<a name="restart_connection"></a>
+* How to restart client connection?
+	
+	Here are the [Sample codes](../samples/) containing restarting connection logic with *ALWAYS RETRY* strategy:
+
+	* [ASP.NET Core C# Client](../samples/ChatSample/ChatSample.CSharpClient/Program.cs#L64)
+
+	* [ASP.NET Core JavaScript Client](../samples/ChatSample/ChatSample/wwwroot/index.html#L164)
+
+	* [ASP.NET C# Client](../samples/AspNet.ChatSample/AspNet.ChatSample.CSharpClient/Program.cs#L78)
+
+	* [ASP.NET JavaScript Client](../samples/AspNet.ChatSample/AspNet.ChatSample.JavaScriptClient/wwwroot/index.html#L71)
+

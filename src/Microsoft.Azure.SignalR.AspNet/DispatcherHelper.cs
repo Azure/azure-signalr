@@ -51,9 +51,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             // ServiceEndpointManager needs the logger
             var hubs = GetAvailableHubNames(configuration);
 
-            var endpoint = new ServiceEndpointManager(options, loggerFactory);
-            configuration.Resolver.Register(typeof(IServiceEndpointManager), () => endpoint);
-
             // Get the one from DI or new a default one
             var router = configuration.Resolver.Resolve<IEndpointRouter>() ?? new DefaultEndpointRouter();
 
@@ -63,6 +60,9 @@ namespace Microsoft.Azure.SignalR.AspNet
                 serverNameProvider = new DefaultServerNameProvider();
                 configuration.Resolver.Register(typeof(IServerNameProvider), () => serverNameProvider);
             }
+
+            var endpoint = new ServiceEndpointManager(serverNameProvider, options, loggerFactory);
+            configuration.Resolver.Register(typeof(IServiceEndpointManager), () => endpoint);
 
             var requestIdProvider = configuration.Resolver.Resolve<IConnectionRequestIdProvider>();
             if (requestIdProvider == null)

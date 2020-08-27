@@ -3,7 +3,6 @@
 
 using System;
 using System.Threading.Tasks;
-
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -12,20 +11,30 @@ namespace Microsoft.Azure.SignalR
     internal class ServiceEndpointManager : ServiceEndpointManagerBase
     {
         private readonly ILogger _logger;
+        private readonly ILoggerFactory _loggerFactory;
 
         // Store the initial ServiceOptions for generating EndpointProvider use.
         // Only Endpoints value accept hot-reload and prevent changes of unexpected modification on other configurations.
         private readonly ServiceOptions _options;
         private readonly TimeSpan _scaleTimeout;
-        
-        public ServiceEndpointManager(IOptionsMonitor<ServiceOptions> optionsMonitor, ILoggerFactory loggerFactory) :
+
+        private readonly IServerNameProvider _provider;
+
+        public ServiceEndpointManager(
+            IServerNameProvider provider,
+            IOptionsMonitor<ServiceOptions> optionsMonitor, 
+            ILoggerFactory loggerFactory
+        ) :
             base(optionsMonitor.CurrentValue, loggerFactory.CreateLogger<ServiceEndpointManager>())
         {
             _options = optionsMonitor.CurrentValue;
             _logger = loggerFactory?.CreateLogger<ServiceEndpointManager>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _loggerFactory = loggerFactory;
 
             optionsMonitor.OnChange(OnChange);
             _scaleTimeout = _options.ServiceScaleTimeout;
+
+            _provider = provider;
         }
 
         public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
@@ -35,7 +44,7 @@ namespace Microsoft.Azure.SignalR
                 return null;
             }
 
-            return new ServiceEndpointProvider(endpoint, _options);
+            return new ServiceEndpointProvider(_provider, endpoint, _options, loggerFactory: _loggerFactory);
         }
 
         private void OnChange(ServiceOptions options)

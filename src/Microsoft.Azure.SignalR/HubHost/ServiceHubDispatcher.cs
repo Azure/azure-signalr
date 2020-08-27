@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly IEndpointRouter _router;
         private readonly string _hubName;
-        private readonly IServerNameProvider _nameProvider;
+        protected readonly IServerNameProvider _nameProvider;
 
         public ServiceHubDispatcher(
             IServiceProtocol serviceProtocol,
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR
 
         public void Start(ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
         {
-            // Simply create a couple of connections which connect to Azure SignalR
+            // Create connections to Azure SignalR
             var serviceConnection = GetMultiEndpointServiceConnectionContainer(_hubName, connectionDelegate, contextConfig);
 
             _serviceConnectionManager.SetServiceConnection(serviceConnection);
@@ -76,20 +76,34 @@ namespace Microsoft.Azure.SignalR
                 return;
             }
 
-            using CancellationTokenSource source = new CancellationTokenSource();
-            source.CancelAfter(_options.GracefulShutdown.Timeout);
+            try
+            {
+                var source = new CancellationTokenSource(_options.GracefulShutdown.Timeout);
 
-            await Task.WhenAny(
-                OfflineAndWaitForCompletedAsync(_options.GracefulShutdown.Mode),
-                Task.Delay(TimeSpan.FromHours(1), source.Token)
-            );
+                _logger.LogInformation("[GracefulShutdown] Started.");
 
-            await _serviceConnectionManager.StopAsync();
+                await Task.WhenAny(
+                    OfflineAndWaitForCompletedAsync(_options.GracefulShutdown.Mode),
+                    Task.Delay(Timeout.InfiniteTimeSpan, source.Token)
+                );
+
+                await Task.WhenAny(
+                    _serviceConnectionManager.StopAsync(),
+                    Task.Delay(Timeout.InfiniteTimeSpan, source.Token)
+                );
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning($"[GracefulShutdown] Timeout ({_options.GracefulShutdown.Timeout.TotalMilliseconds}ms) reached, existing connections will be dropped immediately.");
+            }
         }
 
         private async Task OfflineAndWaitForCompletedAsync(GracefulShutdownMode mode)
         {
+            _logger.LogInformation("[GracefulShutdown] Unloading server connections.");
             await _serviceConnectionManager.OfflineAsync(mode);
+
+            _logger.LogInformation("[GracefulShutdown] Waiting client connections to complete.");
             await _clientConnectionManager.WhenAllCompleted();
         }
 
@@ -97,7 +111,25 @@ namespace Microsoft.Azure.SignalR
         {
             var connectionFactory = new ConnectionFactory(_nameProvider, _loggerFactory);
 
-            var serviceConnectionFactory = new ServiceConnectionFactory(
+            var serviceConnectionFactory = GetServiceConnectionFactory(connectionFactory, connectionDelegate, contextConfig);
+
+            var factory = new ServiceConnectionContainerFactory(
+                serviceConnectionFactory,
+                _serviceEndpointManager,
+                _router,
+                _options,
+                _loggerFactory,
+                _options.ServiceScaleTimeout
+            );
+            return factory.Create(hub);
+        }
+
+        internal virtual ServiceConnectionFactory GetServiceConnectionFactory(
+            ConnectionFactory connectionFactory,
+            ConnectionDelegate connectionDelegate,
+            Action<HttpContext> contextConfig)
+        { 
+            return new ServiceConnectionFactory(
                 _serviceProtocol,
                 _clientConnectionManager,
                 connectionFactory,
@@ -109,16 +141,6 @@ namespace Microsoft.Azure.SignalR
                 ConfigureContext = contextConfig,
                 ShutdownMode = _options.GracefulShutdown.Mode
             };
-
-            var factory = new ServiceConnectionContainerFactory(
-                serviceConnectionFactory,
-                _serviceEndpointManager,
-                _router,
-                _options,
-                _loggerFactory,
-                _options.ServiceScaleTimeout
-            );
-            return factory.Create(hub);
         }
 
         private static class Log

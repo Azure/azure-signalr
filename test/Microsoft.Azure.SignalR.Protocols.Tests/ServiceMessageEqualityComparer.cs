@@ -104,56 +104,56 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) &&
                 SequenceEqual(x.Payload.ToArray(), y.Payload.ToArray()) &&
-                StringEqual(x.TracingId, y.TracingId);
+                x.TracingId == y.TracingId;
         }
 
         private bool MultiConnectionDataMessagesEqual(MultiConnectionDataMessage x, MultiConnectionDataMessage y)
         {
             return SequenceEqual(x.ConnectionList, y.ConnectionList) &&
                    PayloadsEqual(x.Payloads, y.Payloads) &&
-                   StringEqual(x.TracingId, y.TracingId);
+                   x.TracingId == y.TracingId;
         }
 
         private bool UserDataMessagesEqual(UserDataMessage x, UserDataMessage y)
         {
             return StringEqual(x.UserId, y.UserId) &&
                    PayloadsEqual(x.Payloads, y.Payloads) &&
-                   StringEqual(x.TracingId, y.TracingId);
+                   x.TracingId == y.TracingId;
         }
 
         private bool MultiUserDataMessagesEqual(MultiUserDataMessage x, MultiUserDataMessage y)
         {
             return SequenceEqual(x.UserList, y.UserList) &&
                    PayloadsEqual(x.Payloads, y.Payloads) &&
-                   StringEqual(x.TracingId, y.TracingId);
+                   x.TracingId == y.TracingId;
         }
 
         private bool BroadcastDataMessagesEqual(BroadcastDataMessage x, BroadcastDataMessage y)
         {
             return SequenceEqual(x.ExcludedList, y.ExcludedList) &&
                    PayloadsEqual(x.Payloads, y.Payloads) &&
-                   StringEqual(x.TracingId, y.TracingId);
+                   x.TracingId == y.TracingId;
         }
 
         private bool JoinGroupMessagesEqual(JoinGroupMessage x, JoinGroupMessage y)
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) && 
                    StringEqual(x.GroupName, y.GroupName) &&
-                   StringEqual(x.TracingId, y.TracingId);
+                   x.TracingId == y.TracingId;
         }
 
         private bool LeaveGroupMessagesEqual(LeaveGroupMessage x, LeaveGroupMessage y)
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) && 
                    StringEqual(x.GroupName, y.GroupName) &&
-                   StringEqual(x.TracingId, y.TracingId);
+                   x.TracingId == y.TracingId;
         }
 
         private bool UserJoinGroupMessagesEqual(UserJoinGroupMessage x, UserJoinGroupMessage y)
         {
             return StringEqual(x.UserId, y.UserId) && 
                    StringEqual(x.GroupName, y.GroupName) &&
-                   StringEqual(x.TracingId, y.TracingId) &&
+                   x.TracingId == y.TracingId &&
                    x.Ttl == y.Ttl;
         }
 
@@ -161,14 +161,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             return StringEqual(x.UserId, y.UserId) && 
                    StringEqual(x.GroupName, y.GroupName) &&
-                   StringEqual(x.TracingId, y.TracingId);
+                   x.TracingId == y.TracingId;
         }
         private bool GroupBroadcastDataMessagesEqual(GroupBroadcastDataMessage x, GroupBroadcastDataMessage y)
         {
             return StringEqual(x.GroupName, y.GroupName) &&
                    SequenceEqual(x.ExcludedList, y.ExcludedList) &&
                    PayloadsEqual(x.Payloads, y.Payloads) &&
-                   StringEqual(x.TracingId, y.TracingId);
+                   x.TracingId == y.TracingId;
         }
 
         private bool MultiGroupBroadcastDataMessagesEqual(MultiGroupBroadcastDataMessage x,
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             return SequenceEqual(x.GroupList, y.GroupList) && 
                    PayloadsEqual(x.Payloads, y.Payloads) &&
-                   StringEqual(x.TracingId, y.TracingId);
+                   x.TracingId == y.TracingId;
         }
 
         private bool ServiceErrorMessageEqual(ServiceErrorMessage x, ServiceErrorMessage y)
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return StringEqual(x.ConnectionId, y.ConnectionId) &&
                    StringEqual(x.GroupName, y.GroupName) &&
                    x.AckId == y.AckId &&
-                   StringEqual(x.TracingId, y.TracingId);
+                   x.TracingId == y.TracingId;
         }
 
         private bool LeaveGroupWithAckMessageEqual(LeaveGroupWithAckMessage x, LeaveGroupWithAckMessage y)
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return StringEqual(x.ConnectionId, y.ConnectionId) &&
                    StringEqual(x.GroupName, y.GroupName) &&
                    x.AckId == y.AckId &&
-                   StringEqual(x.TracingId, y.TracingId);
+                   x.TracingId == y.TracingId;
         }
 
         private bool CheckUserInGroupWithAckMessageEqual(CheckUserInGroupWithAckMessage x, CheckUserInGroupWithAckMessage y)
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return StringEqual(x.UserId, y.UserId) &&
                    StringEqual(x.GroupName, y.GroupName) &&
                    x.AckId == y.AckId &&
-                   StringEqual(x.TracingId, y.TracingId);
+                   x.TracingId == y.TracingId;
         }
 
         private bool AckMessageEqual(AckMessage x, AckMessage y)

@@ -6,19 +6,7 @@
 
 - [REST API in Azure SignalR Service](#REST-API-in-Azure-SignalR-Service)
   - [Typical Server-less Architecture with Azure Functions](#Typical-Server-less-Architecture-with-Azure-Functions)
-  - [API](#API)
-    - [Broadcast message to all clients](#Broadcast-message-to-all-clients)
-    - [Broadcast message to a group](#Broadcast-message-to-a-group)
-    - [Send message to a user](#Send-message-to-a-user)
-    - [Send message to a connection](#Send-message-to-a-connection)
-    - [Add a connection to a group](#Add-a-connection-to-a-group)
-    - [Remove a connection from a group](#Remove-a-connection-from-a-group)
-    - [Add a user to a group](#Add-a-user-to-a-group)
-    - [Remove a user from a group](#Remove-a-user-from-a-group)
-    - [Check user existence in a group](#Check-user-existence-in-a-group)
-    - [Remove a user from all groups](#Remove-a-user-from-all-groups)
-    - [Close a client connection](#Close-a-client-connection)
-    - [Service Health](#Service-Health)
+  - [API List](#API)
   - [Using REST API](#Using-REST-API)
     - [Authentication](#Authentication)
       - [Signing Algorithm and Signature](#Signing-Algorithm-and-Signature)
@@ -49,146 +37,30 @@ You can find a complete sample of using Azure SignalR Service with Azure Functio
 
 The following table shows all versions of REST API we have for now. You can also find the swagger file for each version of REST API.
 
-API Version | Status | Port | Spec
----|---|---|---
-`1.0-preview` | Obsolete | Standard | [swagger](./swagger/v1-preview.json)
-`1.0` | Available | Standard | [swagger](./swagger/v1.json)
+API Version | Status | Port | Doc | Spec 
+---|---|---|---|---
+`1.0-preview` | Obsolete | Standard | [Doc](./swagger/v1-preview.md) | [swagger](./swagger/v1-preview.json)
+`1.0` | Available | Standard | [Doc](./swagger/v1.md) | [swagger](./swagger/v1.json)
 
-Available APIs of each version are listed as following.
+The latest available APIs are listed as following.
 
-API | `1.0-preview` | `1.0`
----|---|---
-[Broadcast to all](#broadcast) | :heavy_check_mark: | :heavy_check_mark:
-[Broadcast to a group](#broadcast-group) | :heavy_check_mark: | :heavy_check_mark:
-Broadcast to a few groups | :heavy_check_mark: (Deprecated) | `N/A`
-[Send to a user](#send-user) | :heavy_check_mark: | :heavy_check_mark:
-Send to a few users | :heavy_check_mark: (Deprecated) | `N/A`
-[Send to a connection](#Send-message-to-a-connection) | `N/A` | :heavy_check_mark:
-[Add a connection to a group](#Add-a-connection-to-a-group) | `N/A` | :heavy_check_mark:
-[Remove a connection from a group](#Remove-a-connection-from-a-group) | `N/A` | :heavy_check_mark:
-[Add a user to a group](#add-user-to-group) | `N/A` | :heavy_check_mark:
-[Remove a user from a group](#remove-user-from-group) | `N/A` | :heavy_check_mark:
-[Check user existence](#Check-user-existence-in-a-group) | `N/A` | :heavy_check_mark:
-[Remove a user from all groups](#remove-user-from-all-groups) | `N/A` | :heavy_check_mark: 
-[Close a client connection](#Close-a-client-connection) | `N/A` | :heavy_check_mark:
-[Service Health](#Service-Health) | `N/A` | :heavy_check_mark:
 
-<a name="broadcast"></a>
-
-### Broadcast message to all clients
-
-API Version | HTTP Method | Request URL | Request Body
----|---|---|---
-`1.0-preview` | `POST` | `https://<instance-name>.service.signalr.net/api/v1-preview/hub/<hub-name>` | `{ "target":"<method-name>", "arguments":[ ... ] }`
-`1.0` | `POST` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>` | Same as above
-
-<a name="broadcast-group"></a>
-
-### Broadcast message to a group
-
-API Version | HTTP Method | Request URL | Request Body
----|---|---|---
-`1.0-preview` | `POST` | `https://<instance-name>.service.signalr.net/api/v1-preview/hub/<hub-name>/group/<group-name>` | `{ "target":"<method-name>", "arguments":[ ... ] }`
-`1.0` | `POST` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>` | Same as above
-
-<a name="send-user"></a>
-
-### Send message to a user
-
-API Version | HTTP Method | Request URL | Request Body
----|---|---|---
-`1.0-preview` | `POST` | `https://<instance-name>.service.signalr.net/api/v1-preview/hub/<hub-name>/user/<user-id>` | `{ "target":"<method-name>", "arguments":[ ... ] }`
-`1.0` | `POST` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>` | Same as above
-
-<a name="send-connection"></a>
-
-### Send message to a connection
-
-API Version | HTTP Method | Request URL | Request Body
----|---|---|---
-`1.0` | `POST` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/connections/<connection-id>` | `{ "target":"<method-name>", "arguments":[ ... ] }`
-
-<a name="add-connection-to-group"></a>
-
-### Add a connection to a group
-
-API Version | HTTP Method | Request URL
----|---|---
-`1.0` | `PUT` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/connections/<connection-id>`
-`1.0` | `PUT` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/connections/<connection-id>/groups/<group-name>`
-
-<a name="remove-connection-from-group"></a>
-
-### Remove a connection from a group
-
-API Version | HTTP Method | Request URL
----|---|---
-`1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/connections/<connection-id>`
-`1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/connections/<connection-id>/groups/<group-name>`
-
-<a name="add-user-to-group"></a>
-
-### Add a user to a group
-
-API Version | HTTP Method | Request URL
----|---|---
-`1.0` | `PUT` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/users/<user-id>`
-`1.0` | `PUT` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/users/<user-id>?ttl=<Time to live in a group for a user (in seconds)>`
-`1.0` | `PUT` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups/<group-name>`
-`1.0` | `PUT` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups/<group-name>?ttl=<Time to live in a group for a user (in seconds)>`
-
-<a name="remove-user-from-group"></a>
-
-### Remove a user from a group
-
-API Version | HTTP Method | Request URL
----|---|---
-`1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/users/<user-id>`
-`1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups/<group-name>`
-
-<a name="check-user-existence"></a>
-
-### Check user existence in a group
-
-API Version | HTTP Method | Request URL
----|---|---
-`1.0` | `GET` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups/<group-name>`
-`1.0` | `GET` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/groups/<group-name>/users/<user-id>` 
-
-Response Status Code | Description
----|---
-`200` | User exists
-`404` | User not exists
-
-<a name="remove-user-from-all-groups"></a>
-
-### Remove a user from all groups
-
-API Version | HTTP Method | Request URL
----|---|---
-`1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/users/<user-id>/groups`
-
-<a name="close-connection"></a>
-
-### Close a client connection
-
-API Version | HTTP Method | Request URL
----|---|---
-`1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/connections/<connection-id>`
-`1.0` | `DELETE` | `https://<instance-name>.service.signalr.net/api/v1/hubs/<hub-name>/connections/<connection-id>?reason=<close-reason>`
-
-<a name="health-api"></a>
-
-### Service Health
-
-API Version | HTTP Method | Request URL
----|---|---                             
-`1.0` | `GET` | `https://<instance-name>.service.signalr.net/api/v1/health`
-
-Response Status Code | Description
----|---
-`200` | Service Good
-`502` and `503` | Service Unavailable
+| API | Path |
+| ---- | ---------- | 
+| [Broadcast a message to all clients connected to target hub.](./swagger/v1.md#post-broadcast-a-message-to-all-clients-connected-to-target-hub.) | `POST /api/v1/hubs/{hub}` |
+| [Broadcast a message to all clients belong to the target user.](./swagger/v1.md#post-broadcast-a-message-to-all-clients-belong-to-the-target-user.) | `POST /api/v1/hubs/{hub}/users/{id}` |
+| [Send message to the specific connection.](./swagger/v1.md#post-send-message-to-the-specific-connection.) | `POST /api/v1/hubs/{hub}/connections/{connectionId}` |
+| [Check if the connection with the given connectionId exists](./swagger/v1.md#get-check-if-the-connection-with-the-given-connectionid-exists) | `GET /api/v1/hubs/{hub}/connections/{connectionId}` |
+| [Close the client connection](./swagger/v1.md#delete-close-the-client-connection) | `DELETE /api/v1/hubs/{hub}/connections/{connectionId}` |
+| [Broadcast a message to all clients within the target group.](./swagger/v1.md#post-broadcast-a-message-to-all-clients-within-the-target-group.) | `POST /api/v1/hubs/{hub}/groups/{group}` |
+| [Check if there are any client connections inside the given group](./swagger/v1.md#get-check-if-there-are-any-client-connections-inside-the-given-group) | `GET /api/v1/hubs/{hub}/groups/{group}` |
+| [Check if there are any client connections connected for the given user](./swagger/v1.md#get-check-if-there-are-any-client-connections-connected-for-the-given-user) | `GET /api/v1/hubs/{hub}/users/{user}` |
+| [Add a connection to the target group.](./swagger/v1.md#put-add-a-connection-to-the-target-group.) | `PUT /api/v1/hubs/{hub}/groups/{group}/connections/{connectionId}` |
+| [Remove a connection from the target group.](./swagger/v1.md#delete-remove-a-connection-from-the-target-group.) | `DELETE /api/v1/hubs/{hub}/groups/{group}/connections/{connectionId}` |
+| [Check whether a user exists in the target group.](./swagger/v1.md#get-check-whether-a-user-exists-in-the-target-group.) | `GET /api/v1/hubs/{hub}/groups/{group}/users/{user}` |
+| [Add a user to the target group.](./swagger/v1.md#put-add-a-user-to-the-target-group.) | `PUT /api/v1/hubs/{hub}/groups/{group}/users/{user}` |
+| [Remove a user from the target group.](./swagger/v1.md#delete-remove-a-user-from-the-target-group.) | `DELETE /api/v1/hubs/{hub}/groups/{group}/users/{user}` |
+| [Remove a user from all groups.](./swagger/v1.md#delete-remove-a-user-from-all-groups.) | `DELETE /api/v1/hubs/{hub}/users/{user}/groups` |
 
 ## Using REST API
 

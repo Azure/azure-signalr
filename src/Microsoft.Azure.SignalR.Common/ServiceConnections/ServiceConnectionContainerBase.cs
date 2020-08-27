@@ -40,11 +40,15 @@ namespace Microsoft.Azure.SignalR
         private readonly AckHandler _ackHandler;
 
         private readonly CustomizedPingTimer _statusPing;
+
         private readonly CustomizedPingTimer _serversPing;
+
+        private readonly ServiceDiagnosticLogsContext _serviceDiagnosticLogsContext = new ServiceDiagnosticLogsContext { EnableMessageLog = false };
 
         private volatile List<IServiceConnection> _fixedServiceConnections;
 
         private volatile ServiceConnectionStatus _status;
+
 
         // <serversTag, latestTimestamp>
         private volatile Tuple<string, long> _serversTagContext = DefaultServersTagContext;
@@ -135,12 +139,23 @@ namespace Microsoft.Azure.SignalR
             ConnectionStatusChanged += OnStatusChanged;
 
             _statusPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.ServiceStatus, WriteServiceStatusPingAsync, Constants.Periods.DefaultStatusPingInterval, Constants.Periods.DefaultStatusPingInterval);
-            _statusPing.Start();
+            
+            // when server connection count is specified to 0, the app server only handle negotiate requests
+            if (initial.Count > 0)
+            {
+                _statusPing.Start();
+            }
 
             _serversPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServersPingAsync, Constants.Periods.DefaultServersPingInterval, Constants.Periods.DefaultServersPingInterval);
         }
 
-        public Task StartAsync() => Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
+        public async Task StartAsync()
+        {
+            using (new ServiceConnectionContainerScope(_serviceDiagnosticLogsContext))
+            {
+                await Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
+            }
+        }
 
         public virtual Task StopAsync()
         {
@@ -185,6 +200,10 @@ namespace Microsoft.Azure.SignalR
                 {
                     _serversTagContext = Tuple.Create(serversTag, updatedTime);
                 }
+            }
+            else if (RuntimeServicePingMessage.TryGetMessageLogEnableFlag(pingMessage, out var enableMessageLog))
+            {
+                _serviceDiagnosticLogsContext.EnableMessageLog = enableMessageLog;
             }
             return Task.CompletedTask;
         }
@@ -463,19 +482,31 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task WriteServiceStatusPingAsync()
+        private Task WriteServiceStatusPingAsync()
         {
-            await WriteAsync(RuntimeServicePingMessage.GetStatusPingMessage(true));
+            return SafeWriteAsync(RuntimeServicePingMessage.GetStatusPingMessage(true));
         }
 
-        private async Task WriteServersPingAsync()
+        private Task WriteServersPingAsync()
         {
             if (Stopwatch.GetTimestamp() - _serversTagContext.Item2 > DefaultServersPingTimeoutTicks)
             {
                 // reset value if expired.
                 _serversTagContext = DefaultServersTagContext;
             }
-            await WriteAsync(RuntimeServicePingMessage.GetServersPingMessage());
+
+            return SafeWriteAsync(RuntimeServicePingMessage.GetServersPingMessage());
+        }
+
+        private async Task SafeWriteAsync(ServiceMessage serviceMessage)
+        {
+            try
+            {
+                await WriteAsync(serviceMessage);
+            }
+            catch
+            {
+            }
         }
 
         private sealed class CustomizedPingTimer : IDisposable
@@ -539,7 +570,7 @@ namespace Microsoft.Azure.SignalR
 
             public void Dispose()
             {
-                 _timer.Stop();
+                _timer.Stop();
             }
 
             private TimerAwaitable Init()

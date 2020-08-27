@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -233,12 +233,13 @@ namespace Microsoft.Azure.SignalR
                 {
                     try
                     {
+                        Log.RouteMessageToServiceEndpoint(_logger, serviceMessage, s.e.ToString());
                         await inner(s.c);
                     }
                     catch (ServiceConnectionNotActiveException)
                     {
                         // log and don't stop other endpoints
-                        Log.FailedWritingMessageToEndpoint(_logger, serviceMessage.GetType().Name, s.e.ToString());
+                        Log.FailedWritingMessageToEndpoint(_logger, serviceMessage.GetType().Name, (serviceMessage as IMessageWithTracingId)?.TracingId, s.e.ToString());
                     }
                 }).ToArray();
 
@@ -415,8 +416,10 @@ namespace Microsoft.Azure.SignalR
             Log.TimeoutWaitingClientsDisconnect(_logger, endpoint.ToString(), _scaleTimeout.Seconds);
         }
 
-        private static class Log
+        internal static class Log
         {
+            public const string FailedWritingMessageToEndpointTemplate = "{0} message {1} is not sent to endpoint {2} because all connections to this endpoint are offline.";
+
             private static readonly Action<ILogger, string, Exception> _startingConnection =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Staring connections for endpoint {endpoint}.");
 
@@ -429,8 +432,8 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _noEndpointRouted =
                 LoggerMessage.Define<string>(LogLevel.Warning, new EventId(4, "NoEndpointRouted"), "Message {messageType} is not sent because no endpoint is returned from the endpoint router.");
 
-            private static readonly Action<ILogger, string, string, Exception> _failedWritingMessageToEndpoint =
-                LoggerMessage.Define<string, string>(LogLevel.Warning, new EventId(5, "FailedWritingMessageToEndpoint"), "Message {messageType} is not sent to endpoint {endpoint} because all connections to this endpoint are offline.");
+            private static readonly Action<ILogger, string, ulong?, string, Exception> _failedWritingMessageToEndpoint =
+                LoggerMessage.Define<string, ulong?, string>(LogLevel.Warning, new EventId(5, "FailedWritingMessageToEndpoint"), FailedWritingMessageToEndpointTemplate);
 
             private static readonly Action<ILogger, string, Exception> _failedStartingConnectionForNewEndpoint =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, "FailedStartingConnectionForNewEndpoint"), "Fail to create and start server connection for new endpoint {endpoint}.");
@@ -444,6 +447,16 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _failedRemovingConnectionForEndpoint =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(10, "FailedRemovingConnectionForEndpoint"), "Fail to stop server connections for endpoint {endpoint}.");
 
+            private static readonly Action<ILogger, ulong?, string, Exception> _routeMessageToServiceEndpoint =
+                LoggerMessage.Define<ulong?, string>(LogLevel.Information, new EventId(11, "RouteMessageToServiceEndpoint"), "Route message {tracingId} to service endpoint {endpoint}.");
+
+            public static void RouteMessageToServiceEndpoint(ILogger logger, ServiceMessage message, string endpoint)
+            {
+                if (ServiceConnectionContainerScope.EnableMessageLog || ClientConnectionScope.IsDiagnosticClient)
+                {
+                    _routeMessageToServiceEndpoint(logger, (message as IMessageWithTracingId).TracingId, endpoint, null);
+                }
+            }
 
             public static void StartingConnection(ILogger logger, string endpoint)
             {
@@ -465,9 +478,9 @@ namespace Microsoft.Azure.SignalR
                 _noEndpointRouted(logger, messageType, null);
             }
 
-            public static void FailedWritingMessageToEndpoint(ILogger logger, string messageType, string endpoint)
+            public static void FailedWritingMessageToEndpoint(ILogger logger, string messageType, ulong? tracingId, string endpoint)
             {
-                _failedWritingMessageToEndpoint(logger, messageType, endpoint, null);
+                _failedWritingMessageToEndpoint(logger, messageType, tracingId, endpoint, null);
             }
 
             public static void FailedStartingConnectionForNewEndpoint(ILogger logger, string endpoint, Exception ex)

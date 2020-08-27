@@ -6,8 +6,11 @@
     <!-- Azure ASP.NET Core SignalR -->
     <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsClientPackage3_0Version>3.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackage3_0Version>
-    <MicrosoftExtensionsLoggingAbstractionsPackageVersion>1.0.0</MicrosoftExtensionsLoggingAbstractionsPackageVersion>
+    <MicrosoftExtensionsLoggingAbstractionsPackageVersion>2.1.0</MicrosoftExtensionsLoggingAbstractionsPackageVersion>
     <MicrosoftExtensionsLoggingAbstractionsPackage3_0Version>3.0.0</MicrosoftExtensionsLoggingAbstractionsPackage3_0Version>
+    <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0</MicrosoftExtensionsDependencyInjectionPackageVersion>
+    <MicrosoftExtensionsDependencyInjectionPackage3_0Version>3.0.0</MicrosoftExtensionsDependencyInjectionPackage3_0Version>
+    <MicrosoftExtensionHttpVersion>2.1.0</MicrosoftExtensionHttpVersion>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.0</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackage3_0Version>3.0.0</MicrosoftAspNetCoreConnectionsAbstractionsPackage3_0Version>
     <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0</MicrosoftAspNetCoreSignalRPackageVersion>
@@ -18,10 +21,11 @@
     <SystemMemoryPackageVersion>4.5.3</SystemMemoryPackageVersion>
     <SystemRuntimeCompilerServicesUnsafePackageVersion>4.5.2</SystemRuntimeCompilerServicesUnsafePackageVersion>
     <SystemIdentityModelTokensJwtPackageVersion>5.5.0</SystemIdentityModelTokensJwtPackageVersion>
-    <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0</MicrosoftExtensionsDependencyInjectionPackageVersion>
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.0</MicrosoftExtensionsPrimitivesPackageVersion>
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>
+    <MicrosoftIdentityClientVersion>4.9.0</MicrosoftIdentityClientVersion>
+    <MicrosoftAzureServicesAppAuthentication>1.5.0</MicrosoftAzureServicesAppAuthentication>
 
     <!-- Azure ASP.NET SignalR -->
     <MicrosoftAspNetSignalRPackageVersion>2.4.1</MicrosoftAspNetSignalRPackageVersion>
@@ -35,7 +39,6 @@
     <MicrosoftConfigurationFileExtensionVersion>2.2.0</MicrosoftConfigurationFileExtensionVersion>
     <MicrosoftConfigurationUserSecretVersion>2.2.0</MicrosoftConfigurationUserSecretVersion>
     <MicrosoftConfigurationEnvironmentVariablesVersion>2.2.0</MicrosoftConfigurationEnvironmentVariablesVersion>
-    <MicrosoftExtensionHttpVersion>2.2.0</MicrosoftExtensionHttpVersion>
     <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.0.11</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
 
     <!-- Signing -->
@@ -48,6 +51,11 @@
     <NewtonsoftJsonPackageVersion>11.0.2</NewtonsoftJsonPackageVersion>
     <MicrosoftOwinPackageVersion>2.1.0</MicrosoftOwinPackageVersion>
     <OwinPackageVersion>1.0.0</OwinPackageVersion>
+    
+    <!--Emulator -->
+    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>3.1.5</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
+    <MicrosoftAspNetCoreMvcNewtonsoftJsonPackageVersion>3.1.5</MicrosoftAspNetCoreMvcNewtonsoftJsonPackageVersion>
+    <MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>3.1.5</MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>
 
     <!--Testing -->
     <MicrosoftAspNetCoreSignalRProtocolsMessagePackTestPackageVersion>3.0.0-preview6.19307.2</MicrosoftAspNetCoreSignalRProtocolsMessagePackTestPackageVersion>
@@ -59,6 +67,7 @@
     <MicrosoftOwinTestingPackageVersion>4.0.0</MicrosoftOwinTestingPackageVersion>
     <MicrosoftAspNetCoreTestingVersion>2.1.0</MicrosoftAspNetCoreTestingVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.3</SystemThreadingTasksExtensionsVersion>
+    <MicrosoftAspNetCoreTestHostPackageVersion>3.0.3</MicrosoftAspNetCoreTestHostPackageVersion>
     <E2eTestUserSecretId>E2eTestUserSecret</E2eTestUserSecretId>
   </PropertyGroup>
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition=" '$(DotNetPackageVersionPropsPath)' != '' " />
