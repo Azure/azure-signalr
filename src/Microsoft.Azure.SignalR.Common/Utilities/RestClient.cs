@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
+using Microsoft.Azure.SignalR.Models;
 
 namespace Microsoft.Azure.SignalR
 {

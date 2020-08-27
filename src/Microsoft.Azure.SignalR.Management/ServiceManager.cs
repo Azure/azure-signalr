@@ -1,15 +1,15 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
@@ -27,8 +27,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IServerNameProvider _serverNameProvider;
         private readonly ServiceEndpoint _endpoint;
         private readonly string _productInfo;
-        private readonly RestClient _restClient;
-        private readonly RestApiProvider _restApiProvider;
+        private readonly GeneratedRestClient _restClient;
 
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo)
         {
@@ -45,8 +44,7 @@ namespace Microsoft.Azure.SignalR.Management
             _endpointProvider = new ServiceEndpointProvider(_serverNameProvider, _endpoint, serviceOptions);
 
             _productInfo = productInfo;
-            _restClient = new RestClient();
-            _restApiProvider = new RestApiProvider(_serviceManagerOptions.ConnectionString);
+            _restClient = GeneratedRestClient.Build(_serviceManagerOptions.ConnectionString, _productInfo);
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
@@ -160,27 +158,15 @@ namespace Microsoft.Azure.SignalR.Management
 
         public async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
-            var isHealthy = false;
-            var api = await _restApiProvider.GetServiceHealthEndpointAsync();
-            await _restClient.SendAsync(api, HttpMethod.Get, _productInfo, handleExpectedResponse: response =>
-                {
-                    switch (response.StatusCode)
-                    {
-                        case HttpStatusCode.OK:
-                            isHealthy = true;
-                            return true;
-                        case HttpStatusCode.BadGateway:
-                            isHealthy = false;
-                            return true;
-                        case HttpStatusCode.ServiceUnavailable:
-                            isHealthy = false;
-                            return true;
-                        default:
-                            return false;
-                    }
-                },
-                cancellationToken: cancellationToken);
-            return isHealthy;
+            var healthApi = _restClient.HealthApi;
+            var httpOperationResponse = await healthApi.GetHealthStatusWithHttpMessagesAsync(cancellationToken: cancellationToken);
+            return httpOperationResponse.Response.StatusCode switch
+            {
+                HttpStatusCode.OK => true,
+                HttpStatusCode.BadGateway => false,
+                HttpStatusCode.ServiceUnavailable => false,
+                _ => false,
+            };
         }
     }
 }
