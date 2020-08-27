@@ -1,0 +1,5195 @@
+{
+ "$id": "1",
+ "modelTypes": [
+  {
+   "$id": "2",
+   "$type": "CompositeType",
+   "properties": [
+    {
+     "$id": "3",
+     "isReadOnly": false,
+     "realPath": [
+      "target"
+     ],
+     "collectionFormat": "none",
+     "defaultValue": {
+      "$id": "4",
+      "fixed": false
+     },
+     "deprecated": false,
+     "documentation": {
+      "$id": "5",
+      "fixed": false
+     },
+     "isRequired": true,
+     "isConstant": false,
+     "name": {
+      "$id": "6",
+      "fixed": false,
+      "raw": "target"
+     },
+     "serializedName": "target",
+     "modelType": {
+      "$id": "7",
+      "$type": "PrimaryType",
+      "knownPrimaryType": "string",
+      "name": {
+       "$id": "8",
+       "fixed": false,
+       "raw": "String"
+      },
+      "deprecated": false
+     }
+    },
+    {
+     "$id": "9",
+     "isReadOnly": false,
+     "realPath": [
+      "arguments"
+     ],
+     "collectionFormat": "none",
+     "defaultValue": {
+      "$id": "10",
+      "fixed": false
+     },
+     "deprecated": false,
+     "documentation": {
+      "$id": "11",
+      "fixed": false
+     },
+     "isRequired": false,
+     "isConstant": false,
+     "name": {
+      "$id": "12",
+      "fixed": false,
+      "raw": "arguments"
+     },
+     "serializedName": "arguments",
+     "modelType": {
+      "$id": "13",
+      "$type": "SequenceType",
+      "elementType": {
+       "$id": "14",
+       "$type": "PrimaryType",
+       "knownPrimaryType": "object",
+       "name": {
+        "$id": "15",
+        "fixed": false,
+        "raw": "Object"
+       },
+       "deprecated": false
+      },
+      "name": {
+       "$id": "16",
+       "fixed": false
+      },
+      "deprecated": false
+     }
+    }
+   ],
+   "serializedName": "PayloadMessage",
+   "containsConstantProperties": false,
+   "name": {
+    "$id": "17",
+    "fixed": false,
+    "raw": "PayloadMessage"
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "PayloadMessage",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/schemas/PayloadMessage"
+     ]
+    }
+   },
+   "deprecated": false
+  }
+ ],
+ "name": "AzureSignalRServiceRESTAPI",
+ "namespace": "Microsoft.Azure.SignalR",
+ "modelsName": "Models",
+ "apiVersion": "v1",
+ "baseUrl": "http://localhost",
+ "extensions": {
+  "security": [
+   {
+    "Bearer": []
+   }
+  ]
+ },
+ "properties": [
+  {
+   "$id": "18",
+   "isReadOnly": false,
+   "realPath": [
+    "hub"
+   ],
+   "collectionFormat": "none",
+   "constraints": {
+    "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+   },
+   "defaultValue": {
+    "$id": "19",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "20",
+    "fixed": false,
+    "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·161axxn·api-v1-hubs-hub·post·parameters·0",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·161axxn·api-v1-hubs-hub·post·parameters·0"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "21",
+    "fixed": false,
+    "raw": "hub"
+   },
+   "serializedName": "hub",
+   "modelType": {
+    "$id": "22",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "23",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "24",
+   "isReadOnly": false,
+   "realPath": [
+    "excluded"
+   ],
+   "collectionFormat": "multi",
+   "defaultValue": {
+    "$id": "25",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "26",
+    "fixed": false,
+    "raw": "Excluded connection Ids"
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·9p05ip·api-v1-hubs-hub·post·parameters·1",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·9p05ip·api-v1-hubs-hub·post·parameters·1"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": false,
+   "isConstant": false,
+   "name": {
+    "$id": "27",
+    "fixed": false,
+    "raw": "excluded"
+   },
+   "serializedName": "excluded",
+   "modelType": {
+    "$id": "28",
+    "$type": "SequenceType",
+    "elementType": {
+     "$id": "29",
+     "$type": "PrimaryType",
+     "knownPrimaryType": "string",
+     "name": {
+      "$id": "30",
+      "fixed": false,
+      "raw": "String"
+     },
+     "deprecated": false
+    },
+    "name": {
+     "$id": "31",
+     "fixed": false
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "32",
+   "isReadOnly": false,
+   "realPath": [
+    "hub"
+   ],
+   "collectionFormat": "none",
+   "constraints": {
+    "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+   },
+   "defaultValue": {
+    "$id": "33",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "34",
+    "fixed": false,
+    "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·15y7v2m·api-v1-hubs-hub-users-user·post·parameters·0",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·15y7v2m·api-v1-hubs-hub-users-user·post·parameters·0"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "35",
+    "fixed": false,
+    "raw": "Hub1"
+   },
+   "serializedName": "hub",
+   "modelType": {
+    "$id": "36",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "37",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "38",
+   "isReadOnly": false,
+   "realPath": [
+    "user"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "39",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "40",
+    "fixed": false,
+    "raw": "The user Id."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1cn0wcw·api-v1-hubs-hub-users-user·post·parameters·1",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1cn0wcw·api-v1-hubs-hub-users-user·post·parameters·1"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "41",
+    "fixed": false,
+    "raw": "user"
+   },
+   "serializedName": "user",
+   "modelType": {
+    "$id": "42",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "43",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "44",
+   "isReadOnly": false,
+   "realPath": [
+    "hub"
+   ],
+   "collectionFormat": "none",
+   "constraints": {
+    "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+   },
+   "defaultValue": {
+    "$id": "45",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "46",
+    "fixed": false,
+    "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·bjrid7·api-v1-hubs-hub-users-user·get·parameters·0",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·bjrid7·api-v1-hubs-hub-users-user·get·parameters·0"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "47",
+    "fixed": false,
+    "raw": "Hub2"
+   },
+   "serializedName": "hub",
+   "modelType": {
+    "$id": "48",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "49",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "50",
+   "isReadOnly": false,
+   "realPath": [
+    "user"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "51",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "52",
+    "fixed": false,
+    "raw": "The user Id."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1a2c402·api-v1-hubs-hub-users-user·get·parameters·1",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1a2c402·api-v1-hubs-hub-users-user·get·parameters·1"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "53",
+    "fixed": false,
+    "raw": "User1"
+   },
+   "serializedName": "user",
+   "modelType": {
+    "$id": "54",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "55",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "56",
+   "isReadOnly": false,
+   "realPath": [
+    "hub"
+   ],
+   "collectionFormat": "none",
+   "constraints": {
+    "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+   },
+   "defaultValue": {
+    "$id": "57",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "58",
+    "fixed": false,
+    "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·u5ha8g·api-v1-hubs-hub-connections-connectionid·post·parameters·0",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·u5ha8g·api-v1-hubs-hub-connections-connectionid·post·parameters·0"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "59",
+    "fixed": false,
+    "raw": "Hub3"
+   },
+   "serializedName": "hub",
+   "modelType": {
+    "$id": "60",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "61",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "62",
+   "isReadOnly": false,
+   "realPath": [
+    "connectionId"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "63",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "64",
+    "fixed": false,
+    "raw": "The connection Id."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·12ftkek·api-v1-hubs-hub-connections-connectionid·post·parameters·1",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·12ftkek·api-v1-hubs-hub-connections-connectionid·post·parameters·1"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "65",
+    "fixed": false,
+    "raw": "connectionId"
+   },
+   "serializedName": "connectionId",
+   "modelType": {
+    "$id": "66",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "67",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "68",
+   "isReadOnly": false,
+   "realPath": [
+    "hub"
+   ],
+   "collectionFormat": "none",
+   "constraints": {
+    "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+   },
+   "defaultValue": {
+    "$id": "69",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "70",
+    "fixed": false,
+    "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·i3qitv·api-v1-hubs-hub-connections-connectionid·get·parameters·0",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·i3qitv·api-v1-hubs-hub-connections-connectionid·get·parameters·0"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "71",
+    "fixed": false,
+    "raw": "Hub4"
+   },
+   "serializedName": "hub",
+   "modelType": {
+    "$id": "72",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "73",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "74",
+   "isReadOnly": false,
+   "realPath": [
+    "connectionId"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "75",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "76",
+    "fixed": false,
+    "raw": "The connection Id."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·mhhq03·api-v1-hubs-hub-connections-connectionid·get·parameters·1",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·mhhq03·api-v1-hubs-hub-connections-connectionid·get·parameters·1"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "77",
+    "fixed": false,
+    "raw": "ConnectionId1"
+   },
+   "serializedName": "connectionId",
+   "modelType": {
+    "$id": "78",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "79",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "80",
+   "isReadOnly": false,
+   "realPath": [
+    "hub"
+   ],
+   "collectionFormat": "none",
+   "constraints": {
+    "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+   },
+   "defaultValue": {
+    "$id": "81",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "82",
+    "fixed": false,
+    "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·108cyt8·api-v1-hubs-hub-connections-connectionid·delete·parameters·0",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·108cyt8·api-v1-hubs-hub-connections-connectionid·delete·parameters·0"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "83",
+    "fixed": false,
+    "raw": "Hub5"
+   },
+   "serializedName": "hub",
+   "modelType": {
+    "$id": "84",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "85",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "86",
+   "isReadOnly": false,
+   "realPath": [
+    "connectionId"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "87",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "88",
+    "fixed": false,
+    "raw": "The connection Id."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·x42rpo·api-v1-hubs-hub-connections-connectionid·delete·parameters·1",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·x42rpo·api-v1-hubs-hub-connections-connectionid·delete·parameters·1"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "89",
+    "fixed": false,
+    "raw": "ConnectionId2"
+   },
+   "serializedName": "connectionId",
+   "modelType": {
+    "$id": "90",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "91",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "92",
+   "isReadOnly": false,
+   "realPath": [
+    "reason"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "93",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "94",
+    "fixed": false,
+    "raw": "The reason of the connection close."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·h2a29g·api-v1-hubs-hub-connections-connectionid·delete·parameters·2",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·h2a29g·api-v1-hubs-hub-connections-connectionid·delete·parameters·2"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": false,
+   "isConstant": false,
+   "name": {
+    "$id": "95",
+    "fixed": false,
+    "raw": "reason"
+   },
+   "serializedName": "reason",
+   "modelType": {
+    "$id": "96",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "97",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "98",
+   "isReadOnly": false,
+   "realPath": [
+    "hub"
+   ],
+   "collectionFormat": "none",
+   "constraints": {
+    "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+   },
+   "defaultValue": {
+    "$id": "99",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "100",
+    "fixed": false,
+    "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·28q3m8·api-v1-hubs-hub-groups-group·post·parameters·0",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·28q3m8·api-v1-hubs-hub-groups-group·post·parameters·0"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "101",
+    "fixed": false,
+    "raw": "Hub6"
+   },
+   "serializedName": "hub",
+   "modelType": {
+    "$id": "102",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "103",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "104",
+   "isReadOnly": false,
+   "realPath": [
+    "group"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "105",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "106",
+    "fixed": false,
+    "raw": "Target group name, which length should be greater than 0 and less than 1025."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1donpwf·api-v1-hubs-hub-groups-group·post·parameters·1",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1donpwf·api-v1-hubs-hub-groups-group·post·parameters·1"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "107",
+    "fixed": false,
+    "raw": "group"
+   },
+   "serializedName": "group",
+   "modelType": {
+    "$id": "108",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "109",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "110",
+   "isReadOnly": false,
+   "realPath": [
+    "excluded"
+   ],
+   "collectionFormat": "multi",
+   "defaultValue": {
+    "$id": "111",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "112",
+    "fixed": false,
+    "raw": "Excluded connection Ids"
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·18184gt·api-v1-hubs-hub-groups-group·post·parameters·2",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·18184gt·api-v1-hubs-hub-groups-group·post·parameters·2"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": false,
+   "isConstant": false,
+   "name": {
+    "$id": "113",
+    "fixed": false,
+    "raw": "Excluded1"
+   },
+   "serializedName": "excluded",
+   "modelType": {
+    "$id": "114",
+    "$type": "SequenceType",
+    "elementType": {
+     "$id": "115",
+     "$type": "PrimaryType",
+     "knownPrimaryType": "string",
+     "name": {
+      "$id": "116",
+      "fixed": false,
+      "raw": "String"
+     },
+     "deprecated": false
+    },
+    "name": {
+     "$id": "117",
+     "fixed": false
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "118",
+   "isReadOnly": false,
+   "realPath": [
+    "hub"
+   ],
+   "collectionFormat": "none",
+   "constraints": {
+    "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+   },
+   "defaultValue": {
+    "$id": "119",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "120",
+    "fixed": false,
+    "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1ckdb6s·api-v1-hubs-hub-groups-group·get·parameters·0",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1ckdb6s·api-v1-hubs-hub-groups-group·get·parameters·0"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "121",
+    "fixed": false,
+    "raw": "Hub7"
+   },
+   "serializedName": "hub",
+   "modelType": {
+    "$id": "122",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "123",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "124",
+   "isReadOnly": false,
+   "realPath": [
+    "group"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "125",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "126",
+    "fixed": false,
+    "raw": "Target group name, which length should be greater than 0 and less than 1025."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1nqv3uv·api-v1-hubs-hub-groups-group·get·parameters·1",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1nqv3uv·api-v1-hubs-hub-groups-group·get·parameters·1"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "127",
+    "fixed": false,
+    "raw": "Group1"
+   },
+   "serializedName": "group",
+   "modelType": {
+    "$id": "128",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "129",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "130",
+   "isReadOnly": false,
+   "realPath": [
+    "hub"
+   ],
+   "collectionFormat": "none",
+   "constraints": {
+    "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+   },
+   "defaultValue": {
+    "$id": "131",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "132",
+    "fixed": false,
+    "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·6hh7wq·api-v1-hubs-hub-groups-group-connections-connectionid·put·parameters·0",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·6hh7wq·api-v1-hubs-hub-groups-group-connections-connectionid·put·parameters·0"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "133",
+    "fixed": false,
+    "raw": "Hub8"
+   },
+   "serializedName": "hub",
+   "modelType": {
+    "$id": "134",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "135",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "136",
+   "isReadOnly": false,
+   "realPath": [
+    "group"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "137",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "138",
+    "fixed": false,
+    "raw": "Target group name, which length should be greater than 0 and less than 1025."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·zi4ojd·api-v1-hubs-hub-groups-group-connections-connectionid·put·parameters·1",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·zi4ojd·api-v1-hubs-hub-groups-group-connections-connectionid·put·parameters·1"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "139",
+    "fixed": false,
+    "raw": "Group2"
+   },
+   "serializedName": "group",
+   "modelType": {
+    "$id": "140",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "141",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "142",
+   "isReadOnly": false,
+   "realPath": [
+    "connectionId"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "143",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "144",
+    "fixed": false,
+    "raw": "Target connection Id"
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1cz8oju·api-v1-hubs-hub-groups-group-connections-connectionid·put·parameters·2",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1cz8oju·api-v1-hubs-hub-groups-group-connections-connectionid·put·parameters·2"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "145",
+    "fixed": false,
+    "raw": "ConnectionId3"
+   },
+   "serializedName": "connectionId",
+   "modelType": {
+    "$id": "146",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "147",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "148",
+   "isReadOnly": false,
+   "realPath": [
+    "hub"
+   ],
+   "collectionFormat": "none",
+   "constraints": {
+    "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+   },
+   "defaultValue": {
+    "$id": "149",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "150",
+    "fixed": false,
+    "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·bk0xnx·api-v1-hubs-hub-groups-group-connections-connectionid·delete·parameters·0",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·bk0xnx·api-v1-hubs-hub-groups-group-connections-connectionid·delete·parameters·0"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "151",
+    "fixed": false,
+    "raw": "Hub9"
+   },
+   "serializedName": "hub",
+   "modelType": {
+    "$id": "152",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "153",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "154",
+   "isReadOnly": false,
+   "realPath": [
+    "group"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "155",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "156",
+    "fixed": false,
+    "raw": "Target group name, which length should be greater than 0 and less than 1025."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1kkk7af·api-v1-hubs-hub-groups-group-connections-connectionid·delete·parameters·1",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1kkk7af·api-v1-hubs-hub-groups-group-connections-connectionid·delete·parameters·1"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "157",
+    "fixed": false,
+    "raw": "Group3"
+   },
+   "serializedName": "group",
+   "modelType": {
+    "$id": "158",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "159",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "160",
+   "isReadOnly": false,
+   "realPath": [
+    "connectionId"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "161",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "162",
+    "fixed": false,
+    "raw": "Target connection Id"
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1qscso·api-v1-hubs-hub-groups-group-connections-connectionid·delete·parameters·2",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1qscso·api-v1-hubs-hub-groups-group-connections-connectionid·delete·parameters·2"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "163",
+    "fixed": false,
+    "raw": "ConnectionId4"
+   },
+   "serializedName": "connectionId",
+   "modelType": {
+    "$id": "164",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "165",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "166",
+   "isReadOnly": false,
+   "realPath": [
+    "hub"
+   ],
+   "collectionFormat": "none",
+   "constraints": {
+    "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+   },
+   "defaultValue": {
+    "$id": "167",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "168",
+    "fixed": false,
+    "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1x6m1xt·api-v1-hubs-hub-groups-group-users-user·get·parameters·0",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1x6m1xt·api-v1-hubs-hub-groups-group-users-user·get·parameters·0"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "169",
+    "fixed": false,
+    "raw": "Hub10"
+   },
+   "serializedName": "hub",
+   "modelType": {
+    "$id": "170",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "171",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "172",
+   "isReadOnly": false,
+   "realPath": [
+    "group"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "173",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "174",
+    "fixed": false,
+    "raw": "Target group name, which length should be greater than 0 and less than 1025."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·s4c362·api-v1-hubs-hub-groups-group-users-user·get·parameters·1",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·s4c362·api-v1-hubs-hub-groups-group-users-user·get·parameters·1"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "175",
+    "fixed": false,
+    "raw": "Group4"
+   },
+   "serializedName": "group",
+   "modelType": {
+    "$id": "176",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "177",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "178",
+   "isReadOnly": false,
+   "realPath": [
+    "user"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "179",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "180",
+    "fixed": false,
+    "raw": "Target user Id"
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1hjqnxz·api-v1-hubs-hub-groups-group-users-user·get·parameters·2",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1hjqnxz·api-v1-hubs-hub-groups-group-users-user·get·parameters·2"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "181",
+    "fixed": false,
+    "raw": "User2"
+   },
+   "serializedName": "user",
+   "modelType": {
+    "$id": "182",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "183",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "184",
+   "isReadOnly": false,
+   "realPath": [
+    "hub"
+   ],
+   "collectionFormat": "none",
+   "constraints": {
+    "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+   },
+   "defaultValue": {
+    "$id": "185",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "186",
+    "fixed": false,
+    "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1i8loyd·api-v1-hubs-hub-groups-group-users-user·put·parameters·0",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1i8loyd·api-v1-hubs-hub-groups-group-users-user·put·parameters·0"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "187",
+    "fixed": false,
+    "raw": "Hub11"
+   },
+   "serializedName": "hub",
+   "modelType": {
+    "$id": "188",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "189",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "190",
+   "isReadOnly": false,
+   "realPath": [
+    "group"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "191",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "192",
+    "fixed": false,
+    "raw": "Target group name, which length should be greater than 0 and less than 1025."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·z2m3yw·api-v1-hubs-hub-groups-group-users-user·put·parameters·1",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·z2m3yw·api-v1-hubs-hub-groups-group-users-user·put·parameters·1"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "193",
+    "fixed": false,
+    "raw": "Group5"
+   },
+   "serializedName": "group",
+   "modelType": {
+    "$id": "194",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "195",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "196",
+   "isReadOnly": false,
+   "realPath": [
+    "user"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "197",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "198",
+    "fixed": false,
+    "raw": "Target user Id"
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1mbvvv5·api-v1-hubs-hub-groups-group-users-user·put·parameters·2",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1mbvvv5·api-v1-hubs-hub-groups-group-users-user·put·parameters·2"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "199",
+    "fixed": false,
+    "raw": "User3"
+   },
+   "serializedName": "user",
+   "modelType": {
+    "$id": "200",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "201",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "202",
+   "isReadOnly": false,
+   "realPath": [
+    "ttl"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "203",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "204",
+    "fixed": false,
+    "raw": "Specifies the seconds that the user exists in the group. If not set, the user lives in the group forever."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·d658cw·api-v1-hubs-hub-groups-group-users-user·put·parameters·3",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·d658cw·api-v1-hubs-hub-groups-group-users-user·put·parameters·3"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": false,
+   "isConstant": false,
+   "name": {
+    "$id": "205",
+    "fixed": false,
+    "raw": "ttl"
+   },
+   "serializedName": "ttl",
+   "modelType": {
+    "$id": "206",
+    "$type": "PrimaryType",
+    "format": "int32",
+    "knownPrimaryType": "int",
+    "name": {
+     "$id": "207",
+     "fixed": false,
+     "raw": "Int"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "208",
+   "isReadOnly": false,
+   "realPath": [
+    "hub"
+   ],
+   "collectionFormat": "none",
+   "constraints": {
+    "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+   },
+   "defaultValue": {
+    "$id": "209",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "210",
+    "fixed": false,
+    "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·i6ld4h·api-v1-hubs-hub-groups-group-users-user·delete·parameters·0",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·i6ld4h·api-v1-hubs-hub-groups-group-users-user·delete·parameters·0"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "211",
+    "fixed": false,
+    "raw": "Hub12"
+   },
+   "serializedName": "hub",
+   "modelType": {
+    "$id": "212",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "213",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "214",
+   "isReadOnly": false,
+   "realPath": [
+    "group"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "215",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "216",
+    "fixed": false,
+    "raw": "Target group name, which length should be greater than 0 and less than 1025."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1pd4xdy·api-v1-hubs-hub-groups-group-users-user·delete·parameters·1",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1pd4xdy·api-v1-hubs-hub-groups-group-users-user·delete·parameters·1"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "217",
+    "fixed": false,
+    "raw": "Group6"
+   },
+   "serializedName": "group",
+   "modelType": {
+    "$id": "218",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "219",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "220",
+   "isReadOnly": false,
+   "realPath": [
+    "user"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "221",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "222",
+    "fixed": false,
+    "raw": "Target user Id"
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1c5721v·api-v1-hubs-hub-groups-group-users-user·delete·parameters·2",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1c5721v·api-v1-hubs-hub-groups-group-users-user·delete·parameters·2"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "223",
+    "fixed": false,
+    "raw": "User4"
+   },
+   "serializedName": "user",
+   "modelType": {
+    "$id": "224",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "225",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "226",
+   "isReadOnly": false,
+   "realPath": [
+    "hub"
+   ],
+   "collectionFormat": "none",
+   "constraints": {
+    "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+   },
+   "defaultValue": {
+    "$id": "227",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "228",
+    "fixed": false,
+    "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1i6n377·api-v1-hubs-hub-users-user-groups·delete·parameters·0",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1i6n377·api-v1-hubs-hub-users-user-groups·delete·parameters·0"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "229",
+    "fixed": false,
+    "raw": "Hub13"
+   },
+   "serializedName": "hub",
+   "modelType": {
+    "$id": "230",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "231",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  },
+  {
+   "$id": "232",
+   "isReadOnly": false,
+   "realPath": [
+    "user"
+   ],
+   "collectionFormat": "none",
+   "defaultValue": {
+    "$id": "233",
+    "fixed": false
+   },
+   "deprecated": false,
+   "documentation": {
+    "$id": "234",
+    "fixed": false,
+    "raw": "Target user Id"
+   },
+   "extensions": {
+    "x-ms-metadata": {
+     "apiVersions": [
+      "v1"
+     ],
+     "filename": [
+      "mem:///109?oai3.shaken.json"
+     ],
+     "name": "paths·1j587fp·api-v1-hubs-hub-users-user-groups·delete·parameters·1",
+     "originalLocations": [
+      "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1j587fp·api-v1-hubs-hub-users-user-groups·delete·parameters·1"
+     ]
+    },
+    "x-ms-parameter-location": "method"
+   },
+   "isRequired": true,
+   "isConstant": false,
+   "name": {
+    "$id": "235",
+    "fixed": false,
+    "raw": "User5"
+   },
+   "serializedName": "user",
+   "modelType": {
+    "$id": "236",
+    "$type": "PrimaryType",
+    "knownPrimaryType": "string",
+    "name": {
+     "$id": "237",
+     "fixed": false,
+     "raw": "String"
+    },
+    "deprecated": false
+   }
+  }
+ ],
+ "operations": [
+  {
+   "$id": "238",
+   "methods": [
+    {
+     "$id": "239",
+     "name": {
+      "$id": "240",
+      "fixed": false,
+      "raw": "GetHealthStatus"
+     },
+     "group": {
+      "$id": "241",
+      "fixed": false,
+      "raw": "HealthApi"
+     },
+     "serializedName": "HealthApi_GetHealthStatus",
+     "url": "/api/v1/health",
+     "isAbsoluteUrl": false,
+     "httpMethod": "head",
+     "responses": {
+      "OK": {
+       "$id": "242",
+       "extensions": {
+        "$id": "243",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·a2exod·api-v1-health·head·responses·200",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·a2exod·api-v1-health·head·responses·200"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "244",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "245",
+      "isNullable": true
+     },
+     "summary": "Get service health status.",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": []
+     },
+     "deprecated": false,
+     "hidden": false
+    }
+   ],
+   "name": {
+    "$id": "246",
+    "fixed": false,
+    "raw": "HealthApi"
+   },
+   "typeName": {
+    "$id": "247",
+    "fixed": false
+   },
+   "nameForProperty": "HealthApi"
+  },
+  {
+   "$id": "248",
+   "methods": [
+    {
+     "$id": "249",
+     "parameters": [
+      {
+       "$id": "250",
+       "clientProperty": {
+        "$ref": "18"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "constraints": {
+        "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+       },
+       "defaultValue": {
+        "$id": "251",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "252",
+        "fixed": false,
+        "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·161axxn·api-v1-hubs-hub·post·parameters·0",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·161axxn·api-v1-hubs-hub·post·parameters·0"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "253",
+        "fixed": false,
+        "raw": "hub"
+       },
+       "serializedName": "hub",
+       "modelType": {
+        "$id": "254",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "255",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "256",
+       "clientProperty": {
+        "$ref": "24"
+       },
+       "location": "query",
+       "collectionFormat": "multi",
+       "defaultValue": {
+        "$id": "257",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "258",
+        "fixed": false,
+        "raw": "Excluded connection Ids"
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·9p05ip·api-v1-hubs-hub·post·parameters·1",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·9p05ip·api-v1-hubs-hub·post·parameters·1"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": false,
+       "isConstant": false,
+       "name": {
+        "$id": "259",
+        "fixed": false,
+        "raw": "excluded"
+       },
+       "serializedName": "excluded",
+       "modelType": {
+        "$id": "260",
+        "$type": "SequenceType",
+        "elementType": {
+         "$id": "261",
+         "$type": "PrimaryType",
+         "knownPrimaryType": "string",
+         "name": {
+          "$id": "262",
+          "fixed": false,
+          "raw": "String"
+         },
+         "deprecated": false
+        },
+        "name": {
+         "$id": "263",
+         "fixed": false
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "264",
+       "location": "body",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "265",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "266",
+        "fixed": false,
+        "raw": "The message body."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·kn45zi·api-v1-hubs-hub·post·requestbody",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/requestBodies/paths·kn45zi·api-v1-hubs-hub·post·requestbody"
+         ]
+        },
+        "x-ms-requestBody-name": "payloadMessage"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "267",
+        "fixed": false,
+        "raw": "payloadMessage"
+       },
+       "serializedName": "payloadMessage",
+       "modelType": {
+        "$ref": "2"
+       }
+      }
+     ],
+     "name": {
+      "$id": "268",
+      "fixed": false,
+      "raw": "Broadcast"
+     },
+     "group": {
+      "$id": "269",
+      "fixed": false,
+      "raw": "ServiceApi"
+     },
+     "serializedName": "ServiceApi_Broadcast",
+     "url": "/api/v1/hubs/{hub}",
+     "isAbsoluteUrl": false,
+     "httpMethod": "post",
+     "responses": {
+      "Accepted": {
+       "$id": "270",
+       "extensions": {
+        "$id": "271",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1qt5mpi·api-v1-hubs-hub·post·responses·202",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·1qt5mpi·api-v1-hubs-hub·post·responses·202"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "272",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "273",
+      "isNullable": true
+     },
+     "summary": "Broadcast a message to all clients connected to target hub.",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": [],
+      "x-ms-requestBody-index": "2"
+     },
+     "deprecated": false,
+     "hidden": false
+    },
+    {
+     "$id": "274",
+     "parameters": [
+      {
+       "$id": "275",
+       "clientProperty": {
+        "$ref": "18"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "constraints": {
+        "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+       },
+       "defaultValue": {
+        "$id": "276",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "277",
+        "fixed": false,
+        "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·15y7v2m·api-v1-hubs-hub-users-user·post·parameters·0",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·15y7v2m·api-v1-hubs-hub-users-user·post·parameters·0"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "278",
+        "fixed": false,
+        "raw": "hub"
+       },
+       "serializedName": "hub",
+       "modelType": {
+        "$id": "279",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "280",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "281",
+       "clientProperty": {
+        "$ref": "38"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "282",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "283",
+        "fixed": false,
+        "raw": "The user Id."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1cn0wcw·api-v1-hubs-hub-users-user·post·parameters·1",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1cn0wcw·api-v1-hubs-hub-users-user·post·parameters·1"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "284",
+        "fixed": false,
+        "raw": "user"
+       },
+       "serializedName": "user",
+       "modelType": {
+        "$id": "285",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "286",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "287",
+       "location": "body",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "288",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "289",
+        "fixed": false,
+        "raw": "The message body."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1o7a4g2·api-v1-hubs-hub-users-user·post·requestbody",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/requestBodies/paths·1o7a4g2·api-v1-hubs-hub-users-user·post·requestbody"
+         ]
+        },
+        "x-ms-requestBody-name": "payloadMessage"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "290",
+        "fixed": false,
+        "raw": "payloadMessage"
+       },
+       "serializedName": "payloadMessage",
+       "modelType": {
+        "$ref": "2"
+       }
+      }
+     ],
+     "name": {
+      "$id": "291",
+      "fixed": false,
+      "raw": "SendToUser"
+     },
+     "group": {
+      "$id": "292",
+      "fixed": false,
+      "raw": "ServiceApi"
+     },
+     "serializedName": "ServiceApi_SendToUser",
+     "url": "/api/v1/hubs/{hub}/users/{user}",
+     "isAbsoluteUrl": false,
+     "httpMethod": "post",
+     "responses": {
+      "Accepted": {
+       "$id": "293",
+       "extensions": {
+        "$id": "294",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·9752ug·api-v1-hubs-hub-users-user·post·responses·202",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·9752ug·api-v1-hubs-hub-users-user·post·responses·202"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "295",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "296",
+      "isNullable": true
+     },
+     "summary": "Broadcast a message to all clients belong to the target user.",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": [],
+      "x-ms-requestBody-index": "2"
+     },
+     "deprecated": false,
+     "hidden": false
+    },
+    {
+     "$id": "297",
+     "parameters": [
+      {
+       "$id": "298",
+       "clientProperty": {
+        "$ref": "18"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "constraints": {
+        "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+       },
+       "defaultValue": {
+        "$id": "299",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "300",
+        "fixed": false,
+        "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·bjrid7·api-v1-hubs-hub-users-user·get·parameters·0",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·bjrid7·api-v1-hubs-hub-users-user·get·parameters·0"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "301",
+        "fixed": false,
+        "raw": "hub"
+       },
+       "serializedName": "hub",
+       "modelType": {
+        "$id": "302",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "303",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "304",
+       "clientProperty": {
+        "$ref": "38"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "305",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "306",
+        "fixed": false,
+        "raw": "The user Id."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1a2c402·api-v1-hubs-hub-users-user·get·parameters·1",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1a2c402·api-v1-hubs-hub-users-user·get·parameters·1"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "307",
+        "fixed": false,
+        "raw": "user"
+       },
+       "serializedName": "user",
+       "modelType": {
+        "$id": "308",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "309",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      }
+     ],
+     "name": {
+      "$id": "310",
+      "fixed": false,
+      "raw": "CheckUserExistence"
+     },
+     "group": {
+      "$id": "311",
+      "fixed": false,
+      "raw": "ServiceApi"
+     },
+     "serializedName": "ServiceApi_CheckUserExistence",
+     "url": "/api/v1/hubs/{hub}/users/{user}",
+     "isAbsoluteUrl": false,
+     "httpMethod": "get",
+     "responses": {
+      "OK": {
+       "$id": "312",
+       "extensions": {
+        "$id": "313",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·ahpzoy·api-v1-hubs-hub-users-user·get·responses·200",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·ahpzoy·api-v1-hubs-hub-users-user·get·responses·200"
+         ]
+        }
+       },
+       "isNullable": true
+      },
+      "NotFound": {
+       "$id": "314",
+       "extensions": {
+        "$id": "315",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·2azxi2·api-v1-hubs-hub-users-user·get·responses·404",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·2azxi2·api-v1-hubs-hub-users-user·get·responses·404"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "316",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "317",
+      "isNullable": true
+     },
+     "summary": "Check if there are any client connections connected for the given user",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": []
+     },
+     "deprecated": false,
+     "hidden": false
+    },
+    {
+     "$id": "318",
+     "parameters": [
+      {
+       "$id": "319",
+       "clientProperty": {
+        "$ref": "18"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "constraints": {
+        "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+       },
+       "defaultValue": {
+        "$id": "320",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "321",
+        "fixed": false,
+        "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·u5ha8g·api-v1-hubs-hub-connections-connectionid·post·parameters·0",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·u5ha8g·api-v1-hubs-hub-connections-connectionid·post·parameters·0"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "322",
+        "fixed": false,
+        "raw": "hub"
+       },
+       "serializedName": "hub",
+       "modelType": {
+        "$id": "323",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "324",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "325",
+       "clientProperty": {
+        "$ref": "62"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "326",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "327",
+        "fixed": false,
+        "raw": "The connection Id."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·12ftkek·api-v1-hubs-hub-connections-connectionid·post·parameters·1",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·12ftkek·api-v1-hubs-hub-connections-connectionid·post·parameters·1"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "328",
+        "fixed": false,
+        "raw": "connectionId"
+       },
+       "serializedName": "connectionId",
+       "modelType": {
+        "$id": "329",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "330",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "331",
+       "location": "body",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "332",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "333",
+        "fixed": false,
+        "raw": "The message body."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·cch81u·api-v1-hubs-hub-connections-connectionid·post·requestbody",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/requestBodies/paths·cch81u·api-v1-hubs-hub-connections-connectionid·post·requestbody"
+         ]
+        },
+        "x-ms-requestBody-name": "payloadMessage"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "334",
+        "fixed": false,
+        "raw": "payloadMessage"
+       },
+       "serializedName": "payloadMessage",
+       "modelType": {
+        "$ref": "2"
+       }
+      }
+     ],
+     "name": {
+      "$id": "335",
+      "fixed": false,
+      "raw": "SendToConnection"
+     },
+     "group": {
+      "$id": "336",
+      "fixed": false,
+      "raw": "ServiceApi"
+     },
+     "serializedName": "ServiceApi_SendToConnection",
+     "url": "/api/v1/hubs/{hub}/connections/{connectionId}",
+     "isAbsoluteUrl": false,
+     "httpMethod": "post",
+     "responses": {
+      "Accepted": {
+       "$id": "337",
+       "extensions": {
+        "$id": "338",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1gkh6jf·api-v1-hubs-hub-connections-connectionid·post·responses·202",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·1gkh6jf·api-v1-hubs-hub-connections-connectionid·post·responses·202"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "339",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "340",
+      "isNullable": true
+     },
+     "summary": "Send message to the specific connection.",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": [],
+      "x-ms-requestBody-index": "2"
+     },
+     "deprecated": false,
+     "hidden": false
+    },
+    {
+     "$id": "341",
+     "parameters": [
+      {
+       "$id": "342",
+       "clientProperty": {
+        "$ref": "18"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "constraints": {
+        "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+       },
+       "defaultValue": {
+        "$id": "343",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "344",
+        "fixed": false,
+        "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·i3qitv·api-v1-hubs-hub-connections-connectionid·get·parameters·0",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·i3qitv·api-v1-hubs-hub-connections-connectionid·get·parameters·0"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "345",
+        "fixed": false,
+        "raw": "hub"
+       },
+       "serializedName": "hub",
+       "modelType": {
+        "$id": "346",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "347",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "348",
+       "clientProperty": {
+        "$ref": "62"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "349",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "350",
+        "fixed": false,
+        "raw": "The connection Id."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·mhhq03·api-v1-hubs-hub-connections-connectionid·get·parameters·1",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·mhhq03·api-v1-hubs-hub-connections-connectionid·get·parameters·1"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "351",
+        "fixed": false,
+        "raw": "connectionId"
+       },
+       "serializedName": "connectionId",
+       "modelType": {
+        "$id": "352",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "353",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      }
+     ],
+     "name": {
+      "$id": "354",
+      "fixed": false,
+      "raw": "CheckConnectionExistence"
+     },
+     "group": {
+      "$id": "355",
+      "fixed": false,
+      "raw": "ServiceApi"
+     },
+     "serializedName": "ServiceApi_CheckConnectionExistence",
+     "url": "/api/v1/hubs/{hub}/connections/{connectionId}",
+     "isAbsoluteUrl": false,
+     "httpMethod": "get",
+     "responses": {
+      "OK": {
+       "$id": "356",
+       "extensions": {
+        "$id": "357",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·14ne5ik·api-v1-hubs-hub-connections-connectionid·get·responses·200",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·14ne5ik·api-v1-hubs-hub-connections-connectionid·get·responses·200"
+         ]
+        }
+       },
+       "isNullable": true
+      },
+      "NotFound": {
+       "$id": "358",
+       "extensions": {
+        "$id": "359",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·duzhav·api-v1-hubs-hub-connections-connectionid·get·responses·404",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·duzhav·api-v1-hubs-hub-connections-connectionid·get·responses·404"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "360",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "361",
+      "isNullable": true
+     },
+     "summary": "Check if the connection with the given connectionId exists",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": []
+     },
+     "deprecated": false,
+     "hidden": false
+    },
+    {
+     "$id": "362",
+     "parameters": [
+      {
+       "$id": "363",
+       "clientProperty": {
+        "$ref": "18"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "constraints": {
+        "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+       },
+       "defaultValue": {
+        "$id": "364",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "365",
+        "fixed": false,
+        "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·108cyt8·api-v1-hubs-hub-connections-connectionid·delete·parameters·0",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·108cyt8·api-v1-hubs-hub-connections-connectionid·delete·parameters·0"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "366",
+        "fixed": false,
+        "raw": "hub"
+       },
+       "serializedName": "hub",
+       "modelType": {
+        "$id": "367",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "368",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "369",
+       "clientProperty": {
+        "$ref": "62"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "370",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "371",
+        "fixed": false,
+        "raw": "The connection Id."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·x42rpo·api-v1-hubs-hub-connections-connectionid·delete·parameters·1",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·x42rpo·api-v1-hubs-hub-connections-connectionid·delete·parameters·1"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "372",
+        "fixed": false,
+        "raw": "connectionId"
+       },
+       "serializedName": "connectionId",
+       "modelType": {
+        "$id": "373",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "374",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "375",
+       "clientProperty": {
+        "$ref": "92"
+       },
+       "location": "query",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "376",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "377",
+        "fixed": false,
+        "raw": "The reason of the connection close."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·h2a29g·api-v1-hubs-hub-connections-connectionid·delete·parameters·2",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·h2a29g·api-v1-hubs-hub-connections-connectionid·delete·parameters·2"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": false,
+       "isConstant": false,
+       "name": {
+        "$id": "378",
+        "fixed": false,
+        "raw": "reason"
+       },
+       "serializedName": "reason",
+       "modelType": {
+        "$id": "379",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "380",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      }
+     ],
+     "name": {
+      "$id": "381",
+      "fixed": false,
+      "raw": "CloseClientConnection"
+     },
+     "group": {
+      "$id": "382",
+      "fixed": false,
+      "raw": "ServiceApi"
+     },
+     "serializedName": "ServiceApi_CloseClientConnection",
+     "url": "/api/v1/hubs/{hub}/connections/{connectionId}",
+     "isAbsoluteUrl": false,
+     "httpMethod": "delete",
+     "responses": {
+      "Accepted": {
+       "$id": "383",
+       "extensions": {
+        "$id": "384",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·ts2d9w·api-v1-hubs-hub-connections-connectionid·delete·responses·202",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·ts2d9w·api-v1-hubs-hub-connections-connectionid·delete·responses·202"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "385",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "386",
+      "isNullable": true
+     },
+     "summary": "Close the client connection",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": []
+     },
+     "deprecated": false,
+     "hidden": false
+    },
+    {
+     "$id": "387",
+     "parameters": [
+      {
+       "$id": "388",
+       "clientProperty": {
+        "$ref": "18"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "constraints": {
+        "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+       },
+       "defaultValue": {
+        "$id": "389",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "390",
+        "fixed": false,
+        "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·28q3m8·api-v1-hubs-hub-groups-group·post·parameters·0",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·28q3m8·api-v1-hubs-hub-groups-group·post·parameters·0"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "391",
+        "fixed": false,
+        "raw": "hub"
+       },
+       "serializedName": "hub",
+       "modelType": {
+        "$id": "392",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "393",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "394",
+       "clientProperty": {
+        "$ref": "104"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "395",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "396",
+        "fixed": false,
+        "raw": "Target group name, which length should be greater than 0 and less than 1025."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1donpwf·api-v1-hubs-hub-groups-group·post·parameters·1",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1donpwf·api-v1-hubs-hub-groups-group·post·parameters·1"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "397",
+        "fixed": false,
+        "raw": "group"
+       },
+       "serializedName": "group",
+       "modelType": {
+        "$id": "398",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "399",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "400",
+       "clientProperty": {
+        "$ref": "24"
+       },
+       "location": "query",
+       "collectionFormat": "multi",
+       "defaultValue": {
+        "$id": "401",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "402",
+        "fixed": false,
+        "raw": "Excluded connection Ids"
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·18184gt·api-v1-hubs-hub-groups-group·post·parameters·2",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·18184gt·api-v1-hubs-hub-groups-group·post·parameters·2"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": false,
+       "isConstant": false,
+       "name": {
+        "$id": "403",
+        "fixed": false,
+        "raw": "excluded"
+       },
+       "serializedName": "excluded",
+       "modelType": {
+        "$id": "404",
+        "$type": "SequenceType",
+        "elementType": {
+         "$id": "405",
+         "$type": "PrimaryType",
+         "knownPrimaryType": "string",
+         "name": {
+          "$id": "406",
+          "fixed": false,
+          "raw": "String"
+         },
+         "deprecated": false
+        },
+        "name": {
+         "$id": "407",
+         "fixed": false
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "408",
+       "location": "body",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "409",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "410",
+        "fixed": false,
+        "raw": "The message body."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1s48o7a·api-v1-hubs-hub-groups-group·post·requestbody",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/requestBodies/paths·1s48o7a·api-v1-hubs-hub-groups-group·post·requestbody"
+         ]
+        },
+        "x-ms-requestBody-name": "payloadMessage"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "411",
+        "fixed": false,
+        "raw": "payloadMessage"
+       },
+       "serializedName": "payloadMessage",
+       "modelType": {
+        "$ref": "2"
+       }
+      }
+     ],
+     "name": {
+      "$id": "412",
+      "fixed": false,
+      "raw": "GroupBroadcast"
+     },
+     "group": {
+      "$id": "413",
+      "fixed": false,
+      "raw": "ServiceApi"
+     },
+     "serializedName": "ServiceApi_GroupBroadcast",
+     "url": "/api/v1/hubs/{hub}/groups/{group}",
+     "isAbsoluteUrl": false,
+     "httpMethod": "post",
+     "responses": {
+      "Accepted": {
+       "$id": "414",
+       "extensions": {
+        "$id": "415",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1xhlu5g·api-v1-hubs-hub-groups-group·post·responses·202",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·1xhlu5g·api-v1-hubs-hub-groups-group·post·responses·202"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "416",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "417",
+      "isNullable": true
+     },
+     "summary": "Broadcast a message to all clients within the target group.",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": [],
+      "x-ms-requestBody-index": "3"
+     },
+     "deprecated": false,
+     "hidden": false
+    },
+    {
+     "$id": "418",
+     "parameters": [
+      {
+       "$id": "419",
+       "clientProperty": {
+        "$ref": "18"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "constraints": {
+        "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+       },
+       "defaultValue": {
+        "$id": "420",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "421",
+        "fixed": false,
+        "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1ckdb6s·api-v1-hubs-hub-groups-group·get·parameters·0",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1ckdb6s·api-v1-hubs-hub-groups-group·get·parameters·0"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "422",
+        "fixed": false,
+        "raw": "hub"
+       },
+       "serializedName": "hub",
+       "modelType": {
+        "$id": "423",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "424",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "425",
+       "clientProperty": {
+        "$ref": "104"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "426",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "427",
+        "fixed": false,
+        "raw": "Target group name, which length should be greater than 0 and less than 1025."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1nqv3uv·api-v1-hubs-hub-groups-group·get·parameters·1",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1nqv3uv·api-v1-hubs-hub-groups-group·get·parameters·1"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "428",
+        "fixed": false,
+        "raw": "group"
+       },
+       "serializedName": "group",
+       "modelType": {
+        "$id": "429",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "430",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      }
+     ],
+     "name": {
+      "$id": "431",
+      "fixed": false,
+      "raw": "CheckGroupExistence"
+     },
+     "group": {
+      "$id": "432",
+      "fixed": false,
+      "raw": "ServiceApi"
+     },
+     "serializedName": "ServiceApi_CheckGroupExistence",
+     "url": "/api/v1/hubs/{hub}/groups/{group}",
+     "isAbsoluteUrl": false,
+     "httpMethod": "get",
+     "responses": {
+      "OK": {
+       "$id": "433",
+       "extensions": {
+        "$id": "434",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·19vpctu·api-v1-hubs-hub-groups-group·get·responses·200",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·19vpctu·api-v1-hubs-hub-groups-group·get·responses·200"
+         ]
+        }
+       },
+       "isNullable": true
+      },
+      "NotFound": {
+       "$id": "435",
+       "extensions": {
+        "$id": "436",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·4c8thv·api-v1-hubs-hub-groups-group·get·responses·404",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·4c8thv·api-v1-hubs-hub-groups-group·get·responses·404"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "437",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "438",
+      "isNullable": true
+     },
+     "summary": "Check if there are any client connections inside the given group",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": []
+     },
+     "deprecated": false,
+     "hidden": false
+    },
+    {
+     "$id": "439",
+     "parameters": [
+      {
+       "$id": "440",
+       "clientProperty": {
+        "$ref": "18"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "constraints": {
+        "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+       },
+       "defaultValue": {
+        "$id": "441",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "442",
+        "fixed": false,
+        "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·6hh7wq·api-v1-hubs-hub-groups-group-connections-connectionid·put·parameters·0",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·6hh7wq·api-v1-hubs-hub-groups-group-connections-connectionid·put·parameters·0"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "443",
+        "fixed": false,
+        "raw": "hub"
+       },
+       "serializedName": "hub",
+       "modelType": {
+        "$id": "444",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "445",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "446",
+       "clientProperty": {
+        "$ref": "104"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "447",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "448",
+        "fixed": false,
+        "raw": "Target group name, which length should be greater than 0 and less than 1025."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·zi4ojd·api-v1-hubs-hub-groups-group-connections-connectionid·put·parameters·1",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·zi4ojd·api-v1-hubs-hub-groups-group-connections-connectionid·put·parameters·1"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "449",
+        "fixed": false,
+        "raw": "group"
+       },
+       "serializedName": "group",
+       "modelType": {
+        "$id": "450",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "451",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "452",
+       "clientProperty": {
+        "$ref": "62"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "453",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "454",
+        "fixed": false,
+        "raw": "Target connection Id"
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1cz8oju·api-v1-hubs-hub-groups-group-connections-connectionid·put·parameters·2",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1cz8oju·api-v1-hubs-hub-groups-group-connections-connectionid·put·parameters·2"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "455",
+        "fixed": false,
+        "raw": "connectionId"
+       },
+       "serializedName": "connectionId",
+       "modelType": {
+        "$id": "456",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "457",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      }
+     ],
+     "name": {
+      "$id": "458",
+      "fixed": false,
+      "raw": "AddConnectionToGroup"
+     },
+     "group": {
+      "$id": "459",
+      "fixed": false,
+      "raw": "ServiceApi"
+     },
+     "serializedName": "ServiceApi_AddConnectionToGroup",
+     "url": "/api/v1/hubs/{hub}/groups/{group}/connections/{connectionId}",
+     "isAbsoluteUrl": false,
+     "httpMethod": "put",
+     "responses": {
+      "OK": {
+       "$id": "460",
+       "extensions": {
+        "$id": "461",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·9kndgj·api-v1-hubs-hub-groups-group-connections-connectionid·put·responses·200",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·9kndgj·api-v1-hubs-hub-groups-group-connections-connectionid·put·responses·200"
+         ]
+        }
+       },
+       "isNullable": true
+      },
+      "NotFound": {
+       "$id": "462",
+       "extensions": {
+        "$id": "463",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1r537gx·api-v1-hubs-hub-groups-group-connections-connectionid·put·responses·404",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·1r537gx·api-v1-hubs-hub-groups-group-connections-connectionid·put·responses·404"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "464",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "465",
+      "isNullable": true
+     },
+     "summary": "Add a connection to the target group.",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": []
+     },
+     "deprecated": false,
+     "hidden": false
+    },
+    {
+     "$id": "466",
+     "parameters": [
+      {
+       "$id": "467",
+       "clientProperty": {
+        "$ref": "18"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "constraints": {
+        "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+       },
+       "defaultValue": {
+        "$id": "468",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "469",
+        "fixed": false,
+        "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·bk0xnx·api-v1-hubs-hub-groups-group-connections-connectionid·delete·parameters·0",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·bk0xnx·api-v1-hubs-hub-groups-group-connections-connectionid·delete·parameters·0"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "470",
+        "fixed": false,
+        "raw": "hub"
+       },
+       "serializedName": "hub",
+       "modelType": {
+        "$id": "471",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "472",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "473",
+       "clientProperty": {
+        "$ref": "104"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "474",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "475",
+        "fixed": false,
+        "raw": "Target group name, which length should be greater than 0 and less than 1025."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1kkk7af·api-v1-hubs-hub-groups-group-connections-connectionid·delete·parameters·1",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1kkk7af·api-v1-hubs-hub-groups-group-connections-connectionid·delete·parameters·1"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "476",
+        "fixed": false,
+        "raw": "group"
+       },
+       "serializedName": "group",
+       "modelType": {
+        "$id": "477",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "478",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "479",
+       "clientProperty": {
+        "$ref": "62"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "480",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "481",
+        "fixed": false,
+        "raw": "Target connection Id"
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1qscso·api-v1-hubs-hub-groups-group-connections-connectionid·delete·parameters·2",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1qscso·api-v1-hubs-hub-groups-group-connections-connectionid·delete·parameters·2"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "482",
+        "fixed": false,
+        "raw": "connectionId"
+       },
+       "serializedName": "connectionId",
+       "modelType": {
+        "$id": "483",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "484",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      }
+     ],
+     "name": {
+      "$id": "485",
+      "fixed": false,
+      "raw": "RemoveConnectionFromGroup"
+     },
+     "group": {
+      "$id": "486",
+      "fixed": false,
+      "raw": "ServiceApi"
+     },
+     "serializedName": "ServiceApi_RemoveConnectionFromGroup",
+     "url": "/api/v1/hubs/{hub}/groups/{group}/connections/{connectionId}",
+     "isAbsoluteUrl": false,
+     "httpMethod": "delete",
+     "responses": {
+      "OK": {
+       "$id": "487",
+       "extensions": {
+        "$id": "488",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·x0z9u6·api-v1-hubs-hub-groups-group-connections-connectionid·delete·responses·200",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·x0z9u6·api-v1-hubs-hub-groups-group-connections-connectionid·delete·responses·200"
+         ]
+        }
+       },
+       "isNullable": true
+      },
+      "NotFound": {
+       "$id": "489",
+       "extensions": {
+        "$id": "490",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·18cz7od·api-v1-hubs-hub-groups-group-connections-connectionid·delete·responses·404",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·18cz7od·api-v1-hubs-hub-groups-group-connections-connectionid·delete·responses·404"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "491",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "492",
+      "isNullable": true
+     },
+     "summary": "Remove a connection from the target group.",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": []
+     },
+     "deprecated": false,
+     "hidden": false
+    },
+    {
+     "$id": "493",
+     "parameters": [
+      {
+       "$id": "494",
+       "clientProperty": {
+        "$ref": "18"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "constraints": {
+        "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+       },
+       "defaultValue": {
+        "$id": "495",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "496",
+        "fixed": false,
+        "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1x6m1xt·api-v1-hubs-hub-groups-group-users-user·get·parameters·0",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1x6m1xt·api-v1-hubs-hub-groups-group-users-user·get·parameters·0"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "497",
+        "fixed": false,
+        "raw": "hub"
+       },
+       "serializedName": "hub",
+       "modelType": {
+        "$id": "498",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "499",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "500",
+       "clientProperty": {
+        "$ref": "104"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "501",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "502",
+        "fixed": false,
+        "raw": "Target group name, which length should be greater than 0 and less than 1025."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·s4c362·api-v1-hubs-hub-groups-group-users-user·get·parameters·1",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·s4c362·api-v1-hubs-hub-groups-group-users-user·get·parameters·1"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "503",
+        "fixed": false,
+        "raw": "group"
+       },
+       "serializedName": "group",
+       "modelType": {
+        "$id": "504",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "505",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "506",
+       "clientProperty": {
+        "$ref": "38"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "507",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "508",
+        "fixed": false,
+        "raw": "Target user Id"
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1hjqnxz·api-v1-hubs-hub-groups-group-users-user·get·parameters·2",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1hjqnxz·api-v1-hubs-hub-groups-group-users-user·get·parameters·2"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "509",
+        "fixed": false,
+        "raw": "user"
+       },
+       "serializedName": "user",
+       "modelType": {
+        "$id": "510",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "511",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      }
+     ],
+     "name": {
+      "$id": "512",
+      "fixed": false,
+      "raw": "CheckUserExistenceInGroup"
+     },
+     "group": {
+      "$id": "513",
+      "fixed": false,
+      "raw": "ServiceApi"
+     },
+     "serializedName": "ServiceApi_CheckUserExistenceInGroup",
+     "url": "/api/v1/hubs/{hub}/groups/{group}/users/{user}",
+     "isAbsoluteUrl": false,
+     "httpMethod": "get",
+     "responses": {
+      "OK": {
+       "$id": "514",
+       "extensions": {
+        "$id": "515",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1uqf677·api-v1-hubs-hub-groups-group-users-user·get·responses·200",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·1uqf677·api-v1-hubs-hub-groups-group-users-user·get·responses·200"
+         ]
+        }
+       },
+       "isNullable": true
+      },
+      "NotFound": {
+       "$id": "516",
+       "extensions": {
+        "$id": "517",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·pygpq5·api-v1-hubs-hub-groups-group-users-user·get·responses·404",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·pygpq5·api-v1-hubs-hub-groups-group-users-user·get·responses·404"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "518",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "519",
+      "isNullable": true
+     },
+     "summary": "Check whether a user exists in the target group.",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": []
+     },
+     "deprecated": false,
+     "hidden": false
+    },
+    {
+     "$id": "520",
+     "parameters": [
+      {
+       "$id": "521",
+       "clientProperty": {
+        "$ref": "18"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "constraints": {
+        "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+       },
+       "defaultValue": {
+        "$id": "522",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "523",
+        "fixed": false,
+        "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1i8loyd·api-v1-hubs-hub-groups-group-users-user·put·parameters·0",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1i8loyd·api-v1-hubs-hub-groups-group-users-user·put·parameters·0"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "524",
+        "fixed": false,
+        "raw": "hub"
+       },
+       "serializedName": "hub",
+       "modelType": {
+        "$id": "525",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "526",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "527",
+       "clientProperty": {
+        "$ref": "104"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "528",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "529",
+        "fixed": false,
+        "raw": "Target group name, which length should be greater than 0 and less than 1025."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·z2m3yw·api-v1-hubs-hub-groups-group-users-user·put·parameters·1",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·z2m3yw·api-v1-hubs-hub-groups-group-users-user·put·parameters·1"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "530",
+        "fixed": false,
+        "raw": "group"
+       },
+       "serializedName": "group",
+       "modelType": {
+        "$id": "531",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "532",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "533",
+       "clientProperty": {
+        "$ref": "38"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "534",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "535",
+        "fixed": false,
+        "raw": "Target user Id"
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1mbvvv5·api-v1-hubs-hub-groups-group-users-user·put·parameters·2",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1mbvvv5·api-v1-hubs-hub-groups-group-users-user·put·parameters·2"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "536",
+        "fixed": false,
+        "raw": "user"
+       },
+       "serializedName": "user",
+       "modelType": {
+        "$id": "537",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "538",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "539",
+       "clientProperty": {
+        "$ref": "202"
+       },
+       "location": "query",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "540",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "541",
+        "fixed": false,
+        "raw": "Specifies the seconds that the user exists in the group. If not set, the user lives in the group forever."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·d658cw·api-v1-hubs-hub-groups-group-users-user·put·parameters·3",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·d658cw·api-v1-hubs-hub-groups-group-users-user·put·parameters·3"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": false,
+       "isConstant": false,
+       "name": {
+        "$id": "542",
+        "fixed": false,
+        "raw": "ttl"
+       },
+       "serializedName": "ttl",
+       "modelType": {
+        "$id": "543",
+        "$type": "PrimaryType",
+        "format": "int32",
+        "knownPrimaryType": "int",
+        "name": {
+         "$id": "544",
+         "fixed": false,
+         "raw": "Int"
+        },
+        "deprecated": false
+       }
+      }
+     ],
+     "name": {
+      "$id": "545",
+      "fixed": false,
+      "raw": "AddUserToGroup"
+     },
+     "group": {
+      "$id": "546",
+      "fixed": false,
+      "raw": "ServiceApi"
+     },
+     "serializedName": "ServiceApi_AddUserToGroup",
+     "url": "/api/v1/hubs/{hub}/groups/{group}/users/{user}",
+     "isAbsoluteUrl": false,
+     "httpMethod": "put",
+     "responses": {
+      "Accepted": {
+       "$id": "547",
+       "extensions": {
+        "$id": "548",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·p5tz1y·api-v1-hubs-hub-groups-group-users-user·put·responses·202",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·p5tz1y·api-v1-hubs-hub-groups-group-users-user·put·responses·202"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "549",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "550",
+      "isNullable": true
+     },
+     "summary": "Add a user to the target group.",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": []
+     },
+     "deprecated": false,
+     "hidden": false
+    },
+    {
+     "$id": "551",
+     "parameters": [
+      {
+       "$id": "552",
+       "clientProperty": {
+        "$ref": "18"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "constraints": {
+        "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+       },
+       "defaultValue": {
+        "$id": "553",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "554",
+        "fixed": false,
+        "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·i6ld4h·api-v1-hubs-hub-groups-group-users-user·delete·parameters·0",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·i6ld4h·api-v1-hubs-hub-groups-group-users-user·delete·parameters·0"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "555",
+        "fixed": false,
+        "raw": "hub"
+       },
+       "serializedName": "hub",
+       "modelType": {
+        "$id": "556",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "557",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "558",
+       "clientProperty": {
+        "$ref": "104"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "559",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "560",
+        "fixed": false,
+        "raw": "Target group name, which length should be greater than 0 and less than 1025."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1pd4xdy·api-v1-hubs-hub-groups-group-users-user·delete·parameters·1",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1pd4xdy·api-v1-hubs-hub-groups-group-users-user·delete·parameters·1"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "561",
+        "fixed": false,
+        "raw": "group"
+       },
+       "serializedName": "group",
+       "modelType": {
+        "$id": "562",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "563",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "564",
+       "clientProperty": {
+        "$ref": "38"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "565",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "566",
+        "fixed": false,
+        "raw": "Target user Id"
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1c5721v·api-v1-hubs-hub-groups-group-users-user·delete·parameters·2",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1c5721v·api-v1-hubs-hub-groups-group-users-user·delete·parameters·2"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "567",
+        "fixed": false,
+        "raw": "user"
+       },
+       "serializedName": "user",
+       "modelType": {
+        "$id": "568",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "569",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      }
+     ],
+     "name": {
+      "$id": "570",
+      "fixed": false,
+      "raw": "RemoveUserFromGroup"
+     },
+     "group": {
+      "$id": "571",
+      "fixed": false,
+      "raw": "ServiceApi"
+     },
+     "serializedName": "ServiceApi_RemoveUserFromGroup",
+     "url": "/api/v1/hubs/{hub}/groups/{group}/users/{user}",
+     "isAbsoluteUrl": false,
+     "httpMethod": "delete",
+     "responses": {
+      "Accepted": {
+       "$id": "572",
+       "extensions": {
+        "$id": "573",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·fvedgj·api-v1-hubs-hub-groups-group-users-user·delete·responses·202",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·fvedgj·api-v1-hubs-hub-groups-group-users-user·delete·responses·202"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "574",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "575",
+      "isNullable": true
+     },
+     "summary": "Remove a user from the target group.",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": []
+     },
+     "deprecated": false,
+     "hidden": false
+    },
+    {
+     "$id": "576",
+     "parameters": [
+      {
+       "$id": "577",
+       "clientProperty": {
+        "$ref": "18"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "constraints": {
+        "Pattern": "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$"
+       },
+       "defaultValue": {
+        "$id": "578",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "579",
+        "fixed": false,
+        "raw": "Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore."
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1i6n377·api-v1-hubs-hub-users-user-groups·delete·parameters·0",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1i6n377·api-v1-hubs-hub-users-user-groups·delete·parameters·0"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "580",
+        "fixed": false,
+        "raw": "hub"
+       },
+       "serializedName": "hub",
+       "modelType": {
+        "$id": "581",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "582",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      },
+      {
+       "$id": "583",
+       "clientProperty": {
+        "$ref": "38"
+       },
+       "location": "path",
+       "collectionFormat": "none",
+       "defaultValue": {
+        "$id": "584",
+        "fixed": false
+       },
+       "deprecated": false,
+       "documentation": {
+        "$id": "585",
+        "fixed": false,
+        "raw": "Target user Id"
+       },
+       "extensions": {
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1j587fp·api-v1-hubs-hub-users-user-groups·delete·parameters·1",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/parameters/paths·1j587fp·api-v1-hubs-hub-users-user-groups·delete·parameters·1"
+         ]
+        },
+        "x-ms-parameter-location": "method"
+       },
+       "isRequired": true,
+       "isConstant": false,
+       "name": {
+        "$id": "586",
+        "fixed": false,
+        "raw": "user"
+       },
+       "serializedName": "user",
+       "modelType": {
+        "$id": "587",
+        "$type": "PrimaryType",
+        "knownPrimaryType": "string",
+        "name": {
+         "$id": "588",
+         "fixed": false,
+         "raw": "String"
+        },
+        "deprecated": false
+       }
+      }
+     ],
+     "name": {
+      "$id": "589",
+      "fixed": false,
+      "raw": "RemoveUserFromAllGroups"
+     },
+     "group": {
+      "$id": "590",
+      "fixed": false,
+      "raw": "ServiceApi"
+     },
+     "serializedName": "ServiceApi_RemoveUserFromAllGroups",
+     "url": "/api/v1/hubs/{hub}/users/{user}/groups",
+     "isAbsoluteUrl": false,
+     "httpMethod": "delete",
+     "responses": {
+      "OK": {
+       "$id": "591",
+       "extensions": {
+        "$id": "592",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·cft2si·api-v1-hubs-hub-users-user-groups·delete·responses·200",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·cft2si·api-v1-hubs-hub-users-user-groups·delete·responses·200"
+         ]
+        }
+       },
+       "isNullable": true
+      },
+      "Accepted": {
+       "$id": "593",
+       "extensions": {
+        "$id": "594",
+        "x-ms-metadata": {
+         "apiVersions": [
+          "v1"
+         ],
+         "filename": [
+          "mem:///109?oai3.shaken.json"
+         ],
+         "name": "paths·1n4kgms·api-v1-hubs-hub-users-user-groups·delete·responses·202",
+         "originalLocations": [
+          "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/145513669e3d329e1549d714877ba720d8f0d253/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json#/components/responses/paths·1n4kgms·api-v1-hubs-hub-users-user-groups·delete·responses·202"
+         ]
+        }
+       },
+       "isNullable": true
+      }
+     },
+     "defaultResponse": {
+      "$id": "595",
+      "isNullable": true
+     },
+     "returnType": {
+      "$id": "596",
+      "isNullable": true
+     },
+     "summary": "Remove a user from all groups.",
+     "requestContentType": "application/json; charset=utf-8",
+     "responseContentTypes": [
+      "application/json"
+     ],
+     "extensions": {
+      "servers": []
+     },
+     "deprecated": false,
+     "hidden": false
+    }
+   ],
+   "name": {
+    "$id": "597",
+    "fixed": false,
+    "raw": "ServiceApi"
+   },
+   "typeName": {
+    "$id": "598",
+    "fixed": false
+   },
+   "nameForProperty": "ServiceApi"
+  }
+ ]
+}
