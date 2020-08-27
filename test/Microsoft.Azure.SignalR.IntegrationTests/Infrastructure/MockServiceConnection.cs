@@ -38,7 +38,6 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
         public Task StartAsync(string target = null)
         {
             var tag = $"svc_{ConnectionNumber}_";
-            //target = target == null ? tag : tag + target;
             target = tag + target;
             return _serviceConnection.StartAsync(target);
         }

@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System;
 using Microsoft.AspNetCore.SignalR;
+using System.Diagnostics;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 {
@@ -56,10 +57,10 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
             _sdkSideConnections.Add(sdkSideConnection);
         }
 
-        public MockServiceSideConnection RegisterSDKConnectionContext(MockServiceConnectionContext sdkSIdeConnCtx, HubServiceEndpoint endpoint, string target, IDuplexPipe pipe)
+        public MockServiceSideConnection RegisterSDKConnectionContext(MockServiceConnectionContext sdkSideConnCtx, HubServiceEndpoint endpoint, string target, IDuplexPipe pipe)
         {
             // Loosely coupled and indirect way of instantiating SDK side ServiceConnection and ServiceConnectionContext objects created
-            // a unique problem: MockServiceConnection has no way of knowing which instance of MockServiceConnectionContext its creating.
+            // a unique problem: MockServiceConnection has no way of knowing which instance of MockServiceConnectionContext it is using.
             // Being able to associate these two is useful in several ways:
             // - the mock service (and the tests) would be able to track both ServiceConnectionContext and ServiceConnection states
             // - allows integration tests framework to add additional invariant checks regarding the state of these 2 objects
@@ -72,40 +73,33 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
             // as it flows from MockServiceConnection instance to MockServiceConnectionContext 
             // see MockServiceConnection.StartAsync
             string startTag = "svc_";
-            if (target.IndexOf(startTag) == 0)
+            Debug.Assert(target.IndexOf(startTag) == 0);
+
+            int endTagIndex = target.IndexOf(value: "_", startIndex: startTag.Length);
+            Debug.Assert(endTagIndex > startTag.Length + 1);
+
+            string id = target.Substring(startTag.Length, endTagIndex - startTag.Length);
+            int.TryParse(id, out int serviceConnectionIndex);
+            Debug.Assert(serviceConnectionIndex > 0);   // indexes start from 1
+
+            var svcConnection = _sdkSideConnections.Where(c => c.ConnectionNumber == serviceConnectionIndex).FirstOrDefault();
+            Debug.Assert(svcConnection != default, $"Missing MockServiceConnection with id {id}");
+
+            // Found it! MockServiceConnectionContext, please meet the MockServiceConnection instance 
+            // which wraps ServiceConnection that is going to use you to send and receive messages 
+            sdkSideConnCtx.MyMockServiceConnetion = svcConnection;
+
+            // now fix the target
+            if (target.Length > endTagIndex + 1)
             {
-                int endTagIndex = target.IndexOf(value: "_", startIndex: startTag.Length);
-                if (endTagIndex > 0)
-                {
-                    string id = target.Substring(startTag.Length, endTagIndex - startTag.Length);
-                    if (Int32.TryParse(id, out int serviceConnectionIndex))
-                    {
-                        var svcConnection = _sdkSideConnections.Where(c => c.ConnectionNumber == serviceConnectionIndex).FirstOrDefault();
-
-                        if (svcConnection != default)
-                        {
-                            // Found it! 
-                            // MockServiceConnectionContext, please meet the MockServiceConnection instance that created you
-                            sdkSIdeConnCtx.MyMockServiceConnetion = svcConnection;
-
-                            //now fix the target
-                            if (target.Length > endTagIndex + 1)
-                            {
-                                target = target.Substring(endTagIndex + 1);
-                            }
-                            else
-                            {
-                                target = null;
-                            }
-                        }
-                        // else throw
-                    }
-                    // else throw
-                }
-                // else throw
+                target = target.Substring(endTagIndex + 1);
+            }
+            else
+            {
+                target = null;
             }
 
-            var conn = new MockServiceSideConnection(this, sdkSIdeConnCtx, endpoint, target, pipe);
+            var conn = new MockServiceSideConnection(this, sdkSideConnCtx, endpoint, target, pipe);
             _serviceSideConnections.Add(conn);
 
             conn.Start();
