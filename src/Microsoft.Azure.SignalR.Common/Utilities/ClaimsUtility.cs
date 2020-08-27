@@ -33,7 +33,8 @@ namespace Microsoft.Azure.SignalR
             ServerStickyMode mode = ServerStickyMode.Disabled, 
             bool enableDetailedErrors = false, 
             int endpointsCount = 1,
-            int? maxPollInterval = null)
+            int? maxPollInterval = null,
+            bool isDiagnosticClient = false)
         {
             if (userId != null)
             {
@@ -44,6 +45,11 @@ namespace Microsoft.Azure.SignalR
             {
                 yield return new Claim(Constants.ClaimType.ServerName, serverName);
                 yield return new Claim(Constants.ClaimType.ServerStickyMode, mode.ToString());
+            }
+
+            if (isDiagnosticClient)
+            {
+                yield return new Claim(Constants.ClaimType.DiagnosticClient, "true");
             }
 
             var authenticationType = user?.Identity?.AuthenticationType;

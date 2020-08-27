@@ -11,14 +11,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionHttpVersion)" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsDependencyInjectionPackageVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="$(MicrosoftConfigurationFileExtensionVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="$(MicrosoftConfigurationUserSecretVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="$(MicrosoftConfigurationEnvironmentVariablesVersion)" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Microsoft.Azure.SignalR\Microsoft.Azure.SignalR.csproj" />
   </ItemGroup>
@@ -39,6 +31,8 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsDependencyInjectionPackageVersion)" />
+	<PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionHttpVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="$(MicrosoftAspNetCoreSignalRPackageVersion)" />
   </ItemGroup>
 </Project>

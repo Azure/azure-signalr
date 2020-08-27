@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -13,7 +14,8 @@ namespace Microsoft.Azure.SignalR.Management
     internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IHubLifetimeManagerForUserGroup where THub : Hub
     {
         public WebSocketsHubLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver,
-            IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions) : base(serviceConnectionManager, protocolResolver, globalHubOptions, hubOptions)
+            IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILoggerFactory loggerFactory) :
+            base(serviceConnectionManager, protocolResolver, globalHubOptions, hubOptions, loggerFactory?.CreateLogger(nameof(WebSocketsHubLifetimeManager<Hub>)))
         {
         }
 
@@ -29,8 +31,9 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new UserJoinGroupMessage(userId, groupName);
-            return ServiceConnectionContainer.WriteAsync(message);
+            var message = new UserJoinGroupMessage(userId, groupName).WithTracingId();
+            Log.StartToAddUserToGroup(Logger, message);
+            return WriteAsync(message);
         }
 
         public Task UserAddToGroupAsync(string userId, string groupName, TimeSpan ttl, CancellationToken cancellationToken = default)
@@ -49,8 +52,9 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 throw new ArgumentOutOfRangeException(nameof(ttl), TtlOutOfRangeErrorMessage);
             }
-            var message = new UserJoinGroupMessage(userId, groupName) { Ttl = (int)ttl.TotalSeconds };
-            return ServiceConnectionContainer.WriteAsync(message);
+            var message = new UserJoinGroupMessage(userId, groupName) { Ttl = (int)ttl.TotalSeconds }.WithTracingId();
+            Log.StartToAddUserToGroup(Logger, message);
+            return WriteAsync(message);
         }
 
         public Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
@@ -65,8 +69,9 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new UserLeaveGroupMessage(userId, groupName);
-            return ServiceConnectionContainer.WriteAsync(message);
+            var message = new UserLeaveGroupMessage(userId, groupName).WithTracingId();
+            Log.StartToRemoveUserFromGroup(Logger, message);
+            return WriteAsync(message);
         }
 
         public Task UserRemoveFromAllGroupsAsync(string userId, CancellationToken cancellationToken = default)
@@ -76,8 +81,9 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
             }
 
-            var message = new UserLeaveGroupMessage(userId, null);
-            return ServiceConnectionContainer.WriteAsync(message);
+            var message = new UserLeaveGroupMessage(userId, null).WithTracingId();
+            Log.StartToRemoveUserFromGroup(Logger, message);
+            return WriteAsync(message);
         }
 
         public Task<bool> IsUserInGroup(string userId, string groupName, CancellationToken cancellationToken = default)

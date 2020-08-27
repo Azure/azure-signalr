@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 using Microsoft.Extensions.Primitives;
 
-namespace Microsoft.Azure.SignalR.Management
+namespace Microsoft.Azure.SignalR
 {
     internal class RestApiEndpoint
     {

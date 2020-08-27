@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR
         protected static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
         // Service ping rate is 5 sec to let server know service status. Set timeout for 30 sec for some space.
         private static readonly TimeSpan DefaultServiceTimeout = TimeSpan.FromSeconds(30);
-        private static readonly long DefaultServiceTimeoutTicks = DefaultServiceTimeout.Seconds * Stopwatch.Frequency;
+        private static readonly long DefaultServiceTimeoutTicks = (long)(DefaultServiceTimeout.TotalSeconds * Stopwatch.Frequency);
         // App server ping rate is 5 sec to let service know if app server is still alive
         // Service will abort both server and client connections link to this server when server is down.
         // App server ping is triggered by incoming requests and send by checking last send timestamp.
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.SignalR
             {
                 // We always mark the connection as Disconnected before dispose the underlying http connection
                 // So in theory this log should never trigger
-                Log.FailedToWrite(Logger, ConnectionId, ex);
+                Log.FailedToWrite(Logger, (serviceMessage as IMessageWithTracingId)?.TracingId, ConnectionId, ex);
                 return false;
             }
             finally
@@ -582,8 +582,8 @@ namespace Microsoft.Azure.SignalR
         private static class Log
         {
             // Category: ServiceConnection
-            private static readonly Action<ILogger, string, string, Exception> _failedToWrite =
-                LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(1, "FailedToWrite"), "Failed to send message to the service: {message}. Id: {ServiceConnectionId}");
+            private static readonly Action<ILogger, ulong?, string, string, Exception> _failedToWrite =
+                LoggerMessage.Define<ulong?, string, string>(LogLevel.Error, new EventId(1, "FailedToWrite"), "Failed to send message {tracingId} to the service: {message}. Id: {ServiceConnectionId}");
 
             private static readonly Action<ILogger, string, string, string, Exception> _failedToConnect =
                 LoggerMessage.Define<string, string, string>(LogLevel.Error, new EventId(2, "FailedToConnect"), "Failed to connect to '{endpoint}', will retry after the back off period. Error detail: {message}. Id: {ServiceConnectionId}");
@@ -648,9 +648,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _receivedInstanceOfflinePing =
                 LoggerMessage.Define<string>(LogLevel.Information, new EventId(31, "ReceivedInstanceOfflinePing"), "Received instance offline service ping: {InstanceId}");
 
-            public static void FailedToWrite(ILogger logger, string serviceConnectionId, Exception exception)
+            public static void FailedToWrite(ILogger logger, ulong? tracingId, string serviceConnectionId, Exception exception)
             {
-                _failedToWrite(logger, exception.Message, serviceConnectionId, null);
+                _failedToWrite(logger, tracingId, exception.Message, serviceConnectionId, null);
             }
 
             public static void FailedToConnect(ILogger logger, string endpoint, string serviceConnectionId, Exception exception)

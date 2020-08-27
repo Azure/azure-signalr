@@ -27,16 +27,12 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly TimeSpan _accessTokenLifetime;
         private readonly AccessTokenAlgorithm _algorithm;
 
+        private readonly IServerNameProvider _provider;
+
         public IWebProxy Proxy { get; }
 
-        public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions options)
+        public ServiceEndpointProvider(IServerNameProvider provider, ServiceEndpoint endpoint, ServiceOptions options)
         {
-            var connectionString = endpoint.ConnectionString;
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                throw new ArgumentException(ConnectionStringNotFound);
-            }
-
             _accessTokenLifetime = options.AccessTokenLifetime;
 
             // Version is ignored for aspnet signalr case
@@ -45,6 +41,9 @@ namespace Microsoft.Azure.SignalR.AspNet
             _appName = options.ApplicationName;
             _port = endpoint.Port;
             _algorithm = options.AccessTokenAlgorithm;
+
+            _provider = provider;
+
             Proxy = options.Proxy;
         }
 
@@ -54,15 +53,20 @@ namespace Microsoft.Azure.SignalR.AspNet
             return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
         }
 
-        public async Task<string> GenerateClientAccessTokenAsync(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
+        public Task<string> GenerateClientAccessTokenAsync(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
         {
             var audience = $"{_endpoint}/{ClientPath}";
-            await _accessKey.AuthorizedTask;
-            return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
+
+            return _accessKey.GenerateAccessToken(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
-        public async Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
+        public Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
         {
+            if (_accessKey is AadAccessKey key)
+            {
+                return key.GenerateAadToken();
+            }
+
             IEnumerable<Claim> claims = null;
             if (userId != null)
             {
@@ -72,10 +76,9 @@ namespace Microsoft.Azure.SignalR.AspNet
                 };
             }
 
-            await _accessKey.AuthorizedTask;
             var audience = $"{_endpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
 
-            return AuthUtility.GenerateAccessToken(_accessKey, audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
+            return _accessKey.GenerateAccessToken(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
         public string GetClientEndpoint(string hubName = null, string originalPath = null, string queryString = null)

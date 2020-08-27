@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetclient")]
         public async Task TestGenerateClientAccessToken(string connectionString, string expectedAudience)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
+            var provider = new ServiceEndpointProvider(new DefaultServerNameProvider(), new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
             var clientToken = await provider.GenerateClientAccessTokenAsync(null, new Claim[]
             {
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=https://abc.com;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "orig<inal.com", "?abc=%21dcf", "https://abc.com/aspnetclient?abc=%21dcf&asrs.op=orig%3Cinal.com")]
         public void TestGenerateClientEndpoint(string connectionString, string originalPath, string queryString, string expectedEndpoint)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
+            var provider = new ServiceEndpointProvider(new DefaultServerNameProvider(), new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
             var clientEndpoint = provider.GetClientEndpoint(null, originalPath, queryString);
 
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=hub1")]
         public async Task TestGenerateServerAccessToken(string connectionString, string expectedAudience)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
+            var provider = new ServiceEndpointProvider(new DefaultServerNameProvider(), new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
             var clientToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
 
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=prefix_hub1")]
         public async Task TestGenerateServerAccessTokenWIthPrefix(string connectionString, string expectedAudience)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { ApplicationName = "prefix" });
+            var provider = new ServiceEndpointProvider(new DefaultServerNameProvider(), new ServiceEndpoint(connectionString), new ServiceOptions() { ApplicationName = "prefix" });
 
             var clientToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
 
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=hub1")]
         public void TestGenerateServerEndpoint(string connectionString, string expectedEndpoint)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
+            var provider = new ServiceEndpointProvider(new DefaultServerNameProvider(), new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
             var clientEndpoint = provider.GetServerEndpoint("hub1");
 
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         [InlineData("Endpoint=https://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;", "https://localhost/aspnetserver/?hub=prefix_hub1")]
         public void TestGenerateServerEndpointWithPrefix(string connectionString, string expectedEndpoint)
         {
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { ApplicationName = "prefix" });
+            var provider = new ServiceEndpointProvider(new DefaultServerNameProvider(), new ServiceEndpoint(connectionString), new ServiceOptions() { ApplicationName = "prefix" });
 
             var clientEndpoint = provider.GetServerEndpoint("hub1");
 
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public async Task TestGenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
         {
             var connectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
+            var provider = new ServiceEndpointProvider(new DefaultServerNameProvider(), new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
             var generatedToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
 
             var handler = new JwtSecurityTokenHandler();
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public async Task TestGenerateClientAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
         {
             var connectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
-            var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
+            var provider = new ServiceEndpointProvider(new DefaultServerNameProvider(), new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
             var generatedToken = await provider.GenerateClientAccessTokenAsync("hub1");
 
             var handler = new JwtSecurityTokenHandler();
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public async Task GenerateMutlipleAccessTokenShouldBeUnique()
         {
             var count = 1000;
-            var sep = new ServiceEndpointProvider(new ServiceEndpoint(DefaultConnectionString), new ServiceOptions() { });
+            var sep = new ServiceEndpointProvider(new DefaultServerNameProvider(), new ServiceEndpoint(DefaultConnectionString), new ServiceOptions() { });
             var userId = Guid.NewGuid().ToString();
             var tokens = new List<string>();
             for (int i = 0; i < count; i++)

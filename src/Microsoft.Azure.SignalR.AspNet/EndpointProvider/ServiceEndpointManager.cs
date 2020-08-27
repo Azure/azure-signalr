@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.AspNet
@@ -10,10 +9,13 @@ namespace Microsoft.Azure.SignalR.AspNet
     {
         private readonly ServiceOptions _options;
 
-        public ServiceEndpointManager(ServiceOptions options, ILoggerFactory loggerFactory) : 
+        private readonly IServerNameProvider _provider;
+
+        public ServiceEndpointManager(IServerNameProvider provider, ServiceOptions options, ILoggerFactory loggerFactory) : 
             base(options,
                 loggerFactory?.CreateLogger<ServiceEndpointManager>())
         {
+            _provider = provider;
             _options = options;
         }
 
@@ -24,7 +26,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 return null;
             }
 
-            return new ServiceEndpointProvider(endpoint, _options);
+            return new ServiceEndpointProvider(_provider, endpoint, _options);
         }
     }
 }
