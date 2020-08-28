@@ -7,7 +7,6 @@ using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Localization;
@@ -24,6 +23,7 @@ namespace Microsoft.Azure.SignalR
         private readonly Func<HttpContext, bool> _diagnosticClientFilter;
         private readonly IServiceEndpointManager _endpointManager;
         private readonly IEndpointRouter _router;
+        private readonly IBlazorDetector _blazorDetector;
         private readonly string _serverName;
         private readonly ServerStickyMode _mode;
         private readonly bool _enableDetailedErrors;
@@ -32,7 +32,13 @@ namespace Microsoft.Azure.SignalR
 
         public NegotiateHandler(
             IOptions<HubOptions> hubOptions,
-            IServiceEndpointManager endpointManager, IEndpointRouter router, IUserIdProvider userIdProvider, IServerNameProvider nameProvider, IConnectionRequestIdProvider connectionRequestIdProvider, IOptions<ServiceOptions> options)
+            IServiceEndpointManager endpointManager, 
+            IEndpointRouter router, 
+            IUserIdProvider userIdProvider, 
+            IServerNameProvider nameProvider, 
+            IConnectionRequestIdProvider connectionRequestIdProvider, 
+            IOptions<ServiceOptions> options,
+            IBlazorDetector blazorDetector)
         {
             _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
             _router = router ?? throw new ArgumentNullException(nameof(router));
@@ -41,6 +47,7 @@ namespace Microsoft.Azure.SignalR
             _connectionRequestIdProvider = connectionRequestIdProvider ?? throw new ArgumentNullException(nameof(connectionRequestIdProvider));
             _claimsProvider = options?.Value?.ClaimsProvider;
             _diagnosticClientFilter = options?.Value?.DiagnosticClientFilter;
+            _blazorDetector = blazorDetector ?? new DefaultBlazorDetector();
             _mode = options.Value.ServerStickyMode;
             _enableDetailedErrors = hubOptions.Value.EnableDetailedErrors == true;
             _endpointsCount = options.Value.Endpoints.Length;
@@ -49,7 +56,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task<NegotiationResponse> Process(HttpContext context, string hubName)
         {
-            var claims = BuildClaims(context);
+            var claims = BuildClaims(context, hubName);
             var request = context.Request;
             var cultureName = context.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture.Name;
             var originalPath = GetOriginalPath(request.Path);
@@ -90,10 +97,12 @@ namespace Microsoft.Azure.SignalR
                 : queryString;
         }
 
-        private IEnumerable<Claim> BuildClaims(HttpContext context)
+        private IEnumerable<Claim> BuildClaims(HttpContext context, string hubName)
         {
+            // Make sticky mode required if detect using blazor
+            var mode = _blazorDetector.IsBlazor(hubName) ? ServerStickyMode.Required : _mode;
             var userId = _userIdProvider.GetUserId(new ServiceHubConnectionContext(context));
-            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, _mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(context)).ToList();
+            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(context)).ToList();
         }
 
         private Func<IEnumerable<Claim>> GetClaimsProvider(HttpContext context)

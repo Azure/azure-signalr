@@ -43,6 +43,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private static readonly IOptions<HubOptions> _globalHubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "json", "messagepack" } });
         private static readonly IOptions<HubOptions<TestHub>> _localHubOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "json", "messagepack" } });
+        private static readonly IBlazorDetector _blazorDetector = new DefaultBlazorDetector();
 
         private static readonly ILogger<ServiceLifetimeManager<TestHub>> Logger =
             NullLogger<ServiceLifetimeManager<TestHub>>.Instance;
@@ -65,13 +66,14 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions);
+                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions, _blazorDetector);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
             Assert.Equal(1, serviceConnectionManager.GetCallCount(type));
             VerifyServiceMessage(functionName, serviceConnectionManager.ServiceMessage);
             Assert.Equal(2, (serviceConnectionManager.ServiceMessage as MulticastDataMessage).Payloads.Count);
+            Assert.False(_blazorDetector.IsBlazor(nameof(TestHub)));
         }
 
         [Theory]
@@ -89,12 +91,14 @@ namespace Microsoft.Azure.SignalR.Tests
                 Logger,
                 Marker,
                 _globalHubOptions,
-                _localHubOptions);
+                _localHubOptions,
+                _blazorDetector);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
             Assert.Equal(1, serviceConnectionManager.GetCallCount(type));
             VerifyServiceMessage(functionName, serviceConnectionManager.ServiceMessage);
+            Assert.False(_blazorDetector.IsBlazor(nameof(TestHub)));
         }
 
         [Theory]
@@ -117,7 +121,7 @@ namespace Microsoft.Azure.SignalR.Tests
             serviceConnectionManager.SetServiceConnection(proxy.ServiceConnectionContainer);
 
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions);
+                proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions, _blazorDetector);
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
@@ -161,13 +165,14 @@ namespace Microsoft.Azure.SignalR.Tests
             IOptions<HubOptions<TestHub>> localHubOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "json", "messagepack", MockProtocol } });
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                new ClientConnectionManager(), protocolResolver, Logger, Marker, globalHubOptions, localHubOptions);
+                new ClientConnectionManager(), protocolResolver, Logger, Marker, globalHubOptions, localHubOptions, _blazorDetector);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
             Assert.Equal(1, serviceConnectionManager.GetCallCount(type));
             VerifyServiceMessage(functionName, serviceConnectionManager.ServiceMessage);
             Assert.Equal(2, (serviceConnectionManager.ServiceMessage as MulticastDataMessage).Payloads.Count);
+            Assert.True(_blazorDetector.IsBlazor(nameof(TestHub)));
         }
 
         [Theory]
@@ -180,13 +185,15 @@ namespace Microsoft.Azure.SignalR.Tests
         public async void ServiceLifetimeManagerOnlyBlazorHubProtocolTest(string functionName, Type type)
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
-            var serviceLifetimeManager = MockLifetimeManager(serviceConnectionManager);
+            var blazorDetector = new DefaultBlazorDetector();
+            var serviceLifetimeManager = MockLifetimeManager(serviceConnectionManager, null, blazorDetector);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
             Assert.Equal(1, serviceConnectionManager.GetCallCount(type));
             VerifyServiceMessage(functionName, serviceConnectionManager.ServiceMessage);
             Assert.Equal(1, (serviceConnectionManager.ServiceMessage as MulticastDataMessage).Payloads.Count);
+            Assert.True(blazorDetector.IsBlazor(nameof(TestHub)));
         }
 
         [Fact]
@@ -215,7 +222,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.True(false);
         }
 
-        private HubLifetimeManager<TestHub> MockLifetimeManager(IServiceConnectionManager<TestHub> serviceConnectionManager, IClientConnectionManager clientConnectionManager = null)
+        private HubLifetimeManager<TestHub> MockLifetimeManager(IServiceConnectionManager<TestHub> serviceConnectionManager, IClientConnectionManager clientConnectionManager = null, IBlazorDetector blazorDetector = null)
         {
             clientConnectionManager ??= new ClientConnectionManager();
 
@@ -236,7 +243,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 Logger,
                 Marker,
                 globalHubOptions,
-                localHubOptions
+                localHubOptions,
+                blazorDetector
             );
         }
 
