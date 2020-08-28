@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR
 #endif
             _clientConnectionManager = clientConnectionManager;
 
-            if (hubOptions.Value.SupportedProtocols.Any(x => x.Equals("blazorpack", StringComparison.OrdinalIgnoreCase)))
+            if (hubOptions.Value.SupportedProtocols.Any(x => x.Equals(Constants.Protocol.BlazorPack, StringComparison.OrdinalIgnoreCase)))
             {
                 blazorDetector?.TrySetBlazor(typeof(THub).Name, true);
             }
