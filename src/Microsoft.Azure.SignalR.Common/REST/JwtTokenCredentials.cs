@@ -19,12 +19,11 @@ namespace Microsoft.Azure.SignalR
             RestApiAccessTokenGenerator = new RestApiAccessTokenGenerator(new AccessKey(accessKey));
         }
 
-
         public override async Task ProcessHttpRequestAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (request == null)
             {
-                throw new ArgumentNullException("request");
+                throw new ArgumentNullException(nameof(request));
             }
             var tokenString = await RestApiAccessTokenGenerator.Generate(request.RequestUri.ToString());
             HttpRequestHeaders headers = request.Headers;

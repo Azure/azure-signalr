@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR
 
         public static GeneratedRestClient Build(string connectionString, string productInfo)
         {
-            var (endPoint, key, _, port) = ConnectionStringParser.Parse(connectionString);
+            (string endPoint, string key, string _, int? port) = ConnectionStringParser.Parse(connectionString);
             UriBuilder uriBuilder = new UriBuilder(endPoint);
             if (port.HasValue)
             {
