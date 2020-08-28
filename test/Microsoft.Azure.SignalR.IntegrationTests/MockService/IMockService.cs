@@ -16,6 +16,6 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
         public Task StopConnectionAsync(MockServiceSideConnection conn);
         List<MockServiceSideConnection> ServiceSideConnections { get; }
         IInvocationBinder CurrentInvocationBinder { get; set; }
-        Task AllInitialFixedConnectionsEstablished();
+        Task AllConnectionsEstablished();
     }
 }

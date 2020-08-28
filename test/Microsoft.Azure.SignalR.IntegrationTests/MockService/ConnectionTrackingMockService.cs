@@ -31,25 +31,10 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 
         public IInvocationBinder CurrentInvocationBinder { get; set; } = new DefaultMockInvocationBinder();
 
-        public async Task AllInitialFixedConnectionsEstablished()
+        public Task AllConnectionsEstablished()
         {
-            bool allConnected;
-            do
-            {
-                allConnected = true;
-                foreach (var c in _serviceSideConnections)
-                {
-                    if (c.SDKSideServiceConnection.MyMockServiceConnetion.Status != ServiceConnectionStatus.Connected)
-                    {
-                        allConnected = false;
-                        break;
-                    }
-                }
-                if (!allConnected)
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(10));
-                }
-            } while (!allConnected);
+            return Task.WhenAll(_serviceSideConnections.Select(
+                c => c.SDKSideServiceConnection.MyMockServiceConnetion.ConnectionInitializedTask));
         }
 
         public void RegisterSDKConnection(MockServiceConnection sdkSideConnection)

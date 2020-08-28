@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
             using(var server = new AspNetTestServer(builder))
             {
                 var mockSvc = (server.Host.Services.GetRequiredService<ServiceHubDispatcher<TestHub>>() as MockServiceHubDispatcher<TestHub>).MockService;
-                await mockSvc.AllInitialFixedConnectionsEstablished();
+                await mockSvc.AllConnectionsEstablished();
                 List<MockServiceSideConnection> allSvcConns = mockSvc.ServiceSideConnections;
 
                 // A few extra checks (just for this initial test to verify more invariants)
