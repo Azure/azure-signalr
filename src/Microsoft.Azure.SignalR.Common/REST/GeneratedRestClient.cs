@@ -9,16 +9,16 @@ namespace Microsoft.Azure.SignalR
 {
     public partial class GeneratedRestClient
     {
-        string ProductInfo { get; }
+        private readonly string _productInfo;
 
         public GeneratedRestClient(Uri baseUri, ServiceClientCredentials credentials, string productInfo) : this(baseUri, credentials)
         {
-            ProductInfo = productInfo;
+            _productInfo = productInfo;
         }
 
         partial void CustomInitialize()
         {
-            HttpClient.DefaultRequestHeaders.Add(Constants.AsrsUserAgent, ProductInfo);
+            HttpClient.DefaultRequestHeaders.Add(Constants.AsrsUserAgent, _productInfo);
         }
 
         public static GeneratedRestClient Build(string connectionString, string productInfo)
