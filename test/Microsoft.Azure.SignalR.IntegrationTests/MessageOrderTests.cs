@@ -78,20 +78,19 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
                     // todo: extension method?
                     var receivedMessage = await Task.WhenAny(allSvcConns.Select(async c =>
                     {
-                        var msg = await c.PeekMessageAsync<BroadcastDataMessage>();
-                        return (c, msg);
+                        bool moreData = await c.WaitToDequeueMessageAsync<BroadcastDataMessage>();
+                        return (c, moreData);
                     }));
 
+                    Assert.True(receivedMessage.Result.moreData);
                     var conn = receivedMessage.Result.c;
-                    var peekMsg = receivedMessage.Result.msg;
-                    var dqMsg = await conn.DequeueMessageAsync<BroadcastDataMessage>();
-                    Assert.Equal(peekMsg, dqMsg);
+                    var newMsg = await conn.DequeueMessageAsync<BroadcastDataMessage>();
 
                     int msgCount = counts.GetOrAdd (conn, 0);
                     counts[conn] = ++msgCount;
 
                     // parse each BroadcastDataMessage and verify this is the correct message
-                    var hubMessage = ParseBroadcastDataMessageJson(peekMsg, mockSvc.CurrentInvocationBinder);
+                    var hubMessage = ParseBroadcastDataMessageJson(newMsg, mockSvc.CurrentInvocationBinder);
                     Assert.True(hubMessage is InvocationMessage);
                     var invMsg = hubMessage as InvocationMessage;
                     Assert.Equal("Callback", invMsg.Target);

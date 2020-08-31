@@ -1,17 +1,18 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR;
+using Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
+using Microsoft.Azure.SignalR.Protocol;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Threading;
-using System;
-using Microsoft.AspNetCore.SignalR.Protocol;
-using Microsoft.Azure.SignalR.Protocol;
+using System.Threading.Channels;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
-using System.IO.Pipelines;
 using HandshakeRequestMessage = Microsoft.Azure.SignalR.Protocol.HandshakeRequestMessage;
 using HandshakeResponseMessage = Microsoft.Azure.SignalR.Protocol.HandshakeResponseMessage;
 
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
         private static int s_index = 0;
         private Task _processIncoming;
         private TaskCompletionSource<bool> _completedHandshake = new TaskCompletionSource<bool>();
-        private ConcurrentDictionary<Type, MessageQueue<ServiceMessage>> _messagesFromSDK = new ConcurrentDictionary<Type, MessageQueue<ServiceMessage>>();
+        private ConcurrentDictionary<Type, Channel<ServiceMessage>> _messagesFromSDK = new ConcurrentDictionary<Type, Channel<ServiceMessage>>();
 
         public MockServiceSideConnection(IMockService mocksvc, MockServiceConnectionContext sdkSideConnCtx, HubServiceEndpoint endpoint, string target, IDuplexPipe pipe)
         {
@@ -198,13 +199,13 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
         }
 
         private void EnqueueMessage(ServiceMessage m) =>
-            _messagesFromSDK.GetOrAdd(m.GetType(), _ => new MessageQueue<ServiceMessage>()).EnqueueMessage(m);
+            _messagesFromSDK.GetOrAdd(m.GetType(), _ => CreateChannel<ServiceMessage>()).Writer.TryWrite(m);
 
         public async Task<TServiceMessage> DequeueMessageAsync<TServiceMessage>() where TServiceMessage : ServiceMessage =>
-            await _messagesFromSDK.GetOrAdd(typeof(TServiceMessage), _ => new MessageQueue<ServiceMessage>()).DequeueMessageAsync() as TServiceMessage;
+            await _messagesFromSDK.GetOrAdd(typeof(TServiceMessage), _ => CreateChannel<ServiceMessage>()).Reader.ReadAsync() as TServiceMessage;
 
-        public async Task<TServiceMessage> PeekMessageAsync<TServiceMessage>() where TServiceMessage : ServiceMessage =>
-            await _messagesFromSDK.GetOrAdd(typeof(TServiceMessage), _ => new MessageQueue<ServiceMessage>()).PeekMessageAsync() as TServiceMessage;
+        public ValueTask<bool> WaitToDequeueMessageAsync<TServiceMessage>() where TServiceMessage : ServiceMessage =>
+            _messagesFromSDK.GetOrAdd(typeof(TServiceMessage), _ => CreateChannel<ServiceMessage>()).Reader.WaitToReadAsync();
 
         public static ReadOnlyMemory<byte> GetMessageBytes(Microsoft.AspNetCore.SignalR.Protocol.HandshakeRequestMessage message)
         {
@@ -219,5 +220,8 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                 MemoryBufferWriter.Return(writer);
             }
         }
+
+        private static Channel<T> CreateChannel<T>() => Channel.CreateUnbounded<T>(
+            new UnboundedChannelOptions() { SingleReader = true, SingleWriter = true, AllowSynchronousContinuations = false });
     }
 }

@@ -1,11 +1,13 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Protocol;
-using System.Collections.Concurrent;
-using System;
 using Microsoft.AspNetCore.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Protocol;
+using System;
+using System.Collections.Concurrent;
+using System.Threading.Channels;
+using System.Threading.Tasks;
+
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 {
@@ -61,15 +63,18 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
             ServiceSideConnection = serviceSideConnection;
         }
 
-        private ConcurrentDictionary<Type, MessageQueue<HubMessage>> _hubMessagesFromSDK = new ConcurrentDictionary<Type, MessageQueue<HubMessage>>();
+        private ConcurrentDictionary<Type, Channel<HubMessage>> _hubMessagesFromSDK = new ConcurrentDictionary<Type, Channel<HubMessage>>();
 
         public void EnqueueMessage(HubMessage m) =>
-            _hubMessagesFromSDK.GetOrAdd(m.GetType(), _ => new MessageQueue<HubMessage>()).EnqueueMessage(m);
+            _hubMessagesFromSDK.GetOrAdd(m.GetType(), _ => CreateChannel<HubMessage>()).Writer.TryWrite(m);
 
         public async Task<TServiceMessage> DequeueMessageAsync<TServiceMessage>() where TServiceMessage : HubMessage =>
-            await _hubMessagesFromSDK.GetOrAdd(typeof(TServiceMessage), _ => new MessageQueue<HubMessage>()).DequeueMessageAsync() as TServiceMessage;
+            await _hubMessagesFromSDK.GetOrAdd(typeof(TServiceMessage), _ => CreateChannel<HubMessage>()).Reader.ReadAsync() as TServiceMessage;
 
-        public async Task<TServiceMessage> PeekMessageAsync<TServiceMessage>() where TServiceMessage : ServiceMessage =>
-            await _hubMessagesFromSDK.GetOrAdd(typeof(TServiceMessage), _ => new MessageQueue<HubMessage>()).PeekMessageAsync() as TServiceMessage;
+        public ValueTask<bool> WaitToDequeueMessageAsync<TServiceMessage>() where TServiceMessage : ServiceMessage =>
+            _hubMessagesFromSDK.GetOrAdd(typeof(TServiceMessage), _ => CreateChannel<HubMessage>()).Reader.WaitToReadAsync();
+
+        private static Channel<T> CreateChannel<T>() => Channel.CreateUnbounded<T>(
+                new UnboundedChannelOptions() { SingleReader = true, SingleWriter = true, AllowSynchronousContinuations = false });
     }
 }

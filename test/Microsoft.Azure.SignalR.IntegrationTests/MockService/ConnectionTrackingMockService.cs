@@ -61,7 +61,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
             Debug.Assert(target.IndexOf(startTag) == 0);
 
             int endTagIndex = target.IndexOf(value: "_", startIndex: startTag.Length);
-            Debug.Assert(endTagIndex > startTag.Length + 1);
+            Debug.Assert(endTagIndex >= startTag.Length + 1);
 
             string id = target.Substring(startTag.Length, endTagIndex - startTag.Length);
             int.TryParse(id, out int serviceConnectionIndex);
