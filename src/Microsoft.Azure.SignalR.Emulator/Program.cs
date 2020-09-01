@@ -2,10 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO;
+
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Microsoft.IdentityModel.Logging;
 
 namespace Microsoft.Azure.SignalR.Emulator
 {
@@ -13,6 +13,9 @@ namespace Microsoft.Azure.SignalR.Emulator
     {
         public static void Main(string[] args)
         {
+            // todo: "upstream init" to generate the default setting.json file
+            // todo: "upstream list" to list the settings file
+            // todo: "start" to run the emulator
             CreateHostBuilder(args).Build().Run();
         }
 
@@ -23,7 +26,8 @@ namespace Microsoft.Azure.SignalR.Emulator
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                }).ConfigureAppConfiguration(s => s.AddJsonFile(settingsFile, optional: true, reloadOnChange: true));
+                }).ConfigureAppConfiguration(s => s.AddJsonFile(settingsFile, optional: true, reloadOnChange: true))
+                .ConfigureAppConfiguration(s => s.AddJsonFile("settings.json", optional: true, reloadOnChange: true));
         }
     }
 }
