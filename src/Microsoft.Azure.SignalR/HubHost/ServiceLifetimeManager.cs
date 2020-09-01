@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
@@ -25,7 +26,8 @@ namespace Microsoft.Azure.SignalR
             ILogger<ServiceLifetimeManager<THub>> logger,
             AzureSignalRMarkerService marker,
             IOptions<HubOptions> globalHubOptions,
-            IOptions<HubOptions<THub>> hubOptions)
+            IOptions<HubOptions<THub>> hubOptions,
+            IBlazorDetector blazorDetector)
             : base(
                   serviceConnectionManager,
                   protocolResolver,
@@ -40,6 +42,11 @@ namespace Microsoft.Azure.SignalR
             }
 #endif
             _clientConnectionManager = clientConnectionManager;
+
+            if (hubOptions.Value.SupportedProtocols != null && hubOptions.Value.SupportedProtocols.Any(x => x.Equals(Constants.Protocol.BlazorPack, StringComparison.OrdinalIgnoreCase)))
+            {
+                blazorDetector?.TrySetBlazor(typeof(THub).Name, true);
+            }
         }
 
         public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
