@@ -139,7 +139,12 @@ namespace Microsoft.Azure.SignalR
             ConnectionStatusChanged += OnStatusChanged;
 
             _statusPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.ServiceStatus, WriteServiceStatusPingAsync, Constants.Periods.DefaultStatusPingInterval, Constants.Periods.DefaultStatusPingInterval);
-            _statusPing.Start();
+            
+            // when server connection count is specified to 0, the app server only handle negotiate requests
+            if (initial.Count > 0)
+            {
+                _statusPing.Start();
+            }
 
             _serversPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.Servers, WriteServersPingAsync, Constants.Periods.DefaultServersPingInterval, Constants.Periods.DefaultServersPingInterval);
         }
@@ -477,19 +482,31 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task WriteServiceStatusPingAsync()
+        private Task WriteServiceStatusPingAsync()
         {
-            await WriteAsync(RuntimeServicePingMessage.GetStatusPingMessage(true));
+            return SafeWriteAsync(RuntimeServicePingMessage.GetStatusPingMessage(true));
         }
 
-        private async Task WriteServersPingAsync()
+        private Task WriteServersPingAsync()
         {
             if (Stopwatch.GetTimestamp() - _serversTagContext.Item2 > DefaultServersPingTimeoutTicks)
             {
                 // reset value if expired.
                 _serversTagContext = DefaultServersTagContext;
             }
-            await WriteAsync(RuntimeServicePingMessage.GetServersPingMessage());
+
+            return SafeWriteAsync(RuntimeServicePingMessage.GetServersPingMessage());
+        }
+
+        private async Task SafeWriteAsync(ServiceMessage serviceMessage)
+        {
+            try
+            {
+                await WriteAsync(serviceMessage);
+            }
+            catch
+            {
+            }
         }
 
         private sealed class CustomizedPingTimer : IDisposable

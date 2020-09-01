@@ -69,6 +69,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChatSample.NetCore21", "sam
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.IntegrationTests", "test\Microsoft.Azure.SignalR.IntegrationTests\Microsoft.Azure.SignalR.IntegrationTests.csproj", "{3E11208B-B038-4840-8180-69DC6B5EAD22}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "emulator", "emulator", "{ADD61A03-340D-426C-BA51-DBBC096434ED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.SignalR.Emulator", "src\Microsoft.Azure.SignalR.Emulator\Microsoft.Azure.SignalR.Emulator.csproj", "{ABAAAEA8-40B3-4178-A7FD-09779A5DC757}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -159,6 +163,10 @@ Global
 		{3E11208B-B038-4840-8180-69DC6B5EAD22}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3E11208B-B038-4840-8180-69DC6B5EAD22}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3E11208B-B038-4840-8180-69DC6B5EAD22}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ABAAAEA8-40B3-4178-A7FD-09779A5DC757}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ABAAAEA8-40B3-4178-A7FD-09779A5DC757}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ABAAAEA8-40B3-4178-A7FD-09779A5DC757}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ABAAAEA8-40B3-4178-A7FD-09779A5DC757}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -187,6 +195,7 @@ Global
 		{63BB9836-126B-4E65-92B9-019438185E41} = {C965ED06-6A17-4329-B3C6-811830F4F4ED}
 		{1D06C79C-4E97-40F6-A860-092941922EFA} = {C965ED06-6A17-4329-B3C6-811830F4F4ED}
 		{3E11208B-B038-4840-8180-69DC6B5EAD22} = {2429FBD8-1FCE-4C42-AA28-DF32F7249E77}
+		{ABAAAEA8-40B3-4178-A7FD-09779A5DC757} = {ADD61A03-340D-426C-BA51-DBBC096434ED}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7945A4E4-ACDB-4F6E-95CA-6AC6E7C2CD59}

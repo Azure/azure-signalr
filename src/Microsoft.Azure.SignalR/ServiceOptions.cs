@@ -26,7 +26,8 @@ namespace Microsoft.Azure.SignalR
         public int ConnectionCount { get; set; } = 5;
 
         /// <summary>
-        /// Gets or sets the prefix to apply to each hub name
+        /// Gets applicationName, which will be used as a prefix to apply to each hub name. 
+        /// Should be prefixed with alphabetic characters and only contain alpha-numeric characters or underscore.
         /// </summary>
         public string ApplicationName { get; set; }
 
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.SignalR
         /// Gets or sets the func to set diagnostic client filter from <see cref="HttpContext" />.
         /// The clients will be regarded as diagnostic client only if the function returns true.
         /// </summary>
-        public Func<HttpContext, bool> DiagnosticClientFilter { get; set; } = null;
+        internal Func<HttpContext, bool> DiagnosticClientFilter { get; set; } = null;
 
         /// <summary>
         /// Gets or sets the lifetime of auto-generated access token, which will be used to authenticate with Azure SignalR Service.
@@ -64,11 +65,6 @@ namespace Microsoft.Azure.SignalR
         /// By default it is disabled
         /// </summary>
         public ServerStickyMode ServerStickyMode { get; set; } = ServerStickyMode.Disabled;
-
-        /// <summary>
-        /// Gets or sets options for Authentication via third party.
-        /// </summary>
-        internal AuthOptions AuthOptions { get; set; }
 
         /// <summary>
         /// Specifies if the client-connection assigned to this server can be migrated to another server.

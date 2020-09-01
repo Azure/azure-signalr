@@ -36,11 +36,13 @@ namespace Microsoft.Azure.SignalR.Management
             _endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString, EndpointType.Secondary);
             _serverNameProvider = new DefaultServerNameProvider();
 
-            _endpointProvider = new ServiceEndpointProvider(_serverNameProvider, _endpoint, Options.Create(new ServiceOptions
+            var serviceOptions = Options.Create(new ServiceOptions
             {
                 ApplicationName = _serviceManagerOptions.ApplicationName,
                 Proxy = serviceManagerOptions.Proxy
-            }).Value);
+            }).Value;
+
+            _endpointProvider = new ServiceEndpointProvider(_serverNameProvider, _endpoint, serviceOptions);
 
             _productInfo = productInfo;
             _restClient = new RestClient();
@@ -159,7 +161,7 @@ namespace Microsoft.Azure.SignalR.Management
         public async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
             var isHealthy = false;
-            var api = _restApiProvider.GetServiceHealthEndpoint();
+            var api = await _restApiProvider.GetServiceHealthEndpointAsync();
             await _restClient.SendAsync(api, HttpMethod.Get, _productInfo, handleExpectedResponse: response =>
                 {
                     switch (response.StatusCode)

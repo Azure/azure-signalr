@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Tests;
 using Xunit;
 
@@ -24,8 +25,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         [Theory]
         [MemberData(nameof(GetTestData))]
-        internal void RestApiTest(RestApiEndpoint api, string expectedAudience)
+        internal async Task RestApiTest(Task<RestApiEndpoint> task, string expectedAudience)
         {
+            var api = await task;
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(api.Token);
             string expectedTokenString = JwtTokenHelper.GenerateExpectedAccessToken(token, expectedAudience, _accessKey);
 
@@ -35,12 +37,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         public static IEnumerable<object[]> GetTestData()
         {
-            yield return new object[]{_restApiProvider.GetBroadcastEndpoint(_appName, _hubName), _commonEndpoint };
-            yield return new object[] { _restApiProvider.GetSendToUserEndpoint(_appName, _hubName, _userId), $"{_commonEndpoint}/users/{_userId}" };
-            yield return new object[] { _restApiProvider.GetSendToGroupEndpoint(_appName, _hubName, _groupName), $"{_commonEndpoint}/groups/{_groupName}" };
-            yield return new object[] { _restApiProvider.GetUserGroupManagementEndpoint(_appName, _hubName, _userId, _groupName), $"{_commonEndpoint}/groups/{_groupName}/users/{_userId}" };
-            yield return new object[] { _restApiProvider.GetSendToConnectionEndpoint(_appName, _hubName, _connectionId), $"{_commonEndpoint}/connections/{_connectionId}" };
-            yield return new object[] { _restApiProvider.GetConnectionGroupManagementEndpoint(_appName, _hubName, _connectionId, _groupName), $"{_commonEndpoint}/groups/{_groupName}/connections/{_connectionId}" };
+            yield return new object[] { _restApiProvider.GetBroadcastEndpointAsync(_appName, _hubName), _commonEndpoint };
+            yield return new object[] { _restApiProvider.GetSendToUserEndpointAsync(_appName, _hubName, _userId), $"{_commonEndpoint}/users/{_userId}" };
+            yield return new object[] { _restApiProvider.GetSendToGroupEndpointAsync(_appName, _hubName, _groupName), $"{_commonEndpoint}/groups/{_groupName}" };
+            yield return new object[] { _restApiProvider.GetUserGroupManagementEndpointAsync(_appName, _hubName, _userId, _groupName), $"{_commonEndpoint}/groups/{_groupName}/users/{_userId}" };
+            yield return new object[] { _restApiProvider.GetSendToConnectionEndpointAsync(_appName, _hubName, _connectionId), $"{_commonEndpoint}/connections/{_connectionId}" };
+            yield return new object[] { _restApiProvider.GetConnectionGroupManagementEndpointAsync(_appName, _hubName, _connectionId, _groupName), $"{_commonEndpoint}/groups/{_groupName}/connections/{_connectionId}" };
         }
     }
 }

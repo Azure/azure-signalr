@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// Gets or sets the func to generate claims from <see cref="IOwinContext" />.
         /// The claims will be included in the auto-generated token for clients.
         /// </summary>
-        public Func<IOwinContext, IEnumerable<Claim>> ClaimsProvider { get; set; } = null;
+        internal Func<IOwinContext, IEnumerable<Claim>> ClaimsProvider { get; set; } = null;
 
         /// <summary>
         /// Gets or sets the func to set diagnostic client filter from <see cref="IOwinContext" />.
@@ -66,11 +66,6 @@ namespace Microsoft.Azure.SignalR.AspNet
         /// By default this mode is disabled
         /// </summary>
         public ServerStickyMode ServerStickyMode { get; set; }
-
-        /// <summary>
-        /// Gets or sets options for Authentication via third party.
-        /// </summary>
-        internal AuthOptions AuthOptions { get; set; }
 
         /// <summary>
         /// Gets or sets the proxy used when ServiceEndpoint will attempt to connect to Azure SignalR.
