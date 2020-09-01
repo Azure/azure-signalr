@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
         {
             // ConnectAsync merely means establish a physical connection. 
             // In our case this means connect the pipes and start the message processing loops
-            ConnectionContext c = new MockServiceConnectionContext(_mockService, connectionId);
+            ConnectionContext c = new MockServiceConnectionContext(_mockService, endpoint, target, connectionId);
 
             return Task.FromResult(c);
         }

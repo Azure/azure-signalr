@@ -12,7 +12,8 @@ using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 {
-    internal class MockServiceHubDispatcher<THub> : ServiceHubDispatcher<THub> where THub : Hub
+    internal class MockServiceHubDispatcher<THub> : ServiceHubDispatcher<THub> 
+        where THub : Hub 
     {
         ILoggerFactory _loggerFactory;
         IClientConnectionManager _clientConnectionManager;
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
                 serverLifetimeManager,
                 clientConnectionFactory)
         {
-            MockService = new MockServiceMock();
+            MockService = new ConnectionTrackingMockService();
 
             // just store copies of these locally to keep the base class' accessor modifiers intact
             _loggerFactory = loggerFactory;
@@ -55,6 +56,9 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
             ) => new MockServiceConnectionFactory(MockService, _serviceProtocol, _clientConnectionManager, connectionFactory, _loggerFactory, connectionDelegate, _clientConnectionFactory, _nameProvider);
 
         // this is the gateway for the tests to control the mock service side
-        public IMockService MockService { get; private set; }
+        public IMockService MockService { 
+            get; 
+            private set; 
+        }
     }
 }

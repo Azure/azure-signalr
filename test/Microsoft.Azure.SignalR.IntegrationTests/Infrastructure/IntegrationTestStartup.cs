@@ -3,6 +3,7 @@
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +13,30 @@ using System.Security.Claims;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 {
-    internal class IntegrationTestStartup : IStartup
+    internal interface IIntegrationTestStartupParameters
+    { 
+        public int ConnectionCount { get; }
+        public ServiceEndpoint[] ServiceEndpoints { get; }
+        public GracefulShutdownMode ShutdownMode { get; }
+    }
+
+    internal class RealMockServiceE2ETestParams : IIntegrationTestStartupParameters
+    {
+        public static int ConnectionCount = 2;
+        public static GracefulShutdownMode ShutdownMode = GracefulShutdownMode.WaitForClientsClose;
+        public static ServiceEndpoint[] ServiceEndpoints = new[] {
+            new ServiceEndpoint("Endpoint=http://127.0.0.1;AccessKey=AAAAAAAAAAAAAAAAAAAAAAAAAA0A2A4A6A8A;Version=1.0;Port=8080", type: EndpointType.Primary, name: "primary"),
+            new ServiceEndpoint("Endpoint=http://127.1.1.0;AccessKey=BBBBBBBBBBBBBBBBBBBBBBBBBB0B2B4B6B8B;Version=1.0;Port=8080", type: EndpointType.Secondary, name: "secondary")
+        };
+
+        int IIntegrationTestStartupParameters.ConnectionCount => ConnectionCount;
+        ServiceEndpoint[] IIntegrationTestStartupParameters.ServiceEndpoints => ServiceEndpoints;
+        GracefulShutdownMode IIntegrationTestStartupParameters.ShutdownMode => GracefulShutdownMode.WaitForClientsClose;
+    }
+
+    internal class IntegrationTestStartup<TParams, THub> : IStartup 
+        where TParams: IIntegrationTestStartupParameters, new()
+        where THub: Hub
     {
         public const string ApplicationName = "AppName";
         private readonly IConfiguration _configuration;
@@ -25,7 +49,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
         {
             app.UseAzureSignalR(configure =>
             {
-                configure.MapHub<TestHub>($"/{nameof(TestHub)}");
+                configure.MapHub<THub>($"/{nameof(THub)}");
             });
             app.UseMvc();
         }
@@ -33,6 +57,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
             var applicationName = _configuration[ApplicationName];
+            var p = new TParams();
 
             services.AddMvc(option => option.EnableEndpointRouting = false);
             services.AddSignalR(options =>
@@ -41,17 +66,15 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
                 })
                 .AddAzureSignalR(o =>
                 {
-                    o.ConnectionCount = 1;
-                    o.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
+                    o.ConnectionCount = p.ConnectionCount;
+                    o.GracefulShutdown.Mode = p.ShutdownMode;
+                    o.Endpoints = p.ServiceEndpoints;
+                    o.ClaimsProvider = context => new[] { new Claim(ClaimTypes.NameIdentifier, context.Request.Query["user"]) };  // todo: migrate to TParams
                     o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                    o.ClaimsProvider = context => new[] { new Claim(ClaimTypes.NameIdentifier, context.Request.Query["user"]) };
                     o.ApplicationName = applicationName;
-                    o.Endpoints = new[] { new ServiceEndpoint("Endpoint=http://127.0.0.1;AccessKey=AAAAAAAAAAAAAAAAAAAAAAAAAA0A2A4A6A8A;Version=1.0;Port=8080") };
                 });
 
-            //
-            // inject MockServiceHubDispatcher and use it as a gateway to the MockService side
-            //
+            // Here we inject MockServiceHubDispatcher and use it as a gateway to the MockService side
             services.Replace(ServiceDescriptor.Singleton(typeof(ServiceHubDispatcher<>), typeof(MockServiceHubDispatcher<>)));
 
             return services.BuildServiceProvider();
