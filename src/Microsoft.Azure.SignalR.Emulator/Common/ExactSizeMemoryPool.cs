@@ -6,7 +6,7 @@ using System.Buffers;
 
 namespace Microsoft.Azure.SignalR.Common
 {
-    public class ExactSizeMemoryPool : MemoryPool<byte>
+    internal class ExactSizeMemoryPool : MemoryPool<byte>
     {
         public static new ExactSizeMemoryPool Shared { get; } = new ExactSizeMemoryPool();
 

@@ -5,6 +5,8 @@ namespace Microsoft.Azure.SignalR.Common
 {
     internal class Constants
     {
+        public const string Asterisk = "*";
+
         public static class ContentTypes
         {
             // Serverless Http Request
@@ -13,9 +15,6 @@ namespace Microsoft.Azure.SignalR.Common
             public const string BinaryContentType = "application/octet-stream";
             public const string PlainTextContentType = "text/plain";
         }
-
-        public const string Asterisk = "*";
-
 
         public static class ClaimTypes
         {
@@ -26,12 +25,7 @@ namespace Microsoft.Azure.SignalR.Common
 
         public static class Headers
         {
-            public const string Authorization = "Authorization";
             public const string AsrsHeaderPrefix = "X-ASRS-";
-            public const string AsrsInternalHeaderPrefix = "X-ASRS-Internal-";
-            public const string AsrsInternalForwardedByHeader = AsrsInternalHeaderPrefix + "Forwarded-By";
-            public const string AsrsInternalRedirectFromHeader = AsrsInternalHeaderPrefix + "Redirect-From";
-            public const string InstanceIdHeader = "Asrs-Instance-Id";
             public const string AsrsConnectionIdHeader = AsrsHeaderPrefix + "Connection-Id";
             public const string AsrsUserClaims = AsrsHeaderPrefix + "User-Claims";
             public const string AsrsUserId = AsrsHeaderPrefix + "User-Id";
@@ -40,11 +34,8 @@ namespace Microsoft.Azure.SignalR.Common
             public const string AsrsEvent = AsrsHeaderPrefix + "Event";
             public const string AsrsClientQueryString = AsrsHeaderPrefix + "Client-Query";
             public const string AsrsSignature = AsrsHeaderPrefix + "Signature";
-            public const string AsrsMigrateFrom = "Asrs-Migrate-From";
-            public const string AsrsMigrateTo = "Asrs-Migrate-To";
             public const string AsrsClientCertThumbprint = AsrsHeaderPrefix + "Client-Cert-Thumbprint";
             public const string AsrsConnectionGroups = AsrsHeaderPrefix + "Connection-Group";
-            public const string AsrsIsDiagnosticClient = "Asrs-Is-Diagnostic-Client";
         }
     }
 }

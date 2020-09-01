@@ -13,7 +13,7 @@ using Microsoft.Azure.SignalR.Serverless.Common;
 
 namespace Microsoft.Azure.SignalR.Emulator
 {
-    public static class HttpUpstreamTriggerExtensions
+    internal static class HttpUpstreamTriggerExtensions
     {
         public static async Task<HttpResponseMessage> GetResponseAsync(this IHttpUpstreamTrigger httpUpstream, UpstreamContext context, HubConnectionContext connectionContext, ServerlessProtocol.InvocationMessage message, InvokeUpstreamParameters parameters, MediaTypeHeaderValue mediaType = null, CancellationToken token = default)
         {

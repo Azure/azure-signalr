@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 
 namespace Microsoft.Azure.SignalR.Emulator
 {
-    public static class Utils
+    internal static class Utils
     {
         private static readonly Regex UpstreamReplaceRegex = new Regex("\\{(?:hub|category|event)\\}", RegexOptions.Compiled);
 

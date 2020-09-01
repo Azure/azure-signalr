@@ -8,10 +8,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Serverless.Common;
 
-
 namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 {
-    public interface IUpstreamMessageHandler
+    internal interface IUpstreamMessageHandler
     {
         Task AddClientConnectionAsync(HubConnectionContext connection, CancellationToken token = default);
 

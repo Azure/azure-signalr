@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Azure.SignalR.Emulator
 {
-    public class UpstreamContext
+    internal class UpstreamContext
     {
         public Uri Uri { get; set; }
     }

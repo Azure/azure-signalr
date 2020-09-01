@@ -8,7 +8,6 @@ using System.IO;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
@@ -21,6 +20,10 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 {
+    /// <summary>
+    /// An modified version of HubConnectionHandler https://github.com/dotnet/aspnetcore/blob/v3.1.7/src/SignalR/server/Core/src/HubConnectionHandler.cs
+    /// </summary>
+    /// <typeparam name="THub"></typeparam>
     internal class HubProxyHandler<THub> : HubConnectionHandler<THub> where THub: Hub
     {
         internal static TimeSpan DefaultHandshakeTimeout => TimeSpan.FromSeconds(15);
@@ -263,7 +266,6 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
                                 {
                                     await ((EmulatorHubConnectionContext)connection).ConnectionContext.Transport.Output.WriteAsync(response.First);
                                 }
-
                             }
                         }
                     }

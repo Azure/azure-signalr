@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 {
-    public static class HttpResponseMessageExtensions
+    internal static class HttpResponseMessageExtensions
     {
         public static void CheckResponse(this HttpResponseMessage response, InvokeUpstreamParameters parameters, ILogger logger, Func<HttpResponseMessage, bool> expectedEvaluator)
         {

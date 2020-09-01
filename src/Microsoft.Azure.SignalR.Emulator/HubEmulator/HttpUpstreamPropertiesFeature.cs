@@ -1,25 +1,25 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http.Connections.Features;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 {
-    public sealed class HttpUpstreamPropertiesFeature : IHttpUpstreamPropertiesFeature
+    internal sealed partial class HttpUpstreamPropertiesFeature : IHttpUpstreamPropertiesFeature
     {
         private (IReadOnlyList<string> keys, IReadOnlyList<string> signatures) _cache;
 
         public string ConnectionId { get; set; }
 
         public string QueryString { get; }
+
         public IReadOnlyList<string> ClaimStrings { get; }
 
         public string Hub { get; }
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             var user = connectionContext.Features.Get<IConnectionUserFeature>()?.User;
 
             ClaimStrings = user?.Claims.Select(c => c.ToString()).ToList();
-            UserIdentifier = GetUserIdentifier(connectionContext);
+            UserIdentifier = connectionContext.GetUserIdentifier();
             ConnectionId = connectionContext.ConnectionId;
             var context = connectionContext.Features.Get<IHttpContextFeature>()?.HttpContext;
 
@@ -49,20 +49,6 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             }
 
             return currentCache.signatures;
-        }
-
-        internal static string GetUserIdentifier(ConnectionContext connectionContext)
-        {
-            var user = connectionContext.Features.Get<IConnectionUserFeature>()?.User;
-            if (user != null)
-            {
-                var customUserIdClaim = user.FindFirst(Constants.ClaimTypes.UserIdClaimType);
-                return customUserIdClaim != null
-                    ? customUserIdClaim.Value
-                    : user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            }
-
-            return null;
         }
     }
 }

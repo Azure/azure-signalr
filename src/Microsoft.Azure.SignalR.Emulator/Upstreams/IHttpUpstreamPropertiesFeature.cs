@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR.Emulator
 {
-    public interface IHttpUpstreamPropertiesFeature
+    internal interface IHttpUpstreamPropertiesFeature
     {
         string QueryString { get; }
 

@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Serverless.Common
 {
-    public class ServerlessProtocol
+    internal class ServerlessProtocol
     {
         public class Constants
         {
@@ -65,6 +65,7 @@ namespace Microsoft.Azure.SignalR.Serverless.Common
             [JsonProperty(PropertyName = "error")]
             public string Error { get; set; }
         }
+
         public class InvocationMessage
         {
             public ReadOnlySequence<byte> Payload { get; private set; }

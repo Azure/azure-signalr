@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Emulator
 {
-    public class HttpUpstreamTrigger : IHttpUpstreamTrigger
+    internal class HttpUpstreamTrigger : IHttpUpstreamTrigger
     {
         private readonly IOptionsMonitor<UpstreamOptions> _optionsMonitor;
         private readonly IHttpClientFactory _httpClientFactory;
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Emulator
 
         public HttpUpstreamTrigger(IOptionsMonitor<UpstreamOptions> optionsMonitor, IHttpClientFactory httpClientFactory, ILogger<HttpUpstreamTrigger> logger)
         {
-            _optionsMonitor = optionsMonitor;
+            _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -91,8 +91,9 @@ namespace Microsoft.Azure.SignalR.Emulator
             {
                 return await SendAsync(request, operationName, token);
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                _logger.LogWarning($"Failed to write message during operation {operationName}: {e.Message}");
                 return new HttpResponseMessage(HttpStatusCode.InternalServerError);
             }
         }
@@ -102,6 +103,12 @@ namespace Microsoft.Azure.SignalR.Emulator
             using (var client = _httpClientFactory.CreateClient())
             {
                 var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
+                if (response.StatusCode == HttpStatusCode.InternalServerError)
+                {
+                    // log 500 here as outer 500 is mixed with exception
+                    _logger.LogWarning($"Sending message during operation {operationName} got unexpected response with status code {500}.");
+                }
+
                 return response;
             }
         }

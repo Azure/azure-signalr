@@ -3,7 +3,6 @@
 
 using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -21,7 +20,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 {
-    public class HttpServerlessMessageHandler<THub> : IUpstreamMessageHandler where THub: Hub
+    internal class HttpServerlessMessageHandler<THub> : IUpstreamMessageHandler where THub: Hub
     {
         private static readonly byte[] OpenConnectionPayload = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(
             new ServerlessProtocol.OpenConnectionMessage { Type = ServerlessProtocol.Constants.OpenConnectionMessageType }

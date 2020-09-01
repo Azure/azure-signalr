@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Emulator
 {
-    public interface IHttpUpstreamTrigger
+    internal interface IHttpUpstreamTrigger
     {
         Task<HttpResponseMessage> TriggerAsync(UpstreamContext context, IHttpUpstreamPropertiesFeature upstreamProperties, InvokeUpstreamParameters parameters, Action<HttpRequestMessage> configureRequest = null, CancellationToken token = default);
         bool TryGetMatchedUpstreamContext(InvokeUpstreamParameters parameters, out UpstreamContext upstreamContext);

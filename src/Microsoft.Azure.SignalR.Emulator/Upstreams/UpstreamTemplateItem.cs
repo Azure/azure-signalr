@@ -9,12 +9,12 @@ using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR.Emulator
 {
-    public class UpstreamOptions
+    internal class UpstreamOptions
     {
         public UpstreamTemplateItem[] Templates { get; set; }
     }
 
-    public class UpstreamTemplateItem : IEquatable<UpstreamTemplateItem>
+    internal class UpstreamTemplateItem : IEquatable<UpstreamTemplateItem>
     {
         private static readonly HashSet<string> MatchAllPattern = new HashSet<string>(new[] { Constants.Asterisk });
         private static readonly HashSet<string> EmptyPattern = new HashSet<string>();
