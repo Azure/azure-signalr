@@ -5,7 +5,7 @@
 This is the AutoRest configuration file for SignalR.
 
 ``` yaml
-input-file: ../src/Microsoft.Azure.SignalR.Common/RestClients/health.json
+input-file: health.json
 ```
 
 ## Alternate settings
@@ -14,5 +14,5 @@ input-file: ../src/Microsoft.Azure.SignalR.Common/RestClients/health.json
 license-header: MICROSOFT_MIT_NO_VERSION
 override-client-name: SignalRServiceRestClient
 namespace: Microsoft.Azure.SignalR
-output-folder: ../src/Microsoft.Azure.SignalR.Common/RestClients/Generated
+output-folder: Generated
 add-credentials: true

@@ -6,5 +6,5 @@ autorest --info  | Out-Null
 if(-not $? ){
 	npm install -g autorest
 }
-autorest --csharp  --v3 swagger/readme.md   
+autorest --csharp  --v3 src\Microsoft.Azure.SignalR.Common\RestClients\readme.md  
 # please note that an unused file 'code-model-v1' is also generated, avoid uploading it to repos.
