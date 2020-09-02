@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 using Microsoft.Azure.SignalR.Protocol;
@@ -13,13 +14,20 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
     /// </summary>
     internal class MockServiceConnection : IServiceConnection
     {
+        static int s_num = 0;
+
         private readonly IServiceConnection _serviceConnection;
         IMockService _mockService;
+        
         internal MockServiceConnection(IMockService mockService, IServiceConnection serviceConnection)
         {
             _mockService = mockService;
             _serviceConnection = serviceConnection;
+            ConnectionNumber = Interlocked.Increment(ref s_num);
+            _mockService.RegisterSDKConnection(this);
         }
+
+        public int ConnectionNumber { get; private set; }
 
         public ServiceConnectionStatus Status => _serviceConnection.Status;
 
@@ -27,7 +35,12 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 
         public Task ConnectionOfflineTask => _serviceConnection.ConnectionOfflineTask;
 
-        public Task StartAsync(string target = null) => _serviceConnection.StartAsync(target);
+        public Task StartAsync(string target = null)
+        {
+            var tag = $"svc_{ConnectionNumber}_";
+            target = tag + target;
+            return _serviceConnection.StartAsync(target);
+        }
 
         public Task StopAsync() => _serviceConnection.StopAsync();
 

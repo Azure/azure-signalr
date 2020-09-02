@@ -473,6 +473,64 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Contains(tokens.Claims, x => x.Type == Constants.ClaimType.MaxPollInterval && x.Value == maxPollInterval.ToString());
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task TestNegotiateHandlerServerStickyRespectBlazor(bool isBlazor)
+        {
+            var hubName = nameof(TestNegotiateHandlerServerStickyRespectBlazor);
+            var blazorDetector = new DefaultBlazorDetector();
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection()
+                .AddSignalR(o => o.EnableDetailedErrors = true)
+                .AddAzureSignalR(
+                o =>
+                {
+                    o.ServerStickyMode = ServerStickyMode.Preferred;
+                    o.ConnectionString = DefaultConnectionString;
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IConfiguration>(config)
+                .AddSingleton(typeof(IUserIdProvider), typeof(DefaultUserIdProvider))
+                .AddSingleton(typeof(IBlazorDetector), blazorDetector)
+                .BuildServiceProvider();
+
+            blazorDetector.TrySetBlazor(hubName, isBlazor);
+            var httpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                {
+                    new Claim(CustomClaimType, CustomUserId),
+                    new Claim(ClaimTypes.NameIdentifier, DefaultUserId),
+                    new Claim("custom", "custom"),
+                }))
+            };
+
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler>();
+            var negotiateResponse = await handler.Process(httpContext, hubName);
+
+            Assert.NotNull(negotiateResponse);
+            Assert.NotNull(negotiateResponse.Url);
+            Assert.NotNull(negotiateResponse.AccessToken);
+            Assert.Null(negotiateResponse.ConnectionId);
+            Assert.Empty(negotiateResponse.AvailableTransports);
+
+            var token = JwtSecurityTokenHandler.ReadJwtToken(negotiateResponse.AccessToken);
+
+            var mode = token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.ServerStickyMode)?.Value;
+            if (isBlazor)
+            {
+                Assert.Equal("Required", mode);
+            }
+            else
+            {
+                Assert.Equal("Preferred", mode);
+            }
+            Assert.Equal("True", token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.EnableDetailedErrors)?.Value);
+
+        }
+
         private sealed class TestServerNameProvider : IServerNameProvider
         {
             private readonly string _serverName;
