@@ -59,10 +59,11 @@ namespace Microsoft.Azure.SignalR.AspNet
                             // this message always goes through the appName-connection
                             var groupName = command.Value;
                             var connectionId = GetName(message.Key, PrefixHelper.ConnectionIdPrefix);
-
+                            var joinGroupWithAckMessage = new JoinGroupWithAckMessage(connectionId, groupName).WithTracingId();
+                            
                             // go through the app connection
                             // use groupName as the partitionkey so that commands towards the same group always goes into the same service connection
-                            yield return new AppMessage(new JoinGroupWithAckMessage(connectionId, groupName), message);
+                            yield return new AppMessage(joinGroupWithAckMessage, message);
                             yield break;
                         }
                     case CommandType.RemoveFromGroup:
@@ -70,10 +71,10 @@ namespace Microsoft.Azure.SignalR.AspNet
                             // this message always goes through the appName-connection
                             var groupName = command.Value;
                             var connectionId = GetName(message.Key, PrefixHelper.ConnectionIdPrefix);
-
+                            var leaveGroupWithAckMessage = new LeaveGroupWithAckMessage(connectionId, groupName).WithTracingId();
                             // go through the app connection
                             // use groupName as the partitionkey so that commands towards the same group always goes into the same service connection
-                            yield return new AppMessage(new LeaveGroupWithAckMessage(connectionId, groupName), message);
+                            yield return new AppMessage(leaveGroupWithAckMessage, message);
                             yield break;
                         }
                     case CommandType.Initializing:
@@ -88,7 +89,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             // broadcast case
             if (TryGetName(message.Key, PrefixHelper.HubPrefix, out var hubName))
             {
-                yield return new HubMessage(hubName, new BroadcastDataMessage(excludedList: GetExcludedIds(message.Filter), payloads: GetPayloads(segment)), message);
+                var broadcastDataMessage = new BroadcastDataMessage(excludedList: GetExcludedIds(message.Filter), payloads: GetPayloads(segment)).WithTracingId();
+                yield return new HubMessage(hubName, broadcastDataMessage, message);
             }
             // echo case
             else if (TryGetName(message.Key, PrefixHelper.HubConnectionIdPrefix, out _))
@@ -103,8 +105,10 @@ namespace Microsoft.Azure.SignalR.AspNet
 
                 var connectionId = message.Key.Substring(index + 1);
 
+                var connectionDataMessage = new ConnectionDataMessage(connectionId, segment).WithTracingId();
+
                 // Go through the app connection
-                yield return new AppMessage(new ConnectionDataMessage(connectionId, segment), message);
+                yield return new AppMessage(connectionDataMessage, message);
             }
             // group broadcast case
             else if (TryGetName(message.Key, PrefixHelper.HubGroupPrefix, out _))
@@ -113,7 +117,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                 // go through the app connection
                 // use groupName as the partitionkey so that commands towards the same group always goes into the same service connection
                 var groupName = message.Key;
-                yield return new AppMessage(new GroupBroadcastDataMessage(groupName, excludedList: GetExcludedIds(message.Filter), payloads: GetPayloads(segment)), message);
+                var groupBroadcastDataMessage = new GroupBroadcastDataMessage(groupName, excludedList: GetExcludedIds(message.Filter), payloads: GetPayloads(segment)).WithTracingId();
+                yield return new AppMessage(groupBroadcastDataMessage, message);
             }
             // user case
             else if (TryGetName(message.Key, PrefixHelper.HubUserPrefix, out var userWithHubPrefix))
@@ -122,8 +127,9 @@ namespace Microsoft.Azure.SignalR.AspNet
                 // Go through all the possibilities
                 foreach (var (hub, user) in GetPossibleNames(userWithHubPrefix))
                 {
+                    var userDataMessage = new UserDataMessage(user, GetPayloads(segment)).WithTracingId();
                     // For old protocol, it is always single user per message https://github.com/SignalR/SignalR/blob/dev/src/Microsoft.AspNet.SignalR.Core/Infrastructure/Connection.cs#L162
-                    yield return new HubMessage(hub, new UserDataMessage(user, GetPayloads(segment)), message);
+                    yield return new HubMessage(hub, userDataMessage, message);
                 }
             }
             else
