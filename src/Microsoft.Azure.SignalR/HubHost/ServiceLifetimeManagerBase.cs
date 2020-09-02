@@ -47,7 +47,10 @@ namespace Microsoft.Azure.SignalR
             }
 
             var message = new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)).WithTracingId();
-            Log.StartToBroadcastMessage(Logger, message);
+            if (message.TracingId != null)
+            {
+                Log.StartToBroadcastMessage(Logger, message);
+            }
             return WriteAsync(message);
         }
 
@@ -59,7 +62,10 @@ namespace Microsoft.Azure.SignalR
             }
 
             var message = new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)).WithTracingId();
-            Log.StartToBroadcastMessage(Logger, message);
+            if (message.TracingId != null)
+            {
+                Log.StartToBroadcastMessage(Logger, message);
+            }
             return WriteAsync(message);
         }
 
@@ -76,7 +82,10 @@ namespace Microsoft.Azure.SignalR
             }
 
             var message = new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)).WithTracingId();
-            Log.StartToSendMessageToConnections(Logger, message);
+            if (message.TracingId != null)
+            {
+                Log.StartToSendMessageToConnections(Logger, message);
+            }
             return WriteAsync(message);
         }
 
@@ -93,7 +102,10 @@ namespace Microsoft.Azure.SignalR
             }
 
             var message = new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)).WithTracingId();
-            Log.StartToSendMessageToConnections(Logger, message);
+            if (message.TracingId != null)
+            {
+                Log.StartToSendMessageToConnections(Logger, message);
+            }
             return WriteAsync(message);
         }
 
@@ -110,7 +122,10 @@ namespace Microsoft.Azure.SignalR
             }
 
             var message = new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args)).WithTracingId();
-            Log.StartToBroadcastMessageToGroup(Logger, message);
+            if (message.TracingId != null)
+            {
+                Log.StartToBroadcastMessageToGroup(Logger, message);
+            }
             return WriteAsync(message);
         }
 
@@ -127,7 +142,10 @@ namespace Microsoft.Azure.SignalR
             }
 
             var message = new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)).WithTracingId();
-            Log.StartToBroadcastMessageToGroups(Logger, message);
+            if (message.TracingId != null)
+            {
+                Log.StartToBroadcastMessageToGroups(Logger, message);
+            }
             // Send this message from a random service connection because this message involves of multiple groups.
             // Unless we send message for each group one by one, we can not guarantee the message order for all groups.
             return WriteAsync(message);
@@ -146,7 +164,10 @@ namespace Microsoft.Azure.SignalR
             }
 
             var message = new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args)).WithTracingId();
-            Log.StartToBroadcastMessageToGroup(Logger, message);
+            if (message.TracingId != null)
+            {
+                Log.StartToBroadcastMessageToGroup(Logger, message);
+            }
             return WriteAsync(message);
         }
 
@@ -163,7 +184,10 @@ namespace Microsoft.Azure.SignalR
             }
 
             var message = new UserDataMessage(userId, SerializeAllProtocols(methodName, args)).WithTracingId();
-            Log.StartToSendMessageToUser(Logger, message);
+            if (message.TracingId != null)
+            {
+                Log.StartToSendMessageToUser(Logger, message);
+            }
             return WriteAsync(message);
         }
 
@@ -181,7 +205,10 @@ namespace Microsoft.Azure.SignalR
             }
 
             var message = new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)).WithTracingId();
-            Log.StartToSendMessageToUsers(Logger, message);
+            if (message.TracingId != null)
+            {
+                Log.StartToSendMessageToUsers(Logger, message);
+            }
             return WriteAsync(message);
         }
 
@@ -198,7 +225,10 @@ namespace Microsoft.Azure.SignalR
             }
 
             var message = new JoinGroupWithAckMessage(connectionId, groupName).WithTracingId();
-            Log.StartToAddConnectionToGroup(Logger, message);
+            if (message.TracingId != null)
+            {
+                Log.StartToAddConnectionToGroup(Logger, message);
+            }
             return WriteAckableMessageAsync(message);
         }
 
@@ -215,7 +245,10 @@ namespace Microsoft.Azure.SignalR
             }
 
             var message = new LeaveGroupWithAckMessage(connectionId, groupName).WithTracingId();
-            Log.StartToRemoveConnectionFromGroup(Logger, message);
+            if (message.TracingId != null)
+            {
+                Log.StartToRemoveConnectionFromGroup(Logger, message);
+            }
             return WriteAckableMessageAsync(message);
         }
 
@@ -258,7 +291,11 @@ namespace Microsoft.Azure.SignalR
                 Log.FailedToSendMessage(Logger, message, ex);
                 throw;
             }
-            Log.SucceededToSendMessage(Logger, message);
+            
+            if (message.TracingId != null)
+            {
+                Log.SucceededToSendMessage(Logger, message);
+            }
         }
 
         internal static class Log
@@ -378,31 +415,16 @@ namespace Microsoft.Azure.SignalR
 
             public static void SucceededToSendMessage<T>(ILogger logger, T message) where T : ServiceMessage, IMessageWithTracingId
             {
-                if (!Enabled())
-                {
-                    return;
-                }
-
                 _succeededToSendMessage(logger, message.TracingId, null);
             }
 
             public static void FailedToSendMessage<T>(ILogger logger, T message, Exception ex) where T : ServiceMessage, IMessageWithTracingId
             {
-                if (!Enabled())
-                {
-                    return;
-                }
-
                 _failedToSendMessage(logger, message.TracingId, ex);
             }
 
             public static void StartToBroadcastMessage(ILogger logger, BroadcastDataMessage message)
             {
-                if (!Enabled())
-                {
-                    return;
-                }
-
                 if (message.ExcludedList == null || message.ExcludedList.Count == 0)
                 {
                     _startToBroadcastMessage(logger, message.TracingId, null);
@@ -417,21 +439,12 @@ namespace Microsoft.Azure.SignalR
 
             public static void StartToSendMessageToConnections(ILogger logger, MultiConnectionDataMessage message)
             {
-                if (!Enabled())
-                {
-                    return;
-                }
                 var connections = string.Join(", ", message.ConnectionList);
                 _startToSendMessageToConnections(logger, message.TracingId, message.ConnectionList.Count, connections, null);
             }
 
             public static void StartToBroadcastMessageToGroup(ILogger logger, GroupBroadcastDataMessage message)
             {
-                if (!Enabled())
-                {
-                    return;
-                }
-
                 if (message.ExcludedList == null || message.ExcludedList.Count == 0)
                 {
                     _startToBroadcastMessageToGroup(logger, message.TracingId, message.GroupName, null);
@@ -445,57 +458,33 @@ namespace Microsoft.Azure.SignalR
 
             public static void StartToBroadcastMessageToGroups(ILogger logger, MultiGroupBroadcastDataMessage message)
             {
-                if (!Enabled())
-                {
-                    return;
-                }
                 var groups = string.Join(", ", message.GroupList);
                 _startToBroadcastMessageToGroups(logger, message.TracingId, message.GroupList.Count, groups, null);
             }
 
             public static void StartToSendMessageToUser(ILogger logger, UserDataMessage message)
             {
-                if (!Enabled())
-                {
-                    return;
-                }
                 _startToSendMessageToUser(logger, message.TracingId, message.UserId, null);
             }
 
             public static void StartToSendMessageToUsers(ILogger logger, MultiUserDataMessage message)
             {
-                if (!Enabled())
-                {
-                    return;
-                }
                 var users = string.Join(", ", message.UserList);
                 _startToSendMessageToUsers(logger, message.TracingId, message.UserList.Count, users, null);
             }
 
             public static void StartToAddConnectionToGroup(ILogger logger, JoinGroupWithAckMessage message)
             {
-                if (!Enabled())
-                {
-                    return;
-                }
                 _startToAddConnectionToGroup(logger, message.TracingId, message.ConnectionId, message.GroupName, null);
             }
 
             public static void StartToRemoveConnectionFromGroup(ILogger logger, LeaveGroupWithAckMessage message)
             {
-                if (!Enabled())
-                {
-                    return;
-                }
                 _startToRemoveConnectionFromGroup(logger, message.TracingId, message.ConnectionId, message.GroupName, null);
             }
 
             public static void StartToAddUserToGroup(ILogger logger, UserJoinGroupMessage message)
             {
-                if (!Enabled())
-                {
-                    return;
-                }
                 if (message.Ttl == null)
                 {
                     _startToAddUserToGroup(logger, message.TracingId, message.UserId, message.GroupName, null);
@@ -508,10 +497,6 @@ namespace Microsoft.Azure.SignalR
 
             public static void StartToRemoveUserFromGroup(ILogger logger, UserLeaveGroupMessage message)
             {
-                if (!Enabled())
-                {
-                    return;
-                }
                 if (message.GroupName == null)
                 {
                     _startToRemoveUserFromAllGroups(logger, message.TracingId, message.UserId, null);
@@ -520,11 +505,6 @@ namespace Microsoft.Azure.SignalR
                 {
                     _startToRemoveUserFromGroup(logger, message.TracingId, message.UserId, message.GroupName, null);
                 }
-            }
-
-            private static bool Enabled()
-            {
-                return ServiceConnectionContainerScope.EnableMessageLog || ClientConnectionScope.IsDiagnosticClient;
             }
         }
     }
