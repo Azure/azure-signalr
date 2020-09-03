@@ -124,4 +124,4 @@ You can also use [Microsoft.Azure.SignalR.Management](<https://www.nuget.org/pac
 Azure SignalR Service has following limitation:
 
 * Body size: up to 1MB per request.
-* Head size: up to 16KB.
+* Header size: up to 16KB.
