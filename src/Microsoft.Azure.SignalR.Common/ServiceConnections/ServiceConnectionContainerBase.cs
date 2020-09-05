@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly int MaxReconnectBackOffInternalInMilliseconds = 1000;
         // Give (interval * 3 + 1) delay when check value expire.
-        private static readonly long DefaultServersPingTimeoutTicks = Stopwatch.Frequency * (Constants.Periods.DefaultServersPingInterval.Seconds * 3 + 1);
+        private static readonly long DefaultServersPingTimeoutTicks = Stopwatch.Frequency * ((long)Constants.Periods.DefaultServersPingInterval.TotalSeconds * 3 + 1);
         private static readonly Tuple<string, long> DefaultServersTagContext = new Tuple<string, long>(string.Empty, 0);
 
         private static TimeSpan ReconnectInterval =>
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly ServiceDiagnosticLogsContext _serviceDiagnosticLogsContext = new ServiceDiagnosticLogsContext { EnableMessageLog = false };
 
-        private volatile List<IServiceConnection> _fixedServiceConnections;
+        private volatile List<IServiceConnection> _serviceConnections;
 
         private volatile ServiceConnectionStatus _status;
 
@@ -57,10 +57,10 @@ namespace Microsoft.Azure.SignalR
 
         protected ILogger Logger { get; }
 
-        protected List<IServiceConnection> FixedServiceConnections
+        protected List<IServiceConnection> ServiceConnections
         {
-            get { return _fixedServiceConnections; }
-            set { _fixedServiceConnections = value; }
+            get { return _serviceConnections; }
+            set { _serviceConnections = value; }
         }
 
         protected IServiceConnectionFactory ServiceConnectionFactory { get; }
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.SignalR
                 initial.AddRange(remaining);
             }
 
-            FixedServiceConnections = initial;
+            ServiceConnections = initial;
             FixedConnectionCount = initial.Count;
             ConnectionStatusChanged += OnStatusChanged;
 
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.SignalR
         {
             using (new ServiceConnectionContainerScope(_serviceDiagnosticLogsContext))
             {
-                await Task.WhenAll(FixedServiceConnections.Select(c => StartCoreAsync(c)));
+                await Task.WhenAll(ServiceConnections.Select(c => StartCoreAsync(c)));
             }
         }
 
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.SignalR
         {
             _terminated = true;
             _statusPing.Stop();
-            return Task.WhenAll(FixedServiceConnections.Select(c => c.StopAsync()));
+            return Task.WhenAll(ServiceConnections.Select(c => c.StopAsync()));
         }
 
         /// <summary>
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.SignalR
             _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status);
         }
 
-        public Task ConnectionInitializedTask => Task.WhenAll(from connection in FixedServiceConnections
+        public Task ConnectionInitializedTask => Task.WhenAll(from connection in ServiceConnections
                                                               select connection.ConnectionInitializedTask);
 
         public virtual Task WriteAsync(ServiceMessage serviceMessage)
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.SignalR
 
         public virtual Task OfflineAsync(GracefulShutdownMode mode)
         {
-            return Task.WhenAll(FixedServiceConnections.Select(c => RemoveConnectionAsync(c, mode)));
+            return Task.WhenAll(ServiceConnections.Select(c => RemoveConnectionAsync(c, mode)));
         }
 
         public Task StartGetServersPing()
@@ -298,25 +298,66 @@ namespace Microsoft.Azure.SignalR
 
             serviceConnection.ConnectionStatusChanged -= OnConnectionStatusChanged;
 
-            if (serviceConnection.Status == ServiceConnectionStatus.Connected)
-            {
-                return;
-            }
-
-            var index = FixedServiceConnections.IndexOf(serviceConnection);
+            var index = ServiceConnections.IndexOf(serviceConnection);
             if (index != -1)
             {
-                await RestartServiceConnectionCoreAsync(index);
+                // first FixedConnectionCount connections are "fixed" and always try to restart
+                if (index < FixedConnectionCount)
+                {
+                    await RestartFixedServiceConnectionCoreAsync(index);
+                }
+                // the rest are "on demand" and are only created upon request
+                else
+                {
+                    RemoveOnDemandConnection(serviceConnection);
+                }
             }
         }
 
-        protected void ReplaceFixedConnections(int index, IServiceConnection serviceConnection)
+        private async Task RestartFixedServiceConnectionCoreAsync(int index)
+        {
+            Func<Task<bool>> tryNewConnection = async () =>
+            {
+                var connection = CreateServiceConnectionCore(InitialConnectionType);
+                ReplaceFixedConnection(index, connection);
+
+                _ = StartCoreAsync(connection);
+                await connection.ConnectionInitializedTask;
+
+                return connection.Status == ServiceConnectionStatus.Connected;
+            };
+            await _backOffPolicy.CallProbeWithBackOffAsync(tryNewConnection, GetRetryDelay);
+        }
+
+        private void ReplaceFixedConnection(int index, IServiceConnection serviceConnection)
         {
             lock (_lock)
             {
-                var newImmutableConnections = FixedServiceConnections.ToList();
+                var newImmutableConnections = ServiceConnections.ToList();
                 newImmutableConnections[index] = serviceConnection;
-                FixedServiceConnections = newImmutableConnections;
+                ServiceConnections = newImmutableConnections;
+            }
+        }
+
+        private void RemoveOnDemandConnection(IServiceConnection serviceConnection)
+        {
+            lock (_lock)
+            {
+                var newImmutableConnections = ServiceConnections.ToList();
+                Debug.Assert(newImmutableConnections.IndexOf(serviceConnection) >= FixedConnectionCount);
+                newImmutableConnections.Remove(serviceConnection);
+                ServiceConnections = newImmutableConnections;
+            }
+        }
+
+        protected void AddOnDemandConnection(IServiceConnection serviceConnection)
+        {
+            lock (_lock)
+            {
+                var newImmutableConnections = ServiceConnections.ToList();
+                newImmutableConnections.Add(serviceConnection);
+                Debug.Assert(newImmutableConnections.IndexOf(serviceConnection) >= FixedConnectionCount);
+                ServiceConnections = newImmutableConnections;
             }
         }
 
@@ -330,7 +371,7 @@ namespace Microsoft.Azure.SignalR
 
         protected virtual ServiceConnectionStatus GetStatus()
         {
-            return FixedServiceConnections.Any(s => s.Status == ServiceConnectionStatus.Connected)
+            return ServiceConnections.Any(s => s.Status == ServiceConnectionStatus.Connected)
                 ? ServiceConnectionStatus.Connected
                 : ServiceConnectionStatus.Disconnected;
         }
@@ -420,24 +461,12 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async Task RestartServiceConnectionCoreAsync(int index)
-        {
-            Func<Task<bool>> tryNewConnection = async () =>
-            {
-                var connection = CreateServiceConnectionCore(InitialConnectionType);
-                ReplaceFixedConnections(index, connection);
 
-                _ = StartCoreAsync(connection);
-                await connection.ConnectionInitializedTask;
-
-                return connection.Status == ServiceConnectionStatus.Connected;
-            };
-            await _backOffPolicy.CallProbeWithBackOffAsync(tryNewConnection, GetRetryDelay);
-        }
 
         private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
         {
-            return WriteWithRetry(serviceMessage, StaticRandom.Next(-FixedConnectionCount, FixedConnectionCount), FixedConnectionCount);
+            int count = ServiceConnections.Count;
+            return WriteWithRetry(serviceMessage, StaticRandom.Next(-count, count), count);
         }
 
         private async Task WriteWithRetry(ServiceMessage serviceMessage, int initial, int count)
@@ -449,7 +478,7 @@ namespace Microsoft.Azure.SignalR
             var direction = initial > 0 ? 1 : count - 1;
             while (retry < maxRetry)
             {
-                var connection = FixedServiceConnections[index];
+                var connection = ServiceConnections[index];
                 if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
                 {
                     try
