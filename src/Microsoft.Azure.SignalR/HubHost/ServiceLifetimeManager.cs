@@ -66,7 +66,7 @@ namespace Microsoft.Azure.SignalR
                 var message = new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)).WithTracingId();
                 if (message.TracingId != null)
                 {
-                    Log.StartToSendMessageToConnections(Logger, message);
+                    AzureSignalRLog.StartToSendMessageToConnections(Logger, message);
                 }
                 // Write directly to this connection
                 return serviceConnectionContext.ServiceConnection.WriteAsync(message);
