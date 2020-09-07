@@ -10,16 +10,16 @@ namespace Microsoft.Azure.SignalR
     internal class AsrsUserAgentHandler
         : DelegatingHandler
     {
-        private readonly string value;
+        private readonly string _asrsUserAgent;
 
         public AsrsUserAgentHandler(string productInfo)
         {
-            value = productInfo;
+            _asrsUserAgent = productInfo;
         }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            request.Headers.Add(Constants.AsrsUserAgent, value);
+            request.Headers.Add(Constants.AsrsUserAgent, _asrsUserAgent);
             return base.SendAsync(request, cancellationToken);
         }
     }
