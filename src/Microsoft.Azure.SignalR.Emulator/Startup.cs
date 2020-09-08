@@ -31,6 +31,8 @@ namespace Microsoft.Azure.SignalR.Emulator
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddHttpClient();
+
             services.AddAllowAllCors();
             services.AddJwtBearerAuth(Configuration);
             services.AddAuthorization();
@@ -39,6 +41,11 @@ namespace Microsoft.Azure.SignalR.Emulator
             {
                 manager.FeatureProviders.Add(new CustomControllerFeatureProvider());
             });
+
+            var upstreamOptions = new UpstreamOptions();
+            Configuration.GetSection("UpstreamSettings").Bind(upstreamOptions);
+            services.Configure<UpstreamOptions>(s => s.Templates = upstreamOptions.Templates);
+
             services.AddSignalREmulator();
             services.AddLogging(services =>
             {
@@ -69,7 +76,6 @@ Endpoint={address.Scheme}://{address.Host};Port={address.Port};AccessKey={AppBui
             app.UseRouting();
             app.UseWebSockets();
             app.UseAllowAllCors();
-
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>
