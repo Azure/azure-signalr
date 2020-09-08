@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
 {
-    public class SignalRServiceRestClientHelperFacts
+    public class RestClientBuilderFacts
     {
         private const string ProductInfo = "productInfo";
         private const string AccessKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -15,8 +15,9 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
         private readonly string _connectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0;";
 
         [Fact]
-        public void GetCustomizedClient_RequestContainsAsrsUAFact()
+        public void RequestContainsAsrsUAFact()
         {
+            ServiceEndpoint serviceEndpoint = new ServiceEndpoint(_connectionString);
             var mockHelper = new MockHandlerHelper();
             string requestUri = "http://requestUri";  //The implementation of SignalRServiceRestClient doesn't pass the base URI to its member HttpClient
 
@@ -27,18 +28,21 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
             });
             var handler = mock.Object;
 
-            SignalRServiceRestClient restClient = new SignalRServiceRestClientHelper()
-                .GetCustomizedClient(_connectionString, ProductInfo, handler);
+            RestClientBuilder restClientBuilder = new RestClientBuilder()
+                .WithProductInfo(ProductInfo)
+                .WithServiceEndpoint(serviceEndpoint)
+                .WithHandler(new DelegatingHandler[] { handler });
+            var restClient = restClientBuilder.Build();
             var httpClient = restClient.HttpClient;
             httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, requestUri));
 
             mockHelper.AssertHandlerUsed(mock);
-            Assert.Equal(Endpoint, restClient.BaseUri.AbsoluteUri);
         }
 
         [Fact]
-        public async void GetCustomizedClient_RequestContainsCredentials()
+        public async void RequestContainsCredentials()
         {
+            ServiceEndpoint serviceEndpoint = new ServiceEndpoint(_connectionString);
             var mockHelper = new MockHandlerHelper();
             var mock = mockHelper.GetVerificationHandlerMock((request, t) =>
             {
@@ -50,8 +54,11 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
                 Assert.NotNull(parameter);
             });
             var handler = mock.Object;
-            SignalRServiceRestClient restClient = new SignalRServiceRestClientHelper()
-                .GetCustomizedClient(_connectionString, ProductInfo, handler);
+
+            RestClientBuilder restClientBuilder = new RestClientBuilder()
+                .WithServiceEndpoint(serviceEndpoint)
+                .WithHandler(new DelegatingHandler[] { handler });
+            var restClient = restClientBuilder.Build();
             await restClient.HealthApi.GetHealthStatusWithHttpMessagesAsync();
 
             mockHelper.AssertHandlerUsed(mock);
@@ -60,7 +67,13 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
         [Fact]
         public void GetCustomiazeClient_BaseUriRightFact()
         {
-            SignalRServiceRestClient restClient = new SignalRServiceRestClientHelper().GetCustomizedClient(_connectionString, ProductInfo);
+            ServiceEndpoint serviceEndpoint = new ServiceEndpoint(_connectionString);
+
+            RestClientBuilder restClientBuilder = new RestClientBuilder()
+                .WithProductInfo(ProductInfo)
+                .WithServiceEndpoint(serviceEndpoint);
+            var restClient = restClientBuilder.Build();
+
             Assert.Equal(Endpoint, restClient.BaseUri.AbsoluteUri);
         }
 

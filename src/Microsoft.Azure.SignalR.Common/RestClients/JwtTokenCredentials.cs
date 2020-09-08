@@ -14,9 +14,9 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly RestApiAccessTokenGenerator _restApiAccessTokenGenerator;
 
-        public JwtTokenCredentials(string accessKey)
+        public JwtTokenCredentials(AccessKey accessKey)
         {
-            _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(new AccessKey(accessKey));
+            _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(accessKey);
         }
 
         public override async Task ProcessHttpRequestAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -26,8 +26,9 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException(nameof(request));
             }
             var uri = request.RequestUri;
+            var uriWithoutPort = uri.GetComponents(UriComponents.AbsoluteUri & ~UriComponents.Port, UriFormat.UriEscaped);
 
-            var tokenString = await _restApiAccessTokenGenerator.Generate(request.RequestUri.ToString());
+            var tokenString = await _restApiAccessTokenGenerator.Generate(uriWithoutPort);
             HttpRequestHeaders headers = request.Headers;
             headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
             await base.ProcessHttpRequestAsync(request, cancellationToken);
