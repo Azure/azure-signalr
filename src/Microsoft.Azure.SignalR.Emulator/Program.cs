@@ -17,6 +17,7 @@ namespace Microsoft.Azure.SignalR.Emulator
         private static readonly string SettingsFile = "settings.json";
         private static readonly string ProgramDirectory = Path.GetDirectoryName(typeof(Program).Assembly.Location);
         private static readonly string ProgramDefaultSettingsFile = Path.Combine(ProgramDirectory, SettingsFile);
+        private static readonly string AppSettingsFile = Path.Combine(ProgramDirectory, "appsettings.json");
 
         public static void Main(string[] args)
         {
@@ -112,7 +113,6 @@ namespace Microsoft.Azure.SignalR.Emulator
 
         public static IHostBuilder CreateHostBuilder(string[] args, int? port = null)
         {
-            var appSettingsFile = Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "appsettings.json");
             return Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.SignalR.Emulator
                 })
                 .ConfigureAppConfiguration(s =>
                 {
-                    s.AddJsonFile(appSettingsFile, optional: true, reloadOnChange: true);
+                    s.AddJsonFile(AppSettingsFile, optional: true, reloadOnChange: true);
                     s.AddJsonFile(SettingsFile, optional: true, reloadOnChange: true);
                 });
         }
