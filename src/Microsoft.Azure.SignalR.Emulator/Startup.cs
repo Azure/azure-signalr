@@ -59,8 +59,8 @@ namespace Microsoft.Azure.SignalR.Emulator
             lifetime.ApplicationStarted.Register(() =>
                {
                    var address = new Uri(app.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First());
-                   var optionChanged = app.ApplicationServices.GetRequiredService<IOptionsMonitor<UpstreamOptions>>();
-                   optionChanged.OnChange(s =>
+                   var upstreamOptionMonitor = app.ApplicationServices.GetRequiredService<IOptionsMonitor<UpstreamOptions>>();
+                   upstreamOptionMonitor.OnChange(s =>
                    {
                        s.Print();
                    });
@@ -76,7 +76,7 @@ Endpoint={address.Scheme}://{address.Host};Port={address.Port};AccessKey={AppBui
 
 ===================================================
 ");
-                   optionChanged.CurrentValue.Print();
+                   upstreamOptionMonitor.CurrentValue.Print();
                });
             app.UseRouting();
             app.UseWebSockets();

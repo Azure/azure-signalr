@@ -15,10 +15,6 @@ namespace Microsoft.Azure.SignalR.Emulator
 {
     public class Program
     {
-        private static readonly JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions {
-            WriteIndented = true,
-        };
-
         private static readonly string SettingsFile = "settings.json";
         private static readonly string ProgramDirectory = Path.GetDirectoryName(typeof(Program).Assembly.Location);
         private static readonly string ProgramDefaultSettingsFile = Path.Combine(ProgramDirectory, SettingsFile);
