@@ -11,24 +11,20 @@ using Moq.Protected;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    public class MockRestClientHelper
+    public class TestRestClient : SignalRServiceRestClient
     {
-        public ServiceClientCredentials Credentials { get; set; } = new Mock<ServiceClientCredentials>().Object;
+        public TestRestClient(HttpResponseMessage response) : base(new Mock<ServiceClientCredentials>().Object, GetTestHandler(response), false) { }
 
-        public SignalRServiceRestClient GetRestClientReturnStatusCode(HttpResponseMessage response)
+        public TestRestClient(HttpStatusCode code) : base(new Mock<ServiceClientCredentials>().Object, GetTestHandler(new HttpResponseMessage(code)), false) { }
+
+        private static HttpClient GetTestHandler(HttpResponseMessage response)
         {
             var mock = new Mock<HttpMessageHandler>();
             mock.Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(response);
             var mockHandler = mock.Object;
-
-            return new SignalRServiceRestClient(Credentials, new HttpClient(mockHandler), false);
-        }
-
-        public SignalRServiceRestClient GetRestClientReturnStatusCode(HttpStatusCode statusCode)
-        {
-            return GetRestClientReturnStatusCode(new HttpResponseMessage(statusCode));
+            return new HttpClient(mockHandler);
         }
     }
 }

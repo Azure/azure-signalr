@@ -16,8 +16,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
         [Fact]
         public async void IsServiceHealthyReturnTrue()
         {
-            var signalRServiceRestClient = new MockRestClientHelper()
-                .GetRestClientReturnStatusCode(HttpStatusCode.OK);
+            var signalRServiceRestClient = new TestRestClient(HttpStatusCode.OK);
             var healthApi = new HealthApi(signalRServiceRestClient);
 
             var operationResponse = await healthApi.GetHealthStatusWithHttpMessagesAsync();
@@ -40,8 +39,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
                 Content = content,
                 StatusCode = statusCode
             };
-            var signalRServiceRestClient = new MockRestClientHelper()
-                .GetRestClientReturnStatusCode(message);
+            var signalRServiceRestClient = new TestRestClient(message);
             var healthApi = new HealthApi(signalRServiceRestClient);
 
             Task func() => healthApi.GetHealthStatusWithHttpMessagesAsync();

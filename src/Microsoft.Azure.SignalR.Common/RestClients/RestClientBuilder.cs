@@ -11,37 +11,40 @@ namespace Microsoft.Azure.SignalR
 {
     internal class RestClientBuilder
     {
-        private Uri BaseUri;
-        private ServiceClientCredentials Credentials;
-        private readonly List<DelegatingHandler> Handlers = new List<DelegatingHandler>();
-        private AsrsUserAgentHandler AzUserAgentHandler;
+        private readonly Uri _baseUri;
+        private readonly ServiceClientCredentials _credentials;
+        private readonly List<DelegatingHandler> _handlers = new List<DelegatingHandler>();
+        private AsrsUserAgentHandler _azUserAgentHandler;
 
-        internal RestClientBuilder WithProductInfo(string productInfo)
+        internal RestClientBuilder(ServiceEndpoint endpoint)
         {
-            AzUserAgentHandler = new AsrsUserAgentHandler(productInfo);
+            _baseUri = new Uri(endpoint.Endpoint);
+            _credentials = new JwtTokenCredentials(endpoint.AccessKey);
+        }
+
+        internal RestClientBuilder(string connectionString) : this(new ServiceEndpoint(connectionString)) { }
+
+        internal RestClientBuilder WithProductInfo(string usegAgent)
+        {
+            _azUserAgentHandler = new AsrsUserAgentHandler(usegAgent);
             return this;
         }
 
-        internal RestClientBuilder WithServiceEndpoint(ServiceEndpoint serviceEndpoint)
+        internal RestClientBuilder WithHandler(DelegatingHandler handler)
         {
-            BaseUri = new Uri(serviceEndpoint.Endpoint);
-            Credentials = new JwtTokenCredentials(serviceEndpoint.AccessKey);
-            return this;
-        }
-
-        internal RestClientBuilder WithHandler(IEnumerable<DelegatingHandler> handlers)
-        {
-            Handlers.AddRange(handlers);
+            _handlers.Add(handler);
             return this;
         }
 
         internal SignalRServiceRestClient Build()
         {
             List<DelegatingHandler> finalHandlers = new List<DelegatingHandler>();
-            if (AzUserAgentHandler != null)
-                finalHandlers.Add(AzUserAgentHandler);
-            finalHandlers.AddRange(Handlers);
-            return new SignalRServiceRestClient(BaseUri, Credentials, finalHandlers.ToArray());
+            if (_azUserAgentHandler != null)
+            {
+                finalHandlers.Add(_azUserAgentHandler);
+            }
+            finalHandlers.AddRange(_handlers);
+            return new SignalRServiceRestClient(_baseUri, _credentials, finalHandlers.ToArray());
         }
     }
 }

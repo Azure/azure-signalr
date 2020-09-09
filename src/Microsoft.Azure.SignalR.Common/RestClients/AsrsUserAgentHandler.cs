@@ -12,9 +12,9 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly string _asrsUserAgent;
 
-        public AsrsUserAgentHandler(string productInfo)
+        public AsrsUserAgentHandler(string userAgent)
         {
-            _asrsUserAgent = productInfo;
+            _asrsUserAgent = userAgent;
         }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
