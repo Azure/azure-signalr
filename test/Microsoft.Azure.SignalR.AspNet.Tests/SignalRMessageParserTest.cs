@@ -11,6 +11,7 @@ using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Json;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestGetMessageWithUnknownKeyThrows(string key)
         {
             var hubs = new List<string> { };
-            var parser = new SignalRMessageParser(hubs, _resolver);
+            var parser = new SignalRMessageParser(hubs, _resolver, NullLogger<SignalRMessageParser>.Instance);
             var raw = "<script type=\"\"></script>";
             var message = new Message("foo", key, new ArraySegment<byte>(Encoding.Default.GetBytes(raw)));
 
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestAddToGroupCommandMessage()
         {
             var hubs = new List<string> { };
-            var parser = new SignalRMessageParser(hubs, _resolver);
+            var parser = new SignalRMessageParser(hubs, _resolver, NullLogger<SignalRMessageParser>.Instance);
             var groupName = GenerateRandomName();
             var command = new Command
             {
@@ -73,7 +74,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestAddToGroupCommandMessageWithInvalidKeyThrows(CommandType type, string invalidKey)
         {
             var hubs = new List<string> { };
-            var parser = new SignalRMessageParser(hubs, _resolver);
+            var parser = new SignalRMessageParser(hubs, _resolver, NullLogger<SignalRMessageParser>.Instance);
             var groupName = GenerateRandomName();
             var command = new Command
             {
@@ -91,7 +92,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestRemoveFromGroupCommandMessage()
         {
             var hubs = new List<string> { };
-            var parser = new SignalRMessageParser(hubs, _resolver);
+            var parser = new SignalRMessageParser(hubs, _resolver, NullLogger<SignalRMessageParser>.Instance);
             var groupName = GenerateRandomName();
             var command = new Command
             {
@@ -116,7 +117,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestOtherGroupCommandMessagesAreIgnored(CommandType type)
         {
             var hubs = new List<string> { };
-            var parser = new SignalRMessageParser(hubs, _resolver);
+            var parser = new SignalRMessageParser(hubs, _resolver, NullLogger<SignalRMessageParser>.Instance);
             var groupName = GenerateRandomName();
             var command = new Command
             {
@@ -142,7 +143,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestHubMessage(string connectionId, string input, Type exceptionType = null)
         {
             var hubs = new List<string> { "h-", "a", "a.connection1" };
-            var parser = new SignalRMessageParser(hubs, _resolver);
+            var parser = new SignalRMessageParser(hubs, _resolver, NullLogger<SignalRMessageParser>.Instance);
             var groupName = GenerateRandomName();
 
             var message = SignalRMessageUtility.CreateMessage(PrefixHelper.GetHubName(connectionId), input);
@@ -174,7 +175,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestHubConnectionMessage(string connectionId, string input, string expectedId, Type exceptionType = null)
         {
             var hubs = new List<string> { "hub", "hub1", "hub.hub1", "h", "hub.hub1.h.hub2", "hub.hub1.h" };
-            var parser = new SignalRMessageParser(hubs, _resolver);
+            var parser = new SignalRMessageParser(hubs, _resolver, NullLogger<SignalRMessageParser>.Instance);
             var groupName = GenerateRandomName();
 
             var message = SignalRMessageUtility.CreateMessage(PrefixHelper.GetHubConnectionId(connectionId), input);
@@ -202,7 +203,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestHubGroupMessage(string input, string hub)
         {
             var hubs = new List<string> { "hub1", "hub.hub1", "hub.hub1.h.hub2" };
-            var parser = new SignalRMessageParser(hubs, _resolver);
+            var parser = new SignalRMessageParser(hubs, _resolver, NullLogger<SignalRMessageParser>.Instance);
             var groupName = GenerateRandomName();
             var fullName = PrefixHelper.GetHubGroupName(hub + "." + groupName);
             var message = SignalRMessageUtility.CreateMessage(fullName, input);
@@ -227,7 +228,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestHubUserMessage(string userName, string input, string hub, Type exceptionType = null)
         {
             var hubs = new List<string> { "hub1", "hub.hub1", "hub2.hub1.h.hub2", ".", ".." };
-            var parser = new SignalRMessageParser(hubs, _resolver);
+            var parser = new SignalRMessageParser(hubs, _resolver, NullLogger<SignalRMessageParser>.Instance);
 
             var message = SignalRMessageUtility.CreateMessage(PrefixHelper.GetHubUserId(hub + "." + userName), input);
             var excludedConnectionIds = new string[] { GenerateRandomName(), GenerateRandomName() };
@@ -251,7 +252,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public void TestHubUserMessageWithMultiplePossiblities()
         {
             var hubs = new List<string> { "hub", "hub.hub1", "hub.hub1.h.hub2", ".", "......" };
-            var parser = new SignalRMessageParser(hubs, _resolver);
+            var parser = new SignalRMessageParser(hubs, _resolver, NullLogger<SignalRMessageParser>.Instance);
             var fullName = "hub.hub1.h.hub2.user1";
             var message = SignalRMessageUtility.CreateMessage(PrefixHelper.GetHubUserId(fullName), null);
 
