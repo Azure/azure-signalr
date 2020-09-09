@@ -8,6 +8,7 @@ This guidance is to provide useful troubleshooting guide based on the common iss
 - [401 Unauthorized returned for client requests](#401_unauthorized_returned_for_client_requests)
 - [404 returned for client requests](#random_404_returned_for_client_requests)
 - [404 returned for ASP.NET SignalR's reconnect request](#reconnect_404)
+- [413 returned for REST API requests](#413_rest)
 - [429 Too Many Requests returned for client requests](#429_too_many_requests)
 - [500 Error when negotiate](#500_error_when_negotiate)
 - [Client connection drops](#client_connection_drop)
@@ -132,6 +133,13 @@ For a SignalR persistent connection, it first `/negotiate` to Azure SignalR serv
 <a name="reconnect_404"></a>
 ## 404 returned for ASP.NET SignalR's reconnect request
 For ASP.NET SignalR, when the [client connection drops](#client_connection_drop), it reconnects using the same `connectionId` for 3 times before stopping the connection. `/reconnect` can help if the connection is dropped due to network intermittent issues that `/reconnect` can reestablish the persistent connection successfully. Under other circumstances, for example, the client connection is dropped due to the routed server connection is dropped, or SignalR Service has some internal errors like instance restart/failover/deployment, the connection no longer exists, thus `/reconnect` returns `404`. It is the expected behavior for `/reconnect` and after 3 times retry the connection stops. We suggest having [connection restart](#restart_connection) logic when connection stops.
+
+<a name="413_rest"></a>
+## 413 returned for REST API requests
+
+413 returns if your request body is larger than 1MB.
+
+For REST API see [limitation](rest-api.md#Limitation).
 
 <a name="429_too_many_requests"></a>
 ## 429(Too Many Requests) returned for client requests
