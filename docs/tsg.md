@@ -10,6 +10,7 @@ This guidance is to provide useful troubleshooting guide based on the common iss
 - [404 returned for ASP.NET SignalR's reconnect request](#reconnect_404)
 - [413 returned for REST API requests](#413_rest)
 - [429 Too Many Requests returned for client requests](#429_too_many_requests)
+- [429 Too Many Requests returned for negotiate requests](#429_negotiate)
 - [500 Error when negotiate](#500_error_when_negotiate)
 - [Client connection drops](#client_connection_drop)
 - [Client connection increases constantly](#client_connection_increases_constantly)
@@ -150,6 +151,16 @@ For **Free** instances, **Concurrent** connection count limit is 20
 For **Standard** instances, **concurrent** connection count limit **per unit** is 1K, which means Unit100 allows 100K **concurrent** connections.
 
 The connections include both client and server connections. check [here](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-concept-messages-and-connections#how-connections-are-counted) for how connections are counted.
+
+<a name="429_negotiate"></a>
+## 429(Too Many Requests) returned for negotiate requests
+
+Too many negotiate requests at same time.
+
+All instances allow at least 400 requests per second.
+Big unit will allow more requests per second.
+
+Please add a random delay for your client retry.
 
 <a name="500_error_when_negotiate"></a>
 ## 500 Error when negotiate: Azure SignalR Service is not connected yet, please try again later.
