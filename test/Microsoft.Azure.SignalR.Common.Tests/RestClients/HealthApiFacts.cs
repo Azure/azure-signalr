@@ -34,9 +34,9 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
             using var signalRServiceRestClient = new TestRestClient(statusCode, contentString);
             var healthApi = new HealthApi(signalRServiceRestClient);
 
-            Task func() => healthApi.GetHealthStatusWithHttpMessagesAsync();
+            Task methodToTest() => healthApi.GetHealthStatusWithHttpMessagesAsync();
 
-            HttpOperationException exception = await Assert.ThrowsAsync<HttpOperationException>(func);
+            HttpOperationException exception = await Assert.ThrowsAsync<HttpOperationException>(methodToTest);
             Assert.Equal(statusCode, exception.Response.StatusCode);
             Assert.Equal(contentString, exception.Response.Content);
         }
