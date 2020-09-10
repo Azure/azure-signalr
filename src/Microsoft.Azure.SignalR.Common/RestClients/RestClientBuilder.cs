@@ -15,36 +15,36 @@ namespace Microsoft.Azure.SignalR
         private readonly ServiceClientCredentials _credentials;
         private readonly List<DelegatingHandler> _handlers = new List<DelegatingHandler>();
         private AsrsUserAgentHandler _azUserAgentHandler;
+        private HttpClientHandler _rootHandler;
 
-        internal RestClientBuilder(ServiceEndpoint endpoint)
+        public RestClientBuilder(ServiceEndpoint endpoint)
         {
             _baseUri = new Uri(endpoint.Endpoint);
             _credentials = new JwtTokenCredentials(endpoint.AccessKey);
         }
 
-        internal RestClientBuilder(string connectionString) : this(new ServiceEndpoint(connectionString)) { }
+        public RestClientBuilder(string connectionString) : this(new ServiceEndpoint(connectionString)) { }
 
-        internal RestClientBuilder WithProductInfo(string usegAgent)
+        public RestClientBuilder WithProductInfo(string usegAgent)
         {
             _azUserAgentHandler = new AsrsUserAgentHandler(usegAgent);
             return this;
         }
 
-        internal RestClientBuilder WithHandler(DelegatingHandler handler)
+        internal RestClientBuilder WithRootHandler(HttpClientHandler rootHandler)
         {
-            _handlers.Add(handler);
+            _rootHandler = rootHandler;
             return this;
         }
 
         internal SignalRServiceRestClient Build()
         {
-            List<DelegatingHandler> finalHandlers = new List<DelegatingHandler>();
+            DelegatingHandler[] handlers = null;
             if (_azUserAgentHandler != null)
             {
-                finalHandlers.Add(_azUserAgentHandler);
+                handlers = new DelegatingHandler[] { _azUserAgentHandler };
             }
-            finalHandlers.AddRange(_handlers);
-            return new SignalRServiceRestClient(_baseUri, _credentials, finalHandlers.ToArray());
+            return new SignalRServiceRestClient(_baseUri, _credentials, _rootHandler, handlers);
         }
     }
 }

@@ -57,18 +57,13 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
 
         private async void TestRestClientBuilder(Action<HttpRequestMessage, CancellationToken> assertion, Action<RestClientBuilder> action)
         {
-            var mockHelper = new MockHandlerHelper();
-            var mock = mockHelper.GetVerificationHandlerMock(assertion);
-            var handler = mock.Object;
+            var handler = new TestRootHandler(assertion);
             RestClientBuilder restClientBuilder = new RestClientBuilder(_connectionString)
-                .WithHandler(handler);
+                .WithRootHandler(handler);
 
             action?.Invoke(restClientBuilder);
             using var restClient = restClientBuilder.Build();
             await restClient.HealthApi.GetHealthStatusWithHttpMessagesAsync();
-
-            mockHelper.AssertHandlerUsed(mock);
         }
-
     }
 }

@@ -2,8 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net;
-using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Rest;
@@ -25,21 +23,15 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
         }
 
         [Theory]
-        [InlineData(HttpStatusCode.BadRequest)]
-        [InlineData(HttpStatusCode.Conflict)]
-        [InlineData(HttpStatusCode.ServiceUnavailable)]
-        [InlineData(HttpStatusCode.InternalServerError)]
+        [InlineData(HttpStatusCode.ServiceUnavailable)] //will retry many times
+        [InlineData(HttpStatusCode.GatewayTimeout)]  //will retry many times
+        [InlineData(HttpStatusCode.BadRequest)]  //won't retry
+        [InlineData(HttpStatusCode.Conflict)]   //won't retry
         public async void IsServiceHealthyThrowException(HttpStatusCode statusCode)
         //always throw exception when status code != 200
         {
             string contentString = "response content";
-            var content = new ByteArrayContent(Encoding.UTF8.GetBytes(contentString));
-            HttpResponseMessage message = new HttpResponseMessage
-            {
-                Content = content,
-                StatusCode = statusCode
-            };
-            var signalRServiceRestClient = new TestRestClient(message);
+            var signalRServiceRestClient = new TestRestClient(statusCode, contentString);
             var healthApi = new HealthApi(signalRServiceRestClient);
 
             Task func() => healthApi.GetHealthStatusWithHttpMessagesAsync();
@@ -48,6 +40,5 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
             Assert.Equal(statusCode, exception.Response.StatusCode);
             Assert.Equal(contentString, exception.Response.Content);
         }
-
     }
 }
