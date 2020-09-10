@@ -148,10 +148,11 @@ There are two cases.
 
 ### **Concurrent** connection count exceeds limit.
 
-For **Free** instances, **Concurrent** connection count limit is 20
-For **Standard** instances, **concurrent** connection count limit **per unit** is 1K, which means Unit100 allows 100K **concurrent** connections.
+* For **Free** instances, **Concurrent** connection count limit is 20.
+* For **Standard** instances, **concurrent** connection count limit **per unit** is 1K, which means Unit100 allows 100K **concurrent** connections.
 
-The connections include both client and server connections. check [here](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-concept-messages-and-connections#how-connections-are-counted) for how connections are counted.
+The connections include both client and server connections.
+Check [here](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-concept-messages-and-connections#how-connections-are-counted) for how connections are counted.
 
 ### Too many negotiate requests at same time.
 
