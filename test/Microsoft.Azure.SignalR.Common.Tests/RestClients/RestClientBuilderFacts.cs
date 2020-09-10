@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
         {
             string productInfo = "productInfo";
 
-            void action(RestClientBuilder b) => b.WithProductInfo(productInfo);
+            void action(RestClientBuilder b) => b.WithUserAgent(productInfo);
 
             void assertion(HttpRequestMessage request, CancellationToken t)
             {

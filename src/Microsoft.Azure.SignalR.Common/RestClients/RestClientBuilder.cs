@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR
 
         public RestClientBuilder(string connectionString) : this(new ServiceEndpoint(connectionString)) { }
 
-        public RestClientBuilder WithProductInfo(string usegAgent)
+        public RestClientBuilder WithUserAgent(string usegAgent)
         {
             var azUserAgentHandler = new AsrsUserAgentHandler(usegAgent);
             _handlers = new DelegatingHandler[] { azUserAgentHandler };
