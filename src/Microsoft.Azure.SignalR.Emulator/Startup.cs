@@ -67,6 +67,9 @@ namespace Microsoft.Azure.SignalR.Emulator
                    Console.WriteLine(@$"
 ===================================================
 The Azure SignalR Emulator was successfully started.
+
+Press Ctrl+C to stop the Emulator.
+
 Use the below value inside *********** block as its ConnectionString:
 ***********
 
@@ -77,6 +80,8 @@ Endpoint={address.Scheme}://{address.Host};Port={address.Port};AccessKey={AppBui
 ===================================================
 ");
                    upstreamOptionMonitor.CurrentValue.Print();
+
+
                });
             app.UseRouting();
             app.UseWebSockets();

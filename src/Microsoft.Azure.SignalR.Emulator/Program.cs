@@ -14,10 +14,11 @@ namespace Microsoft.Azure.SignalR.Emulator
 {
     public class Program
     {
-        private static readonly string SettingsFile = "settings.json";
-        private static readonly string ProgramDirectory = Path.GetDirectoryName(typeof(Program).Assembly.Location);
-        private static readonly string ProgramDefaultSettingsFile = Path.Combine(ProgramDirectory, SettingsFile);
-        private static readonly string AppSettingsFile = Path.Combine(ProgramDirectory, "appsettings.json");
+        private const int DefaultPort = 8888;
+        private static readonly string SettingsFileName = "settings.json";
+        private static readonly string SettingsFile = Path.GetFullPath(SettingsFileName);
+        private static readonly string ProgramDefaultSettingsFile = Path.Combine(AppContext.BaseDirectory, SettingsFileName);
+        private static readonly string AppSettingsFile = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
 
         public static void Main(string[] args)
         {
@@ -26,8 +27,6 @@ namespace Microsoft.Azure.SignalR.Emulator
             // todo: "start" to run the emulator
             // todo: "help" to explain the upstream and pattern rules
 
-            var host = CreateHostBuilder(args).Build();
-
             var app = new CommandLineApplication();
             app.Name = "asrs-emulator";
             app.Description = "The local emulator for Azure SignalR Serverless features.";
@@ -35,32 +34,50 @@ namespace Microsoft.Azure.SignalR.Emulator
             
             app.Command("upstream", command =>
             {
-                command.Description = "To init/list/update the upstream options";
+                command.Description = "To init/list the upstream options";
                 command.HelpOption("-h|--help");
                 command.Command("init", c =>
                 {
-                    c.Description = "Init the default upstream options into a settings.json config";
+                    c.Description = "Init the default upstream options into a settings.json config. Use -o to specify the folder to export the default settings.";
+                    var configOptions = c.Option("-o|--output", "Specify the folder to init the upstream settings file.", CommandOptionType.SingleValue);
+                    c.HelpOption("-h|--help");
                     c.OnExecute(() =>
                     {
-                        if (File.Exists(SettingsFile))
+                        string outputFile = configOptions.HasValue() ? Path.GetFullPath(Path.Combine(configOptions.Value(), SettingsFileName)) : SettingsFile;
+                        if (File.Exists(outputFile))
                         {
-                            Console.WriteLine($"Already contains {SettingsFile}, still want to override it with the default one? (N/y)");
+                            Console.WriteLine($"Already contains '{outputFile}', still want to override it with the default one? (N/y)");
                             if (Console.ReadKey().Key != ConsoleKey.Y)
                             {
                                 return 0;
                             }
+
+                            Console.WriteLine();
                         }
 
-                        File.Copy(ProgramDefaultSettingsFile, SettingsFile, true);
-                        Console.WriteLine($"Exported default settings to {Path.GetFullPath(SettingsFile)}.");
+                        Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
+                        File.Copy(ProgramDefaultSettingsFile, outputFile, true);
+
+                        Console.WriteLine($"Exported default settings to '{outputFile}'.");
                         return 0;
                     });
                 });
                 command.Command("list", c =>
                 {
-                    c.Description = "List current upstream options.";
+                    c.Description = "List current upstream options. Use -c to specify the folder or file to read the settings.";
+                    var configOptions = c.Option("-c|--config", "Specify the upstream settings file to load from.", CommandOptionType.SingleValue);
+                    c.HelpOption("-h|--help");
                     c.OnExecute(() =>
                     {
+                        if (!TryGetConfigFilePath(configOptions, out var config))
+                        {
+                            return 1;
+                        }
+
+                        var host = CreateHostBuilder(args, DefaultPort, config).Build();
+                        
+                        Console.WriteLine($"Loaded upstream settings from '{config}'");
+                        
                         var option = host.Services.GetRequiredService<IOptions<UpstreamOptions>>();
                         option.Value.Print();
                         return 0;
@@ -72,25 +89,18 @@ namespace Microsoft.Azure.SignalR.Emulator
             {
                 command.Description = "To start the emulator.";
                 var portOptions = command.Option("-p|--port", "Specify the port to use.", CommandOptionType.SingleValue);
+                var configOptions = command.Option("-c|--config", "Specify the upstream settings file to load from.", CommandOptionType.SingleValue);
                 command.HelpOption("-h|--help");
                 command.OnExecute(() =>
                 {
-                    if (portOptions.HasValue())
+                    if (!TryGetPort(portOptions, out var port) || !TryGetConfigFilePath(configOptions, out var config))
                     {
-                        var val = portOptions.Value();
-
-                        if (int.TryParse(val, out var port))
-                        {
-                            host = CreateHostBuilder(args, port).Build();
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Invalid port value: {val}.");
-                            return 1;
-                        }
+                        return 1;
                     }
 
-                    host.Run();
+                    Console.WriteLine($"Loaded settings from '{config}'. Changes to the settings file will be hot-loaded into the emulator.");
+
+                    CreateHostBuilder(args, port, config).Build().Run();
                     return 0;
                 });
             });
@@ -111,23 +121,72 @@ namespace Microsoft.Azure.SignalR.Emulator
             }
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args, int? port = null)
+        public static IHostBuilder CreateHostBuilder(string[] args, int port, string configFile)
         {
             return Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-
-                    if (port.HasValue)
-                    {
-                        webBuilder.UseKestrel(o => o.ListenLocalhost(port.Value));
-                    }
+                    webBuilder.UseKestrel(o => o.ListenLocalhost(port));
                 })
                 .ConfigureAppConfiguration(s =>
                 {
                     s.AddJsonFile(AppSettingsFile, optional: true, reloadOnChange: true);
-                    s.AddJsonFile(SettingsFile, optional: true, reloadOnChange: true);
+                    s.AddJsonFile(configFile, optional: true, reloadOnChange: true);
                 });
+        }
+
+        private static bool TryGetPort(CommandOption portOption, out int port)
+        {
+            if (portOption.HasValue())
+            {
+                var val = portOption.Value();
+
+                if( int.TryParse(val, out port))
+                {
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine($"Invalid port value: {val}");
+                    return false;
+                }
+            }
+            else
+            {
+                port = DefaultPort;
+                return true;
+            }
+        }
+
+        private static bool TryGetConfigFilePath(CommandOption configOption, out string path)
+        {
+            if (configOption.HasValue())
+            {
+                var fileAttempt = Path.GetFullPath(configOption.Value());
+                if (File.Exists(fileAttempt))
+                {
+                    path = fileAttempt;
+                    return true;
+                }
+
+                // Try this as a folder
+                var folderAttempt = Path.GetFullPath(Path.Combine(fileAttempt, SettingsFileName));
+                if (File.Exists(folderAttempt))
+                {
+                    path = folderAttempt;
+                    return true;
+                }
+
+                Console.WriteLine($"Unable to find config file '{fileAttempt}' or '{folderAttempt}'.");
+                path = null;
+                return false;
+            }
+            else
+            {
+                path = SettingsFile;
+                return true;
+            }
         }
     }
 }
