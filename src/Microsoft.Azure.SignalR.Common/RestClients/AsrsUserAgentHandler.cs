@@ -14,6 +14,10 @@ namespace Microsoft.Azure.SignalR
 
         public AsrsUserAgentHandler(string userAgent)
         {
+            if (string.IsNullOrEmpty(userAgent))
+            {
+                throw new System.ArgumentException($"'{nameof(userAgent)}' cannot be null or empty", nameof(userAgent));
+            }
             _asrsUserAgent = userAgent;
         }
 
