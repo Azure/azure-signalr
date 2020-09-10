@@ -70,7 +70,6 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             await WriteMessage(_serviceConnectionManager, message);
-            return;
         }
 
         private async Task WriteMessage(IServiceConnectionContainer connection, AppMessage appMessage)
