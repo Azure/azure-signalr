@@ -154,9 +154,9 @@ There are two cases.
 The connections include both client and server connections.
 Check [here](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-concept-messages-and-connections#how-connections-are-counted) for how connections are counted.
 
-### Too many negotiate requests at same time.
+### Too many negotiate requests at the same time.
 
-Please delay random seconds, then retry.
+We suggest having a random delay before reconnecting, please check [here](#restart_connection) for retry samples.
 
 <a name="500_error_when_negotiate"></a>
 ## 500 Error when negotiate: Azure SignalR Service is not connected yet, please try again later.
