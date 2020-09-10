@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
         public void GetCustomiazeClient_BaseUriRightFact()
         {
             RestClientBuilder restClientBuilder = new RestClientBuilder(_connectionString);
-            var restClient = restClientBuilder.Build();
+            using var restClient = restClientBuilder.Build();
 
             Assert.Equal(Endpoint, restClient.BaseUri.AbsoluteUri);
         }

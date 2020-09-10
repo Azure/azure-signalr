@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
         [Fact]
         public async void IsServiceHealthyReturnTrue()
         {
-            var signalRServiceRestClient = new TestRestClient(HttpStatusCode.OK);
+            using var signalRServiceRestClient = new TestRestClient(HttpStatusCode.OK);
             var healthApi = new HealthApi(signalRServiceRestClient);
 
             var operationResponse = await healthApi.GetHealthStatusWithHttpMessagesAsync();
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
         //always throw exception when status code != 200
         {
             string contentString = "response content";
-            var signalRServiceRestClient = new TestRestClient(statusCode, contentString);
+            using var signalRServiceRestClient = new TestRestClient(statusCode, contentString);
             var healthApi = new HealthApi(signalRServiceRestClient);
 
             Task func() => healthApi.GetHealthStatusWithHttpMessagesAsync();
