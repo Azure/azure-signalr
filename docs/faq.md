@@ -107,8 +107,9 @@ When using Azure SignalR, some APIs and features of ASP.NET SignalR are no longe
 - **Forever Frame transport** is not supported  when using Azure SignalR.
 - Azure SignalR no longer replays messages sent to client when client is offline.
 - When using Azure SignalR, the traffic for one client connection is always routed (aka. **sticky**) to one app server instance for the duration of the connection.
-- Clients using long polling or server side event cannot send a message large than 1MB.
+- Clients using long polling or server sent events cannot send a message large than 1MB.
 
 The support for ASP.NET SignalR is focused on compatibility, so not all new features from ASP.NET Core SignalR are supported. For example, **MessagePack**, **Streaming**, etc., are only available for ASP.NET Core SignalR applications.
 
-SignalR Service can be configured for different service mode: `Classic`/`Default`/`Serverless`. In this ASP.NET support, the `Serverless` mode is not supported. The data-plane REST API is also not supported.
+SignalR Service can be configured for different service mode: `Classic`/`Default`/`Serverless`.
+The current implementation does not support `serverless` mode and REST API for ASP.NET Signalr.
