@@ -72,8 +72,10 @@ namespace Microsoft.Azure.SignalR.Emulator
         public static IServiceCollection AddSignalREmulator(this IServiceCollection services)
         {
             services.AddSingleton(typeof(HubLifetimeManager<>), typeof(CachedHubLifetimeManager<>));
+            services.AddSingleton(typeof(HubProxyHandler<>));
+            services.AddSingleton(typeof(HttpServerlessMessageHandler<>));
+            services.AddSingleton<IHttpUpstreamTrigger, HttpUpstreamTrigger>();
             services.AddSingleton<DynamicHubContextStore>();
-
             services.AddSignalR().AddMessagePackProtocol();
             return services;
         }

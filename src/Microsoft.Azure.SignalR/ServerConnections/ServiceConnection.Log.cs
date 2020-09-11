@@ -80,10 +80,7 @@ namespace Microsoft.Azure.SignalR
 
             public static void RecieveMessageFromService(ILogger logger, ConnectionDataMessage message)
             {
-                if (ClientConnectionScope.IsDiagnosticClient)
-                {
-                    _receivedMessageFromService(logger, message.TracingId, message.ConnectionId, null);
-                }
+                _receivedMessageFromService(logger, message.TracingId, message.ConnectionId, null);
             }
 
             public static void WaitingForTransport(ILogger logger)

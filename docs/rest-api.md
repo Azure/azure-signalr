@@ -14,6 +14,7 @@
     - [Implement Negotiate Endpoint](#Implement-Negotiate-Endpoint)
     - [User-related REST API](#User-related-REST-API)
     - [Sample](#Sample)
+  - [Limitation](#Limitation)
 
 On top of classical client-server pattern, Azure SignalR Service provides a set of REST APIs, so that you can easily integrate real-time functionality into your server-less architecture.
 
@@ -117,3 +118,13 @@ Then SignalR Service will use the value of `nameid` claim as the user id of each
 You can find a complete console app to demonstrate how to manually build REST API HTTP request in Azure SignalR Service [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Serverless).
 
 You can also use [Microsoft.Azure.SignalR.Management](<https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management>) to publish messages to Azure SignalR Service using the similar interfaces of `IHubContext`. Samples can be found [here](<https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management>). For more information, see [here](management-sdk-guide.md).
+
+
+## Limitation
+
+Currently, we have following limitation for REST API request:
+
+* Header size, we only support up to 16KB.
+* Body size, we only support up to 1MB.
+
+If you want to send message than 1MB, please use management SDK with persistent connection.

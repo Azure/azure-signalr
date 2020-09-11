@@ -26,6 +26,7 @@
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>
     <MicrosoftIdentityClientVersion>4.9.0</MicrosoftIdentityClientVersion>
     <MicrosoftAzureServicesAppAuthentication>1.5.0</MicrosoftAzureServicesAppAuthentication>
+    <MicrosoftRestClientRuntimePackageVersion>2.3.21</MicrosoftRestClientRuntimePackageVersion>
 
     <!-- Azure ASP.NET SignalR -->
     <MicrosoftAspNetSignalRPackageVersion>2.4.1</MicrosoftAspNetSignalRPackageVersion>
