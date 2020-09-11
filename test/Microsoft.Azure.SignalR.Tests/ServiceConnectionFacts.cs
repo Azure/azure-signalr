@@ -422,7 +422,7 @@ namespace Microsoft.Azure.SignalR.Tests
         /// </summary>
         /// <returns></returns>
         [Fact]
-        public async Task OnDemandConnectionSendsMessages()
+        public async Task OnDemandConnectionSelectedToSendMessages()
         {
             var proxy = new ServiceConnectionProxy();
 
@@ -453,7 +453,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // now that the only connection left is on demand one verify that we still receive pings
             var pingMsgTask = proxy.WaitForApplicationMessageAsync(typeof(PingMessage));
-            await Task.Delay(TimeSpan.FromSeconds(6));
+            await Task.Delay(TimeSpan.FromSeconds(10));
             await pingMsgTask.OrTimeout();
         }
 
