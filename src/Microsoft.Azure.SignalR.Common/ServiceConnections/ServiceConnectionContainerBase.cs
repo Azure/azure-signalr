@@ -465,11 +465,12 @@ namespace Microsoft.Azure.SignalR
 
         private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
         {
-            int count = ServiceConnections.Count;
-            return WriteWithRetry(serviceMessage, StaticRandom.Next(-count, count), count);
+            // ServiceConnections can change underneath so we make a local copy and pass it along
+            var currentConnections = ServiceConnections;
+            return WriteWithRetry(serviceMessage, currentConnections, StaticRandom.Next(-currentConnections.Count, currentConnections.Count), currentConnections.Count);
         }
 
-        private async Task WriteWithRetry(ServiceMessage serviceMessage, int initial, int count)
+        private async Task WriteWithRetry(ServiceMessage serviceMessage, List<IServiceConnection> currentConnections, int initial, int count)
         {
             // go through all the connections, it can be useful when one of the remote service instances is down
             var maxRetry = count;
@@ -478,7 +479,7 @@ namespace Microsoft.Azure.SignalR
             var direction = initial > 0 ? 1 : count - 1;
             while (retry < maxRetry)
             {
-                var connection = ServiceConnections[index];
+                var connection = currentConnections[index];
                 if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
                 {
                     try
