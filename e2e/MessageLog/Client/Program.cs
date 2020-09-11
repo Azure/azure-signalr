@@ -29,14 +29,28 @@ namespace Microsoft.Azure.SignalR.E2ETest
         static async Task RunCoreAsync(Options opts)
         {
             var connections = new List<HubConnection>();
-            for (var i = 0; i < opts.ConnectionCount; i++)
+            for (var i = 0; i < (opts.Scenario == Scenario.Throttle ? 150 : opts.ConnectionCount); i++)
             {
                 connections.Add(CreateConnection(opts.Url, GetUniqueName(i), opts.Protocol));
             }
+            if(opts.Scenario == Scenario.Throttle)
+            {
+                await Task.WhenAll(
+                from connection in connections.GetRange(0, 100)
+                select RandomDelayTask(connection.StartAsync(), 10 * 1000));
 
-            await Task.WhenAll(
+                await Task.Delay(20 * 1000);
+
+                await Task.WhenAll(
+                from connection in connections.GetRange(100, 50)
+                select RandomDelayTask(connection.StartAsync(), 10 * 1000));
+            }
+            else
+            {
+                await Task.WhenAll(
                 from connection in connections
-                select RandomDelayTask(connection.StartAsync(), opts.Scenario == Scenario.Throttle ? 58 * 1000 : connections.Count * 1000));
+                select RandomDelayTask(connection.StartAsync(), connections.Count * 1000));
+            }
 
             await Task.Delay(1000);
             for (var i = 0; i < opts.RepeatSendingTimes; i++)
