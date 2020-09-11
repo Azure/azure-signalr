@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net;
-using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Rest;
 using Xunit;
@@ -34,9 +33,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
             using var signalRServiceRestClient = new TestRestClient(statusCode, contentString);
             var healthApi = new HealthApi(signalRServiceRestClient);
 
-            Task action() => healthApi.GetHealthStatusWithHttpMessagesAsync();
 
-            HttpOperationException exception = await Assert.ThrowsAsync<HttpOperationException>(action);
+            HttpOperationException exception = await Assert.ThrowsAsync<HttpOperationException>(() => healthApi.GetHealthStatusWithHttpMessagesAsync());
             Assert.Equal(statusCode, exception.Response.StatusCode);
             Assert.Equal(contentString, exception.Response.Content);
         }
