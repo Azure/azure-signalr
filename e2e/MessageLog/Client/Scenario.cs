@@ -9,6 +9,7 @@
         SendToGroupRandomly,
         SendToClientRandomly,
         SendToUserRandomly,
+        Throttle,
         MessageLog
     }
 }

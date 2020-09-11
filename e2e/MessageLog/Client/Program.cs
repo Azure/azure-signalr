@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.E2ETest
 
             await Task.WhenAll(
                 from connection in connections
-                select RandomDelayTask(connection.StartAsync(), connections.Count * 1000));
+                select RandomDelayTask(connection.StartAsync(), opts.Scenario == Scenario.Throttle ? 58 * 1000 : connections.Count * 1000));
 
             await Task.Delay(1000);
             for (var i = 0; i < opts.RepeatSendingTimes; i++)
