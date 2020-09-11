@@ -453,7 +453,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // now that the only connection left is on demand one verify that we still receive pings
             var pingMsgTask = proxy.WaitForApplicationMessageAsync(typeof(PingMessage));
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(20));
             await pingMsgTask.OrTimeout();
         }
 

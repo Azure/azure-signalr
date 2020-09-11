@@ -465,7 +465,7 @@ namespace Microsoft.Azure.SignalR
 
         private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
         {
-            // ServiceConnections can change underneath so we make a local copy and pass it along
+            // ServiceConnections can change the collection underneath so we make a local copy and pass it along
             var currentConnections = ServiceConnections;
             return WriteWithRetry(serviceMessage, currentConnections, StaticRandom.Next(-currentConnections.Count, currentConnections.Count), currentConnections.Count);
         }
