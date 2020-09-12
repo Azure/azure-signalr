@@ -86,9 +86,9 @@ namespace Microsoft.Azure.SignalR.Management
                     }
                 case ServiceTransportType.Transient:
                     {
-                        var serviceProvider = BuildTransientServiceProvider(hubName, loggerFactory);
+                        var serviceProvider = BuildTransientServiceProvider<Hub>(hubName, loggerFactory);
                         var hubContext = serviceProvider.GetRequiredService<IHubContext<Hub>>();
-                        var restHubLifetimeManager = (RestHubLifetimeManager) serviceProvider.GetRequiredService<HubLifetimeManager<Hub>>();
+                        var restHubLifetimeManager = (RestHubLifetimeManager<Hub>) serviceProvider.GetRequiredService<HubLifetimeManager<Hub>>();
                         return new ServiceHubContext(hubContext, restHubLifetimeManager, serviceProvider);
                     }
                 default:
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.SignalR.Management
                             // wait until service connection established
                             await weakConnectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
 
-                            var webSocketsHubLifetimeManager = (WebSocketsHubLifetimeManager<Hub>)serviceProvider.GetRequiredService<HubLifetimeManager<Hub>>();
+                            var webSocketsHubLifetimeManager = (WebSocketsHubLifetimeManager<Hub<T>>)serviceProvider.GetRequiredService<HubLifetimeManager<Hub<T>>>();
 
                             var hubContext = serviceProvider.GetRequiredService<IHubContext<Hub<T>, T>>();
                             var serviceHubContext = new ServiceHubContext<T>(hubContext, webSocketsHubLifetimeManager, serviceProvider);
@@ -134,9 +134,9 @@ namespace Microsoft.Azure.SignalR.Management
                     }
                 case ServiceTransportType.Transient:
                     {
-                        var serviceProvider = BuildTransientServiceProvider(hubName, loggerFactory);
+                        var serviceProvider = BuildTransientServiceProvider<Hub<T>>(hubName, loggerFactory);
                         var hubContext = serviceProvider.GetRequiredService<IHubContext<Hub<T>, T>>();
-                        var restHubLifetimeManager = (RestHubLifetimeManager)serviceProvider.GetRequiredService<HubLifetimeManager<Hub>>();
+                        var restHubLifetimeManager = (RestHubLifetimeManager<Hub<T>>)serviceProvider.GetRequiredService<HubLifetimeManager<Hub<T>>>();
                         return new ServiceHubContext<T>(hubContext, restHubLifetimeManager, serviceProvider);
                     }
                 default:
@@ -186,7 +186,9 @@ namespace Microsoft.Azure.SignalR.Management
             return serviceCollection.BuildServiceProvider();
         }
 
-        public ServiceProvider BuildTransientServiceProvider(string hubName, ILoggerFactory loggerFactory)
+        // Slight deviation here from the Persistent builder. We need THub as RestHubLifetimeManager is not built via DI.
+        public ServiceProvider BuildTransientServiceProvider<THub>(string hubName, ILoggerFactory loggerFactory)
+            where THub : Hub
         {
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddSignalRCore();
@@ -196,9 +198,8 @@ namespace Microsoft.Azure.SignalR.Management
             serviceCollection.Remove(serviceDescriptor);
 
             // add rest hub lifetime manager
-            // TODO: Tests will fail, must update RestHubLifetimeManager to support Hub<T> or open generic
-            var restHubLifetimeManager = new RestHubLifetimeManager(_serviceManagerOptions, hubName, _productInfo);
-            serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), sp => restHubLifetimeManager);
+            var restHubLifetimeManager = new RestHubLifetimeManager<THub>(_serviceManagerOptions, hubName, _productInfo);
+            serviceCollection.AddSingleton(typeof(HubLifetimeManager<THub>), sp => restHubLifetimeManager);
 
             return serviceCollection.BuildServiceProvider();
         }

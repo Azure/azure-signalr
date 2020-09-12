@@ -8,8 +8,9 @@ using Microsoft.AspNetCore.SignalR;
 namespace Microsoft.Azure.SignalR.Management
 {
     /// <summary>
-    /// A context abstraction for a hub.
+    /// A context abstraction for a hub with strongly typed clients.
     /// </summary>
+    /// <typeparam name="T">The type of client.</typeparam>
     public interface IServiceHubContext<T> : IHubContext<Hub<T>, T> where T : class
     {
         /// <summary>

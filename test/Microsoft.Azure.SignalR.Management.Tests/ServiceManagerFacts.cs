@@ -108,6 +108,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             using (var loggerFactory = useLoggerFactory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance)
             {
                 var hubContext = await serviceManager.CreateHubContextAsync<IServiceHubTestClient>(HubName, loggerFactory);
+
+                Assert.IsAssignableFrom<IHubClients<IServiceHubTestClient>>(hubContext.Clients);
             }
         }
 
