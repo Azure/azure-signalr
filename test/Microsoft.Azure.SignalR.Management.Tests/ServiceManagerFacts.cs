@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -13,6 +15,11 @@ using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
+    public interface IServiceHubTestClient
+    {
+        Task HelloWorld();
+    }
+
     public class ServiceManagerFacts
     {
         private const string Endpoint = "https://abc";
@@ -69,7 +76,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         //[Theory(Skip = "Reenable when it is ready")]
         [Theory]
         [MemberData(nameof(TestServiceManagerOptionData))]
-        internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFacory, string appName, int connectionCount)
+        internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFactory, string appName, int connectionCount)
         {
             var serviceManager = new ServiceManager(new ServiceManagerOptions
             {
@@ -79,9 +86,28 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ConnectionCount = connectionCount
             }, null);
 
-            using (var loggerFactory = useLoggerFacory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance)
+            using (var loggerFactory = useLoggerFactory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance)
             {
                 var hubContext = await serviceManager.CreateHubContextAsync(HubName, loggerFactory);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestServiceManagerOptionData))]
+        internal async Task CreateServiceHubContextGenericTest(ServiceTransportType serviceTransportType,
+            bool useLoggerFactory, string appName, int connectionCount)
+        {
+            var serviceManager = new ServiceManager(new ServiceManagerOptions
+            {
+                ConnectionString = _testConnectionString,
+                ServiceTransportType = serviceTransportType,
+                ApplicationName = appName,
+                ConnectionCount = connectionCount
+            }, null);
+
+            using (var loggerFactory = useLoggerFactory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance)
+            {
+                var hubContext = await serviceManager.CreateHubContextAsync<IServiceHubTestClient>(HubName, loggerFactory);
             }
         }
 

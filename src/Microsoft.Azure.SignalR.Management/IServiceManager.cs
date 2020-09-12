@@ -25,6 +25,17 @@ namespace Microsoft.Azure.SignalR.Management
         Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Asynchronously creates an instance of <see cref="IServiceHubContext{T}"/> with strongly typed clients T.
+        /// </summary>
+        /// <typeparam name="T">Hub Client type. See <see cref="Microsoft.AspNetCore.SignalR.IHubClients{T}"/></typeparam>
+        /// <param name="hubName">The hub name.</param>
+        /// <param name="loggerFactory">The logger factory.</param>
+        /// <param name="cancellationToken">Cancellation token for creating service hub context.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        Task<IServiceHubContext<T>> CreateHubContextAsync<T>(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default) 
+            where T : class;
+
+        /// <summary>
         /// Creates a client access token for SignalR hub connections to connect to Azure SignalR Service.
         /// </summary>
         /// <param name="hubName">The hub name.</param>

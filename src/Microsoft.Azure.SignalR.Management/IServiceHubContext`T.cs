@@ -1,0 +1,26 @@
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
+
+namespace Microsoft.Azure.SignalR.Management
+{
+    /// <summary>
+    /// A context abstraction for a hub.
+    /// </summary>
+    public interface IServiceHubContext<T> : IHubContext<Hub<T>, T> where T : class
+    {
+        /// <summary>
+        /// Gets a user group manager instance which implements <see cref="IUserGroupManager"/> that can be used to add and remove users to named groups.
+        /// </summary>
+        IUserGroupManager UserGroups { get; }
+
+        /// <summary>
+        /// Dispose instances of <see cref="Microsoft.Azure.SignalR.Management.IServiceHubContext"/> asynchronously. 
+        /// </summary>
+        /// <returns></returns>
+        Task DisposeAsync();
+    }
+}
