@@ -14,6 +14,7 @@ namespace Microsoft.Azure.SignalR
         public const string StartToBroadcastMessageTemplate = "Start to broadcast message {0}.";
         public const string StartToBroadcastMessageWithExcludedConnectionTemplate = "Start to broadcast message {0} except for {1} connections {2}.";
         public const string StartToSendMessageToConnectionsTemplate = "Start to send message {0} to {1} connections {2}.";
+        public const string StartToSendMessageToConnectionTemplate = "Start to send message {0} to connection {1}.";
         public const string StartToBroadcastMessageToGroupTemplate = "Start to broadcast message {0} to group {1}.";
         public const string StartToBroadcastMessageToGroupWithExcludedConnectionsTemplate = "Start to broadcast message {0} to group {1} except for {2} connections {3}.";
         public const string StartToBroadcastMessageToGroupsTemplate = "Start to broadcast message {0} to {1} groups {2}.";
@@ -45,6 +46,12 @@ namespace Microsoft.Azure.SignalR
                 LogLevel.Information,
                 new EventId(10, "StartToSendMessageToConnections"),
                 StartToSendMessageToConnectionsTemplate);
+
+        private static readonly Action<ILogger, ulong?, string, Exception> _startToSendMessageToConnection =
+            LoggerMessage.Define<ulong?, string>(
+                LogLevel.Information,
+                new EventId(11, "StartToSendMessageToConnection"),
+                StartToSendMessageToConnectionTemplate);
 
         private static readonly Action<ILogger, ulong?, string, Exception> _startToBroadcastMessageToGroup =
             LoggerMessage.Define<ulong?, string>(
@@ -124,12 +131,33 @@ namespace Microsoft.Azure.SignalR
                 new EventId(110, "SucceededToSendMessage"),
                 SucceededToSendMessageTemplate);
 
+        private static readonly Action<ILogger, ulong?, string, Exception> _receivedMessageFromService =
+                LoggerMessage.Define<ulong?, string>(
+                    LogLevel.Information,
+                    new EventId(120, "RecieveMessageFromService"),
+                    "Received message {tracingId} from client connection {connectionId}.");
+
+        public static void ReceiveMessageFromService(ILogger logger, ConnectionDataMessage message)
+        {
+            _receivedMessageFromService(logger, message.TracingId, message.ConnectionId, null);
+        }
+
         public static void SucceededToSendMessage<T>(ILogger logger, T message) where T : ServiceMessage, IMessageWithTracingId
         {
             _succeededToSendMessage(logger, message.TracingId, null);
         }
 
+        public static void SucceededToSendMessage(ILogger logger, IMessageWithTracingId message)
+        {
+            _succeededToSendMessage(logger, message.TracingId, null);
+        }
+
         public static void FailedToSendMessage<T>(ILogger logger, T message, Exception ex) where T : ServiceMessage, IMessageWithTracingId
+        {
+            _failedToSendMessage(logger, message.TracingId, ex);
+        }
+
+        public static void FailedToSendMessage(ILogger logger, IMessageWithTracingId message, Exception ex)
         {
             _failedToSendMessage(logger, message.TracingId, ex);
         }
@@ -152,6 +180,11 @@ namespace Microsoft.Azure.SignalR
         {
             var connections = string.Join(", ", message.ConnectionList);
             _startToSendMessageToConnections(logger, message.TracingId, message.ConnectionList.Count, connections, null);
+        }
+
+        public static void StartToSendMessageToConnection(ILogger logger, ConnectionDataMessage message)
+        {
+            _startToSendMessageToConnection(logger, message.TracingId, message.ConnectionId, null);
         }
 
         public static void StartToBroadcastMessageToGroup(ILogger logger, GroupBroadcastDataMessage message)
