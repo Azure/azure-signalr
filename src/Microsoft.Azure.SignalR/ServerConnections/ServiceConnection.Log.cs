@@ -72,17 +72,6 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _processConnectionFailed =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(24, "ProcessConnectionFailed"), "Error processing the connection {TransportConnectionId}.");
 
-            private static readonly Action<ILogger, ulong?, string, Exception> _receivedMessageFromService =
-                LoggerMessage.Define<ulong?, string>(
-                    LogLevel.Information,
-                    new EventId(25, "RecieveMessageFromService"),
-                    "Received message {tracingId} from client connection {connectionId}.");
-
-            public static void RecieveMessageFromService(ILogger logger, ConnectionDataMessage message)
-            {
-                _receivedMessageFromService(logger, message.TracingId, message.ConnectionId, null);
-            }
-
             public static void WaitingForTransport(ILogger logger)
             {
                 _waitingForTransport(logger, null);
