@@ -3,6 +3,7 @@
 
 using Microsoft.Azure.SignalR.Common.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 
 namespace Microsoft.Azure.SignalR
@@ -14,25 +15,34 @@ namespace Microsoft.Azure.SignalR
     {
         private bool _needCleanup;
 
-        internal ClientConnectionScope() : this(default, default)
+        internal ClientConnectionScope() : this(default, default, default)
         {
         }
 
-        protected internal ClientConnectionScope(IServiceConnection outboundConnection, bool isDiagnosticClient)
+        protected internal ClientConnectionScope(HubServiceEndpoint endpoint, IServiceConnection outboundConnection, bool isDiagnosticClient)
         {
             // Only allow to carry one copy of connection properties regardless of how many nested scopes are created
             if (!IsScopeEstablished)
             {
                 _needCleanup = true;
+
+                // The lifetime of the async local we're about to create can be much longer than some of the objects we store inside.
+                // Instances of IServiceConnection can be stopped and replaced over time and nobody should keep references to the old ones.
+                // So we keep them inside async local wrapped in weak references to avoid unnecessarily prolonging their lifetime.
+                // Instances of HubServiceEndpoint (and connection container it references) are expected to exist for the duration
+                // of the process. So we can store them without wrapping in weak reference.
+                var dict = new ConcurrentDictionary<HubServiceEndpoint, WeakReference<IServiceConnection>>();
+                dict.TryAdd(endpoint, new WeakReference<IServiceConnection>(outboundConnection));
+
                 ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current =
-                            new ScopePropertiesAccessor<ClientConnectionScopeProperties>()
-                            {
-                                Properties = new ClientConnectionScopeProperties()
-                                {
-                                    OutboundServiceConnection = new WeakReference<IServiceConnection>(outboundConnection),
-                                    IsDiagnosticClient = isDiagnosticClient
-                                }
-                            };
+                    new ScopePropertiesAccessor<ClientConnectionScopeProperties>()
+                    {
+                        Properties = new ClientConnectionScopeProperties()
+                        {
+                            OutboundServiceConnections = dict,
+                            IsDiagnosticClient = isDiagnosticClient
+                        }
+                    };
             }
             else
             {
@@ -44,7 +54,8 @@ namespace Microsoft.Azure.SignalR
         {
             if (_needCleanup)
             {
-                // shallow cleanup since we don't want any execution contexts in unawaited tasks 
+                // shallow cleanup since we don't want any running tasks or threads
+                // (whose execution contexts can still carry a copy of async local)
                 // to suddenly change behavior once we're done with disposing
                 ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current = null;
             }
@@ -52,15 +63,15 @@ namespace Microsoft.Azure.SignalR
 
         internal static bool IsScopeEstablished => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current != null;
 
-        internal static WeakReference<IServiceConnection> OutboundServiceConnection
+        internal static ConcurrentDictionary<HubServiceEndpoint, WeakReference<IServiceConnection>> OutboundServiceConnections
         {
-            get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties?.OutboundServiceConnection;
+            get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties?.OutboundServiceConnections;
             set 
             {
                 var currentProps = ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties;
                 if (currentProps != null)
                 {
-                    currentProps.OutboundServiceConnection = value;
+                    currentProps.OutboundServiceConnections = value;
                 }
             }
         }
@@ -80,7 +91,7 @@ namespace Microsoft.Azure.SignalR
 
         private class ClientConnectionScopeProperties
         {
-            public WeakReference<IServiceConnection> OutboundServiceConnection { get; set; }
+            public ConcurrentDictionary<HubServiceEndpoint, WeakReference<IServiceConnection>> OutboundServiceConnections { get; set; }
 
             public bool IsDiagnosticClient { get; set; }
         }

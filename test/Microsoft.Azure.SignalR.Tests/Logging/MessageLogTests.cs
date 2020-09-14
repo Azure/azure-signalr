@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void MessageLogTest()
         {
             var logger = new TestLogger();
-            using (var s = new ClientConnectionScope(null, true))
+            using (var s = new ClientConnectionScope(null, null, true))
             {
                 // broadcast
                 AzureSignalRLog.StartToBroadcastMessage(logger, new BroadcastDataMessage(null, 123UL));

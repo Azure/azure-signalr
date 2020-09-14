@@ -218,7 +218,7 @@ namespace Microsoft.Azure.SignalR
 
         public virtual Task WriteAsync(ServiceMessage serviceMessage)
         {
-            return WriteToRandomAvailableConnection(serviceMessage);
+            return WriteToScopedOrRandomAvailableConnection(serviceMessage);
         }
 
         public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.SignalR
             var task = _ackHandler.CreateAck(out var id, cancellationToken);
             ackableMessage.AckId = id;
 
-            await WriteToRandomAvailableConnection(serviceMessage);
+            await WriteToScopedOrRandomAvailableConnection(serviceMessage);
 
             var status = await task;
             switch (status)
@@ -435,28 +435,107 @@ namespace Microsoft.Azure.SignalR
             await _backOffPolicy.CallProbeWithBackOffAsync(tryNewConnection, GetRetryDelay);
         }
 
-        private Task WriteToRandomAvailableConnection(ServiceMessage serviceMessage)
+        private async Task WriteToScopedOrRandomAvailableConnection(ServiceMessage serviceMessage)
         {
-            return WriteWithRetry(serviceMessage, StaticRandom.Next(-FixedConnectionCount, FixedConnectionCount), FixedConnectionCount);
+            if (!(serviceMessage is PingMessage))
+            {
+                Console.WriteLine();
+            }
+            if (ClientConnectionScope.IsScopeEstablished)
+            {
+                var containers = ClientConnectionScope.OutboundServiceConnections;
+                WeakReference<IServiceConnection> connectionWr = null;
+                containers?.TryGetValue(Endpoint, out connectionWr);
+
+                //var myWr = new WeakReference<IServiceConnection>(null);
+                //var wr = containers?.GetOrAdd(Endpoint.GetHashCode(), myWr);
+                //if (wr == myWr)
+                //{
+                //    // find connection, etc
+                //}
+                //else
+                //{
+                //    // await TaskCompletionSource from the element
+                //}
+
+                // special case: established scope but nothing for this endpoint
+                // this is either a secondary endpoint or a customer-established scope
+                //if (containers != null && connectionWr == null)
+                //{
+                //    // todo: decide whether just GetOrAdd for an unproven connection or to wait for the send?
+                //    connectionWr = containers.GetOrAdd(Endpoint, (ep)=> {
+                //        var wr = new WeakReference<IServiceConnection>(null);
+                //        return wr;
+                //    });
+                //}
+
+                IServiceConnection connection = null;
+                connectionWr?.TryGetTarget(out connection);
+
+                bool correctContainer = false;
+                if (connection != null)
+                {
+                    // double check
+                    foreach (var c in _fixedServiceConnections)
+                    {
+                        if (c.GetHashCode() == connection.GetHashCode())
+                        {
+                            correctContainer = true;
+                            break;
+                        }
+                    }
+
+                    if (!correctContainer)
+                    {
+                        connection = null;
+                    }
+                }
+
+                if (connection != null)
+                {
+                    Console.WriteLine();
+                }
+
+                var connectionUsed = await WriteWithRetry(serviceMessage, connection);
+
+                // Try to persist the connection choice for the subsequent calls within the same async flow
+                // todo: what if there are concurrent writes??
+                // lock on something?
+                // rework after verifying the basic switch over
+                // for both primary and secondary
+
+
+                if (connectionUsed != connection)
+                {
+                    ClientConnectionScope.OutboundServiceConnections[Endpoint] = new WeakReference<IServiceConnection>(connectionUsed);
+                }
+
+            }
+            else
+            {
+                await WriteWithRetry(serviceMessage, null);
+            }
         }
 
-        private async Task WriteWithRetry(ServiceMessage serviceMessage, int initial, int count)
+        private async Task<IServiceConnection> WriteWithRetry(ServiceMessage serviceMessage, IServiceConnection connection)
         {
             // go through all the connections, it can be useful when one of the remote service instances is down
-            var maxRetry = count;
+            var initial = StaticRandom.Next(-FixedConnectionCount, FixedConnectionCount);
+            var maxRetry = FixedConnectionCount;
             var retry = 0;
-            var index = (initial & int.MaxValue) % count;
-            var direction = initial > 0 ? 1 : count - 1;
-            while (retry < maxRetry)
+            var index = (initial & int.MaxValue) % FixedConnectionCount;
+            var direction = initial > 0 ? 1 : FixedConnectionCount - 1;
+
+            // ensure a full sweep starting with a connection flowed with the async context
+            while (retry <= maxRetry)
             {
-                var connection = FixedServiceConnections[index];
                 if (connection != null && connection.Status == ServiceConnectionStatus.Connected)
                 {
                     try
                     {
                         // still possible the connection is not valid
                         await connection.WriteAsync(serviceMessage);
-                        return;
+                        return connection;
                     }
                     catch (ServiceConnectionNotActiveException)
                     {
@@ -467,8 +546,11 @@ namespace Microsoft.Azure.SignalR
                     }
                 }
 
+                // try current index instead
+                connection = FixedServiceConnections[index];
+
                 retry++;
-                index = (index + direction) % count;
+                index = (index + direction) % FixedConnectionCount;
             }
 
             throw new ServiceConnectionNotActiveException();

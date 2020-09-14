@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             Assert.NotNull(msg1 as IMessageWithTracingId);
             Assert.Null((msg1 as IMessageWithTracingId).TracingId);
 
-            using (new ClientConnectionScope(null, true))
+            using (new ClientConnectionScope(null, null, true))
             {
                 var msg2 = new BroadcastDataMessage(null).WithTracingId();
 
