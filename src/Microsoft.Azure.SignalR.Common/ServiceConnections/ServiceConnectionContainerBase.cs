@@ -192,6 +192,11 @@ namespace Microsoft.Azure.SignalR
                 Log.ReceivedServiceStatusPing(Logger, status, Endpoint);
                 _hasClients = status;
                 Endpoint.IsActive = GetServiceStatus(status, CheckWindow, CheckTimeSpan);
+
+                if (RuntimeServicePingMessage.TryGetClientCount(pingMessage, out var clientCount))
+                {
+                    Endpoint.EndpointStat.ClientCount = clientCount;
+                }
             }
             else if (RuntimeServicePingMessage.TryGetServersTag(pingMessage, out var serversTag, out var updatedTime))
             {

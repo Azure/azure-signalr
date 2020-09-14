@@ -37,6 +37,11 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public bool IsActive { get; internal set; } = true;
 
+        /// <summary>
+        /// Enriched endpoint stat for customized routing.
+        /// </summary>
+        public EndpointStat EndpointStat { get; internal set; } = new EndpointStat();
+
         internal ServiceEndpoint(string endpoint, AuthOptions authOptions, int port = 443)
         {
             // Endpoint = string.Format("https://{0}.service.signalr.net", resourceName);
