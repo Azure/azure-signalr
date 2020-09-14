@@ -49,7 +49,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
+        public override async Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (IsInvalidArgument(connectionId))
             {
@@ -68,10 +68,26 @@ namespace Microsoft.Azure.SignalR
                 {
                     AzureSignalRLog.StartToSendMessageToConnections(Logger, message);
                 }
-                // Write directly to this connection
-                return serviceConnectionContext.ServiceConnection.WriteAsync(message);
+
+                try
+                {
+                    // Write directly to this connection
+                    await serviceConnectionContext.ServiceConnection.WriteAsync(message);
+                    
+                    if (message.TracingId != null)
+                    {
+                        AzureSignalRLog.SucceededToSendMessage(Logger, message);
+                    }
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    AzureSignalRLog.FailedToSendMessage(Logger, message, ex);
+                    throw;
+                }
             }
-            return base.SendConnectionAsync(connectionId, methodName, args, cancellationToken);
+
+            await base.SendConnectionAsync(connectionId, methodName, args, cancellationToken);
         }
     }
 }
