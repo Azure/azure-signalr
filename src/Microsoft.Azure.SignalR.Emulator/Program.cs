@@ -22,11 +22,6 @@ namespace Microsoft.Azure.SignalR.Emulator
 
         public static void Main(string[] args)
         {
-            // todo: "upstream init" to generate the default setting.json file
-            // todo: "upstream list" to list the settings file
-            // todo: "start" to run the emulator
-            // todo: "help" to explain the upstream and pattern rules
-
             var app = new CommandLineApplication();
             app.Name = "asrs-emulator";
             app.Description = "The local emulator for Azure SignalR Serverless features.";
