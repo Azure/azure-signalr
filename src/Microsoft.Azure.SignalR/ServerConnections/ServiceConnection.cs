@@ -165,7 +165,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (connectionDataMessage.TracingId != null)
             {
-                Log.RecieveMessageFromService(Logger, connectionDataMessage);
+                AzureSignalRLog.ReceiveMessageFromService(Logger, connectionDataMessage);
             }
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionDataMessage.ConnectionId, out var connection))
             {

@@ -144,12 +144,19 @@ For REST API see [limitation](rest-api.md#Limitation).
 <a name="429_too_many_requests"></a>
 ## 429(Too Many Requests) returned for client requests
 
-429 returns if your **concurrent** connection count exceeds limit.
+There are two cases.
 
-For **Free** instances, **Concurrent** connection count limit is 20
-For **Standard** instances, **concurrent** connection count limit **per unit** is 1K, which means Unit100 allows 100K **concurrent** connections.
+### **Concurrent** connection count exceeds limit.
 
-The connections include both client and server connections. check [here](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-concept-messages-and-connections#how-connections-are-counted) for how connections are counted.
+* For **Free** instances, **Concurrent** connection count limit is 20.
+* For **Standard** instances, **concurrent** connection count limit **per unit** is 1K, which means Unit100 allows 100K **concurrent** connections.
+
+The connections include both client and server connections.
+Check [here](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-concept-messages-and-connections#how-connections-are-counted) for how connections are counted.
+
+### Too many negotiate requests at the same time.
+
+We suggest having a random delay before reconnecting, please check [here](#restart_connection) for retry samples.
 
 <a name="500_error_when_negotiate"></a>
 ## 500 Error when negotiate: Azure SignalR Service is not connected yet, please try again later.

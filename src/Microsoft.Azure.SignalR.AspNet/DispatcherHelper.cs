@@ -114,10 +114,10 @@ namespace Microsoft.Azure.SignalR.AspNet
             var atm = new AzureTransportManager(configuration.Resolver);
             configuration.Resolver.Register(typeof(ITransportManager), () => atm);
 
-            var parser = new SignalRMessageParser(hubs, configuration.Resolver);
+            var parser = new SignalRMessageParser(hubs, configuration.Resolver, loggerFactory.CreateLogger<SignalRMessageParser>());
             configuration.Resolver.Register(typeof(IMessageParser), () => parser);
 
-            var smb = new ServiceMessageBus(configuration.Resolver);
+            var smb = new ServiceMessageBus(configuration.Resolver, loggerFactory.CreateLogger<ServiceMessageBus>());
             configuration.Resolver.Register(typeof(IMessageBus), () => smb);
 
             var scf = configuration.Resolver.Resolve<IServiceConnectionFactory>();
