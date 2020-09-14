@@ -84,12 +84,17 @@ namespace Microsoft.Azure.SignalR.Tests
             return connection;
         }
 
-        private Task ConnectionFactoryCallbackAsync(TestConnection connection)
+        public bool NewConnectionsCreationPaused { get; set; }
+
+        private async Task ConnectionFactoryCallbackAsync(TestConnection connection)
         {
+            while (NewConnectionsCreationPaused)
+            {
+                await Task.Delay(10);
+            }
             ConnectionContexts.TryAdd(connection.ConnectionId, connection);
             // Start a process for each server connection
             _ = StartProcessApplicationMessagesAsync(connection);
-            return Task.CompletedTask;
         }
 
         private async Task StartProcessApplicationMessagesAsync(TestConnection connection)
