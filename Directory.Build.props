@@ -55,6 +55,7 @@
     <SignedPackageFile Include="$(PublishDir)Microsoft.Extensions.Primitives.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.IdentityModel.JsonWebTokens.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.Extensions.Primitives.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Extensions.CommandLineUtils.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.IdentityModel.Logging.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.IdentityModel.Protocols.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.IdentityModel.Protocols.OpenIdConnect.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
