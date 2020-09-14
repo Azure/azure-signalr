@@ -8,6 +8,7 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public async Task PublishInvalidMessageThrows()
         {
             var dr = GetDefaultResolver(new string[] { }, out _);
-            using (var bus = new ServiceMessageBus(dr))
+            using (var bus = new ServiceMessageBus(dr, NullLogger<ServiceMessageBus>.Instance))
             {
                 await Assert.ThrowsAsync<NotSupportedException>(() => bus.Publish("test", "key", "1"));
             }
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public async Task PublishMessageToNotExistHubThrows()
         {
             var dr = GetDefaultResolver(new string[] { }, out _);
-            using (var bus = new ServiceMessageBus(dr))
+            using (var bus = new ServiceMessageBus(dr, NullLogger<ServiceMessageBus>.Instance))
             {
                 await Assert.ThrowsAsync<KeyNotFoundException>(() => bus.Publish("test", "h-key", "1"));
             }
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             PrepareConnection(scm, out var result);
 
-            using (var bus = new ServiceMessageBus(dr))
+            using (var bus = new ServiceMessageBus(dr, NullLogger<ServiceMessageBus>.Instance))
             {
                 await bus.Publish(SignalRMessageUtility.CreateMessage(messageKey, messageValue));
             }
@@ -101,7 +102,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             PrepareConnection(scm, out var result);
 
-            using (var bus = new ServiceMessageBus(dr))
+            using (var bus = new ServiceMessageBus(dr, NullLogger<ServiceMessageBus>.Instance))
             {
                 await bus.Publish(SignalRMessageUtility.CreateMessage(messageKey, messageValue));
             }
@@ -141,7 +142,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             var ccm = new TestClientConnectionManager(anotherSCM);
             dr.Register(typeof(IClientConnectionManager), () => ccm);
 
-            using (var bus = new ServiceMessageBus(dr))
+            using (var bus = new ServiceMessageBus(dr, NullLogger<ServiceMessageBus>.Instance))
             {
                 await bus.Publish(SignalRMessageUtility.CreateMessage(messageKey, messageValue));
             }
@@ -183,7 +184,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             PrepareConnection(scm, out var result);
 
-            using (var bus = new ServiceMessageBus(dr))
+            using (var bus = new ServiceMessageBus(dr, NullLogger<ServiceMessageBus>.Instance))
             {
                 await bus.Publish(SignalRMessageUtility.CreateMessage(messageKey, messageValue));
             }
@@ -223,7 +224,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
             PrepareConnection(scm, out var result);
 
-            using (var bus = new ServiceMessageBus(dr))
+            using (var bus = new ServiceMessageBus(dr, NullLogger<ServiceMessageBus>.Instance))
             {
                 await bus.Publish(SignalRMessageUtility.CreateMessage(messageKey, messageValue));
             }
@@ -257,7 +258,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             resolver.Register(typeof(IClientConnectionManager), () => ccm);
             var connectionManager = new ServiceConnectionManager(AppName, hubs);
             resolver.Register(typeof(IServiceConnectionManager), () => connectionManager);
-            resolver.Register(typeof(IMessageParser), () => new SignalRMessageParser(hubs, resolver));
+            resolver.Register(typeof(IMessageParser), () => new SignalRMessageParser(hubs, resolver, NullLogger<SignalRMessageParser>.Instance));
             scm = connectionManager;
             return resolver;
         }
