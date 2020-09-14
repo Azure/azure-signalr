@@ -8,16 +8,9 @@ using Microsoft.Rest;
 
 namespace Microsoft.Azure.SignalR.Common.RestClients
 {
-    public class HttpExceptionWrapper
+    internal static class HttpExceptionWrapperExtension
     {
-        private readonly Uri _baseUri;
-
-        public HttpExceptionWrapper(Uri baseUri)
-        {
-            _baseUri = baseUri ?? throw new ArgumentNullException(nameof(baseUri));
-        }
-
-        public Exception WrapException(Exception e)
+        internal static Exception WrapAsAzureSingalRException(this Exception e, Uri baseUri)
         {
             switch (e)
             {
@@ -34,10 +27,10 @@ namespace Microsoft.Azure.SignalR.Common.RestClients
                         HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(request.RequestUri.ToString(), innerException, detail),
                         HttpStatusCode.Unauthorized => new AzureSignalRUnauthorizedException(request.RequestUri.ToString(), innerException),
                         HttpStatusCode.NotFound => new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), innerException),
-                        _ => new AzureSignalRRuntimeException(request.RequestUri.ToString(), innerException),
+                        _ => new AzureSignalRRuntimeException(baseUri.ToString(), innerException),
                     };
                 case HttpRequestException requestException:
-                    return new AzureSignalRInaccessibleEndpointException(_baseUri.ToString(), requestException);
+                    return new AzureSignalRInaccessibleEndpointException(baseUri.ToString(), requestException);
                 default:
                     return e;
             }

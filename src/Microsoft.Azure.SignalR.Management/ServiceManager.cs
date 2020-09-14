@@ -28,7 +28,6 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly ServiceEndpoint _endpoint;
         private readonly string _productInfo;
         private readonly ISignalRServiceRestClient _restClient;
-        private readonly HttpExceptionWrapper _httpExceptionWrapper;
 
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo, ISignalRServiceRestClient restClient)
         {
@@ -46,7 +45,6 @@ namespace Microsoft.Azure.SignalR.Management
 
             _productInfo = productInfo;
             _restClient = restClient;
-            _httpExceptionWrapper = new HttpExceptionWrapper(_restClient.BaseUri);
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
@@ -175,7 +173,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (Exception ex)
             {
-                throw _httpExceptionWrapper.WrapException(ex);
+                throw ex.WrapAsAzureSingalRException(_restClient.BaseUri);
             }
         }
     }

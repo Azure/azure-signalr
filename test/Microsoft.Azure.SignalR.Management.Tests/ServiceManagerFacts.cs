@@ -11,7 +11,6 @@ using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
@@ -50,8 +49,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestGenerateAccessTokenData))]
         internal void GenerateClientAccessTokenTest(string userId, Claim[] claims, string appName)
         {
-            using var restClient = Mock.Of<ISignalRServiceRestClient>(client => client.BaseUri == new Uri(Endpoint));
-            var manager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = _testConnectionString, ApplicationName = appName }, null, restClient);
+            var manager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = _testConnectionString, ApplicationName = appName }, null, null);
             var tokenString = manager.GenerateClientAccessToken(HubName, userId, claims, _tokenLifeTime);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
@@ -64,8 +62,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestGenerateClientEndpointData))]
         internal void GenerateClientEndpointTest(string appName, string expectedClientEndpoint)
         {
-            using var restClient = Mock.Of<ISignalRServiceRestClient>(client => client.BaseUri == new Uri(Endpoint));
-            var manager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = _testConnectionString, ApplicationName = appName }, null, restClient);
+            var manager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = _testConnectionString, ApplicationName = appName }, null, null);
             var clientEndpoint = manager.GetClientEndpoint(HubName);
 
             Assert.Equal(expectedClientEndpoint, clientEndpoint);
@@ -76,14 +73,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestServiceManagerOptionData))]
         internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFacory, string appName, int connectionCount)
         {
-            using var restClient = Mock.Of<ISignalRServiceRestClient>(client => client.BaseUri == new Uri(Endpoint));
             var serviceManager = new ServiceManager(new ServiceManagerOptions
             {
                 ConnectionString = _testConnectionString,
                 ServiceTransportType = serviceTransportType,
                 ApplicationName = appName,
                 ConnectionCount = connectionCount
-            }, null, restClient);
+            }, null, null);
 
             using (var loggerFactory = useLoggerFacory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance)
             {
