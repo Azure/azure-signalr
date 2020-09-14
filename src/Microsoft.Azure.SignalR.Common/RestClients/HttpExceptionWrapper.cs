@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Common.RestClients
                     var detail = response.Content;
 
                     var innerException = new HttpRequestException(
-                        $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})"); ;
+                        $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})", operationException); ;
 
                     return response.StatusCode switch
                     {

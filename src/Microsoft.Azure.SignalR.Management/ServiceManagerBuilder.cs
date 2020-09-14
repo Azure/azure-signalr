@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _options.ValidateOptions();
 
-            string productInfo = ProductInfo.GetProductInfo(_assembly);
+            var productInfo = ProductInfo.GetProductInfo(_assembly);
             ISignalRServiceRestClient restClient = new RestClientBuilder(_options.ConnectionString).WithUserAgent(productInfo).Build();
 
             return new ServiceManager(_options, productInfo, restClient);

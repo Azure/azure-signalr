@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -156,14 +156,17 @@ namespace Microsoft.Azure.SignalR.Management
             return _endpointProvider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifeTime).Result;
         }
 
-        public string GetClientEndpoint(string hubName) => _endpointProvider.GetClientEndpoint(hubName, null, null);
+        public string GetClientEndpoint(string hubName)
+        {
+            return _endpointProvider.GetClientEndpoint(hubName, null, null);
+        }
 
         public async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
             try
             {
                 var healthApi = _restClient.HealthApi;
-                using HttpOperationResponse response = await healthApi.GetHealthStatusWithHttpMessagesAsync(cancellationToken: cancellationToken);
+                using var response = await healthApi.GetHealthStatusWithHttpMessagesAsync(cancellationToken: cancellationToken);
                 return true;
             }
             catch (HttpOperationException e) when ((int)e.Response.StatusCode >= 500 && (int)e.Response.StatusCode < 600)
