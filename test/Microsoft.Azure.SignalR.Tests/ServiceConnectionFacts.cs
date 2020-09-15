@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
@@ -421,7 +422,7 @@ namespace Microsoft.Azure.SignalR.Tests
         /// </summary>
         /// <returns></returns>
         [Fact]
-        public async Task PromoteOnDemandConnection()
+        public async Task OnDemandConnectionSelectedToSendMessages()
         {
             var proxy = new ServiceConnectionProxy();
 
@@ -429,7 +430,7 @@ namespace Microsoft.Azure.SignalR.Tests
             _ = proxy.StartAsync();
             var defaultConnection = await serverTask1.OrTimeout();
 
-            // Try to send a ping message to ask for a on-demand connection
+            // Try to send a ping message to ask for an on-demand connection
             var serverTask2 = proxy.WaitForServerConnectionAsync(2);
 
             string target = "Target";
@@ -438,20 +439,22 @@ namespace Microsoft.Azure.SignalR.Tests
                 Messages = new[] { "target", target }
             });
 
-            var onDemandConnection = await serverTask2.OrTimeout();
-            Assert.Equal(target, ((TestConnection)onDemandConnection).Target);
+            var onDemandConnection = (TestConnection)await serverTask2.OrTimeout();
+            Assert.Equal(target, (onDemandConnection).Target);
 
-            // Try to dispose default connection
+            // pause creation of new ones
+            proxy.NewConnectionsCreationPaused = true;
+
+            // dispose the only default connection
             var serverTask3 = proxy.WaitForServerConnectionAsync(3);
-            AssertTimeout(serverTask3);
-
             defaultConnection.Transport.Input.CancelPendingRead();
             // There won't be another connection to be created
             AssertTimeout(serverTask3);
 
-            // on-demand connection has been promoted. Try to dispose and another connection will be created
-            onDemandConnection.Transport.Input.CancelPendingRead();
-            await serverTask3.OrTimeout();
+            // now that the only connection left is on demand one verify that we still receive pings
+            var pingMsgTask = proxy.WaitForApplicationMessageAsync(typeof(PingMessage));
+            await Task.Delay(TimeSpan.FromSeconds(20));
+            await pingMsgTask.OrTimeout();
         }
 
         /// <summary>
