@@ -38,9 +38,9 @@ namespace Microsoft.Azure.SignalR
         public bool IsActive { get; internal set; } = true;
 
         /// <summary>
-        /// Enriched endpoint stat for customized routing.
+        /// Enriched endpoint metrics for customized routing.
         /// </summary>
-        public EndpointStat EndpointStat { get; internal set; } = new EndpointStat();
+        public EndpointMetrics EndpointStat { get; internal set; } = new EndpointMetrics();
 
         internal ServiceEndpoint(string endpoint, AuthOptions authOptions, int port = 443)
         {
