@@ -31,8 +31,11 @@ namespace Microsoft.Azure.SignalR
                 // So we keep them inside async local wrapped in weak references to avoid unnecessarily prolonging their lifetime.
                 // Instances of HubServiceEndpoint (and connection container it references) are expected to exist for the duration
                 // of the process. So we can store them without wrapping in weak reference.
-                var dict = new ConcurrentDictionary<HubServiceEndpoint, WeakReference<IServiceConnection>>();
-                dict.TryAdd(endpoint, new WeakReference<IServiceConnection>(outboundConnection));
+                ConcurrentDictionary<HubServiceEndpoint, WeakReference<IServiceConnection>> dict = new ConcurrentDictionary<HubServiceEndpoint, WeakReference<IServiceConnection>>();
+                if (endpoint != null)
+                {
+                    dict.TryAdd(endpoint, new WeakReference<IServiceConnection>(outboundConnection));
+                }
 
                 ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current =
                     new ScopePropertiesAccessor<ClientConnectionScopeProperties>()

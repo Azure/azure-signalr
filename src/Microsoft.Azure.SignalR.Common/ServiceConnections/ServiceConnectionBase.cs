@@ -18,13 +18,13 @@ namespace Microsoft.Azure.SignalR
     {
         protected static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
         // Service ping rate is 5 sec to let server know service status. Set timeout for 30 sec for some space.
-        private static readonly TimeSpan DefaultServiceTimeout = TimeSpan.FromSeconds(300); //private static readonly TimeSpan DefaultServiceTimeout = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan DefaultServiceTimeout = TimeSpan.FromSeconds(30);
         private static readonly long DefaultServiceTimeoutTicks = (long)(DefaultServiceTimeout.TotalSeconds * Stopwatch.Frequency);
         // App server ping rate is 5 sec to let service know if app server is still alive
         // Service will abort both server and client connections link to this server when server is down.
         // App server ping is triggered by incoming requests and send by checking last send timestamp.
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
-        private static readonly long DefaultKeepAliveTicks = DefaultKeepAliveInterval.Seconds * Stopwatch.Frequency;
+        private static readonly long DefaultKeepAliveTicks = (long)DefaultKeepAliveInterval.TotalSeconds * Stopwatch.Frequency;
 
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
 
@@ -212,11 +212,6 @@ namespace Microsoft.Azure.SignalR
             if (!string.IsNullOrEmpty(_errorMessage) || Status != ServiceConnectionStatus.Connected)
             {
                 return false;
-            }
-
-            if (!(serviceMessage is PingMessage))
-            {
-                Console.WriteLine();
             }
 
             await _writeLock.WaitAsync();

@@ -103,12 +103,12 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 
         public Type GetReturnType(string invocationId)
         {
-            return typeof(void);
+            return typeof(object);
         }
 
         public Type GetStreamItemType(string streamId)
         {
-            return typeof(void);
+            return typeof(object);
         }
     }
 
@@ -121,12 +121,12 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 
         public Type GetReturnType(string invocationId)
         {
-            return typeof(void);
+            return typeof(bool);
         }
 
         public Type GetStreamItemType(string streamId)
         {
-            return typeof(void);
+            return typeof(object);
         }
     }
 

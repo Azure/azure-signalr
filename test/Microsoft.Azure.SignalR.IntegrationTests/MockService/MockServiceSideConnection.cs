@@ -162,18 +162,9 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                                         {
                                             clientConnection.EnqueueMessage(hubMessage);
 
-                                            if (hubMessage is CompletionMessage complMsg)
-                                            {
-                                                Console.WriteLine($" -- {clientConnection.ConnectionId} Result: {complMsg.Result} HasResult: {complMsg.HasResult}");
-                                            }
                                             if (hubMessage is CloseMessage closeMsg)
                                             {
                                                 clientConnection.CloseMessageReceivedFromSdk = true;
-                                                Console.WriteLine($" -- CloseMessage {clientConnection.ConnectionId}: {closeMsg.Error}");
-                                            }
-                                            else
-                                            {
-                                                Console.WriteLine($"oh something else {hubMessage}");
                                             }
                                         }
                                     }
