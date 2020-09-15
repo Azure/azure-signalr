@@ -173,7 +173,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (Exception ex)
             {
-                throw ex.WrapAsAzureSingalRException(_restClient.BaseUri);
+                throw ex.WrapAsAzureSignalRException(_restClient.BaseUri);
             }
         }
     }
