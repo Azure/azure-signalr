@@ -6,8 +6,8 @@ namespace Microsoft.Azure.SignalR
     public class EndpointStat
     {
         /// <summary>
-        /// <see cref="ServiceEndpoint" /> globally concurrent client connection count
+        /// <see cref="ServiceEndpoint" /> global concurrent client connection count
         /// </summary>
-        public int ClientCount { get; internal set; }
+        public int ClientConnectionCount { get; internal set; }
     }
 }

@@ -71,6 +71,12 @@ namespace Microsoft.Azure.SignalR
         public static ServicePingMessage GetStatusPingMessage(bool isActive) =>
             isActive ? StatusActive : StatusInactive;
 
+        public static ServicePingMessage GetStatusPingMessage(bool isActive, int clientCount) =>
+            isActive
+            ? new ServicePingMessage { Messages = new[] { StatusKey, StatusActiveValue, ClientCountKey, clientCount.ToString() } }
+            : new ServicePingMessage { Messages = new[] { StatusKey, StatusInactiveValue, ClientCountKey, clientCount.ToString() } };
+
+
         public static bool TryGetStatus(this ServicePingMessage ping, out bool isActive)
         {
             if (!TryGetValue(ping, StatusKey, out var value))
