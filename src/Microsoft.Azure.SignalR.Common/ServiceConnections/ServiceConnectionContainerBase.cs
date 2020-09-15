@@ -195,7 +195,7 @@ namespace Microsoft.Azure.SignalR
 
                 if (RuntimeServicePingMessage.TryGetClientCount(pingMessage, out var clientCount))
                 {
-                    Endpoint.EndpointStat.ClientConnectionCount = clientCount;
+                    Endpoint.EndpointMetrics.ClientConnectionCount = clientCount;
                 }
             }
             else if (RuntimeServicePingMessage.TryGetServersTag(pingMessage, out var serversTag, out var updatedTime))

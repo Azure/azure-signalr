@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Enriched endpoint metrics for customized routing.
         /// </summary>
-        public EndpointMetrics EndpointStat { get; internal set; } = new EndpointMetrics();
+        public EndpointMetrics EndpointMetrics { get; internal set; } = new EndpointMetrics();
 
         internal ServiceEndpoint(string endpoint, AuthOptions authOptions, int port = 443)
         {

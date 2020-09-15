@@ -1425,8 +1425,8 @@ namespace Microsoft.Azure.SignalR.Tests
             await Task.WhenAll(container1.MockReceivedStatusPing(true, c1));
             await Task.WhenAll(container2.MockReceivedStatusPing(true, c2));
 
-            Assert.Equal(c1, hubEndpoints[0].EndpointStat.ClientConnectionCount);
-            Assert.Equal(c2, hubEndpoints[1].EndpointStat.ClientConnectionCount);
+            Assert.Equal(c1, hubEndpoints[0].EndpointMetrics.ClientConnectionCount);
+            Assert.Equal(c2, hubEndpoints[1].EndpointMetrics.ClientConnectionCount);
         }
 
         public static IEnumerable<object[]> TestReloadEndpointsData = new object[][]
