@@ -16,3 +16,4 @@ override-client-name: SignalRServiceRestClient
 namespace: Microsoft.Azure.SignalR
 output-folder: Generated
 add-credentials: true
+use-internal-constructors: true
