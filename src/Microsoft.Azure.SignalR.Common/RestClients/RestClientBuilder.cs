@@ -12,18 +12,19 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly Uri _baseUri;
         private readonly ServiceClientCredentials _credentials;
-        private readonly DelegatingHandler[] _handlers;
+        private DelegatingHandler[] _handlers;
         private HttpClientHandler _rootHandler;
 
-        public RestClientBuilder(ServiceEndpoint endpoint, string userAgent) : this(userAgent)
+        public RestClientBuilder(ServiceEndpoint endpoint, string userAgent)
         {
+            CreateUserAgentHandler(userAgent);
             _baseUri = new Uri(endpoint.Endpoint);
             _credentials = new JwtTokenCredentials(endpoint.AccessKey);
         }
 
         public RestClientBuilder(string connectionString, string userAgent) : this(new ServiceEndpoint(connectionString), userAgent) { }
 
-        private RestClientBuilder(string userAgent)
+        private void CreateUserAgentHandler(string userAgent)
         {
             if (string.IsNullOrWhiteSpace(userAgent))
             {
