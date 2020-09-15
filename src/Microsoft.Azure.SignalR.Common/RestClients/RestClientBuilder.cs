@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR
             return this;
         }
 
-        internal SignalRServiceRestClient Build()
+        public SignalRServiceRestClient Build()
         {
             return new SignalRServiceRestClient(_baseUri, _credentials, _rootHandler, _handlers);
         }
