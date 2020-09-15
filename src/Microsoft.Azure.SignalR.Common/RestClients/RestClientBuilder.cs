@@ -17,21 +17,17 @@ namespace Microsoft.Azure.SignalR
 
         public RestClientBuilder(ServiceEndpoint endpoint, string userAgent)
         {
-            _baseUri = new Uri(endpoint.Endpoint);
-            _credentials = new JwtTokenCredentials(endpoint.AccessKey);
-            _handlers = new DelegatingHandler[] { CreateUserAgentHandler(userAgent) };
-        }
-
-        public RestClientBuilder(string connectionString, string userAgent) : this(new ServiceEndpoint(connectionString), userAgent) { }
-
-        private DelegatingHandler CreateUserAgentHandler(string userAgent)
-        {
             if (string.IsNullOrWhiteSpace(userAgent))
             {
                 throw new ArgumentException($"'{nameof(userAgent)}' cannot be null or whitespace", nameof(userAgent));
             }
-            return new AsrsUserAgentHandler(userAgent);
+
+            _baseUri = new Uri(endpoint.Endpoint);
+            _credentials = new JwtTokenCredentials(endpoint.AccessKey);
+            _handlers = new DelegatingHandler[] { new AsrsUserAgentHandler(userAgent) };
         }
+
+        public RestClientBuilder(string connectionString, string userAgent) : this(new ServiceEndpoint(connectionString), userAgent) { }
 
         internal RestClientBuilder WithRootHandler(HttpClientHandler rootHandler)
         {
