@@ -99,13 +99,17 @@ Choosing:
 
 <a name="diff-aspnet-signalr"></a>
 ## Any feature differences when using Azure SignalR for ASP.NET SignalR?
+
 When using Azure SignalR, some APIs and features of ASP.NET SignalR are no longer supported:
-- The ability to pass arbitrary state between clients and the hub (often called `HubState`) is not supported when using Azure SignalR
-- `PersistentConnection` class is not yet supported when using Azure SignalR
-- **Forever Frame transport** is not supported  when using Azure SignalR
-- Azure SignalR no longer replays messages sent to client when client is offline
-- When using Azure SignalR, the traffic for one client connection is always routed (aka. **sticky**) to one app server instance for the duration of the connection
+
+- The ability to pass arbitrary state between clients and the hub (often called `HubState`) is not supported when using Azure SignalR.
+- `PersistentConnection` class is not yet supported when using Azure SignalR.
+- **Forever Frame transport** is not supported  when using Azure SignalR.
+- Azure SignalR no longer replays messages sent to client when client is offline.
+- When using Azure SignalR, the traffic for one client connection is always routed (aka. **sticky**) to one app server instance for the duration of the connection.
+- Clients using long polling or server sent events cannot send a message large than 1MB.
 
 The support for ASP.NET SignalR is focused on compatibility, so not all new features from ASP.NET Core SignalR are supported. For example, **MessagePack**, **Streaming**, etc., are only available for ASP.NET Core SignalR applications.
 
-SignalR Service can be configured for different service mode: `Classic`/`Default`/`Serverles`s. In this ASP.NET support, the `Serverless` mode is not supported. The data-plane REST API is also not supported.
+SignalR Service can be configured for different service mode: `Classic`/`Default`/`Serverless`.
+The current implementation does not support `serverless` mode and REST API for ASP.NET Signalr.
