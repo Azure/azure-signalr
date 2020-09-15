@@ -25,6 +25,11 @@ namespace Microsoft.Azure.SignalR
 
         private RestClientBuilder(string userAgent)
         {
+            if (string.IsNullOrWhiteSpace(userAgent))
+            {
+                throw new ArgumentException($"'{nameof(userAgent)}' cannot be null or whitespace", nameof(userAgent));
+            }
+
             var azUserAgentHandler = new AsrsUserAgentHandler(userAgent);
             _handlers = new DelegatingHandler[] { azUserAgentHandler };
         }
