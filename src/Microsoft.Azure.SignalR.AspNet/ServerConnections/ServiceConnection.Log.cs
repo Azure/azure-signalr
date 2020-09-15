@@ -17,8 +17,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             private static readonly Action<ILogger, string, Exception> _sendLoopStopped =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, "SendLoopStopped"), "Error while processing messages from {TransportConnectionId}.");
 
-            private static readonly Action<ILogger, string, string, Exception> _failToWriteMessageToApplication =
-                LoggerMessage.Define<string, string>(LogLevel.Error, new EventId(3, "FailToWriteMessageToApplication"), "Failed to write message {messageType} to {TransportConnectionId}.");
+            private static readonly Action<ILogger, string, string, ulong?, Exception> _failToWriteMessageToApplication =
+                LoggerMessage.Define<string, string, ulong?>(LogLevel.Error, new EventId(3, "FailToWriteMessageToApplication"), "Failed to write {messageType} message {tracingId} to {TransportConnectionId}.");
 
             private static readonly Action<ILogger, string, Exception> _connectedStarting =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(4, "ConnectedStarting"), "Connection {TransportConnectionId} started.");
@@ -51,9 +51,9 @@ namespace Microsoft.Azure.SignalR.AspNet
                 _sendLoopStopped(logger, connectionId, exception);
             }
 
-            public static void FailToWriteMessageToApplication(ILogger logger, string messageType, string connectionId, Exception exception)
+            public static void FailToWriteMessageToApplication(ILogger logger, string messageType, string connectionId, ulong? tracingId, Exception exception)
             {
-                _failToWriteMessageToApplication(logger, messageType, connectionId, exception);
+                _failToWriteMessageToApplication(logger, messageType, connectionId, tracingId, exception);
             }
 
             public static void ConnectedStarting(ILogger logger, string connectionId)

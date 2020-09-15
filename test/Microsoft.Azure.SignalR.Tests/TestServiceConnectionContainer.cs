@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
         }
 
-        public List<IServiceConnection> Connections { get => FixedServiceConnections; }
+        public List<IServiceConnection> Connections { get => ServiceConnections; }
 
         public void ShutdownForTest()
         {

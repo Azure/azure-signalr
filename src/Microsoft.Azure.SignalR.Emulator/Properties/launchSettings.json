@@ -11,12 +11,14 @@
   "profiles": {
     "IIS Express": {
       "commandName": "Project",
+      "commandLineArgs": "start",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "Microsoft.Azure.SignalR.Emulator": {
       "commandName": "Project",
+      "commandLineArgs": "start -p 8111",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
