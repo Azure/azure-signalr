@@ -187,16 +187,16 @@ namespace Microsoft.Azure.SignalR
 
         public virtual Task HandlePingAsync(PingMessage pingMessage)
         {
+            if (RuntimeServicePingMessage.TryGetClientCount(pingMessage, out var clientCount))
+            {
+                Endpoint.EndpointMetrics.ClientConnectionCount = clientCount;
+            }
+
             if (RuntimeServicePingMessage.TryGetStatus(pingMessage, out var status))
             {
                 Log.ReceivedServiceStatusPing(Logger, status, Endpoint);
                 _hasClients = status;
                 Endpoint.IsActive = GetServiceStatus(status, CheckWindow, CheckTimeSpan);
-
-                if (RuntimeServicePingMessage.TryGetClientCount(pingMessage, out var clientCount))
-                {
-                    Endpoint.EndpointMetrics.ClientConnectionCount = clientCount;
-                }
             }
             else if (RuntimeServicePingMessage.TryGetServersTag(pingMessage, out var serversTag, out var updatedTime))
             {
