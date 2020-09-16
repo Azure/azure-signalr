@@ -74,5 +74,11 @@ namespace Microsoft.Azure.SignalR.Tests
             var ping = new PingMessage { Messages = new[] { "status", isActive ? "1" : "0" } };
             return base.HandlePingAsync(ping);
         }
+
+        public Task MockReceivedStatusPing(bool isActive, int clientCount)
+        {
+            var ping = new PingMessage { Messages = new[] { "status", isActive ? "1" : "0" , "clientcount", clientCount.ToString()} };
+            return base.HandlePingAsync(ping);
+        }
     }
 }
