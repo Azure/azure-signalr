@@ -13,14 +13,13 @@ using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests.MultiEndpoints
 {
-    public class UserGroupManagerFacts
+    public class MultiEndpointUserGroupManagerFacts
     {
         private const string UserName = "user1";
         private const string GroupName = "group1";
         private const int Count = 3;
         private static readonly TimeSpan _ttl = TimeSpan.FromMinutes(1);
-        private readonly ServiceEndpoint[] _endpoints = Enumerable.Range(0, Count)
-            .Select(id => new ServiceEndpoint($"Endpoint=http://endpoint{id};AccessKey=accessKey;Version=1.0;")).ToArray();
+        private readonly ServiceEndpoint[] _endpoints = MultiEndpointUtils.GenerateServiceEndpoints(Count);
 
         public static readonly TheoryData<Expression<Func<IUserGroupManager, Task>>> VoidMethodExprs = new TheoryData<Expression<Func<IUserGroupManager, Task>>>
         {
@@ -69,13 +68,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests.MultiEndpoints
                 })
                 .ToList();
             Func<IUserGroupManager, Task> func = expr.Compile();
-            var helper = new AggreExcpVerificationHelper();
             var managers = mocks.Select(mock => mock.Object);
 
             var multiEndpointManager = CreateMeUserGroupManager(managers);
             Task t = func(multiEndpointManager);
 
-            await helper.AssertIsAggreExp(1, t); //only one endpoint is routed to according to mock router
+            await t.AssertThrowAggregationException(1);//only one endpoint is routed to according to mock router
         }
 
         [Theory]

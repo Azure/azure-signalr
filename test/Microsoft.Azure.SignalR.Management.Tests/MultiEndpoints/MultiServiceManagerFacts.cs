@@ -1,16 +1,5 @@
-﻿// ----------------------------------------------------------------------------------
-//
-// Copyright Microsoft Corporation
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-// ----------------------------------------------------------------------------------
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
@@ -19,6 +8,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.SignalR.Management.Tests.MultiEndpoints;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -28,8 +18,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
     public class MultiServiceManagerFacts
     {
         private const int Count = 3;
-        private readonly ServiceEndpoint[] _endpoints = Enumerable.Range(0, Count)
-    .Select(id => new ServiceEndpoint($"Endpoint=http://endpoint{id};AccessKey=accessKey;Version=1.0;")).ToArray();
+        private readonly ServiceEndpoint[] _endpoints = MultiEndpointUtils.GenerateServiceEndpoints(Count);
 
         [Theory]
         [InlineData(true, true)]
@@ -58,6 +47,25 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
+        public async Task IsServiceHealthyThrownTest()
+        {
+            var mockRouter = Mock.Of<IEndpointRouter>();
+            IEnumerable<IServiceManager> mockManagers = _endpoints
+                .Select(status =>
+                {
+                    var mock = new Mock<IServiceManager>();
+                    mock.Setup(manager => manager.IsServiceHealthy(default))
+                        .ThrowsAsync(new Exception());
+                    return mock.Object;
+                });
+            var multiServiceManager = new MultiServiceManager(mockManagers, _endpoints, mockRouter);
+
+            Task t = multiServiceManager.IsServiceHealthy(default);
+
+            await t.AssertThrowAggregationException(Count);
+        }
+
+        [Fact]
         public void CreateHubContextAsyncNormalTest()
         {
             var hubName = "hub_1";
@@ -83,6 +91,30 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 mock.Verify(managers => managers.CreateHubContextAsync(hubName, loggerFactory, cancellationToken));
             }
+        }
+
+        [Fact]
+        public async Task CreateHubContextAsyncThrownTest()
+        {
+            var hubName = "hub_1";
+            var loggerFactory = default(ILoggerFactory);
+            var cancellationToken = default(CancellationToken);
+            var mockRouter = Mock.Of<IEndpointRouter>();
+            var mocks = _endpoints
+            .Select(endpoint =>
+            {
+                var managerMock = new Mock<IServiceManager>();
+                var serviceHubContextMock = new Mock<IServiceHubContext>();
+                serviceHubContextMock.SetupAllProperties();
+                managerMock.Setup(manager => manager.CreateHubContextAsync(hubName, loggerFactory, cancellationToken)).ThrowsAsync(new Exception());
+                return managerMock;
+            }).ToArray();
+            var managers = from mock in mocks select mock.Object;
+            var multiServiceManager = new MultiServiceManager(managers, _endpoints, mockRouter);
+
+            var task = multiServiceManager.CreateHubContextAsync(hubName, loggerFactory, cancellationToken);
+
+            await task.AssertThrowAggregationException(Count);
         }
 
         [Fact]

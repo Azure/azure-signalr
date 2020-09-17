@@ -10,7 +10,7 @@ using Moq;
 using Xunit;
 namespace Microsoft.Azure.SignalR.Management.Tests.MultiEndpoints
 {
-    public class ClientProxyFacts
+    public class MultiEndpointClientProxyFacts
     {
         [Fact]
         public async Task SendCoreAsync_Normal_Fact()
@@ -56,11 +56,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests.MultiEndpoints
                 });
             var mockProxies = mocks.Select(mock => mock.Object);
             var MeClientProxy = new MultiEndpointClientProxy(mockProxies);
-            var aggreExpHelper = new AggreExcpVerificationHelper();
 
             Task t = MeClientProxy.SendCoreAsync(default, default, default);
 
-            await aggreExpHelper.AssertIsAggreExp(proxyNum, t);
+            await t.AssertThrowAggregationException(proxyNum);
         }
     }
 }

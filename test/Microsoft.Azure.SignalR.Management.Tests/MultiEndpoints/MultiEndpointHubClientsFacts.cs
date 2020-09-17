@@ -28,10 +28,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests.MultiEndpoints
         private static readonly string[] userIds = Enumerable.Range(0, UserCount)
     .Select(id => $"user_{id}").ToArray();
         private static readonly CancellationToken token = default;
-        private static readonly ServiceEndpoint[] _endpoints
-            = Enumerable.Range(0, EndpointCount)
-            .Select(id => new ServiceEndpoint($"Endpoint=http://endpoint{id};AccessKey=accessKey;Version=1.0;"))
-            .ToArray();
+        private static readonly ServiceEndpoint[] _endpoints = MultiEndpointUtils.GenerateServiceEndpoints(EndpointCount);
 
         [Fact]
         public async void All_Normal_Fact()
@@ -76,7 +73,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests.MultiEndpoints
 
             Task t = multiEndpointHubClients.All.SendCoreAsync(Method, args, token);
 
-            await new AggreExcpVerificationHelper().AssertIsAggreExp(EndpointCount, t);
+            await t.AssertThrowAggregationException(EndpointCount);
         }
 
         public static readonly TheoryData<Expression<Func<IHubClients<IClientProxy>, IClientProxy>>> MethodsTestedWithDefaultRouter = new TheoryData<Expression<Func<IHubClients<IClientProxy>, IClientProxy>>>
@@ -120,7 +117,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests.MultiEndpoints
 
             Task t = func(multiEndpointHubClients).SendCoreAsync(Method, args, token);
 
-            await new AggreExcpVerificationHelper().AssertIsAggreExp(EndpointCount, t);
+            await t.AssertThrowAggregationException(EndpointCount);
         }
 
         public static readonly TheoryData<Expression<Func<IHubClients<IClientProxy>, IClientProxy>>, Expression<Func<IEndpointRouter, IEnumerable<ServiceEndpoint>>>> dataTestedWithSingleRouter = new TheoryData<Expression<Func<IHubClients<IClientProxy>, IClientProxy>>, Expression<Func<IEndpointRouter, IEnumerable<ServiceEndpoint>>>>

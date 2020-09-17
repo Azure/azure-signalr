@@ -42,15 +42,31 @@ namespace Microsoft.Azure.SignalR.Management
         {
             IEnumerable<(ServiceEndpoint Key, Task<IServiceHubContext>)> endpoint_contextCreationTasks =
                 _serviceManagerTable.Select(pair => (pair.Key, pair.Value.CreateHubContextAsync(hubName, loggerFactory, cancellationToken)));
-            await Task.WhenAll(endpoint_contextCreationTasks.Select(pair => pair.Item2));
-
+            var t = Task.WhenAll(endpoint_contextCreationTasks.Select(pair => pair.Item2));
+            try
+            {
+                await t;
+            }
+            catch
+            {
+                throw t.Exception;
+            }
             IServiceHubContext multiServiceHubContext = new MultiServiceHubContext(_router, endpoint_contextCreationTasks.ToDictionary(pair => pair.Key, pair => pair.Item2.Result));
             return multiServiceHubContext;
         }
 
         public async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
-            var healthyStatus = await Task.WhenAll(_serviceManagerTable.Values.Select(manager => manager.IsServiceHealthy(cancellationToken)));
+            var t = Task.WhenAll(_serviceManagerTable.Values.Select(manager => manager.IsServiceHealthy(cancellationToken)));
+            bool[] healthyStatus = null;
+            try
+            {
+                healthyStatus = await t;
+            }
+            catch
+            {
+                throw t.Exception;
+            }
             return healthyStatus.Aggregate((b1, b2) => b1 && b2);
         }
 

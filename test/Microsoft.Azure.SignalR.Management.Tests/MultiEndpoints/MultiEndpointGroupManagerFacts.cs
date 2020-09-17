@@ -11,14 +11,11 @@ using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests.MultiEndpoints
 {
-    public class GroupManagerFacts
+    public class MultiEndpointGroupManagerFacts
     {
         private const int Count = 3;
         private const string ConnectionId = "connection_0", groupName = "group_0";
-        private readonly ServiceEndpoint[] endpoints
-            = Enumerable.Range(0, Count)
-            .Select(id => new ServiceEndpoint($"Endpoint=http://endpoint{id};AccessKey=accessKey;Version=1.0;"))
-            .ToArray();
+        private readonly ServiceEndpoint[] endpoints = MultiEndpointUtils.GenerateServiceEndpoints(Count);
         public static TheoryData<Expression<Func<IGroupManager, Task>>> MethodExprs = new TheoryData<Expression<Func<IGroupManager, Task>>>
         {
             {gm => gm.AddToGroupAsync(ConnectionId, groupName, default) },
@@ -43,11 +40,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests.MultiEndpoints
                 .ToDictionary(pair => pair.First, pair => pair.Second);
             var router = new EndpointRouterDecorator();
             var gm = new MultiEndpointGroupManager(router, table);
-            Func<IGroupManager, Task> func = expr.Compile();
 
+            Func<IGroupManager, Task> func = expr.Compile();
             Task t = func(gm);
-            var helper = new AggreExcpVerificationHelper();
-            await helper.AssertIsAggreExp(Count, t);
+
+            await t.AssertThrowAggregationException(Count);
         }
 
 
