@@ -27,75 +27,59 @@ namespace Microsoft.Azure.SignalR.Management
 
         public IClientProxy AllExcept(IReadOnlyList<string> excludedConnectionIds)
         {
-            return new MultiEndpointClientProxy(
-_hubClients
-.Select(hubClient => hubClient.AllExcept(excludedConnectionIds)));
+            return new MultiEndpointClientProxy(_hubClients.Select(hubClient => hubClient.AllExcept(excludedConnectionIds)));
         }
 
         public IClientProxy Client(string connectionId)
         {
-            return new MultiEndpointClientProxy(
-_router
-.GetEndpointsForConnection(connectionId, _endpoints)
-.Select(endpoint => _hubClientsTable[endpoint])
-.Select(hubClient => hubClient.Client(connectionId)));
+            return new MultiEndpointClientProxy(_router.GetEndpointsForConnection(connectionId, _endpoints)
+                                                       .Select(endpoint => _hubClientsTable[endpoint])
+                                                       .Select(hubClient => hubClient.Client(connectionId)));
         }
 
         public IClientProxy Clients(IReadOnlyList<string> connectionIds)
         {
-            return new MultiEndpointClientProxy(
-connectionIds
-.SelectMany(id => _router.GetEndpointsForConnection(id, _endpoints))
-.Distinct()
-.Select(endpoint => _hubClientsTable[endpoint])
-.Select(hubClient => hubClient.Clients(connectionIds)));
+            return new MultiEndpointClientProxy(connectionIds.SelectMany(id => _router.GetEndpointsForConnection(id, _endpoints))
+                                                             .Distinct()
+                                                             .Select(endpoint => _hubClientsTable[endpoint])
+                                                             .Select(hubClient => hubClient.Clients(connectionIds)));
         }
 
         public IClientProxy Group(string groupName)
         {
-            return new MultiEndpointClientProxy(
-_router
-.GetEndpointsForGroup(groupName, _endpoints)
-.Select(endpoint => _hubClientsTable[endpoint])
-.Select(hubClient => hubClient.Group(groupName)));
+            return new MultiEndpointClientProxy(_router.GetEndpointsForGroup(groupName, _endpoints)
+                                                       .Select(endpoint => _hubClientsTable[endpoint])
+                                                       .Select(hubClient => hubClient.Group(groupName)));
         }
 
         public IClientProxy GroupExcept(string groupName, IReadOnlyList<string> excludedConnectionIds)
         {
-            return new MultiEndpointClientProxy(
-_router
-.GetEndpointsForGroup(groupName, _endpoints)
-.Select(endpoint => _hubClientsTable[endpoint])
-.Select(hubClient => hubClient.GroupExcept(groupName, excludedConnectionIds)));
+            return new MultiEndpointClientProxy(_router.GetEndpointsForGroup(groupName, _endpoints)
+                                                       .Select(endpoint => _hubClientsTable[endpoint])
+                                                       .Select(hubClient => hubClient.GroupExcept(groupName, excludedConnectionIds)));
         }
 
         public IClientProxy Groups(IReadOnlyList<string> groupNames)
         {
-            return new MultiEndpointClientProxy(
-groupNames
-.SelectMany(groupName => _router.GetEndpointsForGroup(groupName, _endpoints))
-.Distinct()
-.Select(endpoint => _hubClientsTable[endpoint])
-.Select(hubClient => hubClient.Groups(groupNames)));
+            return new MultiEndpointClientProxy(groupNames.SelectMany(groupName => _router.GetEndpointsForGroup(groupName, _endpoints))
+                                                          .Distinct()
+                                                          .Select(endpoint => _hubClientsTable[endpoint])
+                                                          .Select(hubClient => hubClient.Groups(groupNames)));
         }
 
         public IClientProxy User(string userId)
         {
-            return new MultiEndpointClientProxy(
-_router
-.GetEndpointsForUser(userId, _endpoints)
-.Select(endpoint => _hubClientsTable[endpoint])
-.Select(hubClient => hubClient.User(userId)));
+            return new MultiEndpointClientProxy(_router.GetEndpointsForUser(userId, _endpoints)
+                                                       .Select(endpoint => _hubClientsTable[endpoint])
+                                                       .Select(hubClient => hubClient.User(userId)));
         }
 
         public IClientProxy Users(IReadOnlyList<string> userIds)
         {
-            return new MultiEndpointClientProxy(
-userIds
-.SelectMany(userId => _router.GetEndpointsForUser(userId, _endpoints))
-.Distinct()
-.Select(endpoint => _hubClientsTable[endpoint])
-.Select(hubClient => hubClient.Users(userIds)));
+            return new MultiEndpointClientProxy(userIds.SelectMany(userId => _router.GetEndpointsForUser(userId, _endpoints))
+                                                       .Distinct()
+                                                       .Select(endpoint => _hubClientsTable[endpoint])
+                                                       .Select(hubClient => hubClient.Users(userIds)));
         }
     }
 }
