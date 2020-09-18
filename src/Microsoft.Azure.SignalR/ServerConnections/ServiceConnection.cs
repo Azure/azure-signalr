@@ -5,6 +5,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -14,6 +16,15 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using static Microsoft.Azure.SignalR.Protocol.ReliableProtocol;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -40,6 +51,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ConnectionDelegate _connectionDelegate;
 
         public Action<HttpContext> ConfigureContext { get; set; }
+
 
         public ServiceConnection(IServiceProtocol serviceProtocol,
                                  IClientConnectionManager clientConnectionManager,
@@ -75,7 +87,7 @@ namespace Microsoft.Azure.SignalR
 
         protected override async Task CleanupClientConnections(string fromInstanceId = null)
         {
-            // To gracefully complete client connections, let the client itself owns the connection lifetime 
+            // To gracefully complete client connections, let the client itself owns the connection lifetime
             try
             {
                 if (_connectionIds.Count == 0)
@@ -110,8 +122,40 @@ namespace Microsoft.Azure.SignalR
 
         protected override Task OnClientConnectedAsync(OpenConnectionMessage message)
         {
+            // If reloading, send barrier message to old and new connection.
+            var oldConn = message.Claims.FirstOrDefault(o => o.Type == "oldConnectionId");
+            if (oldConn != null)
+            {
+                // Map the new connection to oldClientConnectionContext
+                var oldConnection = _clientConnectionManager.ClientConnections[oldConn.Value];
+                _clientConnectionManager.TryAddClientConnection(message.ConnectionId, oldConnection);
+                if (!oldConnection.ConnectionMap.ContainsKey(message.ConnectionId)) oldConnection.AddReloadConnection(message.ConnectionId, this);
+                Task.Run(() => { _ = oldConnection.Switch(); });
+                // Semd barrier message to clients
+                BarrierMessage bm = new BarrierMessage();
+                bm.from = oldConn.Value;
+                bm.to = message.ConnectionId;
+                RMessage nrm = new RMessage
+                {
+                    MessageType = RMType.Barrier,
+                    Payload = JsonConvert.SerializeObject(bm)
+                };
+                var bmsg = EncodeMessage(nrm);
+                var userid = message.Claims.First(o => o.Type == Constants.ClaimType.UserId).Value;
+                // Send an Barrier RMessage to the user from two conns.
+                _ = WriteAsync(new UserDataMessage(userid, new Dictionary<string, ReadOnlyMemory<byte>>
+                {
+                    { "json", bmsg },
+                    { "messagepack", bmsg }
+                }));
+
+
+                return Task.CompletedTask;
+        }
+
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
             connection.ServiceConnection = this;
+            connection.CurConn.serviceConnection = this;
 
             if (message.Headers.TryGetValue(Constants.AsrsMigrateFrom, out var from))
             {
@@ -122,6 +166,7 @@ namespace Microsoft.Azure.SignalR
 
             bool isDiagnosticClient = false;
             message.Headers.TryGetValue(Constants.AsrsIsDiagnosticClient, out var isDiagnosticClientValue);
+
             if (!StringValues.IsNullOrEmpty(isDiagnosticClientValue))
             {
                 isDiagnosticClient = Convert.ToBoolean(isDiagnosticClientValue.FirstOrDefault());
@@ -147,8 +192,12 @@ namespace Microsoft.Azure.SignalR
         protected override Task OnClientDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             var connectionId = closeConnectionMessage.ConnectionId;
+            
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
             {
+                // If is reloading or already reloaded just return.
+                if (connectionId != context.CurConn.ConnectionId) return Task.CompletedTask;
+
                 if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
                 {
                     context.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(ServerId, to));
@@ -170,7 +219,152 @@ namespace Microsoft.Azure.SignalR
                 {
                     var payload = connectionDataMessage.Payload;
                     Log.WriteMessageToApplication(Logger, payload.Length, connectionDataMessage.ConnectionId);
-                    await connection.WriteMessageAsync(payload);
+
+                    // 1. 2 connections
+                    // 1 connection old , one new
+                    // 1 barrier, 
+                    // reliableMessage = connectionDataMessage.Payload
+                    // signalrPayload = ReliableProtocol.GetPayload(reliableMessage);
+                    // ReliableProtocol: ReloadMessage, BarrierMessage, DataMessage
+                    // new ConnectionDataMessage(new InvocationMessage())
+                    // new ConnectionDataMessage(new ReliableProtocol.DataMessage(new InvocationMessage()))
+                    var s = Encoding.UTF8.GetString(payload.ToArray());
+                    RMessage rm = JsonConvert.DeserializeObject<RMessage>(s, new JsonSerializerSettings
+                    {
+                        Error = delegate (object sender, ErrorEventArgs errorArgs)
+                        {
+                            var currentError = errorArgs.ErrorContext.Error.Message;
+                            errorArgs.ErrorContext.Handled = true;
+                        }
+                    });
+                    if (rm == null)
+                    {
+                        // Only Handshake Bytes will go through this block, for each connection, we only pass first one.
+                        if (!connection.HandshakeProcessed && SignalRProtocol.HandshakeProtocol.TryParseRequestMessage(ref payload, out var handshakeRequest))
+                        {
+                            connection.HandshakeProcessed = true;
+                            var memoryBufferWriter = MemoryBufferWriter.Get();
+                            try
+                            {
+                                SignalRProtocol.HandshakeProtocol.WriteRequestMessage(handshakeRequest, memoryBufferWriter);
+                                await connection.WriteMessageAsync(new ReadOnlySequence<byte>(memoryBufferWriter.ToArray()));
+                            }
+                            finally
+                            {
+                                MemoryBufferWriter.Return(memoryBufferWriter);
+                            }
+                        } 
+                        else if (SignalRProtocol.HandshakeProtocol.TryParseRequestMessage(ref payload, out _))
+                        {
+                            // For the virtual handshake request, we respond with a virtual handshake response
+                            var bcc = connection.ConnectionMap[connectionDataMessage.ConnectionId];
+                            RMessage prm = new RMessage();
+                            prm.MessageType = RMType.Dummy;
+                            await bcc.serviceConnection.WriteAsync(new ConnectionDataMessage(bcc.ConnectionId, EncodeMessage(prm)));
+                        }
+                    }
+                    else
+                    {
+                        switch (rm.MessageType)
+                        {
+                            case RMType.Data:
+                                {
+                                    var payload_Bytes = Convert.FromBase64String(rm.Payload);
+                                    // Write to the inner channel
+                                    if (connection.ConnectionMap.ContainsKey(connectionDataMessage.ConnectionId) && connection.ConnectionMap[connectionDataMessage.ConnectionId].receivedBarrier)
+                                    {
+                                        await connection.ConnectionMap[connectionDataMessage.ConnectionId].WriteMessageAsync(new ReadOnlySequence<byte>(payload_Bytes));
+                                    }
+                                    var str = Encoding.UTF8.GetString(payload_Bytes);
+                                    if (str.Contains("reload"))
+                                    {
+                                        ReloadMessage rdm = new ReloadMessage();
+                                        //connection.CompleteIncoming();
+                                        string connectionString = "Endpoint=http://localhost;Port=8081;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;";
+                                        Dictionary<string, string> connStringParts = connectionString.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                            .Select(t => t.Split(new char[] { '=' }, 2))
+                                            .ToDictionary(t => t[0].Trim(), t => t[1].Trim(), StringComparer.InvariantCultureIgnoreCase);
+
+                                        string key = connStringParts["AccessKey"];
+                                        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+                                        {
+                                            KeyId = key.GetHashCode().ToString()
+                                        };
+                                        SigningCredentials credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+                                        var userid = connection.GetHttpContext().Request.Query["user"];
+                                        JwtSecurityTokenHandler JwtTokenHandler = new JwtSecurityTokenHandler();
+                                        var token = JwtTokenHandler.CreateJwtSecurityToken(
+                                            issuer: null,
+                                            audience: connStringParts["Endpoint"] + "/client/?hub=" + HubEndpoint.Hub,
+                                            subject: new ClaimsIdentity(new Claim[] { new Claim("oldConnectionId", connectionDataMessage.ConnectionId), new Claim(Constants.ClaimType.UserId, userid) }),
+                                            notBefore: DateTime.Now,
+                                            expires: DateTime.Now.AddHours(1),
+                                            issuedAt: DateTime.Now,
+                                            signingCredentials: credentials);
+                                        string tk = JwtTokenHandler.WriteToken(token);
+                                        rdm.url = connStringParts["Endpoint"] + ":" + connStringParts["Port"] + "/client/?hub=" + HubEndpoint.Hub + "&reload=true&user=" + userid;
+                                        rdm.token = tk;
+
+                                        RMessage nrm = new RMessage
+                                        {
+                                            MessageType = RMType.Reload,
+                                            Payload = JsonConvert.SerializeObject(rdm)
+                                        };
+                                        var amsg = EncodeMessage(nrm);
+                                        // Response with an Reload RMessage
+                                        //await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, amsg));
+                                        await WriteAsync(new UserDataMessage(userid, new Dictionary<string, ReadOnlyMemory<byte>>
+                                        {
+                                            { "json", amsg },
+                                            { "messagepack", amsg }
+                                        }));
+                                    }
+                                    break;
+                                }
+                            case RMType.Barrier:
+                                {
+                                    BarrierMessage bm = JsonConvert.DeserializeObject<BarrierMessage>(rm.Payload);
+                                    if (bm.from == connectionDataMessage.ConnectionId)
+                                    {
+                                        ReloadAckMessage ram = new ReloadAckMessage
+                                        {
+                                            oldConnID = connection.ConnectionId
+                                        };
+                                        RMessage nrm = new RMessage
+                                        {
+                                            MessageType = RMType.ACK,
+                                            Payload = JsonConvert.SerializeObject(ram)
+                                        };
+                                        var amsg = EncodeMessage(nrm);
+                                        var userid = connection.GetHttpContext().Request.Query["user"];
+                                        // Response with an ACK RMessage
+                                        await WriteAsync(new UserDataMessage(userid, new Dictionary<string, ReadOnlyMemory<byte>>
+                                        {
+                                            { "json", amsg },
+                                            { "messagepack", amsg }
+                                        }
+                                        ));
+                                        //await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, amsg));
+
+                                        // Dequeue the backup connection queue and use the top as new cureent connection.
+                                        connection.CurConn.cts.Cancel();
+                                        // Invalidate the oldConnection.
+                                        connection.ConnectionMap.Remove(bm.from);
+                                        if (!connection.ConnectionMap.ContainsKey(bm.to)) await connection.AddReloadConnection(bm.to, this);
+                                        connection.ConnectionMap[bm.to]._ReloadTcs.SetResult(null);
+                                    }
+                                    else if (bm.to == connectionDataMessage.ConnectionId)
+                                    {
+                                        connection.ConnectionMap[bm.to].receivedBarrier = true;
+                                    }
+                                    break;
+                                }
+                            default:
+                                break;
+                        }
+
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -188,6 +382,7 @@ namespace Microsoft.Azure.SignalR
         {
             try
             {
+
                 // Writing from the application to the service
                 var transport = ProcessOutgoingMessagesAsync(connection, connection.OutgoingAborted);
 
@@ -332,8 +527,16 @@ namespace Microsoft.Azure.SignalR
                     {
                         try
                         {
+                            // Serialize RMessage to get a new payload
+                            var rm = new RMessage();
+                            rm.MessageType = RMType.Data;
+                            var array = buffer.ToArray();
+                            rm.Payload = Convert.ToBase64String(array);
+                            var appMessage = EncodeMessage(rm);
+
                             // Forward the message to the service
-                            await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, buffer));
+                            // TODO: Guarantee only ping message goes through here
+                            await connection.WriteToClientAsync(appMessage);
                         }
                         catch (Exception ex)
                         {

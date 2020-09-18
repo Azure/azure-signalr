@@ -18,6 +18,11 @@ namespace Microsoft.Azure.SignalR
             return _clientConnections.TryAdd(connection.ConnectionId, connection);
         }
 
+        public bool TryAddClientConnection(string connectionId, ClientConnectionContext connection)
+        {
+            return _clientConnections.TryAdd(connectionId, connection);
+        }
+
         public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
         {
             return _clientConnections.TryRemove(connectionId, out connection);

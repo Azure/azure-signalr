@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using static Microsoft.Azure.SignalR.Protocol.ReliableProtocol;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -242,7 +243,14 @@ namespace Microsoft.Azure.SignalR
             var serializedHubMessages = _messageSerializer.SerializeMessage(message);
             foreach (var serializedMessage in serializedHubMessages)
             {
-                payloads.Add(serializedMessage.ProtocolName, serializedMessage.Serialized);
+                // Wrap with RMessage
+                var rm = new RMessage();
+                rm.MessageType = RMType.Data;
+                var array = serializedMessage.Serialized.ToArray();
+                rm.Payload = Convert.ToBase64String(array);
+                var appMessage = EncodeMessage(rm);
+
+                payloads.Add(serializedMessage.ProtocolName, appMessage);
             }
             return payloads;
         }
