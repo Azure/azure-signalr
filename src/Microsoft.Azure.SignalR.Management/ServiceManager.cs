@@ -4,19 +4,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Azure.SignalR.Common.RestClients;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.Rest;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -27,10 +27,9 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IServerNameProvider _serverNameProvider;
         private readonly ServiceEndpoint _endpoint;
         private readonly string _productInfo;
-        private readonly RestClient _restClient;
-        private readonly RestApiProvider _restApiProvider;
+        private readonly ISignalRServiceRestClient _restClient;
 
-        internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo)
+        internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo, ISignalRServiceRestClient restClient)
         {
             _serviceManagerOptions = serviceManagerOptions;
             _endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString, EndpointType.Secondary);
@@ -45,8 +44,7 @@ namespace Microsoft.Azure.SignalR.Management
             _endpointProvider = new ServiceEndpointProvider(_serverNameProvider, _endpoint, serviceOptions);
 
             _productInfo = productInfo;
-            _restClient = new RestClient();
-            _restApiProvider = new RestApiProvider(_serviceManagerOptions.ConnectionString);
+            _restClient = restClient;
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
@@ -156,31 +154,27 @@ namespace Microsoft.Azure.SignalR.Management
             return _endpointProvider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifeTime).Result;
         }
 
-        public string GetClientEndpoint(string hubName) => _endpointProvider.GetClientEndpoint(hubName, null, null);
+        public string GetClientEndpoint(string hubName)
+        {
+            return _endpointProvider.GetClientEndpoint(hubName, null, null);
+        }
 
         public async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
-            var isHealthy = false;
-            var api = await _restApiProvider.GetServiceHealthEndpointAsync();
-            await _restClient.SendAsync(api, HttpMethod.Get, _productInfo, handleExpectedResponse: response =>
-                {
-                    switch (response.StatusCode)
-                    {
-                        case HttpStatusCode.OK:
-                            isHealthy = true;
-                            return true;
-                        case HttpStatusCode.BadGateway:
-                            isHealthy = false;
-                            return true;
-                        case HttpStatusCode.ServiceUnavailable:
-                            isHealthy = false;
-                            return true;
-                        default:
-                            return false;
-                    }
-                },
-                cancellationToken: cancellationToken);
-            return isHealthy;
+            try
+            {
+                var healthApi = _restClient.HealthApi;
+                using var response = await healthApi.GetHealthStatusWithHttpMessagesAsync(cancellationToken: cancellationToken);
+                return true;
+            }
+            catch (HttpOperationException e) when ((int)e.Response.StatusCode >= 500 && (int)e.Response.StatusCode < 600)
+            {
+                return false;
+            }
+            catch (Exception ex)
+            {
+                throw ex.WrapAsAzureSignalRException(_restClient.BaseUri);
+            }
         }
     }
 }
