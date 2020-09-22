@@ -32,7 +32,7 @@ namespace AspNet.ChatSample.SelfHostServer
 
         public void Echo(string message)
         {
-            Clients.Client(Context.ConnectionId).Echo($"{message} (echo from server, Client IP: {GetIpAddress()})");
+            Clients.Caller.Echo($"{message} (echo from server, Client IP: {GetIpAddress()})");
             Trace.TraceInformation("Echo...");
         }
 
