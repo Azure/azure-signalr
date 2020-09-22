@@ -76,7 +76,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         //[Theory(Skip = "Reenable when it is ready")]
         [Theory]
         [MemberData(nameof(TestServiceManagerOptionData))]
-        internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFactory, string appName, int connectionCount)
+        internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFacory, string appName, int connectionCount)
         {
             var serviceManager = new ServiceManager(new ServiceManagerOptions
             {
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ConnectionCount = connectionCount
             }, null);
 
-            using (var loggerFactory = useLoggerFactory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance)
+            using (var loggerFactory = useLoggerFacory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance)
             {
                 var hubContext = await serviceManager.CreateHubContextAsync(HubName, loggerFactory);
             }

@@ -51,7 +51,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
         {
-            loggerFactory ??= NullLoggerFactory.Instance;
+            loggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
             switch (_serviceManagerOptions.ServiceTransportType)
             {
                 case ServiceTransportType.Persistent:
