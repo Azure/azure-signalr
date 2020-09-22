@@ -8,12 +8,12 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.SignalR.Management.Tests.MultiEndpoints;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
-namespace Microsoft.Azure.SignalR.Management.Tests
+namespace Microsoft.Azure.SignalR.Management.Tests.MultiEndpoints
 {
     public class MultiServiceManagerFacts
     {
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             IEnumerable<ServiceEndpoint> endpoints = Enumerable
                 .Range(0, serviceHealthStatus.Length)
                 .Select(id => new ServiceEndpoint($"Endpoint=http://endpoint{id};AccessKey=accessKey;Version=1.0;"));
-            var multiServiceManager = new MultiServiceManager(mockManagers, endpoints, mockRouter);
+            using var multiServiceManager = new MultiServiceManager(mockManagers, endpoints, mockRouter);
 
             var actual = await multiServiceManager.IsServiceHealthy(default);
 
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                         .ThrowsAsync(new Exception());
                     return mock.Object;
                 });
-            var multiServiceManager = new MultiServiceManager(mockManagers, _endpoints, mockRouter);
+            using var multiServiceManager = new MultiServiceManager(mockManagers, _endpoints, mockRouter);
 
             Task t = multiServiceManager.IsServiceHealthy(default);
 
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 return managerMock;
             }).ToArray();
             var managers = from mock in mocks select mock.Object;
-            var multiServiceManager = new MultiServiceManager(managers, _endpoints, mockRouter);
+            using var multiServiceManager = new MultiServiceManager(managers, _endpoints, mockRouter);
 
             var multiServiceHubContext = multiServiceManager.CreateHubContextAsync(hubName, loggerFactory, cancellationToken);
 
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 return managerMock;
             }).ToArray();
             var managers = from mock in mocks select mock.Object;
-            var multiServiceManager = new MultiServiceManager(managers, _endpoints, mockRouter);
+            using var multiServiceManager = new MultiServiceManager(managers, _endpoints, mockRouter);
 
             var task = multiServiceManager.CreateHubContextAsync(hubName, loggerFactory, cancellationToken);
 
@@ -135,12 +135,28 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     mock.Setup(manager => manager.GetClientEndpoint(hubName)).Returns(pair.Item1);
                     return mock.Object;
                 });
-            var multiServiceManager = new MultiServiceManager(mockManagers, _endpoints, mockRouter);
+            using var multiServiceManager = new MultiServiceManager(mockManagers, _endpoints, mockRouter);
 
             var (endpoint, accessToken) = multiServiceManager.GenerateClientEndpointAndAccessTokenPair(context, hubName, userId, claims, lifeTime);
 
             Assert.Equal(endpoint_tokenPairs[0].Item1, endpoint);
             Assert.Equal(endpoint_tokenPairs[0].Item2, accessToken);
+        }
+
+        [Fact]
+        public void NoRoutingAfterHealthCheckReturnFalseTest()
+        {
+            var router = new EndpointRouterDecorator();
+            IEnumerable<IServiceManager> mockManagers = Enumerable.Range(0, Count)
+            .Select(_ =>
+            {
+                var mock = new Mock<IServiceManager>();
+                mock.Setup(manager => manager.IsServiceHealthy(It.IsAny<CancellationToken>())).ReturnsAsync(false);
+                return mock.Object;
+            });
+
+            using var multiServiceManager = new MultiServiceManager(mockManagers, _endpoints, router);
+            Assert.Throws<AzureSignalRNotConnectedException>(() => multiServiceManager.GenerateClientEndpointAndAccessTokenPair(default, "hub_1", "user_1", default, default));
         }
     }
 }

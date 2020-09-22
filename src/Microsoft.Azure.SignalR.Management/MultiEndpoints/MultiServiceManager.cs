@@ -16,7 +16,10 @@ namespace Microsoft.Azure.SignalR.Management
     internal class MultiServiceManager : IMultiServiceManager
     {
         private readonly Dictionary<ServiceEndpoint, IServiceManager> _serviceManagerTable = new Dictionary<ServiceEndpoint, IServiceManager>();
+        private readonly IEnumerable<ServiceEndpoint> _endpointsForNegotiateRouting;
         private readonly IEndpointRouter _router;
+        private readonly IEnumerable<ServiceStatusMonitor> _statusMonitors;
+        private bool _disposedValue;
 
         internal MultiServiceManager(IEnumerable<IServiceManager> serviceManagers, IEnumerable<ServiceEndpoint> endpoints, IEndpointRouter router)
         {
@@ -32,9 +35,14 @@ namespace Microsoft.Azure.SignalR.Management
 
             _router = router ?? throw new ArgumentNullException(nameof(router));
 
+            _endpointsForNegotiateRouting = new List<ServiceEndpoint>(endpoints.Count());
+            _statusMonitors = new List<ServiceStatusMonitor>(endpoints.Count());
             foreach (var pair in endpoints.Zip(serviceManagers, (EndPoint, Manager) => (EndPoint, Manager)))
             {
                 _serviceManagerTable[pair.EndPoint] = pair.Manager;
+                var endpointForNegotiateRouting = new ServiceEndpoint(pair.EndPoint);
+                _endpointsForNegotiateRouting.Append(endpointForNegotiateRouting);
+                _statusMonitors.Append(new ServiceStatusMonitor(pair.Manager, endpointForNegotiateRouting));
             }
         }
 
@@ -51,7 +59,8 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 throw t.Exception;
             }
-            IServiceHubContext multiServiceHubContext = new MultiServiceHubContext(_router, endpoint_contextCreationTasks.ToDictionary(pair => pair.Key, pair => pair.Item2.Result));
+            var hubContextTable = endpoint_contextCreationTasks.ToDictionary(pair => pair.Key, pair => pair.Item2.Result);
+            IServiceHubContext multiServiceHubContext = new MultiServiceHubContext(_router, hubContextTable);
             return multiServiceHubContext;
         }
 
@@ -72,10 +81,31 @@ namespace Microsoft.Azure.SignalR.Management
 
         public (string, string) GenerateClientEndpointAndAccessTokenPair(HttpContext context, string hubName, string userId, IList<Claim> claims, TimeSpan? lifeTime)
         {
-            var serviceEndpoint = _router.GetNegotiateEndpoint(context, _serviceManagerTable.Keys);
+            var serviceEndpoint = _router.GetNegotiateEndpoint(context, _endpointsForNegotiateRouting);
             var clientEndpoint = _serviceManagerTable[serviceEndpoint].GetClientEndpoint(hubName);
             var token = _serviceManagerTable[serviceEndpoint].GenerateClientAccessToken(hubName, userId, claims, lifeTime);
             return (clientEndpoint, token);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    foreach (var monitor in _statusMonitors)
+                    {
+                        monitor.Dispose();
+                    }
+                }
+                _disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

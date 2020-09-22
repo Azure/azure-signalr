@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.Management.MultiEndpoints
     /// <summary>
     /// A manager abstraction for managing Azure SignalR Services of multiple endpoints.
     /// </summary>
-    internal interface IMultiServiceManager
+    internal interface IMultiServiceManager : IDisposable
     {
         /// <summary>
         /// Creates an instance of <see cref="IServiceHubContext"/> asynchronously.
