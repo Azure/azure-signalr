@@ -16,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Emulator
 {
@@ -42,9 +43,7 @@ namespace Microsoft.Azure.SignalR.Emulator
                 manager.FeatureProviders.Add(new CustomControllerFeatureProvider());
             });
 
-            var upstreamOptions = new UpstreamOptions();
-            Configuration.GetSection("UpstreamSettings").Bind(upstreamOptions);
-            services.Configure<UpstreamOptions>(s => s.Templates = upstreamOptions.Templates);
+            services.Configure<UpstreamOptions>(Configuration.GetSection("UpstreamSettings"));
 
             services.AddSignalREmulator();
             services.AddLogging(services =>
@@ -60,9 +59,17 @@ namespace Microsoft.Azure.SignalR.Emulator
             lifetime.ApplicationStarted.Register(() =>
                {
                    var address = new Uri(app.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First());
+                   var upstreamOptionMonitor = app.ApplicationServices.GetRequiredService<IOptionsMonitor<UpstreamOptions>>();
+                   upstreamOptionMonitor.OnChange(s =>
+                   {
+                       s.Print();
+                   });
                    Console.WriteLine(@$"
 ===================================================
 The Azure SignalR Emulator was successfully started.
+
+Press Ctrl+C to stop the Emulator.
+
 Use the below value inside *********** block as its ConnectionString:
 ***********
 
@@ -72,6 +79,9 @@ Endpoint={address.Scheme}://{address.Host};Port={address.Port};AccessKey={AppBui
 
 ===================================================
 ");
+                   upstreamOptionMonitor.CurrentValue.Print();
+
+
                });
             app.UseRouting();
             app.UseWebSockets();

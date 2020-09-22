@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests.TestHubs
 
         public void Echo(string name, string message)
         {
-            Clients.Client(Context.ConnectionId).echo(name, message + " (echo from server)");
+            Clients.Caller.echo(name, message + " (echo from server)");
         }
 
         public async Task JoinGroup(string name, string groupName)

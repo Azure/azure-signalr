@@ -17,7 +17,7 @@ namespace ChatSample
 
         public void Echo(string name, string message)
         {
-            Clients.Client(Context.ConnectionId).SendAsync("echo", name, $"{message} (echo from server, Client IP: {Context.GetHttpContext().Connection.RemoteIpAddress})");
+            Clients.Caller.SendAsync("echo", name, $"{message} (echo from server, Client IP: {Context.GetHttpContext().Connection.RemoteIpAddress})");
             Console.WriteLine("Echo...");
         }
 

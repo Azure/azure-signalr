@@ -4,16 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
 using Microsoft.Azure.SignalR.Common;
 
 namespace Microsoft.Azure.SignalR.Emulator
 {
-    internal class UpstreamOptions
-    {
-        public UpstreamTemplateItem[] Templates { get; set; }
-    }
-
     internal class UpstreamTemplateItem : IEquatable<UpstreamTemplateItem>
     {
         private static readonly HashSet<string> MatchAllPattern = new HashSet<string>(new[] { Constants.Asterisk });
@@ -84,6 +78,11 @@ namespace Microsoft.Azure.SignalR.Emulator
         public override bool Equals(object obj) => Equals(obj as UpstreamTemplateItem);
 
         public override int GetHashCode() => HashCode.Combine(UrlTemplate, EventPattern, HubPattern, CategoryPattern);
+
+        public override string ToString()
+        {
+            return $"{UrlTemplate}(event:'{EventPattern}',hub:'{HubPattern}',category:'{CategoryPattern}')";
+        }
 
         private void SetPattern(string pattern, ref string field, ref HashSet<string> store)
         {
