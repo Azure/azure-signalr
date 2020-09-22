@@ -101,14 +101,14 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 throw new ArgumentNullException(nameof(userId));
             }
-            var endpointsForU = _router.GetEndpointsForUser(userId, _userGroupManagerTable.Keys);
+            var endpointsForUser = _router.GetEndpointsForUser(userId, _userGroupManagerTable.Keys);
             if (groupName == null)
             {
-                return endpointsForU;
+                return endpointsForUser;
             }
 
-            var endpointsForG = _router.GetEndpointsForGroup(groupName, _userGroupManagerTable.Keys);
-            return endpointsForU.Intersect(endpointsForG);
+            var endpointsForGroup = _router.GetEndpointsForGroup(groupName, _userGroupManagerTable.Keys);
+            return endpointsForUser.Intersect(endpointsForGroup);
         }
     }
 }
