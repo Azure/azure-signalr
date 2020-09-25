@@ -112,7 +112,7 @@ namespace Microsoft.Azure.SignalR
             _ackHandler = ackHandler ?? new AckHandler();
 
             // make sure it is after _endpoint is set
-            // init initial connections
+            // init initial connections 
             List<IServiceConnection> initial;
             if (initialConnections == null)
             {
@@ -140,6 +140,7 @@ namespace Microsoft.Azure.SignalR
             ConnectionStatusChanged += OnStatusChanged;
 
             _statusPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.ServiceStatus, WriteServiceStatusPingAsync, Constants.Periods.DefaultStatusPingInterval, Constants.Periods.DefaultStatusPingInterval);
+
             // when server connection count is specified to 0, the app server only handle negotiate requests
             if (initial.Count > 0)
             {
