@@ -10,7 +10,7 @@
     <PackageReference Include="Microsoft.Owin.Diagnostics" Version="$(MicrosoftOwinPackageVersion)" />
     <PackageReference Include="Microsoft.Owin.Host.HttpListener" Version="$(MicrosoftOwinPackageVersion)" />
     <PackageReference Include="Microsoft.Owin.Hosting" Version="$(MicrosoftOwinPackageVersion)" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
     <PackageReference Include="Owin" Version="$(OwinPackageVersion)" />
     <PackageReference Include="Microsoft.AspNet.SignalR" Version="$(MicrosoftAspNetSignalRPackageVersion)" />
     <ProjectReference Include="..\..\..\src\Microsoft.Azure.SignalR.AspNet\Microsoft.Azure.SignalR.AspNet.csproj" />

@@ -226,9 +226,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task Switch()
         {
-            // 1. Send Barrier
-            // 2. Transport replaced by reload
-            // 3. Wait until client send C`lientConnnectionAbort
+            // Switch to new Connection internally.
             if (conns.Count > 0)
             {
                 await conns.Peek()._ReloadTcs.Task;
