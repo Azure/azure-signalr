@@ -8,6 +8,7 @@ namespace Microsoft.Azure.SignalR
     internal interface IClientConnectionManager : IClientConnectionLifetimeManager
     {
         bool TryAddClientConnection(ClientConnectionContext connection);
+
         bool TryAddClientConnection(string connectionId, ClientConnectionContext connection);
 
         bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection);
