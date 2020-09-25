@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -59,8 +60,8 @@ namespace Microsoft.Azure.SignalR
 
         protected List<IServiceConnection> ServiceConnections
         {
-            get { return _serviceConnections; }
-            set { _serviceConnections = value; }
+            get => _serviceConnections;
+            set => _serviceConnections = value;
         }
 
         protected IServiceConnectionFactory ServiceConnectionFactory { get; }
@@ -139,7 +140,7 @@ namespace Microsoft.Azure.SignalR
             ConnectionStatusChanged += OnStatusChanged;
 
             _statusPing = new CustomizedPingTimer(Logger, Constants.CustomizedPingTimer.ServiceStatus, WriteServiceStatusPingAsync, Constants.Periods.DefaultStatusPingInterval, Constants.Periods.DefaultStatusPingInterval);
-            
+
             // when server connection count is specified to 0, the app server only handle negotiate requests
             if (initial.Count > 0)
             {
@@ -248,8 +249,7 @@ namespace Microsoft.Azure.SignalR
                 case AckStatus.Timeout:
                     throw new TimeoutException($"Ack-able message {serviceMessage.GetType()} waiting for ack timed out.");
                 default:
-                    // should not be hit.
-                    return false;
+                    throw new InvalidDataException($"Unexpected ack status is returned from ack-able message with ackid {ackableMessage.AckId}");
             }
         }
 
@@ -560,7 +560,7 @@ namespace Microsoft.Azure.SignalR
             private long _counter = 0;
 
             private long _lastSendTimestamp = 0;
-            private TimerAwaitable _timer;
+            private readonly TimerAwaitable _timer;
 
             public CustomizedPingTimer(ILogger logger, string pingName, Func<Task> writePing, TimeSpan dueTime, TimeSpan intervalTime)
             {
