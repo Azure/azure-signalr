@@ -1,10 +1,9 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.Azure.Services.AppAuthentication;
-using Microsoft.Azure.SignalR.Common.Auth;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class AadManagedIdentityOptions : AuthOptions, ITokenBasedAuthOptions
+    public class AadManagedIdentityOptions : AuthOptions, IAadTokenGenerator
     {
         internal override string AuthType => "ManagedIdentity";
 

@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
         }
 
-        public List<IServiceConnection> Connections { get => FixedServiceConnections; }
+        public List<IServiceConnection> Connections { get => ServiceConnections; }
 
         public void ShutdownForTest()
         {
@@ -72,6 +72,12 @@ namespace Microsoft.Azure.SignalR.Tests
         public Task MockReceivedStatusPing(bool isActive)
         {
             var ping = new PingMessage { Messages = new[] { "status", isActive ? "1" : "0" } };
+            return base.HandlePingAsync(ping);
+        }
+
+        public Task MockReceivedStatusPing(bool isActive, int clientCount)
+        {
+            var ping = new PingMessage { Messages = new[] { "status", isActive ? "1" : "0" , "clientcount", clientCount.ToString()} };
             return base.HandlePingAsync(ping);
         }
     }

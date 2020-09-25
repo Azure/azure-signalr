@@ -79,5 +79,10 @@ namespace Microsoft.Azure.SignalR
             public const string ServiceStatus = "ServiceStatus";
             public const string Servers = "Servers";
         }
+
+        public static class Protocol
+        {
+            public const string BlazorPack = "blazorpack";
+        }
     }
 }

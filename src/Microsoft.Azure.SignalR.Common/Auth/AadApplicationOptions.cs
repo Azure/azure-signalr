@@ -4,11 +4,10 @@
 using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Common.Auth;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class AadApplicationOptions : AuthOptions, ITokenBasedAuthOptions
+    public class AadApplicationOptions : AuthOptions, IAadTokenGenerator
     {
         private static readonly string[] DefaultScopes = new string[] { $"{Audience}/.default" };
 
@@ -54,12 +53,5 @@ namespace Microsoft.Azure.SignalR
             var result = await AzureActiveDirectoryHelper.BuildApplication(this).AcquireTokenForClient(DefaultScopes).WithSendX5C(true).ExecuteAsync();
             return result.AccessToken;
         }
-
-        internal Uri BuildMetadataAddress()
-        {
-            return GetUri(AzureActiveDirectoryInstance, "common/v2.0/.well-known/openid-configuration");
-        }
-
-        private Uri GetUri(string baseUri, string path) => new Uri(new Uri(baseUri), path);
     }
 }

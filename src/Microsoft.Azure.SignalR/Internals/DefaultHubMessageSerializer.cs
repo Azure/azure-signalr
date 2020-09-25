@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR
                 // blazorpack is meant to only be used by the ComponentHub
                 // We remove it from the list here except when the Hub has a single protocol that is "blazorpack" because
                 // that identifies it as the ComponentHub
-                if (supportedProtocols.Count > 1 && string.Equals(protocolName, "blazorpack", StringComparison.OrdinalIgnoreCase))
+                if (supportedProtocols.Count > 1 && string.Equals(protocolName, Constants.Protocol.BlazorPack, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }

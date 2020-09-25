@@ -18,7 +18,7 @@ namespace ChatSample
 
         public void Echo(IDictionary<string, object> data)
         {
-            Clients.Client(Context.ConnectionId).SendAsync("RecordLatency", data);
+            Clients.Caller.SendAsync("RecordLatency", data);
         }
 
         public ChannelReader<IDictionary<string, object>> StreamingEcho(ChannelReader<IDictionary<string, object>> stream, int delay)
