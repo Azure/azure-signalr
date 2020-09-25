@@ -75,7 +75,7 @@ namespace Microsoft.Azure.SignalR
         protected Dictionary<ServiceEndpoint, ServiceEndpoint> GetValuableEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
             // select the most valuable endpoint with the same endpoint address
-            var groupedEndpoints = endpoints.Distinct().GroupBy(s => s.Endpoint).Select(s =>
+            var groupedEndpoints = endpoints.Distinct().GroupBy(s => (s.Endpoint, s.Port)).Select(s =>
             {
                 var items = s.ToList();
                 if (items.Count == 1)
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.SignalR
         {
             public bool Equals(ServiceEndpoint x, ServiceEndpoint y)
             {
-                return x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType;
+                return x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType && x.Port == y.Port;
             }
 
             public int GetHashCode(ServiceEndpoint obj)

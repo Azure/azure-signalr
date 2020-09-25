@@ -13,8 +13,8 @@ namespace ChatSample.CSharpClient
         static async Task Main(string[] args)
         {
             var url = "http://localhost:5050";
-            var proxy = await ConnectAsync(url + "/chat", Console.Out);
-            var currentUser = Guid.NewGuid().ToString("N");
+            var currentUser = "DefaultUser";//Guid.NewGuid().ToString("N");
+            var proxy = await ConnectAsync(url + "/chat?user=" + currentUser + "&endpoint=primary", Console.Out);
 
             Mode mode = Mode.Broadcast;
             if (args.Length > 0)
@@ -22,7 +22,7 @@ namespace ChatSample.CSharpClient
                 Enum.TryParse(args[0], true, out mode);
             }
 
-            Console.WriteLine($"Logged in as user {currentUser}");
+            Console.WriteLine("[Application Layer]\t" + $"Logged in as user {currentUser}");
             var input = Console.ReadLine();
             while (!string.IsNullOrEmpty(input))
             {
@@ -32,7 +32,7 @@ namespace ChatSample.CSharpClient
                         await proxy.InvokeAsync("BroadcastMessage", currentUser, input);
                         break;
                     case Mode.Echo:
-                        await proxy.InvokeAsync("echo", input);
+                        await proxy.InvokeAsync("echo", currentUser, input);
                         break;
                     default:
                         break;
@@ -44,18 +44,20 @@ namespace ChatSample.CSharpClient
 
         private static async Task<HubConnection> ConnectAsync(string url, TextWriter output, CancellationToken cancellationToken = default)
         {
-            var connection = new HubConnectionBuilder()
+               var connection = new HubConnectionBuilder()
                 .WithUrl(url)
-                .AddMessagePackProtocol().Build();
+                .AddMessagePackProtocol()
+                .AddReloadFeature()
+                .Build();
 
-            connection.On<string, string>("BroadcastMessage", BroadcastMessage);
-            connection.On<string>("Echo", Echo);
+            connection.On<string, string>("broadcastMessage", BroadcastMessage);
+            connection.On<string, string>("echo", Echo);
 
             connection.Closed += async (e) =>
             {
                 output.WriteLine(e);
                 await DelayRandom(200, 1000);
-                await StartAsyncWithRetry(connection, output, cancellationToken);
+                //await StartAsyncWithRetry(connection, output, cancellationToken);
             };
 
             await StartAsyncWithRetry(connection, output, cancellationToken);
@@ -96,9 +98,10 @@ namespace ChatSample.CSharpClient
             Console.WriteLine($"{name}: {message}");
         }
 
-        private static void Echo(string message)
+        private static void Echo(string name, string message)
         {
-            Console.WriteLine(message);
+            Console.WriteLine("[Application Layer]\t" + $"{name}: {message}");
+            //Console.WriteLine(message);
         }
 
         private enum Mode

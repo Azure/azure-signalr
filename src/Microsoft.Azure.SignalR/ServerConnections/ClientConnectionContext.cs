@@ -191,11 +191,12 @@ namespace Microsoft.Azure.SignalR
             internal async Task ProcessIncoming(CancellationToken token)
             {
                 await _ReloadTcs.Task;
-                Console.WriteLine(ConnectionId + "has passed tcs!!");
+                
                 while (await _intermediateChannel.Reader.WaitToReadAsync(token))
                 {
                     while (_intermediateChannel.Reader.TryRead(out ReadOnlySequence<byte> payload))
                     {
+                        Console.WriteLine("[Transport Layer]\tReceived message from connection: " + ConnectionId);
                         // Only WriteMessage received after barrier message.
                         await ccc.WriteMessageAsyncCore(payload);
                     }
@@ -227,7 +228,7 @@ namespace Microsoft.Azure.SignalR
         {
             // 1. Send Barrier
             // 2. Transport replaced by reload
-            // 3. Wait until client send ClientConnnectionAbort
+            // 3. Wait until client send C`lientConnnectionAbort
             if (conns.Count > 0)
             {
                 await conns.Peek()._ReloadTcs.Task;

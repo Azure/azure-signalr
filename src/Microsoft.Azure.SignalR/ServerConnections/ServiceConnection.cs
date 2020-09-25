@@ -128,8 +128,12 @@ namespace Microsoft.Azure.SignalR
             {
                 // Map the new connection to oldClientConnectionContext
                 var oldConnection = _clientConnectionManager.ClientConnections[oldConn.Value];
+                
                 _clientConnectionManager.TryAddClientConnection(message.ConnectionId, oldConnection);
+
+                // Update new connectionContext serviceConnection to this.
                 if (!oldConnection.ConnectionMap.ContainsKey(message.ConnectionId)) oldConnection.AddReloadConnection(message.ConnectionId, this);
+                else oldConnection.ConnectionMap[message.ConnectionId].serviceConnection = this;
                 Task.Run(() => { _ = oldConnection.Switch(); });
                 // Semd barrier message to clients
                 BarrierMessage bm = new BarrierMessage();
@@ -196,7 +200,11 @@ namespace Microsoft.Azure.SignalR
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var context))
             {
                 // If is reloading or already reloaded just return.
-                if (connectionId != context.CurConn.ConnectionId) return Task.CompletedTask;
+                if (connectionId != context.CurConn.ConnectionId)
+                {
+                    Console.WriteLine("[Transport Layer]\tConnection: " + connectionId + " disconnected.");
+                    return Task.CompletedTask;
+                }
 
                 if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
                 {
@@ -270,14 +278,15 @@ namespace Microsoft.Azure.SignalR
                             case RMType.Data:
                                 {
                                     var payload_Bytes = Convert.FromBase64String(rm.Payload);
+                                    var str = Encoding.UTF8.GetString(payload_Bytes);
                                     // Write to the inner channel
                                     if (connection.ConnectionMap.ContainsKey(connectionDataMessage.ConnectionId) && connection.ConnectionMap[connectionDataMessage.ConnectionId].receivedBarrier)
                                     {
                                         await connection.ConnectionMap[connectionDataMessage.ConnectionId].WriteMessageAsync(new ReadOnlySequence<byte>(payload_Bytes));
                                     }
-                                    var str = Encoding.UTF8.GetString(payload_Bytes);
                                     if (str.Contains("reload"))
                                     {
+                                        Console.WriteLine("[Transport Layer]\tStart reloading from " + HubEndpoint.Endpoint + ":" + HubEndpoint.Port);
                                         ReloadMessage rdm = new ReloadMessage();
                                         //connection.CompleteIncoming();
                                         string connectionString = "Endpoint=http://localhost;Port=8081;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;";
@@ -324,6 +333,7 @@ namespace Microsoft.Azure.SignalR
                                 }
                             case RMType.Barrier:
                                 {
+                                    Console.WriteLine("[Transport Layer]\tReceived Barrier Message from " + HubEndpoint.Endpoint + ":" + HubEndpoint.Port);
                                     BarrierMessage bm = JsonConvert.DeserializeObject<BarrierMessage>(rm.Payload);
                                     if (bm.from == connectionDataMessage.ConnectionId)
                                     {
@@ -351,6 +361,7 @@ namespace Microsoft.Azure.SignalR
                                         connection.CurConn.cts.Cancel();
                                         // Invalidate the oldConnection.
                                         connection.ConnectionMap.Remove(bm.from);
+
                                         if (!connection.ConnectionMap.ContainsKey(bm.to)) await connection.AddReloadConnection(bm.to, this);
                                         connection.ConnectionMap[bm.to]._ReloadTcs.SetResult(null);
                                     }
@@ -622,7 +633,7 @@ namespace Microsoft.Azure.SignalR
         private async Task PerformDisconnectAsyncCore(string connectionId)
         {
             var connection = RemoveClientConnection(connectionId);
-            if (connection != null)
+            if (connection != null && connectionId == connection.CurConn.ConnectionId)
             {
                 // In normal close, service already knows the client is closed, no need to be informed.
                 connection.AbortOnClose = false;

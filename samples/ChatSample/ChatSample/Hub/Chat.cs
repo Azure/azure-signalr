@@ -18,14 +18,15 @@ namespace ChatSample.CoreApp3
 
         public void Echo(string name, string message)
         {
-            Clients.User(name).SendAsync("echo", name, $"{message} (echo from server, Client IP: {Context.GetHttpContext().Connection.RemoteIpAddress})");
+            Clients.User(name).SendAsync("echo", name, $"{message}");
             //Clients.Client(Context.ConnectionId).SendAsync("echo", name, $"{message} (echo from server, Client IP: {Context.GetHttpContext().Connection.RemoteIpAddress})");
-            Console.WriteLine("Echo...");
+            Console.WriteLine("[Application Layer]\tReceived Message: " + message + " from user " + name);
+            Console.WriteLine();
         }
 
         public override async Task OnConnectedAsync()
         {
-            Console.WriteLine($"{Context.ConnectionId} connected.");
+            Console.WriteLine("[Application Layer]\t" + $"{Context.ConnectionId} connected.");
 
             var feature = Context.GetHttpContext().Features.Get<IConnectionMigrationFeature>();
             if (feature != null)
@@ -38,7 +39,7 @@ namespace ChatSample.CoreApp3
 
         public override async Task OnDisconnectedAsync(Exception e)
         {
-            Console.WriteLine($"{Context.ConnectionId} disconnected.");
+            Console.WriteLine("[Application Layer]\t" + $"{Context.ConnectionId} disconnected.");
 
             var feature = Context.GetHttpContext().Features.Get<IConnectionMigrationFeature>();
             if (feature != null)
