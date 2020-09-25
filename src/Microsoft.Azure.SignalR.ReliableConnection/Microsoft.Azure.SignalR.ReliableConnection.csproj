@@ -14,7 +14,7 @@
   </ItemGroup>
   <ItemGroup>
 
-	  <PackageReference Include="Newtonsoft.Json" Version="11.0.1" />
+	  <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
 	  <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="$(MicrosoftAspNetCoreSignalRClientPackageVersion)" />
 	  <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="$(MicrosoftAspNetCoreSignalRProtocolsMessagePackVersion)" />
 	  <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Common" Version="$(MicrosoftAspNetCoreSignalRClientPackageVersion)" />

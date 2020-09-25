@@ -131,7 +131,7 @@ namespace Microsoft.Azure.SignalR
                 
                 _clientConnectionManager.TryAddClientConnection(message.ConnectionId, oldConnection);
 
-                // Update new connectionContext serviceConnection to this.
+                // Update new connectionContext serviceConnection to this, map the new connection to old connectionContext.
                 if (!oldConnection.ConnectionMap.ContainsKey(message.ConnectionId)) oldConnection.AddReloadConnection(message.ConnectionId, this);
                 else oldConnection.ConnectionMap[message.ConnectionId].serviceConnection = this;
                 Task.Run(() => { _ = oldConnection.Switch(); });
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.SignalR
 
 
                 return Task.CompletedTask;
-        }
+            }
 
             var connection = _clientConnectionFactory.CreateConnection(message, ConfigureContext);
             connection.ServiceConnection = this;
@@ -231,14 +231,7 @@ namespace Microsoft.Azure.SignalR
                     var payload = connectionDataMessage.Payload;
                     Log.WriteMessageToApplication(Logger, payload.Length, connectionDataMessage.ConnectionId);
 
-                    // 1. 2 connections
-                    // 1 connection old , one new
-                    // 1 barrier, 
-                    // reliableMessage = connectionDataMessage.Payload
-                    // signalrPayload = ReliableProtocol.GetPayload(reliableMessage);
-                    // ReliableProtocol: ReloadMessage, BarrierMessage, DataMessage
-                    // new ConnectionDataMessage(new InvocationMessage())
-                    // new ConnectionDataMessage(new ReliableProtocol.DataMessage(new InvocationMessage()))
+
                     var s = Encoding.UTF8.GetString(payload.ToArray());
                     RMessage rm = JsonConvert.DeserializeObject<RMessage>(s, new JsonSerializerSettings
                     {
@@ -304,6 +297,7 @@ namespace Microsoft.Azure.SignalR
                                         };
                                         SigningCredentials credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
+                                        // Create access token for new connection.
                                         var userid = connection.GetHttpContext().Request.Query["user"];
                                         JwtSecurityTokenHandler JwtTokenHandler = new JwtSecurityTokenHandler();
                                         var token = JwtTokenHandler.CreateJwtSecurityToken(
@@ -365,7 +359,9 @@ namespace Microsoft.Azure.SignalR
                                         // Invalidate the oldConnection.
                                         connection.ConnectionMap.Remove(bm.from);
 
+                                        // Create connection if has not created yet.
                                         if (!connection.ConnectionMap.ContainsKey(bm.to)) await connection.AddReloadConnection(bm.to, this);
+                                        // Notification.
                                         connection.ConnectionMap[bm.to]._ReloadTcs.SetResult(null);
                                     }
                                     else if (bm.to == connectionDataMessage.ConnectionId)

@@ -132,27 +132,31 @@ namespace Microsoft.AspNetCore.SignalR
                                 end = buffer.Start;
                                 switch (rm.MessageType)
                                 {
+                                    
                                     case RMType.Data:
                                         {
+                                            // Received normal message, decode with base64 and deliver to application layer.
                                             var output = Convert.FromBase64String(rm.Payload);
                                             if (bc.receivedBarrier)
                                             {
                                                 Console.WriteLine("[Transport Layer]\tConnection " + bc.conn.ConnectionId + " Received Data Message.");
                                                 await bc.chan.Writer.WriteAsync(output);
-                                                //if (bc == inner) await chan.Writer.WriteAsync(output);
-                                                //else bc.buffer.Enqueue(output);
                                             }
                                             break;
                                         }
                                     case RMType.Reload:
                                         {
+                                            // Received Reload Message
                                             ReloadMessage rdm = JsonConvert.DeserializeObject<ReloadMessage>(rm.Payload);
+                                            // Open a new connection.
                                             var backup = new BufferConnection(await _connectionFactory.ConnectAsync(new UriEndPoint(new Uri(rdm.url)), rdm.token));
-                                            // Send HandShakeBytes to execute virtual handshake
+                                            // Send HandShakeBytes to execute virtual handshake, application layer donesn't know.
                                             await backup.conn.Transport.Output.WriteAsync(HandshakeBytes);
                                             conns.Enqueue(backup);
                                             _ = ProcessIncoming(backup);
 
+
+                                            // Send Barrier Message for both old and new connections.
                                             BarrierMessage bm = new BarrierMessage();
                                             bm.from = bc.conn.ConnectionId;
                                             bm.to = backup.conn.ConnectionId;
@@ -173,6 +177,7 @@ namespace Microsoft.AspNetCore.SignalR
                                             BarrierMessage bm = JsonConvert.DeserializeObject<BarrierMessage>(rm.Payload);
                                             if (bm.from == bc.conn.ConnectionId)
                                             {
+                                                // Receoved Barrier, finish one process.
                                                 bc.receivedBarrier = false;
                                                 bc.finish++;
                                             }
@@ -184,6 +189,7 @@ namespace Microsoft.AspNetCore.SignalR
                                         }
                                     case RMType.ACK:
                                         {  
+                                            // Receoved ACK, finish one process.
                                             ReloadAckMessage ram = JsonConvert.DeserializeObject<ReloadAckMessage>(rm.Payload);
                                             if (ram.oldConnID == bc.conn.ConnectionId)
                                             {
@@ -208,6 +214,7 @@ namespace Microsoft.AspNetCore.SignalR
                         input.AdvanceTo(end);
                     }
 
+                    // Finish from both sending and receiving.
                     if (bc.finish == 2)
                     {
                         if (conns.Count == 0) return;
@@ -257,6 +264,7 @@ namespace Microsoft.AspNetCore.SignalR
                             {
                                 if (HandshakeProtocol.TryParseRequestMessage(ref buffer, out var handshakeRequest))
                                 {
+                                    // For the first handshake bytes, we need to send without any changes, because runtime couldn't recognize our wrapper.
                                     end = buffer.Start;
                                     handshakeProcessed = true;
                                     var memoryBufferWriter = MemoryBufferWriter.Get();
@@ -278,12 +286,14 @@ namespace Microsoft.AspNetCore.SignalR
                             }
                             else
                             {
+                                // Wrap with our RMessage.
                                 var rm = new RMessage();
                                 rm.MessageType = RMType.Data;
                                 var array = buffer.ToArray();
                                 rm.Payload = Convert.ToBase64String(array);
                                 var appMessage = EncodeMessage(rm);
                                 
+                                // Send messages for both old and new connections and let receiver to handle receiving logic.
                                 await inner.conn.Transport.Output.WriteAsync(appMessage);
                                 foreach (var back_bc in conns) await back_bc.conn.Transport.Output.WriteAsync(appMessage);
                             }

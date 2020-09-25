@@ -26,6 +26,7 @@ namespace Microsoft.AspNetCore.SignalR
         }
     }
 
+    // Inner factory used to create inner connections for client connection.
     public class RHttpConnectionFactory : IConnectionFactory
     {
         private readonly IServiceProvider _provider;

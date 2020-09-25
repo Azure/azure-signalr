@@ -173,12 +173,15 @@ namespace Microsoft.Azure.SignalR
 
             internal bool receivedBarrier { get; set; }
 
+            // Used for canceling ProcessIncoming().
             internal CancellationTokenSource cts = new CancellationTokenSource();
 
             internal ServiceConnectionBase serviceConnection { get; set; }
 
+            // Used for synchronization, old connection notify new connection.
             internal readonly TaskCompletionSource<object> _ReloadTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
+            // Inner channel.
             private readonly Channel<ReadOnlySequence<byte>> _intermediateChannel = Channel.CreateUnbounded<ReadOnlySequence<byte>>();
 
             //TODO: need add tcs for synchronization
