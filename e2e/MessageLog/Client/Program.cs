@@ -1,6 +1,7 @@
 ﻿using CommandLine;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualBasic.CompilerServices;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,10 +29,12 @@ namespace Microsoft.Azure.SignalR.E2ETest
 
         static async Task RunCoreAsync(Options opts)
         {
-            var connections = new List<HubConnection>();
+            var connections = new List<ConnectionBase>();
             for (var i = 0; i < (opts.Scenario == Scenario.Throttle ? 150 : opts.ConnectionCount); i++)
             {
-                connections.Add(CreateConnection(opts.Url, GetUniqueName(i), opts.Protocol));
+                connections.Add(opts.UseAspNet ?
+                    (ConnectionBase)new AspNetConnection(_prefix, GetUniqueName(i), opts.Protocol) :
+                    new AspNetCoreConnection(_prefix, GetUniqueName(i), opts.Protocol));
             }
             if(opts.Scenario == Scenario.Throttle)
             {
@@ -51,7 +54,6 @@ namespace Microsoft.Azure.SignalR.E2ETest
                 from connection in connections
                 select RandomDelayTask(connection.StartAsync(), connections.Count * 1000));
             }
-
             await Task.Delay(1000);
             for (var i = 0; i < opts.RepeatSendingTimes; i++)
             {
@@ -62,7 +64,7 @@ namespace Microsoft.Azure.SignalR.E2ETest
             await Task.WhenAll(from connection in connections select connection.StopAsync());
         }
 
-        static async Task TestAsync(Scenario scenario, IList<HubConnection> connections)
+        static async Task TestAsync(Scenario scenario, IList<ConnectionBase> connections)
         {
             var groups = (from i in Enumerable.Range(0, connections.Count)
                           select GetUniqueName(_rand.Next(connections.Count)))
@@ -105,25 +107,25 @@ namespace Microsoft.Azure.SignalR.E2ETest
                                 var delay = 1000;
 
                                 // echo
-                                await connection.SendAsync(Scenario.Echo.ToString(), $"invoke {scenario} from user {GetUniqueName(index)}");
+                                await connection.SendAsync(Scenario.Echo.ToString(), $"invoke echo in {scenario} from user {GetUniqueName(index)}");
                                 await Task.Delay(delay);
 
                                 // broadcast
-                                await connection.SendAsync(Scenario.Broadcast.ToString(), $"invoke {scenario} from user {GetUniqueName(index)}");
+                                await connection.SendAsync(Scenario.Broadcast.ToString(), $"invoke broadcast in {scenario} from user {GetUniqueName(index)}");
                                 await Task.Delay(delay);
 
                                 // send to client
-                                await connection.SendAsync(Scenario.SendToClientRandomly.ToString(), $"invoke {scenario} from user {GetUniqueName(index)}");
+                                await connection.SendAsync(Scenario.SendToClientRandomly.ToString(), $"invoke p2p in {scenario} from user {GetUniqueName(index)}");
                                 await Task.Delay(delay);
 
                                 // send to user
-                                await connection.SendAsync(Scenario.SendToUserRandomly.ToString(), $"invoke {scenario} from user {GetUniqueName(index)}");
+                                await connection.SendAsync(Scenario.SendToUserRandomly.ToString(), $"invoke u2u in {scenario} from user {GetUniqueName(index)}");
                                 await Task.Delay(delay);
 
                                 // send to group
                                 await connection.SendAsync(Scenario.JoinGroup.ToString(), groupName);
                                 await Task.Delay(delay);
-                                await connection.SendAsync(Scenario.SendToGroupRandomly.ToString(), $"invoke {scenario} from user {userName}");
+                                await connection.SendAsync(Scenario.SendToGroupRandomly.ToString(), $"invoke group in {scenario} from user {userName}");
                                 await Task.Delay(delay);
                                 await connection.SendAsync(Scenario.LeaveGroup.ToString(), groupName);
                                 await Task.Delay(delay);
@@ -150,33 +152,6 @@ namespace Microsoft.Azure.SignalR.E2ETest
         static string GetUniqueName(int index)
         {
             return $"{_prefix}.{index}";
-        }
-
-        static HubConnection CreateConnection(string url, string userId, HubProtocol protocol)
-        {
-            var builder = new HubConnectionBuilder()
-                .WithUrl($"{url}?user={userId}&prefix={_prefix}&diag=true");
-            if (protocol == HubProtocol.MessagePack)
-            {
-                builder.AddMessagePackProtocol();
-            }
-            var connection = builder.Build();
-            ConfigureConnection(connection);
-            return connection;
-        }
-
-        static void ConfigureConnection(HubConnection connection)
-        {
-            Action<string> callback = (string message) =>
-            {
-                Console.WriteLine($"Received message {message}");
-            };
-
-            connection.On("echo", callback);
-            connection.On("broadcast", callback);
-            connection.On("client", callback);
-            connection.On("user", callback);
-            connection.On("group", callback);
         }
     }
 }

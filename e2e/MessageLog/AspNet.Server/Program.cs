@@ -4,7 +4,7 @@
 using System;
 using Microsoft.Owin.Hosting;
 
-namespace AspNet.ChatSample.SelfHostServer
+namespace Microsoft.Azure.SignalR.E2ETest
 {
     class Program
     {
@@ -12,7 +12,7 @@ namespace AspNet.ChatSample.SelfHostServer
         {
             if (!(args.Length > 0 && int.TryParse(args[0], out var port)))
             {
-                port = 8009;
+                port = 5000;
             }
 
             var url = $"http://localhost:{port}";

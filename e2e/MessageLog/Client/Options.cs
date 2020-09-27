@@ -21,5 +21,8 @@ namespace Microsoft.Azure.SignalR.E2ETest
 
         [Option('R', "RepeatConnectionTimes", Default = 1)]
         public int RepeatConnectionTimes { get; set; }
+
+        [Option('a', "AspNet", Default = false)]
+        public bool UseAspNet { get; set; }
     }
 }

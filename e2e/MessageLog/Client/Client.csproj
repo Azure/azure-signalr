@@ -10,6 +10,7 @@
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="3.1.7" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="3.1.7" />
+	<PackageReference Include="Microsoft.AspNet.SignalR.Client" Version="2.4.1" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,6 @@
 ﻿namespace Microsoft.Azure.SignalR.E2ETest
 {
-    enum HubProtocol
+    public enum HubProtocol
     {
         Json,
         MessagePack,
