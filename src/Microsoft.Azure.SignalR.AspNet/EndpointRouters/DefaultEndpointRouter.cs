@@ -19,8 +19,8 @@ namespace Microsoft.Azure.SignalR.AspNet
         public ServiceEndpoint GetNegotiateEndpoint(IOwinContext owinContext, IEnumerable<ServiceEndpoint> endpoints)
         {
             // get primary endpoints snapshot
-            var availbaleEndpoints = GetNegotiateEndpoints(endpoints);
-            return availbaleEndpoints[StaticRandom.Next(availbaleEndpoints.Length)];
+            var availableEndpoints = GetNegotiateEndpoints(endpoints);
+            return availableEndpoints[StaticRandom.Next(availableEndpoints.Length)];
         }
 
         /// <summary>

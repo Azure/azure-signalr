@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -248,8 +249,7 @@ namespace Microsoft.Azure.SignalR
                 case AckStatus.Timeout:
                     throw new TimeoutException($"Ack-able message {serviceMessage.GetType()} waiting for ack timed out.");
                 default:
-                    // should not be hit.
-                    return false;
+                    throw new InvalidDataException($"Unexpected ack status is returned from ack-able message with ackid {ackableMessage.AckId}");
             }
         }
 
