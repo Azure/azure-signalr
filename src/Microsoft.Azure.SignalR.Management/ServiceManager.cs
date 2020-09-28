@@ -32,7 +32,9 @@ namespace Microsoft.Azure.SignalR.Management
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo, ISignalRServiceRestClient restClient)
         {
             _serviceManagerOptions = serviceManagerOptions;
-            _endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString, EndpointType.Secondary);
+
+            _endpoint = serviceManagerOptions.ServiceEndpoint;
+
             _serverNameProvider = new DefaultServerNameProvider();
 
             var serviceOptions = Options.Create(new ServiceOptions
@@ -44,6 +46,7 @@ namespace Microsoft.Azure.SignalR.Management
             _endpointProvider = new ServiceEndpointProvider(_serverNameProvider, _endpoint, serviceOptions);
 
             _productInfo = productInfo;
+
             _restClient = restClient;
         }
 

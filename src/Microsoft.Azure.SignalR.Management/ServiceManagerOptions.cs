@@ -3,7 +3,6 @@
 
 using System;
 using System.Net;
-using Microsoft.Azure.SignalR;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -22,6 +21,27 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public string ConnectionString { get; set; } = null;
 
+        private ServiceEndpoint _serviceEndpoint = null;
+
+        /// <summary>
+        /// Gets or sets the service endpoint for accessing Azure SignalR Service.
+        /// </summary>
+        public ServiceEndpoint ServiceEndpoint
+        {
+            get
+            {
+                if (_serviceEndpoint == null)
+                {
+                    _serviceEndpoint = new ServiceEndpoint(ConnectionString, EndpointType.Secondary);
+                }
+                return _serviceEndpoint;
+            }
+            set
+            {
+                _serviceEndpoint = value;
+            }
+        }
+
         /// <summary>
         /// Gets or sets the ApplicationName which will be prefixed to each hub name
         /// </summary>
@@ -39,7 +59,10 @@ namespace Microsoft.Azure.SignalR.Management
 
         internal void ValidateOptions()
         {
-            ValidateConnectionString();
+            if (_serviceEndpoint == null)
+            {
+                ValidateConnectionString();
+            }
             ValidateServiceTransportType();
         }
 

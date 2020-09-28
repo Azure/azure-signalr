@@ -13,11 +13,11 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly string _baseEndpoint;
         private readonly int? _port;
 
-        public RestApiProvider(string connectionString)
+        public RestApiProvider(ServiceEndpoint endpoint)
         {
-            string key;
-            (_baseEndpoint, key, _, _port) = ConnectionStringParser.Parse(connectionString);
-            _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(new AccessKey(key));
+            _baseEndpoint = endpoint.Endpoint;
+            _port = endpoint.Port;
+            _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(endpoint.AccessKey);
         }
 
         private string GetPrefixedHubName(string applicationName, string hubName)
