@@ -477,11 +477,6 @@ namespace Microsoft.Azure.SignalR
                 IServiceConnection connection = null;
                 connectionWr?.TryGetTarget(out connection);
 
-                if (connection != null)
-                {
-                    Debug.Assert(IsCorrectContainer(connection, currentConnections));
-                }
-
                 var connectionUsed = await WriteWithRetry(serviceMessage, connection, currentConnections);
 
                 // Todo
@@ -503,23 +498,11 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private static bool IsCorrectContainer(IServiceConnection connection, List<IServiceConnection> currentConnections)
-        {
-            foreach (var c in currentConnections)
-            {
-                if (c.GetHashCode() == connection.GetHashCode())
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         private async Task<IServiceConnection> WriteWithRetry(ServiceMessage serviceMessage, IServiceConnection connection, List<IServiceConnection> currentConnections)
         {
             // go through all the connections, it can be useful when one of the remote service instances is down
             var count = currentConnections.Count;
-            var initial = StaticRandom.Next(count, count);
+            var initial = StaticRandom.Next(-count, count);
             var maxRetry = count;
             var retry = 0;
             var index = (initial & int.MaxValue) % count;
