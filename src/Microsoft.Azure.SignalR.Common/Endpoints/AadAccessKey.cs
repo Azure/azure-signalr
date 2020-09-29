@@ -5,7 +5,6 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Common.Auth;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
 
@@ -44,9 +43,9 @@ namespace Microsoft.Azure.SignalR
 
         public Task<string> GenerateAadToken()
         {
-            if (_authOptions is IAadAuthOptions options)
+            if (_authOptions is IAadTokenGenerator options)
             {
-                return options.GenerateAadToken();
+                return options.AcquireAccessToken();
             }
             throw new InvalidOperationException("This accesskey is not able to generate AccessToken, a TokenBasedAuthOptions is required.");
         }
@@ -98,7 +97,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentNullException("Missing required <AccessKey> field.");
             }
 
-            _authorizeTcs.SetResult(true);
+            _authorizeTcs.TrySetResult(true);
             return true;
         }
     }
