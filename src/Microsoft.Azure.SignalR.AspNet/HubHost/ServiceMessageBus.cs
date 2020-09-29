@@ -105,14 +105,14 @@ namespace Microsoft.Azure.SignalR.AspNet
 
                 if (message is IMessageWithTracingId msg && msg.TracingId != null)
                 {
-                    AzureSignalRLog.SucceededToSendMessage(_logger, msg);
+                    MessageLog.SucceededToSendMessage(_logger, msg);
                 }
             }
             catch (Exception ex)
             {
                 if (message is IMessageWithTracingId msg && msg.TracingId != null)
                 {
-                    AzureSignalRLog.FailedToSendMessage(_logger, msg, ex);
+                    MessageLog.FailedToSendMessage(_logger, msg, ex);
                 }
                 throw;
             }

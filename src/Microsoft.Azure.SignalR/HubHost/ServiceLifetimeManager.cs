@@ -66,7 +66,7 @@ namespace Microsoft.Azure.SignalR
                 var message = new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)).WithTracingId();
                 if (message.TracingId != null)
                 {
-                    AzureSignalRLog.StartToSendMessageToConnections(Logger, message);
+                    MessageLog.StartToSendMessageToConnections(Logger, message);
                 }
 
                 try
@@ -76,13 +76,13 @@ namespace Microsoft.Azure.SignalR
                     
                     if (message.TracingId != null)
                     {
-                        AzureSignalRLog.SucceededToSendMessage(Logger, message);
+                        MessageLog.SucceededToSendMessage(Logger, message);
                     }
                     return;
                 }
                 catch (Exception ex)
                 {
-                    AzureSignalRLog.FailedToSendMessage(Logger, message, ex);
+                    MessageLog.FailedToSendMessage(Logger, message, ex);
                     throw;
                 }
             }
