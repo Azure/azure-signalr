@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                             var joinGroupWithAckMessage = new JoinGroupWithAckMessage(connectionId, groupName).WithTracingId();
                             if (joinGroupWithAckMessage.TracingId != null)
                             { 
-                                AzureSignalRLog.StartToAddConnectionToGroup(_logger, joinGroupWithAckMessage);
+                                MessageLog.StartToAddConnectionToGroup(_logger, joinGroupWithAckMessage);
                             }
 
                             // go through the app connection
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                             var leaveGroupWithAckMessage = new LeaveGroupWithAckMessage(connectionId, groupName).WithTracingId();
                             if (leaveGroupWithAckMessage.TracingId != null)
                             {
-                                AzureSignalRLog.StartToRemoveConnectionFromGroup(_logger, leaveGroupWithAckMessage);
+                                MessageLog.StartToRemoveConnectionFromGroup(_logger, leaveGroupWithAckMessage);
                             }
 
                             // go through the app connection
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 var broadcastDataMessage = new BroadcastDataMessage(excludedList: GetExcludedIds(message.Filter), payloads: GetPayloads(segment)).WithTracingId();
                 if (broadcastDataMessage.TracingId != null)
                 {
-                    AzureSignalRLog.StartToBroadcastMessage(_logger, broadcastDataMessage);
+                    MessageLog.StartToBroadcastMessage(_logger, broadcastDataMessage);
                 }
                 yield return new HubMessage(hubName, broadcastDataMessage, message);
             }
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 var connectionDataMessage = new ConnectionDataMessage(connectionId, segment).WithTracingId();
                 if (connectionDataMessage.TracingId != null)
                 {
-                    AzureSignalRLog.StartToSendMessageToConnection(_logger, connectionDataMessage);
+                    MessageLog.StartToSendMessageToConnection(_logger, connectionDataMessage);
                 }
 
                 // Go through the app connection
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 var groupBroadcastDataMessage = new GroupBroadcastDataMessage(groupName, excludedList: GetExcludedIds(message.Filter), payloads: GetPayloads(segment)).WithTracingId();
                 if (groupBroadcastDataMessage.TracingId != null)
                 {
-                    AzureSignalRLog.StartToBroadcastMessageToGroup(_logger, groupBroadcastDataMessage);
+                    MessageLog.StartToBroadcastMessageToGroup(_logger, groupBroadcastDataMessage);
                 }
                 yield return new AppMessage(groupBroadcastDataMessage, message);
             }
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                     var userDataMessage = new UserDataMessage(user, GetPayloads(segment)).WithTracingId();
                     if (userDataMessage.TracingId != null)
                     {
-                        AzureSignalRLog.StartToSendMessageToUser(_logger, userDataMessage);
+                        MessageLog.StartToSendMessageToUser(_logger, userDataMessage);
                     }
                     // For old protocol, it is always single user per message https://github.com/SignalR/SignalR/blob/dev/src/Microsoft.AspNet.SignalR.Core/Infrastructure/Connection.cs#L162
                     yield return new HubMessage(hub, userDataMessage, message);

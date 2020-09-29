@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR.Management
             var message = new UserJoinGroupMessage(userId, groupName).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToAddUserToGroup(Logger, message);
+                MessageLog.StartToAddUserToGroup(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.SignalR.Management
             var message = new UserJoinGroupMessage(userId, groupName) { Ttl = (int)ttl.TotalSeconds }.WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToAddUserToGroup(Logger, message);
+                MessageLog.StartToAddUserToGroup(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.SignalR.Management
             var message = new UserLeaveGroupMessage(userId, groupName).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToRemoveUserFromGroup(Logger, message);
+                MessageLog.StartToRemoveUserFromGroup(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.SignalR.Management
             var message = new UserLeaveGroupMessage(userId, null).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToRemoveUserFromGroup(Logger, message);
+                MessageLog.StartToRemoveUserFromGroup(Logger, message);
             }
             return WriteAsync(message);
         }
