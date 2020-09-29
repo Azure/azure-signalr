@@ -18,10 +18,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
-using Microsoft.Azure.SignalR.Management;
 
 using AspNetTestServer = Microsoft.AspNetCore.TestHost.TestServer;
-using System;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests
 {
@@ -402,6 +400,9 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
             }
         }
 
+        // TODO: add a test for ReloadServiceEndpoints - to check that the newly added endpoints will be selected and persisted
+
+        // TODO: add a test for ReloadServiceEndpoints - to check that the service connections for removed endpoits are not leaked
 
         private static readonly JsonHubProtocol _signalRPro = new JsonHubProtocol();
         private static HubMessage ParseBroadcastDataMessageJson(BroadcastDataMessage bdm, IInvocationBinder binder)
