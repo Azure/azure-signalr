@@ -42,9 +42,9 @@ namespace Microsoft.Azure.SignalR.Management
             _options.ValidateOptions();
 
             var productInfo = ProductInfo.GetProductInfo(_assembly);
-            ISignalRServiceRestClient restClient = new RestClientBuilder(_options.ConnectionString, productInfo).Build();
+            var restClientBuilder = new RestClientFactory(productInfo);
 
-            return new ServiceManager(_options, productInfo, restClient);
+            return new ServiceManager(_options, productInfo, restClientBuilder);
         }
     }
 }

@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly string _productInfo;
         private readonly ISignalRServiceRestClient _restClient;
 
-        internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo, ISignalRServiceRestClient restClient)
+        internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo, RestClientFactory restClientFactory)
         {
             _serviceManagerOptions = serviceManagerOptions;
 
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Management
 
             _productInfo = productInfo;
 
-            _restClient = restClient;
+            _restClient = restClientFactory.Create(_endpoint);
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
