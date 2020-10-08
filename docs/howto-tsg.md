@@ -151,7 +151,7 @@ Troubleshooting `classic` mode connectivity and message delivary issues are simi
 
 You can check the health api for service health.
 
-* Request: GET `https://{instance_name}.service.signalr.net/v1/api/health`
+* Request: GET `https://{instance_name}.service.signalr.net/api/v1/health`
 * Response status code:
   * 200: healthy.
   * 503: your service is unhealthy.
