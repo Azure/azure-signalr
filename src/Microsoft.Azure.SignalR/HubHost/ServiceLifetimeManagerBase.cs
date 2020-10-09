@@ -49,7 +49,7 @@ namespace Microsoft.Azure.SignalR
             var message = new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToBroadcastMessage(Logger, message);
+                MessageLog.StartToBroadcastMessage(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.SignalR
             var message = new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToBroadcastMessage(Logger, message);
+                MessageLog.StartToBroadcastMessage(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.SignalR
             var message = new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToSendMessageToConnections(Logger, message);
+                MessageLog.StartToSendMessageToConnections(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.SignalR
             var message = new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToSendMessageToConnections(Logger, message);
+                MessageLog.StartToSendMessageToConnections(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.SignalR
             var message = new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args)).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToBroadcastMessageToGroup(Logger, message);
+                MessageLog.StartToBroadcastMessageToGroup(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.SignalR
             var message = new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToBroadcastMessageToGroups(Logger, message);
+                MessageLog.StartToBroadcastMessageToGroups(Logger, message);
             }
             // Send this message from a random service connection because this message involves of multiple groups.
             // Unless we send message for each group one by one, we can not guarantee the message order for all groups.
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.SignalR
             var message = new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args)).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToBroadcastMessageToGroup(Logger, message);
+                MessageLog.StartToBroadcastMessageToGroup(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.SignalR
             var message = new UserDataMessage(userId, SerializeAllProtocols(methodName, args)).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToSendMessageToUser(Logger, message);
+                MessageLog.StartToSendMessageToUser(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.SignalR
             var message = new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToSendMessageToUsers(Logger, message);
+                MessageLog.StartToSendMessageToUsers(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.SignalR
             var message = new JoinGroupWithAckMessage(connectionId, groupName).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToAddConnectionToGroup(Logger, message);
+                MessageLog.StartToAddConnectionToGroup(Logger, message);
             }
             return WriteAckableMessageAsync(message);
         }
@@ -247,7 +247,7 @@ namespace Microsoft.Azure.SignalR
             var message = new LeaveGroupWithAckMessage(connectionId, groupName).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToRemoveConnectionFromGroup(Logger, message);
+                MessageLog.StartToRemoveConnectionFromGroup(Logger, message);
             }
             return WriteAckableMessageAsync(message);
         }
@@ -288,13 +288,13 @@ namespace Microsoft.Azure.SignalR
             }
             catch (Exception ex)
             {
-                AzureSignalRLog.FailedToSendMessage(Logger, message, ex);
+                MessageLog.FailedToSendMessage(Logger, message, ex);
                 throw;
             }
             
             if (message.TracingId != null)
             {
-                AzureSignalRLog.SucceededToSendMessage(Logger, message);
+                MessageLog.SucceededToSendMessage(Logger, message);
             }
         }
     }
