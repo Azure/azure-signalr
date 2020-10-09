@@ -7,7 +7,6 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Common.RestClients;
@@ -57,33 +56,25 @@ namespace Microsoft.Azure.SignalR.Management
                 case ServiceTransportType.Persistent:
                     {
                         var connectionFactory = new ManagementConnectionFactory(_productInfo, new ConnectionFactory(_serverNameProvider, loggerFactory));
-                        var serviceProtocol = new ServiceProtocol();
-                        var clientConnectionManager = new ClientConnectionManager();
-                        var clientConnectionFactory = new ClientConnectionFactory();
-                        ConnectionDelegate connectionDelegate = connectionContext => Task.CompletedTask;
                         var serviceConnectionFactory = new ServiceConnectionFactory(
-                            serviceProtocol,
-                            clientConnectionManager,
+                            new ServiceProtocol(),
+                            new ClientConnectionManager(),
                             connectionFactory,
                             loggerFactory,
-                            connectionDelegate,
-                            clientConnectionFactory,
+                            connectionContext => Task.CompletedTask,
+                            new ClientConnectionFactory(),
                             new DefaultServerNameProvider()
                             );
                         var weakConnectionContainer = new WeakServiceConnectionContainer(
                             serviceConnectionFactory,
                             _serviceManagerOptions.ConnectionCount,
                             new HubServiceEndpoint(hubName, _endpointProvider, _endpoint),
-                            loggerFactory?.CreateLogger(nameof(WeakServiceConnectionContainer)) ?? NullLogger.Instance);
+                            loggerFactory.CreateLogger(nameof(WeakServiceConnectionContainer)));
 
                         var serviceCollection = new ServiceCollection();
                         serviceCollection.AddSignalRCore();
                         serviceCollection.AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
-
-                        if (loggerFactory != null)
-                        {
-                            serviceCollection.AddSingleton(typeof(ILoggerFactory), loggerFactory);
-                        }
+                        serviceCollection.AddSingleton(typeof(ILoggerFactory), loggerFactory);
 
                         serviceCollection
                             .AddLogging()
