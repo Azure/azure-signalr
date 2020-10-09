@@ -11,19 +11,13 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 {
     public class TestRestClientFactory : RestClientFactory
     {
-        public TestRestClientFactory(string userAgent, HttpStatusCode code) : base(userAgent)
-        {
-            _httpClientBuilder.ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(code));
-        }
+        public TestRestClientFactory(string userAgent, HttpStatusCode code) : base(userAgent, b => b.ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(code)))
+        { }
 
-        public TestRestClientFactory(string userAgent, HttpStatusCode code, string content) : base(userAgent)
-        {
-            _httpClientBuilder.ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(code, content));
-        }
+        public TestRestClientFactory(string userAgent, HttpStatusCode code, string content) : base(userAgent, b => b.ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(code, content)))
+        { }
 
-        public TestRestClientFactory(string userAgent, Action<HttpRequestMessage, CancellationToken> callback) : base(userAgent)
-        {
-            _httpClientBuilder.ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(callback));
-        }
+        public TestRestClientFactory(string userAgent, Action<HttpRequestMessage, CancellationToken> callback) : base(userAgent, b => b.ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(callback)))
+        { }
     }
 }
