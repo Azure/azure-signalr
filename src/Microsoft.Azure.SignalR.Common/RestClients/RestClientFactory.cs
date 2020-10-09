@@ -7,29 +7,26 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class RestClientFactory
+    internal class RestClientFactory
     {
         private const string HttpClientName = "HttpClientWithUserAgent";
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly string _userAgent;
 
         internal RestClientFactory(string userAgent, Action<IHttpClientBuilder> action = null)
         {
-            if (string.IsNullOrWhiteSpace(userAgent))
-            {
-                throw new ArgumentException($"'{nameof(userAgent)}' cannot be null or whitespace", nameof(userAgent));
-            }
             var httpClientBuilder = new ServiceCollection()
-                .AddHttpClient(HttpClientName)
-                .ConfigureHttpClient(httpClient => httpClient.DefaultRequestHeaders.Add(Constants.AsrsUserAgent, userAgent));
+                .AddHttpClient(HttpClientName);
             action?.Invoke(httpClientBuilder); //hook for test
             _httpClientFactory = httpClientBuilder.Services.BuildServiceProvider().GetRequiredService<IHttpClientFactory>();
+            _userAgent = userAgent;
         }
 
         internal SignalRServiceRestClient Create(ServiceEndpoint endpoint)
         {
             var httpClient = _httpClientFactory.CreateClient(HttpClientName);
             var credentials = new JwtTokenCredentials(endpoint.AccessKey);
-            var restClient = new SignalRServiceRestClient(credentials, httpClient, false)
+            var restClient = new SignalRServiceRestClient(_userAgent, credentials, httpClient, false)
             {
                 BaseUri = new Uri(endpoint.Endpoint)
             };
