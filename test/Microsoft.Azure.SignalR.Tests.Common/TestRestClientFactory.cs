@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
 {
-    public class TestRestClientFactory : RestClientFactory
+    internal class TestRestClientFactory : RestClientFactory
     {
         public TestRestClientFactory(string userAgent, HttpStatusCode code) : base(userAgent, b => b.ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(code)))
         { }
