@@ -11,8 +11,6 @@ namespace Microsoft.Azure.SignalR.Management
     /// </summary>
     public class ServiceManagerOptions
     {
-        private ServiceEndpoint _serviceEndpoint = null;
-
         /// <summary>
         /// Gets or sets the ApplicationName which will be prefixed to each hub name
         /// </summary>
@@ -25,8 +23,24 @@ namespace Microsoft.Azure.SignalR.Management
 
         /// <summary>
         /// Gets or sets the connection string of Azure SignalR Service instance.
+        /// Gets or sets the connection string of Azure SignalR Service instance and switches to single-endpoint mode.
         /// </summary>
-        public string ConnectionString { get; set; } = null;
+        public string ConnectionString
+        {
+            get => _connectionString;
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    throw new ArgumentException($"'{nameof(ConnectionString)}' cannot be null or whitespace", nameof(ConnectionString));
+                }
+                else
+                {
+                    _connectionString = value;
+                    ServiceEndpoint = new ServiceEndpoint(ConnectionString);
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets the proxy used when ServiceManager will attempt to connect to Azure SignalR Service.
@@ -34,21 +48,36 @@ namespace Microsoft.Azure.SignalR.Management
         public IWebProxy Proxy { get; set; }
 
         /// <summary>
-        /// Gets or sets the service endpoint for accessing Azure SignalR Service.
+        /// Gets or sets the service endpoint for accessing Azure SignalR Service and switches to single-endpoint mode.
         /// </summary>
         public ServiceEndpoint ServiceEndpoint
         {
-            get
-            {
-                if (_serviceEndpoint == null)
-                {
-                    _serviceEndpoint = new ServiceEndpoint(ConnectionString, EndpointType.Secondary);
-                }
-                return _serviceEndpoint;
-            }
+            get => _serviceEndpoint;
             set
             {
+                _multiEndpointState = false;
                 _serviceEndpoint = value;
+                _serviceEndpoints = null;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the service endpoints for accessing Azure SignalR Service and switches to multi-endpoint mode.
+        /// </summary>
+        public ServiceEndpoint[] ServiceEndpoints
+        {
+            get => _serviceEndpoints;
+            set
+            {
+                if (value.Length == 0)
+                {
+                    throw new ArgumentException("collection is empty", nameof(ServiceEndpoints));
+                }
+
+                _serviceEndpoints = value;
+                _multiEndpointState = true;
+                _serviceEndpoint = null;
+                _connectionString = null;
             }
         }
 
@@ -57,19 +86,30 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
 
-        internal void ValidateOptions()
+        private bool _multiEndpointState;
+
+        private string _connectionString;
+        private ServiceEndpoint _serviceEndpoint;
+        private ServiceEndpoint[] _serviceEndpoints;
+
+        public bool IsMultiEndpointState()
         {
-            if (_serviceEndpoint == null)
-            {
-                ValidateConnectionString();
-            }
+            ValidateOptions();
+            return _multiEndpointState;
+        }
+
+        private void ValidateOptions()
+        {
+            ValidateServiceEndpoint();
             ValidateServiceTransportType();
         }
 
-        private void ValidateConnectionString()
+        private void ValidateServiceEndpoint()
         {
-            // if the connection string is invalid, exceptions will be thrown.
-            ConnectionStringParser.Parse(ConnectionString);
+            if ((_multiEndpointState == false && ServiceEndpoint == null) || (_multiEndpointState == true && ServiceEndpoints == null))
+            {
+                throw new InvalidOperationException($"service endpoint(s) not configured. Please set one of the following properties {nameof(ConnectionString)}, {nameof(ServiceEndpoint)}, {nameof(ServiceEndpoints)}");
+            }
         }
 
         private void ValidateServiceTransportType()
