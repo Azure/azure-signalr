@@ -11,13 +11,23 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 {
     internal class TestRestClientFactory : RestClientFactory
     {
-        public TestRestClientFactory(string userAgent, HttpStatusCode code) : base(userAgent, b => b.ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(code)))
+        private const string HttpClientName = "TestRestClient";
+        private static readonly Func<IHttpClientFactory, HttpClient> GenFunc = f => f.CreateClient(HttpClientName);
+
+        public TestRestClientFactory(string userAgent, HttpStatusCode code) : base(userAgent, GenFunc, CreateTestFactory(new TestRootHandler(code)))
         { }
 
-        public TestRestClientFactory(string userAgent, HttpStatusCode code, string content) : base(userAgent, b => b.ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(code, content)))
+        public TestRestClientFactory(string userAgent, HttpStatusCode code, string content) : base(userAgent, GenFunc, CreateTestFactory(new TestRootHandler(code, content)))
         { }
 
-        public TestRestClientFactory(string userAgent, Action<HttpRequestMessage, CancellationToken> callback) : base(userAgent, b => b.ConfigurePrimaryHttpMessageHandler(() => new TestRootHandler(callback)))
+        public TestRestClientFactory(string userAgent, Action<HttpRequestMessage, CancellationToken> callback) : base(userAgent, GenFunc, CreateTestFactory(new TestRootHandler(callback)))
         { }
+
+        private static IHttpClientFactory CreateTestFactory(TestRootHandler rootHandler)
+        {
+            var builder = new ServiceCollection().AddHttpClient(HttpClientName);
+            builder.ConfigurePrimaryHttpMessageHandler(() => rootHandler);
+            return builder.Services.BuildServiceProvider().GetRequiredService<IHttpClientFactory>();
+        }
     }
 }

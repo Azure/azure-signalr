@@ -9,22 +9,29 @@ namespace Microsoft.Azure.SignalR
 {
     internal class RestClientFactory
     {
-        private const string HttpClientName = nameof(SignalRServiceRestClient);
+        private readonly Func<IHttpClientFactory, HttpClient> _genFunc = factory => factory.CreateClient();
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly string _userAgent;
 
-        internal RestClientFactory(string userAgent, Action<IHttpClientBuilder> action = null)
+        internal RestClientFactory(string userAgent)
         {
-            var httpClientBuilder = new ServiceCollection()
-                .AddHttpClient(HttpClientName);
-            action?.Invoke(httpClientBuilder); //hook for test
-            _httpClientFactory = httpClientBuilder.Services.BuildServiceProvider().GetRequiredService<IHttpClientFactory>();
+            var serviceCollection = new ServiceCollection()
+                .AddHttpClient();
+            _httpClientFactory = serviceCollection.BuildServiceProvider().GetRequiredService<IHttpClientFactory>();
             _userAgent = userAgent;
+        }
+
+        //hook for test
+        private protected RestClientFactory(string userAgent, Func<IHttpClientFactory, HttpClient> genFunc, IHttpClientFactory httpClientFactory)
+        {
+            _userAgent = userAgent;
+            _genFunc = genFunc;
+            _httpClientFactory = httpClientFactory;
         }
 
         internal SignalRServiceRestClient Create(ServiceEndpoint endpoint)
         {
-            var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+            var httpClient = _genFunc.Invoke(_httpClientFactory);
             var credentials = new JwtTokenCredentials(endpoint.AccessKey);
             var restClient = new SignalRServiceRestClient(_userAgent, credentials, httpClient, false)
             {
