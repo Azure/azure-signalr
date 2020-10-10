@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IServerNameProvider _serverNameProvider;
         private readonly ServiceEndpoint _endpoint;
         private readonly string _productInfo;
-        private readonly ISignalRServiceRestClient _restClient;
+        private readonly RestClientFactory _restClientFactory;
 
         internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo, RestClientFactory restClientFactory)
         {
@@ -46,8 +46,7 @@ namespace Microsoft.Azure.SignalR.Management
             _endpointProvider = new ServiceEndpointProvider(_serverNameProvider, _endpoint, serviceOptions);
 
             _productInfo = productInfo;
-
-            _restClient = restClientFactory.Create(_endpoint);
+            _restClientFactory = restClientFactory;
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
@@ -164,9 +163,10 @@ namespace Microsoft.Azure.SignalR.Management
 
         public async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
+            using var restClient = _restClientFactory.Create(_endpoint);
             try
             {
-                var healthApi = _restClient.HealthApi;
+                var healthApi = restClient.HealthApi;
                 using var response = await healthApi.GetHealthStatusWithHttpMessagesAsync(cancellationToken: cancellationToken);
                 return true;
             }
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (Exception ex)
             {
-                throw ex.WrapAsAzureSignalRException(_restClient.BaseUri);
+                throw ex.WrapAsAzureSignalRException(restClient.BaseUri);
             }
         }
     }

@@ -12,16 +12,20 @@ namespace Microsoft.Azure.SignalR.Tests.Common
     internal class TestRestClientFactory : RestClientFactory
     {
         private const string HttpClientName = "TestRestClient";
-        private static readonly Func<IHttpClientFactory, HttpClient> GenFunc = f => f.CreateClient(HttpClientName);
 
-        public TestRestClientFactory(string userAgent, HttpStatusCode code) : base(userAgent, GenFunc, CreateTestFactory(new TestRootHandler(code)))
+        public TestRestClientFactory(string userAgent, HttpStatusCode code) : base(userAgent, CreateTestFactory(new TestRootHandler(code)))
         { }
 
-        public TestRestClientFactory(string userAgent, HttpStatusCode code, string content) : base(userAgent, GenFunc, CreateTestFactory(new TestRootHandler(code, content)))
+        public TestRestClientFactory(string userAgent, HttpStatusCode code, string content) : base(userAgent, CreateTestFactory(new TestRootHandler(code, content)))
         { }
 
-        public TestRestClientFactory(string userAgent, Action<HttpRequestMessage, CancellationToken> callback) : base(userAgent, GenFunc, CreateTestFactory(new TestRootHandler(callback)))
+        public TestRestClientFactory(string userAgent, Action<HttpRequestMessage, CancellationToken> callback) : base(userAgent, CreateTestFactory(new TestRootHandler(callback)))
         { }
+
+        protected override HttpClient CreateHttpClient()
+        {
+            return _httpClientFactory.CreateClient(HttpClientName);
+        }
 
         private static IHttpClientFactory CreateTestFactory(TestRootHandler rootHandler)
         {
