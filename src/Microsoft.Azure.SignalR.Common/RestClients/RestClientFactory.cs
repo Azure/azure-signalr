@@ -9,7 +9,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal class RestClientFactory
     {
-        private const string HttpClientName = "HttpClientWithUserAgent";
+        private const string HttpClientName = nameof(SignalRServiceRestClient);
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly string _userAgent;
 
