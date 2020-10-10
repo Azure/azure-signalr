@@ -9,8 +9,9 @@ namespace Microsoft.Azure.SignalR
 {
     internal class RestClientFactory
     {
-        private protected readonly IHttpClientFactory _httpClientFactory;
+        protected readonly IHttpClientFactory _httpClientFactory;
         private readonly string _userAgent;
+        private readonly string _serverName;
 
         internal RestClientFactory(string userAgent)
         {
@@ -18,9 +19,10 @@ namespace Microsoft.Azure.SignalR
                 .AddHttpClient();
             _httpClientFactory = serviceCollection.BuildServiceProvider().GetRequiredService<IHttpClientFactory>();
             _userAgent = userAgent;
+            _serverName = RestApiAccessTokenGenerator.GenerateServerName();
         }
 
-        private protected RestClientFactory(string userAgent, IHttpClientFactory httpClientFactory)
+        protected RestClientFactory(string userAgent, IHttpClientFactory httpClientFactory)
         {
             _userAgent = userAgent;
             _httpClientFactory = httpClientFactory;
@@ -31,7 +33,7 @@ namespace Microsoft.Azure.SignalR
         internal SignalRServiceRestClient Create(ServiceEndpoint endpoint)
         {
             var httpClient = CreateHttpClient();
-            var credentials = new JwtTokenCredentials(endpoint.AccessKey);
+            var credentials = new JwtTokenCredentials(endpoint.AccessKey, _serverName);
             var restClient = new SignalRServiceRestClient(_userAgent, credentials, httpClient, true)
             {
                 BaseUri = new Uri(endpoint.Endpoint)
