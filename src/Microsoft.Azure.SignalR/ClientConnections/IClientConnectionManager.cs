@@ -9,6 +9,8 @@ namespace Microsoft.Azure.SignalR
     {
         bool TryAddClientConnection(ClientConnectionContext connection);
 
+        bool TryAddClientConnection(string connectionId, ClientConnectionContext connection);
+
         bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection);
 
         IReadOnlyDictionary<string, ClientConnectionContext> ClientConnections { get; }

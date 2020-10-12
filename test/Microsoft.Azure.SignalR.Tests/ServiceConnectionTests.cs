@@ -729,6 +729,11 @@ namespace Microsoft.Azure.SignalR.Tests
                 tcs.SetResult(connection);
                 return r;
             }
+            public bool TryAddClientConnection(string connectionId, ClientConnectionContext connection)
+            {
+                // Not developed yet.
+                throw new NotImplementedException();
+            }
 
             public bool TryRemoveClientConnection(string connectionId, out ClientConnectionContext connection)
             {

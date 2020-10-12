@@ -128,7 +128,7 @@ namespace Microsoft.Azure.SignalR
                 return false;
             }
 
-            return Endpoint == that.Endpoint && EndpointType == that.EndpointType && Name == that.Name;
+            return Endpoint == that.Endpoint && EndpointType == that.EndpointType && Name == that.Name && Port == that.Port;
         }
 
         internal static (string, EndpointType) ParseKey(string key)

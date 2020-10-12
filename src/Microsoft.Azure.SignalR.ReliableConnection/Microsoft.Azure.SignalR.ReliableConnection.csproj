@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Implements a reliable connection using Newtonsoft.Json.</Description>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RootNamespace>Microsoft.AspNetCore.SignalR</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsShippingPackage>true</IsShippingPackage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Common\MemoryBufferWriter.cs" Link="Internal\MemoryBufferWriter.cs" />
+    <Compile Include="..\Microsoft.Azure.SignalR.Common\Utilities\DuplexPipe.cs" Link="Internal\DuplexPipe.cs" />
+  </ItemGroup>
+  <ItemGroup>
+
+	  <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+	  <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="$(MicrosoftAspNetCoreSignalRClientPackageVersion)" />
+	  <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="$(MicrosoftAspNetCoreSignalRProtocolsMessagePackVersion)" />
+	  <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Common" Version="$(MicrosoftAspNetCoreSignalRClientPackageVersion)" />
+	  <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="$(MicrosoftAspNetCoreSignalRClientPackageVersion)" />
+  </ItemGroup>
+</Project>

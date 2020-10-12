@@ -10,8 +10,11 @@ using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Security.Claims;
+using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
@@ -20,6 +23,7 @@ using Microsoft.AspNetCore.Http.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Primitives;
@@ -82,6 +86,11 @@ namespace Microsoft.Azure.SignalR
             set => _abortOnClose = value;
         }
 
+        public async Task WriteToClientAsync(ReadOnlyMemory<byte> appMessage)
+        {
+            await CurConn.serviceConnection.WriteAsync(new ConnectionDataMessage(CurConn.ConnectionId, appMessage));
+        }
+
         public override string ConnectionId { get; set; }
 
         public override IFeatureCollection Features { get; }
@@ -103,6 +112,8 @@ namespace Microsoft.Azure.SignalR
         public CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
 
         public CancellationToken ApplicationAborted => _abortApplicationCts.Token;
+
+        public bool HandshakeProcessed = false;
 
         public ClientConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
@@ -126,6 +137,15 @@ namespace Microsoft.Azure.SignalR
             {
                 IsMigrated = true;
             }
+
+            BufferConnectionContext bcc = new BufferConnectionContext();
+            bcc.ConnectionId = ConnectionId;
+            bcc.ccc = this;
+            bcc.receivedBarrier = true;
+            bcc._ReloadTcs.SetResult(null);
+            ConnectionMap[bcc.ConnectionId] = bcc;
+            CurConn = bcc;
+            Task.Run(() => bcc.ProcessIncoming(bcc.cts.Token));
         }
 
         public void CompleteIncoming()
@@ -133,7 +153,7 @@ namespace Microsoft.Azure.SignalR
             // always set the connection state to completing when this method is called
             var previousState =
                 Interlocked.Exchange(ref _connectionState, CompletedState);
-            
+
             Application.Output.CancelPendingFlush();
 
             // If it is idle, complete directly
@@ -143,11 +163,85 @@ namespace Microsoft.Azure.SignalR
                 Application.Output.Complete();
             }
         }
-        
+
+
+        // Store backup clientConnetion context
+        internal class BufferConnectionContext {
+            internal string ConnectionId { get; set; }
+
+            internal ClientConnectionContext ccc;
+
+            internal bool receivedBarrier { get; set; }
+
+            // Used for canceling ProcessIncoming().
+            internal CancellationTokenSource cts = new CancellationTokenSource();
+
+            internal ServiceConnectionBase serviceConnection { get; set; }
+
+            // Used for synchronization, old connection notify new connection.
+            internal readonly TaskCompletionSource<object> _ReloadTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            // Inner channel.
+            private readonly Channel<ReadOnlySequence<byte>> _intermediateChannel = Channel.CreateUnbounded<ReadOnlySequence<byte>>();
+
+            //TODO: need add tcs for synchronization
+
+            internal async Task WriteMessageAsync(ReadOnlySequence<byte> payload)
+            {
+                await _intermediateChannel.Writer.WriteAsync(payload);
+            }
+
+            internal async Task ProcessIncoming(CancellationToken token)
+            {
+                await _ReloadTcs.Task;
+                
+                while (await _intermediateChannel.Reader.WaitToReadAsync(token))
+                {
+                    while (_intermediateChannel.Reader.TryRead(out ReadOnlySequence<byte> payload))
+                    {
+                        Console.WriteLine("[Transport Layer]\tReceived message from connection: " + ConnectionId);
+                        // Only WriteMessage received after barrier message.
+                        await ccc.WriteMessageAsyncCore(payload);
+                    }
+                }
+            }
+
+        }
+
+        public Queue<BufferConnectionContext> conns = new Queue<BufferConnectionContext>(); //Backup connection queue
+
+        public Dictionary<string, BufferConnectionContext> ConnectionMap = new Dictionary<string, BufferConnectionContext>();
+
+        public BufferConnectionContext CurConn { get; set; }
+
+        public Task AddReloadConnection(string ConnectionId, ServiceConnection serviceConnection)
+        {
+            BufferConnectionContext bcc = new BufferConnectionContext();
+            bcc.ConnectionId = ConnectionId;
+            bcc.ccc = this;
+            bcc.serviceConnection = serviceConnection;
+            bcc.receivedBarrier = false;
+            conns.Enqueue(bcc);
+            ConnectionMap[bcc.ConnectionId] = bcc;
+            Task.Run(() => bcc.ProcessIncoming(bcc.cts.Token));
+            return Task.CompletedTask;
+        }
+
+        public async Task Switch()
+        {
+            // Switch to new Connection internally.
+            if (conns.Count > 0)
+            {
+                await conns.Peek()._ReloadTcs.Task;
+                CurConn = conns.Dequeue();
+            }
+        }
+
         public async Task WriteMessageAsync(ReadOnlySequence<byte> payload)
         {
+
             var previousState = Interlocked.CompareExchange(ref _connectionState, WritingState, IdleState);
-            
+
             // Write should not be called from multiple threads
             Debug.Assert(previousState != WritingState);
 
