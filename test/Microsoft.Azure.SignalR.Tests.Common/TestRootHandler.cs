@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -7,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
 {
-    internal class TestRootHandler : HttpClientHandler
+    internal class TestRootHandler : DelegatingHandler
     {
         private readonly Action<HttpRequestMessage, CancellationToken> _callback;
         private readonly HttpStatusCode _code;
