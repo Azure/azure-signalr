@@ -5,8 +5,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
@@ -311,7 +309,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     })
                     .Build();
                 var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", loggerFactory);
-                var connectionContainer = ((ServiceHubContext)serviceHubContext).ServiceProvider.GetRequiredService<IServiceConnectionContainer>();
+                var connectionContainer = ((ServiceConnectionManager<Hub>)((ServiceHubContext)serviceHubContext).ServiceProvider
+                    .GetRequiredService<IServiceConnectionManager<Hub>>())
+                    .GetServiceConnectionContainer();
                 await serviceHubContext.DisposeAsync();
                 await Task.Delay(500);
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connectionContainer.Status);
