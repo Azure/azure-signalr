@@ -3,38 +3,27 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Common.RestClients;
-using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Rest;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class ServiceManager : IServiceManager
+    internal class SingleServiceManager : ServiceManagerBase
     {
-        private readonly ServiceManagerOptions _serviceManagerOptions;
         private readonly ServiceEndpointProvider _endpointProvider;
-        private readonly IServerNameProvider _serverNameProvider;
         private readonly ServiceEndpoint _endpoint;
-        private readonly string _productInfo;
-        private readonly RestClientFactory _restClientFactory;
 
-        internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo, RestClientFactory restClientFactory)
+        internal SingleServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo, RestClientFactory restClientFactory) : base(serviceManagerOptions, productInfo, restClientFactory)
         {
-            _serviceManagerOptions = serviceManagerOptions;
-
             _endpoint = serviceManagerOptions.ServiceEndpoint;
-
-            _serverNameProvider = new DefaultServerNameProvider();
 
             var serviceOptions = Options.Create(new ServiceOptions
             {
@@ -43,97 +32,9 @@ namespace Microsoft.Azure.SignalR.Management
             }).Value;
 
             _endpointProvider = new ServiceEndpointProvider(_serverNameProvider, _endpoint, serviceOptions);
-
-            _productInfo = productInfo;
-            _restClientFactory = restClientFactory;
         }
 
-        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
-        {
-            loggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
-            switch (_serviceManagerOptions.ServiceTransportType)
-            {
-                case ServiceTransportType.Persistent:
-                    {
-                        var connectionFactory = new ManagementConnectionFactory(_productInfo, new ConnectionFactory(_serverNameProvider, loggerFactory));
-                        var serviceConnectionFactory = new ServiceConnectionFactory(
-                            new ServiceProtocol(),
-                            new ClientConnectionManager(),
-                            connectionFactory,
-                            loggerFactory,
-                            connectionContext => Task.CompletedTask,
-                            new ClientConnectionFactory(),
-                            new DefaultServerNameProvider()
-                            );
-                        var weakConnectionContainer = new WeakServiceConnectionContainer(
-                            serviceConnectionFactory,
-                            _serviceManagerOptions.ConnectionCount,
-                            new HubServiceEndpoint(hubName, _endpointProvider, _endpoint),
-                            loggerFactory.CreateLogger(nameof(WeakServiceConnectionContainer)));
-
-                        var serviceCollection = new ServiceCollection();
-                        serviceCollection.AddSignalRCore();
-                        serviceCollection.AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
-                        serviceCollection.AddSingleton(typeof(ILoggerFactory), loggerFactory);
-
-                        serviceCollection
-                            .AddLogging()
-                            .AddSingleton(typeof(IConnectionFactory), sp => connectionFactory)
-                            .AddSingleton(typeof(HubLifetimeManager<>), typeof(WebSocketsHubLifetimeManager<>))
-                            .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
-                            .AddSingleton(typeof(IServiceConnectionContainer), sp => weakConnectionContainer);
-
-                        var success = false;
-                        ServiceProvider serviceProvider = null;
-                        try
-                        {
-                            serviceProvider = serviceCollection.BuildServiceProvider();
-
-                            var serviceConnectionManager = serviceProvider.GetRequiredService<IServiceConnectionManager<Hub>>();
-                            serviceConnectionManager.SetServiceConnection(weakConnectionContainer);
-                            _ = serviceConnectionManager.StartAsync();
-
-                            // wait until service connection established
-                            await weakConnectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
-
-                            var webSocketsHubLifetimeManager = (WebSocketsHubLifetimeManager<Hub>)serviceProvider.GetRequiredService<HubLifetimeManager<Hub>>();
-
-                            var hubContext = serviceProvider.GetRequiredService<IHubContext<Hub>>();
-                            var serviceHubContext = new ServiceHubContext(hubContext, webSocketsHubLifetimeManager, serviceProvider);
-                            success = true;
-                            return serviceHubContext;
-                        }
-                        finally
-                        {
-                            if (!success)
-                            {
-                                serviceProvider?.Dispose();
-                            }
-                        }
-                    }
-                case ServiceTransportType.Transient:
-                    {
-                        var serviceCollection = new ServiceCollection();
-                        serviceCollection.AddSignalRCore();
-
-                        // remove default hub lifetime manager
-                        var serviceDescriptor = serviceCollection.FirstOrDefault(descriptor => descriptor.ServiceType == typeof(HubLifetimeManager<>));
-                        serviceCollection.Remove(serviceDescriptor);
-
-                        // add rest hub lifetime manager
-                        var restHubLifetimeManager = new RestHubLifetimeManager(_serviceManagerOptions, hubName, _productInfo);
-                        serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), sp => restHubLifetimeManager);
-
-                        var serviceProvider = serviceCollection.BuildServiceProvider();
-                        var hubContext = serviceProvider.GetRequiredService<IHubContext<Hub>>();
-                        return new ServiceHubContext(hubContext, restHubLifetimeManager, serviceProvider);
-                    }
-                default:
-                    throw new ArgumentException("Not supported service transport type.");
-            }
-        }
-
-        public string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)
+        public override string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)
         {
             var claimsWithUserId = new List<Claim>();
             if (userId != null)
@@ -147,12 +48,12 @@ namespace Microsoft.Azure.SignalR.Management
             return _endpointProvider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifeTime).Result;
         }
 
-        public string GetClientEndpoint(string hubName)
+        public override string GetClientEndpoint(string hubName)
         {
             return _endpointProvider.GetClientEndpoint(hubName, null, null);
         }
 
-        public async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
+        public override async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
             using var restClient = _restClientFactory.Create(_endpoint);
             try
@@ -169,6 +70,25 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 throw ex.WrapAsAzureSignalRException(restClient.BaseUri);
             }
+        }
+
+        protected override void ConfigurePersistentServiceCollection(ServiceCollection services)
+        {/*do nothing*/}
+
+        protected override IServiceConnectionContainer GetPersistentConnectionContainer(string hubName, ServiceProvider serviceProvider)
+        {
+            var serviceConnectionFactory = serviceProvider.GetRequiredService<IServiceConnectionFactory>();
+            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+            return new WeakServiceConnectionContainer(
+                            serviceConnectionFactory,
+                            _serviceManagerOptions.ConnectionCount,
+                            new HubServiceEndpoint(hubName, _endpointProvider, _endpoint),
+                            loggerFactory.CreateLogger(nameof(WeakServiceConnectionContainer)));
+        }
+
+        protected override HubLifetimeManager<Hub> GetTransientHubLifetimeManager(string hubName)
+        {
+            return new RestHubLifetimeManager(_serviceManagerOptions, hubName, _productInfo);
         }
     }
 }
