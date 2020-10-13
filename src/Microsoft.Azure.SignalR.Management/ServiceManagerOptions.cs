@@ -92,7 +92,7 @@ namespace Microsoft.Azure.SignalR.Management
         private ServiceEndpoint _serviceEndpoint;
         private ServiceEndpoint[] _serviceEndpoints;
 
-        public bool IsMultiEndpointState()
+        public bool InMultiEndpointState()
         {
             ValidateOptions();
             return _multiEndpointState;
