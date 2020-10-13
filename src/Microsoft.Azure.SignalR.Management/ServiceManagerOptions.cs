@@ -62,7 +62,6 @@ namespace Microsoft.Azure.SignalR.Management
 
                 _multiEndpointState = false;
                 _serviceEndpoint = value;
-                _serviceEndpoints = null;
             }
         }
 
@@ -90,8 +89,6 @@ namespace Microsoft.Azure.SignalR.Management
 
                 _serviceEndpoints = value;
                 _multiEndpointState = true;
-                _serviceEndpoint = null;
-                _connectionString = null;
             }
         }
 
