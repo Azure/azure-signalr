@@ -55,6 +55,11 @@ namespace Microsoft.Azure.SignalR.Management
             get => _serviceEndpoint;
             set
             {
+                if (_serviceEndpoints != null)
+                {
+                    throw new InvalidOperationException($"Property {nameof(ServiceEndpoints)} is not null. You are not allowed to set both {nameof(ServiceEndpoint)} and {nameof(ServiceEndpoints)}.");
+                }
+
                 _multiEndpointState = false;
                 _serviceEndpoint = value;
                 _serviceEndpoints = null;
@@ -64,14 +69,23 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Gets or sets the service endpoints for accessing Azure SignalR Service and switches to multi-endpoint mode.
         /// </summary>
-        public ServiceEndpoint[] ServiceEndpoints
+        internal ServiceEndpoint[] ServiceEndpoints  //not ready for public use
         {
             get => _serviceEndpoints;
             set
             {
+                if (value == null)//enable user to reset the _multiEndpointState
+                {
+                    _serviceEndpoints = null;
+                    return;
+                }
                 if (value.Length == 0)
                 {
                     throw new ArgumentException("collection is empty", nameof(ServiceEndpoints));
+                }
+                if (_serviceEndpoint != null)
+                {
+                    throw new InvalidOperationException($"Property {nameof(ServiceEndpoint)} is not null. You are not allowed to set both {nameof(ServiceEndpoint)} and {nameof(ServiceEndpoints)}.");
                 }
 
                 _serviceEndpoints = value;
