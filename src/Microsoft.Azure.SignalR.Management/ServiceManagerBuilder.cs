@@ -39,12 +39,12 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
         public IServiceManager Build()
         {
-            _options.ValidateOptions();
-
             var productInfo = ProductInfo.GetProductInfo(_assembly);
             var restClientBuilder = new RestClientFactory(productInfo);
 
-            return new ServiceManager(_options, productInfo, restClientBuilder);
+            return _options.InMultiEndpointState()
+                ? throw new NotImplementedException("multi-endpoint mode is not implemented yet")
+                : new SingleServiceManager(_options, productInfo, restClientBuilder);
         }
     }
 }
