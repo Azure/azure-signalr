@@ -22,8 +22,7 @@ namespace Microsoft.Azure.SignalR.Management
         public int ConnectionCount { get; set; } = 1;
 
         /// <summary>
-        /// Gets or sets the connection string of Azure SignalR Service instance.
-        /// Gets or sets the connection string of Azure SignalR Service instance and switches to single-endpoint mode.
+        /// Gets or sets the connection string of Azure SignalR Service instance and switches to single-endpoint.
         /// </summary>
         public string ConnectionString
         {
@@ -55,11 +54,6 @@ namespace Microsoft.Azure.SignalR.Management
             get => _serviceEndpoint;
             set
             {
-                if (_serviceEndpoints != null)
-                {
-                    throw new InvalidOperationException($"Property {nameof(ServiceEndpoints)} is not null. You are not allowed to set both {nameof(ServiceEndpoint)} and {nameof(ServiceEndpoints)}.");
-                }
-
                 _multiEndpointState = false;
                 _serviceEndpoint = value;
             }
@@ -81,10 +75,6 @@ namespace Microsoft.Azure.SignalR.Management
                 if (value.Length == 0)
                 {
                     throw new ArgumentException("collection is empty", nameof(ServiceEndpoints));
-                }
-                if (_serviceEndpoint != null)
-                {
-                    throw new InvalidOperationException($"Property {nameof(ServiceEndpoint)} is not null. You are not allowed to set both {nameof(ServiceEndpoint)} and {nameof(ServiceEndpoints)}.");
                 }
 
                 _serviceEndpoints = value;
@@ -117,9 +107,13 @@ namespace Microsoft.Azure.SignalR.Management
 
         private void ValidateServiceEndpoint()
         {
-            if ((_multiEndpointState == false && ServiceEndpoint == null) || (_multiEndpointState == true && ServiceEndpoints == null))
+            if (ServiceEndpoint == null && ServiceEndpoints == null)
             {
                 throw new InvalidOperationException($"service endpoint(s) not configured. Please set one of the following properties {nameof(ConnectionString)}, {nameof(ServiceEndpoint)}, {nameof(ServiceEndpoints)}");
+            }
+            if (ServiceEndpoint != null && ServiceEndpoints != null)
+            {
+                throw new InvalidOperationException($"You are not allowed to set properties for both single-endpoint and multiple-endpoint. Please unset {nameof(ServiceEndpoint)} or {nameof(ServiceEndpoints)}");
             }
         }
 

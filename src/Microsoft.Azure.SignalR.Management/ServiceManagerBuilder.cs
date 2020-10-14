@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR.Management
             var restClientBuilder = new RestClientFactory(productInfo);
 
             return _options.InMultiEndpointState()
-                ? throw new NotImplementedException("multi-endpoint mode is not implemented yet")
+                ? throw new NotImplementedException("Multi-endpoint service manager is not implemented yet.")
                 : new SingleServiceManager(_options, productInfo, restClientBuilder);
         }
     }

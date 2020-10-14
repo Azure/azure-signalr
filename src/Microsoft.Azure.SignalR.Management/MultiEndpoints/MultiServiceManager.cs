@@ -104,6 +104,5 @@ namespace Microsoft.Azure.SignalR.Management.MultiEndpoints
         {
             throw new NotSupportedException("Please use method GetClientEndpoint(string hubName, HttpContext httpContext) instead");
         }
-
     }
 }
