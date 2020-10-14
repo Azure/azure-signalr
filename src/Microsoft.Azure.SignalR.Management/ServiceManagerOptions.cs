@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Management
                 }
                 else
                 {
-                    ServiceEndpoint = new ServiceEndpoint(ConnectionString);
+                    ServiceEndpoint = new ServiceEndpoint(value);
                     _connectionString = value;
                 }
             }
