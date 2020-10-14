@@ -57,7 +57,9 @@ namespace Microsoft.Azure.SignalR.Management.MultiEndpoints
 
         protected override void ConfigurePersistentServiceCollection(ServiceCollection serviceCollection)
         {
-            serviceCollection.AddSingleton(typeof(IServerNameProvider), _serverNameProvider); //required by ServiceEndpointManager
+            serviceCollection
+                .AddSingleton(_serverNameProvider) //required by ServiceEndpointManager
+                .AddSingleton<IServiceEndpointManager, ServiceEndpointManager>();
             serviceCollection
                 .Configure<ServiceOptions>(options =>
                 {
