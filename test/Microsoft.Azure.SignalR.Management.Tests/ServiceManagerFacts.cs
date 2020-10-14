@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
@@ -16,6 +18,11 @@ using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
+    public interface IServiceHubTestClient
+    {
+        Task HelloWorld();
+    }
+
     public class ServiceManagerFacts
     {
         private const string Endpoint = "https://abc";
@@ -88,6 +95,26 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(TestServiceManagerOptionData))]
+        internal async Task CreateServiceHubContextGenericTest(ServiceTransportType serviceTransportType,
+            bool useLoggerFactory, string appName, int connectionCount)
+        {
+            var serviceManager = new ServiceManager(new ServiceManagerOptions
+            {
+                ConnectionString = _testConnectionString,
+                ServiceTransportType = serviceTransportType,
+                ApplicationName = appName,
+                ConnectionCount = connectionCount
+            }, null, null);
+
+            using (var loggerFactory = useLoggerFactory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance)
+            {
+                var hubContext = await serviceManager.CreateHubContextAsync<IServiceHubTestClient>(HubName, loggerFactory);
+                Assert.IsAssignableFrom<IHubClients<IServiceHubTestClient>>(hubContext.Clients);
+            }
+        }
+        
         [Fact]
         internal async Task IsServiceHealthy_ReturnTrue_Test()
         {
