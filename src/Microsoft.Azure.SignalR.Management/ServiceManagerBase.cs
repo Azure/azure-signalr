@@ -7,6 +7,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
@@ -118,9 +119,10 @@ namespace Microsoft.Azure.SignalR.Management
         }
 
         public abstract string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null);
-
+        public abstract string GenerateClientAccessToken(string hubName, ServiceEndpoint endpoint, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null);
         public abstract string GetClientEndpoint(string hubName);
-
+        public abstract ServiceEndpoint GetClientEndpoint(HttpContext httpContext);
+        public abstract string GetClientEndpoint(string hubName, ServiceEndpoint endpoint);
         public abstract Task<bool> IsServiceHealthy(CancellationToken cancellationToken);
 
         protected abstract void ConfigurePersistentServiceCollection(ServiceCollection services);

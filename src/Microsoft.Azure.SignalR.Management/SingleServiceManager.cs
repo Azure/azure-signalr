@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Common.RestClients;
@@ -89,6 +90,21 @@ namespace Microsoft.Azure.SignalR.Management
         protected override HubLifetimeManager<Hub> GetTransientHubLifetimeManager(string hubName)
         {
             return new RestHubLifetimeManager(_serviceManagerOptions, hubName, _productInfo);
+        }
+
+        public override string GenerateClientAccessToken(string hubName, ServiceEndpoint endpoint, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)
+        {
+            throw new NotSupportedException("please use method GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null) instead");
+        }
+
+        public override ServiceEndpoint GetClientEndpoint(HttpContext httpContext)
+        {
+            throw new NotSupportedException("please use method GetClientEndpoint(string hubName) instead");
+        }
+
+        public override string GetClientEndpoint(string hubName, ServiceEndpoint endpoint)
+        {
+            throw new NotSupportedException("please use method GetClientEndpoint(string hubName) instead");
         }
     }
 }
