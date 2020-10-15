@@ -24,22 +24,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Gets or sets the connection string of Azure SignalR Service instance and switches to single-endpoint.
         /// </summary>
-        public string ConnectionString
-        {
-            get => _connectionString;
-            set
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    throw new ArgumentException($"'{nameof(ConnectionString)}' cannot be null or whitespace", nameof(ConnectionString));
-                }
-                else
-                {
-                    ServiceEndpoint = new ServiceEndpoint(value);
-                    _connectionString = value;
-                }
-            }
-        }
+        public string ConnectionString { get; set; }
 
         /// <summary>
         /// Gets or sets the proxy used when ServiceManager will attempt to connect to Azure SignalR Service.
@@ -51,52 +36,26 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public ServiceEndpoint ServiceEndpoint
         {
-            get => _serviceEndpoint;
-            set
-            {
-                _multiEndpointState = false;
-                _serviceEndpoint = value;
-            }
+            get => _serviceEndpoint ?? new ServiceEndpoint(ConnectionString);//not modify backing field to avoid breaking validation rules
+            set => _serviceEndpoint = value;
         }
+
+        private ServiceEndpoint _serviceEndpoint;
 
         /// <summary>
         /// Gets or sets the service endpoints for accessing Azure SignalR Service and switches to multi-endpoint mode.
         /// </summary>
-        internal ServiceEndpoint[] ServiceEndpoints  //not ready for public use
-        {
-            get => _serviceEndpoints;
-            set
-            {
-                if (value == null)//enable user to reset the _multiEndpointState
-                {
-                    _serviceEndpoints = null;
-                    return;
-                }
-                if (value.Length == 0)
-                {
-                    throw new ArgumentException("collection is empty", nameof(ServiceEndpoints));
-                }
-
-                _serviceEndpoints = value;
-                _multiEndpointState = true;
-            }
-        }
+        internal ServiceEndpoint[] ServiceEndpoints { get; set; } //not ready for public use
 
         /// <summary>
         /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
         /// </summary>
         public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
 
-        private bool _multiEndpointState;
-
-        private string _connectionString;
-        private ServiceEndpoint _serviceEndpoint;
-        private ServiceEndpoint[] _serviceEndpoints;
-
         public bool InMultiEndpointState()
         {
             ValidateOptions();
-            return _multiEndpointState;
+            return ServiceEndpoints != null;
         }
 
         private void ValidateOptions()
@@ -107,13 +66,27 @@ namespace Microsoft.Azure.SignalR.Management
 
         private void ValidateServiceEndpoint()
         {
-            if (ServiceEndpoint == null && ServiceEndpoints == null)
+            var notNullCount = 0;
+            if (ConnectionString != null)
             {
-                throw new InvalidOperationException($"service endpoint(s) not configured. Please set one of the following properties {nameof(ConnectionString)}, {nameof(ServiceEndpoint)}, {nameof(ServiceEndpoints)}");
+                notNullCount += 1;
             }
-            if (ServiceEndpoint != null && ServiceEndpoints != null)
+            if (ServiceEndpoint != null)
             {
-                throw new InvalidOperationException($"You are not allowed to set properties for both single-endpoint and multiple-endpoint. Please unset {nameof(ServiceEndpoint)} or {nameof(ServiceEndpoints)}");
+                notNullCount += 1;
+            }
+            if (ServiceEndpoints != null)
+            {
+                notNullCount += 1;
+            }
+
+            if (notNullCount == 0)
+            {
+                throw new InvalidOperationException($"Service endpoint(s) is/are not configured. Please set one of the following properties {nameof(ConnectionString)}, {nameof(ServiceEndpoint)}, {nameof(ServiceEndpoints)}");
+            }
+            if (notNullCount > 1)
+            {
+                throw new InvalidOperationException($"Please set ONLY one of the following properties: {nameof(ConnectionString)}, {nameof(ServiceEndpoint)}, {nameof(ServiceEndpoints)}");
             }
         }
 
