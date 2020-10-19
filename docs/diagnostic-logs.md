@@ -18,8 +18,6 @@
   - [Troubleshooting with diagnostic logs](#troubleshooting-with-diagnostic-logs)
     - [Connection related issues](#connection-related-issues)
       - [Unexpected connection number changes](#unexpected-connection-number-changes)
-        - [Unexpected connection dropping](#unexpected-connection-dropping)
-        - [Unexpected connection growing](#unexpected-connection-growing)
       - [Authorization failure](#authorization-failure)
       - [Throttling](#throttling)
     - [Message related issues](#message-related-issues)
@@ -54,7 +52,7 @@ Diagnostic logs are disabled by default. To enable diagnostic logs, follow these
 1. Configure the log destination settings. 
    1. In **Log Destination Settings** section, a table of diagnostic settings display the existing diagnostic settings. You can click the link in the table to get access to the log destination to view the collected diagnostic logs.
    1. In this section, click the button **Configure Log Destination Settings** to add, update, or delete diagnostic settings.
-   1. Click **Add diagnostic setting** to add a new diagnostic setting, or click **Edit** to moidify an existing diagnostic setting.
+   1. Click **Add diagnostic setting** to add a new diagnostic setting, or click **Edit** to modify an existing diagnostic setting.
    1.	Set the archive target that you want. Currently, SignalR service supports **Archive to a storage account** and **Send to Log Analytics**.
    1. Select the logs you want to archive. Only `AllLogs` is available for diagnostic log. It only controls whether you want to archive the logs. To configure which log types needs to be generated in SignalR service, configure in **Log Source Settings** section.
 	![Diagnostics settings pane](./images/diagnostic-logs/diagnostics-settings-pane.png)
@@ -78,7 +76,7 @@ Messaging logs provide tracing information for the SignalR hub messages received
 
 There are two typical scenarios on using diagnostic logs, especially for messaging logs. 
 
-Someone may care about the quality of each message. For example, they are sensitive on whether the message get sent/received sussessfully, or they want to record every message that is delievered via SignalR service.
+Someone may care about the quality of each message. For example, they are sensitive on whether the message get sent/received successfully, or they want to record every message that is delivered via SignalR service.
 
 In the mean time, others may care about the performance. They are sensitive on the latency of the message, and sometimes they need to track the message in a few connections instead of all the connections for some reason.
 
@@ -86,7 +84,7 @@ Therefore, SignalR service provides two kinds of collecting behaviors
 * **collect all**: collect logs in all connections 
 * **collect partially**: collect logs in some specific connections
 
-> To distinguish the connections between those collect logs and those don't collect logs, SignalR service will treat some client as diagnotic client based on the diagnostic client configurations of server and client, in which the diagnostic logs always get collected, while the others don't. For more details, see [collect partially section](#collect-partially). 
+> To distinguish the connections between those collect logs and those don't collect logs, SignalR service will treat some client as diagnostic client based on the diagnostic client configurations of server and client, in which the diagnostic logs always get collected, while the others don't. For more details, see [collect partially section](#collect-partially). 
 
 #### Collect all
 
@@ -102,7 +100,7 @@ This behavior doesn't require you to update server side configurations. This con
 
 #### Collect partially
 
-Diagnostic logs are **only** collected by [diagnostic clients](#diagnostic-client). All messages get logged inlcuding client messages in the diagnostic clients.
+Diagnostic logs are **only** collected by [diagnostic clients](#diagnostic-client). All messages get logged including client messages in the diagnostic clients.
 
 > The limit of the diagnostic clients' number is 100.
 
@@ -150,7 +148,7 @@ var connection = new HubConnectionBuilder()
 
 ### Archive to a storage account
 
-Logs are stored in the storage account that configured in **Diagnostics logs** pane. A container named `insights-logs-alllogs` is created automatically to store diagnostic logs. Inside the container, logs are stored in the file `resourceId=/SUBSCRIPTIONS/XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX/RESOURCEGROUPS/XXXX/PROVIDERS/MICROSOFT.SIGNALRSERVICE/SIGNALR/XXX/y=YYYY/m=MM/d=DD/h=HH/m=00/PT1H.json`. Basically, the path is combined by `resource ID` and `Date Time`. The log files are splitted by `hour`. Therefore, the minutes always be `m=00`.
+Logs are stored in the storage account that configured in **Diagnostics logs** pane. A container named `insights-logs-alllogs` is created automatically to store diagnostic logs. Inside the container, logs are stored in the file `resourceId=/SUBSCRIPTIONS/XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX/RESOURCEGROUPS/XXXX/PROVIDERS/MICROSOFT.SIGNALRSERVICE/SIGNALR/XXX/y=YYYY/m=MM/d=DD/h=HH/m=00/PT1H.json`. Basically, the path is combined by `resource ID` and `Date Time`. The log files are split by `hour`. Therefore, the minutes always be `m=00`.
 
 All logs are stored in JavaScript Object Notation (JSON) format. Each entry has string fields that use the format described in the following sections.
 
@@ -162,7 +160,7 @@ time | Log event time
 level | Log event level
 resourceId | Resource ID of your Azure SignalR Service
 location | Location of your Azure SignalR Service
-category | Catagory of the log event
+category | Category of the log event
 operationName | Operation name of the event
 callerIpAddress | IP address of your server/client
 properties | Detailed properties related to this log event. For more detail, see [**properties tables**](#properties-tables) below
@@ -179,7 +177,7 @@ connectionId | Optional. Identity of the connection
 transportType | Optional. Transport type of the connection. Allowed values are: `Websockets` \| `ServerSentEvents` \| `LongPolling`
 connectionType | Optional. Type of the connection. Allowed values are: `Server` \| `Client`. `Server`: connection from server side; `Client`: connection from client side
 userId | Optional. Identity of the user
-messageType | Optional. Type of the message, only available for the messsage sent from server. Allowed values are: `BroadcastDataMessage`, `MultiConnectionDataMessage`, `GroupBroadcastDataMessage`, `MultiGroupBroadcastDataMessage`, `GroupBroadcastDataMessage`, `UserDataMessage`, `MultiUserDataMessage`, `JoinGroupWithAckMessage` and `LeaveGroupWithAckMessage`
+messageType | Optional. Type of the message, only available for the message sent from server. Allowed values are: `BroadcastDataMessage`, `MultiConnectionDataMessage`, `GroupBroadcastDataMessage`, `MultiGroupBroadcastDataMessage`, `GroupBroadcastDataMessage`, `UserDataMessage`, `MultiUserDataMessage`, `JoinGroupWithAckMessage` and `LeaveGroupWithAckMessage`
 messageTracingId | Optional. Tracing ID of message
 
 The following code is an example of an archive log JSON string:
@@ -232,7 +230,7 @@ TransportType | Optional. Transport type of the connection. Allowed values are: 
 
 ### Troubleshooting with diagnostic logs
 
-To troubleshoot for Azure SignalR Service, you can enable server/client side logs to capture failures. At present, Azure SiganlR Service exposes diagnostic logs, you can also enable logs for service side.
+To troubleshoot for Azure SignalR Service, you can enable server/client side logs to capture failures. At present, Azure SignalR Service exposes diagnostic logs, you can also enable logs for service side.
 
 #### Connection related issues
 
@@ -280,7 +278,7 @@ When encountering message related problem, you can take advantage of messaging l
 
 > For ASP.NET Core, see [here](https://docs.microsoft.com/aspnet/core/signalr/diagnostics) to enable logging in server and client.
 > 
-> For ASP.NET, see [here](https://docs.microsoft.com/aspnet/signalr/overview/testing-and-debugging/enabling-signalr-tracing) to enable loging in server and client.  
+> For ASP.NET, see [here](https://docs.microsoft.com/aspnet/signalr/overview/testing-and-debugging/enabling-signalr-tracing) to enable logging in server and client.  
 
 If you don't mind potential performance impact and no client-to-server direction message, check the `Messaging` in `Log Source Settings/Types` to enable *collect-all* log collecting behavior. For more information about this behavior, see [collect all section](#collect-all). 
 
@@ -288,7 +286,7 @@ Otherwise, uncheck the `Messaging` to enable *collect-partially* log collecting 
 
 ##### Message loss
 
-If you encouter message loss problem, the key is to locate the place where you lose the message. Basically, you have 3 components when using SignalR service: SignalR service, server and client. Both server and client are connected to SignalR service, they don't connected to each other directly once negotiation is completed. Therefore, we need to consider 2 directions for messages, for each direction, we need to consider 2 pathes:
+If you encounter message loss problem, the key is to locate the place where you lose the message. Basically, you have 3 components when using SignalR service: SignalR service, server and client. Both server and client are connected to SignalR service, they don't connected to each other directly once negotiation is completed. Therefore, we need to consider 2 directions for messages, for each direction, we need to consider 2 paths:
 
 * From client to server via SignalR service
   * Path 1: Client to SignalR service
@@ -303,17 +301,17 @@ For **collect all** collecting behavior:
 
 SignalR service only trace messages in direction **from server to client via SignalR service**. The tracing ID will be generated in server, the message will carry the tracing ID to SignalR service. 
 
-By checking the log in server and service side, you can easily find out whether the message is sent from server, arrives at SignalR service, and leave from SignalR service. Basically, by checking if the *received* and *sent* message are matched or not based on message tracing Id, you can tell wether the message loss issue is in server or SignalR service in this direction. For more information, see the [details](#message-flow-detail-for-path3) below.
+By checking the log in server and service side, you can easily find out whether the message is sent from server, arrives at SignalR service, and leave from SignalR service. Basically, by checking if the *received* and *sent* message are matched or not based on message tracing Id, you can tell whether the message loss issue is in server or SignalR service in this direction. For more information, see the [details](#message-flow-detail-for-path3) below.
 
 For **collect partially** collecting behavior:
 
 Once you mark the client as diagnostic client, SignalR service will trace messages in both directions. 
 
-By checking the log in server and service side, you can easily find out whether the message is pass the server or SignalR service successfully. Basically, by checking if the *received* and *sent* message are matched or not based on message tracing Id, you can tell wether the message loss issue is in server or SignalR service. For more information, see the details below.
+By checking the log in server and service side, you can easily find out whether the message is pass the server or SignalR service successfully. Basically, by checking if the *received* and *sent* message are matched or not based on message tracing Id, you can tell whether the message loss issue is in server or SignalR service. For more information, see the details below.
 
 **Details of the message flow**
 
-For the direction **from client to server via SignalR service**, SignalR service will only consider the invocation that is originated from diagnostic client, that is, the message generated directly in diagnostic client, or service messsage generated due to the invocation of diagnostic client indirectly. 
+For the direction **from client to server via SignalR service**, SignalR service will only consider the invocation that is originated from diagnostic client, that is, the message generated directly in diagnostic client, or service message generated due to the invocation of diagnostic client indirectly. 
 
 The tracing ID will be generated in SignalR service once the message arrives at SignalR service in **Path 1**. SignalR service will generate a log `Received a message <MessageTracingId> from client connection <ConnectionId>.` for each message in diagnostic client. Once the message leaves from the SignalR to server, SignalR service will generate a log `Sent a message <MessageTracingId> to server connection <ConnectionId> successfully.` If you see these 2 logs, you can be sure that the message passes through SignalR service successfully. 
 
@@ -328,19 +326,19 @@ Once the message invokes the hub method in server, a new service message will be
 
 Once the service message arrives at SignalR service, a log called `Received a <MessageType> message <MessageTracingId> from server connection <ConnectionId>.` will be generated. Then SignalR service processes the service message and deliver to the target client(s). Once the message is sent to client(s) in **Path 4**, log `Sent a message <MessageTracingId> to client connection <ConnectionId> successfully.` will be generated.
 
-In summary, the message log will be generated when message goes in and out the SignalR service and server. You can use these logs to validate whether the message is lost in these compoments or not.
+In summary, the message log will be generated when message goes in and out the SignalR service and server. You can use these logs to validate whether the message is lost in these components or not.
 
 If a message get lost in SignalR or server, try to get the warning logs based on the message tracing ID to get the reason. If you need further help, see the [get help section](#get-help).
 
 ### Get help
 
-We recommend you troubleshoot by yourself first. Most isssues are caused by app server or network issues. Please follow [troubleshooting guide with diagnostic log](#troubleshooting-with-diagnostic-logs) and [basic trouble shooting guide](./tsg.md) to find the root cause.
-If the issue still can't be resolved, then consider open an issue in github or create ticket in Azure Portal.
+We recommend you troubleshoot by yourself first. Most issues are caused by app server or network issues. Please follow [troubleshooting guide with diagnostic log](#troubleshooting-with-diagnostic-logs) and [basic trouble shooting guide](./tsg.md) to find the root cause.
+If the issue still can't be resolved, then consider open an issue in GitHub or create ticket in Azure Portal.
 Please provide:
 1. Time range about 30 minutes when the issue occurs
 2. Azure SignalR Service's resource ID
-3. Issue details, as specifically as possible: e.g. appserver doesn't send messages, client connection drops, etc.
+3. Issue details, as specifically as possible: e.g. app server doesn't send messages, client connection drops, etc.
 4. Logs collected from server/client side, and other material that might be useful
 5. [Optional] Repro code
 
-> Note: if you open issue in github, keep your sensitive information (e.g. resource ID, server/client logs) private, only send to members in Microsoft organization privately.  
+> Note: if you open issue in GitHub, keep your sensitive information (e.g. resource ID, server/client logs) private, only send to members in Microsoft organization privately.  
