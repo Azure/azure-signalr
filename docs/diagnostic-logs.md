@@ -102,7 +102,7 @@ This behavior doesn't require you to update server side configurations. This con
 
 Diagnostic logs are **only** collected by [diagnostic clients](#diagnostic-client). All messages get logged including client messages in the diagnostic clients.
 
-> The limit of the diagnostic clients' number is 100.
+> The limit of the diagnostic clients' number is 100. If the number of diagnostic clients exceeds 100, the outnumbered diagnostic clients will get throttled by SignalR service.
 
 ##### Diagnostic client
 
@@ -130,7 +130,7 @@ public IServiceProvider ConfigureServices(IServiceCollection services)
         .AddAzureSignalR(o =>
         {
             o.ConnectionString = "<YOUR_ASRS_CONNECTION_STRING>";
-            o.DiagnosticClientFilter = context => context.Request.Query["user"] == "yes";
+            o.DiagnosticClientFilter = context => context.Request.Query["diag"] == "yes";
         });
 
     return services.BuildServiceProvider();
@@ -299,9 +299,11 @@ If you encounter message loss problem, the key is to locate the place where you 
 
 For **collect all** collecting behavior:
 
-SignalR service only trace messages in direction **from server to client via SignalR service**. The tracing ID will be generated in server, the message will carry the tracing ID to SignalR service. 
+SignalR service only trace messages in direction **from server to client via SignalR service**. The tracing ID will be generated in server, the message will carry the tracing ID to SignalR service.
 
-By checking the log in server and service side, you can easily find out whether the message is sent from server, arrives at SignalR service, and leave from SignalR service. Basically, by checking if the *received* and *sent* message are matched or not based on message tracing Id, you can tell whether the message loss issue is in server or SignalR service in this direction. For more information, see the [details](#message-flow-detail-for-path3) below.
+> If you want to trace message and [send messages from outside a hub](https://docs.microsoft.com/en-us/aspnet/core/signalr/hubcontext) in your app server, you need to enable **collect all** collecting behavior to collect message logs for the messages which are not originated from diagnostic clients.
+
+By checking the log in server and service side, you can easily find out whether the message is sent from server, arrives at SignalR service, and leaves from SignalR service. Basically, by checking if the *received* and *sent* message are matched or not based on message tracing Id, you can tell whether the message loss issue is in server or SignalR service in this direction. For more information, see the [details](#message-flow-detail-for-path3) below.
 
 For **collect partially** collecting behavior:
 
@@ -311,7 +313,7 @@ By checking the log in server and service side, you can easily find out whether 
 
 **Details of the message flow**
 
-For the direction **from client to server via SignalR service**, SignalR service will only consider the invocation that is originated from diagnostic client, that is, the message generated directly in diagnostic client, or service message generated due to the invocation of diagnostic client indirectly. 
+For the direction **from client to server via SignalR service**, SignalR service will **only** consider the invocation that is originated from diagnostic client, that is, the message generated directly in diagnostic client, or service message generated due to the invocation of diagnostic client indirectly. 
 
 The tracing ID will be generated in SignalR service once the message arrives at SignalR service in **Path 1**. SignalR service will generate a log `Received a message <MessageTracingId> from client connection <ConnectionId>.` for each message in diagnostic client. Once the message leaves from the SignalR to server, SignalR service will generate a log `Sent a message <MessageTracingId> to server connection <ConnectionId> successfully.` If you see these 2 logs, you can be sure that the message passes through SignalR service successfully. 
 
@@ -328,6 +330,17 @@ Once the service message arrives at SignalR service, a log called `Received a <M
 
 In summary, the message log will be generated when message goes in and out the SignalR service and server. You can use these logs to validate whether the message is lost in these components or not.
 
+Below is a typical message loss issue.
+
+###### A user fails to receive messages in a group
+
+The typical story in this issue is that the user joins a group **after** sending a group message.
+Without diagnostic logs, you are unable to find out when the user is connected and when the group message is sent.
+Once you enable messaging logs, you are able to compare the message arriving time in SignalR service. Follow the below steps to troubleshoot:
+1. Find the message logs in server to find when the user is joined the group and when the group message is sent. 1. Get the message tracing ID A of joining the group and the message tracing ID B of group message from the message logs.
+1. Filter these message tracing ID among messaging logs in your log archive target, then compare their arriving timestamps, you will find which message message is arrived first in SignalR service.
+1. If message tracing ID A's arriving time later than B's, then you must be sending group message **before** the user joining the group.Then you need to make sure the user is in the group before sending group messages.
+
 If a message get lost in SignalR or server, try to get the warning logs based on the message tracing ID to get the reason. If you need further help, see the [get help section](#get-help).
 
 ### Get help
@@ -336,9 +349,9 @@ We recommend you troubleshoot by yourself first. Most issues are caused by app s
 If the issue still can't be resolved, then consider open an issue in GitHub or create ticket in Azure Portal.
 Please provide:
 1. Time range about 30 minutes when the issue occurs
-2. Azure SignalR Service's resource ID
-3. Issue details, as specifically as possible: e.g. app server doesn't send messages, client connection drops, etc.
-4. Logs collected from server/client side, and other material that might be useful
-5. [Optional] Repro code
+1. Azure SignalR Service's resource ID
+1. Issue details, as specifically as possible: e.g. app server doesn't send messages, client connection drops, etc.
+1. Logs collected from server/client side, and other material that might be useful
+1. [Optional] Repro code
 
 > Note: if you open issue in GitHub, keep your sensitive information (e.g. resource ID, server/client logs) private, only send to members in Microsoft organization privately.  
