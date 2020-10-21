@@ -11,8 +11,6 @@ namespace Microsoft.Azure.SignalR.Management
     /// </summary>
     public class ServiceManagerOptions
     {
-        private ServiceEndpoint _serviceEndpoint = null;
-
         /// <summary>
         /// Gets or sets the ApplicationName which will be prefixed to each hub name
         /// </summary>
@@ -36,40 +34,73 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Gets or sets the service endpoint for accessing Azure SignalR Service.
         /// </summary>
-        public ServiceEndpoint ServiceEndpoint
-        {
-            get
-            {
-                if (_serviceEndpoint == null)
-                {
-                    _serviceEndpoint = new ServiceEndpoint(ConnectionString, EndpointType.Secondary);
-                }
-                return _serviceEndpoint;
-            }
-            set
-            {
-                _serviceEndpoint = value;
-            }
-        }
+        public ServiceEndpoint ServiceEndpoint { get; set; }
+
+        /// <summary>
+        /// Gets or sets the service endpoints for accessing Azure SignalR Service and switches to multi-endpoint mode.
+        /// </summary>
+        internal ServiceEndpoint[] ServiceEndpoints { get; set; } //not ready for public use
 
         /// <summary>
         /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
         /// </summary>
         public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
 
+        /// <summary>
+        /// A unified way to get the service endpoint(s) set by "ConnectionString", "ServiceEndpoint" or "ServiceEndpoints".
+        /// </summary>
+        internal ServiceEndpoint[] UnifiedEndpoints
+        {
+            get
+            {
+                ValidateOptions();
+                if (ConnectionString != null)
+                {
+                    return new ServiceEndpoint[] { new ServiceEndpoint(ConnectionString) };
+                }
+                if (ServiceEndpoint != null)
+                {
+                    return new ServiceEndpoint[] { ServiceEndpoint };
+                }
+                else
+                {
+                    return ServiceEndpoints;
+                }
+            }
+        }
+
+        internal string ProductInfo { get; set; }
+
         internal void ValidateOptions()
         {
-            if (_serviceEndpoint == null)
-            {
-                ValidateConnectionString();
-            }
+            ValidateServiceEndpoint();
             ValidateServiceTransportType();
         }
 
-        private void ValidateConnectionString()
+        private void ValidateServiceEndpoint()
         {
-            // if the connection string is invalid, exceptions will be thrown.
-            ConnectionStringParser.Parse(ConnectionString);
+            var notNullCount = 0;
+            if (ConnectionString != null)
+            {
+                notNullCount += 1;
+            }
+            if (ServiceEndpoint != null)
+            {
+                notNullCount += 1;
+            }
+            if (ServiceEndpoints != null)
+            {
+                notNullCount += 1;
+            }
+
+            if (notNullCount == 0)
+            {
+                throw new InvalidOperationException($"Service endpoint(s) is/are not configured. Please set one of the following properties {nameof(ConnectionString)}, {nameof(ServiceEndpoint)}, {nameof(ServiceEndpoints)}");
+            }
+            if (notNullCount > 1)
+            {
+                throw new InvalidOperationException($"Please set ONLY one of the following properties: {nameof(ConnectionString)}, {nameof(ServiceEndpoint)}, {nameof(ServiceEndpoints)}");
+            }
         }
 
         private void ValidateServiceTransportType()

@@ -29,11 +29,11 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly string _productInfo;
         private readonly RestClientFactory _restClientFactory;
 
-        internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo, RestClientFactory restClientFactory)
+        internal ServiceManager(ServiceManagerOptions serviceManagerOptions, RestClientFactory restClientFactory)
         {
             _serviceManagerOptions = serviceManagerOptions;
 
-            _endpoint = serviceManagerOptions.ServiceEndpoint;
+            _endpoint = serviceManagerOptions.UnifiedEndpoints.Single();//temp solution
 
             _serverNameProvider = new DefaultServerNameProvider();
 
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR.Management
 
             _endpointProvider = new ServiceEndpointProvider(_serverNameProvider, _endpoint, serviceOptions);
 
-            _productInfo = productInfo;
+            _productInfo = serviceManagerOptions.ProductInfo;
             _restClientFactory = restClientFactory;
         }
 
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.SignalR.Management
                         serviceCollection.Remove(serviceDescriptor);
 
                         // add rest hub lifetime manager
-                        var restHubLifetimeManager = new RestHubLifetimeManager(_serviceManagerOptions, hubName, _productInfo);
+                        var restHubLifetimeManager = new RestHubLifetimeManager(_endpoint, hubName, _productInfo, _serviceManagerOptions.ApplicationName);
                         serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), sp => restHubLifetimeManager);
 
                         var serviceProvider = serviceCollection.BuildServiceProvider();

@@ -25,11 +25,11 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly string _hubName;
         private readonly string _appName;
 
-        public RestHubLifetimeManager(ServiceManagerOptions serviceManagerOptions, string hubName, string productInfo)
+        public RestHubLifetimeManager(ServiceEndpoint endpoint, string hubName, string productInfo, string appName)
         {
-            _restApiProvider = new RestApiProvider(serviceManagerOptions.ServiceEndpoint);
+            _restApiProvider = new RestApiProvider(endpoint);
             _productInfo = productInfo;
-            _appName = serviceManagerOptions.ApplicationName;
+            _appName = appName;
             _hubName = hubName;
         }
 
@@ -249,5 +249,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
         }
+
+        public Task DisposeAsync() => Task.CompletedTask;
     }
 }

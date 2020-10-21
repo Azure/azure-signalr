@@ -13,10 +13,13 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IHubLifetimeManagerForUserGroup where THub : Hub
     {
+        private readonly IServiceConnectionManager<THub> _serviceConnectionManager;
+
         public WebSocketsHubLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver,
             IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILoggerFactory loggerFactory) :
             base(serviceConnectionManager, protocolResolver, globalHubOptions, hubOptions, loggerFactory?.CreateLogger(nameof(WebSocketsHubLifetimeManager<Hub>)))
         {
+            _serviceConnectionManager = serviceConnectionManager;
         }
 
         public Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
@@ -101,6 +104,11 @@ namespace Microsoft.Azure.SignalR.Management
         public Task<bool> IsUserInGroup(string userId, string groupName, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
+        }
+
+        public Task DisposeAsync()
+        {
+            return _serviceConnectionManager.StopAsync();
         }
     }
 }
