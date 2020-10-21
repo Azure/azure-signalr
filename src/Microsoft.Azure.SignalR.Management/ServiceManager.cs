@@ -130,7 +130,7 @@ namespace Microsoft.Azure.SignalR.Management
                         serviceCollection.Remove(serviceDescriptor);
 
                         // add rest hub lifetime manager
-                        var restHubLifetimeManager = new RestHubLifetimeManager(_endpoint, hubName, _productInfo, _serviceManagerOptions.ApplicationName);
+                        var restHubLifetimeManager = new RestHubLifetimeManager(hubName, _endpoint, _productInfo, _serviceManagerOptions.ApplicationName);
                         serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), sp => restHubLifetimeManager);
 
                         var serviceProvider = serviceCollection.BuildServiceProvider();
