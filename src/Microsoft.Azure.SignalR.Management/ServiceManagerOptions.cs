@@ -53,7 +53,6 @@ namespace Microsoft.Azure.SignalR.Management
         {
             get
             {
-                ValidateOptions();
                 if (ConnectionString != null)
                 {
                     return new ServiceEndpoint[] { new ServiceEndpoint(ConnectionString) };
@@ -95,11 +94,11 @@ namespace Microsoft.Azure.SignalR.Management
 
             if (notNullCount == 0)
             {
-                throw new InvalidOperationException($"Service endpoint(s) is/are not configured. Please set one of the following properties {nameof(ConnectionString)}, {nameof(ServiceEndpoint)}, {nameof(ServiceEndpoints)}");
+                throw new InvalidOperationException($"Service endpoint(s) is/are not configured. Please set one of the following properties {nameof(ConnectionString)}, {nameof(ServiceEndpoint)}, {nameof(ServiceEndpoints)}.");
             }
             if (notNullCount > 1)
             {
-                throw new InvalidOperationException($"Please set ONLY one of the following properties: {nameof(ConnectionString)}, {nameof(ServiceEndpoint)}, {nameof(ServiceEndpoints)}");
+                throw new InvalidOperationException($"Please set ONLY one of the following properties: {nameof(ConnectionString)}, {nameof(ServiceEndpoint)}, {nameof(ServiceEndpoints)}.");
             }
         }
 
@@ -108,7 +107,7 @@ namespace Microsoft.Azure.SignalR.Management
             if (!Enum.IsDefined(typeof(ServiceTransportType), ServiceTransportType))
             {
                 throw new ArgumentOutOfRangeException($"Not supported service transport type. " +
-                    $"Supported transports type are {ServiceTransportType.Transient} and {ServiceTransportType.Persistent}");
+                    $"Supported transports type are {ServiceTransportType.Transient} and {ServiceTransportType.Persistent}.");
             }
         }
     }

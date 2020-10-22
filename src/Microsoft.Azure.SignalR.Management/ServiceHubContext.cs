@@ -10,7 +10,7 @@ namespace Microsoft.Azure.SignalR.Management
     internal class ServiceHubContext : IServiceHubContext
     {
         private readonly IHubContext<Hub> _hubContext;
-        private readonly IHubLifetimeManagerForUserGroup _lifetimeManager;
+        private readonly IServiceHubLifetimeManager _lifetimeManager;
 
         internal ServiceProvider ServiceProvider { get; }
 
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public IUserGroupManager UserGroups { get; }
 
-        public ServiceHubContext(IHubContext<Hub> hubContext, IHubLifetimeManagerForUserGroup lifetimeManager, ServiceProvider serviceProvider)
+        public ServiceHubContext(IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, ServiceProvider serviceProvider)
         {
             _hubContext = hubContext;
             _lifetimeManager = lifetimeManager;

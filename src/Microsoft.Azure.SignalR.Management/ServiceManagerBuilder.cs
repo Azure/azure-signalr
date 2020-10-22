@@ -13,6 +13,7 @@ namespace Microsoft.Azure.SignalR.Management
     public class ServiceManagerBuilder : IServiceManagerBuilder
     {
         private readonly ServiceManagerOptions _options = new ServiceManagerOptions();
+        private readonly Context _context = new Context();
         private Assembly _assembly;
 
         /// <summary>
@@ -42,9 +43,9 @@ namespace Microsoft.Azure.SignalR.Management
             _options.ValidateOptions();
 
             var productInfo = ProductInfo.GetProductInfo(_assembly);
-            WithOptions(o => o.ProductInfo = productInfo);
+            _context.ProductInfo = productInfo;
             var restClientBuilder = new RestClientFactory(productInfo);
-            return new ServiceManager(_options, restClientBuilder);
+            return new ServiceManager(_options, _context, restClientBuilder);
         }
     }
 }
