@@ -107,7 +107,7 @@ namespace Microsoft.Azure.SignalR.Management
             if (!Enum.IsDefined(typeof(ServiceTransportType), ServiceTransportType))
             {
                 throw new ArgumentOutOfRangeException($"Not supported service transport type. " +
-                    $"Supported transports types are {ServiceTransportType.Transient} and {ServiceTransportType.Persistent}.");
+                    $"Supported transport types are {ServiceTransportType.Transient} and {ServiceTransportType.Persistent}.");
             }
         }
     }
