@@ -29,11 +29,11 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly string _productInfo;
         private readonly RestClientFactory _restClientFactory;
 
-        internal ServiceManager(ServiceManagerOptions serviceManagerOptions, Context context, RestClientFactory restClientFactory)
+        internal ServiceManager(ServiceManagerOptions serviceManagerOptions, ServiceManagerContext context, RestClientFactory restClientFactory)
         {
             _serviceManagerOptions = serviceManagerOptions;
 
-            _endpoint = serviceManagerOptions.ServiceEndpoints.Single();//temp solution
+            _endpoint = context.ServiceEndpoints.Single();//temp solution
 
             _serverNameProvider = new DefaultServerNameProvider();
 

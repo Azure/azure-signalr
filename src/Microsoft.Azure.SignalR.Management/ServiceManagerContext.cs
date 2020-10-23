@@ -3,8 +3,13 @@
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class Context
+    internal class ServiceManagerContext
     {
         public string ProductInfo { get; set; }
+
+        /// <summary>
+        /// A merged result got from <see cref="ServiceManagerOptions.GetMergedServiceEndpoints"/>
+        /// </summary>
+        public ServiceEndpoint[] ServiceEndpoints { get; set; }
     }
 }

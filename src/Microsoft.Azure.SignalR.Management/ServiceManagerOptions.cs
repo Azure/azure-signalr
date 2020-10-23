@@ -37,26 +37,11 @@ namespace Microsoft.Azure.SignalR.Management
         public ServiceEndpoint ServiceEndpoint { get; set; }
 
         /// <summary>
-        /// <para>Gets service endpoint(s) of Azure SignalR Service set by any one of the properties 'ConnectionString', 'ServiceEndpoint' or 'ServiceEndpoints'.</para>
-        /// <para>Sets multiple service endpoints of Azure SignalR Service.</para>
+        /// Sets multiple service endpoints of Azure SignalR Service.
         /// </summary>
         internal ServiceEndpoint[] ServiceEndpoints
         {
-            get
-            {
-                if (_serviceEndpoints != null)
-                {
-                    return _serviceEndpoints;
-                }
-                if (ServiceEndpoint != null)
-                {
-                    return new ServiceEndpoint[] { ServiceEndpoint };
-                }
-                else
-                {
-                    return new ServiceEndpoint[] { new ServiceEndpoint(ConnectionString) };
-                }
-            }
+            get => _serviceEndpoints;
             set
             {
                 if (value != null && value.Length == 0)
@@ -75,12 +60,22 @@ namespace Microsoft.Azure.SignalR.Management
         private ServiceEndpoint[] _serviceEndpoints;
 
         /// <summary>
-        /// A method would be called management SDK to validate options.
+        /// Method called by management SDK to validate options.
         /// </summary>
         public void ValidateOptions()
         {
             ValidateServiceEndpoint();
             ValidateServiceTransportType();
+        }
+
+        /// <summary>
+        /// Gets the service endpoints no matter they are set by 'ConnectionString', 'ServiceEndpoint' or 'ServiceEndpoints'.
+        /// </summary>
+        public ServiceEndpoint[] GetMergedServiceEndpoints()
+        {
+            return ServiceEndpoints ?? (ServiceEndpoint != null
+                    ? (new ServiceEndpoint[] { ServiceEndpoint })
+                    : (new ServiceEndpoint[] { new ServiceEndpoint(ConnectionString) }));
         }
 
         private void ValidateServiceEndpoint()
