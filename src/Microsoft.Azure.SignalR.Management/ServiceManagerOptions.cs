@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Management
         public int ConnectionCount { get; set; } = 1;
 
         /// <summary>
-        /// Gets or sets the connection string of Azure SignalR Service instance.
+        /// Gets or sets a service endpoint of Azure SignalR Service instance by connection string.
         /// </summary>
         public string ConnectionString { get; set; } = null;
 
@@ -32,30 +32,21 @@ namespace Microsoft.Azure.SignalR.Management
         public IWebProxy Proxy { get; set; }
 
         /// <summary>
-        /// Gets or sets the service endpoint for accessing Azure SignalR Service.
+        /// Gets or sets a service endpoint of Azure SignalR Service.
         /// </summary>
         public ServiceEndpoint ServiceEndpoint { get; set; }
 
         /// <summary>
-        /// Gets or sets the service endpoints for accessing Azure SignalR Service and switches to multi-endpoint mode.
+        /// <para>Gets service endpoint(s) of Azure SignalR Service set by any one of the properties 'ConnectionString', 'ServiceEndpoint' or 'ServiceEndpoints'.</para>
+        /// <para>Sets multiple service endpoints of Azure SignalR Service.</para>
         /// </summary>
-        internal ServiceEndpoint[] ServiceEndpoints { get; set; } //not ready for public use
-
-        /// <summary>
-        /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
-        /// </summary>
-        public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
-
-        /// <summary>
-        /// A unified way to get the service endpoint(s) set by "ConnectionString", "ServiceEndpoint" or "ServiceEndpoints".
-        /// </summary>
-        internal ServiceEndpoint[] UnifiedEndpoints
+        internal ServiceEndpoint[] ServiceEndpoints
         {
             get
             {
-                if (ConnectionString != null)
+                if (_serviceEndpoints != null)
                 {
-                    return new ServiceEndpoint[] { new ServiceEndpoint(ConnectionString) };
+                    return _serviceEndpoints;
                 }
                 if (ServiceEndpoint != null)
                 {
@@ -63,14 +54,30 @@ namespace Microsoft.Azure.SignalR.Management
                 }
                 else
                 {
-                    return ServiceEndpoints;
+                    return new ServiceEndpoint[] { new ServiceEndpoint(ConnectionString) };
                 }
             }
-        }
+            set
+            {
+                if (value != null && value.Length == 0)
+                {
+                    throw new ArgumentException("The length of array is zero.", nameof(ServiceEndpoints));
+                }
+                _serviceEndpoints = value;
+            }
+        } //not ready for public use
 
-        internal string ProductInfo { get; set; }
+        /// <summary>
+        /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
+        /// </summary>
+        public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
 
-        internal void ValidateOptions()
+        private ServiceEndpoint[] _serviceEndpoints;
+
+        /// <summary>
+        /// A method would be called management SDK to validate options.
+        /// </summary>
+        public void ValidateOptions()
         {
             ValidateServiceEndpoint();
             ValidateServiceTransportType();

@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _serviceManagerOptions = serviceManagerOptions;
 
-            _endpoint = serviceManagerOptions.UnifiedEndpoints.Single();//temp solution
+            _endpoint = serviceManagerOptions.ServiceEndpoints.Single();//temp solution
 
             _serverNameProvider = new DefaultServerNameProvider();
 

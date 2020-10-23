@@ -92,7 +92,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         internal async Task IsServiceHealthy_ReturnTrue_Test()
         {
             var factory = new TestRestClientFactory(UserAgent, HttpStatusCode.OK);
-            var serviceManager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = _testConnectionString, ProductInfo = UserAgent }, new Context(), factory);
+            var serviceManager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = _testConnectionString }, new Context(), factory);
             var actual = await serviceManager.IsServiceHealthy(default);
 
             Assert.True(actual);
