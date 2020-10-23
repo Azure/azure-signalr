@@ -68,16 +68,6 @@ namespace Microsoft.Azure.SignalR.Management
             ValidateServiceTransportType();
         }
 
-        /// <summary>
-        /// Gets the service endpoints no matter they are set by 'ConnectionString', 'ServiceEndpoint' or 'ServiceEndpoints'.
-        /// </summary>
-        public ServiceEndpoint[] GetMergedServiceEndpoints()
-        {
-            return ServiceEndpoints ?? (ServiceEndpoint != null
-                    ? (new ServiceEndpoint[] { ServiceEndpoint })
-                    : (new ServiceEndpoint[] { new ServiceEndpoint(ConnectionString) }));
-        }
-
         private void ValidateServiceEndpoint()
         {
             var notNullCount = 0;

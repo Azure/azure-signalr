@@ -44,11 +44,11 @@ namespace Microsoft.Azure.SignalR.Management
             var productInfo = ProductInfo.GetProductInfo(_assembly);
             var context = new ServiceManagerContext()
             {
-                ProductInfo = productInfo,
-                ServiceEndpoints = _options.GetMergedServiceEndpoints()
+                ProductInfo = productInfo
             };
+            context.SetValueFromOptions(_options);
             var restClientBuilder = new RestClientFactory(productInfo);
-            return new ServiceManager(_options, context, restClientBuilder);
+            return new ServiceManager(context, restClientBuilder);
         }
     }
 }
