@@ -36,6 +36,7 @@
 
   <!-- Specifying signing for multiple files in a package. -->
   <ItemGroup>
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
     <SignedPackageFile Include="$(PublishDir)MessagePack.dll" Certificate="$(ThirdPartyAssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Authentication.JwtBearer.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Connections.Abstractions.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />

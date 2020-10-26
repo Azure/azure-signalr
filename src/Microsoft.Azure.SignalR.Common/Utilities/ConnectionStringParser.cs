@@ -3,12 +3,19 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 
 namespace Microsoft.Azure.SignalR
 {
     internal static class ConnectionStringParser
     {
+        private const string AuthTypeProperty = "authtype";
+        private const string ClientIdProperty = "clientId";
+        private const string ClientSecretProperty = "clientSecret";
+        private const string ClientCertProperty = "clientCert";
+        private const string TenantIdProperty = "tenantId";
         private const string EndpointProperty = "endpoint";
         private const string AccessKeyProperty = "accesskey";
         private const string VersionProperty = "version";
@@ -19,8 +26,19 @@ namespace Microsoft.Azure.SignalR
         private const string SupportedVersion = "1";
         private const string ValidVersionRegex = "^" + SupportedVersion + @"\.\d+(?:[\w-.]+)?$";
 
-        private static readonly string MissingRequiredProperty =
-            $"Connection string missing required properties {EndpointProperty} and {AccessKeyProperty}.";
+        private static readonly string MissingEndpointProperty =
+            $"Connection string missing required properties {EndpointProperty}.";
+
+        private static readonly string MissingTenantIdProperty =
+            $"Connection string missing required properties {TenantIdProperty}.";
+
+        private static readonly string MissingClientSecretProperty =
+            $"Connection string missing required properties {ClientSecretProperty} or {ClientCertProperty}.";
+
+        private static readonly string MissingAccessKeyProperty =
+            $"{AccessKeyProperty} is required.";
+
+        private static readonly string FileNotExists = "The given filepath is not a valid cert file.";
 
         private const string InvalidVersionValueFormat = "Version {0} is not supported.";
 
@@ -29,12 +47,12 @@ namespace Microsoft.Azure.SignalR
         private static readonly char[] PropertySeparator = { ';' };
         private static readonly char[] KeyValueSeparator = { '=' };
 
-        internal static (string endpoint, string accessKey, string version, int? port, string clientEndpoint) Parse(string connectionString)
+        internal static (string endpoint, AccessKey accessKey, string version, int? port, string clientEndpoint) Parse(string connectionString)
         {
             var properties = connectionString.Split(PropertySeparator, StringSplitOptions.RemoveEmptyEntries);
             if (properties.Length < 2)
             {
-                throw new ArgumentException(MissingRequiredProperty, nameof(connectionString));
+                throw new ArgumentException(MissingEndpointProperty, nameof(connectionString));
             }
 
             var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -52,9 +70,9 @@ namespace Microsoft.Azure.SignalR
                 dict.Add(key, kvp[1].Trim());
             }
 
-            if (!dict.ContainsKey(EndpointProperty) || !dict.ContainsKey(AccessKeyProperty))
+            if (!dict.ContainsKey(EndpointProperty))
             {
-                throw new ArgumentException(MissingRequiredProperty, nameof(connectionString));
+                throw new ArgumentException(MissingEndpointProperty, nameof(connectionString));
             }
 
             if (!ValidateEndpoint(dict[EndpointProperty]))
@@ -97,7 +115,50 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
-            return (dict[EndpointProperty].TrimEnd('/'), dict[AccessKeyProperty], version, port, clientEndpoint);
+            AccessKey accessKey;
+            if (dict.ContainsKey(AuthTypeProperty) && "aad".Equals(dict[AuthTypeProperty], StringComparison.OrdinalIgnoreCase))
+            {
+                if (dict.ContainsKey(ClientIdProperty))
+                {
+                    if (!dict.ContainsKey(TenantIdProperty))
+                    {
+                        throw new ArgumentNullException(MissingTenantIdProperty, nameof(connectionString));
+                    }
+
+                    var options = new AadApplicationOptions(dict[ClientIdProperty], dict[TenantIdProperty]);
+                    if (dict.ContainsKey(ClientSecretProperty))
+                    {
+                        accessKey = new AadAccessKey(options.WithClientSecret(dict[ClientSecretProperty]));
+                    }
+                    else if (dict.ContainsKey(ClientCertProperty))
+                    {
+                        if (!File.Exists(dict[ClientCertProperty]))
+                        {
+                            throw new ArgumentNullException(FileNotExists, nameof(connectionString));
+                        }
+                        var cert = new X509Certificate2(dict[ClientCertProperty]);
+                        accessKey = new AadAccessKey(options.WithClientCert(cert));
+                    }
+                    else
+                    {
+                        throw new ArgumentNullException(MissingClientSecretProperty, nameof(connectionString));
+                    }
+                }
+                else
+                {
+                    accessKey = new AadAccessKey(new AadManagedIdentityOptions());
+                }
+            }
+            else if (dict.ContainsKey(AccessKeyProperty))
+            {
+                accessKey = new AccessKey(dict[AccessKeyProperty]);
+            }
+            else
+            {
+                throw new ArgumentNullException(MissingAccessKeyProperty, nameof(connectionString));
+            }
+
+            return (dict[EndpointProperty].TrimEnd('/'), accessKey, version, port, clientEndpoint);
         }
 
         internal static bool ValidateEndpoint(string endpoint)

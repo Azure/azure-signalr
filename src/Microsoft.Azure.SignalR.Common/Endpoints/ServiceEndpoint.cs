@@ -47,18 +47,6 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public EndpointMetrics EndpointMetrics { get; internal set; } = new EndpointMetrics();
 
-        internal ServiceEndpoint(string endpoint, AuthOptions authOptions, int port = 443, EndpointType type = EndpointType.Primary)
-        {
-            Endpoint = endpoint;
-            AccessKey = new AadAccessKey(authOptions);
-
-            Version = "1.0";
-            Port = port;
-            Name = "";
-
-            EndpointType = type;
-        }
-
         public ServiceEndpoint(string key, string connectionString) : this(connectionString)
         {
             if (!string.IsNullOrEmpty(key))
@@ -74,9 +62,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException($"'{nameof(connectionString)}' cannot be null or whitespace", nameof(connectionString));
             }
 
-            string key;
-            (Endpoint, key, Version, Port, ClientEndpoint) = ConnectionStringParser.Parse(connectionString);
-            AccessKey = new AccessKey(key);
+            (Endpoint, AccessKey, Version, Port, ClientEndpoint) = ConnectionStringParser.Parse(connectionString);
 
             EndpointType = type;
             ConnectionString = connectionString;
@@ -99,11 +85,6 @@ namespace Microsoft.Azure.SignalR
 
         // test only
         internal ServiceEndpoint() { }
-
-        internal void UpdateAccessKey(AccessKey key)
-        {
-            AccessKey = key;
-        }
 
         public override string ToString()
         {
