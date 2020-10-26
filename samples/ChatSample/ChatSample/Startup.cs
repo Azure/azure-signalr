@@ -18,7 +18,7 @@ namespace ChatSample.CoreApp3
                 .AddAzureSignalR(option =>
                 {
                     option.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
-                    option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(10);
+                    option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(30);
                 })
                 .AddMessagePackProtocol();
         }

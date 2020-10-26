@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR
 
         public virtual string Name { get; internal set; }
 
-        public string Endpoint { get; }
+        public string Endpoint => AccessKey?.Endpoint;
 
         /// <summary>
         /// The customized endpoint that the client will be redirected to
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR
 
         internal AccessKey AccessKey { get; private set; }
 
-        internal int? Port { get; }
+        internal int? Port => AccessKey?.Port;
 
         /// <summary>
         /// When current app server instance has server connections connected to the target endpoint for current hub, it can deliver messages to that endpoint.
@@ -47,18 +47,6 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public EndpointMetrics EndpointMetrics { get; internal set; } = new EndpointMetrics();
 
-        internal ServiceEndpoint(string endpoint, AuthOptions authOptions, int port = 443, EndpointType type = EndpointType.Primary)
-        {
-            Endpoint = endpoint;
-            AccessKey = new AadAccessKey(authOptions);
-
-            Version = "1.0";
-            Port = port;
-            Name = "";
-
-            EndpointType = type;
-        }
-
         public ServiceEndpoint(string key, string connectionString) : this(connectionString)
         {
             (Name, EndpointType) = ParseKey(key);
@@ -71,9 +59,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException($"'{nameof(connectionString)}' cannot be null or whitespace", nameof(connectionString));
             }
 
-            string key;
-            (Endpoint, key, Version, Port, ClientEndpoint) = ConnectionStringParser.Parse(connectionString);
-            AccessKey = new AccessKey(key);
+            (AccessKey, Version, ClientEndpoint) = ConnectionStringParser.Parse(connectionString);
 
             EndpointType = type;
             ConnectionString = connectionString;
@@ -87,21 +73,14 @@ namespace Microsoft.Azure.SignalR
                 ConnectionString = endpoint.ConnectionString;
                 EndpointType = endpoint.EndpointType;
                 Name = endpoint.Name;
-                Endpoint = endpoint.Endpoint;
                 Version = endpoint.Version;
                 AccessKey = endpoint.AccessKey;
-                Port = endpoint.Port;
                 ClientEndpoint = endpoint.ClientEndpoint;
             }
         }
 
         // test only
         internal ServiceEndpoint() { }
-
-        internal void UpdateAccessKey(AccessKey key)
-        {
-            AccessKey = key;
-        }
 
         public override string ToString()
         {

@@ -12,20 +12,12 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ServiceEndpointProvider : IServiceEndpointProvider, IDisposable
+    internal class ServiceEndpointProvider : IServiceEndpointProvider
     {
         public static readonly string ConnectionStringNotFound =
             "No connection string was specified. " +
             $"Please specify a configuration entry for {Constants.Keys.ConnectionStringDefaultKey}, " +
             "or explicitly pass one using IServiceCollection.AddAzureSignalR(connectionString) in Startup.ConfigureServices.";
-
-        private const int AuthorizeRetryIntervalInSec = 3;
-        private const int AuthorizeIntervalInMinute = 55;
-        private const int AuthorizeMaxRetryTimes = 3;
-
-        private static readonly TimeSpan AuthorizeRetryInterval = TimeSpan.FromSeconds(AuthorizeRetryIntervalInSec);
-        private static readonly TimeSpan AuthorizeInterval = TimeSpan.FromMinutes(AuthorizeIntervalInMinute);
-        private static readonly TimeSpan AuthorizeTimeout = TimeSpan.FromSeconds(10);
 
         private readonly AccessKey _accessKey;
         private readonly string _appName;
@@ -35,13 +27,11 @@ namespace Microsoft.Azure.SignalR
 
         public IWebProxy Proxy { get; }
 
-        private readonly TimerAwaitable _timer = new TimerAwaitable(TimeSpan.Zero, AuthorizeInterval);
-
         public ServiceEndpointProvider(
             IServerNameProvider provider,
             ServiceEndpoint endpoint,
             ServiceOptions serviceOptions,
-            ILoggerFactory loggerFactory = null
+            ILoggerFactory loggerFactory
         )
         {
             _accessTokenLifetime = serviceOptions.AccessTokenLifetime;
@@ -53,43 +43,9 @@ namespace Microsoft.Azure.SignalR
 
             _generator = new DefaultServiceEndpointGenerator(endpoint);
 
-            _ = UpdateAccessKeyAsync(provider, endpoint, loggerFactory ?? NullLoggerFactory.Instance);
-        }
-
-        public async Task UpdateAccessKeyAsync(IServerNameProvider provider, ServiceEndpoint endpoint, ILoggerFactory loggerFactory)
-        {
             if (endpoint.AccessKey is AadAccessKey key)
-                _timer.Start();
-            else
-                return;
-
-            var logger = loggerFactory.CreateLogger<ServiceEndpointProvider>();
-
-            while (await _timer)
             {
-                var isAuthorized = false;
-                for (int i = 0; i < AuthorizeMaxRetryTimes; i++)
-                {
-                    logger.LogInformation($"Try authorizing AccessKey...({i})");
-                    var source = new CancellationTokenSource(AuthorizeTimeout);
-                    try
-                    {
-                        await key.AuthorizeAsync(endpoint.Endpoint, endpoint.Port, provider.GetName(), source.Token);
-                        logger.LogInformation("AccessKey has been authorized successfully.");
-                        isAuthorized = true;
-                        break;
-                    }
-                    catch (Exception e)
-                    {
-                        logger.LogWarning(e, $"Failed to authorize AccessKey, will retry in {AuthorizeRetryIntervalInSec} seconds.");
-                        await Task.Delay(AuthorizeRetryInterval);
-                    }
-                }
-
-                if (!isAuthorized)
-                {
-                    logger.LogError($"AccessKey authorized failed more than {AuthorizeMaxRetryTimes} times.");
-                }
+                _ = key.UpdateAccessKeyAsync(provider, loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory)));
             }
         }
 
@@ -141,11 +97,6 @@ namespace Microsoft.Azure.SignalR
             }
 
             return _generator.GetServerEndpoint(hubName, _appName);
-        }
-
-        public void Dispose()
-        {
-            ((IDisposable)_timer).Dispose();
         }
     }
 }

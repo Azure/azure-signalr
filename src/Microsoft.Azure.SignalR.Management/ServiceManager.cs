@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common.RestClients;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Rest;
 
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.SignalR.Management
                 Proxy = context.Value.Proxy
             }).Value;
 
-            _endpointProvider = new ServiceEndpointProvider(_serverNameProvider, _endpoint, serviceOptions);
+            _endpointProvider = new ServiceEndpointProvider(_serverNameProvider, _endpoint, serviceOptions, NullLoggerFactory.Instance);
 
             _restClientFactory = restClientFactory;
             _serviceHubContextFactory = serviceHubContextFactory;
