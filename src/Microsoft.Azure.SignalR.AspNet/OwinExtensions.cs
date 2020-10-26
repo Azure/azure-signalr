@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Azure.SignalR.AspNet;
 using Microsoft.Azure.SignalR.Common;
@@ -203,7 +204,7 @@ namespace Owin
             if (dispatcher != null)
             {
                 // Start the server->service connection asynchronously 
-                _ = dispatcher.StartAsync();
+                Task.Run(() => dispatcher.StartAsync());
             }
         }
     }
