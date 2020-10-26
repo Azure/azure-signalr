@@ -64,13 +64,14 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceEndpoint(string connectionString, EndpointType type = EndpointType.Primary, string name = "")
         {
-            // The provider is responsible to check if the connection string is empty and throw correct error message
-            if (!string.IsNullOrEmpty(connectionString))
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
-                string key;
-                (Endpoint, key, Version, Port) = ConnectionStringParser.Parse(connectionString);
-                AccessKey = new AccessKey(key);
+                throw new ArgumentException($"'{nameof(connectionString)}' cannot be null or whitespace", nameof(connectionString));
             }
+
+            string key;
+            (Endpoint, key, Version, Port) = ConnectionStringParser.Parse(connectionString);
+            AccessKey = new AccessKey(key);
 
             EndpointType = type;
             ConnectionString = connectionString;
