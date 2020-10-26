@@ -80,7 +80,16 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.Equal(expectedClientEndpoint, clientEndpoint);
         }
 
-        [Theory/*(Skip = "Reenable when it is ready")*/]
+        [Fact]
+        internal void GenerateClientEndpointTestWithClientEndpoint()
+        {
+            var manager = new ServiceManager(new ServiceManagerOptions() { ConnectionString = $"Endpoint=http://localhost;AccessKey=ABC;Version=1.0;ClientEndpoint=https://remote"}, null, new RestClientFactory(UserAgent));
+            var clientEndpoint = manager.GetClientEndpoint(HubName);
+
+            Assert.Equal("https://remote/client/?hub=signalrbench", clientEndpoint);
+        }
+
+        [Theory]
         [MemberData(nameof(TestServiceManagerOptionData))]
         internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFacory, string appName, int connectionCount)
         {

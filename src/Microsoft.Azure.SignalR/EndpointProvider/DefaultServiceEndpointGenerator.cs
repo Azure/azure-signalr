@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Net;
 using System.Text;
 
@@ -10,18 +11,20 @@ namespace Microsoft.Azure.SignalR
     {
         private const string ClientPath = "client";
         private const string ServerPath = "server";
-
         public string Endpoint { get; }
 
         public string Version { get; }
 
         public int? Port { get; }
 
-        public DefaultServiceEndpointGenerator(string endpoint, string version, int? port)
+        public string ClientEndpoint { get; }
+
+        public DefaultServiceEndpointGenerator(ServiceEndpoint endpoint)
         {
-            Endpoint = endpoint;
-            Version = version;
-            Port = port;
+            Endpoint = endpoint.Endpoint;
+            Version = endpoint.Version;
+            Port = endpoint.Port;
+            ClientEndpoint = endpoint.ClientEndpoint;
         }
 
         public string GetClientAudience(string hubName, string applicationName) =>
@@ -60,9 +63,10 @@ namespace Microsoft.Azure.SignalR
 
         private string InternalGetEndpoint(string path, string hubName, string applicationName)
         {
+            var target = ClientEndpoint ?? Endpoint;
             return Port.HasValue ?
-                $"{Endpoint}:{Port}/{path}/?hub={GetPrefixedHubName(applicationName, hubName)}" :
-                $"{Endpoint}/{path}/?hub={GetPrefixedHubName(applicationName, hubName)}";
+                $"{target}:{Port}/{path}/?hub={GetPrefixedHubName(applicationName, hubName)}" :
+                $"{target}/{path}/?hub={GetPrefixedHubName(applicationName, hubName)}";
         }
 
         private string InternalGetAudience(string path, string hubName, string applicationName)
