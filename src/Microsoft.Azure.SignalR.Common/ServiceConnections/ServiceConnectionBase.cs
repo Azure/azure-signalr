@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR
         // Service will abort both server and client connections link to this server when server is down.
         // App server ping is triggered by incoming requests and send by checking last send timestamp.
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
-        private static readonly long DefaultKeepAliveTicks = DefaultKeepAliveInterval.Seconds * Stopwatch.Frequency;
+        private static readonly long DefaultKeepAliveTicks = (long)DefaultKeepAliveInterval.TotalSeconds * Stopwatch.Frequency;
 
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
 
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task WriteAsync(ServiceMessage serviceMessage)
         {
-            if (!await SafeWriteAsync(serviceMessage))
+            if (!await SafeWriteAsync(serviceMessage).ConfigureAwait(false))
             {
                 throw new ServiceConnectionNotActiveException(_errorMessage);
             }
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.SignalR
                 return false;
             }
 
-            await _writeLock.WaitAsync();
+            await _writeLock.WaitAsync().ConfigureAwait(false);
 
             if (Status != ServiceConnectionStatus.Connected)
             {
@@ -226,7 +226,7 @@ namespace Microsoft.Azure.SignalR
             {
                 // Write the service protocol message
                 ServiceProtocol.WriteMessage(serviceMessage, _connectionContext.Transport.Output);
-                await _connectionContext.Transport.Output.FlushAsync();
+                await _connectionContext.Transport.Output.FlushAsync().ConfigureAwait(false);
                 return true;
             }
             catch (Exception ex)

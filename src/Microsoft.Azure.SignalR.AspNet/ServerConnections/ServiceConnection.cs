@@ -116,6 +116,10 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         protected override Task OnClientMessageAsync(ConnectionDataMessage connectionDataMessage)
         {
+            if (connectionDataMessage.TracingId != null)
+            {
+                MessageLog.ReceiveMessageFromService(Logger, connectionDataMessage);
+            }
             return ForwardMessageToApplication(connectionDataMessage.ConnectionId, connectionDataMessage);
         }
 
@@ -146,7 +150,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 }
                 catch (Exception e)
                 {
-                    Log.FailToWriteMessageToApplication(Logger, message.GetType().Name, connectionId, e);
+                    Log.FailToWriteMessageToApplication(Logger, message.GetType().Name, connectionId, (message as IMessageWithTracingId)?.TracingId, e);
                     _ = PerformDisconnectCore(connectionId, true);
 
                     _ = SafeWriteAsync(new CloseConnectionMessage(connectionId, e.Message));
@@ -244,7 +248,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
             catch (Exception e)
             {
-                Log.FailToWriteMessageToApplication(Logger, nameof(ConnectionDataMessage), connectionDataMessage.ConnectionId, e);
+                Log.FailToWriteMessageToApplication(Logger, nameof(ConnectionDataMessage), connectionDataMessage.ConnectionId, connectionDataMessage.TracingId, e);
             }
         }
 

@@ -8,6 +8,7 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
@@ -17,14 +18,16 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly IServiceConnectionManager _serviceConnectionManager;
         private readonly IClientConnectionManager _clientConnectionManager;
         private readonly IAckHandler _ackHandler;
+        private readonly ILogger<ServiceMessageBus> _logger;
 
-        public ServiceMessageBus(IDependencyResolver resolver) : base(resolver)
+        public ServiceMessageBus(IDependencyResolver resolver, ILogger<ServiceMessageBus> logger) : base(resolver)
         {
             // TODO: find a more decent way instead of DI, it can be easily overriden
             _serviceConnectionManager = resolver.Resolve<IServiceConnectionManager>() ?? throw new ArgumentNullException(nameof(IServiceConnectionManager));
             _clientConnectionManager = resolver.Resolve<IClientConnectionManager>() ?? throw new ArgumentNullException(nameof(IClientConnectionManager));
             _parser = resolver.Resolve<IMessageParser>() ?? throw new ArgumentNullException(nameof(IMessageParser));
             _ackHandler = resolver.Resolve<IAckHandler>() ?? throw new ArgumentNullException(nameof(IAckHandler));
+            _logger = logger ?? throw new ArgumentNullException(nameof(ILogger<ServiceMessageBus>));
         }
 
         public override Task Publish(Message message)
@@ -43,58 +46,75 @@ namespace Microsoft.Azure.SignalR.AspNet
             return Task.WhenAll(messages.Select(m => ProcessMessage(m)));
         }
 
-        private Task ProcessMessage(AppMessage message)
+        private async Task ProcessMessage(AppMessage message)
         {
             if (message is HubMessage hubMessage)
             {
-                return WriteMessage(_serviceConnectionManager.WithHub(hubMessage.HubName), message);
+                await WriteMessage(_serviceConnectionManager.WithHub(hubMessage.HubName), message);
+                return;
             }
 
-            return WriteMessage(_serviceConnectionManager, message);
+            await WriteMessage(_serviceConnectionManager, message);
         }
 
         private async Task WriteMessage(IServiceConnectionContainer connection, AppMessage appMessage)
         {
             var message = appMessage.Message;
-            switch (message)
+            try
             {
-                // For group related messages, make sure messages are written to the same partition
-                case JoinGroupWithAckMessage joinGroupMessage:
-                    try
-                    {
-                        await connection.WriteAckableMessageAsync(joinGroupMessage);
-                    }
-                    finally
-                    {
-                        _ackHandler.TriggerAck(appMessage.RawMessage.CommandId);
-                    }
-                    break;
-                case LeaveGroupWithAckMessage leaveGroupMessage:
-                    try
-                    {
-                        await connection.WriteAckableMessageAsync(leaveGroupMessage);
-                    }
-                    finally
-                    {
-                        _ackHandler.TriggerAck(appMessage.RawMessage.CommandId);
-                    }
-                    break;
-                case ConnectionDataMessage connectionDataMessage:
-                    var connectionId = connectionDataMessage.ConnectionId;
-                    if (_clientConnectionManager.TryGetClientConnection(connectionId, out var conn))
-                    {
-                        // If the client connection is connected to local server connection, 
-                        // send back directly from the established server connection
-                        await conn.WriteMessageAsync(connectionDataMessage);
-                    }
-                    else
-                    {
+                switch (message)
+                {
+                    // For group related messages, make sure messages are written to the same partition
+                    case JoinGroupWithAckMessage joinGroupMessage:
+                        try
+                        {
+                            await connection.WriteAckableMessageAsync(joinGroupMessage);
+                        }
+                        finally
+                        {
+                            _ackHandler.TriggerAck(appMessage.RawMessage.CommandId);
+                        }
+                        break;
+                    case LeaveGroupWithAckMessage leaveGroupMessage:
+                        try
+                        {
+                            await connection.WriteAckableMessageAsync(leaveGroupMessage);
+                        }
+                        finally
+                        {
+                            _ackHandler.TriggerAck(appMessage.RawMessage.CommandId);
+                        }
+                        break;
+                    case ConnectionDataMessage connectionDataMessage:
+                        var connectionId = connectionDataMessage.ConnectionId;
+                        if (_clientConnectionManager.TryGetClientConnection(connectionId, out var conn))
+                        {
+                            // If the client connection is connected to local server connection, 
+                            // send back directly from the established server connection
+                            await conn.WriteMessageAsync(connectionDataMessage);
+                        }
+                        else
+                        {
+                            await connection.WriteAsync(message);
+                        }
+                        break;
+                    default:
                         await connection.WriteAsync(message);
-                    }
-                    break;
-                default:
-                    await connection.WriteAsync(message);
-                    break;
+                        break;
+                }
+
+                if (message is IMessageWithTracingId msg && msg.TracingId != null)
+                {
+                    MessageLog.SucceededToSendMessage(_logger, msg);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (message is IMessageWithTracingId msg && msg.TracingId != null)
+                {
+                    MessageLog.FailedToSendMessage(_logger, msg, ex);
+                }
+                throw;
             }
         }
     }

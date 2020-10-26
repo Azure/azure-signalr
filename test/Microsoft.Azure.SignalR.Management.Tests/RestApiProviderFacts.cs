@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private const string _connectionId = "ConnectionA";
         private static readonly string _commonEndpoint = $"{_endpoint}/api/v1/hubs/{_appName.ToLower()}_{_hubName}";
 
-        private static readonly RestApiProvider _restApiProvider = new RestApiProvider(_connectionString);
+        private static readonly RestApiProvider _restApiProvider = new RestApiProvider(new ServiceEndpoint(_connectionString));
 
         [Theory]
         [MemberData(nameof(GetTestData))]

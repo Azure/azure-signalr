@@ -1389,6 +1389,46 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
+        [Theory]
+        [InlineData(0, 1)]
+        [InlineData(200, 5)]
+        [InlineData(5, 0)]
+        public async Task TestEndpointWithStatusPingPlusClientCount(int c1, int c2)
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "22")
+                );
+            var endpoints = sem.Endpoints.Keys.ToArray();
+            Assert.Equal(2, endpoints.Length);
+            Assert.Equal("1", endpoints[0].Name);
+            Assert.Equal("22", endpoints[1].Name);
+
+            var router = new TestEndpointRouter();
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
+            }, e), sem, router, NullLoggerFactory.Instance);
+
+            var hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, hubEndpoints.Length);
+            Assert.Equal("1", hubEndpoints[0].Name);
+            Assert.Equal("22", hubEndpoints[1].Name);
+
+            // mock client count ping and validate they won't messed.
+            var containers = container.GetTestOnlineContainers();
+            var container1 = containers.Where(x => x.Endpoint.Name == "1").FirstOrDefault();
+            var container2 = containers.Where(x => x.Endpoint.Name == "22").FirstOrDefault();
+            await Task.WhenAll(container1.MockReceivedStatusPing(true, c1));
+            await Task.WhenAll(container2.MockReceivedStatusPing(true, c2));
+
+            Assert.Equal(c1, hubEndpoints[0].EndpointMetrics.ClientConnectionCount);
+            Assert.Equal(c2, hubEndpoints[1].EndpointMetrics.ClientConnectionCount);
+        }
+
         public static IEnumerable<object[]> TestReloadEndpointsData = new object[][]
         {
             // no change

@@ -103,7 +103,7 @@ namespace Microsoft.Azure.SignalR
             return groupedEndpoints;
         }
 
-        protected async virtual Task ReloadServiceEndpointsAsync(ServiceEndpoint[] serviceEndpoints, TimeSpan scaleTimeout)
+        protected async virtual Task ReloadServiceEndpointsAsync(IEnumerable<ServiceEndpoint> serviceEndpoints, TimeSpan scaleTimeout)
         {
             try
             {

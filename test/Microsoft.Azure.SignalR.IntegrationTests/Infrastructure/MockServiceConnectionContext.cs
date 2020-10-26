@@ -19,8 +19,9 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
         public override IDuplexPipe Transport { get; set; }
 
         IMockService _mockService;
+        MockServiceSideConnection _svcSideConnection;
 
-        public MockServiceConnectionContext(IMockService mockService, string id)
+        public MockServiceConnectionContext(IMockService mockService, HubServiceEndpoint endpoint, string target, string id)
         {
             ConnectionId = id;
             Features = new FeatureCollection();
@@ -31,13 +32,15 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
             // SDK's side uses Transport property to read/write to our mock service
             Transport = duplexPipePair.Transport;
 
-            (_mockService = mockService).MockServicePipe = duplexPipePair.Application;
-            _ = _mockService.StartAsync();
+            _mockService = mockService;
+            _svcSideConnection = _mockService.RegisterSDKConnectionContext(this, endpoint, target, duplexPipePair.Application);
         }
 
         public override async ValueTask DisposeAsync()
         {
-            await _mockService.StopAsync();
+            await _mockService.StopConnectionAsync(_svcSideConnection);
         }
+
+        public MockServiceConnection MyMockServiceConnetion { get; set; }
     }
 }

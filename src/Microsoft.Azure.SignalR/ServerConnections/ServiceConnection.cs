@@ -163,7 +163,10 @@ namespace Microsoft.Azure.SignalR
 
         protected override async Task OnClientMessageAsync(ConnectionDataMessage connectionDataMessage)
         {
-            Log.RecieveMessageFromService(Logger, connectionDataMessage);
+            if (connectionDataMessage.TracingId != null)
+            {
+                MessageLog.ReceiveMessageFromService(Logger, connectionDataMessage);
+            }
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionDataMessage.ConnectionId, out var connection))
             {
                 try

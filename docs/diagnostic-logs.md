@@ -5,6 +5,8 @@
 - [Set up diagnostic logs for an Azure SignalR Service](#set-up-diagnostic-logs-for-an-azure-signalr-service)
   - [Enable diagnostic logs](#enable-diagnostic-logs)
   - [Diagnostic logs categories](#diagnostic-logs-categories)
+  - [Diagnostic logs types](#diagnostic-logs-types)
+  - [Diagnostic logs collecting behaviors](#diagnostic-logs-collecting-behaviors)
   - [Archive to a storage account](#archive-to-a-storage-account)
   - [Archive logs schema for Log Analytics](#archive-logs-schema-for-log-analytics)
   - [Troubleshooting with diagnostic logs](#troubleshooting-with-diagnostic-logs)
@@ -55,6 +57,12 @@ For more information about configuring diagnostics, see the [overview of Azure d
 Azure SignalR Service captures diagnostic logs in one category:
 
 * **All Logs**: Track connections that connect to Azure SignalR Service. The logs Provide infomation about the connect/disconnect, authentication and throttling. For more information, see the next section.
+
+### Diagnostic logs types
+[TODO]
+
+### Diagnostic logs collecting behaviors
+[TODO]
 
 ### Archive to a storage account
 

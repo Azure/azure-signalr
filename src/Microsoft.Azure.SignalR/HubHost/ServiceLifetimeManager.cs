@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
@@ -25,7 +26,8 @@ namespace Microsoft.Azure.SignalR
             ILogger<ServiceLifetimeManager<THub>> logger,
             AzureSignalRMarkerService marker,
             IOptions<HubOptions> globalHubOptions,
-            IOptions<HubOptions<THub>> hubOptions)
+            IOptions<HubOptions<THub>> hubOptions,
+            IBlazorDetector blazorDetector)
             : base(
                   serviceConnectionManager,
                   protocolResolver,
@@ -40,9 +42,14 @@ namespace Microsoft.Azure.SignalR
             }
 #endif
             _clientConnectionManager = clientConnectionManager;
+
+            if (hubOptions.Value.SupportedProtocols != null && hubOptions.Value.SupportedProtocols.Any(x => x.Equals(Constants.Protocol.BlazorPack, StringComparison.OrdinalIgnoreCase)))
+            {
+                blazorDetector?.TrySetBlazor(typeof(THub).Name, true);
+            }
         }
 
-        public override Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
+        public override async Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (IsInvalidArgument(connectionId))
             {
@@ -57,11 +64,30 @@ namespace Microsoft.Azure.SignalR
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var serviceConnectionContext))
             {
                 var message = new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)).WithTracingId();
-                Log.StartToSendMessageToConnections(Logger, message);
-                // Write directly to this connection
-                return serviceConnectionContext.ServiceConnection.WriteAsync(message);
+                if (message.TracingId != null)
+                {
+                    MessageLog.StartToSendMessageToConnections(Logger, message);
+                }
+
+                try
+                {
+                    // Write directly to this connection
+                    await serviceConnectionContext.ServiceConnection.WriteAsync(message);
+                    
+                    if (message.TracingId != null)
+                    {
+                        MessageLog.SucceededToSendMessage(Logger, message);
+                    }
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    MessageLog.FailedToSendMessage(Logger, message, ex);
+                    throw;
+                }
             }
-            return base.SendConnectionAsync(connectionId, methodName, args, cancellationToken);
+
+            await base.SendConnectionAsync(connectionId, methodName, args, cancellationToken);
         }
     }
 }

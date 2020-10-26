@@ -16,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Emulator
 {
@@ -31,6 +32,8 @@ namespace Microsoft.Azure.SignalR.Emulator
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddHttpClient();
+
             services.AddAllowAllCors();
             services.AddJwtBearerAuth(Configuration);
             services.AddAuthorization();
@@ -39,6 +42,9 @@ namespace Microsoft.Azure.SignalR.Emulator
             {
                 manager.FeatureProviders.Add(new CustomControllerFeatureProvider());
             });
+
+            services.Configure<UpstreamOptions>(Configuration.GetSection("UpstreamSettings"));
+
             services.AddSignalREmulator();
             services.AddLogging(services =>
             {
@@ -53,9 +59,17 @@ namespace Microsoft.Azure.SignalR.Emulator
             lifetime.ApplicationStarted.Register(() =>
                {
                    var address = new Uri(app.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First());
+                   var upstreamOptionMonitor = app.ApplicationServices.GetRequiredService<IOptionsMonitor<UpstreamOptions>>();
+                   upstreamOptionMonitor.OnChange(s =>
+                   {
+                       s.Print();
+                   });
                    Console.WriteLine(@$"
 ===================================================
 The Azure SignalR Emulator was successfully started.
+
+Press Ctrl+C to stop the Emulator.
+
 Use the below value inside *********** block as its ConnectionString:
 ***********
 
@@ -65,11 +79,13 @@ Endpoint={address.Scheme}://{address.Host};Port={address.Port};AccessKey={AppBui
 
 ===================================================
 ");
+                   upstreamOptionMonitor.CurrentValue.Print();
+
+
                });
             app.UseRouting();
             app.UseWebSockets();
             app.UseAllowAllCors();
-
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>

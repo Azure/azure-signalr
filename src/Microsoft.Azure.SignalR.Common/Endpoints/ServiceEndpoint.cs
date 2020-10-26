@@ -37,15 +37,21 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public bool IsActive { get; internal set; } = true;
 
-        internal ServiceEndpoint(string endpoint, AuthOptions authOptions, int port = 443)
+        /// <summary>
+        /// Enriched endpoint metrics for customized routing.
+        /// </summary>
+        public EndpointMetrics EndpointMetrics { get; internal set; } = new EndpointMetrics();
+
+        internal ServiceEndpoint(string endpoint, AuthOptions authOptions, int port = 443, EndpointType type = EndpointType.Primary)
         {
-            // Endpoint = string.Format("https://{0}.service.signalr.net", resourceName);
             Endpoint = endpoint;
             AccessKey = new AadAccessKey(authOptions);
 
             Version = "1.0";
             Port = port;
             Name = "";
+
+            EndpointType = type;
         }
 
         public ServiceEndpoint(string key, string connectionString) : this(connectionString)
