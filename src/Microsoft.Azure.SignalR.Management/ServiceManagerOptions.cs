@@ -39,25 +39,13 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Sets multiple service endpoints of Azure SignalR Service.
         /// </summary>
-        internal ServiceEndpoint[] ServiceEndpoints
-        {
-            get => _serviceEndpoints;
-            set
-            {
-                if (value != null && value.Length == 0)
-                {
-                    throw new ArgumentException("The length of array is zero.", nameof(ServiceEndpoints));
-                }
-                _serviceEndpoints = value;
-            }
-        } //not ready for public use
+        internal ServiceEndpoint[] ServiceEndpoints { get; set; } //not ready for public use
 
         /// <summary>
         /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
         /// </summary>
         public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
 
-        private ServiceEndpoint[] _serviceEndpoints;
 
         /// <summary>
         /// Method called by management SDK to validate options.
@@ -91,6 +79,10 @@ namespace Microsoft.Azure.SignalR.Management
             if (notNullCount > 1)
             {
                 throw new InvalidOperationException($"Please set ONLY one of the following properties: {nameof(ConnectionString)}, {nameof(ServiceEndpoint)}, {nameof(ServiceEndpoints)}.");
+            }
+            if (ServiceEndpoints != null && ServiceEndpoints.Length == 0)
+            {
+                throw new InvalidOperationException($"The length of parameter {nameof(ServiceEndpoints)} is zero.");
             }
         }
 
