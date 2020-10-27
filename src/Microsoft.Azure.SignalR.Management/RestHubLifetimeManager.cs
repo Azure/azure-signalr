@@ -13,7 +13,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class RestHubLifetimeManager : HubLifetimeManager<Hub>, IHubLifetimeManagerForUserGroup
+    internal class RestHubLifetimeManager : HubLifetimeManager<Hub>, IServiceHubLifetimeManager
     {
         private const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
         private const string TtlOutOfRangeErrorMessage = "Ttl cannot be less than 0.";
@@ -25,11 +25,11 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly string _hubName;
         private readonly string _appName;
 
-        public RestHubLifetimeManager(ServiceManagerOptions serviceManagerOptions, string hubName, string productInfo)
+        public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string productInfo, string appName)
         {
-            _restApiProvider = new RestApiProvider(serviceManagerOptions.ServiceEndpoint);
+            _restApiProvider = new RestApiProvider(endpoint);
             _productInfo = productInfo;
-            _appName = serviceManagerOptions.ApplicationName;
+            _appName = appName;
             _hubName = hubName;
         }
 
@@ -249,5 +249,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
         }
+
+        public Task DisposeAsync() => Task.CompletedTask;
     }
 }

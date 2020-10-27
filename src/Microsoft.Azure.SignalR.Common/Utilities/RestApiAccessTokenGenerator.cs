@@ -15,12 +15,13 @@ namespace Microsoft.Azure.SignalR
 
         private const AccessTokenAlgorithm DefaultAlgorithm = AccessTokenAlgorithm.HS256;
 
-        public RestApiAccessTokenGenerator(AccessKey accessKey)
+        public RestApiAccessTokenGenerator(AccessKey accessKey, string serverName = null)
         {
+            serverName ??= GenerateServerName();
             _accessKey = accessKey;
             _claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, GenerateServerName())
+                new Claim(ClaimTypes.NameIdentifier, serverName)
             };
         }
 
@@ -38,7 +39,7 @@ namespace Microsoft.Azure.SignalR
                 DefaultAlgorithm);
         }
 
-        private static string GenerateServerName()
+        public static string GenerateServerName()
         {
             return $"{Environment.MachineName}_{Guid.NewGuid():N}";
         }

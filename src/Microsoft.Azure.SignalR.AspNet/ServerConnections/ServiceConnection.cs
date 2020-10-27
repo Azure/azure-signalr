@@ -118,7 +118,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             if (connectionDataMessage.TracingId != null)
             {
-                AzureSignalRLog.ReceiveMessageFromService(Logger, connectionDataMessage);
+                MessageLog.ReceiveMessageFromService(Logger, connectionDataMessage);
             }
             return ForwardMessageToApplication(connectionDataMessage.ConnectionId, connectionDataMessage);
         }

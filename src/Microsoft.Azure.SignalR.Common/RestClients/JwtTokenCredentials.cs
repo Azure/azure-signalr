@@ -14,9 +14,9 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly RestApiAccessTokenGenerator _restApiAccessTokenGenerator;
 
-        public JwtTokenCredentials(AccessKey accessKey)
+        public JwtTokenCredentials(AccessKey accessKey, string serverName = null)
         {
-            _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(accessKey);
+            _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(accessKey, serverName);
         }
 
         public override async Task ProcessHttpRequestAsync(HttpRequestMessage request, CancellationToken cancellationToken)

@@ -7,10 +7,8 @@ using System;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal static class AzureSignalRLog
+    internal static class MessageLog
     {
-        #region MessageLog
-
         public const string StartToBroadcastMessageTemplate = "Start to broadcast message {0}.";
         public const string StartToBroadcastMessageWithExcludedConnectionTemplate = "Start to broadcast message {0} except for {1} connections {2}.";
         public const string StartToSendMessageToConnectionsTemplate = "Start to send message {0} to {1} connections {2}.";
@@ -250,7 +248,5 @@ namespace Microsoft.Azure.SignalR
                 _startToRemoveUserFromGroup(logger, message.TracingId, message.UserId, message.GroupName, null);
             }
         }
-
-        #endregion
     }
 }

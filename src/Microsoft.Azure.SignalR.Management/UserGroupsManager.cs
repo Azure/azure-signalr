@@ -9,9 +9,9 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class UserGroupsManager : IUserGroupManager
     {
-        private IHubLifetimeManagerForUserGroup _lifetimeManager;
+        private IUserGroupHubLifetimeManager _lifetimeManager;
 
-        public UserGroupsManager(IHubLifetimeManagerForUserGroup lifetimeManager)
+        public UserGroupsManager(IUserGroupHubLifetimeManager lifetimeManager)
         {
             _lifetimeManager = lifetimeManager;
         }

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -51,10 +52,10 @@ namespace Microsoft.Azure.SignalR
         {
             Log.DetectConfigurationChanges(_logger);
 
-            ReloadServiceEndpointsAsync(options.Endpoints);
+            ReloadServiceEndpointsAsync(GetEndpoints(options));
         }
 
-        private Task ReloadServiceEndpointsAsync(ServiceEndpoint[] serviceEndpoints)
+        private Task ReloadServiceEndpointsAsync(IEnumerable<ServiceEndpoint> serviceEndpoints)
         {
             return ReloadServiceEndpointsAsync(serviceEndpoints, _scaleTimeout);
         }
