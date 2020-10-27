@@ -4,7 +4,6 @@
 using System;
 using System.Linq;
 using System.Reflection;
-
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting;
@@ -64,6 +63,11 @@ namespace Microsoft.Azure.SignalR.Emulator
                    {
                        s.Print();
                    });
+                   var host = address.Host;
+                   if (host == "[::]")
+                   {
+                       host = "localhost";
+                   }
                    Console.WriteLine(@$"
 ===================================================
 The Azure SignalR Emulator was successfully started.
@@ -73,7 +77,7 @@ Press Ctrl+C to stop the Emulator.
 Use the below value inside *********** block as its ConnectionString:
 ***********
 
-Endpoint={address.Scheme}://{address.Host};Port={address.Port};AccessKey={AppBuilderExtensions.AccessKey};Version=1.0;
+Endpoint={address.Scheme}://{host};Port={address.Port};AccessKey={AppBuilderExtensions.AccessKey};Version=1.0;
 
 ***********
 

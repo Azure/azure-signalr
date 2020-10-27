@@ -122,7 +122,7 @@ namespace Microsoft.Azure.SignalR.Emulator
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                    webBuilder.UseKestrel(o => o.ListenLocalhost(port));
+                    webBuilder.UseKestrel(o => o.ListenAnyIP(port));
                 })
                 .ConfigureAppConfiguration(s =>
                 {
