@@ -97,7 +97,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
                     int actualCallbackNum = (int)invMsg.Arguments[0];
 
                     // this check works for both primary and secondary connections
-                    Assert.Equal(actualCallbackNum, msgCount);
+                    Assert.Equal(msgCount, actualCallbackNum);
                 }
 
                 // todo: verify we received no extra BroadcastDataMessage - need TryPeek method (async with timeout?)
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
 
                     // verify the order of messages
                     int actualCallbackNum = (int)invMsg.Arguments[0];
-                    Assert.Equal(actualCallbackNum, msgCount);
+                    Assert.Equal(msgCount, actualCallbackNum);
                 }
 
                 // step 4: verify the connections that received messages
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
                 var client0 = await primarySvc0.ConnectClientAsync();
 
                 // step 1: make sure we know initial connection selections before disconnecting the client
-                // make 2 calls to also verify that subsequent calls sticl to previous selections
+                // make 2 calls to also verify that subsequent calls stick to previous selections
                 await client0.SendMessage("BroadcastNumCalls", new object[] { 1 });
                 await client0.SendMessage("BroadcastNumCalls", new object[] { 1 });
                 var counts = new ConcurrentDictionary<MockServiceSideConnection, int>();
@@ -318,7 +318,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
                     int actualCallbackNum = (int)invMsg.Arguments[0];
 
                     // account for 2 extra messages sent before we disconnected the client
-                    Assert.Equal(actualCallbackNum, msgCount - 2);
+                    Assert.Equal(msgCount - 2, actualCallbackNum);
                 }
 
                 // step 4: verify the connections that received messages
@@ -389,7 +389,64 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
 
                     // verify the order of messages
                     int actualCallbackNum = (int)invMsg.Arguments[0];
-                    Assert.Equal(actualCallbackNum, msgCount);
+                    Assert.Equal(msgCount, actualCallbackNum);
+                }
+
+                Assert.Equal(counts.Count(), MockServiceMessageOrderTestParams.ServiceEndpoints.Count());
+                foreach (var conn in counts)
+                {
+                    Assert.Equal(conn.Value, MsgNum);
+                }
+            }
+        }
+
+        [Fact]
+        // OnConnectedAsync and regular hub method calls should have the same connection selection for the same client connection
+        // This test verifies this by sending messages from both and verifying the message order.
+        public async Task OutgoingMessagesMultipleContexts()
+        {
+            var builder = WebHost.CreateDefaultBuilder()
+                 .ConfigureServices((IServiceCollection services) => { })
+                 .ConfigureLogging(logging => logging.AddXunit(_output))
+                 .UseStartup<IntegrationTestStartup<MockServiceMessageOrderTestParams, MessageOrderTestHub>>();
+
+            using (var server = new AspNetTestServer(builder))
+            {
+                var mockSvc = (server.Host.Services.GetRequiredService<ServiceHubDispatcher<MessageOrderTestHub>>() as MockServiceHubDispatcher<MessageOrderTestHub>).MockService;
+                await mockSvc.AllConnectionsEstablished();
+                List<MockServiceSideConnection> allSvcConns = mockSvc.ServiceSideConnections;
+                mockSvc.CurrentInvocationBinder = new TestHubBroadcastNCallsInvocationBinder();
+                var priList = allSvcConns.Where(i => i.Endpoint.EndpointType == EndpointType.Primary).ToList();
+                var primarySvc0 = priList[StaticRandom.Next(priList.Count)];
+                var client0 = await primarySvc0.ConnectClientAsync();
+
+                const int MsgNum = 10;
+                await client0.SendMessage("BroadcastNumCallsMultipleContexts", new object[] { MsgNum });
+
+                var counts = new ConcurrentDictionary<MockServiceSideConnection, int>();
+                int endpointCount = allSvcConns.Distinct(new MockServiceSideConnectionEndpointComparer()).Count();
+                for (int ep = 0; ep < endpointCount * MsgNum; ep++)
+                {
+                    var connWithMessage = await Task.WhenAny(allSvcConns.Select(async c =>
+                    {
+                        bool moreData = await c.WaitToDequeueMessageAsync<BroadcastDataMessage>();
+                        Assert.True(moreData);
+                        return (c, moreData);
+                    }));
+
+                    var conn = connWithMessage.Result.c;
+                    var newMsg = await conn.DequeueMessageAsync<BroadcastDataMessage>();
+
+                    int msgCount = counts.GetOrAdd(conn, 0);
+                    counts[conn] = ++msgCount;
+
+                    var hubMessage = ParseBroadcastDataMessageJson(newMsg, mockSvc.CurrentInvocationBinder);
+                    var invMsg = hubMessage as InvocationMessage;
+                    Assert.Equal("Callback", invMsg.Target);
+
+                    // verify the order of messages
+                    int actualCallbackNum = (int)invMsg.Arguments[0];
+                    Assert.Equal(msgCount, actualCallbackNum);
                 }
 
                 Assert.Equal(counts.Count(), MockServiceMessageOrderTestParams.ServiceEndpoints.Count());
