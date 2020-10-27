@@ -4,16 +4,19 @@
 using System;
 using System.ComponentModel;
 using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     /// <summary>
     /// A builder for configuring <see cref="IServiceManager"/> instances.
     /// </summary>
-    public class ServiceManagerBuilder : IServiceManagerBuilder
+    public class ServiceManagerBuilder : IServiceManagerBuilder, IDisposable
     {
-        private readonly ServiceManagerOptions _options = new ServiceManagerOptions();
+        private readonly IServiceCollection _services = new ServiceCollection();
         private Assembly _assembly;
+        private ServiceProvider _serviceProvider;
 
         /// <summary>
         /// Configures the <see cref="IServiceManager"/> instances.
@@ -22,7 +25,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The same instance of the <see cref="ServiceManagerBuilder"/> for chaining.</returns>
         public ServiceManagerBuilder WithOptions(Action<ServiceManagerOptions> configure)
         {
-            configure?.Invoke(_options);
+            _services.Configure(configure);
             return this;
         }
 
@@ -39,16 +42,22 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
         public IServiceManager Build()
         {
-            _options.ValidateOptions();
-
+            _services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
+            _services.AddSingleton<IConfigureOptions<ServiceManagerContext>, ServiceManagerContextSetup>();
+            _serviceProvider = _services.BuildServiceProvider();
+            var context = _serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value;
             var productInfo = ProductInfo.GetProductInfo(_assembly);
-            var context = new ServiceManagerContext()
-            {
-                ProductInfo = productInfo
-            };
-            context.SetValueFromOptions(_options);
             var restClientBuilder = new RestClientFactory(productInfo);
             return new ServiceManager(context, restClientBuilder);
+        }
+
+        /// <summary>
+        /// Dispose unmanaged resources accociated with the builder and the instance built from it.
+        /// </summary>
+        public void Dispose()
+        {
+            _serviceProvider?.Dispose();
+            _serviceProvider = null;
         }
     }
 }
