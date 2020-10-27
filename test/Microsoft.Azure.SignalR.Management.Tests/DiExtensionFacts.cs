@@ -14,7 +14,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 {
     public class DiExtensionFacts
     {
+        private const string Url = "https://abc";
         private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
+        private static readonly string _testConnectionString = $"Endpoint={Url};AccessKey={AccessKey};Version=1.0;";
+        private static readonly string[] Urls = Enumerable.Range(0, 2).Select(id => $"https://endpoint-{id}").ToArray();
 
         [Fact]
         public void ServiceEndpointsConfigurationChangeDetecedFact()
@@ -40,6 +43,21 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             Thread.Sleep(1000);
             Assert.Equal(newUrl, optionsMonitor.CurrentValue.ServiceEndpoints.Single().Endpoint);
+        }
+
+        [Fact]
+        public void ProductInfoDefaultValueNotNullFact()
+        {
+            ServiceCollection services = new ServiceCollection();
+            services.Configure<ServiceManagerOptions>(o =>
+            {
+                o.ConnectionString = _testConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Persistent;
+            });
+            services.AddSignalRServiceManager();
+            using var serviceProvider = services.BuildServiceProvider();
+            var productInfo = serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value.ProductInfo;
+            Assert.NotNull(productInfo);
         }
     }
 }
