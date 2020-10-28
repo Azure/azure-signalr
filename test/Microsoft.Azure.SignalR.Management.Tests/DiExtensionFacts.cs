@@ -69,5 +69,20 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.Matches("^Microsoft.Azure.SignalR.Management/", productInfo);
             _outputHelper.WriteLine(productInfo);
         }
+
+        [Fact]
+        public void ConfigureViaDelegateFact()
+        {
+            ServiceCollection services = new ServiceCollection();
+            services.Configure<ServiceManagerOptions>(o =>
+            {
+                o.ConnectionString = _testConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Persistent;
+            });
+            services.AddSignalRServiceManager();
+            using var serviceProvider = services.BuildServiceProvider();
+            var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ServiceOptions>>();
+            Assert.Equal(Url, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
+        }
     }
 }

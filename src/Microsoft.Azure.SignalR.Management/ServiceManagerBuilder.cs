@@ -42,8 +42,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
         public IServiceManager Build()
         {
-            _services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
-            _services.AddSingleton<IConfigureOptions<ServiceManagerContext>, ServiceManagerContextSetup>();
+            _services.AddSignalRServiceManager();
             _serviceProvider = _services.BuildServiceProvider();
             var context = _serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value;
             var productInfo = ProductInfo.GetProductInfo(_assembly);
