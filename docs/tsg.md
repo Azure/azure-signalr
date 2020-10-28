@@ -199,13 +199,14 @@ When using SDK version >= `1.0.0`, you can enable traces by adding the following
         </listeners>
       </source>
     </sources>
-    <!-- Sets the trace verbosity level -->
+    <!-- Sets the trace verbosity level, change to Verbose if detailed info is needed-->
     <switches>
       <add name="SignalRSwitch" value="Information" />
     </switches>
     <!-- Specifies the trace writer for output -->
     <sharedListeners>
-      <add name="ASRS" type="System.Diagnostics.TextWriterTraceListener" initializeData="asrs.log.txt" />
+      <add name="ASRS" type="System.Diagnostics.TextWriterTraceListener" initializeData="asrs.log.txt" 
+           traceOutputOptions="DateTime"/>
     </sharedListeners>
     <trace autoflush="true" />
   </system.diagnostics>

@@ -51,10 +51,7 @@ namespace Microsoft.Azure.SignalR
 
             Proxy = serviceOptions.Proxy;
 
-            var port = endpoint.Port;
-            var version = endpoint.Version;
-
-            _generator = new DefaultServiceEndpointGenerator(endpoint.Endpoint, version, port);
+            _generator = new DefaultServiceEndpointGenerator(endpoint);
 
             _ = UpdateAccessKeyAsync(provider, endpoint, loggerFactory ?? NullLoggerFactory.Instance);
         }
