@@ -13,6 +13,8 @@ namespace Microsoft.Azure.SignalR
         private const string AccessKeyProperty = "accesskey";
         private const string VersionProperty = "version";
         private const string PortProperty = "port";
+        private const string ClientEndpointProperty = "ClientEndpoint";
+
         // For SDK 1.x, only support Azure SignalR Service 1.x
         private const string SupportedVersion = "1";
         private const string ValidVersionRegex = "^" + SupportedVersion + @"\.\d+(?:[\w-.]+)?$";
@@ -27,7 +29,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly char[] PropertySeparator = { ';' };
         private static readonly char[] KeyValueSeparator = { '=' };
 
-        internal static (string endpoint, string accessKey, string version, int? port) Parse(string connectionString)
+        internal static (string endpoint, string accessKey, string version, int? port, string clientEndpoint) Parse(string connectionString)
         {
             var properties = connectionString.Split(PropertySeparator, StringSplitOptions.RemoveEmptyEntries);
             if (properties.Length < 2)
@@ -87,7 +89,15 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
-            return (dict[EndpointProperty].TrimEnd('/'), dict[AccessKeyProperty], version, port);
+            if (dict.TryGetValue(ClientEndpointProperty, out var clientEndpoint))
+            {
+                if (!ValidateEndpoint(clientEndpoint))
+                {
+                    throw new ArgumentException($"{ClientEndpointProperty} property in connection string is not a valid URI: {clientEndpoint}.");
+                }
+            }
+
+            return (dict[EndpointProperty].TrimEnd('/'), dict[AccessKeyProperty], version, port, clientEndpoint);
         }
 
         internal static bool ValidateEndpoint(string endpoint)

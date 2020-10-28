@@ -21,6 +21,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private const string ServerPath = "aspnetserver";
 
         private readonly string _endpoint;
+        private readonly string _clientEndpoint;
         private readonly AccessKey _accessKey;
         private readonly string _appName;
         private readonly int? _port;
@@ -37,13 +38,13 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             // Version is ignored for aspnet signalr case
             _endpoint = endpoint.Endpoint;
+            _clientEndpoint = endpoint.ClientEndpoint ?? endpoint.Endpoint;
             _accessKey = endpoint.AccessKey;
             _appName = options.ApplicationName;
             _port = endpoint.Port;
             _algorithm = options.AccessTokenAlgorithm;
 
             _provider = provider;
-
             Proxy = options.Proxy;
         }
 
@@ -108,8 +109,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             return _port.HasValue ?
-                $"{_endpoint}:{_port}/{ClientPath}{queryBuilder}" :
-                $"{_endpoint}/{ClientPath}{queryBuilder}";
+                $"{_clientEndpoint}:{_port}/{ClientPath}{queryBuilder}" :
+                $"{_clientEndpoint}/{ClientPath}{queryBuilder}";
         }
 
         public string GetServerEndpoint(string hubName)
