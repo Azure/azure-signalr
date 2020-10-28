@@ -36,7 +36,6 @@ namespace Microsoft.Azure.SignalR.Emulator
             services.AddAllowAllCors();
             services.AddJwtBearerAuth(Configuration);
             services.AddAuthorization();
-
             services.AddControllers().AddNewtonsoftJson().ConfigureApplicationPartManager(manager =>
             {
                 manager.FeatureProviders.Add(new CustomControllerFeatureProvider());
@@ -64,10 +63,6 @@ namespace Microsoft.Azure.SignalR.Emulator
                        s.Print();
                    });
                    var host = address.Host;
-                   if (host == "[::]")
-                   {
-                       host = "localhost";
-                   }
                    Console.WriteLine(@$"
 ===================================================
 The Azure SignalR Emulator was successfully started.

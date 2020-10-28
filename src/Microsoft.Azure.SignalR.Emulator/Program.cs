@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Net;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.SignalR.Emulator
                             return 1;
                         }
 
-                        var host = CreateHostBuilder(args, DefaultPort, config).Build();
+                        var host = CreateHostBuilder(args, null, DefaultPort, config).Build();
                         
                         Console.WriteLine($"Loaded upstream settings from '{config}'");
                         
@@ -84,18 +85,19 @@ namespace Microsoft.Azure.SignalR.Emulator
             {
                 command.Description = "To start the emulator.";
                 var portOptions = command.Option("-p|--port", "Specify the port to use.", CommandOptionType.SingleValue);
+                var ipOptions = command.Option("-i|--ip", "Specify the IP address to use.", CommandOptionType.SingleValue);
                 var configOptions = command.Option("-c|--config", "Specify the upstream settings file to load from.", CommandOptionType.SingleValue);
                 command.HelpOption("-h|--help");
                 command.OnExecute(() =>
                 {
-                    if (!TryGetPort(portOptions, out var port) || !TryGetConfigFilePath(configOptions, out var config))
+                    if (!TryGetPort(portOptions, out var port) || !TryGetConfigFilePath(configOptions, out var config) || !TryGetIpAddress(ipOptions, out var ip))
                     {
                         return 1;
                     }
 
                     Console.WriteLine($"Loaded settings from '{config}'. Changes to the settings file will be hot-loaded into the emulator.");
 
-                    CreateHostBuilder(args, port, config).Build().Run();
+                    CreateHostBuilder(args, ip, port, config).Build().Run();
                     return 0;
                 });
             });
@@ -116,19 +118,52 @@ namespace Microsoft.Azure.SignalR.Emulator
             }
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args, int port, string configFile)
+        public static IHostBuilder CreateHostBuilder(string[] args, IPAddress ip, int port, string configFile)
         {
             return Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                    webBuilder.UseKestrel(o => o.ListenAnyIP(port));
+                    webBuilder.UseKestrel(o =>
+                    {
+                        if (ip == null)
+                        {
+                            o.ListenLocalhost(port);
+                        }
+                        else
+                        {
+                            o.Listen(ip, port);
+                        }
+                    });
                 })
                 .ConfigureAppConfiguration(s =>
                 {
                     s.AddJsonFile(AppSettingsFile, optional: true, reloadOnChange: true);
                     s.AddJsonFile(configFile, optional: true, reloadOnChange: true);
                 });
+        }
+
+        private static bool TryGetIpAddress(CommandOption ipOptions, out IPAddress ip)
+        {
+            if (ipOptions.HasValue())
+            {
+                var val = ipOptions.Value();
+
+                if (IPAddress.TryParse(val, out ip))
+                {
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine($"Invalid IP address value: {val}");
+                    return false;
+                }
+            }
+            else
+            {
+                ip = null;
+                return true;
+            }
         }
 
         private static bool TryGetPort(CommandOption portOption, out int port)
