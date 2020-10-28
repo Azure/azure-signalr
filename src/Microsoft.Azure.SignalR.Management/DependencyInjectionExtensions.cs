@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR.Management
                 services.AddSingleton<IOptionsChangeTokenSource<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>());
                 services.AddSingleton<IOptionsChangeTokenSource<ServiceOptions>>(sp => sp.GetService<ServiceOptionsSetup>());
             }
-            services.WithCallingAssembly(overwrite: false);
+            services.TrySetProductInfo();
             return services;
         }
 
@@ -33,16 +33,25 @@ namespace Microsoft.Azure.SignalR.Management
         /// Add product info to <see cref="ServiceManagerContext"/>
         /// </summary>
         /// <param name="services"></param>
-        /// <param name="overwrite">Overwrites existing 'productInfo' configuration if true. Default is true.</param>
         /// <returns></returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IServiceCollection WithCallingAssembly(this IServiceCollection services, bool overwrite = true)
+        public static IServiceCollection WithCallingAssembly(this IServiceCollection services)
         {
             var assembly = Assembly.GetCallingAssembly();
             var productInfo = ProductInfo.GetProductInfo(assembly);
             return services.Configure<ServiceManagerContext>(o =>
             {
-                if (overwrite || o.ProductInfo == null)
+                o.ProductInfo = productInfo;
+            });
+        }
+
+        private static IServiceCollection TrySetProductInfo(this IServiceCollection services)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var productInfo = ProductInfo.GetProductInfo(assembly);
+            return services.Configure<ServiceManagerContext>(o =>
+            {
+                if (o.ProductInfo == null)
                 {
                     o.ProductInfo = productInfo;
                 }

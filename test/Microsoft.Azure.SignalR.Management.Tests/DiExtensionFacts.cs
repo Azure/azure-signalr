@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
@@ -19,8 +20,16 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private static readonly string _testConnectionString = $"Endpoint={Url};AccessKey={AccessKey};Version=1.0;";
         private static readonly string[] Urls = Enumerable.Range(0, 2).Select(id => $"https://endpoint-{id}").ToArray();
 
+        private readonly ITestOutputHelper _outputHelper;
+
+        public DiExtensionFacts(ITestOutputHelper outputHelper)
+        {
+            _outputHelper = outputHelper;
+        }
+
         [Fact]
         public void ServiceEndpointsConfigurationChangeDetecedFact()
+
         {
             string configPath = "temp.json";
             var originUrl = "http://abc";
@@ -41,7 +50,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             serviceManagerOptions.ConnectionString = $"Endpoint={newUrl};AccessKey={AccessKey};Version=1.0;";
             File.WriteAllText(configPath, JsonConvert.SerializeObject(serviceManagerOptions));
 
-            Thread.Sleep(1000);
+            Thread.Sleep(5000);
             Assert.Equal(newUrl, optionsMonitor.CurrentValue.ServiceEndpoints.Single().Endpoint);
         }
 
@@ -57,7 +66,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             services.AddSignalRServiceManager();
             using var serviceProvider = services.BuildServiceProvider();
             var productInfo = serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value.ProductInfo;
-            Assert.NotNull(productInfo);
+            Assert.Matches("^Microsoft.Azure.SignalR.Management/", productInfo);
+            _outputHelper.WriteLine(productInfo);
         }
     }
 }
