@@ -36,6 +36,7 @@ namespace Microsoft.Azure.SignalR.Emulator
             services.AddAllowAllCors();
             services.AddJwtBearerAuth(Configuration);
             services.AddAuthorization();
+
             services.AddControllers().AddNewtonsoftJson().ConfigureApplicationPartManager(manager =>
             {
                 manager.FeatureProviders.Add(new CustomControllerFeatureProvider());
@@ -62,7 +63,6 @@ namespace Microsoft.Azure.SignalR.Emulator
                    {
                        s.Print();
                    });
-                   var host = address.Host;
                    Console.WriteLine(@$"
 ===================================================
 The Azure SignalR Emulator was successfully started.
@@ -72,7 +72,7 @@ Press Ctrl+C to stop the Emulator.
 Use the below value inside *********** block as its ConnectionString:
 ***********
 
-Endpoint={address.Scheme}://{host};Port={address.Port};AccessKey={AppBuilderExtensions.AccessKey};Version=1.0;
+Endpoint={address.Scheme}://{address.Host};Port={address.Port};AccessKey={AppBuilderExtensions.AccessKey};Version=1.0;
 
 ***********
 
