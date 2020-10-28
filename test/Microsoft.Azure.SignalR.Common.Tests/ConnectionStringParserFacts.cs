@@ -15,12 +15,13 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [InlineData("http://aaa", "ENDPOINT=http://aaa/;ACCESSKEY=bbb;")]
         public void ValidPreviewConnectionString(string expectedEndpoint, string connectionString)
         {
-            var (endpoint, accessKey, version, port) = ConnectionStringParser.Parse(connectionString);
+            var (endpoint, accessKey, version, port, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
 
             Assert.Equal(expectedEndpoint, endpoint);
             Assert.Equal("bbb", accessKey);
             Assert.Null(version);
             Assert.Null(port);
+            Assert.Null(clientEndpoint);
         }
 
         [Theory]
@@ -30,12 +31,13 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [InlineData("http://aaa", "1.1-beta2", 1234, "ENDPOINT=http://aaa/;ACCESSKEY=bbb;Version=1.1-beta2;Port=1234")]
         public void ValidConnectionString(string expectedEndpoint, string expectedVersion, int? expectedPort, string connectionString)
         {
-            var (endpoint, accessKey, version, port) = ConnectionStringParser.Parse(connectionString);
+            var (endpoint, accessKey, version, port, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
 
             Assert.Equal(expectedEndpoint, endpoint);
             Assert.Equal("bbb", accessKey);
             Assert.Equal(expectedVersion, version);
             Assert.Equal(expectedPort, port);
+            Assert.Null(clientEndpoint);
         }
 
         [Theory]
@@ -58,6 +60,16 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
 
             Assert.Contains("Endpoint property in connection string is not a valid URI", exception.Message);
+        }
+
+        [Theory]
+        [InlineData("endpoint=https://aaa;clientEndpoint=aaa;AccessKey=bbb;")]
+        [InlineData("endpoint=https://aaa;ClientEndpoint=endpoint=aaa;AccessKey=bbb;")]
+        public void InvalidClientEndpoint(string connectionString)
+        {
+            var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
+
+            Assert.Contains("ClientEndpoint property in connection string is not a valid URI", exception.Message);
         }
 
         [Theory]
