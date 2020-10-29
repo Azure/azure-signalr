@@ -113,7 +113,7 @@ private class CustomRouter : EndpointRouterDecorator
 }
 ```
 
-From version 1.5.2, we're exposing metrics synced from service side to help with customized routing for balancing and load use. So you can select the endpoints with minimal clients in below sample.
+From version 1.6.0, we're exposing metrics synced from service side to help with customized routing for balancing and load use. So you can select the endpoints with minimal clients in below sample.
 
 ```cs
 private class CustomRouter : EndpointRouterDecorator
@@ -217,7 +217,7 @@ private class CustomRouter : EndpointRouterDecorator
 }
 ```
 
-Another example about you can select the endpoints with minimal clients.
+Another example about you can select the endpoints with minimal clients, supported from version 1.6.0.
 
 ```cs
 private class CustomRouter : EndpointRouterDecorator
