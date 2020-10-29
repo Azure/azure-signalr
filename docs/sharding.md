@@ -11,6 +11,7 @@ In latest SDK, we add support for configuring multiple SignalR service instances
     * [How to add multiple endpoints from code](#aspnet-code)
     * [How to customize endpoint router](#aspnet-customize-router)
 * [Configuration in cross-geo scenarios](#cross-geo)
+* [Dynamic Scale ServiceEndpoints](#dynamic-scale)
 * [Failover](#failover)
 
 ## For ASP.NET Core
@@ -112,6 +113,19 @@ private class CustomRouter : EndpointRouterDecorator
 }
 ```
 
+From version 1.5.2, we're exposing metrics synced from service side to help with customized routing for balancing and load use. So you can select the endpoints with minimal clients in below sample.
+
+```cs
+private class CustomRouter : EndpointRouterDecorator
+{
+    public override ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
+    {
+        return endpoints.OrderBy(x => x.EndpointMetrics.ClientConnectionCount).FirstOrDefault(x => x.Online) // Get the available endpoint with minimal clients load
+               ?? base.GetNegotiateEndpoint(context, endpoints); // Or fallback to the default behavior to randomly select one from primary endpoints, or fallback to secondary when no primary ones are online
+    }
+}
+```
+
 And don't forget to register the router to DI container using:
 
 ```cs
@@ -202,6 +216,20 @@ private class CustomRouter : EndpointRouterDecorator
     }
 }
 ```
+
+Another example about you can select the endpoints with minimal clients.
+
+```cs
+private class CustomRouter : EndpointRouterDecorator
+{
+    public override ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
+    {
+        return endpoints.OrderBy(x => x.EndpointMetrics.ClientConnectionCount).FirstOrDefault(x => x.Online) // Get the available endpoint with minimal clients load
+               ?? base.GetNegotiateEndpoint(context, endpoints); // Or fallback to the default behavior to randomly select one from primary endpoints, or fallback to secondary when no primary ones are online
+    }
+}
+```
+
 And don't forget to register the router to DI container using:
 
 ```cs
@@ -234,6 +262,18 @@ When a client `/negotiate` with the app server, with the default router, SDK **r
 In cross-geo scenario, when a client `/negotiate` with the app server hosted in East US, by default it always returns the `primary` endpoint located in East US for the client to establish persistent connection with. When all East US endpoints are not available, the client will then be redirected to endpoints in other regions, such as West US. [Failover](#failover) describes it in detail.
 
 ![Normal Negotiate](./images/normal_negotiate.png)
+
+## Dynamic Scale ServiceEndpoints
+<a name="dynamic-scale"></a>
+
+From version 1.5.0, we're enabling dynamic scale ServiceEndpoints for ASP.NET Core version first. So you don't have to restart app server when you need to add/remove a ServiceEndpoint. As ASP.NET Core is supporting default configuration like `appsettings.json` with `reloadOnChange: true`, you don't need to change a code and it's supported by nature. And if you'd like to add some customized configuration and work with hot-reload, please refer to [this](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-3.1).
+
+> Note
+> 
+> Considering the time of connection set-up between server/service and client/service may be a few difference, to ensure no message loss during the scale process, we have a staging period waiting for server connection be ready before open the new ServiceEndpoint to clients. Usually it takes seconds to complete and you'll be able to see log like `Succeed in adding endpoint: '{endpoint}'` which indicates the process completes. But for some unexpected reason like cross-region network issue or configuration inconsistent on different app servers, the staging period will not able to finish correctly. Since fewer things can be done in app server side, we choose to promote the scale as it is. It's suggested to restart App Server when you found the scaling process not working correctly.
+> 
+>  The default value of scale staging period is 5 minutes, and it can be customized by setting the value in [`ServiceOptions.ServiceScaleTimeout`](https://github.com/Azure/azure-signalr/blob/dev/docs/use-signalr-service.md#servicescaletimeout). If you have a lot of app servers, it's good to extend the value a little more.
+
 
 ## Failover
 <a name="failover"></a>
