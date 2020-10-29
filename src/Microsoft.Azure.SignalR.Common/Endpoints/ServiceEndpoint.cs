@@ -15,6 +15,11 @@ namespace Microsoft.Azure.SignalR
 
         public string Endpoint { get; }
 
+        /// <summary>
+        /// The customized endpoint that the client will be redirected to
+        /// </summary>
+        internal string ClientEndpoint { get; }
+
         internal string Version { get; }
 
         internal AccessKey AccessKey { get; private set; }
@@ -70,7 +75,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             string key;
-            (Endpoint, key, Version, Port) = ConnectionStringParser.Parse(connectionString);
+            (Endpoint, key, Version, Port, ClientEndpoint) = ConnectionStringParser.Parse(connectionString);
             AccessKey = new AccessKey(key);
 
             EndpointType = type;
