@@ -75,7 +75,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public void ConfigureByDelegateFact_Method1()
+        public void ConfigureByDelegateFact()
         {
             ServiceCollection services = new ServiceCollection();
             services.AddSignalRServiceManager(o =>
@@ -83,19 +83,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 o.ConnectionString = TestConnectionString;
                 o.ServiceTransportType = ServiceTransportType.Persistent;
             });
-            using var serviceProvider = services.BuildServiceProvider();
-            var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ServiceManagerContext>>();
-            Assert.Equal(Url, optionsMonitor.CurrentValue.ServiceEndpoints.Single().Endpoint);
-            Assert.Equal(ServiceTransportType.Persistent, optionsMonitor.CurrentValue.ServiceTransportType);
-        }
-
-        [Fact]
-        public void ConfigureByDelegateFact_Method2()
-        {
-            ServiceCollection services = new ServiceCollection();
-            services.Configure<ServiceManagerOptions>(o => o.ConnectionString = TestConnectionString);
-            services.Configure<ServiceManagerOptions>(o => o.ServiceTransportType = ServiceTransportType.Persistent);
-            services.AddSignalRServiceManagerCore();
             using var serviceProvider = services.BuildServiceProvider();
             var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ServiceManagerContext>>();
             Assert.Equal(Url, optionsMonitor.CurrentValue.ServiceEndpoints.Single().Endpoint);
