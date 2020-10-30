@@ -17,6 +17,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IServiceCollection _services = new ServiceCollection();
         private Assembly _assembly;
         private ServiceProvider _serviceProvider;
+        private Action<ServiceManagerOptions> _configure;
 
         /// <summary>
         /// Configures the <see cref="IServiceManager"/> instances.
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The same instance of the <see cref="ServiceManagerBuilder"/> for chaining.</returns>
         public ServiceManagerBuilder WithOptions(Action<ServiceManagerOptions> configure)
         {
-            _services.Configure(configure);
+            _configure = configure;
             return this;
         }
 
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
         public IServiceManager Build()
         {
-            _services.AddSignalRServiceManager();
+            _services.AddSignalRServiceManager(_configure);
             _serviceProvider = _services.BuildServiceProvider();
             var context = _serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value;
             var productInfo = ProductInfo.GetProductInfo(_assembly);
