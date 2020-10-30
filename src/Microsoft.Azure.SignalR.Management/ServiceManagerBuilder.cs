@@ -4,9 +4,9 @@
 using System;
 using System.ComponentModel;
 using System.Reflection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-
 namespace Microsoft.Azure.SignalR.Management
 {
     /// <summary>
@@ -17,16 +17,26 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IServiceCollection _services = new ServiceCollection();
         private Assembly _assembly;
         private ServiceProvider _serviceProvider;
-        private Action<ServiceManagerOptions> _configure;
 
         /// <summary>
-        /// Configures the <see cref="IServiceManager"/> instances.
+        /// Registers an action used to configure <see cref="IServiceManager"/>.
         /// </summary>
         /// <param name="configure">A callback to configure the <see cref="IServiceManager"/>.</param>
         /// <returns>The same instance of the <see cref="ServiceManagerBuilder"/> for chaining.</returns>
         public ServiceManagerBuilder WithOptions(Action<ServiceManagerOptions> configure)
         {
-            _configure = configure;
+            _services.Configure(configure);
+            return this;
+        }
+
+        /// <summary>
+        /// Registers a configuration instance to configure <see cref="IServiceManager"/>
+        /// </summary>
+        /// <param name="config">The configuration instance.</param>
+        /// <returns>The same instance of the <see cref="ServiceManagerBuilder"/> for chaining.</returns>
+        internal ServiceManagerBuilder WithConfiguration(IConfiguration config) //todo test needed
+        {
+            _services.Configure<ServiceManagerOptions>(config.GetSection(Constants.Keys.AzureKey).GetSection(Constants.Keys.SignalRKey));
             return this;
         }
 
@@ -43,7 +53,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
         public IServiceManager Build()
         {
-            _services.AddSignalRServiceManager(_configure);
+            _services.AddSignalRServiceManagerCore();
             _serviceProvider = _services.BuildServiceProvider();
             var context = _serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value;
             var productInfo = ProductInfo.GetProductInfo(_assembly);
