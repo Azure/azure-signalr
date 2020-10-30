@@ -17,8 +17,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
     {
         private const string Url = "https://abc";
         private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
-        private static readonly string _testConnectionString = $"Endpoint={Url};AccessKey={AccessKey};Version=1.0;";
-        private static readonly string[] Urls = Enumerable.Range(0, 2).Select(id => $"https://endpoint-{id}").ToArray();
+        private static readonly string TestConnectionString = $"Endpoint={Url};AccessKey={AccessKey};Version=1.0;";
 
         private readonly ITestOutputHelper _outputHelper;
 
@@ -28,42 +27,47 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public void ServiceEndpointsConfigurationChangeDetecedFact()
-
+        public void ConfigureByFile_ChangeDetecedFact()
         {
             string configPath = "temp.json";
             var originUrl = "http://abc";
             var newUrl = "http://cde";
-            var serviceManagerOptions = new ServiceManagerOptions()
+            var configObj = new
             {
-                ConnectionString = $"Endpoint={originUrl};AccessKey={AccessKey};Version=1.0;"
+                Azure = new
+                {
+                    SignalR = new ServiceManagerOptions
+                    {
+                        ConnectionString = $"Endpoint={originUrl};AccessKey={AccessKey};Version=1.0;"
+                    }
+                }
             };
-            File.WriteAllText(configPath, JsonConvert.SerializeObject(serviceManagerOptions));
+            File.WriteAllText(configPath, JsonConvert.SerializeObject(configObj));
+            _outputHelper.WriteLine(JsonConvert.SerializeObject(configObj));
             ServiceCollection services = new ServiceCollection();
-            services.Configure<ServiceManagerOptions>(new ConfigurationBuilder().AddJsonFile(configPath, false, true).Build());
             services.AddSignalRServiceManager();
+            services.AddSingleton<IConfiguration>(new ConfigurationBuilder().AddJsonFile(configPath, false, true).Build());
             using var provider = services.BuildServiceProvider();
-            var optionsMonitor = provider.GetRequiredService<IOptionsMonitor<ServiceManagerContext>>();
-            Assert.Equal(originUrl, optionsMonitor.CurrentValue.ServiceEndpoints.Single().Endpoint);
+            var optionsMonitor = provider.GetRequiredService<IOptionsMonitor<ServiceOptions>>();
+            Assert.Equal(originUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
 
             //update json config file
-            serviceManagerOptions.ConnectionString = $"Endpoint={newUrl};AccessKey={AccessKey};Version=1.0;";
-            File.WriteAllText(configPath, JsonConvert.SerializeObject(serviceManagerOptions));
+            configObj.Azure.SignalR.ConnectionString = $"Endpoint={newUrl};AccessKey={AccessKey};Version=1.0;";
+            File.WriteAllText(configPath, JsonConvert.SerializeObject(configObj));
 
-            Thread.Sleep(5000);
-            Assert.Equal(newUrl, optionsMonitor.CurrentValue.ServiceEndpoints.Single().Endpoint);
+            Thread.Sleep(3000);
+            Assert.Equal(newUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
         }
 
         [Fact]
         public void ProductInfoDefaultValueNotNullFact()
         {
             ServiceCollection services = new ServiceCollection();
-            services.Configure<ServiceManagerOptions>(o =>
+            services.AddSignalRServiceManager(o =>
             {
-                o.ConnectionString = _testConnectionString;
+                o.ConnectionString = TestConnectionString;
                 o.ServiceTransportType = ServiceTransportType.Persistent;
             });
-            services.AddSignalRServiceManager();
             using var serviceProvider = services.BuildServiceProvider();
             var productInfo = serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value.ProductInfo;
             Assert.Matches("^Microsoft.Azure.SignalR.Management/", productInfo);
@@ -71,18 +75,31 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public void ConfigureViaDelegateFact()
+        public void ConfigureByDelegateFact_Method1()
         {
             ServiceCollection services = new ServiceCollection();
-            services.Configure<ServiceManagerOptions>(o =>
+            services.AddSignalRServiceManager(o =>
             {
-                o.ConnectionString = _testConnectionString;
+                o.ConnectionString = TestConnectionString;
                 o.ServiceTransportType = ServiceTransportType.Persistent;
             });
-            services.AddSignalRServiceManager();
             using var serviceProvider = services.BuildServiceProvider();
-            var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ServiceOptions>>();
-            Assert.Equal(Url, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
+            var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ServiceManagerContext>>();
+            Assert.Equal(Url, optionsMonitor.CurrentValue.ServiceEndpoints.Single().Endpoint);
+            Assert.Equal(ServiceTransportType.Persistent, optionsMonitor.CurrentValue.ServiceTransportType);
+        }
+
+        [Fact]
+        public void ConfigureByDelegateFact_Method2()
+        {
+            ServiceCollection services = new ServiceCollection();
+            services.Configure<ServiceManagerOptions>(o => o.ConnectionString = TestConnectionString);
+            services.Configure<ServiceManagerOptions>(o => o.ServiceTransportType = ServiceTransportType.Persistent);
+            services.AddSignalRServiceManagerCore();
+            using var serviceProvider = services.BuildServiceProvider();
+            var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ServiceManagerContext>>();
+            Assert.Equal(Url, optionsMonitor.CurrentValue.ServiceEndpoints.Single().Endpoint);
+            Assert.Equal(ServiceTransportType.Persistent, optionsMonitor.CurrentValue.ServiceTransportType);
         }
     }
 }
