@@ -270,9 +270,9 @@ From version 1.5.0, we're enabling dynamic scale ServiceEndpoints for ASP.NET Co
 
 > Note
 > 
-> Considering the time of connection set-up between server/service and client/service may be a few difference, to ensure no message loss during the scale process, we have a staging period waiting for server connection be ready before open the new ServiceEndpoint to clients. Usually it takes seconds to complete and you'll be able to see log like `Succeed in adding endpoint: '{endpoint}'` which indicates the process completes. But for some unexpected reason like cross-region network issue or configuration inconsistent on different app servers, the staging period will not able to finish correctly. Since fewer things can be done in app server side, we choose to promote the scale as it is. It's suggested to restart App Server when you found the scaling process not working correctly.
+> Considering the time of connection set-up between server/service and client/service may be a few difference, to ensure no message loss during the scale process, we have a staging period waiting for server connection be ready before open the new ServiceEndpoint to clients. Usually it takes seconds to complete and you'll be able to see log like `Succeed in adding endpoint: '{endpoint}'` which indicates the process completes. But for some unexpected reasons like cross-region network issue or configuration inconsistent on different app servers, the staging period will not be able to finish correctly. Since limited things can be done during the dynamic scale process, we choose to promote the scale as it is. It's suggested to restart App Server when you find the scaling process not working correctly.
 > 
->  The default value of scale staging period is 5 minutes, and it can be customized by setting the value in [`ServiceOptions.ServiceScaleTimeout`](https://github.com/Azure/azure-signalr/blob/dev/docs/use-signalr-service.md#servicescaletimeout). If you have a lot of app servers, it's good to extend the value a little more.
+>  The default timeout period for the scale is 5 minutes, and it can be customized by setting the value in [`ServiceOptions.ServiceScaleTimeout`](https://github.com/Azure/azure-signalr/blob/dev/docs/use-signalr-service.md#servicescaletimeout). If you have a lot of app servers, it's suggested to extend the value a little more.
 
 
 ## Failover
