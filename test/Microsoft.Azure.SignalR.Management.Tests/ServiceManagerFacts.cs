@@ -83,13 +83,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [Fact]
         internal void GenerateClientEndpointTestWithClientEndpoint()
         {
-            var options = new ServiceManagerOptions
+            var context = new ServiceManagerContext
             {
-                ConnectionString = $"Endpoint=http://localhost;AccessKey=ABC;Version=1.0;ClientEndpoint=https://remote"
+                ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint($"Endpoint=http://localhost;AccessKey=ABC;Version=1.0;ClientEndpoint=https://remote") }
             };
 
-            var context = new ServiceManagerContext();
-            context.SetValueFromOptions(options);
             var manager = new ServiceManager(context, new RestClientFactory(UserAgent));
             var clientEndpoint = manager.GetClientEndpoint(HubName);
 
