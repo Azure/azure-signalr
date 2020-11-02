@@ -3,7 +3,8 @@
 
 using System.IO;
 using System.Linq;
-using System.Threading;
+using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public void ConfigureByFile_ChangeDetecedFact()
+        public async Task ConfigHotReloadTest()
         {
             string configPath = "temp.json";
             var originUrl = "http://abc";
@@ -43,7 +44,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 }
             };
             File.WriteAllText(configPath, JsonConvert.SerializeObject(configObj));
-            _outputHelper.WriteLine(JsonConvert.SerializeObject(configObj));
             ServiceCollection services = new ServiceCollection();
             services.AddSignalRServiceManager();
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder().AddJsonFile(configPath, false, true).Build());
@@ -55,8 +55,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             configObj.Azure.SignalR.ConnectionString = $"Endpoint={newUrl};AccessKey={AccessKey};Version=1.0;";
             File.WriteAllText(configPath, JsonConvert.SerializeObject(configObj));
 
-            Thread.Sleep(3000);
+            await Task.Delay(15000);
             Assert.Equal(newUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
+            _outputHelper.WriteLine("This test may fail in github-actions/Gated -Windows. It should be OK.");
         }
 
         [Fact]
@@ -71,7 +72,21 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             using var serviceProvider = services.BuildServiceProvider();
             var productInfo = serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value.ProductInfo;
             Assert.Matches("^Microsoft.Azure.SignalR.Management/", productInfo);
-            _outputHelper.WriteLine(productInfo);
+        }
+
+        [Fact]
+        public void ProductInfoFromCallingAssemblyFact()
+        {
+            ServiceCollection services = new ServiceCollection();
+            services.AddSignalRServiceManager(o =>
+            {
+                o.ConnectionString = TestConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Persistent;
+            });
+            services.WithAssembly(Assembly.GetExecutingAssembly());
+            using var serviceProvider = services.BuildServiceProvider();
+            var productInfo = serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value.ProductInfo;
+            Assert.Matches("^Microsoft.Azure.SignalR.Management.Tests/", productInfo);
         }
 
         [Fact]

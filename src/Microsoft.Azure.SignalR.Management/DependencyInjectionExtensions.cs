@@ -52,30 +52,19 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Adds product info to <see cref="ServiceManagerContext"/>
         /// </summary>
-        /// <param name="services"></param>
         /// <returns></returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IServiceCollection WithCallingAssembly(this IServiceCollection services)
+        public static IServiceCollection WithAssembly(this IServiceCollection services, Assembly assembly)
         {
-            var assembly = Assembly.GetCallingAssembly();
             var productInfo = ProductInfo.GetProductInfo(assembly);
-            return services.Configure<ServiceManagerContext>(o =>
-            {
-                o.ProductInfo = productInfo;
-            });
+            return services.Configure<ServiceManagerContext>(o => o.ProductInfo = productInfo);
         }
 
         private static IServiceCollection TrySetProductInfo(this IServiceCollection services)
         {
             var assembly = Assembly.GetExecutingAssembly();
             var productInfo = ProductInfo.GetProductInfo(assembly);
-            return services.Configure<ServiceManagerContext>(o =>
-            {
-                if (o.ProductInfo == null)
-                {
-                    o.ProductInfo = productInfo;
-                }
-            });
+            return services.Configure<ServiceManagerContext>(o => o.ProductInfo = o.ProductInfo ?? productInfo);
         }
     }
 }

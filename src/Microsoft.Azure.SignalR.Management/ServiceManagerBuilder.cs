@@ -44,6 +44,7 @@ namespace Microsoft.Azure.SignalR.Management
         public ServiceManagerBuilder WithCallingAssembly()
         {
             _assembly = Assembly.GetCallingAssembly();
+            _services.WithAssembly(_assembly);
             return this;
         }
 
@@ -69,5 +70,8 @@ namespace Microsoft.Azure.SignalR.Management
             _serviceProvider?.Dispose();
             _serviceProvider = null;
         }
+
+        //tests only
+        internal ServiceProvider GetServiceProvider() => _serviceProvider;
     }
 }
