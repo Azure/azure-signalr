@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Gets or sets a service endpoint of Azure SignalR Service.
         /// </summary>
-        public ServiceEndpoint ServiceEndpoint { get; set; }
+        internal ServiceEndpoint ServiceEndpoint { get; set; }
 
         /// <summary>
         /// Sets multiple service endpoints of Azure SignalR Service.
@@ -45,7 +45,6 @@ namespace Microsoft.Azure.SignalR.Management
         /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
         /// </summary>
         public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
-
 
         /// <summary>
         /// Method called by management SDK to validate options.
