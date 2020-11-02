@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 
@@ -11,7 +12,7 @@ namespace Microsoft.Azure.SignalR.Management.Configuration
     {
         private readonly IConfiguration _configuration;
 
-        public ServiceManagerOptionsSetup(IConfiguration configuration)
+        public ServiceManagerOptionsSetup(IConfiguration configuration = null)
         {
             _configuration = configuration;
         }
@@ -20,12 +21,15 @@ namespace Microsoft.Azure.SignalR.Management.Configuration
 
         public void Configure(ServiceManagerOptions options)
         {
-            _configuration.GetSection(Constants.Keys.AzureKey).GetSection(Constants.Keys.SignalRKey).Bind(options);
+            if (_configuration != null)
+            {
+                _configuration.GetSection(Constants.Keys.AzureKey).GetSection(Constants.Keys.SignalRKey).Bind(options);
+            }
         }
 
         public IChangeToken GetChangeToken()
         {
-            return _configuration.GetReloadToken();
+            return _configuration?.GetReloadToken() ?? NullChangeToken.Singleton;
         }
     }
 }

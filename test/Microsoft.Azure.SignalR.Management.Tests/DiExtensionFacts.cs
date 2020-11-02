@@ -31,8 +31,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         public async Task ConfigHotReloadTest()
         {
             string configPath = "temp.json";
-            var originUrl = "http://abc";
-            var newUrl = "http://cde";
+            var originUrl = "http://originUrl";
+            var newUrl = "http://newUrl";
             var configObj = new
             {
                 Azure = new

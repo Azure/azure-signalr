@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         /// <param name="config">The configuration instance.</param>
         /// <returns>The same instance of the <see cref="ServiceManagerBuilder"/> for chaining.</returns>
-        internal ServiceManagerBuilder WithConfiguration(IConfiguration config) //todo test needed
+        internal ServiceManagerBuilder WithConfiguration(IConfiguration config)
         {
             _services.Configure<ServiceManagerOptions>(config.GetSection(Constants.Keys.AzureKey).GetSection(Constants.Keys.SignalRKey));
             return this;

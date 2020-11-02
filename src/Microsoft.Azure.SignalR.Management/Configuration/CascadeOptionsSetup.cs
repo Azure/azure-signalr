@@ -16,17 +16,12 @@ namespace Microsoft.Azure.SignalR.Management.Configuration
     {
         private protected readonly IOptionsMonitor<SourceOptions> _monitor;
         private readonly IOptionsChangeTokenSource<SourceOptions> _changeTokenSource;
-        private readonly IChangeToken _nullChangeToken;
 
         public CascadeOptionsSetup(IOptionsMonitor<SourceOptions> monitor, IOptionsChangeTokenSource<SourceOptions> changeTokenSource = null)
         //Making 'tokenSource' optional avoids error when 'tokenSource' is unavailable.
         {
             _monitor = monitor;
             _changeTokenSource = changeTokenSource;
-            if (_changeTokenSource == null)
-            {
-                _nullChangeToken = NullChangeToken.Singleton;
-            }
         }
 
         public string Name => Options.DefaultName;
@@ -35,14 +30,10 @@ namespace Microsoft.Azure.SignalR.Management.Configuration
 
         public IChangeToken GetChangeToken()
         {
-            if (_changeTokenSource != null)
-            {
-                return _changeTokenSource.GetChangeToken();
-            }
+            return _changeTokenSource?.GetChangeToken() ?? NullChangeToken.Singleton;
 
-            //until .NET 5, we can't return a ChangeToken as null.
+            //We can't return a ChangeToken as null.
             //fixes in https://github.com/dotnet/runtime/pull/43306
-            return _nullChangeToken;
         }
     }
 }

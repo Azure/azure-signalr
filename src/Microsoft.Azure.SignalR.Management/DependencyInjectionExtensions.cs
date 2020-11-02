@@ -16,10 +16,9 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public static IServiceCollection AddSignalRServiceManager(this IServiceCollection services)
         {
-            services.AddSingleton<IConfigureOptions<ServiceManagerOptions>, ServiceManagerOptionsSetup>();
             services.AddSingleton<ServiceManagerOptionsSetup>()
-                .AddSingleton<IConfigureOptions<ServiceManagerOptions>>(sp => sp.GetService<ServiceManagerOptionsSetup>())
-                .AddSingleton<IOptionsChangeTokenSource<ServiceManagerOptions>>(sp => sp.GetService<ServiceManagerOptionsSetup>());
+                    .AddSingleton<IConfigureOptions<ServiceManagerOptions>>(sp => sp.GetService<ServiceManagerOptionsSetup>())
+                    .AddSingleton<IOptionsChangeTokenSource<ServiceManagerOptions>>(sp => sp.GetService<ServiceManagerOptionsSetup>());
             return services.AddSignalRServiceManagerCore();
         }
 
@@ -29,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Management
         public static IServiceCollection AddSignalRServiceManager(this IServiceCollection services, Action<ServiceManagerOptions> configure)
         {
             services.Configure(configure);
-            return services.AddSignalRServiceManagerCore();
+            return services.AddSignalRServiceManager();
         }
 
         /// <summary>
