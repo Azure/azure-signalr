@@ -55,7 +55,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             configObj.Azure.SignalR.ConnectionString = $"Endpoint={newUrl};AccessKey={AccessKey};Version=1.0;";
             File.WriteAllText(configPath, JsonConvert.SerializeObject(configObj));
 
-            await Task.Delay(15000);
+            await Task.Delay(5000);
             Assert.Equal(newUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
             _outputHelper.WriteLine("This test may fail in github-actions/Gated -Windows. It should be OK.");
         }
