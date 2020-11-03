@@ -19,7 +19,14 @@ namespace Microsoft.Azure.SignalR.Management
             services.AddSingleton<ServiceManagerOptionsSetup>()
                     .AddSingleton<IConfigureOptions<ServiceManagerOptions>>(sp => sp.GetService<ServiceManagerOptionsSetup>())
                     .AddSingleton<IOptionsChangeTokenSource<ServiceManagerOptions>>(sp => sp.GetService<ServiceManagerOptionsSetup>());
-            return services.AddSignalRServiceManagerCore();
+            services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
+            services.AddSingleton<ServiceManagerContextSetup>()
+                    .AddSingleton<IConfigureOptions<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>())
+                    .AddSingleton<IOptionsChangeTokenSource<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>());
+            services.AddSingleton<ServiceOptionsSetup>()
+                    .AddSingleton<IConfigureOptions<ServiceOptions>>(sp => sp.GetService<ServiceOptionsSetup>())
+                    .AddSingleton<IOptionsChangeTokenSource<ServiceOptions>>(sp => sp.GetService<ServiceOptionsSetup>());
+            return services.TrySetProductInfo();
         }
 
         /// <summary>
@@ -29,23 +36,6 @@ namespace Microsoft.Azure.SignalR.Management
         {
             services.Configure(configure);
             return services.AddSignalRServiceManager();
-        }
-
-        /// <summary>
-        /// Adds the minimum essential SignalR Service Manager services to the specified services collection.
-        /// </summary>
-        /// <param name="services"></param>
-        /// <returns></returns>
-        internal static IServiceCollection AddSignalRServiceManagerCore(this IServiceCollection services)
-        {
-            services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
-            services.AddSingleton<ServiceManagerContextSetup>()
-                    .AddSingleton<IConfigureOptions<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>())
-                    .AddSingleton<IOptionsChangeTokenSource<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>());
-            services.AddSingleton<ServiceOptionsSetup>()
-                    .AddSingleton<IConfigureOptions<ServiceOptions>>(sp => sp.GetService<ServiceOptionsSetup>())
-                    .AddSingleton<IOptionsChangeTokenSource<ServiceOptions>>(sp => sp.GetService<ServiceOptionsSetup>());
-            return services.TrySetProductInfo();
         }
 
         /// <summary>

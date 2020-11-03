@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             _outputHelper = outputHelper;
         }
 
-        [Fact(Skip = "The test fails for unknown reason in GitHub Actions.")]
+        [Fact]
         public async Task ConfigHotReloadTest()
         {
             string configPath = "temp.json";

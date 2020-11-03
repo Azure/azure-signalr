@@ -2,23 +2,25 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Azure.SignalR.Management.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class ServiceOptionsSetup : CascadeOptionsSetup<ServiceManagerContext, ServiceOptions>
+    internal class ServiceOptionsSetup : CascadeOptionsSetup<ServiceOptions>
     {
-        public ServiceOptionsSetup(IOptionsMonitor<ServiceManagerContext> monitor, IOptionsChangeTokenSource<ServiceManagerContext> changeTokenSource = null) : base(monitor, changeTokenSource)
+        public ServiceOptionsSetup(IOptions<ServiceManagerOptions> initialSource, IConfiguration configuration = null) : base(initialSource, configuration)
         {
         }
 
-        public override void Configure(ServiceOptions options)
+        protected override void Convert(ServiceOptions target, ServiceManagerOptions source)
         {
-            var context = _monitor.CurrentValue;
-            options.ApplicationName = context.ApplicationName;
-            options.Endpoints = context.ServiceEndpoints;
-            options.Proxy = context.Proxy;
-            options.ConnectionCount = context.ConnectionCount;
+            target.ApplicationName = source.ApplicationName;
+            target.Endpoints = source.ServiceEndpoints ?? (source.ServiceEndpoint != null
+                    ? (new ServiceEndpoint[] { source.ServiceEndpoint })
+                    : (new ServiceEndpoint[] { new ServiceEndpoint(source.ConnectionString) }));
+            target.Proxy = source.Proxy;
+            target.ConnectionCount = source.ConnectionCount;
         }
     }
 }

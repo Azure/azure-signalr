@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The same instance of the <see cref="ServiceManagerBuilder"/> for chaining.</returns>
         internal ServiceManagerBuilder WithConfiguration(IConfiguration config)
         {
-            _services.Configure<ServiceManagerOptions>(config.GetSection(Constants.Keys.ServiceManagerOptionsSectionKey));
+            _services.AddSingleton(config);
             return this;
         }
 
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new InvalidOperationException($"Mulitple invocation of the method is not allowed.");
             }
 
-            _services.AddSignalRServiceManagerCore();
+            _services.AddSignalRServiceManager();
             ServiceProvider = _services.BuildServiceProvider();
             var context = ServiceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value;
             var productInfo = ProductInfo.GetProductInfo(_assembly);
