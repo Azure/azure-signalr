@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.Matches("^Microsoft.Azure.SignalR.Management.Tests/", productInfo);
         }
 
-        [Fact(Skip = "The test fails for unknown reason in GitHub Actions."]
+        [Fact(Skip = "The test fails for unknown reason in GitHub Actions.")]
         public async Task ConfigHotReloadTest()
         {
             string configPath = "temp.json";

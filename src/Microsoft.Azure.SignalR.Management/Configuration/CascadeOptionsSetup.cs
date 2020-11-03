@@ -17,8 +17,8 @@ namespace Microsoft.Azure.SignalR.Management.Configuration
         private protected readonly IOptionsMonitor<SourceOptions> _monitor;
         private readonly IOptionsChangeTokenSource<SourceOptions> _changeTokenSource;
 
-        public CascadeOptionsSetup(IOptionsMonitor<SourceOptions> monitor, IOptionsChangeTokenSource<SourceOptions> changeTokenSource = null)
         //Making 'tokenSource' optional avoids error when 'tokenSource' is unavailable.
+        public CascadeOptionsSetup(IOptionsMonitor<SourceOptions> monitor, IOptionsChangeTokenSource<SourceOptions> changeTokenSource = null)
         {
             _monitor = monitor;
             _changeTokenSource = changeTokenSource;
