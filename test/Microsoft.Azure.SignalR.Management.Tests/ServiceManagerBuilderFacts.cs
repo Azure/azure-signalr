@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var builder = new ServiceManagerBuilder().WithCallingAssembly().WithOptions(o => o.ConnectionString = _testConnectionString);
             builder.Build();
-            var serviceProvider = builder.GetServiceProvider();
+            var serviceProvider = builder.ServiceProvider;
             var productInfo = serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value.ProductInfo;
             Assert.Matches("^Microsoft.Azure.SignalR.Management.Tests/", productInfo);
         }
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             File.WriteAllText(configPath, JsonConvert.SerializeObject(configObj));
             var builder = new ServiceManagerBuilder().WithConfiguration(new ConfigurationBuilder().AddJsonFile(configPath, false, true).Build());
             builder.Build();
-            using var provider = builder.GetServiceProvider();
+            using var provider = builder.ServiceProvider;
             var optionsMonitor = provider.GetRequiredService<IOptionsMonitor<ServiceOptions>>();
             Assert.Equal(originUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
 

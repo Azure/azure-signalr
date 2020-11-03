@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private readonly IServiceCollection _services = new ServiceCollection();
         private Assembly _assembly;
-        private ServiceProvider _serviceProvider;
+        internal ServiceProvider ServiceProvider { get; private set; }
 
         /// <summary>
         /// Registers an action used to configure <see cref="IServiceManager"/>.
@@ -54,9 +54,14 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
         public IServiceManager Build()
         {
+            if (ServiceProvider != null)
+            {
+                throw new InvalidOperationException($"Mulitple invocation of the method is not allowed.");
+            }
+
             _services.AddSignalRServiceManagerCore();
-            _serviceProvider = _services.BuildServiceProvider();
-            var context = _serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value;
+            ServiceProvider = _services.BuildServiceProvider();
+            var context = ServiceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value;
             var productInfo = ProductInfo.GetProductInfo(_assembly);
             var restClientBuilder = new RestClientFactory(productInfo);
             return new ServiceManager(context, restClientBuilder);
@@ -67,11 +72,8 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public void Dispose()
         {
-            _serviceProvider?.Dispose();
-            _serviceProvider = null;
+            ServiceProvider?.Dispose();
+            ServiceProvider = null;
         }
-
-        //tests only
-        internal ServiceProvider GetServiceProvider() => _serviceProvider;
     }
 }
