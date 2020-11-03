@@ -1,6 +1,10 @@
-﻿using System.IO;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -10,7 +14,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
-    public class ServiceManagerBuilderFacts
+    public partial class ServiceManagerBuilderFacts
     {
         private const string Endpoint = "https://abc";
         private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
@@ -33,9 +37,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task ConfigHotReloadTest()
+        public async Task FileConfigHotReloadTest()
         {
-            string configPath = "temp.json";
+            // to avoid possible file name conflict with another FileConfigHotReloadTest
+            string configPath = nameof(ServiceManagerBuilderFacts);
             var originUrl = "http://originUrl";
             var newUrl = "http://newUrl";
             var configObj = new
@@ -63,24 +68,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.Equal(newUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
         }
 
-        internal class ReloadableMemoryProvider : ConfigurationProvider
-        {
-            public override void Set(string key, string value)
-            {
-                base.Set(key, value);
-                OnReload();
-            }
-        }
-
-        internal class ReloadableMemorySource : IConfigurationSource
-        {
-            private ReloadableMemoryProvider _provider;
-
-            public ReloadableMemorySource(ReloadableMemoryProvider provider) => _provider = provider;
-
-            public IConfigurationProvider Build(IConfigurationBuilder builder) => _provider;
-        }
-
         [Fact]
         public void MemoryConfigHotReloadTest()
         {
@@ -97,7 +84,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             //update
             configProvider.Set("Azure:SignalR:ConnectionString", $"Endpoint={newUrl};AccessKey={AccessKey};Version=1.0;");
             Assert.Equal(newUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
-
         }
     }
 }

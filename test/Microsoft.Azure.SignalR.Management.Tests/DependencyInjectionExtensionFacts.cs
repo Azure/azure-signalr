@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -28,9 +29,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task ConfigHotReloadTest()
+        public async Task FileConfigHotReloadTest()
         {
-            string configPath = "temp.json";
+            // to avoid possible file name conflict with another FileConfigHotReloadTest
+            string configPath = nameof(DependencyInjectionExtensionFacts);
             var originUrl = "http://originUrl";
             var newUrl = "http://newUrl";
             var configObj = new
@@ -58,6 +60,25 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             await Task.Delay(5000);
             Assert.Equal(newUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
             _outputHelper.WriteLine("This test may fail in github-actions/Gated -Windows. It should be OK.");
+        }
+
+        [Fact]
+        public void MemoryConfigHotReloadTest()
+        {
+            var originUrl = "http://originUrl";
+            var newUrl = "http://newUrl";
+            var configProvider = new ReloadableMemoryProvider();
+            configProvider.Set("Azure:SignalR:ConnectionString", $"Endpoint={originUrl};AccessKey={AccessKey};Version=1.0;");
+            var services = new ServiceCollection()
+                .AddSignalRServiceManager()
+                .AddSingleton<IConfiguration>(new ConfigurationBuilder().Add(new ReloadableMemorySource(configProvider)).Build());
+            using var provider = services.BuildServiceProvider();
+            var optionsMonitor = provider.GetRequiredService<IOptionsMonitor<ServiceOptions>>();
+            Assert.Equal(originUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
+
+            //update
+            configProvider.Set("Azure:SignalR:ConnectionString", $"Endpoint={newUrl};AccessKey={AccessKey};Version=1.0;");
+            Assert.Equal(newUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
         }
 
         [Fact]
