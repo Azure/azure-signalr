@@ -9,8 +9,7 @@ namespace Microsoft.Azure.SignalR
     {
         public static class Keys
         {
-            public const string AzureKey = "Azure";
-            public const string SignalRKey = "SignalR";
+            public const string ServiceManagerOptionsSectionKey = "Azure:SignalR";
             public const string ServerStickyModeDefaultKey = "Azure:SignalR:ServerStickyMode";
             public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
             public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";

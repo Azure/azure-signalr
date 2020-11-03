@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Management.Configuration
         {
             if (_configuration != null)
             {
-                _configuration.GetSection(Constants.Keys.AzureKey).GetSection(Constants.Keys.SignalRKey).Bind(options);
+                _configuration.GetSection(Constants.Keys.ServiceManagerOptionsSectionKey).Bind(options);
             }
         }
 
