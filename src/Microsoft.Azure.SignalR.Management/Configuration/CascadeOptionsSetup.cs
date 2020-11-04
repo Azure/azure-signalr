@@ -1,47 +1,50 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Threading;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.Management.Configuration
 {
     /// <summary>
-    /// Sets up TargetOptions from ServiceManagerOptions and tracks changes .
+    /// Sets up TargetOptions from SourceOptions and tracks changes .
     /// </summary>
-    internal abstract class CascadeOptionsSetup<TargetOptions> : IConfigureOptions<TargetOptions>, IOptionsChangeTokenSource<TargetOptions>
+    internal abstract class CascadeOptionsSetup<TargetOptions, SourceOptions> : IConfigureOptions<TargetOptions>, IOptionsChangeTokenSource<TargetOptions>, IDisposable
+        where SourceOptions : class
         where TargetOptions : class
     {
-        private readonly ServiceManagerOptions _initialSource;
-        private readonly IConfiguration _configuration;
+        private ConfigurationReloadToken _changeToken;
+        private IDisposable _registration;
+        private SourceOptions _sourceOptions;
 
-        //Making 'configuration' optional avoids error when 'tokenSource' is unavailable.
-        public CascadeOptionsSetup(IOptions<ServiceManagerOptions> initialSource, IConfiguration configuration = null)
+        public CascadeOptionsSetup(IOptionsMonitor<SourceOptions> sourceMonitor)
         {
-            _initialSource = initialSource.Value;
-            _configuration = configuration;
+            _registration = sourceMonitor.OnChange(RaiseChange);
+            _sourceOptions = sourceMonitor.CurrentValue;
+            _changeToken = new ConfigurationReloadToken();
         }
 
         public string Name => Options.DefaultName;
 
-        public void Configure(TargetOptions target)
+        public void Configure(TargetOptions target) => Convert(target, _sourceOptions);
+
+        protected abstract void Convert(TargetOptions target, SourceOptions source);
+
+        public IChangeToken GetChangeToken() => _changeToken;
+
+        private void RaiseChange(SourceOptions sourceOptions)
         {
-            if (_configuration == null)
-            {
-                Convert(target, _initialSource);
-            }
-            else
-            {
-                var sourceOption = _configuration.GetSection(ServiceManagerOptions.Section).Get<ServiceManagerOptions>();
-                Convert(target, sourceOption);
-            }
+            _sourceOptions = sourceOptions;
+            var previousToken = Interlocked.Exchange(ref _changeToken, new ConfigurationReloadToken());
+            previousToken.OnReload();
         }
 
-        protected abstract void Convert(TargetOptions target, ServiceManagerOptions source);
-
-        public IChangeToken GetChangeToken() => _configuration?.GetReloadToken() ?? NullChangeToken.Singleton;
-
+        public void Dispose()
+        {
+            _registration.Dispose();
+        }
     }
 }

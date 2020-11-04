@@ -59,7 +59,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             await Task.Delay(5000);
             Assert.Equal(newUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
-            _outputHelper.WriteLine("This test may fail in github-actions/Gated -Windows. It should be OK.");
         }
 
         [Fact]
@@ -123,6 +122,33 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ServiceManagerContext>>();
             Assert.Equal(Url, optionsMonitor.CurrentValue.ServiceEndpoints.Single().Endpoint);
             Assert.Equal(ServiceTransportType.Persistent, optionsMonitor.CurrentValue.ServiceTransportType);
+        }
+
+        [Fact]
+        public void ConfigureByFileAndDelegateFact()
+        {
+            var originUrl = "http://originUrl";
+            var newUrl = "http://newUrl";
+            var appName = "AppName";
+            var newAppName = "NewAppName";
+            var configProvider = new ReloadableMemoryProvider();
+            configProvider.Set("Azure:SignalR:ConnectionString", $"Endpoint={originUrl};AccessKey={AccessKey};Version=1.0;");
+            ServiceCollection services = new ServiceCollection();
+            services.AddSignalRServiceManager(o =>
+            {
+                o.ApplicationName = appName;
+            })
+            .AddSingleton<IConfiguration>(new ConfigurationBuilder().Add(new ReloadableMemorySource(configProvider)).Build());
+            using var serviceProvider = services.BuildServiceProvider();
+            var contextMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ServiceManagerContext>>();
+            Assert.Equal(appName, contextMonitor.CurrentValue.ApplicationName);
+
+            configProvider.Set("Azure:SignalR:ConnectionString", $"Endpoint={newUrl};AccessKey={AccessKey};Version=1.0;");
+            Assert.Equal(appName, contextMonitor.CurrentValue.ApplicationName);  // configuration via delegate is conserved after reload config.
+            Assert.Equal(newUrl, contextMonitor.CurrentValue.ServiceEndpoints.Single().Endpoint);
+
+            configProvider.Set("Azure:SignalR:ApplicationName", newAppName);
+            Assert.Equal(newAppName, contextMonitor.CurrentValue.ApplicationName);
         }
     }
 }

@@ -2,14 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Azure.SignalR.Management.Configuration;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class ServiceManagerContextSetup : CascadeOptionsSetup<ServiceManagerContext>
+    internal class ServiceManagerContextSetup : CascadeOptionsSetup<ServiceManagerContext, ServiceManagerOptions>
     {
-        public ServiceManagerContextSetup(IOptions<ServiceManagerOptions> initialSource, IConfiguration configuration = null) : base(initialSource, configuration)
+        public ServiceManagerContextSetup(IOptionsMonitor<ServiceManagerOptions> sourceMonitor) : base(sourceMonitor)
         {
         }
 

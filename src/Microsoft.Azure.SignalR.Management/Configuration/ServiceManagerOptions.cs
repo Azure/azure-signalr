@@ -3,7 +3,6 @@
 
 using System;
 using System.Net;
-using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -12,11 +11,6 @@ namespace Microsoft.Azure.SignalR.Management
     /// </summary>
     public class ServiceManagerOptions
     {
-        /// <summary>
-        /// The section name used to get <see cref="ServiceManagerOptions"/> value from <see cref="IConfiguration.GetSection(string)"/>
-        /// </summary>
-        public const string Section = "Azure:SignalR";
-
         /// <summary>
         /// Gets or sets the ApplicationName which will be prefixed to each hub name
         /// </summary>
