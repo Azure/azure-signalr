@@ -10,10 +10,8 @@ using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
@@ -58,7 +56,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ApplicationName = appName,
                 ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint(_testConnectionString) }
             };
-            var manager = new ServiceManager(context, new RestClientFactory(UserAgent), Mock.Of<ServiceProvider>());
+            var manager = new ServiceManager(context, new RestClientFactory(UserAgent), null);
             var tokenString = manager.GenerateClientAccessToken(HubName, userId, claims, _tokenLifeTime);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
