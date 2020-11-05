@@ -28,10 +28,9 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly string _productInfo;
         private readonly ServiceManagerContext _context;
         private readonly RestClientFactory _restClientFactory;
-        private readonly ServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
 
-        //in builder mode, serviceProvider is not null and should be disposed.
-        internal ServiceManager(ServiceManagerContext context, RestClientFactory restClientFactory, ServiceProvider serviceProvider = null)
+        internal ServiceManager(ServiceManagerContext context, RestClientFactory restClientFactory, IServiceProvider serviceProvider)
         {
             _endpoint = context.ServiceEndpoints.Single();//temp solution
 
@@ -148,7 +147,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             if (_context.DisposeServiceProvider)
             {
-                _serviceProvider?.Dispose();
+                (_serviceProvider as IDisposable).Dispose();
             }
         }
 
