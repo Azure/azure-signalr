@@ -12,6 +12,7 @@ using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
@@ -47,6 +48,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                                                                            from appName in _appNames
                                                                            select new object[] { userId, claims, appName };
 
+        private static readonly IServiceProvider MockServiceProvider = Mock.Of<IServiceProvider>();
+
         [Theory]
         [MemberData(nameof(TestGenerateAccessTokenData))]
         internal void GenerateClientAccessTokenTest(string userId, Claim[] claims, string appName)
@@ -56,7 +59,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ApplicationName = appName,
                 ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint(_testConnectionString) }
             };
-            var manager = new ServiceManager(context, new RestClientFactory(UserAgent));
+            var manager = new ServiceManager(context, new RestClientFactory(UserAgent), MockServiceProvider);
             var tokenString = manager.GenerateClientAccessToken(HubName, userId, claims, _tokenLifeTime);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
@@ -74,7 +77,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ApplicationName = appName,
                 ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint(_testConnectionString) }
             };
-            var manager = new ServiceManager(context, new RestClientFactory(UserAgent));
+            var manager = new ServiceManager(context, new RestClientFactory(UserAgent), MockServiceProvider);
             var clientEndpoint = manager.GetClientEndpoint(HubName);
 
             Assert.Equal(expectedClientEndpoint, clientEndpoint);
@@ -83,14 +86,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [Fact]
         internal void GenerateClientEndpointTestWithClientEndpoint()
         {
-            var options = new ServiceManagerOptions
+            var context = new ServiceManagerContext
             {
-                ConnectionString = $"Endpoint=http://localhost;AccessKey=ABC;Version=1.0;ClientEndpoint=https://remote"
+                ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint($"Endpoint=http://localhost;AccessKey=ABC;Version=1.0;ClientEndpoint=https://remote") }
             };
 
-            var context = new ServiceManagerContext();
-            context.SetValueFromOptions(options);
-            var manager = new ServiceManager(context, new RestClientFactory(UserAgent));
+            var manager = new ServiceManager(context, new RestClientFactory(UserAgent), MockServiceProvider);
             var clientEndpoint = manager.GetClientEndpoint(HubName);
 
             Assert.Equal("https://remote/client/?hub=signalrbench", clientEndpoint);
@@ -107,7 +108,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ConnectionCount = connectionCount,
                 ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint(_testConnectionString) }
             };
-            var serviceManager = new ServiceManager(context, new RestClientFactory(UserAgent));
+            var serviceManager = new ServiceManager(context, new RestClientFactory(UserAgent), MockServiceProvider);
 
             using (var loggerFactory = useLoggerFacory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance)
             {
@@ -123,7 +124,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint(_testConnectionString) }
             };
             var factory = new TestRestClientFactory(UserAgent, HttpStatusCode.OK);
-            var serviceManager = new ServiceManager(context, factory);
+            var serviceManager = new ServiceManager(context, factory, null);
             var actual = await serviceManager.IsServiceHealthy(default);
 
             Assert.True(actual);
@@ -140,7 +141,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint(_testConnectionString) }
             };
             var factory = new TestRestClientFactory(UserAgent, statusCode);
-            var serviceManager = new ServiceManager(context, factory);
+            var serviceManager = new ServiceManager(context, factory, null);
             var actual = await serviceManager.IsServiceHealthy(default);
 
             Assert.False(actual);
@@ -158,7 +159,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint(_testConnectionString) }
             };
             var factory = new TestRestClientFactory(UserAgent, statusCode);
-            var serviceManager = new ServiceManager(context, factory);
+            var serviceManager = new ServiceManager(context, factory, MockServiceProvider);
 
             var exception = await Assert.ThrowsAnyAsync<AzureSignalRException>(() => serviceManager.IsServiceHealthy(default));
             Assert.IsType(expectedException, exception);

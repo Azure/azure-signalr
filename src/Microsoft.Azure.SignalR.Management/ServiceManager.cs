@@ -28,8 +28,9 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly string _productInfo;
         private readonly ServiceManagerContext _context;
         private readonly RestClientFactory _restClientFactory;
+        private readonly IServiceProvider _serviceProvider;
 
-        internal ServiceManager(ServiceManagerContext context, RestClientFactory restClientFactory)
+        internal ServiceManager(ServiceManagerContext context, RestClientFactory restClientFactory, IServiceProvider serviceProvider)
         {
             _endpoint = context.ServiceEndpoints.Single();//temp solution
 
@@ -46,6 +47,7 @@ namespace Microsoft.Azure.SignalR.Management
             _productInfo = context.ProductInfo;
             _context = context;
             _restClientFactory = restClientFactory;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
@@ -138,6 +140,14 @@ namespace Microsoft.Azure.SignalR.Management
                     }
                 default:
                     throw new ArgumentException("Not supported service transport type.");
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_context.DisposeServiceProvider)
+            {
+                (_serviceProvider as IDisposable).Dispose();
             }
         }
 
