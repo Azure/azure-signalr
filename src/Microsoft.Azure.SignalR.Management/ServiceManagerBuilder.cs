@@ -15,7 +15,6 @@ namespace Microsoft.Azure.SignalR.Management
     public class ServiceManagerBuilder : IServiceManagerBuilder
     {
         private readonly IServiceCollection _services = new ServiceCollection();
-        private Assembly _assembly;
 
         /// <summary>
         /// Registers an action used to configure <see cref="IServiceManager"/>.
@@ -42,8 +41,8 @@ namespace Microsoft.Azure.SignalR.Management
         [EditorBrowsable(EditorBrowsableState.Never)]
         public ServiceManagerBuilder WithCallingAssembly()
         {
-            _assembly = Assembly.GetCallingAssembly();
-            _services.WithAssembly(_assembly);
+            var assembly = Assembly.GetCallingAssembly();
+            _services.WithAssembly(assembly);
             return this;
         }
 
@@ -56,7 +55,7 @@ namespace Microsoft.Azure.SignalR.Management
             _services.AddSignalRServiceManager();
             var serviceProvider = _services.BuildServiceProvider();
             var context = serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value;
-            var productInfo = ProductInfo.GetProductInfo(_assembly);
+            var productInfo = context.ProductInfo;
             var restClientBuilder = new RestClientFactory(productInfo);
             return new ServiceManager(context, restClientBuilder, serviceProvider);
         }
