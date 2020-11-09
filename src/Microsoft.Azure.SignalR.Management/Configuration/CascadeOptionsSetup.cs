@@ -16,20 +16,20 @@ namespace Microsoft.Azure.SignalR.Management.Configuration
         where SourceOptions : class
         where TargetOptions : class
     {
+        private readonly IDisposable _registration;
+        private readonly IOptionsMonitor<SourceOptions> _sourceMonitor;
         private ConfigurationReloadToken _changeToken;
-        private IDisposable _registration;
-        private SourceOptions _sourceOptions;
 
         public CascadeOptionsSetup(IOptionsMonitor<SourceOptions> sourceMonitor)
         {
             _registration = sourceMonitor.OnChange(RaiseChange);
-            _sourceOptions = sourceMonitor.CurrentValue;
             _changeToken = new ConfigurationReloadToken();
+            _sourceMonitor = sourceMonitor;
         }
 
         public string Name => Options.DefaultName;
 
-        public void Configure(TargetOptions target) => Convert(target, _sourceOptions);
+        public void Configure(TargetOptions target) => Convert(target, _sourceMonitor.CurrentValue);
 
         protected abstract void Convert(TargetOptions target, SourceOptions source);
 
@@ -37,7 +37,6 @@ namespace Microsoft.Azure.SignalR.Management.Configuration
 
         private void RaiseChange(SourceOptions sourceOptions)
         {
-            _sourceOptions = sourceOptions;
             var previousToken = Interlocked.Exchange(ref _changeToken, new ConfigurationReloadToken());
             previousToken.OnReload();
         }

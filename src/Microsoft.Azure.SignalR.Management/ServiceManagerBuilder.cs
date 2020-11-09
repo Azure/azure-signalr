@@ -7,6 +7,7 @@ using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+
 namespace Microsoft.Azure.SignalR.Management
 {
     /// <summary>
@@ -53,6 +54,7 @@ namespace Microsoft.Azure.SignalR.Management
         public IServiceManager Build()
         {
             _services.AddSignalRServiceManager();
+            _services.Configure<ServiceManagerContext>(c => c.DisposeServiceProvider = true);
             var serviceProvider = _services.BuildServiceProvider();
             var context = serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value;
             var productInfo = context.ProductInfo;

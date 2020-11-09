@@ -28,9 +28,9 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly string _productInfo;
         private readonly ServiceManagerContext _context;
         private readonly RestClientFactory _restClientFactory;
-        private readonly ServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
 
-        internal ServiceManager(ServiceManagerContext context, RestClientFactory restClientFactory, ServiceProvider serviceProvider)
+        internal ServiceManager(ServiceManagerContext context, RestClientFactory restClientFactory, IServiceProvider serviceProvider)
         {
             _endpoint = context.ServiceEndpoints.Single();//temp solution
 
@@ -145,7 +145,10 @@ namespace Microsoft.Azure.SignalR.Management
 
         public void Dispose()
         {
-            _serviceProvider?.Dispose();
+            if (_context.DisposeServiceProvider)
+            {
+                (_serviceProvider as IDisposable).Dispose();
+            }
         }
 
         public string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)

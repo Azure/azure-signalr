@@ -18,5 +18,7 @@ namespace Microsoft.Azure.SignalR.Management
         public IWebProxy Proxy { get; set; }
 
         public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
+
+        public bool DisposeServiceProvider { get; set; } = false;
     }
 }
