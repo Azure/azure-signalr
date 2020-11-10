@@ -17,14 +17,10 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _managerFactory = managerFactory;
         }
+
         public async Task<IServiceHubContext> Create(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
         {
             var manager = await _managerFactory.Create(hubName, cancellationToken, loggerFactory);
-            return CreateWithManager(manager);
-        }
-
-        private ServiceHubContext CreateWithManager(IServiceHubLifetimeManager manager)
-        {
             var servicesPerHub = new ServiceCollection();
             servicesPerHub.AddSignalRCore();
             servicesPerHub.AddSingleton((HubLifetimeManager<Hub>)manager);

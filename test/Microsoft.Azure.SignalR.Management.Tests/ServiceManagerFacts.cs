@@ -47,9 +47,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                                                                            from claims in _claimLists
                                                                            from appName in _appNames
                                                                            select new object[] { userId, claims, appName };
+
         [Theory]
         [MemberData(nameof(TestGenerateAccessTokenData))]
-        [Obsolete]
         internal void GenerateClientAccessTokenTest(string userId, Claim[] claims, string appName)
         {
             var builder = new ServiceManagerBuilder()
@@ -69,7 +69,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         [Theory]
         [MemberData(nameof(TestGenerateClientEndpointData))]
-        [Obsolete]
         internal void GenerateClientEndpointTest(string appName, string expectedClientEndpoint)
         {
             var builder = new ServiceManagerBuilder()
@@ -174,15 +173,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
 
             return $"{Endpoint}/client/?hub={appName.ToLower()}_{HubName.ToLower()}";
-        }
-
-        [Fact]
-        public void Test()
-        {
-            var services = new ServiceCollection();
-            services.AddSignalRServiceManager();
-            services.Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
-            services.BuildServiceProvider();
         }
     }
 }

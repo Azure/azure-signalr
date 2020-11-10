@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Management
     /// </summary>
     public class ServiceManagerBuilder : IServiceManagerBuilder
     {
-        private readonly ServiceCollection _services = new ServiceCollection();
+        private readonly IServiceCollection _services = new ServiceCollection();
 
         /// <summary>
         /// Registers an action used to configure <see cref="IServiceManager"/>.
