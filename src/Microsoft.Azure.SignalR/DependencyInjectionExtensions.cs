@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
-        private static ISignalRServerBuilder AddAzureSignalRCore(this ISignalRServerBuilder builder)
+        internal static ISignalRServerBuilder AddAzureSignalRCore(this ISignalRServerBuilder builder)
         {
             builder.Services
                 .AddSingleton(typeof(HubLifetimeManager<>), typeof(ServiceLifetimeManager<>))

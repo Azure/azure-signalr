@@ -7,9 +7,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -21,6 +19,10 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public static IServiceCollection AddSignalRServiceManager(this IServiceCollection services)
         {
+            services.AddSignalR()
+                    .AddAzureSignalRCore();
+
+            //cascade options setup
             services.AddSingleton<ServiceManagerOptionsSetup>()
                     .AddSingleton<IConfigureOptions<ServiceManagerOptions>>(sp => sp.GetService<ServiceManagerOptionsSetup>())
                     .AddSingleton<IOptionsChangeTokenSource<ServiceManagerOptions>>(sp => sp.GetService<ServiceManagerOptionsSetup>());
@@ -33,7 +35,7 @@ namespace Microsoft.Azure.SignalR.Management
                     .AddSingleton<IOptionsChangeTokenSource<ServiceOptions>>(sp => sp.GetService<ServiceOptionsSetup>());
 
             //add dependencies for persistent mode only
-            services.AddSingleton<IServerNameProvider, DefaultServerNameProvider>()
+            services
                 .AddSingleton<ConnectionFactory>()
                 .AddSingleton<IConnectionFactory>(sp =>
                 {
@@ -41,25 +43,16 @@ namespace Microsoft.Azure.SignalR.Management
                     var defaultConnectionFactory = sp.GetRequiredService<ConnectionFactory>();
                     return new ManagementConnectionFactory(productInfo, defaultConnectionFactory);
                 })
-                .AddSingleton<IServiceProtocol, ServiceProtocol>()
-                .AddSingleton<IClientConnectionManager, ClientConnectionManager>()
-                .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
                 .AddSingleton<IServiceConnectionFactory>(sp =>
                     ActivatorUtilities.CreateInstance<ServiceConnectionFactory>(sp, (ConnectionDelegate)((connectionContext) => Task.CompletedTask)))
                 .AddSingleton<MultiEndpointConnectionContainerFactory>()
-                .AddSingleton<IServiceEndpointManager, ServiceEndpointManager>()
-                .AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>()
-                .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>));
+                .AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
 
-            services.AddSignalRCore();
             services.AddLogging()
                     .AddSingleton<ServiceHubContextFactory>()
                     .AddSingleton<ServiceHubLifetimeManagerFactory>();
             services.AddSingleton<IServiceManager, ServiceManager>();
             services.AddRestClientFactory();
-            services.TryAddSingleton<IEndpointRouter, DefaultEndpointRouter>();
-            services.AddSingleton<IServiceEndpointManager, ServiceEndpointManager>()
-                    .AddSingleton<IServerNameProvider, DefaultServerNameProvider>();
             return services.TrySetProductInfo();
         }
 
