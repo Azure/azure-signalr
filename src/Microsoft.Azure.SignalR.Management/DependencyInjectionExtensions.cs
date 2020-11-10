@@ -2,9 +2,14 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 using System;
 using System.ComponentModel;
+using System.Net.Http;
 using System.Reflection;
-using Microsoft.Azure.SignalR.Management.Configuration;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -26,6 +31,35 @@ namespace Microsoft.Azure.SignalR.Management
             services.AddSingleton<ServiceOptionsSetup>()
                     .AddSingleton<IConfigureOptions<ServiceOptions>>(sp => sp.GetService<ServiceOptionsSetup>())
                     .AddSingleton<IOptionsChangeTokenSource<ServiceOptions>>(sp => sp.GetService<ServiceOptionsSetup>());
+
+            //add dependencies for persistent mode only
+            services.AddSingleton<IServerNameProvider, DefaultServerNameProvider>()
+                .AddSingleton<ConnectionFactory>()
+                .AddSingleton<IConnectionFactory>(sp =>
+                {
+                    var productInfo = sp.GetRequiredService<IOptions<ServiceManagerContext>>().Value.ProductInfo;
+                    var defaultConnectionFactory = sp.GetRequiredService<ConnectionFactory>();
+                    return new ManagementConnectionFactory(productInfo, defaultConnectionFactory);
+                })
+                .AddSingleton<IServiceProtocol, ServiceProtocol>()
+                .AddSingleton<IClientConnectionManager, ClientConnectionManager>()
+                .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
+                .AddSingleton<IServiceConnectionFactory>(sp =>
+                    ActivatorUtilities.CreateInstance<ServiceConnectionFactory>(sp, (ConnectionDelegate)((connectionContext) => Task.CompletedTask)))
+                .AddSingleton<MultiEndpointConnectionContainerFactory>()
+                .AddSingleton<IServiceEndpointManager, ServiceEndpointManager>()
+                .AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>()
+                .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>));
+
+            services.AddSignalRCore();
+            services.AddLogging()
+                    .AddSingleton<ServiceHubContextFactory>()
+                    .AddSingleton<ServiceHubLifetimeManagerFactory>();
+            services.AddSingleton<IServiceManager, ServiceManager>();
+            services.AddRestClientFactory();
+            services.TryAddSingleton<IEndpointRouter, DefaultEndpointRouter>();
+            services.AddSingleton<IServiceEndpointManager, ServiceEndpointManager>()
+                    .AddSingleton<IServerNameProvider, DefaultServerNameProvider>();
             return services.TrySetProductInfo();
         }
 
@@ -55,5 +89,15 @@ namespace Microsoft.Azure.SignalR.Management
             var productInfo = ProductInfo.GetProductInfo(assembly);
             return services.Configure<ServiceManagerContext>(o => o.ProductInfo = o.ProductInfo ?? productInfo);
         }
+
+        private static IServiceCollection AddRestClientFactory(this IServiceCollection services) => services
+            .AddHttpClient()
+            .AddSingleton(sp =>
+            {
+                var options = sp.GetRequiredService<IOptions<ServiceManagerContext>>().Value;
+                var productInfo = options.ProductInfo;
+                var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+                return new RestClientFactory(productInfo, httpClientFactory);
+            });
     }
 }
