@@ -48,7 +48,7 @@ Diagnostic logs are disabled by default. To enable diagnostic logs, follow these
 
 1. Configure the log source settings.
    1. In **Log Source Settings** section, a table shows collecting behaviors for each log type. 
-   1. Check the the specific log type you want to collect for all connections. Otherwise the the log will be collected only for [diagnostic clients](#diagnostic-client).
+   1. Check the specific log type you want to collect for all connections. Otherwise the the log will be collected only for [diagnostic clients](#diagnostic-client).
 1. Configure the log destination settings. 
    1. In **Log Destination Settings** section, a table of diagnostic settings display the existing diagnostic settings. You can click the link in the table to get access to the log destination to view the collected diagnostic logs.
    1. In this section, click the button **Configure Log Destination Settings** to add, update, or delete diagnostic settings.
@@ -70,7 +70,7 @@ Connectivity logs provide detailed information for SignalR hub connections. For 
 
 Messaging logs provide tracing information for the SignalR hub messages received and sent via SignalR service. For example, tracing ID and message type of the message. The tracing ID and message type is also logged in app server. Typically the message is recorded when it arrives at or leaves from service or server. Therefore messaging logs are helpful for troubleshooting message related issues. For typical message related troubleshooting guide, see [message related issues](#message-related-issues)
 
-> This type of logs is generated for every messages, if the messages are sent frequently, messaging logs might impact the performance of SignalR service. However, you can choose different collecting behaviors to minimize the performance impact. See [diagnostic logs collecting behaviors](#Diagnostic-logs-collecting-behaviors) below.
+> This type of logs is generated for every message, if the messages are sent frequently, messaging logs might impact the performance of SignalR service. However, you can choose different collecting behaviors to minimize the performance impact. See [diagnostic logs collecting behaviors](#Diagnostic-logs-collecting-behaviors) below.
 
 ### Diagnostic logs collecting behaviors
 
@@ -102,7 +102,7 @@ This behavior doesn't require you to update server side configurations. This con
 
 Diagnostic logs are **only** collected by [diagnostic clients](#diagnostic-client). All messages get logged including client messages in the diagnostic clients.
 
-> The limit of the diagnostic clients' number is 100. If the number of diagnostic clients exceeds 100, the outnumbered diagnostic clients will get throttled by SignalR service.
+> The limit of the diagnostic clients' number is 100. If the number of diagnostic clients exceeds 100, the outnumbered diagnostic clients will get throttled by SignalR service. The new but outnumbered clients will be failed to connect to SignalR service, and throw `System.Net.Http.HttpRequestException` which has message `Response status code does not indicate success: 429 (Too Many Requests)`, while the already connected ones work without getting impacted by the throttling policy.
 
 ##### Diagnostic client
 
