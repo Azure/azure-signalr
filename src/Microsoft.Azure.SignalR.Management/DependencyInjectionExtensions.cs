@@ -19,20 +19,37 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public static IServiceCollection AddSignalRServiceManager(this IServiceCollection services)
         {
-            services.AddSignalR()
-                    .AddAzureSignalRCore();
+            return services.AddSignalRServiceManager<ServiceManagerOptionsSetup>();
+        }
 
+        /// <summary>
+        /// Adds the essential SignalR Service Manager services to the specified services collection and registers an action used to configure <see cref="ServiceManagerOptions"/>
+        /// </summary>
+        public static IServiceCollection AddSignalRServiceManager(this IServiceCollection services, Action<ServiceManagerOptions> configure)
+        {
+            services.Configure(configure);
+            return services.AddSignalRServiceManager();
+        }
+
+        /// <summary>
+        /// Adds the essential SignalR Service Manager services to the specified services collection.
+        /// </summary>
+        /// <remarks>Designed for Azure Function extension where the setup of <see cref="ServiceManagerOptions"/> is different from SDK</remarks>
+        /// <typeparam name="TOptionsSetup">The type of class used to setup <see cref="ServiceManagerOptions"/>. </typeparam>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static IServiceCollection AddSignalRServiceManager<TOptionsSetup>(this IServiceCollection services) where TOptionsSetup : class, IConfigureOptions<ServiceManagerOptions>, IOptionsChangeTokenSource<ServiceManagerOptions>
+        {
             //cascade options setup
-            services.AddSingleton<ServiceManagerOptionsSetup>()
-                    .AddSingleton<IConfigureOptions<ServiceManagerOptions>>(sp => sp.GetService<ServiceManagerOptionsSetup>())
-                    .AddSingleton<IOptionsChangeTokenSource<ServiceManagerOptions>>(sp => sp.GetService<ServiceManagerOptionsSetup>());
+            services.AddSingleton<TOptionsSetup>()
+                    .AddSingleton<IConfigureOptions<ServiceManagerOptions>>(sp => sp.GetService<TOptionsSetup>())
+                    .AddSingleton<IOptionsChangeTokenSource<ServiceManagerOptions>>(sp => sp.GetService<TOptionsSetup>());
             services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
             services.AddSingleton<ServiceManagerContextSetup>()
                     .AddSingleton<IConfigureOptions<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>())
                     .AddSingleton<IOptionsChangeTokenSource<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>());
-            services.AddSingleton<ServiceOptionsSetup>()
-                    .AddSingleton<IConfigureOptions<ServiceOptions>>(sp => sp.GetService<ServiceOptionsSetup>())
-                    .AddSingleton<IOptionsChangeTokenSource<ServiceOptions>>(sp => sp.GetService<ServiceOptionsSetup>());
+
+            services.AddSignalR()
+                    .AddAzureSignalR<ServiceOptionsSetup>();
 
             //add dependencies for persistent mode only
             services
@@ -54,15 +71,6 @@ namespace Microsoft.Azure.SignalR.Management
             services.AddSingleton<IServiceManager, ServiceManager>();
             services.AddRestClientFactory();
             return services.TrySetProductInfo();
-        }
-
-        /// <summary>
-        /// Adds the essential SignalR Service Manager services to the specified services collection and registers an action used to configure <see cref="ServiceManagerOptions"/>
-        /// </summary>
-        public static IServiceCollection AddSignalRServiceManager(this IServiceCollection services, Action<ServiceManagerOptions> configure)
-        {
-            services.Configure(configure);
-            return services.AddSignalRServiceManager();
         }
 
         /// <summary>
