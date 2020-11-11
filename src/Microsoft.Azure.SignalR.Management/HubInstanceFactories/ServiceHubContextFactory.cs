@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Management
             _managerFactory = managerFactory;
         }
 
-        public async Task<IServiceHubContext> Create(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
+        public async Task<IServiceHubContext> CreateAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
         {
             var manager = await _managerFactory.Create(hubName, cancellationToken, loggerFactory);
             var servicesPerHub = new ServiceCollection();

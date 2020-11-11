@@ -54,14 +54,9 @@ namespace Microsoft.Azure.SignalR.Management
             //add dependencies for persistent mode only
             services
                 .AddSingleton<ConnectionFactory>()
-                .AddSingleton<IConnectionFactory>(sp =>
-                {
-                    var productInfo = sp.GetRequiredService<IOptions<ServiceManagerContext>>().Value.ProductInfo;
-                    var defaultConnectionFactory = sp.GetRequiredService<ConnectionFactory>();
-                    return new ManagementConnectionFactory(productInfo, defaultConnectionFactory);
-                })
-                .AddSingleton<IServiceConnectionFactory>(sp =>
-                    ActivatorUtilities.CreateInstance<ServiceConnectionFactory>(sp, (ConnectionDelegate)((connectionContext) => Task.CompletedTask)))
+                .AddSingleton<IConnectionFactory,ManagementConnectionFactory>()
+                .AddSingleton<ConnectionDelegate>((connectionContext) => Task.CompletedTask)
+                .AddSingleton<IServiceConnectionFactory, ServiceConnectionFactory>()
                 .AddSingleton<MultiEndpointConnectionContainerFactory>()
                 .AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
 
@@ -88,7 +83,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             var assembly = Assembly.GetExecutingAssembly();
             var productInfo = ProductInfo.GetProductInfo(assembly);
-            return services.Configure<ServiceManagerContext>(o => o.ProductInfo = o.ProductInfo ?? productInfo);
+            return services.Configure<ServiceManagerContext>(o => o.ProductInfo ??= productInfo);
         }
 
         private static IServiceCollection AddRestClientFactory(this IServiceCollection services) => services

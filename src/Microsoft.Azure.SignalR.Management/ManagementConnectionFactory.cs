@@ -5,17 +5,18 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     internal class ManagementConnectionFactory : IConnectionFactory
     {
         private readonly string _productInfo;
-        private readonly IConnectionFactory _connectionFactory;
+        private readonly ConnectionFactory _connectionFactory;
 
-        public ManagementConnectionFactory(string productInfo, IConnectionFactory connectionFactory)
+        public ManagementConnectionFactory(IOptions<ServiceManagerContext> context, ConnectionFactory connectionFactory)
         {
-            _productInfo = productInfo;
+            _productInfo = context.Value.ProductInfo;
             _connectionFactory = connectionFactory;
         }
 
