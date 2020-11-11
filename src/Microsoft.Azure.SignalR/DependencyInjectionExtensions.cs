@@ -14,7 +14,6 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Microsoft.Win32.SafeHandles;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
