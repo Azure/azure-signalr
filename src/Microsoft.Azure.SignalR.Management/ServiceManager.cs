@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IServiceProvider _serviceProvider;
         private readonly bool _disposeServiceProvider;
 
-        internal ServiceManager(IOptions<ServiceManagerContext> context, RestClientFactory restClientFactory, ServiceHubContextFactory serviceHubContextFactory, IServiceProvider serviceProvider)
+        public ServiceManager(IOptions<ServiceManagerContext> context, RestClientFactory restClientFactory, ServiceHubContextFactory serviceHubContextFactory, IServiceProvider serviceProvider)
         {
             _endpoint = context.Value.ServiceEndpoints.Single();//temp solution
 
