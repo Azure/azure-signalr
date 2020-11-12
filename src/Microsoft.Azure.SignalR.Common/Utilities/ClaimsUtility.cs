@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly string DefaultRoleClaimType = DefaultClaimsIdentity.RoleClaimType;
 
         public static IEnumerable<Claim> BuildJwtClaims(
+            ILogger logger,
             ClaimsPrincipal user, 
             string userId, 
             Func<IEnumerable<Claim>> claimsProvider, 
@@ -34,7 +36,7 @@ namespace Microsoft.Azure.SignalR
             bool enableDetailedErrors = false, 
             int endpointsCount = 1,
             int? maxPollInterval = null,
-            bool isDiagnosticClient = false)
+            bool isDiagnosticClient = false, TimeSpan? handshakeTimeout = null)
         {
             if (userId != null)
             {
@@ -50,6 +52,11 @@ namespace Microsoft.Azure.SignalR
             if (isDiagnosticClient)
             {
                 yield return new Claim(Constants.ClaimType.DiagnosticClient, "true");
+            }
+
+            if (TryGetCustomHandshakeTimeoutClaim(handshakeTimeout, logger, out var handshakeTimeoutClaim))
+            {
+                yield return handshakeTimeoutClaim;
             }
 
             var authenticationType = user?.Identity?.AuthenticationType;
@@ -167,6 +174,49 @@ namespace Microsoft.Azure.SignalR
             }
 
             return new ClaimsPrincipal(new ClaimsIdentity(claims, authenticationType, nameType, roleType));
+        }
+
+        private static bool TryGetCustomHandshakeTimeoutClaim(TimeSpan? handshakeTimeout, ILogger logger, out Claim claim)
+        {
+            // use default handshake timeout
+            if (!handshakeTimeout.HasValue || handshakeTimeout.Value.Equals(Constants.Periods.DefaultHandshakeTimeout))
+            {
+                claim = null;
+                return false;
+            }
+
+            // the custom handshake timeout is invalid, use default hanshake timeout instead
+            if (handshakeTimeout.Value.CompareTo(TimeSpan.Zero) <= 0 ||
+                handshakeTimeout.Value.CompareTo(Constants.Periods.MaxCustomHandshakeTimeout) > 0)
+            {
+                Log.FailToSetCustomHandshakeTimeout(logger, new ArgumentOutOfRangeException(nameof(handshakeTimeout)));
+                claim = null;
+                return false;
+            }
+
+            // the custom handshake timeout is valid
+            Log.SucceedToSetCustomHandshakeTimeout(logger, handshakeTimeout.Value);
+            claim = new Claim(Constants.ClaimType.CustomHandshakeTimeout, ((int)handshakeTimeout.Value.TotalSeconds).ToString());
+            return true;
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, int, Exception> _succeedToSetCustomHandshakeTimeout =
+                LoggerMessage.Define<int>(LogLevel.Information, new EventId(1, "SucceedToSetCustomHandshakeTimeout"), "Succeed to set custom handshake timeout: {timeout} seconds.");
+
+            private static readonly Action<ILogger, Exception> _failToSetCustomHandshakeTimeout =
+                LoggerMessage.Define(LogLevel.Warning, new EventId(2, "FailToSetCustomHandshakeTimeout"), $"Fail to set custom handshake timeout, use default handshake timeout {Constants.Periods.DefaultHandshakeTimeout.TotalSeconds} seconds instead. The range of custom handshake timeout should between 1 second to {Constants.Periods.MaxCustomHandshakeTimeout.TotalSeconds} seconds.");
+        
+            public static void SucceedToSetCustomHandshakeTimeout(ILogger logger, TimeSpan customHandshakeTimeout)
+            {
+                _succeedToSetCustomHandshakeTimeout(logger, (int)customHandshakeTimeout.TotalSeconds, null);
+            }
+
+            public static void FailToSetCustomHandshakeTimeout(ILogger logger, Exception exception)
+            {
+                _failToSetCustomHandshakeTimeout(logger, exception);
+            }
         }
     }
 }

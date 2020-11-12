@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [Fact]
         public void TestGetSystemClaimsWithDefaultValue()
         {
-            var claims = ClaimsUtility.BuildJwtClaims(null, null, null).ToList();
+            var claims = ClaimsUtility.BuildJwtClaims(NullLogger.Instance, null, null, null).ToList();
             Assert.Empty(claims);
         }
 
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [MemberData(nameof(ClaimsParameters))]
         public void TestGetSystemClaims(ClaimsIdentity identity, string userId, Func<IEnumerable<Claim>> provider, string expectedAuthenticationType, int expectedClaimsCount)
         {
-            var claims = ClaimsUtility.BuildJwtClaims(new ClaimsPrincipal(identity), userId, provider).ToArray();
+            var claims = ClaimsUtility.BuildJwtClaims(NullLogger.Instance, new ClaimsPrincipal(identity), userId, provider).ToArray();
             var resultIdentity = ClaimsUtility.GetUserPrincipal(claims).Identity;
 
             var ci = resultIdentity as ClaimsIdentity;

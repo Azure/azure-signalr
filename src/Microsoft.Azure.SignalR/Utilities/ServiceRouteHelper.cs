@@ -15,9 +15,9 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceRouteHelper
     {
-        public static async Task RedirectToService(HttpContext context, string hubName, IList<IAuthorizeData> authorizationData)
+        public static async Task RedirectToService(HttpContext context, Type hubType, IList<IAuthorizeData> authorizationData)
         {
-            var handler = context.RequestServices.GetRequiredService<NegotiateHandler>();
+            var handler = context.RequestServices.GetRequiredService(typeof(NegotiateHandler<>).MakeGenericType(hubType)) as INegotiateHandler;
             var loggerFactory = context.RequestServices.GetService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger<ServiceRouteHelper>();
 
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR
             NegotiationResponse negotiateResponse = null;
             try
             {
-                negotiateResponse = await handler.Process(context, hubName);
+                negotiateResponse = await handler.Process(context);
 
                 if (context.Response.HasStarted)
                 {

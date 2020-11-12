@@ -45,7 +45,7 @@ namespace Microsoft.Azure.SignalR
         {
             // Get auth attributes
             var authorizationData = AuthorizeHelper.BuildAuthorizePolicy(typeof(THub));
-            _routes.MapRoute(path + Constants.Path.Negotiate, c => ServiceRouteHelper.RedirectToService(c, typeof(THub).Name, authorizationData));
+            _routes.MapRoute(path + Constants.Path.Negotiate, c => ServiceRouteHelper.RedirectToService(c, typeof(THub), authorizationData));
 
             Start<THub>();
         }

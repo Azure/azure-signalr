@@ -11,11 +11,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class NegotiateHandler
+    internal class NegotiateHandler<THub> : INegotiateHandler where THub : Hub
     {
         private readonly IUserIdProvider _userIdProvider;
         private readonly IConnectionRequestIdProvider _connectionRequestIdProvider;
@@ -29,17 +30,23 @@ namespace Microsoft.Azure.SignalR
         private readonly bool _enableDetailedErrors;
         private readonly int _endpointsCount;
         private readonly int? _maxPollInterval;
+        private readonly TimeSpan? _customHandshakeTimeout;
+        private readonly string _hubName;
+        private readonly ILogger<NegotiateHandler<THub>> _logger;
 
         public NegotiateHandler(
-            IOptions<HubOptions> hubOptions,
+            IOptions<HubOptions> globalHubOptions,
+            IOptions<HubOptions<THub>> hubOptions,
             IServiceEndpointManager endpointManager, 
             IEndpointRouter router, 
             IUserIdProvider userIdProvider, 
             IServerNameProvider nameProvider, 
             IConnectionRequestIdProvider connectionRequestIdProvider, 
             IOptions<ServiceOptions> options,
-            IBlazorDetector blazorDetector)
+            IBlazorDetector blazorDetector,
+            ILogger<NegotiateHandler<THub>> logger)
         {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _endpointManager = endpointManager ?? throw new ArgumentNullException(nameof(endpointManager));
             _router = router ?? throw new ArgumentNullException(nameof(router));
             _serverName = nameProvider?.GetName();
@@ -49,18 +56,20 @@ namespace Microsoft.Azure.SignalR
             _diagnosticClientFilter = options?.Value?.DiagnosticClientFilter;
             _blazorDetector = blazorDetector ?? new DefaultBlazorDetector();
             _mode = options.Value.ServerStickyMode;
-            _enableDetailedErrors = hubOptions.Value.EnableDetailedErrors == true;
+            _enableDetailedErrors = globalHubOptions.Value.EnableDetailedErrors == true;
             _endpointsCount = options.Value.Endpoints.Length;
             _maxPollInterval = options.Value.MaxPollIntervalInSeconds;
+            _customHandshakeTimeout = hubOptions.Value.HandshakeTimeout ?? globalHubOptions.Value.HandshakeTimeout;
+            _hubName = typeof(THub).Name;
         }
 
-        public async Task<NegotiationResponse> Process(HttpContext context, string hubName)
+        public async Task<NegotiationResponse> Process(HttpContext context)
         {
-            var claims = BuildClaims(context, hubName);
+            var claims = BuildClaims(context);
             var request = context.Request;
             var cultureName = context.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture.Name;
             var originalPath = GetOriginalPath(request.Path);
-            var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(context, _endpointManager.GetEndpoints(hubName)));
+            var provider = _endpointManager.GetEndpointProvider(_router.GetNegotiateEndpoint(context, _endpointManager.GetEndpoints(_hubName)));
 
             if (provider == null)
             {
@@ -71,8 +80,8 @@ namespace Microsoft.Azure.SignalR
 
             return new NegotiationResponse
             {
-                Url = provider.GetClientEndpoint(hubName, originalPath, queryString),
-                AccessToken = await provider.GenerateClientAccessTokenAsync(hubName, claims),
+                Url = provider.GetClientEndpoint(_hubName, originalPath, queryString),
+                AccessToken = await provider.GenerateClientAccessTokenAsync(_hubName, claims),
                 // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
                 AvailableTransports = new List<AvailableTransport>()
             };
@@ -97,12 +106,12 @@ namespace Microsoft.Azure.SignalR
                 : queryString;
         }
 
-        private IEnumerable<Claim> BuildClaims(HttpContext context, string hubName)
+        private IEnumerable<Claim> BuildClaims(HttpContext context)
         {
             // Make sticky mode required if detect using blazor
-            var mode = _blazorDetector.IsBlazor(hubName) ? ServerStickyMode.Required : _mode;
+            var mode = _blazorDetector.IsBlazor(_hubName) ? ServerStickyMode.Required : _mode;
             var userId = _userIdProvider.GetUserId(new ServiceHubConnectionContext(context));
-            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(context)).ToList();
+            return ClaimsUtility.BuildJwtClaims(_logger, context.User, userId, GetClaimsProvider(context), _serverName, mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(context), _customHandshakeTimeout).ToList();
         }
 
         private Func<IEnumerable<Claim>> GetClaimsProvider(HttpContext context)

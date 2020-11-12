@@ -66,7 +66,7 @@ namespace Microsoft.Azure.SignalR
             // Replaces the negotiate endpoint with one that does the service redirect
             var routeEndpointBuilder = new RouteEndpointBuilder(async context =>
             {
-                await ServiceRouteHelper.RedirectToService(context, hubMetadata.HubType.Name, null);
+                await ServiceRouteHelper.RedirectToService(context, hubMetadata.HubType, null);
             },
             routeEndpoint.RoutePattern,
             routeEndpoint.Order);
