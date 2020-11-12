@@ -56,7 +56,7 @@ Diagnostic logs are disabled by default. To enable diagnostic logs, follow these
    1.	Set the archive target that you want. Currently, SignalR service supports **Archive to a storage account** and **Send to Log Analytics**.
    1. Select the logs you want to archive. Only `AllLogs` is available for diagnostic log. It only controls whether you want to archive the logs. To configure which log types needs to be generated in SignalR service, configure in **Log Source Settings** section.
 	![Diagnostics settings pane](./images/diagnostic-logs/diagnostics-settings-pane.png)
-   1.	Save the new diagnostics setting. The new setting takes effect in about 10 minutes. After that, logs will be sent to configured archival target. For more information about configuring log destination settings, see the [overview of Azure diagnostic logs](../azure-monitor/platform/resource-logs-overview.md).
+   1.	Save the new diagnostics setting. The new setting takes effect in about 10 minutes. After that, logs will be sent to configured archival target. For more information about configuring log destination settings, see the [overview of Azure diagnostic logs](https://docs.microsoft.com/azure/azure-monitor/platform/platform-logs-overview).
 
 ### Diagnostic logs types
 
@@ -100,13 +100,15 @@ This behavior doesn't require you to update server side configurations. This con
 
 #### Collect partially
 
-Diagnostic logs are **only** collected by [diagnostic clients](#diagnostic-client). All messages get logged including client messages in the diagnostic clients.
+Diagnostic logs are **only** collected by [diagnostic clients](#diagnostic-client). All messages get logged including client messages and connectivity events in the diagnostic clients.
 
 > The limit of the diagnostic clients' number is 100. If the number of diagnostic clients exceeds 100, the outnumbered diagnostic clients will get throttled by SignalR service. The new but outnumbered clients will be failed to connect to SignalR service, and throw `System.Net.Http.HttpRequestException` which has message `Response status code does not indicate success: 429 (Too Many Requests)`, while the already connected ones work without getting impacted by the throttling policy.
 
 ##### Diagnostic client
 
 Diagnostic client is a logical concept, any client can be a diagnostic client. The server controls which client can be a diagnostic client. Once a client is marked as a diagnostic client, all diagnostic logs will be enabled in this client. To set a client be a diagnostic client, see the [configuration guide](#configuration-guide-1) below.
+
+> Diagnostic clients works for both **collect all** and **collect partially** collecting behaviors. It has higher priority to collect logs.
 
 ##### Configuration guide
 
@@ -302,6 +304,7 @@ For **collect all** collecting behavior:
 SignalR service only trace messages in direction **from server to client via SignalR service**. The tracing ID will be generated in server, the message will carry the tracing ID to SignalR service.
 
 > If you want to trace message and [send messages from outside a hub](https://docs.microsoft.com/en-us/aspnet/core/signalr/hubcontext) in your app server, you need to enable **collect all** collecting behavior to collect message logs for the messages which are not originated from diagnostic clients.
+> Diagnostic clients works for both **collect all** and **collect partially** collecting behaviors. It has higher priority to collect logs. For more information, see [diagnostic client section](#diagnostic-client).
 
 By checking the log in server and service side, you can easily find out whether the message is sent from server, arrives at SignalR service, and leaves from SignalR service. Basically, by checking if the *received* and *sent* message are matched or not based on message tracing Id, you can tell whether the message loss issue is in server or SignalR service in this direction. For more information, see the [details](#message-flow-detail-for-path3) below.
 
@@ -324,7 +327,7 @@ Then the message carries the tracing ID Server in **Path 2**. Server will genera
 <span id="message-flow-detail-for-path3"></span>
 Once the message invokes the hub method in server, a new service message will be generated with a *new tracing ID*. Once the service message is generated, server will generate a log in template `Start to broadcast/send message <MessageTracingId> ...`, the actual log will be based on your scenario. Then the message will be delivered to SignalR service in **Path 3**, once the service message leaves from server, a log called `Succeeded to send message <MessageTracingId>` will be generated. 
 
-> Due to the limitation of SignalR, message tracing ID can't be passed through SignalR hub. 
+> The tracing ID of the message from client cannot map to the tracing ID of the service message to be sent to SignalR service.
 
 Once the service message arrives at SignalR service, a log called `Received a <MessageType> message <MessageTracingId> from server connection <ConnectionId>.` will be generated. Then SignalR service processes the service message and deliver to the target client(s). Once the message is sent to client(s) in **Path 4**, log `Sent a message <MessageTracingId> to client connection <ConnectionId> successfully.` will be generated.
 
@@ -332,14 +335,29 @@ In summary, the message log will be generated when message goes in and out the S
 
 Below is a typical message loss issue.
 
-###### A user fails to receive messages in a group
+###### A client fails to receive messages in a group
 
-The typical story in this issue is that the user joins a group **after** sending a group message.
-Without diagnostic logs, you are unable to find out when the user is connected and when the group message is sent.
+The typical story in this issue is that the client joins a group **after** sending a group message.
+
+```
+Class Chat : Hub
+{
+    public void JoinAndSendGroup(string name, string groupName)
+    {
+        Groups.AddToGroupAsync(Context.ConnectionId, groupName); // join group
+        Clients.Group(groupName).SendAsync("ReveiceGroupMessage", name, "I'm in group"); // send group message
+    }
+}
+```
+
+For example, someone may make invocations of *join group* and *send group message* in the same hub method. The problem here is the `AddToGroupAsync` is an `async` method. There's no `await` for the `AddToGroupAsync` to wait it finishes, the group message sent before `AddToGroupAsync` completes. Due to network delay, and the delay of the process of joining client to some group, the join group action may complete later than group message delivery. If so, the first group message won't have any client as receiver, since no client has joined the group. So it'll become a message lost issue.
+
+Without diagnostic logs, you are unable to find out when the client joins the group and when the group message is sent.
 Once you enable messaging logs, you are able to compare the message arriving time in SignalR service. Follow the below steps to troubleshoot:
-1. Find the message logs in server to find when the user is joined the group and when the group message is sent. 1. Get the message tracing ID A of joining the group and the message tracing ID B of group message from the message logs.
+1. Find the message logs in server to find when the client joined the group and when the group message is sent.
+1. Get the message tracing ID A of joining the group and the message tracing ID B of group message from the message logs.
 1. Filter these message tracing ID among messaging logs in your log archive target, then compare their arriving timestamps, you will find which message message is arrived first in SignalR service.
-1. If message tracing ID A's arriving time later than B's, then you must be sending group message **before** the user joining the group.Then you need to make sure the user is in the group before sending group messages.
+1. If message tracing ID A's arriving time later than B's, then you must be sending group message **before** the client joining the group.Then you need to make sure the client is in the group before sending group messages.
 
 If a message get lost in SignalR or server, try to get the warning logs based on the message tracing ID to get the reason. If you need further help, see the [get help section](#get-help).
 
