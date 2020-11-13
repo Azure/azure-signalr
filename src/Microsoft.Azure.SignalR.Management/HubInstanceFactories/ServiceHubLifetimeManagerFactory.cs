@@ -16,20 +16,20 @@ namespace Microsoft.Azure.SignalR.Management
     internal class ServiceHubLifetimeManagerFactory
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly MultiEndpointConnectionContainerFactory _connectionContainerFactory;
         private readonly ServiceManagerContext _context;
-        public ServiceHubLifetimeManagerFactory(IServiceProvider sp, IOptions<ServiceManagerContext> context)
+        public ServiceHubLifetimeManagerFactory(IServiceProvider sp, IOptions<ServiceManagerContext> context, MultiEndpointConnectionContainerFactory connectionContainerFactory)
         {
             _serviceProvider = sp;
+            _connectionContainerFactory = connectionContainerFactory;
             _context = context.Value;
-        }
-        public async Task<IServiceHubLifetimeManager> Create(string hubName, CancellationToken cancellationToken, ILoggerFactory loggerFactoryPerHub=null)
+        }public async Task<IServiceHubLifetimeManager> CreateAsync(string hubName, CancellationToken cancellationToken, ILoggerFactory loggerFactoryPerHub = null)
         {
             switch (_context.ServiceTransportType)
             {
                 case ServiceTransportType.Persistent:
                     {
-                        var containerFactory = _serviceProvider.GetRequiredService<MultiEndpointConnectionContainerFactory>();
-                        var container = containerFactory.Create(hubName,loggerFactoryPerHub);
+                        var container = _connectionContainerFactory.Create(hubName, loggerFactoryPerHub);
                         var connectionManager = new ServiceConnectionManager<Hub>();
                         connectionManager.SetServiceConnection(container);
                         _ = connectionManager.StartAsync();
