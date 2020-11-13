@@ -137,7 +137,7 @@ namespace Microsoft.Azure.SignalR
 
         internal static (string, EndpointType) ParseKey(string key)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (string.IsNullOrEmpty(key))
             {
                 return (string.Empty, EndpointType.Primary);
             }
