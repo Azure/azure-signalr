@@ -6,18 +6,14 @@ using System.ComponentModel;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 
-namespace Microsoft.Azure.SignalR.Common.Endpoints
+namespace Microsoft.Azure.SignalR
 {
-    public static class IConfigurationExtension
+    internal static class IConfigurationExtension
     {
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static (string ConnectionString, ServiceEndpoint[]) GetSignalRServiceEndpoints(this IConfiguration configuration, string sectionKey)
+        public static ServiceEndpoint[] GetSignalRServiceEndpoints(this IConfiguration configuration, string sectionKey)
         {
             var section = configuration.GetSection(sectionKey);
-            var connectionString = section.Value;
-            var endpoints = GetEndpoints(section).ToArray();
-
-            return (connectionString, endpoints);
+            return GetEndpoints(section).ToArray();
         }
 
         private static IEnumerable<ServiceEndpoint> GetEndpoints(IConfiguration section)
