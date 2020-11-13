@@ -108,8 +108,6 @@ Diagnostic logs are **only** collected by [diagnostic clients](#diagnostic-clien
 
 Diagnostic client is a logical concept, any client can be a diagnostic client. The server controls which client can be a diagnostic client. Once a client is marked as a diagnostic client, all diagnostic logs will be enabled in this client. To set a client be a diagnostic client, see the [configuration guide](#configuration-guide-1) below.
 
-> Diagnostic clients works for both **collect all** and **collect partially** collecting behaviors. It has higher priority to collect logs.
-
 ##### Configuration guide
 
 To enable this behavior, you need to configure service, server, client side.
