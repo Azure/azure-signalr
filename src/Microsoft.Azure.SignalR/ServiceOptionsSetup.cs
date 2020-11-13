@@ -61,21 +61,18 @@ namespace Microsoft.Azure.SignalR
         {
             var section = configuration.GetSection(key);
             var connectionString = section.Value;
-            var endpoints = GetEndpoints(section.GetChildren()).ToArray();
+            var endpoints = GetEndpoints(section).ToArray();
 
             return (connectionString, endpoints);
         }
 
-        private static IEnumerable<ServiceEndpoint> GetEndpoints(IEnumerable<IConfigurationSection> sections)
+        private static IEnumerable<ServiceEndpoint> GetEndpoints(IConfiguration section)
         {
-            foreach (var section in sections)
+            foreach (var entry in section.AsEnumerable(true))
             {
-                foreach (var entry in section.AsEnumerable())
+                if (!string.IsNullOrEmpty(entry.Value))
                 {
-                    if (!string.IsNullOrEmpty(entry.Value))
-                    {
-                        yield return new ServiceEndpoint(entry.Key, entry.Value);
-                    }
+                    yield return new ServiceEndpoint(entry.Key, entry.Value);
                 }
             }
         }
