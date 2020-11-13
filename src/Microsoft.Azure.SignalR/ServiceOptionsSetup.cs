@@ -2,8 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.Azure.SignalR.Common.Endpoints;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
@@ -46,35 +45,15 @@ namespace Microsoft.Azure.SignalR
                 Enum.TryParse(mode, true, out stickyMode);
             }
 
-            var (connectionString, endpoints) = GetEndpoint(_configuration, Constants.Keys.ConnectionStringDefaultKey);
+            var (connectionString, endpoints) = _configuration.GetSignalRServiceEndpoints(Constants.Keys.ConnectionStringDefaultKey);
 
             // Fallback to ConnectionStrings:Azure:SignalR:ConnectionString format when the default one is not available
             if (connectionString == null && endpoints.Length == 0)
             {
-                (connectionString, endpoints) = GetEndpoint(_configuration, Constants.Keys.ConnectionStringSecondaryKey);
+                (connectionString, endpoints) = _configuration.GetSignalRServiceEndpoints(Constants.Keys.ConnectionStringSecondaryKey);
             }
 
             return (appName, connectionString, stickyMode, endpoints);
-        }
-
-        private static (string, ServiceEndpoint[]) GetEndpoint(IConfiguration configuration, string key)
-        {
-            var section = configuration.GetSection(key);
-            var connectionString = section.Value;
-            var endpoints = GetEndpoints(section).ToArray();
-
-            return (connectionString, endpoints);
-        }
-
-        private static IEnumerable<ServiceEndpoint> GetEndpoints(IConfiguration section)
-        {
-            foreach (var entry in section.AsEnumerable(true))
-            {
-                if (!string.IsNullOrEmpty(entry.Value))
-                {
-                    yield return new ServiceEndpoint(entry.Key, entry.Value);
-                }
-            }
         }
     }
 }
