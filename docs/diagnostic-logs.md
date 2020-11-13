@@ -96,7 +96,7 @@ Diagnostic logs are collected by all the connections. Take messaging logs for ex
 
 To enable this behavior, check the checkbox in the *Types* section in the *Log Source Settings*.
 
-This behavior doesn't require you to update server side configurations. This configuration changing will always be sent to server automatically.
+This behavior doesn't require you to update server side configurations. This configuration change will always be sent to server automatically.
 
 #### Collect partially
 
