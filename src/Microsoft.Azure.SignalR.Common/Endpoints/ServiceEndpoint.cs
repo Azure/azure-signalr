@@ -94,6 +94,7 @@ namespace Microsoft.Azure.SignalR
                 Version = endpoint.Version;
                 AccessKey = endpoint.AccessKey;
                 Port = endpoint.Port;
+                ClientEndpoint = endpoint.ClientEndpoint;
             }
         }
 
