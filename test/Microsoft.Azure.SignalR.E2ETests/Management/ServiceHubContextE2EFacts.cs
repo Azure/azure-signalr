@@ -205,7 +205,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         [ConditionalFact]
         [SkipIfConnectionStringNotPresent]
-
         internal async Task CheckUserExistenceInGroupTest()
         {
             var serviceManager = new ServiceManagerBuilder()
@@ -292,6 +291,30 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             finally
             {
                 await serviceHubContext.DisposeAsync();
+            }
+        }
+
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        //TODO this test doesn't work anymore. 
+        //https://github.com/Azure/azure-signalr/pull/707/files  ServiceConnectionContainerBase or WeakConnectionContainer should be tested separately.
+        internal async Task StopServiceHubContextTest()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: context => context.EventId == new EventId(2, "EndpointOffline")))
+            {
+                var serviceManager = new ServiceManagerBuilder()
+                    .WithOptions(o =>
+                    {
+                        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                        o.ConnectionCount = 1;
+                        o.ServiceTransportType = ServiceTransportType.Persistent;
+                    })
+                    .Build();
+                var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", loggerFactory);
+                var connectionContainer = ((ServiceHubContext)serviceHubContext).ServiceProvider.GetRequiredService<IServiceConnectionContainer>();//TODO
+                await serviceHubContext.DisposeAsync();
+                await Task.Delay(500);
+                Assert.Equal(ServiceConnectionStatus.Disconnected, connectionContainer.Status);
             }
         }
 
