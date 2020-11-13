@@ -14,8 +14,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
         private const string AccessKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         private const string Endpoint = "http://endpoint/";
         private const string productInfo = "productInfo";
-        private readonly string _connectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0;";
-
+        private static readonly string _connectionString = $"Endpoint={Endpoint};AccessKey={AccessKey};Version=1.0;";
+        private static readonly ServiceEndpoint _serviceEndpoint = new ServiceEndpoint(_connectionString);
         [Fact]
         public void RequestContainsAsrsUAFact()
         {
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
                 Assert.NotNull(request.Headers.GetValues(Constants.AsrsUserAgent));
             }
 
-            TestRestClientBuilder(assertion);
+            TestRestClientFactory(assertion);
         }
 
         [Fact]
@@ -40,25 +40,21 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
                 Assert.Equal("Bearer", scheme);
                 Assert.NotNull(parameter);
             }
-            TestRestClientBuilder(assertion);
+            TestRestClientFactory(assertion);
         }
 
         [Fact]
         public void GetCustomiazeClient_BaseUriRightFact()
         {
-            RestClientBuilder restClientBuilder = new RestClientBuilder(_connectionString, productInfo);
-            using var restClient = restClientBuilder.Build();
-
+            var restClientFactory = new RestClientFactory(productInfo);
+            using var restClient = restClientFactory.Create(_serviceEndpoint);
             Assert.Equal(Endpoint, restClient.BaseUri.AbsoluteUri);
         }
 
-        private async void TestRestClientBuilder(Action<HttpRequestMessage, CancellationToken> assertion)
+        private async void TestRestClientFactory(Action<HttpRequestMessage, CancellationToken> assertion)
         {
-            var handler = new TestRootHandler(assertion);
-            RestClientBuilder restClientBuilder = new RestClientBuilder(_connectionString, productInfo)
-                .WithRootHandler(handler);
-
-            using var restClient = restClientBuilder.Build();
+            var restClientFactory = new TestRestClientFactory(productInfo, assertion);
+            using var restClient = restClientFactory.Create(_serviceEndpoint);
             await restClient.HealthApi.GetHealthStatusWithHttpMessagesAsync();
         }
     }

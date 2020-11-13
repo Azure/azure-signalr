@@ -201,7 +201,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task WriteAsync(ServiceMessage serviceMessage)
         {
-            if (!await SafeWriteAsync(serviceMessage))
+            if (!await SafeWriteAsync(serviceMessage).ConfigureAwait(false))
             {
                 throw new ServiceConnectionNotActiveException(_errorMessage);
             }
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.SignalR
                 return false;
             }
 
-            await _writeLock.WaitAsync();
+            await _writeLock.WaitAsync().ConfigureAwait(false);
 
             if (Status != ServiceConnectionStatus.Connected)
             {
@@ -226,7 +226,7 @@ namespace Microsoft.Azure.SignalR
             {
                 // Write the service protocol message
                 ServiceProtocol.WriteMessage(serviceMessage, _connectionContext.Transport.Output);
-                await _connectionContext.Transport.Output.FlushAsync();
+                await _connectionContext.Transport.Output.FlushAsync().ConfigureAwait(false);
                 return true;
             }
             catch (Exception ex)

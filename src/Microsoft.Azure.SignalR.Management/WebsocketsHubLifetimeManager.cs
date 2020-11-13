@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IHubLifetimeManagerForUserGroup where THub : Hub
+    internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IServiceHubLifetimeManager where THub : Hub
     {
         public WebSocketsHubLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver,
             IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILoggerFactory loggerFactory) :
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR.Management
             var message = new UserJoinGroupMessage(userId, groupName).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToAddUserToGroup(Logger, message);
+                MessageLog.StartToAddUserToGroup(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.SignalR.Management
             var message = new UserJoinGroupMessage(userId, groupName) { Ttl = (int)ttl.TotalSeconds }.WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToAddUserToGroup(Logger, message);
+                MessageLog.StartToAddUserToGroup(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.SignalR.Management
             var message = new UserLeaveGroupMessage(userId, groupName).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToRemoveUserFromGroup(Logger, message);
+                MessageLog.StartToRemoveUserFromGroup(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.SignalR.Management
             var message = new UserLeaveGroupMessage(userId, null).WithTracingId();
             if (message.TracingId != null)
             {
-                AzureSignalRLog.StartToRemoveUserFromGroup(Logger, message);
+                MessageLog.StartToRemoveUserFromGroup(Logger, message);
             }
             return WriteAsync(message);
         }
@@ -101,6 +101,11 @@ namespace Microsoft.Azure.SignalR.Management
         public Task<bool> IsUserInGroup(string userId, string groupName, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
+        }
+
+        public Task DisposeAsync()
+        {
+            return ServiceConnectionContainer.StopAsync();
         }
     }
 }

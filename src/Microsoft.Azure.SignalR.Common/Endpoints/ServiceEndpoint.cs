@@ -15,6 +15,11 @@ namespace Microsoft.Azure.SignalR
 
         public string Endpoint { get; }
 
+        /// <summary>
+        /// The customized endpoint that the client will be redirected to
+        /// </summary>
+        internal string ClientEndpoint { get; }
+
         internal string Version { get; }
 
         internal AccessKey AccessKey { get; private set; }
@@ -42,15 +47,16 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public EndpointMetrics EndpointMetrics { get; internal set; } = new EndpointMetrics();
 
-        internal ServiceEndpoint(string endpoint, AuthOptions authOptions, int port = 443)
+        internal ServiceEndpoint(string endpoint, AuthOptions authOptions, int port = 443, EndpointType type = EndpointType.Primary)
         {
-            // Endpoint = string.Format("https://{0}.service.signalr.net", resourceName);
             Endpoint = endpoint;
             AccessKey = new AadAccessKey(authOptions);
 
             Version = "1.0";
             Port = port;
             Name = "";
+
+            EndpointType = type;
         }
 
         public ServiceEndpoint(string key, string connectionString) : this(connectionString)
@@ -63,13 +69,14 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceEndpoint(string connectionString, EndpointType type = EndpointType.Primary, string name = "")
         {
-            // The provider is responsible to check if the connection string is empty and throw correct error message
-            if (!string.IsNullOrEmpty(connectionString))
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
-                string key;
-                (Endpoint, key, Version, Port) = ConnectionStringParser.Parse(connectionString);
-                AccessKey = new AccessKey(key);
+                throw new ArgumentException($"'{nameof(connectionString)}' cannot be null or whitespace", nameof(connectionString));
             }
+
+            string key;
+            (Endpoint, key, Version, Port, ClientEndpoint) = ConnectionStringParser.Parse(connectionString);
+            AccessKey = new AccessKey(key);
 
             EndpointType = type;
             ConnectionString = connectionString;
@@ -87,6 +94,7 @@ namespace Microsoft.Azure.SignalR
                 Version = endpoint.Version;
                 AccessKey = endpoint.AccessKey;
                 Port = endpoint.Port;
+                ClientEndpoint = endpoint.ClientEndpoint;
             }
         }
 

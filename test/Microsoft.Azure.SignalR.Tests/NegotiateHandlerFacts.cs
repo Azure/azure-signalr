@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string CustomClaimType = "custom.claim";
         private const string CustomUserId = "customUserId";
         private const string DefaultUserId = "nameId";
-        private const string DefaultConnectionString = "Endpoint=https://localhost;AccessKey=nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=;";
+        private const string DefaultConnectionString = "Endpoint=https://localhost;AccessKey=nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=;ClientEndpoint=http://redirect";
         private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var negotiateResponse = await handler.Process(httpContext, "hub");
 
             Assert.NotNull(negotiateResponse);
-            Assert.NotNull(negotiateResponse.Url);
+            Assert.StartsWith("http://redirect/client/?hub=hub", negotiateResponse.Url);
             Assert.NotNull(negotiateResponse.AccessToken);
             Assert.Null(negotiateResponse.ConnectionId);
             Assert.Empty(negotiateResponse.AvailableTransports);

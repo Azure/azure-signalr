@@ -6,13 +6,17 @@
     <!-- Azure ASP.NET Core SignalR -->
     <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsClientPackage3_0Version>3.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackage3_0Version>
+    <MicrosoftAspNetCoreHttpConnectionsClientPackage3_1Version>3.1.9</MicrosoftAspNetCoreHttpConnectionsClientPackage3_1Version>
     <MicrosoftExtensionsLoggingAbstractionsPackageVersion>2.1.0</MicrosoftExtensionsLoggingAbstractionsPackageVersion>
     <MicrosoftExtensionsLoggingAbstractionsPackage3_0Version>3.0.0</MicrosoftExtensionsLoggingAbstractionsPackage3_0Version>
+    <MicrosoftExtensionsLoggingAbstractionsPackage3_1Version>3.1.9</MicrosoftExtensionsLoggingAbstractionsPackage3_1Version>
     <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0</MicrosoftExtensionsDependencyInjectionPackageVersion>
     <MicrosoftExtensionsDependencyInjectionPackage3_0Version>3.0.0</MicrosoftExtensionsDependencyInjectionPackage3_0Version>
+    <MicrosoftExtensionsDependencyInjectionPackage3_1Version>3.1.9</MicrosoftExtensionsDependencyInjectionPackage3_1Version>
     <MicrosoftExtensionHttpVersion>2.1.0</MicrosoftExtensionHttpVersion>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.0</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackage3_0Version>3.0.0</MicrosoftAspNetCoreConnectionsAbstractionsPackage3_0Version>
+    <MicrosoftAspNetCoreConnectionsAbstractionsPackage3_1Version>3.1.9</MicrosoftAspNetCoreConnectionsAbstractionsPackage3_1Version>
     <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0</MicrosoftAspNetCoreSignalRPackageVersion>
     <MicrosoftAspNetCoreLocalizationPackageVersion>2.1.0</MicrosoftAspNetCoreLocalizationPackageVersion>
     <MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>3.19.1</MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>
@@ -35,12 +39,14 @@
     <MicrosoftExtensionsLoggingEventSourcePackageVersion>2.1.0</MicrosoftExtensionsLoggingEventSourcePackageVersion>
     <SystemThreadingChannelsPackageVersion>4.6.0</SystemThreadingChannelsPackageVersion>
     <SystemIOPipelinesPackageVersion>4.6.0</SystemIOPipelinesPackageVersion>
+    <SystemIOPipelinesPackage3_1Version>4.7.3</SystemIOPipelinesPackage3_1Version>
 
     <!-- SignalR Management -->
     <MicrosoftConfigurationFileExtensionVersion>2.2.0</MicrosoftConfigurationFileExtensionVersion>
     <MicrosoftConfigurationUserSecretVersion>2.2.0</MicrosoftConfigurationUserSecretVersion>
     <MicrosoftConfigurationEnvironmentVariablesVersion>2.2.0</MicrosoftConfigurationEnvironmentVariablesVersion>
     <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.0.11</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
+    <MicrosoftExtensionsOptionsConfigurationExtensionsVersion>2.1.0</MicrosoftExtensionsOptionsConfigurationExtensionsVersion>
 
     <!-- Signing -->
     <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>

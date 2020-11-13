@@ -4,6 +4,9 @@
 using System;
 using System.ComponentModel;
 using System.Reflection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -12,24 +15,35 @@ namespace Microsoft.Azure.SignalR.Management
     /// </summary>
     public class ServiceManagerBuilder : IServiceManagerBuilder
     {
-        private readonly ServiceManagerOptions _options = new ServiceManagerOptions();
-        private Assembly _assembly;
+        private readonly IServiceCollection _services = new ServiceCollection();
 
         /// <summary>
-        /// Configures the <see cref="IServiceManager"/> instances.
+        /// Registers an action used to configure <see cref="IServiceManager"/>.
         /// </summary>
         /// <param name="configure">A callback to configure the <see cref="IServiceManager"/>.</param>
         /// <returns>The same instance of the <see cref="ServiceManagerBuilder"/> for chaining.</returns>
         public ServiceManagerBuilder WithOptions(Action<ServiceManagerOptions> configure)
         {
-            configure?.Invoke(_options);
+            _services.Configure(configure);
+            return this;
+        }
+
+        /// <summary>
+        /// Registers a configuration instance to configure <see cref="IServiceManager"/>
+        /// </summary>
+        /// <param name="config">The configuration instance.</param>
+        /// <returns>The same instance of the <see cref="ServiceManagerBuilder"/> for chaining.</returns>
+        internal ServiceManagerBuilder WithConfiguration(IConfiguration config)
+        {
+            _services.AddSingleton(config);
             return this;
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public ServiceManagerBuilder WithCallingAssembly()
         {
-            _assembly = Assembly.GetCallingAssembly();
+            var assembly = Assembly.GetCallingAssembly();
+            _services.WithAssembly(assembly);
             return this;
         }
 
@@ -39,12 +53,13 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
         public IServiceManager Build()
         {
-            _options.ValidateOptions();
-
-            var productInfo = ProductInfo.GetProductInfo(_assembly);
-            ISignalRServiceRestClient restClient = new RestClientBuilder(_options.ConnectionString, productInfo).Build();
-
-            return new ServiceManager(_options, productInfo, restClient);
+            _services.AddSignalRServiceManager();
+            _services.Configure<ServiceManagerContext>(c => c.DisposeServiceProvider = true);
+            var serviceProvider = _services.BuildServiceProvider();
+            var context = serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value;
+            var productInfo = context.ProductInfo;
+            var restClientBuilder = new RestClientFactory(productInfo);
+            return new ServiceManager(context, restClientBuilder, serviceProvider);
         }
     }
 }

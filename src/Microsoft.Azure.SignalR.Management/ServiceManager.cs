@@ -22,35 +22,38 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class ServiceManager : IServiceManager
     {
-        private readonly ServiceManagerOptions _serviceManagerOptions;
         private readonly ServiceEndpointProvider _endpointProvider;
         private readonly IServerNameProvider _serverNameProvider;
         private readonly ServiceEndpoint _endpoint;
         private readonly string _productInfo;
-        private readonly ISignalRServiceRestClient _restClient;
+        private readonly ServiceManagerContext _context;
+        private readonly RestClientFactory _restClientFactory;
+        private readonly IServiceProvider _serviceProvider;
 
-        internal ServiceManager(ServiceManagerOptions serviceManagerOptions, string productInfo, ISignalRServiceRestClient restClient)
+        internal ServiceManager(ServiceManagerContext context, RestClientFactory restClientFactory, IServiceProvider serviceProvider)
         {
-            _serviceManagerOptions = serviceManagerOptions;
-            _endpoint = new ServiceEndpoint(_serviceManagerOptions.ConnectionString, EndpointType.Secondary);
+            _endpoint = context.ServiceEndpoints.Single();//temp solution
+
             _serverNameProvider = new DefaultServerNameProvider();
 
             var serviceOptions = Options.Create(new ServiceOptions
             {
-                ApplicationName = _serviceManagerOptions.ApplicationName,
-                Proxy = serviceManagerOptions.Proxy
+                ApplicationName = context.ApplicationName,
+                Proxy = context.Proxy
             }).Value;
 
             _endpointProvider = new ServiceEndpointProvider(_serverNameProvider, _endpoint, serviceOptions);
 
-            _productInfo = productInfo;
-            _restClient = restClient;
+            _productInfo = context.ProductInfo;
+            _context = context;
+            _restClientFactory = restClientFactory;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
         {
             loggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
-            switch (_serviceManagerOptions.ServiceTransportType)
+            switch (_context.ServiceTransportType)
             {
                 case ServiceTransportType.Persistent:
                     {
@@ -70,7 +73,7 @@ namespace Microsoft.Azure.SignalR.Management
                             );
                         var weakConnectionContainer = new WeakServiceConnectionContainer(
                             serviceConnectionFactory,
-                            _serviceManagerOptions.ConnectionCount,
+                            _context.ConnectionCount,
                             new HubServiceEndpoint(hubName, _endpointProvider, _endpoint),
                             loggerFactory?.CreateLogger(nameof(WeakServiceConnectionContainer)) ?? NullLogger.Instance);
 
@@ -128,7 +131,7 @@ namespace Microsoft.Azure.SignalR.Management
                         serviceCollection.Remove(serviceDescriptor);
 
                         // add rest hub lifetime manager
-                        var restHubLifetimeManager = new RestHubLifetimeManager(_serviceManagerOptions, hubName, _productInfo);
+                        var restHubLifetimeManager = new RestHubLifetimeManager(hubName, _endpoint, _productInfo, _context.ApplicationName);
                         serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), sp => restHubLifetimeManager);
 
                         var serviceProvider = serviceCollection.BuildServiceProvider();
@@ -137,6 +140,14 @@ namespace Microsoft.Azure.SignalR.Management
                     }
                 default:
                     throw new ArgumentException("Not supported service transport type.");
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_context.DisposeServiceProvider)
+            {
+                (_serviceProvider as IDisposable).Dispose();
             }
         }
 
@@ -161,9 +172,10 @@ namespace Microsoft.Azure.SignalR.Management
 
         public async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
+            using var restClient = _restClientFactory.Create(_endpoint);
             try
             {
-                var healthApi = _restClient.HealthApi;
+                var healthApi = restClient.HealthApi;
                 using var response = await healthApi.GetHealthStatusWithHttpMessagesAsync(cancellationToken: cancellationToken);
                 return true;
             }
@@ -173,7 +185,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch (Exception ex)
             {
-                throw ex.WrapAsAzureSignalRException(_restClient.BaseUri);
+                throw ex.WrapAsAzureSignalRException(restClient.BaseUri);
             }
         }
     }
