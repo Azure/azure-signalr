@@ -61,10 +61,7 @@ namespace Microsoft.Azure.SignalR
 
         public ServiceEndpoint(string key, string connectionString) : this(connectionString)
         {
-            if (!string.IsNullOrEmpty(key))
-            {
-                (Name, EndpointType) = ParseKey(key);
-            }
+            (Name, EndpointType) = ParseKey(key);
         }
 
         public ServiceEndpoint(string connectionString, EndpointType type = EndpointType.Primary, string name = "")
@@ -94,6 +91,7 @@ namespace Microsoft.Azure.SignalR
                 Version = endpoint.Version;
                 AccessKey = endpoint.AccessKey;
                 Port = endpoint.Port;
+                ClientEndpoint = endpoint.ClientEndpoint;
             }
         }
 
@@ -139,43 +137,23 @@ namespace Microsoft.Azure.SignalR
 
         internal static (string, EndpointType) ParseKey(string key)
         {
-            if (key == Constants.Keys.ConnectionStringDefaultKey || key == Constants.Keys.ConnectionStringSecondaryKey)
+            if (string.IsNullOrEmpty(key))
             {
                 return (string.Empty, EndpointType.Primary);
             }
 
-            if (key.StartsWith(Constants.Keys.ConnectionStringKeyPrefix))
-            {
-                // Azure:SignalR:ConnectionString:<name>:<type>
-                return ParseKeyWithPrefix(key, Constants.Keys.ConnectionStringKeyPrefix);
-            }
-
-            if (key.StartsWith(Constants.Keys.ConnectionStringSecondaryKey))
-            {
-                return ParseKeyWithPrefix(key, Constants.Keys.ConnectionStringSecondaryKey);
-            }
-
-            throw new ArgumentException($"Invalid format: {key}", nameof(key));
-        }
-
-        private static (string, EndpointType) ParseKeyWithPrefix(string key, string prefix)
-        {
-            var status = key.Substring(prefix.Length);
-            var parts = status.Split(':');
+            var parts = key.Split(':');
             if (parts.Length == 1)
             {
                 return (parts[0], EndpointType.Primary);
             }
+            else if (Enum.TryParse<EndpointType>(parts[1], true, out var endpointStatus))
+            {
+                return (parts[0], endpointStatus);
+            }
             else
             {
-                if (Enum.TryParse<EndpointType>(parts[1], true, out var endpointStatus))
-                {
-                    return (parts[0], endpointStatus);
-                }
-                else
-                {
-                    return (status, EndpointType.Primary);
-                }
+                return (key, EndpointType.Primary);
             }
         }
     }
