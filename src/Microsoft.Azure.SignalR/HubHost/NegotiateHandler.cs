@@ -16,7 +16,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class NegotiateHandler<THub> : INegotiateHandler where THub : Hub
+    internal class NegotiateHandler<THub> where THub : Hub
     {
         private readonly IUserIdProvider _userIdProvider;
         private readonly IConnectionRequestIdProvider _connectionRequestIdProvider;

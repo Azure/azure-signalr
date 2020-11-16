@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.SignalR
                     // skip endpoint not apply hub.
                     if (hubMetadata != null)
                     {
-                        var newEndpoint = _negotiateEndpointCache.GetOrAdd(hubMetadata.HubType, e => CreateNegotiateEndpoint(routeEndpoint));
+                        var newEndpoint = _negotiateEndpointCache.GetOrAdd(hubMetadata.HubType, CreateNegotiateEndpoint(hubMetadata.HubType, routeEndpoint));
 
                         candidates.ReplaceEndpoint(i, newEndpoint, candidate.Values);
                     }
@@ -59,14 +60,24 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        private Endpoint CreateNegotiateEndpoint(RouteEndpoint routeEndpoint)
+        private Func<Type, Endpoint> CreateNegotiateEndpoint(Type hubType, RouteEndpoint routeEndpoint)
+        {
+            return type =>
+            {
+                var methodInfo = typeof(NegotiateMatcherPolicy).GetMethod(nameof(CreateNegotiateEndpointCore), BindingFlags.NonPublic | BindingFlags.Instance);
+                var genericMethodInfo = methodInfo.MakeGenericMethod(hubType);
+                return (Endpoint)genericMethodInfo.Invoke(this, new object[] { routeEndpoint });
+            };
+        }
+
+        private Endpoint CreateNegotiateEndpointCore<THub>(RouteEndpoint routeEndpoint) where THub : Hub
         {
             var hubMetadata = routeEndpoint.Metadata.GetMetadata<HubMetadata>();
 
             // Replaces the negotiate endpoint with one that does the service redirect
             var routeEndpointBuilder = new RouteEndpointBuilder(async context =>
             {
-                await ServiceRouteHelper.RedirectToService(context, hubMetadata.HubType, null);
+                await ServiceRouteHelper.RedirectToService<THub>(context, null);
             },
             routeEndpoint.RoutePattern,
             routeEndpoint.Order);
