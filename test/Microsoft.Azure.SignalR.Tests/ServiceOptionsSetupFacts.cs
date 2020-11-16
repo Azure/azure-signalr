@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
@@ -25,8 +23,8 @@ namespace Microsoft.Azure.SignalR.Tests
         };
 
         public static IEnumerable<object[]> ParseServiceEndpointData = from section in ConnectionStringKeyPrefixs
-                                                                        from tuple in EndpointDict
-                                                                        select new object[] { section + tuple.Key, tuple.Value.Item1, tuple.Value.Item2 };
+                                                                       from tuple in EndpointDict
+                                                                       select new object[] { section + tuple.Key, tuple.Value.Item1, tuple.Value.Item2 };
 
         [Theory]
         [MemberData(nameof(ParseServiceEndpointData))]
@@ -44,11 +42,13 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void ParseMultipleEndpointsTest(){
+        public void ParseMultipleEndpointsTest()
+        {
             IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
             var defaultConnectionString = "Endpoint=http://default;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
             configuration[$"{Constants.Keys.ConnectionStringDefaultKey}"] = defaultConnectionString;
-            foreach(var key in EndpointDict.Keys){
+            foreach (var key in EndpointDict.Keys)
+            {
                 configuration[ConfigurationPath.Combine(Constants.Keys.ConnectionStringDefaultKey, key)] = FakeConnectionString;
             }
 
@@ -56,9 +56,8 @@ namespace Microsoft.Azure.SignalR.Tests
             var options = new ServiceOptions();
             setup.Configure(options);
 
-
             Assert.Equal(defaultConnectionString, options.ConnectionString);
-            Assert.Equal(EndpointDict.AsEnumerable().Count(), options.Endpoints.Length);
+            Assert.Equal(EndpointDict.Count, options.Endpoints.Length);
         }
     }
 }

@@ -10,9 +10,15 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class IConfigurationExtension
     {
-        public static ServiceEndpoint[] GetSignalRServiceEndpoints(this IConfiguration configuration, string sectionKey)
+        /// <summary>
+        /// Gets SignalR service endpoints configured in a section.
+        /// </summary>
+        /// <remarks>
+        /// The SignalR service endpoint whose key is exactly the section name is not extracted. Only children of the section are extracted.
+        /// </remarks>
+        public static ServiceEndpoint[] GetSignalRServiceEndpoints(this IConfiguration configuration, string sectionName)
         {
-            var section = configuration.GetSection(sectionKey);
+            var section = configuration.GetSection(sectionName);
             return GetEndpoints(section).ToArray();
         }
 
