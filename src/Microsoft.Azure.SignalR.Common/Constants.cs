@@ -43,8 +43,8 @@ namespace Microsoft.Azure.SignalR
             public static readonly TimeSpan DefaultCloseDelayInterval = TimeSpan.FromSeconds(5);
             
             // Custom handshake timeout of SignalR Service
-            public static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
-            public static readonly TimeSpan MaxCustomHandshakeTimeout = TimeSpan.FromSeconds(30);
+            public const int DefaultHandshakeTimeout = 15;
+            public const int MaxCustomHandshakeTimeout = 30;
         }
 
         public static class ClaimType

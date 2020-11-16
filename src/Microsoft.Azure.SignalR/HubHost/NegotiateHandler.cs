@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR
         private readonly bool _enableDetailedErrors;
         private readonly int _endpointsCount;
         private readonly int? _maxPollInterval;
-        private readonly TimeSpan? _customHandshakeTimeout;
+        private readonly int _customHandshakeTimeout;
         private readonly string _hubName;
         private readonly ILogger<NegotiateHandler<THub>> _logger;
 
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR
             _enableDetailedErrors = globalHubOptions.Value.EnableDetailedErrors == true;
             _endpointsCount = options.Value.Endpoints.Length;
             _maxPollInterval = options.Value.MaxPollIntervalInSeconds;
-            _customHandshakeTimeout = hubOptions.Value.HandshakeTimeout ?? globalHubOptions.Value.HandshakeTimeout;
+            _customHandshakeTimeout = GetCustomHandshakeTimeout(hubOptions.Value.HandshakeTimeout ?? globalHubOptions.Value.HandshakeTimeout);
             _hubName = typeof(THub).Name;
         }
 
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.SignalR
             // Make sticky mode required if detect using blazor
             var mode = _blazorDetector.IsBlazor(_hubName) ? ServerStickyMode.Required : _mode;
             var userId = _userIdProvider.GetUserId(new ServiceHubConnectionContext(context));
-            return ClaimsUtility.BuildJwtClaims(_logger, context.User, userId, GetClaimsProvider(context), _serverName, mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(context), _customHandshakeTimeout).ToList();
+            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(context), _customHandshakeTimeout).ToList();
         }
 
         private Func<IEnumerable<Claim>> GetClaimsProvider(HttpContext context)
@@ -129,12 +129,68 @@ namespace Microsoft.Azure.SignalR
             return _diagnosticClientFilter != null && _diagnosticClientFilter(context);
         }
 
+        private int GetCustomHandshakeTimeout(TimeSpan? handshakeTimeout)
+        {
+            if (!handshakeTimeout.HasValue)
+            {
+                Log.UseDefaultHandshakeTimeout(_logger);
+                return Constants.Periods.DefaultHandshakeTimeout;
+            }
+
+            var timeout = (int)handshakeTimeout.Value.TotalSeconds;
+
+            // use default handshake timeout
+            if (timeout == Constants.Periods.DefaultHandshakeTimeout)
+            {
+                Log.UseDefaultHandshakeTimeout(_logger);
+                return Constants.Periods.DefaultHandshakeTimeout;
+            }
+
+            // the custom handshake timeout is invalid, use default hanshake timeout instead
+            if (timeout <= 0 || timeout > Constants.Periods.MaxCustomHandshakeTimeout)
+            {
+                Log.FailToSetCustomHandshakeTimeout(_logger, new ArgumentOutOfRangeException(nameof(handshakeTimeout)));
+                return Constants.Periods.DefaultHandshakeTimeout;
+            }
+
+            // the custom handshake timeout is valid
+            Log.SucceedToSetCustomHandshakeTimeout(_logger, timeout);
+            return timeout;
+        }
+
         private static string GetOriginalPath(string path)
         {
             path = path.TrimEnd('/');
             return path.EndsWith(Constants.Path.Negotiate)
                 ? path.Substring(0, path.Length - Constants.Path.Negotiate.Length)
                 : string.Empty;
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, Exception> _useDefaultHandshakeTimeout =
+                LoggerMessage.Define(LogLevel.Information, new EventId(0, "UseDefaultHandshakeTimeout"), "Use default handshake timeout.");
+
+            private static readonly Action<ILogger, int, Exception> _succeedToSetCustomHandshakeTimeout =
+                LoggerMessage.Define<int>(LogLevel.Information, new EventId(1, "SucceedToSetCustomHandshakeTimeout"), "Succeed to set custom handshake timeout: {timeout} seconds.");
+
+            private static readonly Action<ILogger, Exception> _failToSetCustomHandshakeTimeout =
+                LoggerMessage.Define(LogLevel.Warning, new EventId(2, "FailToSetCustomHandshakeTimeout"), $"Fail to set custom handshake timeout, use default handshake timeout {Constants.Periods.DefaultHandshakeTimeout} seconds instead. The range of custom handshake timeout should between 1 second to {Constants.Periods.MaxCustomHandshakeTimeout} seconds.");
+
+            public static void UseDefaultHandshakeTimeout(ILogger logger)
+            {
+                _useDefaultHandshakeTimeout(logger, null);
+            }
+
+            public static void SucceedToSetCustomHandshakeTimeout(ILogger logger, int customHandshakeTimeout)
+            {
+                _succeedToSetCustomHandshakeTimeout(logger, customHandshakeTimeout, null);
+            }
+
+            public static void FailToSetCustomHandshakeTimeout(ILogger logger, Exception exception)
+            {
+                _failToSetCustomHandshakeTimeout(logger, exception);
+            }
         }
     }
 }

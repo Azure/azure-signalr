@@ -210,7 +210,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             yield return new Claim(Constants.ClaimType.AppName, _appName);
             var user = owinContext.Authentication?.User;
             var userId = _provider?.GetUserId(request);
-            var claims = ClaimsUtility.BuildJwtClaims(_logger, user, userId, GetClaimsProvider(owinContext), _serverName, _mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(owinContext));
+            var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext), _serverName, _mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(owinContext));
 
             yield return new Claim(Constants.ClaimType.Version, AssemblyVersion);
 
