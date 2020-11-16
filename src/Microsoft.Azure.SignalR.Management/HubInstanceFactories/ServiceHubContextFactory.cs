@@ -25,7 +25,8 @@ namespace Microsoft.Azure.SignalR.Management
             servicesPerHub.AddSignalRCore();
             servicesPerHub.AddSingleton((HubLifetimeManager<Hub>)manager);
             var serviceProviderPerHub = servicesPerHub.BuildServiceProvider();
-            var hubContext = serviceProviderPerHub.GetRequiredService<IHubContext<Hub>>();// The impl of IHubContext<Hub> we want is an internal class. We can only get it by this way.
+            // The impl of IHubContext<Hub> we want is an internal class. We can only get it by this way.
+            var hubContext = serviceProviderPerHub.GetRequiredService<IHubContext<Hub>>();
             return new ServiceHubContext(hubContext, manager, serviceProviderPerHub);
         }
     }
