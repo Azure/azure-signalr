@@ -62,15 +62,15 @@ namespace Microsoft.Azure.SignalR
 
         private Func<Type, Endpoint> CreateNegotiateEndpoint(Type hubType, RouteEndpoint routeEndpoint)
         {
+            var methodInfo = typeof(NegotiateMatcherPolicy).GetMethod(nameof(CreateNegotiateEndpointCore), BindingFlags.NonPublic | BindingFlags.Static);
+            var genericMethodInfo = methodInfo.MakeGenericMethod(hubType);
             return type =>
             {
-                var methodInfo = typeof(NegotiateMatcherPolicy).GetMethod(nameof(CreateNegotiateEndpointCore), BindingFlags.NonPublic | BindingFlags.Instance);
-                var genericMethodInfo = methodInfo.MakeGenericMethod(hubType);
                 return (Endpoint)genericMethodInfo.Invoke(this, new object[] { routeEndpoint });
             };
         }
 
-        private Endpoint CreateNegotiateEndpointCore<THub>(RouteEndpoint routeEndpoint) where THub : Hub
+        private static Endpoint CreateNegotiateEndpointCore<THub>(RouteEndpoint routeEndpoint) where THub : Hub
         {
             var hubMetadata = routeEndpoint.Metadata.GetMetadata<HubMetadata>();
 
