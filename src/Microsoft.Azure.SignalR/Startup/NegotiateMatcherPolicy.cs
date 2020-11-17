@@ -17,9 +17,11 @@ namespace Microsoft.Azure.SignalR
 {
     internal class NegotiateMatcherPolicy : MatcherPolicy, IEndpointSelectorPolicy
     {
+        private static readonly MethodInfo _createNegotiateEndpointCoreMethodInfo = typeof(NegotiateMatcherPolicy).GetMethod(nameof(CreateNegotiateEndpointCore), BindingFlags.NonPublic | BindingFlags.Static);
+        
         // This caches the replacement endpoints for negotiate so they are not recomputed on every request
         private readonly ConcurrentDictionary<Type, Endpoint> _negotiateEndpointCache = new ConcurrentDictionary<Type, Endpoint>();
-        
+
         public override int Order => 1;
 
         public bool AppliesToEndpoints(IReadOnlyList<Endpoint> endpoints)
@@ -62,8 +64,7 @@ namespace Microsoft.Azure.SignalR
 
         private Func<Type, Endpoint> CreateNegotiateEndpoint(Type hubType, RouteEndpoint routeEndpoint)
         {
-            var methodInfo = typeof(NegotiateMatcherPolicy).GetMethod(nameof(CreateNegotiateEndpointCore), BindingFlags.NonPublic | BindingFlags.Static);
-            var genericMethodInfo = methodInfo.MakeGenericMethod(hubType);
+            var genericMethodInfo = _createNegotiateEndpointCoreMethodInfo.MakeGenericMethod(hubType);
             return type =>
             {
                 return (Endpoint)genericMethodInfo.Invoke(this, new object[] { routeEndpoint });
