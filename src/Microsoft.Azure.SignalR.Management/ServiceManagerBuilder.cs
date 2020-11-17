@@ -1,12 +1,15 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.ComponentModel;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -25,6 +28,12 @@ namespace Microsoft.Azure.SignalR.Management
         public ServiceManagerBuilder WithOptions(Action<ServiceManagerOptions> configure)
         {
             _services.Configure(configure);
+            return this;
+        }
+
+        public ServiceManagerBuilder WithLoggerFactory(ILoggerFactory loggerFactory)
+        {
+            _services.AddSingleton(loggerFactory);
             return this;
         }
 
@@ -55,11 +64,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _services.AddSignalRServiceManager();
             _services.Configure<ServiceManagerContext>(c => c.DisposeServiceProvider = true);
-            var serviceProvider = _services.BuildServiceProvider();
-            var context = serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value;
-            var productInfo = context.ProductInfo;
-            var restClientBuilder = new RestClientFactory(productInfo);
-            return new ServiceManager(context, restClientBuilder, serviceProvider);
+            return _services.BuildServiceProvider().GetRequiredService<IServiceManager>();
         }
     }
 }

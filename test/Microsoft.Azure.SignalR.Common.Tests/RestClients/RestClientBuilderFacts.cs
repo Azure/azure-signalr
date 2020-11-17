@@ -46,7 +46,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.RestClients
         [Fact]
         public void GetCustomiazeClient_BaseUriRightFact()
         {
-            var restClientFactory = new RestClientFactory(productInfo);
+            var restClientFactory = new TestRestClientFactory(productInfo, null);
             using var restClient = restClientFactory.Create(_serviceEndpoint);
             Assert.Equal(Endpoint, restClient.BaseUri.AbsoluteUri);
         }

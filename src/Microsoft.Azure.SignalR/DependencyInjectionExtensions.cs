@@ -2,10 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+
 #if !NETSTANDARD2_0
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
 #endif
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
@@ -31,12 +33,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder)
         {
-            builder.Services
-                .AddSingleton<ServiceOptionsSetup>()
-                .AddSingleton<IConfigureOptions<ServiceOptions>>(s => s.GetService<ServiceOptionsSetup>())
-                .AddSingleton<IOptionsChangeTokenSource<ServiceOptions>>(s => s.GetService<ServiceOptionsSetup>());
-
-            return builder.AddAzureSignalRCore();
+            return builder.AddAzureSignalR<ServiceOptionsSetup>();
         }
 
         /// <summary>
@@ -66,6 +63,16 @@ namespace Microsoft.Extensions.DependencyInjection
                    .PostConfigure<ServiceOptions>(o => o.Validate());
 
             return builder;
+        }
+
+        /// <typeparam name="TOptionsSetup">The set up class used to configure <see cref="ServiceOptions"/> and track changes.</typeparam>
+        internal static ISignalRServerBuilder AddAzureSignalR<TOptionsSetup>(this ISignalRServerBuilder builder) where TOptionsSetup : class, IConfigureOptions<ServiceOptions>, IOptionsChangeTokenSource<ServiceOptions>
+        {
+            builder.Services
+                    .AddSingleton<TOptionsSetup>()
+                    .AddSingleton<IConfigureOptions<ServiceOptions>>(s => s.GetService<TOptionsSetup>())
+                    .AddSingleton<IOptionsChangeTokenSource<ServiceOptions>>(s => s.GetService<TOptionsSetup>());
+            return builder.AddAzureSignalRCore();
         }
 
         private static ISignalRServerBuilder AddAzureSignalRCore(this ISignalRServerBuilder builder)

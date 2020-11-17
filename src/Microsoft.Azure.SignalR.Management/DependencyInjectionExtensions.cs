@@ -2,8 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 using System;
 using System.ComponentModel;
+using System.Net.Http;
 using System.Reflection;
-using Microsoft.Azure.SignalR.Management.Configuration;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -16,17 +19,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public static IServiceCollection AddSignalRServiceManager(this IServiceCollection services)
         {
-            services.AddSingleton<ServiceManagerOptionsSetup>()
-                    .AddSingleton<IConfigureOptions<ServiceManagerOptions>>(sp => sp.GetService<ServiceManagerOptionsSetup>())
-                    .AddSingleton<IOptionsChangeTokenSource<ServiceManagerOptions>>(sp => sp.GetService<ServiceManagerOptionsSetup>());
-            services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
-            services.AddSingleton<ServiceManagerContextSetup>()
-                    .AddSingleton<IConfigureOptions<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>())
-                    .AddSingleton<IOptionsChangeTokenSource<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>());
-            services.AddSingleton<ServiceOptionsSetup>()
-                    .AddSingleton<IConfigureOptions<ServiceOptions>>(sp => sp.GetService<ServiceOptionsSetup>())
-                    .AddSingleton<IOptionsChangeTokenSource<ServiceOptions>>(sp => sp.GetService<ServiceOptionsSetup>());
-            return services.TrySetProductInfo();
+            return services.AddSignalRServiceManager<ServiceManagerOptionsSetup>();
         }
 
         /// <summary>
@@ -36,6 +29,43 @@ namespace Microsoft.Azure.SignalR.Management
         {
             services.Configure(configure);
             return services.AddSignalRServiceManager();
+        }
+
+        /// <summary>
+        /// Adds the essential SignalR Service Manager services to the specified services collection.
+        /// </summary>
+        /// <remarks>Designed for Azure Function extension where the setup of <see cref="ServiceManagerOptions"/> is different from SDK</remarks>
+        /// <typeparam name="TOptionsSetup">The type of class used to setup <see cref="ServiceManagerOptions"/>. </typeparam>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static IServiceCollection AddSignalRServiceManager<TOptionsSetup>(this IServiceCollection services) where TOptionsSetup : class, IConfigureOptions<ServiceManagerOptions>, IOptionsChangeTokenSource<ServiceManagerOptions>
+        {
+            //cascade options setup
+            services.AddSingleton<TOptionsSetup>()
+                    .AddSingleton<IConfigureOptions<ServiceManagerOptions>>(sp => sp.GetService<TOptionsSetup>())
+                    .AddSingleton<IOptionsChangeTokenSource<ServiceManagerOptions>>(sp => sp.GetService<TOptionsSetup>());
+            services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
+            services.AddSingleton<ServiceManagerContextSetup>()
+                    .AddSingleton<IConfigureOptions<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>())
+                    .AddSingleton<IOptionsChangeTokenSource<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>());
+
+            services.AddSignalR()
+                    .AddAzureSignalR<ServiceOptionsSetup>();
+
+            //add dependencies for persistent mode only
+            services
+                .AddSingleton<ConnectionFactory>()
+                .AddSingleton<IConnectionFactory,ManagementConnectionFactory>()
+                .AddSingleton<ConnectionDelegate>((connectionContext) => Task.CompletedTask)
+                .AddSingleton<IServiceConnectionFactory, ServiceConnectionFactory>()
+                .AddSingleton<MultiEndpointConnectionContainerFactory>()
+                .AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
+
+            services.AddLogging()
+                    .AddSingleton<ServiceHubContextFactory>()
+                    .AddSingleton<ServiceHubLifetimeManagerFactory>();
+            services.AddSingleton<IServiceManager, ServiceManager>();
+            services.AddRestClientFactory();
+            return services.TrySetProductInfo();
         }
 
         /// <summary>
@@ -53,7 +83,17 @@ namespace Microsoft.Azure.SignalR.Management
         {
             var assembly = Assembly.GetExecutingAssembly();
             var productInfo = ProductInfo.GetProductInfo(assembly);
-            return services.Configure<ServiceManagerContext>(o => o.ProductInfo = o.ProductInfo ?? productInfo);
+            return services.Configure<ServiceManagerContext>(o => o.ProductInfo ??= productInfo);
         }
+
+        private static IServiceCollection AddRestClientFactory(this IServiceCollection services) => services
+            .AddHttpClient()
+            .AddSingleton(sp =>
+            {
+                var options = sp.GetRequiredService<IOptions<ServiceManagerContext>>().Value;
+                var productInfo = options.ProductInfo;
+                var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+                return new RestClientFactory(productInfo, httpClientFactory);
+            });
     }
 }
