@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Azure.SignalR.Common.Endpoints;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
@@ -25,9 +26,9 @@ namespace Microsoft.Azure.SignalR
 
         public event EndpointEventHandler OnAdd;
         public event EndpointEventHandler OnRemove;
-
-        protected ServiceEndpointManagerBase(IServiceEndpointOptions options, ILogger logger) 
-            : this(GetEndpoints(options), logger)
+        
+        protected ServiceEndpointManagerBase(IServiceEndpointOptions options, ILogger logger)
+            : this(options.GetMergedEndpoints(), logger)
         {
         }
 
@@ -44,32 +45,6 @@ namespace Microsoft.Azure.SignalR
         public IReadOnlyList<HubServiceEndpoint> GetEndpoints(string hub)
         {
             return _endpointsPerHub.GetOrAdd(hub, s => Endpoints.Select(e => CreateHubServiceEndpoint(hub, e.Key)).ToArray());
-        }
-
-        protected static IEnumerable<ServiceEndpoint> GetEndpoints(IServiceEndpointOptions options)
-        {
-            if (options == null)
-            {
-                yield break;
-            }
-
-            var endpoints = options.Endpoints;
-            var connectionString = options.ConnectionString;
-
-            if (!string.IsNullOrEmpty(connectionString))
-            {
-                yield return new ServiceEndpoint(options.ConnectionString);
-            }
-
-            // ConnectionString can be set by custom Configure
-            // Return both the one from ConnectionString and from Endpoints
-            if (endpoints != null)
-            {
-                foreach (var endpoint in endpoints)
-                {
-                    yield return endpoint;
-                }
-            }
         }
 
         protected Dictionary<ServiceEndpoint, ServiceEndpoint> GetValuableEndpoints(IEnumerable<ServiceEndpoint> endpoints)

@@ -9,7 +9,7 @@ namespace Microsoft.Azure.SignalR.Management
     /// <summary>
     /// Configurable options for Azure SignalR Management SDK.
     /// </summary>
-    public class ServiceManagerOptions
+    public class ServiceManagerOptions : IServiceEndpointOptions
     {
         /// <summary>
         /// Gets or sets the ApplicationName which will be prefixed to each hub name
@@ -32,14 +32,9 @@ namespace Microsoft.Azure.SignalR.Management
         public IWebProxy Proxy { get; set; }
 
         /// <summary>
-        /// Gets or sets a service endpoint of Azure SignalR Service.
-        /// </summary>
-        internal ServiceEndpoint ServiceEndpoint { get; set; }
-
-        /// <summary>
         /// Sets multiple service endpoints of Azure SignalR Service.
         /// </summary>
-        internal ServiceEndpoint[] ServiceEndpoints { get; set; } //not ready for public use
+        public ServiceEndpoint[] Endpoints { get; internal set; } //todo not ready for public use
 
         /// <summary>
         /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
@@ -62,26 +57,18 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 notNullCount += 1;
             }
-            if (ServiceEndpoint != null)
-            {
-                notNullCount += 1;
-            }
-            if (ServiceEndpoints != null)
+            if (Endpoints != null)
             {
                 notNullCount += 1;
             }
 
             if (notNullCount == 0)
             {
-                throw new InvalidOperationException($"Service endpoint(s) is/are not configured. Please set one of the following properties {nameof(ConnectionString)}, {nameof(ServiceEndpoint)}, {nameof(ServiceEndpoints)}.");
+                throw new InvalidOperationException($"Service endpoint(s) is/are not configured. Please set one of the following properties {nameof(ConnectionString)}, {nameof(Endpoints)}.");
             }
-            if (notNullCount > 1)
+            if (ConnectionString == null && Endpoints != null && Endpoints.Length == 0)
             {
-                throw new InvalidOperationException($"Please set ONLY one of the following properties: {nameof(ConnectionString)}, {nameof(ServiceEndpoint)}, {nameof(ServiceEndpoints)}.");
-            }
-            if (ServiceEndpoints != null && ServiceEndpoints.Length == 0)
-            {
-                throw new InvalidOperationException($"The length of parameter {nameof(ServiceEndpoints)} is zero.");
+                throw new InvalidOperationException($"Service endpoint(s) is/are not configured. The length of property {nameof(Endpoints)} is zero.");
             }
         }
 
