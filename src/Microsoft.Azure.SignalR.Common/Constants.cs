@@ -41,6 +41,10 @@ namespace Microsoft.Azure.SignalR
             public static readonly TimeSpan DefaultServersPingInterval = TimeSpan.FromSeconds(5);
             // Depends on DefaultStatusPingInterval, make 1/2 to fast check.
             public static readonly TimeSpan DefaultCloseDelayInterval = TimeSpan.FromSeconds(5);
+            
+            // Custom handshake timeout of SignalR Service
+            public const int DefaultHandshakeTimeout = 15;
+            public const int MaxCustomHandshakeTimeout = 30;
         }
 
         public static class ClaimType
@@ -59,6 +63,7 @@ namespace Microsoft.Azure.SignalR
             public const string ServiceEndpointsCount = AzureSignalRSysPrefix + "secn";
             public const string MaxPollInterval = AzureSignalRSysPrefix + "ttl";
             public const string DiagnosticClient = AzureSignalRSysPrefix + "dc";
+            public const string CustomHandshakeTimeout = AzureSignalRSysPrefix + "cht";
 
             public const string AzureSignalRUserPrefix = "asrs.u.";
         }

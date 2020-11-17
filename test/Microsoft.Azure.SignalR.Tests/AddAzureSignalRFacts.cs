@@ -3,14 +3,18 @@
 
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -499,6 +503,62 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.Equal(4, manager.Endpoints.Count);
                 Assert.Single(manager.Endpoints.Where(x => x.Value.ConnectionString == customeCS));
             }
+        }
+
+        [Fact]
+        public async Task AddAzureSignalRWithCustomHandshakeTimeout()
+        {
+            // set custom handshake timeout in global hub options
+            var claims = await GetClaims(sc => sc.AddSignalR(o => o.HandshakeTimeout = TimeSpan.FromSeconds(1)).AddAzureSignalR());
+            Assert.Contains(claims, c => c.Type == Constants.ClaimType.CustomHandshakeTimeout && c.Value == "1");
+
+            // set custom handshake timeout in particular hub options to override the settings in global hub options
+            claims = await GetClaims(sc => sc.AddSignalR(o => o.HandshakeTimeout = TimeSpan.FromSeconds(1)).AddHubOptions<TestHub>(o => o.HandshakeTimeout = TimeSpan.FromSeconds(2)).AddAzureSignalR());
+            Assert.Contains(claims, c => c.Type == Constants.ClaimType.CustomHandshakeTimeout && c.Value == "2");
+
+            // no custom timeout
+            claims = await GetClaims(sc => sc.AddSignalR().AddAzureSignalR());
+            Assert.DoesNotContain(claims, c => c.Type == Constants.ClaimType.CustomHandshakeTimeout);
+
+            // invalid timeout: larger than 30s
+            claims = await GetClaims(sc => sc.AddSignalR(o => o.HandshakeTimeout = TimeSpan.FromSeconds(31)).AddAzureSignalR());
+            Assert.DoesNotContain(claims, c => c.Type == Constants.ClaimType.CustomHandshakeTimeout);
+
+            // invalid timeout: smaller than 1s
+            claims = await GetClaims(sc => sc.AddSignalR(o => o.HandshakeTimeout = TimeSpan.FromSeconds(0)).AddAzureSignalR());
+            Assert.DoesNotContain(claims, c => c.Type == Constants.ClaimType.CustomHandshakeTimeout);
+        }
+
+        private static async Task<IEnumerable<Claim>> GetClaims(Action<ServiceCollection> addSignalR)
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    {"Azure:SignalR:ConnectionString", "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQR55555555012345678933333333;Version=1.0;"}
+                })
+                .Build();
+
+            var services = new ServiceCollection();
+            addSignalR(services);
+
+            var sp = services
+                .AddLogging()
+                .AddSingleton<IHostApplicationLifetime>(new EmptyApplicationLifetime())
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var app = new ApplicationBuilder(sp);
+            app.UseRouting();
+            app.UseEndpoints(routes =>
+            {
+                routes.MapHub<TestHub>("/chat");
+            });
+
+            var h = sp.GetRequiredService<NegotiateHandler<TestHub>>();
+            var r = await h.Process(new DefaultHttpContext());
+            var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
+            var t = jwtSecurityTokenHandler.ReadJwtToken(r.AccessToken);
+            return t.Claims;
         }
     }
 }
