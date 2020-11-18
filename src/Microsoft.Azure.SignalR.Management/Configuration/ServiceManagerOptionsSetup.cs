@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR.Management
             if (_configuration != null)
             {
                 _configuration.GetSection(Constants.Keys.AzureSignalRSectionKey).Bind(options);
-                options.Endpoints = _configuration.GetSignalRServiceEndpoints(Constants.Keys.AzureSignalRSectionKey);//Our configuration format of service endoints array is not the standard format to configure array supported by .NET
+                options.Endpoints = _configuration.GetSignalRServiceEndpoints(Constants.Keys.ConnectionStringDefaultKey);//Our configuration format of service endoints array is not the standard format to configure array supported by .NET
             }
         }
 
