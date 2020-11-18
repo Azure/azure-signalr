@@ -2,7 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Linq;
 using System.Net;
+using Microsoft.Azure.SignalR.Common.Endpoints;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -34,7 +36,11 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Sets multiple service endpoints of Azure SignalR Service.
         /// </summary>
-        public ServiceEndpoint[] Endpoints { get; internal set; } //todo not ready for public use
+        ServiceEndpoint[] IServiceEndpointOptions.Endpoints => _serviceEndpoints;  //todo not ready for public use
+
+        internal ServiceEndpoint[] Endpoints { get => _serviceEndpoints; set => _serviceEndpoints = value; }
+
+        private ServiceEndpoint[] _serviceEndpoints;
 
         /// <summary>
         /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
@@ -52,23 +58,10 @@ namespace Microsoft.Azure.SignalR.Management
 
         private void ValidateServiceEndpoint()
         {
-            var notNullCount = 0;
-            if (ConnectionString != null)
-            {
-                notNullCount += 1;
-            }
-            if (Endpoints != null)
-            {
-                notNullCount += 1;
-            }
-
-            if (notNullCount == 0)
+            var mergedEndpoints = (this as IServiceEndpointOptions).GetMergedEndpoints();
+            if (mergedEndpoints.Count() == 0)
             {
                 throw new InvalidOperationException($"Service endpoint(s) is/are not configured. Please set one of the following properties {nameof(ConnectionString)}, {nameof(Endpoints)}.");
-            }
-            if (ConnectionString == null && Endpoints != null && Endpoints.Length == 0)
-            {
-                throw new InvalidOperationException($"Service endpoint(s) is/are not configured. The length of property {nameof(Endpoints)} is zero.");
             }
         }
 
