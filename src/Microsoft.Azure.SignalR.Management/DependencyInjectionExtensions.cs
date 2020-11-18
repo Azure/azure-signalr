@@ -36,17 +36,12 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         /// <remarks>Designed for Azure Function extension where the setup of <see cref="ServiceManagerOptions"/> is different from SDK</remarks>
         /// <typeparam name="TOptionsSetup">The type of class used to setup <see cref="ServiceManagerOptions"/>. </typeparam>
-        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IServiceCollection AddSignalRServiceManager<TOptionsSetup>(this IServiceCollection services) where TOptionsSetup : class, IConfigureOptions<ServiceManagerOptions>, IOptionsChangeTokenSource<ServiceManagerOptions>
         {
             //cascade options setup
-            services.AddSingleton<TOptionsSetup>()
-                    .AddSingleton<IConfigureOptions<ServiceManagerOptions>>(sp => sp.GetService<TOptionsSetup>())
-                    .AddSingleton<IOptionsChangeTokenSource<ServiceManagerOptions>>(sp => sp.GetService<TOptionsSetup>());
+            services.SetupOptions<ServiceManagerOptions, ServiceManagerOptionsSetup>();
             services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
-            services.AddSingleton<ServiceManagerContextSetup>()
-                    .AddSingleton<IConfigureOptions<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>())
-                    .AddSingleton<IOptionsChangeTokenSource<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>());
+            services.SetupOptions<ServiceManagerContext,ServiceManagerContextSetup>();
 
             services.AddSignalR()
                     .AddAzureSignalR<ServiceOptionsSetup>();
