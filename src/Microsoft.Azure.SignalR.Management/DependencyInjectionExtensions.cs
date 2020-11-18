@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR.Management
             services.AddSingleton<TOptionsSetup>()
                     .AddSingleton<IConfigureOptions<ServiceManagerOptions>>(sp => sp.GetService<TOptionsSetup>())
                     .AddSingleton<IOptionsChangeTokenSource<ServiceManagerOptions>>(sp => sp.GetService<TOptionsSetup>());
-            services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
+            services.PostConfigure<ServiceManagerContext>(o => o.ValidateOptions());
             services.AddSingleton<ServiceManagerContextSetup>()
                     .AddSingleton<IConfigureOptions<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>())
                     .AddSingleton<IOptionsChangeTokenSource<ServiceManagerContext>>(sp => sp.GetService<ServiceManagerContextSetup>());

@@ -1,10 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Linq;
 using System.Net;
-using Microsoft.Azure.SignalR.Common.Endpoints;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -46,32 +43,5 @@ namespace Microsoft.Azure.SignalR.Management
         /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
         /// </summary>
         public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
-
-        /// <summary>
-        /// Method called by management SDK to validate options.
-        /// </summary>
-        internal void ValidateOptions()
-        {
-            ValidateServiceEndpoint();
-            ValidateServiceTransportType();
-        }
-
-        private void ValidateServiceEndpoint()
-        {
-            var mergedEndpoints = (this as IServiceEndpointOptions).GetMergedEndpoints();
-            if (mergedEndpoints.Count() == 0)
-            {
-                throw new InvalidOperationException($"Service endpoint(s) is/are not configured. Please set one of the following properties {nameof(ConnectionString)}, {nameof(Endpoints)}.");
-            }
-        }
-
-        private void ValidateServiceTransportType()
-        {
-            if (!Enum.IsDefined(typeof(ServiceTransportType), ServiceTransportType))
-            {
-                throw new ArgumentOutOfRangeException($"Not supported service transport type. " +
-                    $"Supported transport types are {ServiceTransportType.Transient} and {ServiceTransportType.Persistent}.");
-            }
-        }
     }
 }
