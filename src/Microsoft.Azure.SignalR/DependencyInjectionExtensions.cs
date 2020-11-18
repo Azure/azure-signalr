@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TOptionsSetup">The set up class used to configure <see cref="ServiceOptions"/> and track changes.</typeparam>
         internal static ISignalRServerBuilder AddAzureSignalR<TOptionsSetup>(this ISignalRServerBuilder builder) where TOptionsSetup : class, IConfigureOptions<ServiceOptions>, IOptionsChangeTokenSource<ServiceOptions>
         {
-            builder.Services.SetupOptions<ServiceOptions,ServiceOptionsSetup>();
+            builder.Services.SetupOptions<ServiceOptions, TOptionsSetup>();
             return builder.AddAzureSignalRCore();
         }
 
