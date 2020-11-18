@@ -49,7 +49,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Method called by management SDK to validate options.
         /// </summary>
-        public void ValidateOptions()
+        internal void ValidateOptions()
         {
             ValidateServiceEndpoint();
             ValidateServiceTransportType();
