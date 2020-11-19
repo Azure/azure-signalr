@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             //cascade options setup
             services.SetupOptions<ServiceManagerOptions, ServiceManagerOptionsSetup>();
-            services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
+            services.PostConfigure<ServiceManagerContext>(o => o.ValidateOptions());
             services.SetupOptions<ServiceManagerContext,ServiceManagerContextSetup>();
 
             services.AddSignalR()

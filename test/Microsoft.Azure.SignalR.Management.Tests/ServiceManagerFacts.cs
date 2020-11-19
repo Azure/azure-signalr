@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var manager = new ServiceManagerBuilder().WithOptions(o =>
             {
-                o.ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint($"Endpoint=http://localhost;AccessKey=ABC;Version=1.0;ClientEndpoint=https://remote") };
+                o.Endpoints = new ServiceEndpoint[] { new ServiceEndpoint($"Endpoint=http://localhost;AccessKey=ABC;Version=1.0;ClientEndpoint=https://remote") };
             }).Build();
             var clientEndpoint = manager.GetClientEndpoint(HubName);
 
