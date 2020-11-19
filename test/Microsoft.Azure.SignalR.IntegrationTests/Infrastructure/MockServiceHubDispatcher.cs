@@ -22,6 +22,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 
         public MockServiceHubDispatcher(
             IServiceProtocol serviceProtocol,
+            IHubContext<THub> context,
             IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
             IServiceEndpointManager serviceEndpointManager,
@@ -32,6 +33,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
             ServerLifetimeManager serverLifetimeManager,
             IClientConnectionFactory clientConnectionFactory) : base(
                 serviceProtocol,
+                context,
                 serviceConnectionManager,
                 clientConnectionManager,
                 serviceEndpointManager,
