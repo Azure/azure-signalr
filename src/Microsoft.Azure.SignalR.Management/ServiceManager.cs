@@ -7,12 +7,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Common.RestClients;
-using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -25,119 +20,39 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly ServiceEndpointProvider _endpointProvider;
         private readonly IServerNameProvider _serverNameProvider;
         private readonly ServiceEndpoint _endpoint;
-        private readonly string _productInfo;
-        private readonly ServiceManagerContext _context;
         private readonly RestClientFactory _restClientFactory;
+        private readonly ServiceHubContextFactory _serviceHubContextFactory;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly bool _disposeServiceProvider;
 
-        internal ServiceManager(ServiceManagerContext context, RestClientFactory restClientFactory)
+        public ServiceManager(IOptions<ServiceManagerContext> context, RestClientFactory restClientFactory, ServiceHubContextFactory serviceHubContextFactory, IServiceProvider serviceProvider)
         {
-            _endpoint = context.ServiceEndpoints.Single();//temp solution
+            _endpoint = context.Value.ServiceEndpoints.Single();//temp solution
 
             _serverNameProvider = new DefaultServerNameProvider();
 
             var serviceOptions = Options.Create(new ServiceOptions
             {
-                ApplicationName = context.ApplicationName,
-                Proxy = context.Proxy
+                ApplicationName = context.Value.ApplicationName,
+                Proxy = context.Value.Proxy
             }).Value;
 
-            _endpointProvider = new ServiceEndpointProvider(_serverNameProvider, _endpoint, serviceOptions);
+            _endpointProvider = new ServiceEndpointProvider(_serverNameProvider, _endpoint, serviceOptions, NullLoggerFactory.Instance);
 
-            _productInfo = context.ProductInfo;
-            _context = context;
             _restClientFactory = restClientFactory;
+            _serviceHubContextFactory = serviceHubContextFactory;
+            _serviceProvider = serviceProvider;
+            _disposeServiceProvider = context.Value.DisposeServiceProvider;
         }
 
-        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
+        public Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default) =>
+            _serviceHubContextFactory.CreateAsync(hubName, loggerFactory, cancellationToken);
+
+        public void Dispose()
         {
-            loggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
-            switch (_context.ServiceTransportType)
+            if (_disposeServiceProvider)
             {
-                case ServiceTransportType.Persistent:
-                    {
-                        var connectionFactory = new ManagementConnectionFactory(_productInfo, new ConnectionFactory(_serverNameProvider, loggerFactory));
-                        var serviceProtocol = new ServiceProtocol();
-                        var clientConnectionManager = new ClientConnectionManager();
-                        var clientConnectionFactory = new ClientConnectionFactory();
-                        ConnectionDelegate connectionDelegate = connectionContext => Task.CompletedTask;
-                        var serviceConnectionFactory = new ServiceConnectionFactory(
-                            serviceProtocol,
-                            clientConnectionManager,
-                            connectionFactory,
-                            loggerFactory,
-                            connectionDelegate,
-                            clientConnectionFactory,
-                            new DefaultServerNameProvider()
-                            );
-                        var weakConnectionContainer = new WeakServiceConnectionContainer(
-                            serviceConnectionFactory,
-                            _context.ConnectionCount,
-                            new HubServiceEndpoint(hubName, _endpointProvider, _endpoint),
-                            loggerFactory?.CreateLogger(nameof(WeakServiceConnectionContainer)) ?? NullLogger.Instance);
-
-                        var serviceCollection = new ServiceCollection();
-                        serviceCollection.AddSignalRCore();
-                        serviceCollection.AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
-
-                        if (loggerFactory != null)
-                        {
-                            serviceCollection.AddSingleton(typeof(ILoggerFactory), loggerFactory);
-                        }
-
-                        serviceCollection
-                            .AddLogging()
-                            .AddSingleton(typeof(IConnectionFactory), sp => connectionFactory)
-                            .AddSingleton(typeof(HubLifetimeManager<>), typeof(WebSocketsHubLifetimeManager<>))
-                            .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
-                            .AddSingleton(typeof(IServiceConnectionContainer), sp => weakConnectionContainer);
-
-                        var success = false;
-                        ServiceProvider serviceProvider = null;
-                        try
-                        {
-                            serviceProvider = serviceCollection.BuildServiceProvider();
-
-                            var serviceConnectionManager = serviceProvider.GetRequiredService<IServiceConnectionManager<Hub>>();
-                            serviceConnectionManager.SetServiceConnection(weakConnectionContainer);
-                            _ = serviceConnectionManager.StartAsync();
-
-                            // wait until service connection established
-                            await weakConnectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
-
-                            var webSocketsHubLifetimeManager = (WebSocketsHubLifetimeManager<Hub>)serviceProvider.GetRequiredService<HubLifetimeManager<Hub>>();
-
-                            var hubContext = serviceProvider.GetRequiredService<IHubContext<Hub>>();
-                            var serviceHubContext = new ServiceHubContext(hubContext, webSocketsHubLifetimeManager, serviceProvider);
-                            success = true;
-                            return serviceHubContext;
-                        }
-                        finally
-                        {
-                            if (!success)
-                            {
-                                serviceProvider?.Dispose();
-                            }
-                        }
-                    }
-                case ServiceTransportType.Transient:
-                    {
-                        var serviceCollection = new ServiceCollection();
-                        serviceCollection.AddSignalRCore();
-
-                        // remove default hub lifetime manager
-                        var serviceDescriptor = serviceCollection.FirstOrDefault(descriptor => descriptor.ServiceType == typeof(HubLifetimeManager<>));
-                        serviceCollection.Remove(serviceDescriptor);
-
-                        // add rest hub lifetime manager
-                        var restHubLifetimeManager = new RestHubLifetimeManager(hubName, _endpoint, _productInfo, _context.ApplicationName);
-                        serviceCollection.AddSingleton(typeof(HubLifetimeManager<Hub>), sp => restHubLifetimeManager);
-
-                        var serviceProvider = serviceCollection.BuildServiceProvider();
-                        var hubContext = serviceProvider.GetRequiredService<IHubContext<Hub>>();
-                        return new ServiceHubContext(hubContext, restHubLifetimeManager, serviceProvider);
-                    }
-                default:
-                    throw new ArgumentException("Not supported service transport type.");
+                (_serviceProvider as IDisposable).Dispose();
             }
         }
 

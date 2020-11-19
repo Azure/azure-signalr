@@ -30,6 +30,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var dispatcher = new ServiceHubDispatcher<Hub>(
                 null,
+                TestHubContext<Hub>.GetInstance(),
                 serviceManager,
                 clientManager,
                 null,

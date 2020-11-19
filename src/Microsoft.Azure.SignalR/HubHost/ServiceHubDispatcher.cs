@@ -17,6 +17,8 @@ namespace Microsoft.Azure.SignalR
     {
         private static readonly string Name = $"ServiceHubDispatcher<{typeof(THub).FullName}>";
 
+        private IHubContext<THub> Context { get; }
+
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<ServiceHubDispatcher<THub>> _logger;
         private readonly ServiceOptions _options;
@@ -27,10 +29,12 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly IEndpointRouter _router;
         private readonly string _hubName;
+
         protected readonly IServerNameProvider _nameProvider;
 
         public ServiceHubDispatcher(
             IServiceProtocol serviceProtocol,
+            IHubContext<THub> context,
             IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
             IServiceEndpointManager serviceEndpointManager,
@@ -46,6 +50,8 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionManager = clientConnectionManager;
             _serviceEndpointManager = serviceEndpointManager;
             _options = options != null ? options.Value : throw new ArgumentNullException(nameof(options));
+
+            Context = context;
 
             _router = router ?? throw new ArgumentNullException(nameof(router));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -71,7 +77,8 @@ namespace Microsoft.Azure.SignalR
 
         public async Task ShutdownAsync()
         {
-            if (_options.GracefulShutdown.Mode == GracefulShutdownMode.Off)
+            var options = _options.GracefulShutdown;
+            if (options.Mode == GracefulShutdownMode.Off)
             {
                 return;
             }
@@ -80,31 +87,34 @@ namespace Microsoft.Azure.SignalR
             {
                 var source = new CancellationTokenSource(_options.GracefulShutdown.Timeout);
 
-                _logger.LogInformation("[GracefulShutdown] Started.");
+                Log.SettingServerOffline(_logger, _hubName);
 
                 await Task.WhenAny(
-                    OfflineAndWaitForCompletedAsync(_options.GracefulShutdown.Mode),
+                    _serviceConnectionManager.OfflineAsync(options.Mode),
                     Task.Delay(Timeout.InfiniteTimeSpan, source.Token)
                 );
 
+                Log.TriggeringShutdownHooks(_logger, _hubName);
+
                 await Task.WhenAny(
-                    _serviceConnectionManager.StopAsync(),
+                    options.OnShutdown(Context),
+                    Task.Delay(Timeout.InfiniteTimeSpan, source.Token)
+                );
+
+                Log.WaitingClientConnectionsToClose(_logger, _hubName);
+
+                await Task.WhenAny(
+                    _clientConnectionManager.WhenAllCompleted(),
                     Task.Delay(Timeout.InfiniteTimeSpan, source.Token)
                 );
             }
             catch (OperationCanceledException)
             {
-                _logger.LogWarning($"[GracefulShutdown] Timeout ({_options.GracefulShutdown.Timeout.TotalMilliseconds}ms) reached, existing connections will be dropped immediately.");
+                Log.GracefulShutdownTimeoutExceeded(_logger, _hubName, Convert.ToInt32(_options.GracefulShutdown.Timeout.TotalMilliseconds));
             }
-        }
 
-        private async Task OfflineAndWaitForCompletedAsync(GracefulShutdownMode mode)
-        {
-            _logger.LogInformation("[GracefulShutdown] Unloading server connections.");
-            await _serviceConnectionManager.OfflineAsync(mode);
-
-            _logger.LogInformation("[GracefulShutdown] Waiting client connections to complete.");
-            await _clientConnectionManager.WhenAllCompleted();
+            Log.StoppingServer(_logger, _hubName);
+            await _serviceConnectionManager.StopAsync();
         }
 
         private IMultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
@@ -148,9 +158,49 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, int, Exception> _startingConnection =
                 LoggerMessage.Define<string, int>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Starting {name} with {connectionNumber} connections...");
 
+            private static readonly Action<ILogger, string, int, Exception> _gracefulShutdownTimeoutExceeded =
+                LoggerMessage.Define<string, int>(LogLevel.Warning, new EventId(2, "GracefulShutdownTimeoutExceeded"), "[{hubName}] Timeout({timeoutInMs}ms) reached, existing client connections will be dropped immediately.");
+
+            private static readonly Action<ILogger, string, Exception> _settingServerOffline =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(3, "SettingServerOffline"), "[{hubName}] Setting the hub server offline...");
+
+            private static readonly Action<ILogger, string, Exception> _triggeringShutdownHooks =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(4, "TriggeringShutdownHooks"), "[{hubName}] Triggering shutdown hooks...");
+
+            private static readonly Action<ILogger, string, Exception> _waitingClientConnectionsToClose =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(5, "WaitingClientConnectionsToClose"), "[{hubName}] Waiting client connections to close...");
+
+            private static readonly Action<ILogger, string, Exception> _stoppingServer =
+                LoggerMessage.Define<string>(LogLevel.Information, new EventId(6, "StoppingServer"), "[{hubName}] Stopping the hub server...");
+
             public static void StartingConnection(ILogger logger, string name, int connectionNumber)
             {
                 _startingConnection(logger, name, connectionNumber, null);
+            }
+
+            public static void GracefulShutdownTimeoutExceeded(ILogger logger, string hubName, int timeoutInMs)
+            {
+                _gracefulShutdownTimeoutExceeded(logger, hubName, timeoutInMs, null);
+            }
+
+            public static void SettingServerOffline(ILogger logger, string hubName)
+            {
+                _settingServerOffline(logger, hubName, null);
+            }
+
+            public static void TriggeringShutdownHooks(ILogger logger, string hubName)
+            {
+                _triggeringShutdownHooks(logger, hubName, null);
+            }
+
+            public static void WaitingClientConnectionsToClose(ILogger logger, string hubName)
+            {
+                _waitingClientConnectionsToClose(logger, hubName, null);
+            }
+
+            public static void StoppingServer(ILogger logger, string hubName)
+            {
+                _stoppingServer(logger, hubName, null);
             }
         }
     }
