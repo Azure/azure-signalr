@@ -24,24 +24,9 @@ namespace Microsoft.Azure.SignalR.Management
 
         internal void ValidateOptions()
         {
-            ValidateServiceEndpoint();
-            ValidateServiceTransportType();
-        }
-
-        private void ValidateServiceEndpoint()
-        {
             if (ServiceEndpoints.Length == 0)
             {
                 throw new InvalidOperationException($"Service endpoint(s) is/are not configured.");
-            }
-        }
-
-        private void ValidateServiceTransportType()
-        {
-            if (!Enum.IsDefined(typeof(ServiceTransportType), ServiceTransportType))
-            {
-                throw new ArgumentOutOfRangeException($"Not supported service transport type. " +
-                    $"Supported transport types are {ServiceTransportType.Transient} and {ServiceTransportType.Persistent}.");
             }
         }
     }
