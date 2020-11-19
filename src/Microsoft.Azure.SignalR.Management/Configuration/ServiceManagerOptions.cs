@@ -10,6 +10,8 @@ namespace Microsoft.Azure.SignalR.Management
     /// </summary>
     public class ServiceManagerOptions : IServiceEndpointOptions
     {
+        private ServiceEndpoint[] _serviceEndpoints;
+
         /// <summary>
         /// Gets or sets the ApplicationName which will be prefixed to each hub name
         /// </summary>
@@ -36,8 +38,6 @@ namespace Microsoft.Azure.SignalR.Management
         ServiceEndpoint[] IServiceEndpointOptions.Endpoints => _serviceEndpoints;  //todo not ready for public use
 
         internal ServiceEndpoint[] Endpoints { get => _serviceEndpoints; set => _serviceEndpoints = value; }
-
-        private ServiceEndpoint[] _serviceEndpoints;
 
         /// <summary>
         /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
