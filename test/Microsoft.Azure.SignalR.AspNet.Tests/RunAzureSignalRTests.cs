@@ -103,7 +103,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                        {
                        }
                    });
-            Assert.StartsWith("Connection string missing required properties endpoint and accesskey.", exception.Message);
+            Assert.StartsWith("Connection string missing required properties endpoint.", exception.Message);
         }
 
         [Fact]

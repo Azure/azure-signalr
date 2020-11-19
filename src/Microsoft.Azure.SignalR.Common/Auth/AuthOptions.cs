@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -19,7 +20,11 @@ namespace Microsoft.Azure.SignalR
 
         internal const string USGovernmentInstance = "https://login.microsoftonline.us/";
 
+        internal abstract string AuthType { get; }
+
         protected string AzureActiveDirectoryInstance { get; set; } = GlobalInstance;
+
+        public abstract Task<string> AcquireAccessToken();
 
         public AuthOptions WithChina()
         {
@@ -57,7 +62,5 @@ namespace Microsoft.Azure.SignalR
         }
 
         protected Uri GetUri(string baseUri, string path) => new Uri(new Uri(baseUri), path);
-
-        internal abstract string AuthType { get; }
     }
 }

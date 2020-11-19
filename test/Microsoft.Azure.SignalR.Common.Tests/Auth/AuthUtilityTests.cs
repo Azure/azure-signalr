@@ -21,7 +21,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         public void TestAccessTokenTooLongThrowsException()
         {
             var claims = GenerateClaims(100);
-            var exception = Assert.Throws<AzureSignalRAccessTokenTooLongException>(() => AuthUtility.GenerateAccessToken(new AccessKey(SigningKey), Audience, claims, DefaultLifetime, AccessTokenAlgorithm.HS256));
+            var accessKey = new AccessKey(SigningKey, "http://localhost", 443);
+            var exception = Assert.Throws<AzureSignalRAccessTokenTooLongException>(() => AuthUtility.GenerateAccessToken(accessKey, Audience, claims, DefaultLifetime, AccessTokenAlgorithm.HS256));
 
             Assert.Equal("AccessToken must not be longer than 4K.", exception.Message);
         }
@@ -32,7 +33,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             var count = 0;
             while (count < 1000)
             {
-                AuthUtility.GenerateJwtBearer(audience: Audience, expires: DateTime.UtcNow.Add(DefaultLifetime), signingKey: new AccessKey(SigningKey));
+                var accessKey = new AccessKey(SigningKey, "http://localhost", 443);
+                AuthUtility.GenerateJwtBearer(audience: Audience, expires: DateTime.UtcNow.Add(DefaultLifetime), signingKey: accessKey);
                 count++;
             };
 
