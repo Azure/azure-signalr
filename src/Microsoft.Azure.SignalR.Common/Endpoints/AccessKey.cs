@@ -10,17 +10,24 @@ namespace Microsoft.Azure.SignalR
 {
     internal class AccessKey
     {
-        public string Id { get; protected set; }
+        public string Id => Key?.Item1;
+        public string Value => Key?.Item2;
 
-        public string Value { get; protected set; }
+        protected Tuple<string, string> Key { get; set; }
 
-        public AccessKey(string key)
+        public string Endpoint { get; }
+        public int? Port { get; }
+
+        public AccessKey(string key, string endpoint, int? port) : this(endpoint, port)
         {
-            Id = key.GetHashCode().ToString();
-            Value = key;
+            Key = new Tuple<string, string>(key.GetHashCode().ToString(), key);
         }
 
-        protected AccessKey() { }
+        protected AccessKey(string endpoint, int? port)
+        {
+            Endpoint = endpoint;
+            Port = port;
+        }
 
         public virtual Task<string> GenerateAccessToken(
             string audience,

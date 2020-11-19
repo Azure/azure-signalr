@@ -174,8 +174,8 @@ services.AddSignalR()
                 options.AccessTokenLifetime = TimeSpan.FromDays(1);
                 options.ClaimsProvider = context => context.User.Claims;
 
-                option.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
-                option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(10);
+                options.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
+                options.GracefulShutdown.Timeout = TimeSpan.FromSeconds(10);
             });
 ```
 

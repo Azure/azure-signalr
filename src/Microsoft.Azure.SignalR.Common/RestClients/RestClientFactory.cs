@@ -3,7 +3,6 @@
 
 using System;
 using System.Net.Http;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -13,19 +12,11 @@ namespace Microsoft.Azure.SignalR
         private readonly string _userAgent;
         private readonly string _serverName;
 
-        internal RestClientFactory(string userAgent)
+        public RestClientFactory(string userAgent, IHttpClientFactory httpClientFactory)
         {
-            var serviceCollection = new ServiceCollection()
-                .AddHttpClient();
-            _httpClientFactory = serviceCollection.BuildServiceProvider().GetRequiredService<IHttpClientFactory>();
+            _httpClientFactory = httpClientFactory;
             _userAgent = userAgent;
             _serverName = RestApiAccessTokenGenerator.GenerateServerName();
-        }
-
-        protected RestClientFactory(string userAgent, IHttpClientFactory httpClientFactory)
-        {
-            _userAgent = userAgent;
-            _httpClientFactory = httpClientFactory;
         }
 
         protected virtual HttpClient CreateHttpClient() => _httpClientFactory.CreateClient();

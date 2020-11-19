@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR
 
         public virtual string Name { get; internal set; }
 
-        public string Endpoint { get; }
+        public string Endpoint => AccessKey?.Endpoint;
 
         /// <summary>
         /// The customized endpoint that the client will be redirected to
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR
 
         internal AccessKey AccessKey { get; private set; }
 
-        internal int? Port { get; }
+        internal int? Port => AccessKey?.Port;
 
         /// <summary>
         /// When current app server instance has server connections connected to the target endpoint for current hub, it can deliver messages to that endpoint.
@@ -47,24 +47,9 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public EndpointMetrics EndpointMetrics { get; internal set; } = new EndpointMetrics();
 
-        internal ServiceEndpoint(string endpoint, AuthOptions authOptions, int port = 443, EndpointType type = EndpointType.Primary)
-        {
-            Endpoint = endpoint;
-            AccessKey = new AadAccessKey(authOptions);
-
-            Version = "1.0";
-            Port = port;
-            Name = "";
-
-            EndpointType = type;
-        }
-
         public ServiceEndpoint(string key, string connectionString) : this(connectionString)
         {
-            if (!string.IsNullOrEmpty(key))
-            {
-                (Name, EndpointType) = ParseKey(key);
-            }
+            (Name, EndpointType) = ParseKey(key);
         }
 
         public ServiceEndpoint(string connectionString, EndpointType type = EndpointType.Primary, string name = "")
@@ -74,9 +59,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException($"'{nameof(connectionString)}' cannot be null or whitespace", nameof(connectionString));
             }
 
-            string key;
-            (Endpoint, key, Version, Port, ClientEndpoint) = ConnectionStringParser.Parse(connectionString);
-            AccessKey = new AccessKey(key);
+            (AccessKey, Version, ClientEndpoint) = ConnectionStringParser.Parse(connectionString);
 
             EndpointType = type;
             ConnectionString = connectionString;
@@ -90,20 +73,14 @@ namespace Microsoft.Azure.SignalR
                 ConnectionString = endpoint.ConnectionString;
                 EndpointType = endpoint.EndpointType;
                 Name = endpoint.Name;
-                Endpoint = endpoint.Endpoint;
                 Version = endpoint.Version;
                 AccessKey = endpoint.AccessKey;
-                Port = endpoint.Port;
+                ClientEndpoint = endpoint.ClientEndpoint;
             }
         }
 
         // test only
         internal ServiceEndpoint() { }
-
-        internal void UpdateAccessKey(AccessKey key)
-        {
-            AccessKey = key;
-        }
 
         public override string ToString()
         {
@@ -139,43 +116,23 @@ namespace Microsoft.Azure.SignalR
 
         internal static (string, EndpointType) ParseKey(string key)
         {
-            if (key == Constants.Keys.ConnectionStringDefaultKey || key == Constants.Keys.ConnectionStringSecondaryKey)
+            if (string.IsNullOrEmpty(key))
             {
                 return (string.Empty, EndpointType.Primary);
             }
 
-            if (key.StartsWith(Constants.Keys.ConnectionStringKeyPrefix))
-            {
-                // Azure:SignalR:ConnectionString:<name>:<type>
-                return ParseKeyWithPrefix(key, Constants.Keys.ConnectionStringKeyPrefix);
-            }
-
-            if (key.StartsWith(Constants.Keys.ConnectionStringSecondaryKey))
-            {
-                return ParseKeyWithPrefix(key, Constants.Keys.ConnectionStringSecondaryKey);
-            }
-
-            throw new ArgumentException($"Invalid format: {key}", nameof(key));
-        }
-
-        private static (string, EndpointType) ParseKeyWithPrefix(string key, string prefix)
-        {
-            var status = key.Substring(prefix.Length);
-            var parts = status.Split(':');
+            var parts = key.Split(':');
             if (parts.Length == 1)
             {
                 return (parts[0], EndpointType.Primary);
             }
+            else if (Enum.TryParse<EndpointType>(parts[1], true, out var endpointStatus))
+            {
+                return (parts[0], endpointStatus);
+            }
             else
             {
-                if (Enum.TryParse<EndpointType>(parts[1], true, out var endpointStatus))
-                {
-                    return (parts[0], endpointStatus);
-                }
-                else
-                {
-                    return (status, EndpointType.Primary);
-                }
+                return (key, EndpointType.Primary);
             }
         }
     }

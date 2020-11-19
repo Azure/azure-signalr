@@ -28,7 +28,17 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <div>Connection Error...</div>
-                    <div><strong style="font-size: 1.5em;">Hit Refresh/F5</strong> to rejoin. ;)</div>
+                    <div><strong style="font-size: 1.5em;">Hit Refresh/F5</strong> to rejoin. :)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal alert alert-success fade" id="closeModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>Connection Closed</div>
+                    <div><strong style="font-size: 1.5em;">Hit Refresh/F5</strong> to rejoin. :)</div>
                 </div>
             </div>
         </div>
@@ -97,9 +107,15 @@
                     messageBox.appendChild(messageEntry);
                     messageBox.scrollTop = messageBox.scrollHeight;
                 };
+
+                var close = function (name, message) {
+                    setTimeout(() => connection.stop(), 3000);
+                }
+
                 // Create a function that the hub can call to broadcast messages.
                 connection.on('broadcastMessage', messageCallback);
                 connection.on('echo', messageCallback);
+                connection.on('exit', close);
                 connection.onclose(onConnectionError);
             }
 
@@ -138,8 +154,10 @@
             function onConnectionError(error) {
                 if (error && error.message) {
                     console.error(error.message);
+                    var modal = document.getElementById('myModal');
+                } else {
+                    var modal = document.getElementById('closeModal');
                 }
-                var modal = document.getElementById('myModal');
                 modal.classList.add('in');
                 modal.style = 'display: block;';
             }

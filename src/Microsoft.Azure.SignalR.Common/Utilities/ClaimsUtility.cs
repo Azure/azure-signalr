@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR
             bool enableDetailedErrors = false, 
             int endpointsCount = 1,
             int? maxPollInterval = null,
-            bool isDiagnosticClient = false)
+            bool isDiagnosticClient = false, int handshakeTimeout = Constants.Periods.DefaultHandshakeTimeout)
         {
             if (userId != null)
             {
@@ -50,6 +50,11 @@ namespace Microsoft.Azure.SignalR
             if (isDiagnosticClient)
             {
                 yield return new Claim(Constants.ClaimType.DiagnosticClient, "true");
+            }
+
+            if (handshakeTimeout != Constants.Periods.DefaultHandshakeTimeout)
+            {
+                yield return new Claim(Constants.ClaimType.CustomHandshakeTimeout, handshakeTimeout.ToString());
             }
 
             var authenticationType = user?.Identity?.AuthenticationType;

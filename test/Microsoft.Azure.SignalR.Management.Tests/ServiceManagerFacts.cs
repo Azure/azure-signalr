@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -51,12 +52,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestGenerateAccessTokenData))]
         internal void GenerateClientAccessTokenTest(string userId, Claim[] claims, string appName)
         {
-            var context = new ServiceManagerContext
-            {
-                ApplicationName = appName,
-                ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint(_testConnectionString) }
-            };
-            var manager = new ServiceManager(context, new RestClientFactory(UserAgent));
+            var builder = new ServiceManagerBuilder()
+                .WithOptions(o =>
+                {
+                    o.ApplicationName = appName;
+                    o.ConnectionString = _testConnectionString;
+                });
+            var manager = builder.Build();
             var tokenString = manager.GenerateClientAccessToken(HubName, userId, claims, _tokenLifeTime);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
@@ -69,12 +71,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [MemberData(nameof(TestGenerateClientEndpointData))]
         internal void GenerateClientEndpointTest(string appName, string expectedClientEndpoint)
         {
-            var context = new ServiceManagerContext
-            {
-                ApplicationName = appName,
-                ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint(_testConnectionString) }
-            };
-            var manager = new ServiceManager(context, new RestClientFactory(UserAgent));
+            var builder = new ServiceManagerBuilder()
+                .WithOptions(o =>
+                {
+                    o.ApplicationName = appName;
+                    o.ConnectionString = _testConnectionString;
+                });
+            var manager = builder.Build();
             var clientEndpoint = manager.GetClientEndpoint(HubName);
 
             Assert.Equal(expectedClientEndpoint, clientEndpoint);
@@ -83,47 +86,44 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [Fact]
         internal void GenerateClientEndpointTestWithClientEndpoint()
         {
-            var options = new ServiceManagerOptions
+            var manager = new ServiceManagerBuilder().WithOptions(o =>
             {
-                ConnectionString = $"Endpoint=http://localhost;AccessKey=ABC;Version=1.0;ClientEndpoint=https://remote"
-            };
-
-            var context = new ServiceManagerContext();
-            context.SetValueFromOptions(options);
-            var manager = new ServiceManager(context, new RestClientFactory(UserAgent));
+                o.Endpoints = new ServiceEndpoint[] { new ServiceEndpoint($"Endpoint=http://localhost;AccessKey=ABC;Version=1.0;ClientEndpoint=https://remote") };
+            }).Build();
             var clientEndpoint = manager.GetClientEndpoint(HubName);
 
             Assert.Equal("https://remote/client/?hub=signalrbench", clientEndpoint);
         }
 
-        [Theory]
+        [Theory(Skip = "Reenable when it is ready")]
         [MemberData(nameof(TestServiceManagerOptionData))]
         internal async Task CreateServiceHubContextTest(ServiceTransportType serviceTransportType, bool useLoggerFacory, string appName, int connectionCount)
         {
-            var context = new ServiceManagerContext
-            {
-                ServiceTransportType = serviceTransportType,
-                ApplicationName = appName,
-                ConnectionCount = connectionCount,
-                ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint(_testConnectionString) }
-            };
-            var serviceManager = new ServiceManager(context, new RestClientFactory(UserAgent));
+            var builder = new ServiceManagerBuilder()
+                .WithOptions(o =>
+                {
+                    o.ServiceTransportType = serviceTransportType;
+                    o.ApplicationName = appName;
+                    o.ConnectionCount = connectionCount;
+                    o.ConnectionString = _testConnectionString;
+                });
+            var serviceManager = builder.Build();
 
             using (var loggerFactory = useLoggerFacory ? (ILoggerFactory)new LoggerFactory() : NullLoggerFactory.Instance)
             {
-                var hubContext = await serviceManager.CreateHubContextAsync(HubName, loggerFactory);
+                var hubContext = await serviceManager.CreateHubContextAsync(HubName, default);
             }
         }
 
         [Fact]
         internal async Task IsServiceHealthy_ReturnTrue_Test()
         {
-            var context = new ServiceManagerContext
-            {
-                ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint(_testConnectionString) }
-            };
-            var factory = new TestRestClientFactory(UserAgent, HttpStatusCode.OK);
-            var serviceManager = new ServiceManager(context, factory);
+            var services = new ServiceCollection();
+            services.AddSignalRServiceManager();
+            services.Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
+            services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, HttpStatusCode.OK));
+            using var serviceProvider = services.BuildServiceProvider();
+            var serviceManager = serviceProvider.GetRequiredService<IServiceManager>();
             var actual = await serviceManager.IsServiceHealthy(default);
 
             Assert.True(actual);
@@ -135,12 +135,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [InlineData(HttpStatusCode.GatewayTimeout)]
         internal async Task IsServiceHealthy_ReturnFalse_Test(HttpStatusCode statusCode)
         {
-            var context = new ServiceManagerContext
-            {
-                ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint(_testConnectionString) }
-            };
-            var factory = new TestRestClientFactory(UserAgent, statusCode);
-            var serviceManager = new ServiceManager(context, factory);
+            var services = new ServiceCollection();
+            services.Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
+            services.AddSignalRServiceManager();
+            services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, statusCode));
+            using var serviceProvider = services.BuildServiceProvider();
+            var serviceManager = serviceProvider.GetRequiredService<IServiceManager>();
+
             var actual = await serviceManager.IsServiceHealthy(default);
 
             Assert.False(actual);
@@ -153,12 +154,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [InlineData(HttpStatusCode.Ambiguous, typeof(AzureSignalRRuntimeException))]
         internal async Task IsServiceHealthy_Throw_Test(HttpStatusCode statusCode, Type expectedException)
         {
-            var context = new ServiceManagerContext
-            {
-                ServiceEndpoints = new ServiceEndpoint[] { new ServiceEndpoint(_testConnectionString) }
-            };
-            var factory = new TestRestClientFactory(UserAgent, statusCode);
-            var serviceManager = new ServiceManager(context, factory);
+            var services = new ServiceCollection();
+            services.AddSignalRServiceManager();
+            services.Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
+            services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, statusCode));
+            using var serviceProvider = services.BuildServiceProvider();
+            var serviceManager = serviceProvider.GetRequiredService<IServiceManager>();
 
             var exception = await Assert.ThrowsAnyAsync<AzureSignalRException>(() => serviceManager.IsServiceHealthy(default));
             Assert.IsType(expectedException, exception);

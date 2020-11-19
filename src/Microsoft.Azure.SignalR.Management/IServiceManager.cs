@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Management
     /// <summary>
     /// A manager abstraction for managing Azure SignalR Service.
     /// </summary>
-    public interface IServiceManager
+    public interface IServiceManager : IDisposable
     {
         /// <summary>
         /// Creates an instance of <see cref="IServiceHubContext"/> asynchronously.
