@@ -11,12 +11,15 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private readonly IServerNameProvider _provider;
 
+        private readonly ILoggerFactory _loggerFactory;
+
         public ServiceEndpointManager(IServerNameProvider provider, ServiceOptions options, ILoggerFactory loggerFactory) : 
             base(options,
                 loggerFactory?.CreateLogger<ServiceEndpointManager>())
         {
             _provider = provider;
             _options = options;
+            _loggerFactory = loggerFactory;
         }
 
         public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
@@ -26,7 +29,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 return null;
             }
 
-            return new ServiceEndpointProvider(_provider, endpoint, _options);
+            return new ServiceEndpointProvider(_provider, endpoint, _options, _loggerFactory);
         }
     }
 }
