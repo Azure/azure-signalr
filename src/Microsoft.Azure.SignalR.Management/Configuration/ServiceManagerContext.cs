@@ -22,6 +22,8 @@ namespace Microsoft.Azure.SignalR.Management
 
         public bool DisposeServiceProvider { get; set; } = false;
 
+        public NegotiationResponseOptions NegotiationResponseOptions { get; set; } = new NegotiationResponseOptions();
+
         internal void ValidateOptions()
         {
             if (ServiceEndpoints.Length == 0)

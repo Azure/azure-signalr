@@ -21,6 +21,7 @@ namespace Microsoft.Azure.SignalR.Management
             target.ConnectionCount = source.ConnectionCount;
             target.Proxy = source.Proxy;
             target.ServiceTransportType = source.ServiceTransportType;
+            target.NegotiationResponseOptions = source.NegotiationResponseOptions;
         }
     }
 }

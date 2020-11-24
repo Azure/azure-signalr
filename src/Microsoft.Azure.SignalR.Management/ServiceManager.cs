@@ -24,6 +24,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly ServiceHubContextFactory _serviceHubContextFactory;
         private readonly IServiceProvider _serviceProvider;
         private readonly bool _disposeServiceProvider;
+        private readonly NegotiationResponseOptions _negotiationResponseOptions;
 
         public ServiceManager(IOptions<ServiceManagerContext> context, RestClientFactory restClientFactory, ServiceHubContextFactory serviceHubContextFactory, IServiceProvider serviceProvider)
         {
@@ -43,6 +44,7 @@ namespace Microsoft.Azure.SignalR.Management
             _serviceHubContextFactory = serviceHubContextFactory;
             _serviceProvider = serviceProvider;
             _disposeServiceProvider = context.Value.DisposeServiceProvider;
+            _negotiationResponseOptions = context.Value.NegotiationResponseOptions;
         }
 
         public Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default) =>
@@ -59,10 +61,26 @@ namespace Microsoft.Azure.SignalR.Management
         public string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)
         {
             var claimsWithUserId = new List<Claim>();
+            
+            // internal claims
             if (userId != null)
             {
                 claimsWithUserId.Add(new Claim(ClaimTypes.NameIdentifier, userId));
             };
+            
+            if (_negotiationResponseOptions.IsDiagnosticClient)
+            {
+                claimsWithUserId.Add(new Claim(Constants.ClaimType.DiagnosticClient, "true"));
+            }
+            
+            // todo: add logger
+            var timeout = HandshakeTimeoutHelper.GetCustomHandshakeTimeout(_negotiationResponseOptions.HandshakeTimeout, NullLogger.Instance);
+            if (timeout != Constants.Periods.DefaultHandshakeTimeout)
+            {
+                claimsWithUserId.Add(new Claim(Constants.ClaimType.CustomHandshakeTimeout, timeout.ToString()));
+            }
+
+            // external claims
             if (claims != null)
             {
                 claimsWithUserId.AddRange(claims);

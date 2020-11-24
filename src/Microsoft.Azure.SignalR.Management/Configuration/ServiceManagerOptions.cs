@@ -43,5 +43,10 @@ namespace Microsoft.Azure.SignalR.Management
         /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.
         /// </summary>
         public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
+
+        /// <summary>
+        /// Gets or sets negotiation response options for redirecting client to SignalR service.
+        /// </summary>
+        public NegotiationResponseOptions NegotiationResponseOptions { get; set; } = new NegotiationResponseOptions();
     }
 }

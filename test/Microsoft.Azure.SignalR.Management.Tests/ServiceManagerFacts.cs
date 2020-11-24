@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
@@ -47,6 +48,29 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                                                                            from claims in _claimLists
                                                                            from appName in _appNames
                                                                            select new object[] { userId, claims, appName };
+
+        [Fact]
+        public void GenerateClientAccessTokenWithNegotiateResponseOptionsTest()
+        {
+            // default options
+            Assert.DoesNotContain(GetClaims(_ => { }), c => c.Type == Constants.ClaimType.DiagnosticClient || c.Type == Constants.ClaimType.CustomHandshakeTimeout);
+
+            // enable diagnostic client
+            Assert.Contains(GetClaims(o => o.NegotiationResponseOptions.IsDiagnosticClient = true), c => c.Type == Constants.ClaimType.DiagnosticClient && c.Value == "true");
+
+            // disable diagnostic client
+            Assert.DoesNotContain(GetClaims(o => o.NegotiationResponseOptions.IsDiagnosticClient = false), c => c.Type == Constants.ClaimType.DiagnosticClient);
+
+            // default hanshake timeout
+            Assert.DoesNotContain(GetClaims(o => o.NegotiationResponseOptions.HandshakeTimeout = TimeSpan.FromSeconds(15)), c => c.Type == Constants.ClaimType.CustomHandshakeTimeout);
+
+            // valid hanshake timeout
+            Assert.Contains(GetClaims(o => o.NegotiationResponseOptions.HandshakeTimeout = TimeSpan.FromSeconds(1)), c => c.Type == Constants.ClaimType.CustomHandshakeTimeout && c.Value == "1");
+
+            // invalid hanshake timeout
+            Assert.DoesNotContain(GetClaims(o => o.NegotiationResponseOptions.HandshakeTimeout = TimeSpan.FromSeconds(31)), c => c.Type == Constants.ClaimType.CustomHandshakeTimeout);
+            Assert.DoesNotContain(GetClaims(o => o.NegotiationResponseOptions.HandshakeTimeout = TimeSpan.FromSeconds(0)), c => c.Type == Constants.ClaimType.CustomHandshakeTimeout);
+        }
 
         [Theory]
         [MemberData(nameof(TestGenerateAccessTokenData))]
@@ -173,6 +197,14 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
 
             return $"{Endpoint}/client/?hub={appName.ToLower()}_{HubName.ToLower()}";
+        }
+
+        private static IEnumerable<Claim> GetClaims(Action<ServiceManagerOptions> configure)
+        {
+            var builder = new ServiceManagerBuilder().WithOptions(configure).WithOptions(o => o.ConnectionString = _testConnectionString);
+            var manager = builder.Build();
+            var token = manager.GenerateClientAccessToken("hub");
+            return new JwtSecurityTokenHandler().ReadJwtToken(token).Claims;
         }
     }
 }
