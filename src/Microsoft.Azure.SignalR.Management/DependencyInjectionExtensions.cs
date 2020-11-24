@@ -40,8 +40,8 @@ namespace Microsoft.Azure.SignalR.Management
         {
             //cascade options setup
             services.SetupOptions<ServiceManagerOptions, ServiceManagerOptionsSetup>();
-            services.PostConfigure<ServiceManagerContext>(o => o.ValidateOptions());
-            services.SetupOptions<ServiceManagerContext,ServiceManagerContextSetup>();
+            services.PostConfigure<ContextOptions>(o => o.ValidateOptions());
+            services.SetupOptions<ContextOptions,ContextOptionsSetup>();
 
             services.AddSignalR()
                     .AddAzureSignalR<ServiceOptionsSetup>();
@@ -64,28 +64,28 @@ namespace Microsoft.Azure.SignalR.Management
         }
 
         /// <summary>
-        /// Adds product info to <see cref="ServiceManagerContext"/>
+        /// Adds product info to <see cref="ContextOptions"/>
         /// </summary>
         /// <returns></returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static IServiceCollection WithAssembly(this IServiceCollection services, Assembly assembly)
         {
             var productInfo = ProductInfo.GetProductInfo(assembly);
-            return services.Configure<ServiceManagerContext>(o => o.ProductInfo = productInfo);
+            return services.Configure<ContextOptions>(o => o.ProductInfo = productInfo);
         }
 
         private static IServiceCollection TrySetProductInfo(this IServiceCollection services)
         {
             var assembly = Assembly.GetExecutingAssembly();
             var productInfo = ProductInfo.GetProductInfo(assembly);
-            return services.Configure<ServiceManagerContext>(o => o.ProductInfo ??= productInfo);
+            return services.Configure<ContextOptions>(o => o.ProductInfo ??= productInfo);
         }
 
         private static IServiceCollection AddRestClientFactory(this IServiceCollection services) => services
             .AddHttpClient()
             .AddSingleton(sp =>
             {
-                var options = sp.GetRequiredService<IOptions<ServiceManagerContext>>().Value;
+                var options = sp.GetRequiredService<IOptions<ContextOptions>>().Value;
                 var productInfo = options.ProductInfo;
                 var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
                 return new RestClientFactory(productInfo, httpClientFactory);
