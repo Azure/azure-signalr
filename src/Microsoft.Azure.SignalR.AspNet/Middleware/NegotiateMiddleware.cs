@@ -173,8 +173,16 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             var url = provider.GetClientEndpoint(null, originalPath, queryString);
-
-            return GenerateClientAccessTokenAsync(provider, context, url, claims);
+            try
+            {
+                return GenerateClientAccessTokenAsync(provider, context, url, claims);
+            }
+            catch (AzureSignalRAccessTokenNotAuthorizedException e)
+            {
+                Log.NegotiateFailed(_logger, e.Message);
+                context.Response.StatusCode = 500;
+                return context.Response.End("");
+            }
         }
 
         private async Task GenerateClientAccessTokenAsync(
