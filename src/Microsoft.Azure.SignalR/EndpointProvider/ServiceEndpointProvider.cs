@@ -31,8 +31,7 @@ namespace Microsoft.Azure.SignalR
             IServerNameProvider provider,
             ServiceEndpoint endpoint,
             ServiceOptions serviceOptions,
-            ILoggerFactory loggerFactory
-        )
+            ILoggerFactory loggerFactory)
         {
             _accessTokenLifetime = serviceOptions.AccessTokenLifetime;
             _accessKey = endpoint.AccessKey;
