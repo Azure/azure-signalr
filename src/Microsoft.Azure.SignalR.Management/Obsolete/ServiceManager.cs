@@ -35,7 +35,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public void Dispose()
         {
-            (_serviceProvider as IDisposable)?.Dispose();
+            ((IDisposable)_serviceProvider).Dispose();
         }
 
         public string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)
