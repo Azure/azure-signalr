@@ -58,8 +58,13 @@ namespace Microsoft.Azure.SignalR.Management
             services.AddLogging()
                     .AddSingleton<ServiceHubContextFactory>()
                     .AddSingleton<ServiceHubLifetimeManagerFactory>();
+
+            //obsolete
             services.AddSingleton<IServiceManager, ServiceManager>();
+
+            services.AddSingleton<IServiceContext, ServiceContext>();
             services.AddRestClientFactory();
+            services.AddSingleton<NegotiateProcessor>();
             return services.TrySetProductInfo();
         }
 
