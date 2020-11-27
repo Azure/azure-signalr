@@ -7,9 +7,9 @@
 using System;
 using System.ComponentModel;
 using System.Reflection;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -37,17 +37,6 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
-        /// <summary>
-        /// Registers a configuration instance to configure <see cref="IServiceManager"/>
-        /// </summary>
-        /// <param name="config">The configuration instance.</param>
-        /// <returns>The same instance of the <see cref="ServiceManagerBuilder"/> for chaining.</returns>
-        internal ServiceManagerBuilder WithConfiguration(IConfiguration config)
-        {
-            _services.AddSingleton(config);
-            return this;
-        }
-
         [EditorBrowsable(EditorBrowsableState.Never)]
         public ServiceManagerBuilder WithCallingAssembly()
         {
@@ -63,8 +52,10 @@ namespace Microsoft.Azure.SignalR.Management
         public IServiceManager Build()
         {
             _services.AddSignalRServiceManager();
-            _services.Configure<ServiceManagerContext>(c => c.DisposeServiceProvider = true);
-            return _services.BuildServiceProvider().GetRequiredService<IServiceManager>();
+            var serviceProvider = _services.BuildServiceProvider();
+            var endpoints = serviceProvider.GetRequiredService<IOptions<ContextOptions>>().Value.ServiceEndpoints;
+            return endpoints.Length == 1 ? serviceProvider.GetRequiredService<IServiceManager>() 
+                : throw new NotSupportedException($"{nameof(ServiceManagerBuilder)} does not support multiple endpoints.");
         }
     }
 }

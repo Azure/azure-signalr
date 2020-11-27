@@ -8,13 +8,13 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class ServiceManagerContextSetup : CascadeOptionsSetup<ServiceManagerContext, ServiceManagerOptions>
+    internal class ContextOptionsSetup : CascadeOptionsSetup<ContextOptions, ServiceManagerOptions>
     {
-        public ServiceManagerContextSetup(IOptionsMonitor<ServiceManagerOptions> sourceMonitor) : base(sourceMonitor)
+        public ContextOptionsSetup(IOptionsMonitor<ServiceManagerOptions> sourceMonitor) : base(sourceMonitor)
         {
         }
 
-        protected override void Convert(ServiceManagerContext target, ServiceManagerOptions source)
+        protected override void Convert(ContextOptions target, ServiceManagerOptions source)
         {
             target.ServiceEndpoints = source.GetMergedEndpoints().ToArray();
             target.ApplicationName = source.ApplicationName;

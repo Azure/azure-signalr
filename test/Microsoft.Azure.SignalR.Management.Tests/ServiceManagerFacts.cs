@@ -165,6 +165,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.IsType(expectedException, exception);
         }
 
+        [Fact]
+        public void DisposeTest()
+        {
+            var serviceManager = new ServiceManagerBuilder().WithOptions(o => o.ConnectionString = _testConnectionString).Build();
+            serviceManager.Dispose();
+        }
+
         private static string GetExpectedClientEndpoint(string appName = null)
         {
             if (string.IsNullOrEmpty(appName))
