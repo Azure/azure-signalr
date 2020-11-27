@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly string _productInfo;
         private readonly ConnectionFactory _connectionFactory;
 
-        public ManagementConnectionFactory(IOptions<ServiceManagerContext> context, ConnectionFactory connectionFactory)
+        public ManagementConnectionFactory(IOptions<ContextOptions> context, ConnectionFactory connectionFactory)
         {
             _productInfo = context.Value.ProductInfo;
             _connectionFactory = connectionFactory;

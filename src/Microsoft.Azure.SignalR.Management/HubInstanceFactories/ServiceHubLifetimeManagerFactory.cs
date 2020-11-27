@@ -17,9 +17,9 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly MultiEndpointConnectionContainerFactory _connectionContainerFactory;
-        private readonly ServiceManagerContext _context;
+        private readonly ContextOptions _context;
 
-        public ServiceHubLifetimeManagerFactory(IServiceProvider sp, IOptions<ServiceManagerContext> context, MultiEndpointConnectionContainerFactory connectionContainerFactory)
+        public ServiceHubLifetimeManagerFactory(IServiceProvider sp, IOptions<ContextOptions> context, MultiEndpointConnectionContainerFactory connectionContainerFactory)
         {
             _serviceProvider = sp;
             _connectionContainerFactory = connectionContainerFactory;
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR.Management
                     {
                         return new RestHubLifetimeManager(hubName, _context.ServiceEndpoints.Single(), _context.ProductInfo, _context.ApplicationName);
                     }
-                default: throw new InvalidEnumArgumentException(nameof(ServiceManagerContext.ServiceTransportType), (int)_context.ServiceTransportType, typeof(ServiceTransportType));
+                default: throw new InvalidEnumArgumentException(nameof(ContextOptions.ServiceTransportType), (int)_context.ServiceTransportType, typeof(ServiceTransportType));
             }
         }
     }
