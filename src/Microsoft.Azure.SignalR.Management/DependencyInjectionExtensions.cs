@@ -12,7 +12,11 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal static class DependencyInjectionExtensions //TODO: not ready for public use
+    /// <summary>
+    /// Please do NOT use following methods on a global <see cref="IServiceCollection"/>,
+    /// because <see cref="IServiceManager"/> will dispose the service container when itself get disposed.
+    /// </summary>
+    internal static class DependencyInjectionExtensions
     {
         /// <summary>
         /// Adds the essential SignalR Service Manager services to the specified services collection and configures <see cref="ServiceManagerOptions"/> with configuration instance registered in service collection.
@@ -34,12 +38,14 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Adds the essential SignalR Service Manager services to the specified services collection.
         /// </summary>
-        /// <remarks>Designed for Azure Function extension where the setup of <see cref="ServiceManagerOptions"/> is different from SDK</remarks>
+        /// <remarks>Designed for Azure Function extension</remarks>
+        /// <param name="services"></param>
+        /// <param name="setupInstance">The setup instance. </param>
         /// <typeparam name="TOptionsSetup">The type of class used to setup <see cref="ServiceManagerOptions"/>. </typeparam>
-        public static IServiceCollection AddSignalRServiceManager<TOptionsSetup>(this IServiceCollection services) where TOptionsSetup : class, IConfigureOptions<ServiceManagerOptions>, IOptionsChangeTokenSource<ServiceManagerOptions>
+        public static IServiceCollection AddSignalRServiceManager<TOptionsSetup>(this IServiceCollection services, TOptionsSetup setupInstance = null) where TOptionsSetup : class, IConfigureOptions<ServiceManagerOptions>, IOptionsChangeTokenSource<ServiceManagerOptions>
         {
             //cascade options setup
-            services.SetupOptions<ServiceManagerOptions, ServiceManagerOptionsSetup>();
+            services.SetupOptions<ServiceManagerOptions, TOptionsSetup>(setupInstance);
             services.PostConfigure<ContextOptions>(o => o.ValidateOptions());
             services.SetupOptions<ContextOptions,ContextOptionsSetup>();
 
@@ -66,7 +72,6 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Adds product info to <see cref="ContextOptions"/>
         /// </summary>
-        /// <returns></returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static IServiceCollection WithAssembly(this IServiceCollection services, Assembly assembly)
         {
