@@ -55,8 +55,8 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The instance of the <see cref="IServiceContext"/>.</returns>
         public IServiceContext Build()
         {
-            _services.AddSignalRServiceManager();
-            var serviceProvider = _services.BuildServiceProvider();
+            var serviceProvider = _services.AddSignalRServiceContext<ServiceManagerOptionsSetup>()
+                                           .BuildServiceProvider();
             return serviceProvider.GetRequiredService<IServiceContext>();
         }
     }

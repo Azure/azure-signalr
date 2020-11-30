@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿ // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 using System;
 using System.ComponentModel;
@@ -19,35 +19,14 @@ namespace Microsoft.Azure.SignalR.Management
     internal static class DependencyInjectionExtensions
     {
         /// <summary>
-        /// Adds the essential SignalR Service Manager services to the specified services collection and configures <see cref="ServiceManagerOptions"/> with configuration instance registered in service collection.
+        /// Adds SignalR Service Manager to the specified services collection.
         /// </summary>
         public static IServiceCollection AddSignalRServiceManager(this IServiceCollection services)
         {
-            return services.AddSignalRServiceManager<ServiceManagerOptionsSetup>();
-        }
-
-        /// <summary>
-        /// Adds the essential SignalR Service Manager services to the specified services collection and registers an action used to configure <see cref="ServiceManagerOptions"/>
-        /// </summary>
-        public static IServiceCollection AddSignalRServiceManager(this IServiceCollection services, Action<ServiceManagerOptions> configure)
-        {
-            services.Configure(configure);
-            return services.AddSignalRServiceManager();
-        }
-
-        /// <summary>
-        /// Adds the essential SignalR Service Manager services to the specified services collection.
-        /// </summary>
-        /// <remarks>Designed for Azure Function extension</remarks>
-        /// <param name="services"></param>
-        /// <param name="setupInstance">The setup instance. </param>
-        /// <typeparam name="TOptionsSetup">The type of class used to setup <see cref="ServiceManagerOptions"/>. </typeparam>
-        public static IServiceCollection AddSignalRServiceManager<TOptionsSetup>(this IServiceCollection services, TOptionsSetup setupInstance = null) where TOptionsSetup : class, IConfigureOptions<ServiceManagerOptions>, IOptionsChangeTokenSource<ServiceManagerOptions>
-        {
             //cascade options setup
-            services.SetupOptions<ServiceManagerOptions, TOptionsSetup>(setupInstance);
+            services.SetupOptions<ServiceManagerOptions, ServiceManagerOptionsSetup>();
             services.PostConfigure<ContextOptions>(o => o.ValidateOptions());
-            services.SetupOptions<ContextOptions,ContextOptionsSetup>();
+            services.SetupOptions<ContextOptions, ContextOptionsSetup>();
 
             services.AddSignalR()
                     .AddAzureSignalR<ServiceOptionsSetup>();
@@ -55,7 +34,7 @@ namespace Microsoft.Azure.SignalR.Management
             //add dependencies for persistent mode only
             services
                 .AddSingleton<ConnectionFactory>()
-                .AddSingleton<IConnectionFactory,ManagementConnectionFactory>()
+                .AddSingleton<IConnectionFactory, ManagementConnectionFactory>()
                 .AddSingleton<ConnectionDelegate>((connectionContext) => Task.CompletedTask)
                 .AddSingleton<IServiceConnectionFactory, ServiceConnectionFactory>()
                 .AddSingleton<MultiEndpointConnectionContainerFactory>()
@@ -65,8 +44,40 @@ namespace Microsoft.Azure.SignalR.Management
                     .AddSingleton<ServiceHubContextFactory>()
                     .AddSingleton<ServiceHubLifetimeManagerFactory>();
 
-            //obsolete
             services.AddSingleton<IServiceManager, ServiceManager>();
+            services.AddRestClientFactory();
+            services.AddSingleton<NegotiateProcessor>();
+            return services.TrySetProductInfo();
+        }
+
+        /// <summary>
+        /// Adds SignalR Service Context to the specified services collection.
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="setupInstance">The setup instance. If null, service container will create the instance.</param>
+        /// <typeparam name="TOptionsSetup">The type of class used to setup <see cref="ServiceManagerOptions"/>. </typeparam>
+        public static IServiceCollection AddSignalRServiceContext<TOptionsSetup>(this IServiceCollection services, TOptionsSetup setupInstance = null) where TOptionsSetup : class, IConfigureOptions<ServiceManagerOptions>, IOptionsChangeTokenSource<ServiceManagerOptions>
+        {
+            //cascade options setup
+            services.SetupOptions<ServiceManagerOptions, TOptionsSetup>(setupInstance);
+            services.PostConfigure<ContextOptions>(o => o.ValidateOptions());
+            services.SetupOptions<ContextOptions, ContextOptionsSetup>();
+
+            services.AddSignalR()
+                    .AddAzureSignalR<ServiceOptionsSetup>();
+
+            //add dependencies for persistent mode only
+            services
+                .AddSingleton<ConnectionFactory>()
+                .AddSingleton<IConnectionFactory, ManagementConnectionFactory>()
+                .AddSingleton<ConnectionDelegate>((connectionContext) => Task.CompletedTask)
+                .AddSingleton<IServiceConnectionFactory, ServiceConnectionFactory>()
+                .AddSingleton<MultiEndpointConnectionContainerFactory>()
+                .AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
+
+            services.AddLogging()
+                    .AddSingleton<ServiceHubContextFactory>()
+                    .AddSingleton<ServiceHubLifetimeManagerFactory>();
 
             services.AddSingleton<IServiceContext, ServiceContext>();
             services.AddRestClientFactory();
