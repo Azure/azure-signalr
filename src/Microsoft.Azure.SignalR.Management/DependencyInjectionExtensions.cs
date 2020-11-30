@@ -25,29 +25,9 @@ namespace Microsoft.Azure.SignalR.Management
         {
             //cascade options setup
             services.SetupOptions<ServiceManagerOptions, ServiceManagerOptionsSetup>();
-            services.PostConfigure<ContextOptions>(o => o.ValidateOptions());
             services.SetupOptions<ContextOptions, CascadeContextOptionsSetup>();
 
-            services.AddSignalR()
-                    .AddAzureSignalR<CascadeServiceOptionsSetup>();
-
-            //add dependencies for persistent mode only
-            services
-                .AddSingleton<ConnectionFactory>()
-                .AddSingleton<IConnectionFactory, ManagementConnectionFactory>()
-                .AddSingleton<ConnectionDelegate>((connectionContext) => Task.CompletedTask)
-                .AddSingleton<IServiceConnectionFactory, ServiceConnectionFactory>()
-                .AddSingleton<MultiEndpointConnectionContainerFactory>()
-                .AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
-
-            services.AddLogging()
-                    .AddSingleton<ServiceHubContextFactory>()
-                    .AddSingleton<ServiceHubLifetimeManagerFactory>();
-
-            services.AddSingleton<IServiceManager, ServiceManager>();
-            services.AddRestClientFactory();
-            services.AddSingleton<NegotiateProcessor>();
-            return services.TrySetProductInfo();
+            return services.AddSignalRServiceCore();
         }
 
         /// <summary>
@@ -58,11 +38,16 @@ namespace Microsoft.Azure.SignalR.Management
         /// <typeparam name="TOptionsSetup">The type of class used to setup <see cref="ServiceManagerOptions"/>. </typeparam>
         public static IServiceCollection AddSignalRServiceContext<TOptionsSetup>(this IServiceCollection services, TOptionsSetup setupInstance = null) where TOptionsSetup : class, IConfigureOptions<ContextOptions>, IOptionsChangeTokenSource<ContextOptions>
         {
-            services.PostConfigure<ContextOptions>(o => o.ValidateOptions());
             services.SetupOptions<ContextOptions, TOptionsSetup>(setupInstance);
 
+            return services.AddSignalRServiceCore();
+        }
+
+        private static IServiceCollection AddSignalRServiceCore(this IServiceCollection services)
+        {
+            services.PostConfigure<ContextOptions>(o => o.ValidateOptions());
             services.AddSignalR()
-                    .AddAzureSignalR<CascadeServiceOptionsSetup>();
+                .AddAzureSignalR<CascadeServiceOptionsSetup>();
 
             //add dependencies for persistent mode only
             services
@@ -82,6 +67,7 @@ namespace Microsoft.Azure.SignalR.Management
             services.AddSingleton<NegotiateProcessor>();
             return services.TrySetProductInfo();
         }
+
 
         /// <summary>
         /// Adds product info to <see cref="ContextOptions"/>
