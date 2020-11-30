@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -29,9 +29,9 @@ namespace Microsoft.Azure.SignalR.Management
             return _serviceHubContextFactory.CreateAsync(hubName, null, cancellationToken);
         }
 
-        public Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)
+        public Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null,CancellationToken cancellationToken=default)
         {
-            return _negotiateProcessor.GetClientEndpointAsync(hubName, httpContext, userId, claims, lifeTime);
+            return _negotiateProcessor.GetClientEndpointAsync(hubName, httpContext, userId, cancellationToken);
         }
 
         public void Dispose()

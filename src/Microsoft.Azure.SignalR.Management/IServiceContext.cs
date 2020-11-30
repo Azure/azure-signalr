@@ -28,9 +28,8 @@ namespace Microsoft.Azure.SignalR.Management
         /// <param name="hubName">The hub name.</param>
         /// <param name="httpContext">The HTTP context for routing decision.</param>
         /// <param name="userId">The user ID.</param>
-        /// <param name="claims">The claim list to be put into access token.</param>
-        /// <param name="lifeTime">The lifetime of the token. The default value is one hour.</param>
+        /// <param name="cancellationToken">Cancellation token for geting client endpoint.</param>
         /// <returns>Client endpoint and access token to Azure SignalR Service.</returns>
-        Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null);
+        Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, CancellationToken cancellationToken = default);
     }
 }
