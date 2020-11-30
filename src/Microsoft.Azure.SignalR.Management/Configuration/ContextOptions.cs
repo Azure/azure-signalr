@@ -6,6 +6,7 @@ using System.Net;
 
 namespace Microsoft.Azure.SignalR.Management
 {
+    //todo public later
     internal class ContextOptions
     {
         public string ProductInfo { get; set; }

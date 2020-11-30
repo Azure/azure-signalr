@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 
@@ -11,10 +10,10 @@ namespace Microsoft.Azure.SignalR
     internal static class IConfigurationExtension
     {
         /// <summary>
-        /// Gets SignalR service endpoints configured in a section.
+        /// Gets SignalR service endpoints from the children of a section.
         /// </summary>
         /// <remarks>
-        /// The SignalR service endpoint whose key is exactly the section name is not extracted. Only children of the section are extracted.
+        /// The SignalR service endpoint whose key is exactly the section name is not extracted.
         /// </remarks>
         public static ServiceEndpoint[] GetSignalRServiceEndpoints(this IConfiguration configuration, string sectionName)
         {
@@ -31,6 +30,24 @@ namespace Microsoft.Azure.SignalR
                     yield return new ServiceEndpoint(entry.Key, entry.Value);
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets SignalR service endpoints from a section.
+        /// </summary>
+        /// <remarks>
+        /// The value of the section is included.
+        /// </remarks>
+        public static IEnumerable<ServiceEndpoint> GetMergedSignalREndpoints(this IConfiguration configuration, string sectionName)
+        {
+            var connectionString = configuration[sectionName];
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                yield return new ServiceEndpoint(connectionString);
+            }
+
+            var section = configuration.GetSection(sectionName);
+            GetEndpoints(section);
         }
     }
 }
