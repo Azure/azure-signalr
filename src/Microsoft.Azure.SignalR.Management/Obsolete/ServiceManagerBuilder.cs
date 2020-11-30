@@ -9,7 +9,6 @@ using System.ComponentModel;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -53,9 +52,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _services.AddSignalRServiceManager();
             var serviceProvider = _services.BuildServiceProvider();
-            var endpoints = serviceProvider.GetRequiredService<IOptions<ContextOptions>>().Value.ServiceEndpoints;
-            return endpoints.Length == 1 ? serviceProvider.GetRequiredService<IServiceManager>() 
-                : throw new NotSupportedException($"{nameof(ServiceManagerBuilder)} does not support multiple endpoints.");
+            return serviceProvider.GetRequiredService<IServiceManager>();
         }
     }
 }
