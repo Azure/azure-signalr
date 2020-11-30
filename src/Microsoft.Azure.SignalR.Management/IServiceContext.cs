@@ -7,6 +7,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Connections;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -30,6 +31,6 @@ namespace Microsoft.Azure.SignalR.Management
         /// <param name="claims">The claim list to be put into access token.</param>
         /// <param name="lifeTime">The lifetime of the token. The default value is one hour.</param>
         /// <returns>Client endpoint and access token to Azure SignalR Service.</returns>
-        Task<ClientEndpoint> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null);
+        Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null);
     }
 }
