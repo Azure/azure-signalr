@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public void Dispose()
         {
-            (_serviceProvider as IDisposable).Dispose();
+            (_serviceProvider as IDisposable)?.Dispose();
         }
     }
 }

@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// Gets client endpoint access information object for SignalR hub connections to connect to Azure SignalR Service
         /// </summary>
         /// <param name="hubName">The hub name.</param>
-        /// <param name="httpContext">The HTTP context for routing decision.</param>
+        /// <param name="httpContext">The HTTP context.</param>
         /// <param name="userId">The user ID.</param>
         /// <param name="cancellationToken">Cancellation token for geting client endpoint.</param>
         /// <returns>Client endpoint and access token to Azure SignalR Service.</returns>
