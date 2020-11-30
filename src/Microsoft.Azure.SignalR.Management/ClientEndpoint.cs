@@ -3,7 +3,8 @@
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    public class ClientEndpoint
+    //todo public later
+    internal class ClientEndpoint
     {
         public string Url { get; set; }
         public string Token { get; set; }
