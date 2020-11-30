@@ -138,12 +138,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var configProvider = new ReloadableMemoryProvider();
             configProvider.Set("Azure:SignalR:ConnectionString", $"Endpoint={originUrl};AccessKey={AccessKey};Version=1.0;");
             var services = new ServiceCollection()
-                .AddSignalRServiceManager()
                 .Configure<ServiceManagerOptions>(o =>
                 {
-                    o.ConnectionString = TestConnectionString;
-                    o.ServiceTransportType = ServiceTransportType.Persistent;
+                    o.ApplicationName = appName;
                 })
+                .AddSignalRServiceManager()
             .AddSingleton<IConfiguration>(new ConfigurationBuilder().Add(new ReloadableMemorySource(configProvider)).Build());
             using var serviceProvider = services.BuildServiceProvider();
             var contextMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ContextOptions>>();
