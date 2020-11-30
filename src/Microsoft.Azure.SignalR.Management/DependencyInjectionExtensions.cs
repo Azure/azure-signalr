@@ -26,6 +26,7 @@ namespace Microsoft.Azure.SignalR.Management
             services.SetupOptions<ServiceManagerOptions, ServiceManagerOptionsSetup>();
             services.SetupOptions<ContextOptions, CascadeContextOptionsSetup>();
 
+            services.AddSingleton<IServiceManager, ServiceManager>();
             return services.AddSignalRServiceCore();
         }
 
@@ -38,6 +39,7 @@ namespace Microsoft.Azure.SignalR.Management
         public static IServiceCollection AddSignalRServiceContext<TOptionsSetup>(this IServiceCollection services, TOptionsSetup setupInstance = null) where TOptionsSetup : class, IConfigureOptions<ContextOptions>, IOptionsChangeTokenSource<ContextOptions>
         {
             services.SetupOptions<ContextOptions, TOptionsSetup>(setupInstance);
+            services.AddSingleton<IServiceContext, ServiceContext>();
 
             return services.AddSignalRServiceCore();
         }
@@ -61,7 +63,6 @@ namespace Microsoft.Azure.SignalR.Management
                     .AddSingleton<ServiceHubContextFactory>()
                     .AddSingleton<ServiceHubLifetimeManagerFactory>();
 
-            services.AddSingleton<IServiceContext, ServiceContext>();
             services.AddRestClientFactory();
             services.AddSingleton<NegotiateProcessor>();
             return services.TrySetProductInfo();
