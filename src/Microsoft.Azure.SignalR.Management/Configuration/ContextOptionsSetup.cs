@@ -2,25 +2,37 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Linq;
-using Microsoft.Azure.SignalR.Common.Endpoints;
-using Microsoft.Azure.SignalR.Management.Configuration;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class ContextOptionsSetup : CascadeOptionsSetup<ContextOptions, ServiceManagerOptions>
+    internal class ContextOptionsSetup : IConfigureOptions<ContextOptions>, IOptionsChangeTokenSource<ContextOptions>
     {
-        public ContextOptionsSetup(IOptionsMonitor<ServiceManagerOptions> sourceMonitor) : base(sourceMonitor)
+        private readonly IConfiguration _configuration;
+
+        public ContextOptionsSetup(IConfiguration configuration)
         {
+            _configuration = configuration;
         }
 
-        protected override void Convert(ContextOptions target, ServiceManagerOptions source)
+        public string Name => Options.DefaultName;
+
+        public void Configure(ContextOptions options)
         {
-            target.ServiceEndpoints = source.GetMergedEndpoints().ToArray();
-            target.ApplicationName = source.ApplicationName;
-            target.ConnectionCount = source.ConnectionCount;
-            target.Proxy = source.Proxy;
-            target.ServiceTransportType = source.ServiceTransportType;
+            if (_configuration != null)
+            {
+                _configuration.GetSection(Constants.Keys.AzureSignalRSectionKey).Bind(options);
+
+                options.ServiceEndpoints = _configuration.GetMergedSignalREndpoints(Constants.Keys.ConnectionStringDefaultKey).ToArray();
+            }
+        }
+
+        public IChangeToken GetChangeToken()
+        {
+            return _configuration?.GetReloadToken() ?? NullChangeToken.Singleton;
         }
     }
 }

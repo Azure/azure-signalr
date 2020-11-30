@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         /// <param name="configure">A callback to configure the <see cref="IServiceContext"/>.</param>
         /// <returns>The same instance of the <see cref="ServiceContextBuilder"/> for chaining.</returns>
-        public ServiceContextBuilder WithOptions(Action<ServiceManagerOptions> configure)
+        public ServiceContextBuilder WithOptions(Action<ContextOptions> configure)
         {
             _services.Configure(configure);
             return this;
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The instance of the <see cref="IServiceContext"/>.</returns>
         public IServiceContext Build()
         {
-            var serviceProvider = _services.AddSignalRServiceContext<ServiceManagerOptionsSetup>()
+            var serviceProvider = _services.AddSignalRServiceContext<ContextOptionsSetup>()
                                            .BuildServiceProvider();
             return serviceProvider.GetRequiredService<IServiceContext>();
         }

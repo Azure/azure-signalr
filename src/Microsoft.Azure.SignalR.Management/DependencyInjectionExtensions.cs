@@ -26,10 +26,10 @@ namespace Microsoft.Azure.SignalR.Management
             //cascade options setup
             services.SetupOptions<ServiceManagerOptions, ServiceManagerOptionsSetup>();
             services.PostConfigure<ContextOptions>(o => o.ValidateOptions());
-            services.SetupOptions<ContextOptions, ContextOptionsSetup>();
+            services.SetupOptions<ContextOptions, CascadeContextOptionsSetup>();
 
             services.AddSignalR()
-                    .AddAzureSignalR<ServiceOptionsSetup>();
+                    .AddAzureSignalR<CascadeServiceOptionsSetup>();
 
             //add dependencies for persistent mode only
             services
@@ -56,15 +56,13 @@ namespace Microsoft.Azure.SignalR.Management
         /// <param name="services"></param>
         /// <param name="setupInstance">The setup instance. If null, service container will create the instance.</param>
         /// <typeparam name="TOptionsSetup">The type of class used to setup <see cref="ServiceManagerOptions"/>. </typeparam>
-        public static IServiceCollection AddSignalRServiceContext<TOptionsSetup>(this IServiceCollection services, TOptionsSetup setupInstance = null) where TOptionsSetup : class, IConfigureOptions<ServiceManagerOptions>, IOptionsChangeTokenSource<ServiceManagerOptions>
+        public static IServiceCollection AddSignalRServiceContext<TOptionsSetup>(this IServiceCollection services, TOptionsSetup setupInstance = null) where TOptionsSetup : class, IConfigureOptions<ContextOptions>, IOptionsChangeTokenSource<ContextOptions>
         {
-            //cascade options setup
-            services.SetupOptions<ServiceManagerOptions, TOptionsSetup>(setupInstance);
             services.PostConfigure<ContextOptions>(o => o.ValidateOptions());
-            services.SetupOptions<ContextOptions, ContextOptionsSetup>();
+            services.SetupOptions<ContextOptions, TOptionsSetup>(setupInstance);
 
             services.AddSignalR()
-                    .AddAzureSignalR<ServiceOptionsSetup>();
+                    .AddAzureSignalR<CascadeServiceOptionsSetup>();
 
             //add dependencies for persistent mode only
             services

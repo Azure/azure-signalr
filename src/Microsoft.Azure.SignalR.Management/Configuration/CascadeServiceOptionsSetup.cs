@@ -6,9 +6,9 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class ServiceOptionsSetup : CascadeOptionsSetup<ServiceOptions, ContextOptions>
+    internal class CascadeServiceOptionsSetup : CascadeOptionsSetup<ServiceOptions, ContextOptions>
     {
-        public ServiceOptionsSetup(IOptionsMonitor<ContextOptions> sourceMonitor) : base(sourceMonitor)
+        public CascadeServiceOptionsSetup(IOptionsMonitor<ContextOptions> sourceMonitor) : base(sourceMonitor)
         {
         }
 
