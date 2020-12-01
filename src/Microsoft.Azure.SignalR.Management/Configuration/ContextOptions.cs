@@ -9,7 +9,8 @@ namespace Microsoft.Azure.SignalR.Management
     //todo public later
     internal class ContextOptions
     {
-        public string ProductInfo { get; set; }
+        //Users not allowed to configure it
+        internal string ProductInfo { get; set; }
 
         public ServiceEndpoint[] ServiceEndpoints { get; set; }
 
@@ -19,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public IWebProxy Proxy { get; set; }
 
-        public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
+        internal ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Persistent;
 
         internal void ValidateOptions()
         {
