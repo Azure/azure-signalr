@@ -12,14 +12,25 @@ namespace Microsoft.Azure.SignalR.Management
         //Users not allowed to configure it
         internal string ProductInfo { get; set; }
 
+        /// <summary>
+        /// Gets or sets the service endpoints.
+        /// </summary>
         public ServiceEndpoint[] ServiceEndpoints { get; set; }
 
+        /// <summary>
+        /// Gets or sets the ApplicationName which will be prefixed to each hub name
+        /// </summary>
         public string ApplicationName { get; set; }
 
-        public int ConnectionCount { get; set; } = 2;
+        /// <summary>
+        /// Gets or sets the total number of connections from SDK to Azure SignalR Service. Default value is 1.
+        /// </summary>
+        public int ConnectionCount { get; set; } = 3;
 
+        /// <summary>
+        /// Gets or sets the proxy used when ServiceManager will attempt to connect to Azure SignalR Service.
+        /// </summary>
         public IWebProxy Proxy { get; set; }
-
         internal ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Persistent;
 
         internal void ValidateOptions()
