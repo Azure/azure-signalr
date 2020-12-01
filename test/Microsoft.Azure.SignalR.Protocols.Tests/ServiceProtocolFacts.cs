@@ -290,6 +290,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new OpenConnectionMessage("conn4", null, new Dictionary<string, StringValues>(), "query1=value1&query2=query2&query3=value3"),
                 binary: "lgSlY29ubjSAgNkpcXVlcnkxPXZhbHVlMSZxdWVyeTI9cXVlcnkyJnF1ZXJ5Mz12YWx1ZTOA"),
             new ProtocolTestData(
+                name: "OpenConnection_WithProtocol",
+                message: new OpenConnectionMessage("conn1", null) { Protocol = "json" },
+                binary: "lgSlY29ubjGAgKCBA6Rqc29u"),
+            new ProtocolTestData(
                 name: "CloseConnection",
                 message: new CloseConnectionMessage("conn3"),
                 binary: "lQWlY29ubjOggIA="),
