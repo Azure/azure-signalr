@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private readonly IConfiguration _configuration;
 
-        public ContextOptionsSetup(IConfiguration configuration)
+        public ContextOptionsSetup(IConfiguration configuration=null)
         {
             _configuration = configuration;
         }
