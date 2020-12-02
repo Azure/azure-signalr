@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public string ApplicationName { get; set; }
 
-        public int ConnectionCount { get; set; }
+        public int ConnectionCount { get; set; } = 2;
 
         public IWebProxy Proxy { get; set; }
 
