@@ -23,6 +23,7 @@ namespace Microsoft.Azure.SignalR
         private readonly object _lock = new object();
 
         private (bool needRouter, IReadOnlyList<HubServiceEndpoint> endpoints) _routerEndpoints;
+        private int _started = 0;
 
         internal MultiEndpointServiceConnectionContainer(
             string hub,
@@ -115,11 +116,14 @@ namespace Microsoft.Azure.SignalR
 
         public Task StartAsync()
         {
-            return Task.WhenAll(_routerEndpoints.endpoints.Select(s =>
-            {
-                Log.StartingConnection(_logger, s.Endpoint);
-                return s.ConnectionContainer.StartAsync();
-            }));
+            //ensure started only once
+            return Interlocked.CompareExchange(ref _started, 1, 0) == 0
+                ? Task.WhenAll(_routerEndpoints.endpoints.Select(s =>
+                {
+                    Log.StartingConnection(_logger, s.Endpoint);
+                    return s.ConnectionContainer.StartAsync();
+                }))
+                : Task.CompletedTask;
         }
 
         public Task StopAsync()

@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null, CancellationToken cancellationToken = default)
         {
-            return _negotiateProcessor.GetClientEndpointAsync(hubName, httpContext, userId, claims,lifeTime,cancellationToken);
+            return _negotiateProcessor.GetClientEndpointAsync(hubName, httpContext, userId, claims, lifeTime, cancellationToken);
         }
 
         public void Dispose()

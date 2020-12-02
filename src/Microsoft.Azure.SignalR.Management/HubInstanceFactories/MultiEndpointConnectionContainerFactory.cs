@@ -26,7 +26,14 @@ namespace Microsoft.Azure.SignalR.Management
             _router = router;
         }
 
-        private MultiEndpointServiceConnectionContainer CreateAndStart(string hubName, ILoggerFactory loggerFactoryPerHub = null)
+        public MultiEndpointServiceConnectionContainer GetOrCreate(string hubName, ref bool newlyCreated, ILoggerFactory loggerFactoryPerHub = null)
+        {
+            //a best effort to indicate whether the container is newly created, false positive is OK.
+            newlyCreated = !_hubConnectionContainers.ContainsKey(hubName);
+            return _hubConnectionContainers.GetOrAdd(hubName, (hubName) => Create(hubName, loggerFactoryPerHub));
+        }
+
+        private MultiEndpointServiceConnectionContainer Create(string hubName, ILoggerFactory loggerFactoryPerHub = null)
         {
             var loggerFactory = loggerFactoryPerHub ?? _loggerFactory;
             var container = new MultiEndpointServiceConnectionContainer(
@@ -35,13 +42,7 @@ namespace Microsoft.Azure.SignalR.Management
                 _endpointManager,
                 _router,
                 loggerFactory);
-            container.StartAsync();
             return container;
-        }
-
-        public MultiEndpointServiceConnectionContainer GetOrCreate(string hubName, ILoggerFactory loggerFactoryPerHub = null)
-        {
-            return _hubConnectionContainers.GetOrAdd(hubName, (hubName) => CreateAndStart(hubName, loggerFactoryPerHub));
         }
     }
 }
