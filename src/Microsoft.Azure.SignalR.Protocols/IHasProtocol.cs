@@ -3,8 +3,8 @@
 
 namespace Microsoft.Azure.SignalR.Protocol
 {
-    public interface IHasTtl
+    public interface IHasProtocol
     {
-        int? Ttl { get; set; }
+        string Protocol { get; set; }
     }
 }

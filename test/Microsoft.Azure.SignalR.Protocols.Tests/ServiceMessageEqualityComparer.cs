@@ -92,7 +92,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return StringEqual(x.ConnectionId, y.ConnectionId) &&
                    ClaimsEqual(x.Claims, y.Claims) &&
                    HeadersEqual(x.Headers, y.Headers) &&
-                   StringEqual(x.QueryString, y.QueryString);
+                   StringEqual(x.QueryString, y.QueryString) &&
+                   StringEqual(x.Protocol, y.Protocol);
         }
 
         private bool CloseConnectionMessagesEqual(CloseConnectionMessage x, CloseConnectionMessage y)
