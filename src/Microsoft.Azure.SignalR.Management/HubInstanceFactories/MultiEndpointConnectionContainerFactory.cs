@@ -28,8 +28,12 @@ namespace Microsoft.Azure.SignalR.Management
 
         public bool TryGetOrCreate(string hubName, out MultiEndpointServiceConnectionContainer container, ILoggerFactory loggerFactoryPerHub = null)
         {
-            var newlyCreated = !_hubConnectionContainers.ContainsKey(hubName);
-            container = _hubConnectionContainers.GetOrAdd(hubName, (hubName) => Create(hubName, loggerFactoryPerHub));
+            bool newlyCreated;
+            if (newlyCreated = !_hubConnectionContainers.TryGetValue(hubName,out container))
+            {
+                _hubConnectionContainers.TryAdd(hubName, Create(hubName, loggerFactoryPerHub));
+                container = _hubConnectionContainers[hubName];
+            }
             return newlyCreated;
         }
 
