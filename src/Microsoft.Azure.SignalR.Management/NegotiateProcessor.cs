@@ -44,16 +44,7 @@ namespace Microsoft.Azure.SignalR.Management
 
             userId ??= httpContext?.User?.Identity?.Name;
             claims ??= httpContext?.User?.Claims;
-
-            var claimsWithUserId = new List<Claim>();
-            if (userId != null)
-            {
-                claimsWithUserId.Add(new Claim(ClaimTypes.NameIdentifier, userId));
-            }
-            if (claims != null)
-            {
-                claimsWithUserId.AddRange(claims);
-            }
+            var claimsWithUserId = ClaimsUtility.CreateUserClaims(userId, claims);
 
             var tokenTask = provider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifeTime);
             await tokenTask.OrTimeout(cancellationToken);

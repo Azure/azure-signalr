@@ -129,6 +129,20 @@ namespace Microsoft.Azure.SignalR
             return GetUserPrincipal(message.Claims);
         }
 
+        public static IEnumerable<Claim> CreateUserClaims(string userId, IEnumerable<Claim> claims)
+        {
+            var claimsWithUserId = new List<Claim>();
+            if (userId != null)
+            {
+                claimsWithUserId.Add(new Claim(ClaimTypes.NameIdentifier, userId));
+            }
+            if (claims != null)
+            {
+                claimsWithUserId.AddRange(claims);
+            }
+            return claimsWithUserId;
+        }
+
         internal static ClaimsPrincipal GetUserPrincipal(Claim[] messageClaims)
         {
             if (messageClaims == null || messageClaims.Length == 0)
