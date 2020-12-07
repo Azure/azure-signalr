@@ -7,6 +7,7 @@ using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
@@ -32,7 +33,11 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public IWebProxy Proxy { get; }
 
-        public ServiceEndpointProvider(IServerNameProvider provider, ServiceEndpoint endpoint, ServiceOptions options)
+        public ServiceEndpointProvider(
+            IServerNameProvider provider,
+            ServiceEndpoint endpoint,
+            ServiceOptions options,
+            ILoggerFactory loggerFactory)
         {
             _accessTokenLifetime = options.AccessTokenLifetime;
 
@@ -46,8 +51,12 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             _provider = provider;
             Proxy = options.Proxy;
-        }
 
+            if (endpoint.AccessKey is AadAccessKey key)
+            {
+                _ = key.UpdateAccessKeyAsync(provider, loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory)));
+            }
+        }
 
         private string GetPrefixedHubName(string applicationName, string hubName)
         {

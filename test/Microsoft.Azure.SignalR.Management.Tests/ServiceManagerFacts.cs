@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var manager = new ServiceManagerBuilder().WithOptions(o =>
             {
-                o.Endpoints = new ServiceEndpoint[] { new ServiceEndpoint($"Endpoint=http://localhost;AccessKey=ABC;Version=1.0;ClientEndpoint=https://remote") };
+                o.ConnectionString = $"Endpoint=http://localhost;AccessKey=ABC;Version=1.0;ClientEndpoint=https://remote";
             }).Build();
             var clientEndpoint = manager.GetClientEndpoint(HubName);
 
@@ -163,6 +163,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             var exception = await Assert.ThrowsAnyAsync<AzureSignalRException>(() => serviceManager.IsServiceHealthy(default));
             Assert.IsType(expectedException, exception);
+        }
+
+        [Fact]
+        public void DisposeTest()
+        {
+            var serviceManager = new ServiceManagerBuilder().WithOptions(o => o.ConnectionString = _testConnectionString).Build();
+            serviceManager.Dispose();
         }
 
         private static string GetExpectedClientEndpoint(string appName = null)
