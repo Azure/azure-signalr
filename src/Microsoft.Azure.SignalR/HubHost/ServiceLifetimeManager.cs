@@ -63,7 +63,7 @@ namespace Microsoft.Azure.SignalR
 
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var serviceConnectionContext))
             {
-                var message = CreateMesage(connectionId, methodName, args, serviceConnectionContext);
+                var message = CreateMessage(connectionId, methodName, args, serviceConnectionContext);
                 var messageWithTracingId = (IMessageWithTracingId)message;
                 try
                 {
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.SignalR
             await base.SendConnectionAsync(connectionId, methodName, args, cancellationToken);
         }
 
-        private ServiceMessage CreateMesage(string connectionId, string methodName, object[] args, ClientConnectionContext serviceConnectionContext)
+        private ServiceMessage CreateMessage(string connectionId, string methodName, object[] args, ClientConnectionContext serviceConnectionContext)
         {
             if (serviceConnectionContext.Protocol != null)
             {
