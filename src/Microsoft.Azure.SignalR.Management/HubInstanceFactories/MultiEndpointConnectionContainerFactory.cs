@@ -26,11 +26,11 @@ namespace Microsoft.Azure.SignalR.Management
             _router = router;
         }
 
-        public MultiEndpointServiceConnectionContainer GetOrCreate(string hubName, ref bool newlyCreated, ILoggerFactory loggerFactoryPerHub = null)
+        public bool TryGetOrCreate(string hubName, out MultiEndpointServiceConnectionContainer container, ILoggerFactory loggerFactoryPerHub = null)
         {
-            //a best effort to indicate whether the container is newly created, false positive is OK.
-            newlyCreated = !_hubConnectionContainers.ContainsKey(hubName);
-            return _hubConnectionContainers.GetOrAdd(hubName, (hubName) => Create(hubName, loggerFactoryPerHub));
+            var newlyCreated = !_hubConnectionContainers.ContainsKey(hubName);
+            container = _hubConnectionContainers.GetOrAdd(hubName, (hubName) => Create(hubName, loggerFactoryPerHub));
+            return newlyCreated;
         }
 
         private MultiEndpointServiceConnectionContainer Create(string hubName, ILoggerFactory loggerFactoryPerHub = null)

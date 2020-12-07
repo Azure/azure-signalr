@@ -31,15 +31,12 @@ namespace Microsoft.Azure.SignalR.Management
                 cancellationToken = httpContext.RequestAborted;
             }
 
-            var newlyCreated = false;
-            var endpointsContainer = _endpointsContainerFactory.GetOrCreate(hubName,ref newlyCreated);
-            //avoid too many StartAsync which contains atomic operations.
-            if (newlyCreated)
+            if (_endpointsContainerFactory.TryGetOrCreate(hubName, out var container))
             {
-                _ = endpointsContainer.StartAsync();
+                _ = container.StartAsync();
             }
             //ensure connections to each endpoint are initialized, so that the online status of endpoints are valid
-            await endpointsContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
+            await container.ConnectionInitializedTask.OrTimeout(cancellationToken);
 
             var candidateEndpoints = _serviceEndpointManager.GetEndpoints(hubName);
             var selectedEndpoint = _router.GetNegotiateEndpoint(httpContext, candidateEndpoints);

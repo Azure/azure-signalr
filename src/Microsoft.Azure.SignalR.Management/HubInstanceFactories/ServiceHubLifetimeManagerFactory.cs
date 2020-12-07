@@ -32,10 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 case ServiceTransportType.Persistent:
                     {
-                        var newlyCreated = false;
-                        var container = _connectionContainerFactory.GetOrCreate(hubName, ref newlyCreated, loggerFactoryPerHub);
-                        //avoid too many StartAsync which contains atomic operations.
-                        if (newlyCreated)
+                        if (_connectionContainerFactory.TryGetOrCreate(hubName, out var container, loggerFactoryPerHub))
                         {
                             _ = container.StartAsync();
                         }
