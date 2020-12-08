@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
 
-        public static async Task OrTimeout(this Task task, CancellationToken cancellationToken=default, TimeSpan timeout = default, string taskDescription = "task")
+        public static async Task OrTimeout(this Task task, CancellationToken cancellationToken, TimeSpan timeout = default, string taskDescription = "task")
         {
             timeout = timeout == default ? DefaultTimeout : timeout;
             var taskToCancel = Task.Delay(timeout, cancellationToken);
