@@ -31,8 +31,7 @@ namespace Microsoft.Azure.SignalR.Management
                 cancellationToken = httpContext.RequestAborted;
             }
 
-            var container = _endpointsContainerFactory.GetOrCreate(hubName);
-            _ = container.StartAsync();
+            var container = _endpointsContainerFactory.GetOrCreate(hubName).Value;
             //ensure connections to each endpoint are initialized, so that the online status of endpoints are valid
             await container.ConnectionInitializedTask.OrTimeout(cancellationToken);
 
