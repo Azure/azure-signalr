@@ -8,10 +8,8 @@ namespace Microsoft.Azure.SignalR.Management
     /// <summary>
     /// Configurable options for Azure SignalR Management SDK.
     /// </summary>
-    public class ServiceManagerOptions : IServiceEndpointOptions
+    public class ServiceManagerOptions 
     {
-        private ServiceEndpoint[] _serviceEndpoints;
-
         /// <summary>
         /// Gets or sets the ApplicationName which will be prefixed to each hub name
         /// </summary>
@@ -31,13 +29,6 @@ namespace Microsoft.Azure.SignalR.Management
         /// Gets or sets the proxy used when ServiceManager will attempt to connect to Azure SignalR Service.
         /// </summary>
         public IWebProxy Proxy { get; set; }
-
-        /// <summary>
-        /// Sets multiple service endpoints of Azure SignalR Service.
-        /// </summary>
-        ServiceEndpoint[] IServiceEndpointOptions.Endpoints => _serviceEndpoints;  //todo not ready for public use
-
-        internal ServiceEndpoint[] Endpoints { get => _serviceEndpoints; set => _serviceEndpoints = value; }
 
         /// <summary>
         /// Gets or sets the transport type to Azure SignalR Service. Default value is Transient.

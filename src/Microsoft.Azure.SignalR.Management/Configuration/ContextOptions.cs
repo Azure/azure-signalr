@@ -6,21 +6,21 @@ using System.Net;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class ServiceManagerContext
+    //todo public later
+    internal class ContextOptions
     {
-        public string ProductInfo { get; set; }
+        //Users not allowed to configure it
+        internal string ProductInfo { get; set; }
 
         public ServiceEndpoint[] ServiceEndpoints { get; set; }
 
         public string ApplicationName { get; set; }
 
-        public int ConnectionCount { get; set; }
+        public int ConnectionCount { get; set; } = 2;
 
         public IWebProxy Proxy { get; set; }
 
-        public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
-
-        public bool DisposeServiceProvider { get; set; } = false;
+        internal ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Persistent;
 
         internal void ValidateOptions()
         {

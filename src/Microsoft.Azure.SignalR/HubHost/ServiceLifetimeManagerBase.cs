@@ -280,6 +280,9 @@ namespace Microsoft.Azure.SignalR
             return payloads;
         }
 
+        protected ReadOnlyMemory<byte> SerializeProtocol(string protocol, string method, object[] args) =>
+            _messageSerializer.SerializeMessage(protocol, new InvocationMessage(method, args));
+
         private async Task WriteCoreAsync<T>(T message, Func<T, Task> task) where T : ServiceMessage, IMessageWithTracingId
         {
             try
