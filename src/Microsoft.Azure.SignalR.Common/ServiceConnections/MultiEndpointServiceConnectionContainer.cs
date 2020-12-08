@@ -117,13 +117,13 @@ namespace Microsoft.Azure.SignalR
         public Task StartAsync()
         {
             //ensure started only once
-            return Interlocked.CompareExchange(ref _started, 1, 0) == 0
-                ? Task.WhenAll(_routerEndpoints.endpoints.Select(s =>
+            return _started == 1 || Interlocked.CompareExchange(ref _started, 1, 0) == 1
+                ? Task.CompletedTask
+                : Task.WhenAll(_routerEndpoints.endpoints.Select(s =>
                 {
                     Log.StartingConnection(_logger, s.Endpoint);
                     return s.ConnectionContainer.StartAsync();
-                }))
-                : Task.CompletedTask;
+                }));
         }
 
         public Task StopAsync()
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.SignalR
 
         public void Dispose()
         {
-            foreach(var container in _routerEndpoints.endpoints)
+            foreach (var container in _routerEndpoints.endpoints)
             {
                 container.ConnectionContainer.Dispose();
             }
@@ -199,22 +199,31 @@ namespace Microsoft.Azure.SignalR
             {
                 case BroadcastDataMessage bdm:
                     return _router.GetEndpointsForBroadcast(endpoints);
+
                 case GroupBroadcastDataMessage gbdm:
                     return _router.GetEndpointsForGroup(gbdm.GroupName, endpoints);
+
                 case JoinGroupWithAckMessage jgm:
                     return _router.GetEndpointsForGroup(jgm.GroupName, endpoints);
+
                 case LeaveGroupWithAckMessage lgm:
                     return _router.GetEndpointsForGroup(lgm.GroupName, endpoints);
+
                 case MultiGroupBroadcastDataMessage mgbdm:
                     return mgbdm.GroupList.SelectMany(g => _router.GetEndpointsForGroup(g, endpoints)).Distinct();
+
                 case ConnectionDataMessage cdm:
                     return _router.GetEndpointsForConnection(cdm.ConnectionId, endpoints);
+
                 case MultiConnectionDataMessage mcd:
                     return mcd.ConnectionList.SelectMany(c => _router.GetEndpointsForConnection(c, endpoints)).Distinct();
+
                 case UserDataMessage udm:
                     return _router.GetEndpointsForUser(udm.UserId, endpoints);
+
                 case MultiUserDataMessage mudm:
                     return mudm.UserList.SelectMany(g => _router.GetEndpointsForUser(g, endpoints)).Distinct();
+
                 default:
                     throw new NotSupportedException(message.GetType().Name);
             }
@@ -282,7 +291,7 @@ namespace Microsoft.Azure.SignalR
 
                 await container.ConnectionInitializedTask;
 
-                // Update local store directly after start connection 
+                // Update local store directly after start connection
                 // to get a uniformed action on trigger servers ping
                 UpdateEndpointsStore(endpoint, ScaleOperation.Add);
 
@@ -341,7 +350,7 @@ namespace Microsoft.Azure.SignalR
 
         private void UpdateEndpointsStore(HubServiceEndpoint endpoint, ScaleOperation operation)
         {
-            // Use lock to ensure store update safety as parallel changes triggered in container side. 
+            // Use lock to ensure store update safety as parallel changes triggered in container side.
             lock (_lock)
             {
                 switch (operation)
@@ -394,8 +403,8 @@ namespace Microsoft.Azure.SignalR
             // ensure strong consistency of server Ids for new endpoint towards exists
             foreach (var endpoint in _routerEndpoints.endpoints)
             {
-                allMatch = !string.IsNullOrEmpty(endpoint.ConnectionContainer.ServersTag) 
-                    && serversOnNew.Equals(endpoint.ConnectionContainer.ServersTag, StringComparison.OrdinalIgnoreCase) 
+                allMatch = !string.IsNullOrEmpty(endpoint.ConnectionContainer.ServersTag)
+                    && serversOnNew.Equals(endpoint.ConnectionContainer.ServersTag, StringComparison.OrdinalIgnoreCase)
                     && allMatch;
                 if (!allMatch)
                 {
