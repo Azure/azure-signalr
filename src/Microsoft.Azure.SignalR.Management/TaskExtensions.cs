@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -6,35 +9,23 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal static class TaskExtensions
     {
-        private static readonly TimeSpan _defaultTimeout = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
 
-        public static async Task OrTimeout(this Task task, CancellationToken cancellationToken)
+        public static async Task OrTimeout(this Task task, CancellationToken cancellationToken=default, TimeSpan timeout = default, string taskDescription = "task")
         {
-            if (cancellationToken == default)
+            timeout = timeout == default ? DefaultTimeout : timeout;
+            var taskToCancel = Task.Delay(timeout, cancellationToken);
+            var completed = await Task.WhenAny(task, taskToCancel);
+            if (completed == taskToCancel && !task.IsCompleted)
             {
-                using (CancellationTokenSource cts = new CancellationTokenSource(_defaultTimeout))
+                if (taskToCancel.IsCanceled)
                 {
-                    await task.OrTimeoutCore(cts.Token);
+                    throw new TaskCanceledException($"{taskDescription} is canceled.");
                 }
-            }
-            else
-            {
-                await task.OrTimeoutCore(cancellationToken);
-            }
-        }
-
-        private static async Task OrTimeoutCore(this Task task, CancellationToken cancellationToken)
-        {
-            if (task.IsCompleted)
-            {
-                await task;
-                return;
-            }
-
-            var completed = await Task.WhenAny(task, Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken));
-            if (completed != task)
-            {
-                throw new TimeoutException("Operation timed out");
+                else
+                {
+                    throw new TimeoutException($"Timeout occurred for {taskDescription} after {timeout}.");
+                }
             }
         }
     }
