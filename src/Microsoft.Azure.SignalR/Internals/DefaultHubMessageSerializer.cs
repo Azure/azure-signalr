@@ -44,8 +44,10 @@ namespace Microsoft.Azure.SignalR
             {
                 list.Add(new SerializedMessage(protocol.Value.Name, protocol.Value.GetMessageBytes(message)));
             }
-
             return list;
         }
+
+        public ReadOnlyMemory<byte> SerializeMessage(string protocol, HubMessage message) =>
+            _hubProtocols[protocol].GetMessageBytes(message);
     }
 }
