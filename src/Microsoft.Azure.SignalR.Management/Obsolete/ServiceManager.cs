@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)
         {
-            var claimsWithUserId = ClaimsUtility.CreateUserClaims(userId, claims);
+            var claimsWithUserId = ClaimsUtility.BuildJwtClaims(null,userId:userId, ()=>claims);
             return _endpointProvider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifeTime).Result;
         }
 
