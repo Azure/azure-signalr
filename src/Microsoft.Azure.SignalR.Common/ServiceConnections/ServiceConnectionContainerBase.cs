@@ -50,6 +50,8 @@ namespace Microsoft.Azure.SignalR
 
         private volatile ServiceConnectionStatus _status;
 
+        private bool _isOffline = false;
+
 
         // <serversTag, latestTimestamp>
         private volatile Tuple<string, long> _serversTagContext = DefaultServersTagContext;
@@ -98,6 +100,8 @@ namespace Microsoft.Azure.SignalR
                 }
             }
         }
+
+        protected bool ReadyForNewConnections => !_isOffline && !_terminated;
 
         protected ServiceConnectionContainerBase(IServiceConnectionFactory serviceConnectionFactory,
                                                  int minConnectionCount,
@@ -171,7 +175,7 @@ namespace Microsoft.Azure.SignalR
         /// <returns></returns>
         protected async Task StartCoreAsync(IServiceConnection connection, string target = null)
         {
-            if (_terminated)
+            if (!ReadyForNewConnections)
             {
                 return;
             }
@@ -255,6 +259,7 @@ namespace Microsoft.Azure.SignalR
 
         public virtual Task OfflineAsync(GracefulShutdownMode mode)
         {
+            _isOffline = true;
             return Task.WhenAll(ServiceConnections.Select(c => RemoveConnectionAsync(c, mode)));
         }
 
@@ -304,12 +309,17 @@ namespace Microsoft.Azure.SignalR
             serviceConnection.ConnectionStatusChanged -= OnConnectionStatusChanged;
 
             var index = ServiceConnections.IndexOf(serviceConnection);
+
             if (index != -1)
             {
-                // first FixedConnectionCount connections are "fixed" and always try to restart
+                // always try to restart first FixedConnectionCount connections
                 if (index < FixedConnectionCount)
                 {
-                    await RestartFixedServiceConnectionCoreAsync(index);
+                    // unless the container is offline or stopped
+                    if (ReadyForNewConnections)
+                    {
+                        await RestartFixedServiceConnectionCoreAsync(index);
+                    }
                 }
                 // the rest are "on demand" and are only created upon request
                 else
@@ -570,16 +580,15 @@ namespace Microsoft.Azure.SignalR
                 _dueTime = dueTime;
                 _intervalTime = intervalTime;
                 _defaultPingTicks = intervalTime.Seconds * Stopwatch.Frequency;
-
-                _timer = Init();
             }
 
             public bool Start()
             {
                 if (Interlocked.Increment(ref _counter) == 1)
                 {
-                    _timer.Start();
-                    _ = PingAsync(_timer);
+                    var timer = _timer = Init();
+                    timer.Start();
+                    _ = PingAsync(timer);
                     return true;
                 }
                 return false;
@@ -598,14 +607,15 @@ namespace Microsoft.Azure.SignalR
                     }
                     if (Interlocked.Decrement(ref _counter) == 0)
                     {
-                        _timer.Stop();
+                        _timer?.Stop();
+                        _timer = null;
                     }
                 }
             }
 
             public void Dispose()
             {
-                _timer.Stop();
+                _timer?.Stop();
             }
 
             private TimerAwaitable Init()
@@ -620,22 +630,25 @@ namespace Microsoft.Azure.SignalR
 
             private async Task PingAsync(TimerAwaitable timer)
             {
-                while (await timer)
+                using (timer)
                 {
-                    try
+                    while (await timer)
                     {
-                        // Check if last send time is longer than default keep-alive ticks and then send ping
-                        if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendTimestamp) > _defaultPingTicks)
+                        try
                         {
-                            await _writePing.Invoke();
+                            // Check if last send time is longer than default keep-alive ticks and then send ping
+                            if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendTimestamp) > _defaultPingTicks)
+                            {
+                                await _writePing.Invoke();
 
-                            Interlocked.Exchange(ref _lastSendTimestamp, Stopwatch.GetTimestamp());
-                            Log.SentPing(_logger, _pingName);
+                                Interlocked.Exchange(ref _lastSendTimestamp, Stopwatch.GetTimestamp());
+                                Log.SentPing(_logger, _pingName);
+                            }
                         }
-                    }
-                    catch (Exception e)
-                    {
-                        Log.FailedSendingPing(_logger, _pingName, e);
+                        catch (Exception e)
+                        {
+                            Log.FailedSendingPing(_logger, _pingName, e);
+                        }
                     }
                 }
             }

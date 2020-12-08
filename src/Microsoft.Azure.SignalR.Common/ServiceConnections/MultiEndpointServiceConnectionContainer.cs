@@ -374,7 +374,7 @@ namespace Microsoft.Azure.SignalR
                 }
                 await Task.Delay(Constants.Periods.DefaultServersPingInterval);
             }
-            Log.TimeoutWaitingForAddingEndpoint(_logger, endpoint.ToString(), _scaleTimeout.Seconds);
+            Log.TimeoutWaitingForAddingEndpoint(_logger, endpoint.ToString(), (int)_scaleTimeout.TotalSeconds);
         }
 
         private bool IsServerReady(IServiceConnectionContainer container)
@@ -413,7 +413,7 @@ namespace Microsoft.Azure.SignalR
                 // status ping interval is 10s, quick delay 5s to do next check
                 await Task.Delay(Constants.Periods.DefaultCloseDelayInterval);
             }
-            Log.TimeoutWaitingClientsDisconnect(_logger, endpoint.ToString(), _scaleTimeout.Seconds);
+            Log.TimeoutWaitingClientsDisconnect(_logger, endpoint.ToString(), (int)_scaleTimeout.TotalSeconds);
         }
 
         internal static class Log
