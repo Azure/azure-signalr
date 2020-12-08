@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// creates a lazy container object and starts it after creation.
         /// </summary>
         /// <remarks>
-        /// actually the <see cref="MultiEndpointServiceConnectionContainer"/> itself has mechanism to ensure being started only once.
+        /// actually the <see cref="MultiEndpointServiceConnectionContainer"/> itself has mechanism to ensure being started only once, using Lazy and starting the container here just to avoid starting it everywhere else
         /// </remarks>
         private Lazy<MultiEndpointServiceConnectionContainer> Create(string hubName, ILoggerFactory loggerFactoryPerHub = null)
         {
