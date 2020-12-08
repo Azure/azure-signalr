@@ -5,11 +5,13 @@ Azure SignalR Service SDK for .NET helps you to instantly build Azure applicatio
 This repository contains the open source subset of the .NET SDK.
 
 ## Build Status
+
 [![Windows](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-Windows/dev?label=Windows)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Windowns)
 [![Ubuntu](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-Ubuntu/dev?label=Ubuntu)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Ubuntu)
 [![OSX](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-OSX/dev?label=OSX)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-OSX)
 
 ## Nuget Packages
+
 Azure SignalR Service SDK is supporting ASP.NET Core 3.0 from version `1.1.0-*`. Please find package information below.
 
 <div class="packageTable">
@@ -23,9 +25,11 @@ Microsoft.Azure.SignalR.Management | You can use the package to manage **ASP.NET
 </div>
 
 ## Getting Started
+
 Azure SignalR Service is based on [ASP.NET Core SignalR](https://github.com/aspnet/AspNetCore/tree/master/src/SignalR) framework, and it supports both [ASP.NET Core SignalR](https://github.com/aspnet/AspNetCore/tree/master/src/SignalR) and [ASP.NET SignalR](https://github.com/SignalR/SignalR) applications. Both support are generally available. Please note that different frameworks require different Azure SignalR SDK, for ASP.NET Core SignalR, it is package `Microsoft.Azure.SignalR` to install, for ASP.NET SignalR, it is package `Microsoft.Azure.SignalR.AspNet`.
 
 ### ASP.NET Core SignalR
+
 Package [Microsoft.Azure.SignalR](https://www.nuget.org/packages/Microsoft.Azure.SignalR) is the one to use when you are using [ASP.NET Core SignalR](https://github.com/aspnet/SignalR). If you are not familiar with ASP.NET Core SignalR yet, we recommend you to read [ASP.NET Core SignalR's documentation](https://docs.microsoft.com/aspnet/core/signalr/) first.
 
 Follow the tutorial at [here](https://aka.ms/signalr_service_doc) to get started with Azure SignalR Service.
