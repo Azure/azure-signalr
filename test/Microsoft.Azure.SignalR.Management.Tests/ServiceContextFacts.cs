@@ -53,7 +53,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 var tokenString = accessInfo.AccessToken;
                 var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-                string expectedToken = JwtTokenHelper.GenerateExpectedAccessToken(token, ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName, endpoints[i].Endpoint), endpoints[i].AccessKey, claims);
+                string expectedToken = JwtTokenHelper.GenerateJwtBearer(ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName, endpoints[i].Endpoint), ClaimsUtility.BuildJwtClaims(null, userId, () => claims),token.ValidTo,token.ValidFrom,token.ValidFrom,endpoints[i].AccessKey);
 
                 Assert.Equal(ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName, endpoints[i].Endpoint), accessInfo.Url);
                 Assert.Equal(expectedToken, tokenString);
