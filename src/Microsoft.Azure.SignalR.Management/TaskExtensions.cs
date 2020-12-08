@@ -31,7 +31,11 @@ namespace Microsoft.Azure.SignalR.Management
                 return;
             }
 
-            await Task.WhenAny(task, Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken));
+            var completed = await Task.WhenAny(task, Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken));
+            if (completed != task)
+            {
+                throw new TimeoutException("Operation timed out");
+            }
         }
     }
 }
