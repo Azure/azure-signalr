@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 case ServiceTransportType.Persistent:
                     {
-                        var container = _connectionContainerFactory.GetOrCreate(hubName);
+                        var container = _connectionContainerFactory.GetOrCreate(hubName, loggerFactoryPerHub);
                         _ = container.StartAsync();
                         //ensure connections to each endpoint are initialized, so that the online status of endpoints are valid
                         var connectionManager = new ServiceConnectionManager<Hub>();
