@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -27,9 +29,9 @@ namespace Microsoft.Azure.SignalR.Management
             return _serviceHubContextFactory.CreateAsync(hubName, null, cancellationToken);
         }
 
-        public Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, CancellationToken cancellationToken = default)
+        public Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifetime = null, CancellationToken cancellationToken = default)
         {
-            return _negotiateProcessor.GetClientEndpointAsync(hubName, httpContext, userId, cancellationToken);
+            return _negotiateProcessor.GetClientEndpointAsync(hubName, httpContext, userId, claims, lifetime, cancellationToken);
         }
 
         public void Dispose()
