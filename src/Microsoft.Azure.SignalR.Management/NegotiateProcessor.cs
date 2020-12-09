@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Management
             _endpointsContainerFactory = endpointsContainerFactory;
         }
 
-        public async Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IEnumerable<Claim> claims = null, TimeSpan? lifeTime = null, CancellationToken cancellationToken = default)
+        public async Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.SignalR.Management
                 {
                     cancellationToken = httpContext.RequestAborted;
                 }
-                var container = _endpointsContainerFactory.GetOrCreate(hubName).Value;
+                var container = _endpointsContainerFactory.GetOrCreate(hubName);
                 //ensure connections to each endpoint are initialized, so that the online status of endpoints are valid
                 await container.ConnectionInitializedTask.OrTimeout(cancellationToken, Timeout, ConnectionInitializedTaskDescription);
 
@@ -45,11 +45,10 @@ namespace Microsoft.Azure.SignalR.Management
                 var selectedEndpoint = _router.GetNegotiateEndpoint(httpContext, candidateEndpoints);
                 var provider = _serviceEndpointManager.GetEndpointProvider(selectedEndpoint);
 
-                userId ??= httpContext?.User?.Identity?.Name;
                 claims ??= httpContext?.User?.Claims;
                 var claimsWithUserId = ClaimsUtility.BuildJwtClaims(httpContext?.User, userId: userId, () => claims);
 
-                var tokenTask = provider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifeTime);
+                var tokenTask = provider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifetime);
                 await tokenTask.OrTimeout(cancellationToken, Timeout, GeneratingTokenTaskDescription);
                 return new NegotiationResponse
                 {

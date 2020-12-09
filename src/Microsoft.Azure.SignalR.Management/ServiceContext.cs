@@ -29,9 +29,9 @@ namespace Microsoft.Azure.SignalR.Management
             return _serviceHubContextFactory.CreateAsync(hubName, null, cancellationToken);
         }
 
-        public Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null, CancellationToken cancellationToken = default)
+        public Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifetime = null, CancellationToken cancellationToken = default)
         {
-            return _negotiateProcessor.GetClientEndpointAsync(hubName, httpContext, userId, claims, lifeTime, cancellationToken);
+            return _negotiateProcessor.GetClientEndpointAsync(hubName, httpContext, userId, claims, lifetime, cancellationToken);
         }
 
         public void Dispose()
