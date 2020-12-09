@@ -51,7 +51,7 @@ namespace Microsoft.Azure.SignalR.Management
                 loggerFactory);
                 container.StartAsync();
                 return container;
-            },true);
+            }, true);
         }
     }
 }
