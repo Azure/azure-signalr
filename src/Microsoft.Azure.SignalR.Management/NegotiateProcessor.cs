@@ -45,7 +45,11 @@ namespace Microsoft.Azure.SignalR.Management
                 var selectedEndpoint = _router.GetNegotiateEndpoint(httpContext, candidateEndpoints);
                 var provider = _serviceEndpointManager.GetEndpointProvider(selectedEndpoint);
 
-                Func<IEnumerable<Claim>> claimProvider = claims != null ? () => claims : null;
+                Func<IEnumerable<Claim>> claimProvider = null;
+                if (claims != null)
+                {
+                    claimProvider = () => claims;
+                }
                 var claimsWithUserId = ClaimsUtility.BuildJwtClaims(httpContext?.User, userId: userId, claimProvider);
 
                 var tokenTask = provider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifetime);
