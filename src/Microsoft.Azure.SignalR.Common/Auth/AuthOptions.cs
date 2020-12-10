@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
-    public abstract class AuthOptions
+    internal abstract class AuthOptions
     {
         internal const string Audience = "https://signalr.azure.com";
 
