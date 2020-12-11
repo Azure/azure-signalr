@@ -203,12 +203,18 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        [ConditionalFact]
+        [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
-        internal async Task CheckUserExistenceInGroupTest()
+        [InlineData(ServiceTransportType.Persistent)]
+        [InlineData(ServiceTransportType.Transient)]
+        internal async Task CheckUserExistenceInGroupTest(ServiceTransportType transportType)
         {
             var serviceManager = new ServiceManagerBuilder()
-                .WithOptions(o => o.ConnectionString = TestConfiguration.Instance.ConnectionString)
+                .WithOptions(o =>
+                {
+                    o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                    o.ServiceTransportType = transportType;
+                })
                 .Build();
             var hubName = nameof(CheckUserExistenceInGroupTest);
             var endpoint = serviceManager.GetClientEndpoint(hubName);

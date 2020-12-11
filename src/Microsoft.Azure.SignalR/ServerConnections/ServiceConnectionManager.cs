@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR
             return _serviceConnection.WriteAsync(serviceMessage);
         }
 
-        public Task WriteAckableMessageAsync(ServiceMessage seviceMessage, CancellationToken cancellationToken = default)
+        public Task<bool> WriteAckableMessageAsync(ServiceMessage seviceMessage, CancellationToken cancellationToken = default)
         {
             if (_serviceConnection == null)
             {
