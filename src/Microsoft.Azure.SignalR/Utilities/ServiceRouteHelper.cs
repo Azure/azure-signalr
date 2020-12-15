@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -15,9 +16,9 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceRouteHelper
     {
-        public static async Task RedirectToService(HttpContext context, string hubName, IList<IAuthorizeData> authorizationData)
+        public static async Task RedirectToService<THub>(HttpContext context, IList<IAuthorizeData> authorizationData) where THub : Hub
         {
-            var handler = context.RequestServices.GetRequiredService<NegotiateHandler>();
+            var handler = context.RequestServices.GetRequiredService<NegotiateHandler<THub>>();
             var loggerFactory = context.RequestServices.GetService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger<ServiceRouteHelper>();
 
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.SignalR
             NegotiationResponse negotiateResponse = null;
             try
             {
-                negotiateResponse = await handler.Process(context, hubName);
+                negotiateResponse = await handler.Process(context);
 
                 if (context.Response.HasStarted)
                 {
@@ -52,6 +53,12 @@ namespace Microsoft.Azure.SignalR
                 Log.NegotiateFailed(logger, ex.Message);
                 context.Response.StatusCode = 413;
                 await context.Response.WriteAsync(ex.Message);
+                return;
+            }
+            catch (AzureSignalRAccessTokenNotAuthorizedException ex)
+            {
+                Log.NegotiateFailed(logger, ex.Message);
+                context.Response.StatusCode = 500;
                 return;
             }
             catch (AzureSignalRNotConnectedException e)

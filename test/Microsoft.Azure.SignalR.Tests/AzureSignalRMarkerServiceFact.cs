@@ -122,7 +122,7 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 routes.MapHub<TestHub>("/chat");
             }));
-            Assert.StartsWith("Connection string missing required properties endpoint and accesskey.", exception.Message);
+            Assert.StartsWith("Connection string missing required properties endpoint.", exception.Message);
         }
 
         [Fact]

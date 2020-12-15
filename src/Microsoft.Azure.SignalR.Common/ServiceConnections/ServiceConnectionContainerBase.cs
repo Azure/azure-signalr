@@ -220,7 +220,7 @@ namespace Microsoft.Azure.SignalR
             _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status);
         }
 
-        public Task ConnectionInitializedTask => Task.WhenAll(from connection in ServiceConnections
+        public Task ConnectionInitializedTask => Task.WhenAny(from connection in ServiceConnections
                                                               select connection.ConnectionInitializedTask);
 
         public virtual Task WriteAsync(ServiceMessage serviceMessage)

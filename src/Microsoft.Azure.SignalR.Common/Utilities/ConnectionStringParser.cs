@@ -3,36 +3,53 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 
 namespace Microsoft.Azure.SignalR
 {
     internal static class ConnectionStringParser
     {
-        private const string EndpointProperty = "endpoint";
         private const string AccessKeyProperty = "accesskey";
-        private const string VersionProperty = "version";
+        private const string AuthTypeProperty = "authtype";
+        private const string ClientCertProperty = "clientCert";
+        private const string ClientEndpointProperty = "ClientEndpoint";
+        private const string ClientIdProperty = "clientId";
+        private const string ClientSecretProperty = "clientSecret";
+        private const string EndpointProperty = "endpoint";
+        private const string FileNotExists = "Client cert file not exists.";
+        private const string InvalidVersionValueFormat = "Version {0} is not supported.";
         private const string PortProperty = "port";
         // For SDK 1.x, only support Azure SignalR Service 1.x
         private const string SupportedVersion = "1";
+
+        private const string TenantIdProperty = "tenantId";
         private const string ValidVersionRegex = "^" + SupportedVersion + @"\.\d+(?:[\w-.]+)?$";
-
-        private static readonly string MissingRequiredProperty =
-            $"Connection string missing required properties {EndpointProperty} and {AccessKeyProperty}.";
-
-        private const string InvalidVersionValueFormat = "Version {0} is not supported.";
-
+        private const string VersionProperty = "version";
         private static readonly string InvalidPortValue = $"Invalid value for {PortProperty} property.";
 
-        private static readonly char[] PropertySeparator = { ';' };
         private static readonly char[] KeyValueSeparator = { '=' };
 
-        internal static (string endpoint, string accessKey, string version, int? port) Parse(string connectionString)
+        private static readonly string MissingAccessKeyProperty =
+            $"{AccessKeyProperty} is required.";
+
+        private static readonly string MissingClientSecretProperty =
+            $"Connection string missing required properties {ClientSecretProperty} or {ClientCertProperty}.";
+
+        private static readonly string MissingEndpointProperty =
+                                            $"Connection string missing required properties {EndpointProperty}.";
+
+        private static readonly string MissingTenantIdProperty =
+            $"Connection string missing required properties {TenantIdProperty}.";
+        private static readonly char[] PropertySeparator = { ';' };
+
+        internal static (AccessKey accessKey, string version, string clientEndpoint) Parse(string connectionString)
         {
             var properties = connectionString.Split(PropertySeparator, StringSplitOptions.RemoveEmptyEntries);
             if (properties.Length < 2)
             {
-                throw new ArgumentException(MissingRequiredProperty, nameof(connectionString));
+                throw new ArgumentException(MissingEndpointProperty, nameof(connectionString));
             }
 
             var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -50,34 +67,34 @@ namespace Microsoft.Azure.SignalR
                 dict.Add(key, kvp[1].Trim());
             }
 
-            if (!dict.ContainsKey(EndpointProperty) || !dict.ContainsKey(AccessKeyProperty))
+            // parse and validate endpoint.
+            if (!dict.TryGetValue(EndpointProperty, out var endpoint))
             {
-                throw new ArgumentException(MissingRequiredProperty, nameof(connectionString));
+                throw new ArgumentException(MissingEndpointProperty, nameof(connectionString));
             }
+            endpoint = endpoint.TrimEnd('/');
 
-            if (!ValidateEndpoint(dict[EndpointProperty]))
+            if (!ValidateEndpoint(endpoint))
             {
                 throw new ArgumentException($"Endpoint property in connection string is not a valid URI: {dict[EndpointProperty]}.");
             }
 
+            // parse and validate version.
             string version = null;
             if (dict.TryGetValue(VersionProperty, out var v))
             {
-                if (Regex.IsMatch(v, ValidVersionRegex))
-                {
-                    version = v;
-                }
-                else
+                if (!Regex.IsMatch(v, ValidVersionRegex))
                 {
                     throw new ArgumentException(string.Format(InvalidVersionValueFormat, v), nameof(connectionString));
                 }
+                version = v;
             }
 
+            // parse and validate port.
             int? port = null;
             if (dict.TryGetValue(PortProperty, out var s))
             {
-                if (int.TryParse(s, out var p) &&
-                    p > 0 && p <= 0xFFFF)
+                if (int.TryParse(s, out var p) && p > 0 && p <= 0xFFFF)
                 {
                     port = p;
                 }
@@ -87,13 +104,72 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
-            return (dict[EndpointProperty].TrimEnd('/'), dict[AccessKeyProperty], version, port);
+            // parse and validate clientEndpoint.
+            if (dict.TryGetValue(ClientEndpointProperty, out var clientEndpoint))
+            {
+                if (!ValidateEndpoint(clientEndpoint))
+                {
+                    throw new ArgumentException($"{ClientEndpointProperty} property in connection string is not a valid URI: {clientEndpoint}.");
+                }
+            }
+
+            dict.TryGetValue(AuthTypeProperty, out string type);
+            AccessKey accessKey = type?.ToLower() switch
+            {
+                "aad" => BuildAadAccessKey(dict, endpoint, port),
+                _ => BuildAccessKey(dict, endpoint, port),
+            };
+            return (accessKey, version, clientEndpoint);
         }
 
         internal static bool ValidateEndpoint(string endpoint)
         {
             return Uri.TryCreate(endpoint, UriKind.Absolute, out var uriResult) &&
                    (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        }
+
+        private static AccessKey BuildAadAccessKey(Dictionary<string, string> dict, string endpoint, int? port)
+        {
+            if (dict.ContainsKey(ClientIdProperty))
+            {
+                if (!dict.ContainsKey(TenantIdProperty))
+                {
+                    throw new ArgumentException(MissingTenantIdProperty, TenantIdProperty);
+                }
+
+                var options = new AadApplicationOptions(dict[ClientIdProperty], dict[TenantIdProperty]);
+
+                if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
+                {
+                    return new AadAccessKey(options.WithClientSecret(clientSecret), endpoint, port);
+                }
+                else if (dict.TryGetValue(ClientCertProperty, out var clientCert))
+                {
+                    if (!File.Exists(clientCert))
+                    {
+                        throw new FileNotFoundException(FileNotExists, clientCert);
+                    }
+                    var cert = new X509Certificate2(clientCert);
+                    return new AadAccessKey(options.WithClientCert(cert), endpoint, port);
+                }
+                else
+                {
+                    throw new ArgumentException(MissingClientSecretProperty, ClientSecretProperty);
+                }
+            }
+            else
+            {
+                return new AadAccessKey(new AadManagedIdentityOptions(), endpoint, port);
+            }
+        }
+
+        private static AccessKey BuildAccessKey(Dictionary<string, string> dict, string endpoint, int? port)
+        {
+            if (dict.TryGetValue(AccessKeyProperty, out var key))
+            {
+                return new AccessKey(key, endpoint, port);
+            }
+            throw new ArgumentException(MissingAccessKeyProperty, AccessKeyProperty);
         }
     }
 }

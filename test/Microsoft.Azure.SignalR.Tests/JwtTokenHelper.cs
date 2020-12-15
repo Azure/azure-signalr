@@ -13,6 +13,10 @@ namespace Microsoft.Azure.SignalR.Tests
     {
         public static readonly JwtSecurityTokenHandler JwtHandler = new JwtSecurityTokenHandler();
 
+        private const string TestEndpoint = "http://localhost";
+
+        private const int TestPort = 443;
+
         public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, AccessKey accessKey, IEnumerable<Claim> customClaims = null)
         {
             var requestId = token.Claims.FirstOrDefault(claim => claim.Type == Constants.ClaimType.Id)?.Value;
@@ -43,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string key, IEnumerable<Claim> customClaims = null)
         {
-            return GenerateExpectedAccessToken(token, audience, new AccessKey(key), customClaims: customClaims);
+            return GenerateExpectedAccessToken(token, audience, new AccessKey(key, TestEndpoint, TestPort), customClaims: customClaims);
         }
 
         public static string GenerateJwtBearer(
@@ -75,7 +79,7 @@ namespace Microsoft.Azure.SignalR.Tests
             string signingKey
         )
         {
-            return GenerateJwtBearer(audience, subject, expires, notBefore, issueAt, new AccessKey(signingKey));
+            return GenerateJwtBearer(audience, subject, expires, notBefore, issueAt, new AccessKey(signingKey, TestEndpoint, TestPort));
         }
     }
 }

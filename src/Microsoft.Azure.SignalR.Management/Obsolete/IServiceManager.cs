@@ -10,10 +10,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Management
 {
+    // TODO mark as obsolete when substitute is ready
     /// <summary>
     /// A manager abstraction for managing Azure SignalR Service.
     /// </summary>
-    public interface IServiceManager
+    public interface IServiceManager : IDisposable
     {
         /// <summary>
         /// Creates an instance of <see cref="IServiceHubContext"/> asynchronously.

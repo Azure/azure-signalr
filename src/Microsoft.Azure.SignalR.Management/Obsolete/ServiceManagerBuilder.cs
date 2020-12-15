@@ -1,9 +1,14 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.ComponentModel;
 using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -12,24 +17,30 @@ namespace Microsoft.Azure.SignalR.Management
     /// </summary>
     public class ServiceManagerBuilder : IServiceManagerBuilder
     {
-        private readonly ServiceManagerOptions _options = new ServiceManagerOptions();
-        private Assembly _assembly;
+        private readonly IServiceCollection _services = new ServiceCollection();
 
         /// <summary>
-        /// Configures the <see cref="IServiceManager"/> instances.
+        /// Registers an action used to configure <see cref="IServiceManager"/>.
         /// </summary>
         /// <param name="configure">A callback to configure the <see cref="IServiceManager"/>.</param>
         /// <returns>The same instance of the <see cref="ServiceManagerBuilder"/> for chaining.</returns>
         public ServiceManagerBuilder WithOptions(Action<ServiceManagerOptions> configure)
         {
-            configure?.Invoke(_options);
+            _services.Configure(configure);
+            return this;
+        }
+
+        public ServiceManagerBuilder WithLoggerFactory(ILoggerFactory loggerFactory)
+        {
+            _services.AddSingleton(loggerFactory);
             return this;
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public ServiceManagerBuilder WithCallingAssembly()
         {
-            _assembly = Assembly.GetCallingAssembly();
+            var assembly = Assembly.GetCallingAssembly();
+            _services.WithAssembly(assembly);
             return this;
         }
 
@@ -39,16 +50,9 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
         public IServiceManager Build()
         {
-            _options.ValidateOptions();
-
-            var productInfo = ProductInfo.GetProductInfo(_assembly);
-            var context = new ServiceManagerContext()
-            {
-                ProductInfo = productInfo
-            };
-            context.SetValueFromOptions(_options);
-            var restClientBuilder = new RestClientFactory(productInfo);
-            return new ServiceManager(context, restClientBuilder);
+            _services.AddSignalRServiceManager();
+            var serviceProvider = _services.BuildServiceProvider();
+            return serviceProvider.GetRequiredService<IServiceManager>();
         }
     }
 }

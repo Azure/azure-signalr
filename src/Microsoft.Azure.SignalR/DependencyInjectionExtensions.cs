@@ -2,10 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+
 #if !NETSTANDARD2_0
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
 #endif
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
@@ -31,12 +33,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static ISignalRServerBuilder AddAzureSignalR(this ISignalRServerBuilder builder)
         {
-            builder.Services
-                .AddSingleton<ServiceOptionsSetup>()
-                .AddSingleton<IConfigureOptions<ServiceOptions>>(s => s.GetService<ServiceOptionsSetup>())
-                .AddSingleton<IOptionsChangeTokenSource<ServiceOptions>>(s => s.GetService<ServiceOptionsSetup>());
-
-            return builder.AddAzureSignalRCore();
+            return builder.AddAzureSignalR<ServiceOptionsSetup>();
         }
 
         /// <summary>
@@ -68,6 +65,13 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
+        /// <typeparam name="TOptionsSetup">The set up class used to configure <see cref="ServiceOptions"/> and track changes.</typeparam>
+        internal static ISignalRServerBuilder AddAzureSignalR<TOptionsSetup>(this ISignalRServerBuilder builder) where TOptionsSetup : class, IConfigureOptions<ServiceOptions>, IOptionsChangeTokenSource<ServiceOptions>
+        {
+            builder.Services.SetupOptions<ServiceOptions, TOptionsSetup>();
+            return builder.AddAzureSignalRCore();
+        }
+
         private static ISignalRServerBuilder AddAzureSignalRCore(this ISignalRServerBuilder builder)
         {
             builder.Services
@@ -83,7 +87,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton(typeof(AzureSignalRMarkerService))
                 .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
                 .AddSingleton<IHostedService, HeartBeat>()
-                .AddSingleton<NegotiateHandler>();
+                .AddSingleton(typeof(NegotiateHandler<>));
 
             // If a custom router is added, do not add the default router
             builder.Services.TryAddSingleton(typeof(IEndpointRouter), typeof(DefaultEndpointRouter));

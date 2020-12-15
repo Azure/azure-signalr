@@ -36,6 +36,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
         private const string ServiceUrl = "http://localhost:8086";
         private const string ConnectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
+        private const string ConnectionStringWithRedirect = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;ClientEndpoint=http://redirect";
         private const string ConnectionString2 = "Endpoint=http://localhost2;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
@@ -102,7 +103,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                        {
                        }
                    });
-            Assert.StartsWith("Connection string missing required properties endpoint and accesskey.", exception.Message);
+            Assert.StartsWith("Connection string missing required properties endpoint.", exception.Message);
         }
 
         [Fact]
@@ -530,6 +531,38 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     var uri = new Uri(responseObject.RedirectUrl);
                     // The default router fallbacks to the secondary
                     Assert.Equal("http://localhost/aspnetclient" + expectedQuery, uri.AbsoluteUri);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("/user/path/negotiate", "", "", "")]
+        [InlineData("/user/path/negotiate", "?clientProtocol=1.89", "a", "")]
+        [InlineData("/user/path/negotiate", "?clientProtocol=1.0", "a", "")]
+        [InlineData("/user/path/negotiate", "?clientProtocol=2.1", "a", "?asrs_request_id=a&asrs.op=%2Fuser%2Fpath")]
+        [InlineData("/negotiate", "?%3DKey=%3Fa%3Dc&clientProtocol=2.1", "?a=c", "?%3DKey=%3Fa%3Dc&asrs_request_id=%3Fa%3Dc")]
+        [InlineData("/user/negotiate", "?clientProtocol=2.2&customKey=customeValue", "&", "?customKey=customeValue&asrs_request_id=%26&asrs.op=%2Fuser")]
+        public async Task TestNegotiateRedirectUrlWithClientEndpoint(string path, string query, string id, string expectedQuery)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
+            {
+                var requestIdProvider = new TestRequestIdProvider(id);
+                // Prepare the configuration
+                var hubConfig = Utility.GetTestHubConfig(loggerFactory);
+                hubConfig.Resolver.Register(typeof(IConnectionRequestIdProvider), () => requestIdProvider);
+                using (WebApp.Start(ServiceUrl, app => app.RunAzureSignalR(AppName, ConnectionStringWithRedirect, hubConfig)))
+                {
+                    var client = new HttpClient { BaseAddress = new Uri(ServiceUrl) };
+                    var response = await client.GetAsync(path + query);
+
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    var message = await response.Content.ReadAsStringAsync();
+                    var responseObject = JsonConvert.DeserializeObject<ResponseMessage>(message);
+                    Assert.Equal("2.0", responseObject.ProtocolVersion);
+
+                    var uri = new Uri(responseObject.RedirectUrl);
+                    // The default router fallbacks to the secondary
+                    Assert.Equal("http://redirect/aspnetclient" + expectedQuery, uri.AbsoluteUri);
                 }
             }
         }

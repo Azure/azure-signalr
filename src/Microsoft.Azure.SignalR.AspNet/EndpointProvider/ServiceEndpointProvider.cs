@@ -7,6 +7,7 @@ using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
@@ -21,6 +22,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private const string ServerPath = "aspnetserver";
 
         private readonly string _endpoint;
+        private readonly string _clientEndpoint;
         private readonly AccessKey _accessKey;
         private readonly string _appName;
         private readonly int? _port;
@@ -31,22 +33,30 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public IWebProxy Proxy { get; }
 
-        public ServiceEndpointProvider(IServerNameProvider provider, ServiceEndpoint endpoint, ServiceOptions options)
+        public ServiceEndpointProvider(
+            IServerNameProvider provider,
+            ServiceEndpoint endpoint,
+            ServiceOptions options,
+            ILoggerFactory loggerFactory)
         {
             _accessTokenLifetime = options.AccessTokenLifetime;
 
             // Version is ignored for aspnet signalr case
             _endpoint = endpoint.Endpoint;
+            _clientEndpoint = endpoint.ClientEndpoint ?? endpoint.Endpoint;
             _accessKey = endpoint.AccessKey;
             _appName = options.ApplicationName;
             _port = endpoint.Port;
             _algorithm = options.AccessTokenAlgorithm;
 
             _provider = provider;
-
             Proxy = options.Proxy;
-        }
 
+            if (endpoint.AccessKey is AadAccessKey key)
+            {
+                _ = key.UpdateAccessKeyAsync(provider, loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory)));
+            }
+        }
 
         private string GetPrefixedHubName(string applicationName, string hubName)
         {
@@ -108,8 +118,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             return _port.HasValue ?
-                $"{_endpoint}:{_port}/{ClientPath}{queryBuilder}" :
-                $"{_endpoint}/{ClientPath}{queryBuilder}";
+                $"{_clientEndpoint}:{_port}/{ClientPath}{queryBuilder}" :
+                $"{_clientEndpoint}/{ClientPath}{queryBuilder}";
         }
 
         public string GetServerEndpoint(string hubName)
