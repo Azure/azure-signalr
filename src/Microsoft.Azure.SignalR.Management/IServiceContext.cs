@@ -11,8 +11,7 @@ using Microsoft.AspNetCore.Http.Connections;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    //todo public later
-    internal interface IServiceContext : IDisposable
+    public interface IServiceContext : IDisposable
     {
         /// <summary>
         /// Creates an instance of <see cref="IServiceHubContext"/> asynchronously.
