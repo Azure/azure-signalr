@@ -60,7 +60,37 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
                 {
                     if (response.StatusCode == HttpStatusCode.OK)
                     {
-                        return message.Payload;
+                        var contentLength = response.Content.Headers.ContentLength;
+                        if (contentLength == 0)
+                        {
+                            // same as no content.
+                            await connectionContext.WriteAsync(CompletionMessage.Empty(message.InvocationId));
+                        }
+                        else if (contentLength > 16 * 1024 * 1024)
+                        {
+                            // We don't support response large than 16M, fast fail.
+                            await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, response too large."));
+                        }
+                        else
+                        {
+                            try
+                            {
+                                var memory = await response.Content.ReadAsByteArrayAsync();
+                                return new ReadOnlySequence<byte>(memory);
+                            }
+                            catch (InvalidDataException)
+                            {
+                                await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, response too large."));
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, response cancelled."));
+                            }
+                            catch (Exception ex)
+                            {
+                                await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, error: {ex.Message}."));
+                            }
+                        }
                     }
                     else if (response.StatusCode == HttpStatusCode.NoContent)
                     {
