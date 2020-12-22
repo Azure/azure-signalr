@@ -31,10 +31,10 @@ namespace Microsoft.Azure.SignalR
                 // So we keep them inside async local wrapped in weak references to avoid unnecessarily prolonging their lifetime.
                 // Instances of HubServiceEndpoint (and connection container it references) are expected to exist for the duration
                 // of the process. So we can store them without wrapping in weak reference.
-                ConcurrentDictionary<HubServiceEndpoint, WeakReference<IServiceConnection>> dict = new ConcurrentDictionary<HubServiceEndpoint, WeakReference<IServiceConnection>>();
+                ConcurrentDictionary<long, WeakReference<IServiceConnection>> dict = new ConcurrentDictionary<long, WeakReference<IServiceConnection>>();
                 if (endpoint != null)
                 {
-                    dict.TryAdd(endpoint, new WeakReference<IServiceConnection>(outboundConnection));
+                    dict.TryAdd(endpoint.UniqueIndex, new WeakReference<IServiceConnection>(outboundConnection));
                 }
 
                 ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current =
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.SignalR
 
         internal static bool IsScopeEstablished => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current != null;
 
-        internal static ConcurrentDictionary<HubServiceEndpoint, WeakReference<IServiceConnection>> OutboundServiceConnections
+        internal static ConcurrentDictionary<long, WeakReference<IServiceConnection>> OutboundServiceConnections
         {
             get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties?.OutboundServiceConnections;
             set 
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.SignalR
 
         private class ClientConnectionScopeProperties
         {
-            public ConcurrentDictionary<HubServiceEndpoint, WeakReference<IServiceConnection>> OutboundServiceConnections { get; set; }
+            public ConcurrentDictionary<long, WeakReference<IServiceConnection>> OutboundServiceConnections { get; set; }
 
             public bool IsDiagnosticClient { get; set; }
         }

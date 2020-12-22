@@ -15,6 +15,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using HandshakeRequestMessage = Microsoft.Azure.SignalR.Protocol.HandshakeRequestMessage;
 using HandshakeResponseMessage = Microsoft.Azure.SignalR.Protocol.HandshakeResponseMessage;
+using ServicePingMessage = Microsoft.Azure.SignalR.Protocol.PingMessage;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 {
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
     /// Provides start / stop / connect new client functionality 
     /// Receives and stores messages received from SDK side
     /// </summary>
-    internal class MockServiceSideConnection
+    internal class MockServiceSideConnection : IAsyncDisposable
     {
         private static readonly ServiceProtocol _servicePro = new ServiceProtocol();
         private static readonly JsonHubProtocol _signalRPro = new JsonHubProtocol();
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
         private Task _processIncoming;
         private TaskCompletionSource<bool> _completedHandshake = new TaskCompletionSource<bool>();
         private ConcurrentDictionary<Type, Channel<ServiceMessage>> _messagesFromSDK = new ConcurrentDictionary<Type, Channel<ServiceMessage>>();
+        private int _stopped = 0;
         
         // to help with debugging, make public if useful to check in tests
         private Exception _processIncomingException = null;
@@ -49,6 +51,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
             MockServicePipe = pipe;
         }
 
+        public Task ProcessIncoming => _processIncoming;
         public int Index { get; private set; }
         public IMockService MockSvc { get; private set; }
         public MockServiceConnectionContext SDKSideServiceConnection { get; private set; }
@@ -176,6 +179,15 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                                             }
                                         }
                                     }
+                                    else if (message is ServicePingMessage ping && ping.IsFin())
+                                    {
+                                        Console.WriteLine("send finack");
+                                        var pong = RuntimeServicePingMessage.GetFinAckPingMessage();
+                                        _servicePro.WriteMessage(pong, MockServicePipe.Output);
+                                        var flushResult = _lastFlushResult = await MockServicePipe.Output.FlushAsync();
+
+                                        //todo: do we care about this flush result?
+                                    }
                                 }
                             }
                         }
@@ -196,9 +208,16 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
         // Todo: add more Stop* methods (e.g. send ServiceErrorMessage, etc)
         public async Task StopAsync()
         {
-            MockServicePipe.Output.Complete();
-            MockServicePipe.Input.CancelPendingRead();
-            await _processIncoming;
+            if (Interlocked.CompareExchange(ref _stopped, 1, 0) == 0)
+            {
+                MockServicePipe.Output.Complete();
+                MockServicePipe.Input.CancelPendingRead();
+                await _processIncoming;
+
+                MockSvc.UnregisterMockServiceSideConnection(this);
+            }
+            else
+                Console.WriteLine("bugbug"); // not sure whether its possible - change to Assert?
         }
 
         private void EnqueueMessage(ServiceMessage m) =>
@@ -226,5 +245,10 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 
         private static Channel<T> CreateChannel<T>() => Channel.CreateUnbounded<T>(
             new UnboundedChannelOptions() { SingleReader = true, SingleWriter = true, AllowSynchronousContinuations = false });
+
+        public async ValueTask DisposeAsync()
+        {
+            await StopAsync();
+        }
     }
 }
