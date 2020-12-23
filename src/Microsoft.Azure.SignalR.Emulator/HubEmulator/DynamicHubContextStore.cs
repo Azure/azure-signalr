@@ -62,7 +62,7 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             var handlerType = typeof(HubProxyHandler<>).MakeGenericType(hubType);
 
             var connectionHandler = (ConnectionHandler)_provider.GetService(handlerType);
-            var lifetimeType = typeof(CachedHubLifetimeManager<>).MakeGenericType(hubType);
+            var lifetimeType = typeof(HubLifetimeManager<>).MakeGenericType(hubType);
             var lifetime = _provider.GetService(lifetimeType) as IHubLifetimeManager;
             return new DynamicHubContext(hubType, clients, lifetime, connectionHandler);
         }
