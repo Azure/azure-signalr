@@ -23,6 +23,8 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
 {
     internal class HttpServerlessMessageHandler<THub> : IUpstreamMessageHandler where THub: Hub
     {
+        // We don't support response large than 16M
+        private const int MaxAllowedResponseLength = 16 * 1024 * 1024;
         private static readonly byte[] OpenConnectionPayload = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(
             new ServerlessProtocol.OpenConnectionMessage { Type = ServerlessProtocol.Constants.OpenConnectionMessageType }
         ));
@@ -67,14 +69,14 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
                             // same as no content.
                             await connectionContext.WriteAsync(CompletionMessage.Empty(message.InvocationId));
                         }
-                        else if (contentLength > 16 * 1024 * 1024)
+                        else if (contentLength > MaxAllowedResponseLength)
                         {
                             // We don't support response large than 16M, fast fail.
                             await connectionContext.WriteAsync(CompletionMessage.WithError(message.InvocationId, $"Invocation failed, response too large."));
                         }
                         else
                         {
-                            var ls = new LimitedStream(16 * 1024 * 1024);
+                            var ls = new LimitedStream(MaxAllowedResponseLength);
                             try
                             {
                                 await response.Content.CopyToAsync(ls);
