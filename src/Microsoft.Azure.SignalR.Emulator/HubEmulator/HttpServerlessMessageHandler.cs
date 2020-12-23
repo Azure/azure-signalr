@@ -10,6 +10,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Common;
@@ -73,10 +74,11 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
                         }
                         else
                         {
+                            var ls = new LimitedStream(16 * 1024 * 1024);
                             try
                             {
-                                var memory = await response.Content.ReadAsByteArrayAsync();
-                                return new ReadOnlySequence<byte>(memory);
+                                await response.Content.CopyToAsync(ls);
+                                return new ReadOnlySequence<byte>(ls.ToMemory());
                             }
                             catch (InvalidDataException)
                             {
