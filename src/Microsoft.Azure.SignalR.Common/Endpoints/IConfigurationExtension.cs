@@ -15,14 +15,9 @@ namespace Microsoft.Azure.SignalR
         /// <remarks>
         /// The SignalR service endpoint whose key is exactly the section name is not extracted.
         /// </remarks>
-        public static ServiceEndpoint[] GetSignalRServiceEndpoints(this IConfiguration configuration, string sectionName)
+        public static IEnumerable<ServiceEndpoint> GetSignalREndpointsFromSectionChildren(this IConfiguration configuration, string sectionName)
         {
             var section = configuration.GetSection(sectionName);
-            return GetEndpoints(section).ToArray();
-        }
-
-        private static IEnumerable<ServiceEndpoint> GetEndpoints(IConfiguration section)
-        {
             foreach (var entry in section.AsEnumerable(true))
             {
                 if (!string.IsNullOrEmpty(entry.Value))
@@ -38,16 +33,17 @@ namespace Microsoft.Azure.SignalR
         /// <remarks>
         /// The value of the section is included.
         /// </remarks>
-        public static IEnumerable<ServiceEndpoint> GetMergedSignalREndpoints(this IConfiguration configuration, string sectionName)
+        public static IEnumerable<ServiceEndpoint> GetSignalREndpointsFromSection(this IConfiguration configuration, string sectionName)
         {
             var connectionString = configuration[sectionName];
             if (!string.IsNullOrEmpty(connectionString))
             {
                 yield return new ServiceEndpoint(connectionString);
             }
-
-            var section = configuration.GetSection(sectionName);
-            GetEndpoints(section);
+            foreach (var endpoint in configuration.GetSignalREndpointsFromSectionChildren(sectionName))
+            {
+                yield return endpoint;
+            }
         }
     }
 }

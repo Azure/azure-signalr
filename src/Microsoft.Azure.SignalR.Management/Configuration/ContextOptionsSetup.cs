@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 _configuration.GetSection(Constants.Keys.AzureSignalRSectionKey).Bind(options);
 
-                options.ServiceEndpoints = _configuration.GetMergedSignalREndpoints(Constants.Keys.ConnectionStringDefaultKey).ToArray();
+                options.ServiceEndpoints = _configuration.GetSignalREndpointsFromSection(Constants.Keys.ConnectionStringDefaultKey).ToArray();
             }
         }
 
