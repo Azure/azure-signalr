@@ -17,13 +17,17 @@ namespace Microsoft.Azure.SignalR.Tests
         { }
 
 
-        [Fact]
-        public async Task TestIfConnectionWillRestartAfterShutdown()
+        [Theory]
+        [InlineData(ServiceConnectionStatus.Disconnected)]
+        [InlineData(ServiceConnectionStatus.Connected)]
+        [InlineData(ServiceConnectionStatus.Connecting)]
+        [InlineData(ServiceConnectionStatus.Inited)]
+        internal async Task TestIfConnectionWillNotRestartAfterShutdown(ServiceConnectionStatus status)
         {
             List<IServiceConnection> connections = new List<IServiceConnection>
             {
                 new SimpleTestServiceConnection(),
-                new SimpleTestServiceConnection() // A connection which is not in Connected status could be replaced.
+                new SimpleTestServiceConnection(status: status)
             };
 
             IServiceConnection connection = connections[1];
@@ -33,9 +37,12 @@ namespace Microsoft.Azure.SignalR.Tests
 
             await container.OnConnectionCompleteForTestShutdown(connection);
 
-            // connection should be replaced, but it's StartAsync method should not be called.
-            Assert.NotEqual(container.Connections[1], connection);
-            Assert.NotEqual(ServiceConnectionStatus.Connected, container.Connections[1].Status);
+            // the connection should not be replaced when shutting down
+            Assert.Equal(container.Connections[1], connection);
+            // its status is not changed
+            Assert.Equal(status, container.Connections[1].Status);
+            // the container is not listening to the connection's status changes after shutdown
+            Assert.Equal(1, (connection as SimpleTestServiceConnection).ConnectionStatusChangedRemoveCount);
         }
 
         [Theory]
@@ -223,6 +230,10 @@ namespace Microsoft.Azure.SignalR.Tests
 
             public Task ServersPingTask => _serversPing.Task;
 
+            public int ConnectionStatusChangedAddCount { get; set; }
+
+            public int ConnectionStatusChangedRemoveCount { get; set; }
+
             public SimpleTestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Disconnected)
             {
                 Status = status;
@@ -230,8 +241,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
             public event Action<StatusChange> ConnectionStatusChanged
             {
-                add { }
-                remove { }
+                add { ConnectionStatusChangedAddCount++; }
+                remove { ConnectionStatusChangedRemoveCount++; }
             }
 
             public Task StartAsync(string target = null)
