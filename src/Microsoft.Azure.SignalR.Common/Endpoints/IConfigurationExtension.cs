@@ -3,47 +3,25 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Azure.SignalR
 {
     internal static class IConfigurationExtension
     {
-        /// <summary>
-        /// Gets SignalR service endpoints from the children of a section.
-        /// </summary>
-        /// <remarks>
-        /// The SignalR service endpoint whose key is exactly the section name is not extracted.
-        /// </remarks>
-        public static IEnumerable<ServiceEndpoint> GetSignalREndpointsFromSectionChildren(this IConfiguration configuration, string sectionName)
+        /// <param name="configuration"></param>
+        /// <param name="sectionName"></param>
+        /// <param name="includeNoSuffixEndpoint">Include the service endpoint whose key has no suffix. </param>
+        /// <returns></returns>
+        public static IEnumerable<ServiceEndpoint> GetEndpoints(this IConfiguration configuration, string sectionName, bool includeNoSuffixEndpoint = false)
         {
             var section = configuration.GetSection(sectionName);
-            foreach (var entry in section.AsEnumerable(true))
-            {
-                if (!string.IsNullOrEmpty(entry.Value))
-                {
-                    yield return new ServiceEndpoint(entry.Key, entry.Value);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets SignalR service endpoints from a section.
-        /// </summary>
-        /// <remarks>
-        /// The value of the section is included.
-        /// </remarks>
-        public static IEnumerable<ServiceEndpoint> GetSignalREndpointsFromSection(this IConfiguration configuration, string sectionName)
-        {
-            var connectionString = configuration[sectionName];
-            if (!string.IsNullOrEmpty(connectionString))
-            {
-                yield return new ServiceEndpoint(connectionString);
-            }
-            foreach (var endpoint in configuration.GetSignalREndpointsFromSectionChildren(sectionName))
-            {
-                yield return endpoint;
-            }
+            var suffixedEndpoints = section.AsEnumerable(true)
+                                           .Where(entry => !string.IsNullOrEmpty(entry.Value))
+                                           .Select(entry => new ServiceEndpoint(entry.Key, entry.Value));
+            var connectionString = includeNoSuffixEndpoint ? configuration[sectionName] : null;
+            return ServiceEndpointUtility.Merge(connectionString, suffixedEndpoints);
         }
     }
 }

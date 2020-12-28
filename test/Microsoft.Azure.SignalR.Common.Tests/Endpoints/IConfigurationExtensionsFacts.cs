@@ -16,18 +16,18 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [InlineData("secondary")]
         [InlineData("a:secondary")]
         [InlineData(":secondary")]
-        public void GetOneEndpoint_FromSectionChildren_Test(string relativePath)
+        public void GetEndpointsWithSuffix(string relativePath)
         {
             var connectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
             var configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
             var connectionStringKey = "key";
             configuration[connectionStringKey] = connectionString;
             configuration[$"{connectionStringKey}:{relativePath}"] = connectionString;
-            Assert.Single(configuration.GetSignalREndpointsFromSectionChildren(connectionStringKey));
+            Assert.Single(configuration.GetEndpoints(connectionStringKey));
         }
 
         [Fact]
-        public void GetMultipleEndpoints_FromSection_Test()
+        public void GetEndpoints_IncludeNoSuffixEndpoint()
         {
             var count = 3;
             var connectionStrings = FakeEndpointUtils.GetFakeConnectionString(count).ToArray();
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             configuration[connectionStringKey] = connectionStrings[0];
             configuration[$"{connectionStringKey}:a"] = connectionStrings[1];
             configuration[$"{connectionStringKey}:a:primary"] = connectionStrings[2];
-            Assert.Equal(count, configuration.GetSignalREndpointsFromSection(connectionStringKey).Count());
+            Assert.Equal(count, configuration.GetEndpoints(connectionStringKey, true).Count());
         }
     }
 }

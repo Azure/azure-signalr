@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Linq;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
@@ -26,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 _configuration.GetSection(Constants.Keys.AzureSignalRSectionKey).Bind(options);
 
-                options.ServiceEndpoints = _configuration.GetSignalREndpointsFromSection(Constants.Keys.ConnectionStringDefaultKey).ToArray();
+                options.ServiceEndpoints = _configuration.GetEndpoints(Constants.Keys.ConnectionStringDefaultKey, true).ToArray();
             }
         }
 

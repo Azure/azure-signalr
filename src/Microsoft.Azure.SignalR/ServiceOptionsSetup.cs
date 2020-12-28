@@ -48,11 +48,11 @@ namespace Microsoft.Azure.SignalR
             // Fallback to ConnectionStrings:Azure:SignalR:ConnectionString format when the default one is not available
             var connectionString = _configuration[Constants.Keys.ConnectionStringDefaultKey] ?? _configuration[Constants.Keys.ConnectionStringSecondaryKey];
 
-            var endpoints = _configuration.GetSignalREndpointsFromSectionChildren(Constants.Keys.ConnectionStringDefaultKey).ToArray();
+            var endpoints = _configuration.GetEndpoints(Constants.Keys.ConnectionStringDefaultKey).ToArray();
 
             if (endpoints.Length == 0)
             {
-                endpoints = _configuration.GetSignalREndpointsFromSectionChildren(Constants.Keys.ConnectionStringSecondaryKey).ToArray();
+                endpoints = _configuration.GetEndpoints(Constants.Keys.ConnectionStringSecondaryKey).ToArray();
             }
 
             return (appName, connectionString, stickyMode, endpoints);
