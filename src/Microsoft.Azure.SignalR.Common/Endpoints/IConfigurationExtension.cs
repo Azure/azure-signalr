@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Azure.SignalR
@@ -13,15 +12,13 @@ namespace Microsoft.Azure.SignalR
         /// <param name="configuration"></param>
         /// <param name="sectionName"></param>
         /// <param name="includeNoSuffixEndpoint">Include the service endpoint whose key has no suffix. </param>
-        /// <returns></returns>
         public static IEnumerable<ServiceEndpoint> GetEndpoints(this IConfiguration configuration, string sectionName, bool includeNoSuffixEndpoint = false)
         {
             var section = configuration.GetSection(sectionName);
             var suffixedEndpoints = section.AsEnumerable(true)
                                            .Where(entry => !string.IsNullOrEmpty(entry.Value))
                                            .Select(entry => new ServiceEndpoint(entry.Key, entry.Value));
-            var connectionString = includeNoSuffixEndpoint ? configuration[sectionName] : null;
-            return ServiceEndpointUtility.Merge(connectionString, suffixedEndpoints);
+            return includeNoSuffixEndpoint ? ServiceEndpointUtility.Merge(configuration[sectionName], suffixedEndpoints) : suffixedEndpoints;
         }
     }
 }

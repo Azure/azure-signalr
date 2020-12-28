@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.Azure.SignalR.Common
+namespace Microsoft.Azure.SignalR
 {
     internal static class ServiceEndpointUtility
     {
