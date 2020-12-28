@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class AadApplicationOptions : AuthOptions, IAadTokenGenerator
+    internal class AadApplicationOptions : AuthOptions, IAadTokenGenerator
     {
         private static readonly string[] DefaultScopes = new string[] { $"{Audience}/.default" };
 

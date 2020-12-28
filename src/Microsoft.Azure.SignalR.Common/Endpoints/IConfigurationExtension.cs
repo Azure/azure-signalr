@@ -9,45 +9,16 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class IConfigurationExtension
     {
-        /// <summary>
-        /// Gets SignalR service endpoints from the children of a section.
-        /// </summary>
-        /// <remarks>
-        /// The SignalR service endpoint whose key is exactly the section name is not extracted.
-        /// </remarks>
-        public static ServiceEndpoint[] GetSignalRServiceEndpoints(this IConfiguration configuration, string sectionName)
+        /// <param name="configuration"></param>
+        /// <param name="sectionName"></param>
+        /// <param name="includeNoSuffixEndpoint">Include the service endpoint whose key has no suffix. </param>
+        public static IEnumerable<ServiceEndpoint> GetEndpoints(this IConfiguration configuration, string sectionName, bool includeNoSuffixEndpoint = false)
         {
             var section = configuration.GetSection(sectionName);
-            return GetEndpoints(section).ToArray();
-        }
-
-        private static IEnumerable<ServiceEndpoint> GetEndpoints(IConfiguration section)
-        {
-            foreach (var entry in section.AsEnumerable(true))
-            {
-                if (!string.IsNullOrEmpty(entry.Value))
-                {
-                    yield return new ServiceEndpoint(entry.Key, entry.Value);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets SignalR service endpoints from a section.
-        /// </summary>
-        /// <remarks>
-        /// The value of the section is included.
-        /// </remarks>
-        public static IEnumerable<ServiceEndpoint> GetMergedSignalREndpoints(this IConfiguration configuration, string sectionName)
-        {
-            var connectionString = configuration[sectionName];
-            if (!string.IsNullOrEmpty(connectionString))
-            {
-                yield return new ServiceEndpoint(connectionString);
-            }
-
-            var section = configuration.GetSection(sectionName);
-            GetEndpoints(section);
+            var suffixedEndpoints = section.AsEnumerable(true)
+                                           .Where(entry => !string.IsNullOrEmpty(entry.Value))
+                                           .Select(entry => new ServiceEndpoint(entry.Key, entry.Value));
+            return includeNoSuffixEndpoint ? ServiceEndpointUtility.Merge(configuration[sectionName], suffixedEndpoints) : suffixedEndpoints;
         }
     }
 }

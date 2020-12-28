@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                                                                             select new object[] { transport, useLoggerFactory, appName, connectionCount };
 
         public static IEnumerable<object[]> TestGenerateClientEndpointData => from appName in _appNames
-                                                                              select new object[] { appName, GetExpectedClientEndpoint(appName) };
+                                                                              select new object[] { appName, ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName) };
 
         public static IEnumerable<object[]> TestGenerateAccessTokenData => from userId in _userIds
                                                                            from claims in _claimLists
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var tokenString = manager.GenerateClientAccessToken(HubName, userId, claims, _tokenLifeTime);
             var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-            string expectedToken = JwtTokenHelper.GenerateExpectedAccessToken(token, GetExpectedClientEndpoint(appName), AccessKey, claims);
+            string expectedToken = JwtTokenHelper.GenerateExpectedAccessToken(token, ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName), AccessKey, claims);
 
             Assert.Equal(expectedToken, tokenString);
         }
@@ -170,16 +170,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var serviceManager = new ServiceManagerBuilder().WithOptions(o => o.ConnectionString = _testConnectionString).Build();
             serviceManager.Dispose();
-        }
-
-        private static string GetExpectedClientEndpoint(string appName = null)
-        {
-            if (string.IsNullOrEmpty(appName))
-            {
-                return $"{Endpoint}/client/?hub={HubName.ToLower()}";
-            }
-
-            return $"{Endpoint}/client/?hub={appName.ToLower()}_{HubName.ToLower()}";
         }
     }
 }
