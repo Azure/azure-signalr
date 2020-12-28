@@ -12,6 +12,7 @@ namespace Microsoft.Azure.SignalR
 {
     using Microsoft.Rest;
     using Microsoft.Rest.Serialization;
+    using Models;
     using Newtonsoft.Json;
     using System.Collections;
     using System.Collections.Generic;
@@ -44,6 +45,11 @@ namespace Microsoft.Azure.SignalR
         /// Gets the IHealthApi.
         /// </summary>
         public virtual IHealthApi HealthApi { get; private set; }
+
+        /// <summary>
+        /// Gets the IServiceApi.
+        /// </summary>
+        public virtual IServiceApi ServiceApi { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the SignalRServiceRestClient class.
@@ -287,6 +293,7 @@ namespace Microsoft.Azure.SignalR
         private void Initialize()
         {
             HealthApi = new HealthApi(this);
+            ServiceApi = new ServiceApi(this);
             BaseUri = new System.Uri("http://localhost");
             SerializationSettings = new JsonSerializerSettings
             {

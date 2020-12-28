@@ -10,6 +10,7 @@
 
 namespace Microsoft.Azure.SignalR
 {
+    using Models;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -18,17 +19,6 @@ namespace Microsoft.Azure.SignalR
     /// </summary>
     public static partial class HealthApiExtensions
     {
-            /// <summary>
-            /// Get service health status.
-            /// </summary>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
-            /// </param>
-            public static void GetHealthStatus(this IHealthApi operations)
-            {
-                operations.GetHealthStatusAsync().GetAwaiter().GetResult();
-            }
-
             /// <summary>
             /// Get service health status.
             /// </summary>
