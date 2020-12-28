@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
@@ -47,11 +48,11 @@ namespace Microsoft.Azure.SignalR
             // Fallback to ConnectionStrings:Azure:SignalR:ConnectionString format when the default one is not available
             var connectionString = _configuration[Constants.Keys.ConnectionStringDefaultKey] ?? _configuration[Constants.Keys.ConnectionStringSecondaryKey];
 
-            var endpoints = _configuration.GetSignalRServiceEndpoints(Constants.Keys.ConnectionStringDefaultKey);
+            var endpoints = _configuration.GetEndpoints(Constants.Keys.ConnectionStringDefaultKey).ToArray();
 
             if (endpoints.Length == 0)
             {
-                endpoints = _configuration.GetSignalRServiceEndpoints(Constants.Keys.ConnectionStringSecondaryKey);
+                endpoints = _configuration.GetEndpoints(Constants.Keys.ConnectionStringSecondaryKey).ToArray();
             }
 
             return (appName, connectionString, stickyMode, endpoints);
