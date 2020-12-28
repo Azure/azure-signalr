@@ -7,7 +7,7 @@ namespace Microsoft.Azure.SignalR
     {
         internal override string AuthType => "ManagedIdentity";
 
-        public async Task<string> AcquireAccessToken()
+        public override async Task<string> AcquireAccessToken()
         {
             var azureServiceTokenProvider = new AzureServiceTokenProvider(azureAdInstance: AzureActiveDirectoryInstance);
             return await azureServiceTokenProvider.GetAccessTokenAsync(Audience);

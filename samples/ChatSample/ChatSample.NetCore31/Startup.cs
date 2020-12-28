@@ -1,6 +1,7 @@
 using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -18,7 +19,12 @@ namespace ChatSample.CoreApp3
                 .AddAzureSignalR(option =>
                 {
                     option.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
-                    option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(10);
+                    option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(30);
+
+                    option.GracefulShutdown.Add<Chat>(async (c) =>
+                    {
+                        await c.Clients.All.SendAsync("exit");
+                    });
                 })
                 .AddMessagePackProtocol();
         }

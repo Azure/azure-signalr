@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Common.Endpoints;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -52,7 +53,7 @@ namespace Microsoft.Azure.SignalR
         {
             Log.DetectConfigurationChanges(_logger);
 
-            ReloadServiceEndpointsAsync(GetEndpoints(options));
+            ReloadServiceEndpointsAsync(options.GetMergedEndpoints());
         }
 
         private Task ReloadServiceEndpointsAsync(IEnumerable<ServiceEndpoint> serviceEndpoints)

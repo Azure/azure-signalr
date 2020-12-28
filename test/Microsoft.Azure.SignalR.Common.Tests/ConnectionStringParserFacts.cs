@@ -8,6 +8,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 {
     public class ConnectionStringParserFacts
     {
+
         [Theory]
         [InlineData("https://aaa", "endpoint=https://aaa;AccessKey=bbb;")]
         [InlineData("https://aaa", "ENDPOINT=https://aaa/;ACCESSKEY=bbb;")]
@@ -15,12 +16,49 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [InlineData("http://aaa", "ENDPOINT=http://aaa/;ACCESSKEY=bbb;")]
         public void ValidPreviewConnectionString(string expectedEndpoint, string connectionString)
         {
-            var (endpoint, accessKey, version, port, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
+            var (accessKey, version, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
 
-            Assert.Equal(expectedEndpoint, endpoint);
-            Assert.Equal("bbb", accessKey);
+            Assert.Equal(expectedEndpoint, accessKey.Endpoint);
+            Assert.Equal("bbb", accessKey.Value);
             Assert.Null(version);
-            Assert.Null(port);
+            Assert.Null(accessKey.Port);
+        }
+
+        [Theory]
+        [InlineData("endpoint=https://aaa;AuthType=aad;clientId=123")]
+        [InlineData("endpoint=https://aaa;AuthType=aad;clientId=123;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
+        public void InvliadApplicationConnectionString(string connectionString)
+        {
+            Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
+        }
+
+        [Theory]
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;")]
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientSecret=xxxx;")]
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;tenantId=xxxx;")]
+        public void ValidMSIConnectionString(string expectedEndpoint, string connectionString)
+        {
+            var (accessKey, version, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
+
+            Assert.Equal(expectedEndpoint, accessKey.Endpoint);
+            Assert.IsType<AadAccessKey>(accessKey);
+            Assert.IsType<AadManagedIdentityOptions>(((AadAccessKey)accessKey).Options);
+            Assert.Null(version);
+            Assert.Null(accessKey.Port);
+            Assert.Null(clientEndpoint);
+        }
+
+        [Theory]
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientId=foo;clientSecret=bar;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
+        public void ValidApplicationConnectionString(string expectedEndpoint, string connectionString)
+        {
+            var (accessKey, version, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
+
+            Assert.Equal(expectedEndpoint, accessKey.Endpoint);
+            Assert.IsType<AadAccessKey>(accessKey);
+            Assert.IsType<AadApplicationOptions>(((AadAccessKey)accessKey).Options);
+            Assert.Null(version);
+            Assert.Null(accessKey.Port);
             Assert.Null(clientEndpoint);
         }
 
@@ -31,12 +69,12 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [InlineData("http://aaa", "1.1-beta2", 1234, "ENDPOINT=http://aaa/;ACCESSKEY=bbb;Version=1.1-beta2;Port=1234")]
         public void ValidConnectionString(string expectedEndpoint, string expectedVersion, int? expectedPort, string connectionString)
         {
-            var (endpoint, accessKey, version, port, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
+            var (accessKey, version, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
 
-            Assert.Equal(expectedEndpoint, endpoint);
-            Assert.Equal("bbb", accessKey);
+            Assert.Equal(expectedEndpoint, accessKey.Endpoint);
+            Assert.Equal("bbb", accessKey.Value);
             Assert.Equal(expectedVersion, version);
-            Assert.Equal(expectedPort, port);
+            Assert.Equal(expectedPort, accessKey.Port);
             Assert.Null(clientEndpoint);
         }
 

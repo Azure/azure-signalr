@@ -47,23 +47,22 @@ namespace Microsoft.Azure.SignalR
                 queryBuilder.Append("&").Append(queryString);
             }
 
-            return $"{InternalGetEndpoint(ClientPath, hubName, applicationName)}{queryBuilder}";
+            return $"{InternalGetEndpoint(ClientPath, hubName, applicationName, ClientEndpoint ?? Endpoint)}{queryBuilder}";
         }
 
         public string GetServerAudience(string hubName, string applicationName) =>
             InternalGetAudience(ServerPath, hubName, applicationName);
 
         public string GetServerEndpoint(string hubName, string applicationName) =>
-            InternalGetEndpoint(ServerPath, hubName, applicationName);
+            InternalGetEndpoint(ServerPath, hubName, applicationName, Endpoint);
 
         private string GetPrefixedHubName(string applicationName, string hubName)
         {
             return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
         }
 
-        private string InternalGetEndpoint(string path, string hubName, string applicationName)
+        private string InternalGetEndpoint(string path, string hubName, string applicationName, string target)
         {
-            var target = ClientEndpoint ?? Endpoint;
             return Port.HasValue ?
                 $"{target}:{Port}/{path}/?hub={GetPrefixedHubName(applicationName, hubName)}" :
                 $"{target}/{path}/?hub={GetPrefixedHubName(applicationName, hubName)}";

@@ -2,8 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
@@ -46,38 +44,17 @@ namespace Microsoft.Azure.SignalR
                 Enum.TryParse(mode, true, out stickyMode);
             }
 
-            var (connectionString, endpoints) = GetEndpoint(_configuration, Constants.Keys.ConnectionStringDefaultKey);
-
             // Fallback to ConnectionStrings:Azure:SignalR:ConnectionString format when the default one is not available
-            if (connectionString == null && endpoints.Length == 0)
+            var connectionString = _configuration[Constants.Keys.ConnectionStringDefaultKey] ?? _configuration[Constants.Keys.ConnectionStringSecondaryKey];
+
+            var endpoints = _configuration.GetSignalRServiceEndpoints(Constants.Keys.ConnectionStringDefaultKey);
+
+            if (endpoints.Length == 0)
             {
-                (connectionString, endpoints) = GetEndpoint(_configuration, Constants.Keys.ConnectionStringSecondaryKey);
+                endpoints = _configuration.GetSignalRServiceEndpoints(Constants.Keys.ConnectionStringSecondaryKey);
             }
 
             return (appName, connectionString, stickyMode, endpoints);
-        }
-
-        private static (string, ServiceEndpoint[]) GetEndpoint(IConfiguration configuration, string key)
-        {
-            var section = configuration.GetSection(key);
-            var connectionString = section.Value;
-            var endpoints = GetEndpoints(section.GetChildren()).ToArray();
-
-            return (connectionString, endpoints);
-        }
-
-        private static IEnumerable<ServiceEndpoint> GetEndpoints(IEnumerable<IConfigurationSection> sections)
-        {
-            foreach (var section in sections)
-            {
-                foreach (var entry in section.AsEnumerable())
-                {
-                    if (!string.IsNullOrEmpty(entry.Value))
-                    {
-                        yield return new ServiceEndpoint(entry.Key, entry.Value);
-                    }
-                }
-            }
         }
     }
 }
