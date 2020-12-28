@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 {
     public class CustomizedTimerTests : VerifiableLoggedTest
     {
-        private const int BasePeriodMs = 200;
+        private const int BasePeriodMs = 400;
         private static TimeSpan BaseTs = TimeSpan.FromMilliseconds(BasePeriodMs);
         private static TimeSpan BaseTsPlus = TimeSpan.FromMilliseconds(BasePeriodMs * 1.2); // +20% leeway to avoid false positives
         
