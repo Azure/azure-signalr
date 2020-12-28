@@ -255,6 +255,7 @@ namespace Microsoft.Azure.SignalR
 
         public virtual Task OfflineAsync(GracefulShutdownMode mode)
         {
+            _terminated = true;
             return Task.WhenAll(ServiceConnections.Select(c => RemoveConnectionAsync(c, mode)));
         }
 
@@ -321,6 +322,11 @@ namespace Microsoft.Azure.SignalR
 
         private async Task RestartFixedServiceConnectionCoreAsync(int index)
         {
+            if (_terminated)
+            {
+                return;
+            }
+
             Func<Task<bool>> tryNewConnection = async () =>
             {
                 var connection = CreateServiceConnectionCore(InitialConnectionType);
