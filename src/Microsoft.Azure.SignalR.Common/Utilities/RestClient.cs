@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Azure.SignalR.Models;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 

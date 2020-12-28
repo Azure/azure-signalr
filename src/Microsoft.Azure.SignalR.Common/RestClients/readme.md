@@ -5,7 +5,7 @@
 This is the AutoRest configuration file for SignalR.
 
 ``` yaml
-input-file: health.json
+input-file: https://raw.githubusercontent.com/Azure/azure-rest-api-specs/65532763b0ae845d1e0f449af3cab7983f18e082/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json
 ```
 
 ## Alternate settings
