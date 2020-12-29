@@ -34,5 +34,13 @@ namespace Microsoft.Azure.SignalR.Management
         Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifetime = null, CancellationToken cancellationToken = default);
 
         internal IEnumerable<ServiceEndpoint> GetServiceEndpoints(string hubName);
+
+        /// <summary>
+        /// Creates an instance of <see cref="IServiceHubContext"/> asynchronously. Compared to <seealso cref="CreateHubContextAsync(string, CancellationToken)"/>, allows users to specify endpoints directly. Designed for Azure SignalR Function Extension.
+        /// </summary>
+        /// <param name="hubName"></param>
+        /// <param name="endpoints">The service endpoints to operate on</param>
+        /// <param name="cancellationToken"></param>
+        internal Task<IServiceHubContext> CreateHubContextAsync(string hubName, IEnumerable<ServiceEndpoint> endpoints = null, CancellationToken cancellationToken = default);
     }
 }

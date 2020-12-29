@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading;
@@ -26,13 +27,15 @@ namespace Microsoft.Azure.SignalR.Management
             _context = context.Value;
         }
 
-        public async Task<IServiceHubLifetimeManager> CreateAsync(string hubName, CancellationToken cancellationToken, ILoggerFactory loggerFactoryPerHub = null)
+        public async Task<IServiceHubLifetimeManager> CreateAsync(string hubName, CancellationToken cancellationToken, ILoggerFactory loggerFactoryPerHub = null, IEnumerable<ServiceEndpoint> endpoints= null)
         {
             switch (_context.ServiceTransportType)
             {
                 case ServiceTransportType.Persistent:
                     {
-                        var container = _connectionContainerFactory.GetOrCreate(hubName, loggerFactoryPerHub);
+                        var container = (endpoints == null) ? 
+                            _connectionContainerFactory.GetOrCreate(hubName, loggerFactoryPerHub) 
+                            : _connectionContainerFactory.Create(hubName, endpoints);
                         //ensure connections to each endpoint are initialized, so that the online status of endpoints are valid
                         var connectionManager = new ServiceConnectionManager<Hub>();
                         connectionManager.SetServiceConnection(container);

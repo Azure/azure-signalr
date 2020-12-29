@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
@@ -18,9 +19,9 @@ namespace Microsoft.Azure.SignalR.Management
             _managerFactory = managerFactory;
         }
 
-        public async Task<IServiceHubContext> CreateAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
+        public async Task<IServiceHubContext> CreateAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default, IEnumerable<ServiceEndpoint> endpoints = null)
         {
-            var manager = await _managerFactory.CreateAsync(hubName, cancellationToken, loggerFactory);
+            var manager = await _managerFactory.CreateAsync(hubName, cancellationToken, loggerFactory,endpoints);
             var servicesPerHub = new ServiceCollection();
             servicesPerHub.AddSignalRCore();
             servicesPerHub.AddSingleton((HubLifetimeManager<Hub>)manager);

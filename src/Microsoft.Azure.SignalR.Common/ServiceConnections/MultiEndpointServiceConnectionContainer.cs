@@ -81,6 +81,8 @@ namespace Microsoft.Azure.SignalR
         {
         }
 
+        protected MultiEndpointServiceConnectionContainer() { }
+
         // for tests
         public IEnumerable<HubServiceEndpoint> GetOnlineEndpoints()
         {
@@ -222,7 +224,15 @@ namespace Microsoft.Azure.SignalR
 
         private Task WriteMultiEndpointMessageAsync(ServiceMessage serviceMessage, Func<IServiceConnectionContainer, Task> inner)
         {
-            var routed = GetRoutedEndpoints(serviceMessage)?
+            var routed = GetRoutedEndpoints(serviceMessage);
+            if (routed == null || routed.Count() == 0)
+            {
+                // check if the router returns any endpoint
+                Log.NoEndpointRouted(_logger, serviceMessage.GetType().Name);
+                return Task.CompletedTask;
+            }
+
+            var tasks = routed
                 .Select(endpoint =>
                 {
                     var connection = (endpoint as HubServiceEndpoint)?.ConnectionContainer;
@@ -247,19 +257,12 @@ namespace Microsoft.Azure.SignalR
                     }
                 }).ToArray();
 
-            if (routed == null || routed.Length == 0)
+            if (tasks.Length == 1)
             {
-                // check if the router returns any endpoint
-                Log.NoEndpointRouted(_logger, serviceMessage.GetType().Name);
-                return Task.CompletedTask;
+                return tasks[0];
             }
 
-            if (routed.Length == 1)
-            {
-                return routed[0];
-            }
-
-            return Task.WhenAll(routed);
+            return Task.WhenAll(tasks);
         }
 
         private void OnAdd(HubServiceEndpoint endpoint)
