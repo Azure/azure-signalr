@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,7 +44,6 @@ namespace Microsoft.Azure.SignalR.Management
         IEnumerable<ServiceEndpoint> IServiceContext.GetServiceEndpoints(string hubName)
         {
             return _endpointManager.GetEndpoints(hubName);
-        }
         }
     }
 }
