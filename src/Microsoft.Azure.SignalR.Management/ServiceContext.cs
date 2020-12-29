@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,9 +42,10 @@ namespace Microsoft.Azure.SignalR.Management
             (_serviceProvider as IDisposable)?.Dispose();
         }
 
-        public IEnumerable<ServiceEndpoint> GetServiceEndpoints(string hubName)
+        IEnumerable<ServiceEndpoint> IServiceContext.GetServiceEndpoints(string hubName)
         {
             return _endpointManager.GetEndpoints(hubName);
+        }
         }
     }
 }

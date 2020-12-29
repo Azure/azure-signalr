@@ -33,6 +33,6 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>Client endpoint and access token to Azure SignalR Service.</returns>
         Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifetime = null, CancellationToken cancellationToken = default);
 
-        IEnumerable<ServiceEndpoint> GetServiceEndpoints(string hubName);
+        internal IEnumerable<ServiceEndpoint> GetServiceEndpoints(string hubName);
     }
 }
