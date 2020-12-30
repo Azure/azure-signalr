@@ -12,10 +12,14 @@ namespace Microsoft.Azure.SignalR.Management
     internal class ServiceHubContextFactory
     {
         private readonly ServiceHubLifetimeManagerFactory _managerFactory;
+        private readonly NegotiateProcessor _negotiateProcessor;
+        private readonly IServiceEndpointManager _endpointManager;
 
-        public ServiceHubContextFactory(ServiceHubLifetimeManagerFactory managerFactory)
+        public ServiceHubContextFactory(ServiceHubLifetimeManagerFactory managerFactory, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager)
         {
             _managerFactory = managerFactory;
+            _negotiateProcessor = negotiateProcessor;
+            _endpointManager = endpointManager;
         }
 
         public async Task<IServiceHubContext> CreateAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
@@ -27,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Management
             var serviceProviderPerHub = servicesPerHub.BuildServiceProvider();
             // The impl of IHubContext<Hub> we want is an internal class. We can only get it by this way.
             var hubContext = serviceProviderPerHub.GetRequiredService<IHubContext<Hub>>();
-            return new ServiceHubContext(hubContext, manager, serviceProviderPerHub);
+            return new ServiceHubContext(hubName, hubContext, manager, serviceProviderPerHub, _negotiateProcessor, _endpointManager);
         }
     }
 }

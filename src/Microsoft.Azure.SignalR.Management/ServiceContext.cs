@@ -14,16 +14,12 @@ namespace Microsoft.Azure.SignalR.Management
     internal class ServiceContext : IServiceContext
     {
         private readonly ServiceHubContextFactory _serviceHubContextFactory;
-        private readonly NegotiateProcessor _negotiateProcessor;
         private readonly IServiceProvider _serviceProvider;
-        private readonly IServiceEndpointManager _endpointManager;
 
-        public ServiceContext(ServiceHubContextFactory serviceHubContextFactory, NegotiateProcessor negotiateProcessor, IServiceProvider serviceProvider, IServiceEndpointManager endpointManager)
+        public ServiceContext(ServiceHubContextFactory serviceHubContextFactory, IServiceProvider serviceProvider)
         {
             _serviceHubContextFactory = serviceHubContextFactory;
-            _negotiateProcessor = negotiateProcessor;
             _serviceProvider = serviceProvider;
-            _endpointManager = endpointManager;
         }
 
         public Task<IServiceHubContext> CreateHubContextAsync(string hubName, CancellationToken cancellationToken = default)
@@ -31,19 +27,9 @@ namespace Microsoft.Azure.SignalR.Management
             return _serviceHubContextFactory.CreateAsync(hubName, null, cancellationToken);
         }
 
-        public Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifetime = null, CancellationToken cancellationToken = default)
-        {
-            return _negotiateProcessor.GetClientEndpointAsync(hubName, httpContext, userId, claims, lifetime, cancellationToken);
-        }
-
         public void Dispose()
         {
             (_serviceProvider as IDisposable)?.Dispose();
-        }
-
-        IEnumerable<ServiceEndpoint> IServiceContext.GetServiceEndpoints(string hubName)
-        {
-            return _endpointManager.GetEndpoints(hubName);
         }
     }
 }
