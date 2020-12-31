@@ -66,7 +66,7 @@ namespace Microsoft.Azure.SignalR
         /// </return>
         public async Task<HttpOperationResponse> GetHealthStatusWithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;

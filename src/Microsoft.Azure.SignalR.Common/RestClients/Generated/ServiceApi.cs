@@ -101,7 +101,7 @@ namespace Microsoft.Azure.SignalR
             {
                 payloadMessage.Validate();
             }
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ValidationException(ValidationRules.CannotBeNull, "user");
             }
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;
@@ -428,7 +428,7 @@ namespace Microsoft.Azure.SignalR
             {
                 payloadMessage.Validate();
             }
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;
@@ -583,7 +583,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ValidationException(ValidationRules.CannotBeNull, "connectionId");
             }
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;
@@ -734,7 +734,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ValidationException(ValidationRules.CannotBeNull, "connectionId");
             }
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;
@@ -898,7 +898,7 @@ namespace Microsoft.Azure.SignalR
             {
                 payloadMessage.Validate();
             }
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;
@@ -1054,7 +1054,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ValidationException(ValidationRules.CannotBeNull, "group");
             }
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;
@@ -1217,7 +1217,7 @@ namespace Microsoft.Azure.SignalR
             {
                 payloadMessage.Validate();
             }
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;
@@ -1395,7 +1395,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ValidationException(ValidationRules.CannotBeNull, "connectionId");
             }
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;
@@ -1553,7 +1553,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ValidationException(ValidationRules.CannotBeNull, "connectionId");
             }
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;
@@ -1711,7 +1711,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ValidationException(ValidationRules.CannotBeNull, "user");
             }
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;
@@ -1873,7 +1873,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ValidationException(ValidationRules.CannotBeNull, "user");
             }
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;
@@ -2036,7 +2036,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ValidationException(ValidationRules.CannotBeNull, "user");
             }
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;
@@ -2186,7 +2186,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ValidationException(ValidationRules.CannotBeNull, "user");
             }
-            string apiVersion = "v1";
+            string apiVersion = "2020-10-01";
             // Tracing
             bool _shouldTrace = ServiceClientTracing.IsEnabled;
             string _invocationId = null;

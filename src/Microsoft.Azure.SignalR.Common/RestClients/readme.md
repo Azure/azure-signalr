@@ -5,7 +5,7 @@
 This is the AutoRest configuration file for SignalR.
 
 ``` yaml
-input-file: https://raw.githubusercontent.com/Azure/azure-rest-api-specs/65532763b0ae845d1e0f449af3cab7983f18e082/specification/signalr/data-plane/AzureSignalR/v1/azuresignalr.json
+input-file: https://raw.githubusercontent.com/Azure/azure-rest-api-specs/f0c15797105eb10d07c3dbff4680f9df95cc6201/specification/signalr/data-plane/AzureSignalR/preview/2020-10-01/azuresignalr.json
 ```
 
 ## Alternate settings
@@ -17,3 +17,4 @@ namespace: Microsoft.Azure.SignalR
 output-folder: Generated
 add-credentials: true
 use-internal-constructors: true
+sync-methods: None
