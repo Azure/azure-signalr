@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Microsoft.Azure.SignalR.Controllers.Common
 {
-    //[Authorize]
+    [Authorize]
     [Route("api/v1")]
     [Consumes("application/json")]
     internal abstract class SignalRServiceWebApiDefinition : ControllerBase
