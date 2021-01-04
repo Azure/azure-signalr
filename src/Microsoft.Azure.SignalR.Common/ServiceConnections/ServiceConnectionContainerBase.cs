@@ -550,7 +550,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private sealed class CustomizedPingTimer : IDisposable
+        internal protected sealed class CustomizedPingTimer : IDisposable
         {
             private readonly object _lock = new object();
             private readonly long _defaultPingTicks;
@@ -576,14 +576,13 @@ namespace Microsoft.Azure.SignalR
                 _dueTime = dueTime;
                 _intervalTime = intervalTime;
                 _defaultPingTicks = intervalTime.Seconds * Stopwatch.Frequency;
-
-                _timer = Init();
             }
 
             public bool Start()
             {
                 if (Interlocked.Increment(ref _counter) == 1)
                 {
+                    _timer = Init();
                     _timer.Start();
                     _ = PingAsync(_timer);
                     return true;
@@ -593,7 +592,7 @@ namespace Microsoft.Azure.SignalR
 
             public void Stop()
             {
-                // might be called by multi-thread, lock to ensure thread-safe for _counter update
+                // might be called by multi-thread, lock to ensure thread-safety for _counter update
                 lock (_lock)
                 {
                     if (Interlocked.Read(ref _counter) == 0)
@@ -604,14 +603,21 @@ namespace Microsoft.Azure.SignalR
                     }
                     if (Interlocked.Decrement(ref _counter) == 0)
                     {
-                        _timer.Stop();
+                        CleanupTimer();
                     }
                 }
             }
 
             public void Dispose()
             {
-                _timer.Stop();
+                CleanupTimer();
+            }
+
+            private void CleanupTimer()
+            {
+                var timer = Interlocked.Exchange(ref _timer, null);
+                timer?.Stop();
+                (timer as IDisposable)?.Dispose();
             }
 
             private TimerAwaitable Init()
