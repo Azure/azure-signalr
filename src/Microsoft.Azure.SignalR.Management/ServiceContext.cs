@@ -40,15 +40,5 @@ namespace Microsoft.Azure.SignalR.Management
         {
             (_serviceProvider as IDisposable)?.Dispose();
         }
-
-        IEnumerable<ServiceEndpoint> IServiceContext.GetServiceEndpoints(string hubName)
-        {
-            return _endpointManager.GetEndpoints(hubName);
-        }
-
-        Task<IServiceHubContext> IServiceContext.CreateHubContextAsync(string hubName, IEnumerable<ServiceEndpoint> endpoints, CancellationToken cancellationToken)
-        {
-            return _serviceHubContextFactory.CreateAsync(hubName, null, cancellationToken, endpoints);
-        }
     }
 }

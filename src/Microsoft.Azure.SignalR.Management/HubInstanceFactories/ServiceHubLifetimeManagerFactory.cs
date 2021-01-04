@@ -49,5 +49,13 @@ namespace Microsoft.Azure.SignalR.Management
                 default: throw new InvalidEnumArgumentException(nameof(ContextOptions.ServiceTransportType), (int)_context.ServiceTransportType, typeof(ServiceTransportType));
             }
         }
+
+        public IServiceHubLifetimeManager Create(string hubName, IEnumerable<ServiceEndpoint> endpoints)
+        {
+            var container = _connectionContainerFactory.Create(hubName, endpoints);
+            var connectionManager = new ServiceConnectionManager<Hub>();
+            connectionManager.SetServiceConnection(container);
+            return ActivatorUtilities.CreateInstance<WebSocketsHubLifetimeManager<Hub>>(_serviceProvider, connectionManager);
+        }
     }
 }

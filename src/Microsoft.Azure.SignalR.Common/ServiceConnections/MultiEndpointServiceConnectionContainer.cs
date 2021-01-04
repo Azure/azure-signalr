@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR
             IServiceEndpointManager endpointManager,
             IMessageRouter router,
             ILoggerFactory loggerFactory,
-            TimeSpan? scaleTimeout = null)
+            TimeSpan? scaleTimeout = null) : this(loggerFactory)
         {
             if (generator == null)
             {
@@ -40,7 +40,6 @@ namespace Microsoft.Azure.SignalR
 
             _hubName = hub;
             _router = router ?? throw new ArgumentNullException(nameof(router));
-            _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
             _serviceEndpointManager = endpointManager;
             _scaleTimeout = scaleTimeout ?? Constants.Periods.DefaultScaleTimeout;
 
@@ -81,7 +80,10 @@ namespace Microsoft.Azure.SignalR
         {
         }
 
-        protected MultiEndpointServiceConnectionContainer() { }
+        protected MultiEndpointServiceConnectionContainer(ILoggerFactory loggerFactory)
+        {
+            _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
+        }
 
         // for tests
         public IEnumerable<HubServiceEndpoint> GetOnlineEndpoints()
@@ -190,7 +192,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
+        internal virtual IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
         {
             if (!_routerEndpoints.needRouter)
             {

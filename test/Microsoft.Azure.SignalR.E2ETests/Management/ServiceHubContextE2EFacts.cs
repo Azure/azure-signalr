@@ -294,6 +294,53 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        internal async Task WithEndpointsTest()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var serviceProvider = new ServiceCollection().AddSignalRServiceContext<ContextOptionsSetup>().AddSingleton(TestConfiguration.Instance.Configuration).AddSingleton(loggerFactory).BuildServiceProvider();
+                var hubContext = await serviceProvider.GetRequiredService<IServiceContext>().CreateHubContextAsync(HubName);
+                var endpointManager = serviceProvider.GetRequiredService<IServiceEndpointManager>();
+                var endpoints = endpointManager.GetEndpoints(HubName).ToArray();
+                if (endpoints.Length < 2)
+                {
+                    throw new InvalidOperationException("This test need at lease two Azure SignalR instance endpoints.");
+                };
+                var connections = endpoints.Select(endpoint =>
+                {
+                    var provider = endpointManager.GetEndpointProvider(endpoint);
+                    var clientEndpoint = provider.GetClientEndpoint(HubName, null, null);
+                    var token = provider.GenerateClientAccessTokenAsync(HubName).Result;
+                    return CreateHubConnection(clientEndpoint, token);
+                }).ToArray();
+                using var cancellationTokenSource = new CancellationTokenSource();
+                await Task.WhenAll(connections.Select(conn => conn.StartAsync()));
+                HandleHubConnection(connections, cancellationTokenSource);
+                var receivedFlags = new bool[endpoints.Length];
+                for (var i = 0; i < endpoints.Length; i++)
+                {
+                    var j = i;
+                    connections[j].On(MethodName, (string message) =>
+                    {
+                        receivedFlags[j] = true;
+                    });
+                }
+
+                var subHubContext = hubContext.WithEndpoints(endpoints.Take(1));
+                await subHubContext.Clients.All.SendAsync(MethodName, Message);
+                await Task.Delay(TimeSpan.FromSeconds(10));
+
+                Assert.False(cancellationTokenSource.Token.IsCancellationRequested);
+                Assert.True(receivedFlags[0]);
+                for (var i = 1; i < receivedFlags.Length; i++)
+                {
+                    Assert.False(receivedFlags[i]);
+                }
+            }
+        }
+
         [ConditionalFact(Skip = "TODO: move this test into ServiceConnectionContainerBase or WeakConnectionContainer")]
         [SkipIfConnectionStringNotPresent]
         //TODO this test doesn't work anymore. 

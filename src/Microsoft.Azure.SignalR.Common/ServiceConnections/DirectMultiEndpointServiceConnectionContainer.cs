@@ -7,8 +7,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
 
-namespace Microsoft.Azure.SignalR.Common.ServiceConnections
+namespace Microsoft.Azure.SignalR
 {
     /// <summary>
     /// A Multiple endpoints service connection container which sends message directly without router.
@@ -18,12 +19,12 @@ namespace Microsoft.Azure.SignalR.Common.ServiceConnections
     {
         private readonly IReadOnlyCollection<HubServiceEndpoint> _targetEndpoints;
 
-        public DirectMultiEndpointServiceConnectionContainer(IReadOnlyCollection<HubServiceEndpoint> targetEndpoints)
+        public DirectMultiEndpointServiceConnectionContainer(IReadOnlyCollection<HubServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory) : base(loggerFactory)
         {
             _targetEndpoints = targetEndpoints;
         }
 
-        internal new IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message) => _targetEndpoints;
+        internal override IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message) => _targetEndpoints;
 
         public new Task ConnectionInitializedTask => Task.WhenAll(from endpoint in _targetEndpoints
                                                                   select endpoint.ConnectionContainer.ConnectionInitializedTask);

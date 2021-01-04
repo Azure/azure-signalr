@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.Azure.SignalR.Common.ServiceConnections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -37,12 +36,13 @@ namespace Microsoft.Azure.SignalR.Management
 
         public DirectMultiEndpointServiceConnectionContainer Create(string hubName, IEnumerable<ServiceEndpoint> targetEndpoints)
         {
-            GetOrCreate(hubName);
             var endpoints = _endpointManager.GetEndpoints(hubName)
                                             .Intersect(targetEndpoints, EqualityComparer<ServiceEndpoint>.Default)
                                             .Select(endpoint => endpoint as HubServiceEndpoint)
                                             .ToList();
-            return new DirectMultiEndpointServiceConnectionContainer(endpoints);
+            return endpoints.Count!=targetEndpoints.Count()
+                ? throw new AzureSignalRInvalidEndpointException(targetEndpoints.Except(endpoints, EqualityComparer<ServiceEndpoint>.Default).ToArray())
+                : new DirectMultiEndpointServiceConnectionContainer(endpoints, _loggerFactory);
         }
 
         /// <summary>

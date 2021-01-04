@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 
@@ -22,5 +22,12 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         /// <returns></returns>
         Task DisposeAsync();
+
+        internal IEnumerable<ServiceEndpoint> Endpoints { get; }
+
+        /// <summary>
+        /// Creates an instance of <see cref="IServiceHubContext"/> which skips internal router and uses specified service endpoints asynchronously.
+        /// </summary>
+        internal IServiceHubContext WithEndpoints(IEnumerable<ServiceEndpoint> endpoints);
     }
 }
