@@ -19,7 +19,8 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
         public override IDuplexPipe Transport { get; set; }
 
         IMockService _mockService;
-        MockServiceSideConnection _svcSideConnection;
+        public MockServiceSideConnection MyServiceSideConnection { get; private set; }
+        public MockServiceConnection MyMockServiceConnetion { get; set; }
 
         public MockServiceConnectionContext(IMockService mockService, HubServiceEndpoint endpoint, string target, string id)
         {
@@ -33,14 +34,23 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
             Transport = duplexPipePair.Transport;
 
             _mockService = mockService;
-            _svcSideConnection = _mockService.RegisterSDKConnectionContext(this, endpoint, target, duplexPipePair.Application);
+            MyServiceSideConnection = _mockService.RegisterSDKConnectionContext(this, endpoint, target, duplexPipePair.Application);
         }
 
         public override async ValueTask DisposeAsync()
         {
-            await _mockService.StopConnectionAsync(_svcSideConnection);
-        }
+            //bugbug
+            //await _mockService.StopConnectionAsync(_svcSideConnection);
+            Transport.Output.Complete();
+            Transport.Input.Complete();
+            Transport.Input.CancelPendingRead();
 
-        public MockServiceConnection MyMockServiceConnetion { get; set; }
+            // we don't have any receiving or sending loops
+            // so we await for the other end of the pipe to finish instead
+            await MyServiceSideConnection.ProcessIncoming;
+            //Console.WriteLine("sdk dispose is done");
+
+            _mockService.UnregisterMockServiceConnection(this);
+        }
     }
 }
