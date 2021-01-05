@@ -26,7 +26,6 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
 {
     public class MessageOrderTests : VerifiableLoggedTest
     {
-        //uncomment TODOs in tests when complete.
         const bool MessageOrderFixed = false; 
         private ITestOutputHelper _output;
 
@@ -99,35 +98,34 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
                     // finally, get ready to verify the order of messages
                     int actualCallbackNum = (int)invMsg.Arguments[0];
 
-                    // TODO: unreable code
-                    // if (MessageOrderFixed)
-                    // {
-                    //     // this check works for both primary and secondary connections
-                    //     Assert.Equal(actualCallbackNum, msgCount);
-                    // }
+                    if (MessageOrderFixed)
+                    {
+                        // this check works for both primary and secondary connections
+                        Assert.Equal(actualCallbackNum, msgCount);
+                    }
                 }
 
                 // TODO: verify we received no extra BroadcastDataMessage - need TryPeek method (async with timeout?)
-                // if (MessageOrderFixed)
-                // {
-                //     // Did we got the expected number of calls and all of them stick to exactly one primary and one secondary?
-                //     var primary = counts.Where(c => c.Key.Endpoint.EndpointType == EndpointType.Primary);
-                // 
-                //     Assert.Single(primary);
-                // 
-                //     // and the primary is the one we used to send client message
-                //     Assert.Equal(primary.FirstOrDefault().Key, primarySvc0);
-                // 
-                //     // and it received N messages
-                //     Assert.Equal(primary.FirstOrDefault().Value, MsgNum);
-                // 
-                //     // for every secondary verify that
-                //     // - their number equals to the number of seconary endpoints
-                //     // - each received N messages
-                //     var secondary = counts.Where(c => c.Key.Endpoint.EndpointType == EndpointType.Secondary);
-                //     Assert.Single(secondary);
-                //     Assert.Equal(secondary.FirstOrDefault().Value, MsgNum);
-                // }
+                if (MessageOrderFixed)
+                {
+                    // Did we got the expected number of calls and all of them stick to exactly one primary and one secondary?
+                    var primary = counts.Where(c => c.Key.Endpoint.EndpointType == EndpointType.Primary);
+                
+                    Assert.Single(primary);
+                
+                    // and the primary is the one we used to send client message
+                    Assert.Equal(primary.FirstOrDefault().Key, primarySvc0);
+                
+                    // and it received N messages
+                    Assert.Equal(primary.FirstOrDefault().Value, MsgNum);
+                
+                    // for every secondary verify that
+                    // - their number equals to the number of seconary endpoints
+                    // - each received N messages
+                    var secondary = counts.Where(c => c.Key.Endpoint.EndpointType == EndpointType.Secondary);
+                    Assert.Single(secondary);
+                    Assert.Equal(secondary.FirstOrDefault().Value, MsgNum);
+                }
             }
         }
 
