@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var hubContext = await manager.CreateHubContextAsync(HubName);
             for (int i = 0; i < 3; i++)
             {
-                var accessInfo = await hubContext.GetClientEndpointAsync(null, userId, claims, _tokenLifeTime);
+                var accessInfo = await (hubContext as IInternalServiceHubContext).NegotiateAsync(null, userId, claims, _tokenLifeTime);
                 var tokenString = accessInfo.AccessToken;
                 var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 o.ServiceEndpoints = endpoints;
             }).WithRouter(routerMock.Object).Build();
             var hubContext = await manager.CreateHubContextAsync(HubName);
-            var clientEndpoint = (await hubContext.GetClientEndpointAsync()).Url;
+            var clientEndpoint = (await (hubContext as IInternalServiceHubContext).NegotiateAsync()).Url;
             Assert.Equal("https://remote/client/?hub=signalrbench", clientEndpoint);
         }
     }

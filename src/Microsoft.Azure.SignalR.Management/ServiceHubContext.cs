@@ -13,7 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class ServiceHubContext : IServiceHubContext
+    internal class ServiceHubContext : IInternalServiceHubContext
     {
         private readonly string _hubName;
         private readonly IHubContext<Hub> _hubContext;
@@ -52,11 +52,11 @@ namespace Microsoft.Azure.SignalR.Management
             ServiceProvider?.Dispose();
         }
 
-        Task<NegotiationResponse> IServiceHubContext.GetClientEndpointAsync(HttpContext httpContext, string userId, IList<Claim> claims, TimeSpan? lifetime, CancellationToken cancellationToken)
+        Task<NegotiationResponse> IInternalServiceHubContext.NegotiateAsync(HttpContext httpContext, string userId, IList<Claim> claims, TimeSpan? lifetime, CancellationToken cancellationToken)
         {
-            return _negotiateProcessor.GetClientEndpointAsync(_hubName, httpContext, userId, claims, lifetime, cancellationToken);
+            return _negotiateProcessor.NegotiateAsync(_hubName, httpContext, userId, claims, lifetime, cancellationToken);
         }
 
-        IEnumerable<ServiceEndpoint> IServiceHubContext.GetServiceEndpoints() => _endpointManager.GetEndpoints(_hubName);
+        IEnumerable<ServiceEndpoint> IInternalServiceHubContext.GetServiceEndpoints() => _endpointManager.GetEndpoints(_hubName);
     }
 }

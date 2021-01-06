@@ -46,7 +46,7 @@ namespace Microsoft.Azure.SignalR.Management.E2ETests
             //reduce the effect of randomness
             for (int i = 0; i < 5; i++)
             {
-                var clientEndoint = await negotiateProcessor.GetClientEndpointAsync(hubName);
+                var clientEndoint = await negotiateProcessor.NegotiateAsync(hubName);
                 var expectedUrl = ClientEndpointUtils.GetExpectedClientEndpoint(hubName, null, realEndpoint);
                 Assert.Equal(expectedUrl, clientEndoint.Url);
             }
