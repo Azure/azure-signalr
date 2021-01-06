@@ -28,7 +28,6 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
         public IHubClients ClientManager { get; }
         public IHubLifetimeManager LifetimeManager { get; }
         public ConnectionHandler ConnectionHandler { get; }
-        public HubCallerContext CallerContext { get; }
         public GroupManager UserGroupManager { get; } = new GroupManager();
     }
 }

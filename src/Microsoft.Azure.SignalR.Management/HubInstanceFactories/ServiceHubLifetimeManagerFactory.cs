@@ -32,10 +32,10 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 case ServiceTransportType.Persistent:
                     {
-                        var container = _connectionContainerFactory.Create(hubName, loggerFactoryPerHub);
+                        var container = _connectionContainerFactory.GetOrCreate(hubName, loggerFactoryPerHub);
+                        //ensure connections to each endpoint are initialized, so that the online status of endpoints are valid
                         var connectionManager = new ServiceConnectionManager<Hub>();
                         connectionManager.SetServiceConnection(container);
-                        _ = connectionManager.StartAsync();
                         await container.ConnectionInitializedTask.OrTimeout(cancellationToken);
                         return loggerFactoryPerHub == null ? ActivatorUtilities.CreateInstance<WebSocketsHubLifetimeManager<Hub>>(_serviceProvider, connectionManager) : ActivatorUtilities.CreateInstance<WebSocketsHubLifetimeManager<Hub>>(_serviceProvider, connectionManager, loggerFactoryPerHub);
                     }
