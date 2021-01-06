@@ -60,7 +60,7 @@ namespace Microsoft.Azure.SignalR.Management
                     AccessToken = tokenTask.Result
                 };
             }
-            catch (Exception e)
+            catch (Exception e) when (e is TaskCanceledException || e is TimeoutException)
             {
                 throw new AzureSignalRException(ErrorMsg, e);
             }
