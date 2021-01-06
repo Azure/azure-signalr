@@ -151,7 +151,7 @@ namespace Microsoft.Azure.SignalR
                 if (!endpoints.TryGetValue(hub, out var updatedEndpoints) 
                     || updatedEndpoints.Count == 0)
                 {
-                    return;
+                    continue;
                 }
                 var oldEndpoints = _endpointsPerHub[hub];
                 var newEndpoints = oldEndpoints.ToList();

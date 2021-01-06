@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         public void TestClientQueryString(string message)
         {
-            if (Context.GetHttpContext().Request.QueryString != null)
+            if (Context.GetHttpContext().Request.QueryString.Value != null)
             {
                 Clients.Caller.SendAsync(nameof(TestClientQueryString), message);
             }

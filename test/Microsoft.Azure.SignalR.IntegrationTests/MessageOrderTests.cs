@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
 {
     public class MessageOrderTests : VerifiableLoggedTest
     {
-        const bool MessageOrderFixed = false;
+        const bool MessageOrderFixed = false; 
         private ITestOutputHelper _output;
 
         public MessageOrderTests(ITestOutputHelper output) : base(output)
@@ -105,21 +105,20 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
                     }
                 }
 
-                // todo: verify we received no extra BroadcastDataMessage - need TryPeek method (async with timeout?)
-
+                // TODO: verify we received no extra BroadcastDataMessage - need TryPeek method (async with timeout?)
                 if (MessageOrderFixed)
                 {
                     // Did we got the expected number of calls and all of them stick to exactly one primary and one secondary?
                     var primary = counts.Where(c => c.Key.Endpoint.EndpointType == EndpointType.Primary);
-
+                
                     Assert.Single(primary);
-
+                
                     // and the primary is the one we used to send client message
                     Assert.Equal(primary.FirstOrDefault().Key, primarySvc0);
-
+                
                     // and it received N messages
                     Assert.Equal(primary.FirstOrDefault().Value, MsgNum);
-
+                
                     // for every secondary verify that
                     // - their number equals to the number of seconary endpoints
                     // - each received N messages
