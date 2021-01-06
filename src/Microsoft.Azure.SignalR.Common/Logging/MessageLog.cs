@@ -140,19 +140,9 @@ namespace Microsoft.Azure.SignalR
             _receivedMessageFromService(logger, message.TracingId, message.ConnectionId, null);
         }
 
-        public static void SucceededToSendMessage<T>(ILogger logger, T message) where T : ServiceMessage, IMessageWithTracingId
-        {
-            _succeededToSendMessage(logger, message.TracingId, null);
-        }
-
         public static void SucceededToSendMessage(ILogger logger, IMessageWithTracingId message)
         {
             _succeededToSendMessage(logger, message.TracingId, null);
-        }
-
-        public static void FailedToSendMessage<T>(ILogger logger, T message, Exception ex) where T : ServiceMessage, IMessageWithTracingId
-        {
-            _failedToSendMessage(logger, message.TracingId, ex);
         }
 
         public static void FailedToSendMessage(ILogger logger, IMessageWithTracingId message, Exception ex)

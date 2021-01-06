@@ -17,9 +17,9 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly MultiEndpointConnectionContainerFactory _connectionContainerFactory;
-        private readonly ServiceManagerContext _context;
+        private readonly ContextOptions _context;
 
-        public ServiceHubLifetimeManagerFactory(IServiceProvider sp, IOptions<ServiceManagerContext> context, MultiEndpointConnectionContainerFactory connectionContainerFactory)
+        public ServiceHubLifetimeManagerFactory(IServiceProvider sp, IOptions<ContextOptions> context, MultiEndpointConnectionContainerFactory connectionContainerFactory)
         {
             _serviceProvider = sp;
             _connectionContainerFactory = connectionContainerFactory;
@@ -32,10 +32,10 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 case ServiceTransportType.Persistent:
                     {
-                        var container = _connectionContainerFactory.Create(hubName, loggerFactoryPerHub);
+                        var container = _connectionContainerFactory.GetOrCreate(hubName, loggerFactoryPerHub);
+                        //ensure connections to each endpoint are initialized, so that the online status of endpoints are valid
                         var connectionManager = new ServiceConnectionManager<Hub>();
                         connectionManager.SetServiceConnection(container);
-                        _ = connectionManager.StartAsync();
                         await container.ConnectionInitializedTask.OrTimeout(cancellationToken);
                         return loggerFactoryPerHub == null ? ActivatorUtilities.CreateInstance<WebSocketsHubLifetimeManager<Hub>>(_serviceProvider, connectionManager) : ActivatorUtilities.CreateInstance<WebSocketsHubLifetimeManager<Hub>>(_serviceProvider, connectionManager, loggerFactoryPerHub);
                     }
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR.Management
                     {
                         return new RestHubLifetimeManager(hubName, _context.ServiceEndpoints.Single(), _context.ProductInfo, _context.ApplicationName);
                     }
-                default: throw new InvalidEnumArgumentException(nameof(ServiceManagerContext.ServiceTransportType), (int)_context.ServiceTransportType, typeof(ServiceTransportType));
+                default: throw new InvalidEnumArgumentException(nameof(ContextOptions.ServiceTransportType), (int)_context.ServiceTransportType, typeof(ServiceTransportType));
             }
         }
     }

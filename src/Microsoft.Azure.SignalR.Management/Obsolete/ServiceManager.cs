@@ -9,40 +9,25 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common.RestClients;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Microsoft.Rest;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     internal class ServiceManager : IServiceManager
     {
-        private readonly ServiceEndpointProvider _endpointProvider;
-        private readonly IServerNameProvider _serverNameProvider;
-        private readonly ServiceEndpoint _endpoint;
         private readonly RestClientFactory _restClientFactory;
         private readonly ServiceHubContextFactory _serviceHubContextFactory;
         private readonly IServiceProvider _serviceProvider;
-        private readonly bool _disposeServiceProvider;
+        private readonly ServiceEndpoint _endpoint;
+        private readonly IServiceEndpointProvider _endpointProvider;
 
-        public ServiceManager(IOptions<ServiceManagerContext> context, RestClientFactory restClientFactory, ServiceHubContextFactory serviceHubContextFactory, IServiceProvider serviceProvider)
+        public ServiceManager(RestClientFactory restClientFactory, ServiceHubContextFactory serviceHubContextFactory, IServiceEndpointManager endpointManager, IServiceProvider serviceProvider)
         {
-            _endpoint = context.Value.ServiceEndpoints.Single();//temp solution
-
-            _serverNameProvider = new DefaultServerNameProvider();
-
-            var serviceOptions = Options.Create(new ServiceOptions
-            {
-                ApplicationName = context.Value.ApplicationName,
-                Proxy = context.Value.Proxy
-            }).Value;
-
-            _endpointProvider = new ServiceEndpointProvider(_serverNameProvider, _endpoint, serviceOptions, NullLoggerFactory.Instance);
-
             _restClientFactory = restClientFactory;
             _serviceHubContextFactory = serviceHubContextFactory;
             _serviceProvider = serviceProvider;
-            _disposeServiceProvider = context.Value.DisposeServiceProvider;
+            _endpoint = endpointManager.Endpoints.Single().Key;
+            _endpointProvider = endpointManager.GetEndpointProvider(_endpoint);
         }
 
         public Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default) =>
@@ -50,10 +35,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public void Dispose()
         {
-            if (_disposeServiceProvider)
-            {
-                (_serviceProvider as IDisposable).Dispose();
-            }
+            ((IDisposable)_serviceProvider).Dispose();
         }
 
         public string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)

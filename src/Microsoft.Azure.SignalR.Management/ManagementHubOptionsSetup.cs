@@ -42,7 +42,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 options.HandshakeTimeout = DefaultHandshakeTimeout;
             }
-#if NETCOREAPP3_0
+#if NETCOREAPP
             if (options.MaximumReceiveMessageSize == null)
             {
                 options.MaximumReceiveMessageSize = DefaultMaximumMessageSize;

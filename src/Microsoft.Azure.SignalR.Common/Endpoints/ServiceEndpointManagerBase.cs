@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.Azure.SignalR.Common.Endpoints;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
@@ -28,7 +27,7 @@ namespace Microsoft.Azure.SignalR
         public event EndpointEventHandler OnRemove;
         
         protected ServiceEndpointManagerBase(IServiceEndpointOptions options, ILogger logger)
-            : this(options.GetMergedEndpoints(), logger)
+            : this(ServiceEndpointUtility.Merge(options.ConnectionString, options.Endpoints), logger)
         {
         }
 
@@ -152,7 +151,7 @@ namespace Microsoft.Azure.SignalR
                 if (!endpoints.TryGetValue(hub, out var updatedEndpoints) 
                     || updatedEndpoints.Count == 0)
                 {
-                    return;
+                    continue;
                 }
                 var oldEndpoints = _endpointsPerHub[hub];
                 var newEndpoints = oldEndpoints.ToList();

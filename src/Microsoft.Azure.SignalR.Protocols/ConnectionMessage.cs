@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A open-connection message.
     /// </summary>
-    public class OpenConnectionMessage : ConnectionMessage
+    public class OpenConnectionMessage : ConnectionMessage, IHasProtocol
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="OpenConnectionMessage"/> class.
@@ -69,6 +69,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the associated query string.
         /// </summary>
         public string QueryString { get; set; }
+
+        /// <summary>
+        /// Gets or sets the protocol for new connection.
+        /// </summary>
+        public string Protocol { get; set; }
     }
 
     /// <summary>
