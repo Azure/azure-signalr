@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class ServiceEndpoint
+    public class ServiceEndpoint : IDisposable
     {
         public string ConnectionString { get; }
 
@@ -133,6 +133,14 @@ namespace Microsoft.Azure.SignalR
             else
             {
                 return (key, EndpointType.Primary);
+            }
+        }
+
+        public void Dispose()
+        {
+            if (AccessKey is IDisposable d)
+            {
+                d.Dispose();
             }
         }
     }

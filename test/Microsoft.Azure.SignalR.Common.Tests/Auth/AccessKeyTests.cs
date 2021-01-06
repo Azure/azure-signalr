@@ -8,7 +8,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         private const string TestClientId = "";
         private const string TestClientSecret = "";
         private const string TestTenantId = "";
-
         private const string TestEndpoint = "http://localhost";
         private int? TestPort = 8080;
 
