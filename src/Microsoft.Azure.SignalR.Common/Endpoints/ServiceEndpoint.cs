@@ -2,10 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using Microsoft.Identity.Client;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class ServiceEndpoint
+    public class ServiceEndpoint : IDisposable
     {
         public string ConnectionString { get; }
 
@@ -14,6 +15,10 @@ namespace Microsoft.Azure.SignalR
         public virtual string Name { get; internal set; }
 
         public string Endpoint => AccessKey?.Endpoint;
+
+        private const int DefaultPort = 443;
+
+        private const string DefaultVersion = "1.0";
 
         /// <summary>
         /// The customized endpoint that the client will be redirected to
@@ -47,6 +52,26 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public EndpointMetrics EndpointMetrics { get; internal set; } = new EndpointMetrics();
 
+        public static ServiceEndpoint CreateWithAzureActiveDirectory(string endpoint, IConfidentialClientApplication app)
+        {
+            var options = new AadApplicationOptions(app);
+            var accessKey = new AadAccessKey(options, endpoint, DefaultPort);
+            return new ServiceEndpoint(accessKey);
+        }
+
+        public static ServiceEndpoint CreateWithManagedIdentity(string endpoint)
+        {
+            var accessKey = new AadAccessKey(new AadManagedIdentityOptions(), endpoint, DefaultPort);
+            return new ServiceEndpoint(accessKey);
+        }
+
+        internal ServiceEndpoint(AccessKey key)
+        {
+            AccessKey = key;
+            Version = DefaultVersion;
+            ClientEndpoint = null;
+        }
+
         public ServiceEndpoint(string key, string connectionString) : this(connectionString)
         {
             (Name, EndpointType) = ParseKey(key);
@@ -59,7 +84,9 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException($"'{nameof(connectionString)}' cannot be null or whitespace", nameof(connectionString));
             }
 
-            (AccessKey, Version, ClientEndpoint) = ConnectionStringParser.Parse(connectionString);
+            AccessKey = ConnectionStringParser.Parse(connectionString, out var version, out var clientEndpoint);
+            Version = version;
+            ClientEndpoint = clientEndpoint;
 
             EndpointType = type;
             ConnectionString = connectionString;
@@ -106,7 +133,7 @@ namespace Microsoft.Azure.SignalR
                 return true;
             }
 
-            if (!(obj is ServiceEndpoint that))
+            if (obj is not ServiceEndpoint that)
             {
                 return false;
             }
@@ -133,6 +160,14 @@ namespace Microsoft.Azure.SignalR
             else
             {
                 return (key, EndpointType.Primary);
+            }
+        }
+
+        public void Dispose()
+        {
+            if (AccessKey is IDisposable d)
+            {
+                d.Dispose();
             }
         }
     }

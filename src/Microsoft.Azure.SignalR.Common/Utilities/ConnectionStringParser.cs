@@ -27,6 +27,7 @@ namespace Microsoft.Azure.SignalR
         private const string TenantIdProperty = "tenantId";
         private const string ValidVersionRegex = "^" + SupportedVersion + @"\.\d+(?:[\w-.]+)?$";
         private const string VersionProperty = "version";
+
         private static readonly string InvalidPortValue = $"Invalid value for {PortProperty} property.";
 
         private static readonly char[] KeyValueSeparator = { '=' };
@@ -38,13 +39,14 @@ namespace Microsoft.Azure.SignalR
             $"Connection string missing required properties {ClientSecretProperty} or {ClientCertProperty}.";
 
         private static readonly string MissingEndpointProperty =
-                                            $"Connection string missing required properties {EndpointProperty}.";
+            $"Connection string missing required properties {EndpointProperty}.";
 
         private static readonly string MissingTenantIdProperty =
             $"Connection string missing required properties {TenantIdProperty}.";
+
         private static readonly char[] PropertySeparator = { ';' };
 
-        internal static (AccessKey accessKey, string version, string clientEndpoint) Parse(string connectionString)
+        internal static AccessKey Parse(string connectionString, out string version, out string clientEndpoint)
         {
             var properties = connectionString.Split(PropertySeparator, StringSplitOptions.RemoveEmptyEntries);
             if (properties.Length < 2)
@@ -80,7 +82,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             // parse and validate version.
-            string version = null;
+            version = null;
             if (dict.TryGetValue(VersionProperty, out var v))
             {
                 if (!Regex.IsMatch(v, ValidVersionRegex))
@@ -105,7 +107,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             // parse and validate clientEndpoint.
-            if (dict.TryGetValue(ClientEndpointProperty, out var clientEndpoint))
+            if (dict.TryGetValue(ClientEndpointProperty, out clientEndpoint))
             {
                 if (!ValidateEndpoint(clientEndpoint))
                 {
@@ -119,7 +121,7 @@ namespace Microsoft.Azure.SignalR
                 "aad" => BuildAadAccessKey(dict, endpoint, port),
                 _ => BuildAccessKey(dict, endpoint, port),
             };
-            return (accessKey, version, clientEndpoint);
+            return accessKey;
         }
 
         internal static bool ValidateEndpoint(string endpoint)

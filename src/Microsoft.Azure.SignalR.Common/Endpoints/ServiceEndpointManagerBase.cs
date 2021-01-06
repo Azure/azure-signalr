@@ -230,6 +230,9 @@ namespace Microsoft.Azure.SignalR
 
             // Set complete
             endpoint.CompleteScale();
+
+            // Dispose endpoint
+            endpoint.Dispose();
         }
 
         private void UpdateEndpoints(Dictionary<ServiceEndpoint, ServiceEndpoint> updatedEndpoints,

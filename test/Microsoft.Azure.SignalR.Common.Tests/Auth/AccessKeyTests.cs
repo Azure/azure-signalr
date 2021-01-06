@@ -8,7 +8,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         private const string TestClientId = "";
         private const string TestClientSecret = "";
         private const string TestTenantId = "";
-
         private const string TestEndpoint = "http://localhost";
         private int? TestPort = 8080;
 
@@ -32,7 +31,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         [Fact(Skip ="Provide valid aad options")]
         public async Task TestAuthenticateAsync()
         {
-            var options = new AadApplicationOptions(TestClientId, TestTenantId).WithClientSecret(TestClientSecret);
+            var options = new AadApplicationOptions(TestClientId, TestTenantId);
+            options.WithClientSecret(TestClientSecret);
             var key = new AadAccessKey(options, TestEndpoint, TestPort);
             await key.AuthorizeAsync("serverId");
 

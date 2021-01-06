@@ -4,6 +4,7 @@
 using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Microsoft.Identity.Client;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -19,27 +20,36 @@ namespace Microsoft.Azure.SignalR
 
         public string TenantId { get; }
 
+        public IConfidentialClientApplication Application { get; private set; } = null;
+
         internal override string AuthType => "AzureActiveDirectory";
 
         public AadApplicationOptions(string clientId, string tenantId)
         {
             if (!Guid.TryParseExact(tenantId, "D", out _))
             {
-                throw new FormatException($"{tenantId} is not a valid tenandId, should be [xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx]");
+                throw new FormatException($"The given tenantId \"{tenantId}\" is not a valid guid.");
             }
             TenantId = tenantId;
             ClientId = clientId;
         }
 
+        public AadApplicationOptions(IConfidentialClientApplication app)
+        {
+            Application = app;
+        }
+
         public AadApplicationOptions WithClientSecret(string secret)
         {
             ClientSecret = secret;
+            Application = AzureActiveDirectoryHelper.BuildApplication(this);
             return this;
         }
 
         public AadApplicationOptions WithClientCert(X509Certificate2 cert)
         {
             ClientCert = cert;
+            Application = AzureActiveDirectoryHelper.BuildApplication(this);
             return this;
         }
 
@@ -50,8 +60,7 @@ namespace Microsoft.Azure.SignalR
 
         public override async Task<string> AcquireAccessToken()
         {
-            var app = AzureActiveDirectoryHelper.BuildApplication(this);
-            var result = await app.AcquireTokenForClient(DefaultScopes).WithSendX5C(true).ExecuteAsync();
+            var result = await Application.AcquireTokenForClient(DefaultScopes).WithSendX5C(true).ExecuteAsync();
             return result.AccessToken;
         }
     }
