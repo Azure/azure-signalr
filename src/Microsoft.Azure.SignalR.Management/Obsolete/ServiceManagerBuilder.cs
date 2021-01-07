@@ -51,8 +51,7 @@ namespace Microsoft.Azure.SignalR.Management
         public IServiceManager Build()
         {
             _services.AddSignalRServiceManager();
-            var serviceProvider = _services.BuildServiceProvider();
-            return serviceProvider.GetRequiredService<IServiceManager>();
+            return new ServiceManager(_services);
         }
     }
 }

@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public Task<IServiceHubContext> CreateHubContextAsync(string hubName, CancellationToken cancellationToken = default)
         {
-            return _serviceHubContextFactory.CreateAsync(hubName, null, cancellationToken);
+            throw new NotImplementedException();
         }
 
         public Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifetime = null, CancellationToken cancellationToken = default)
