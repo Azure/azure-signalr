@@ -8,6 +8,7 @@ using Microsoft.Azure.SignalR.Protocol;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Threading;
@@ -181,7 +182,6 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                                     }
                                     else if (message is ServicePingMessage ping && ping.IsFin())
                                     {
-                                        Console.WriteLine("send finack");
                                         var pong = RuntimeServicePingMessage.GetFinAckPingMessage();
                                         _servicePro.WriteMessage(pong, MockServicePipe.Output);
                                         var flushResult = _lastFlushResult = await MockServicePipe.Output.FlushAsync();
@@ -208,6 +208,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
         // Todo: add more Stop* methods (e.g. send ServiceErrorMessage, etc)
         public async Task StopAsync()
         {
+            // ignore extra calls to stop
             if (Interlocked.CompareExchange(ref _stopped, 1, 0) == 0)
             {
                 MockServicePipe.Output.Complete();
@@ -216,8 +217,6 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 
                 MockSvc.UnregisterMockServiceSideConnection(this);
             }
-            else
-                Console.WriteLine("bugbug"); // not sure whether its possible - change to Assert?
         }
 
         private void EnqueueMessage(ServiceMessage m) =>

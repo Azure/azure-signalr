@@ -39,8 +39,6 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 
         public override async ValueTask DisposeAsync()
         {
-            //bugbug
-            //await _mockService.StopConnectionAsync(_svcSideConnection);
             Transport.Output.Complete();
             Transport.Input.Complete();
             Transport.Input.CancelPendingRead();
@@ -48,8 +46,6 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
             // we don't have any receiving or sending loops
             // so we await for the other end of the pipe to finish instead
             await MyServiceSideConnection.ProcessIncoming;
-            //Console.WriteLine("sdk dispose is done");
-
             _mockService.UnregisterMockServiceConnection(this);
         }
     }
