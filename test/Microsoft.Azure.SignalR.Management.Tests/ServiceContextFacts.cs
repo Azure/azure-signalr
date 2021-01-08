@@ -66,7 +66,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(false, false)]
-        public async Task X(bool isDiagnosticClient, bool hasClaims)
+        public async Task GetDiagnosticClientNegotiateResponseTest(bool isDiagnosticClient, bool hasClaims)
         {
             var endpoints = FakeEndpointUtils.GetFakeEndpoint(1).ToArray();
             var routerMock = new Mock<IEndpointRouter>();
