@@ -61,7 +61,14 @@ namespace Microsoft.Azure.SignalR.AspNet
                 configuration.Resolver.Register(typeof(IServerNameProvider), () => serverNameProvider);
             }
 
-            var endpoint = new ServiceEndpointManager(serverNameProvider, options, loggerFactory);
+            var accessKeyManager = configuration.Resolver.Resolve<IAccessKeyManager>();
+            if (accessKeyManager == null)
+            {
+                accessKeyManager = new AccessKeyManager(serverNameProvider, loggerFactory);
+                configuration.Resolver.Register(typeof(IAccessKeyManager), () => accessKeyManager);
+            }
+
+            var endpoint = new ServiceEndpointManager(serverNameProvider, accessKeyManager, options, loggerFactory);
             configuration.Resolver.Register(typeof(IServiceEndpointManager), () => endpoint);
 
             var requestIdProvider = configuration.Resolver.Resolve<IConnectionRequestIdProvider>();

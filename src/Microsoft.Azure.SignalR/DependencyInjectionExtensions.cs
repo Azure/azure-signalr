@@ -87,7 +87,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton(typeof(AzureSignalRMarkerService))
                 .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
                 .AddSingleton<IHostedService, HeartBeat>()
-                .AddSingleton(typeof(NegotiateHandler<>));
+                .AddSingleton(typeof(NegotiateHandler<>))
+                .AddSingleton(typeof(AccessKeyManager));
 
             // If a custom router is added, do not add the default router
             builder.Services.TryAddSingleton(typeof(IEndpointRouter), typeof(DefaultEndpointRouter));

@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -25,9 +24,10 @@ namespace Microsoft.Azure.SignalR
         public ServiceEndpointManager(
             IServerNameProvider provider,
             IOptionsMonitor<ServiceOptions> optionsMonitor, 
+            AccessKeyManager accessKeyManager,
             ILoggerFactory loggerFactory
         ) :
-            base(optionsMonitor.CurrentValue, loggerFactory.CreateLogger<ServiceEndpointManager>())
+            base(optionsMonitor.CurrentValue, accessKeyManager, loggerFactory.CreateLogger<ServiceEndpointManager>())
         {
             _options = optionsMonitor.CurrentValue;
             _logger = loggerFactory?.CreateLogger<ServiceEndpointManager>() ?? throw new ArgumentNullException(nameof(loggerFactory));

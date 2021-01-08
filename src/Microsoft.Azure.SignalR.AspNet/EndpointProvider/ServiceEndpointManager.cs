@@ -13,9 +13,16 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         private readonly ILoggerFactory _loggerFactory;
 
-        public ServiceEndpointManager(IServerNameProvider provider, ServiceOptions options, ILoggerFactory loggerFactory) : 
-            base(options,
-                loggerFactory?.CreateLogger<ServiceEndpointManager>())
+        public ServiceEndpointManager(
+            IServerNameProvider provider,
+            IAccessKeyManager manager,
+            ServiceOptions options,
+            ILoggerFactory loggerFactory) :
+            base(
+                options,
+                manager,
+                loggerFactory?.CreateLogger<ServiceEndpointManager>()
+            )
         {
             _provider = provider;
             _options = options;

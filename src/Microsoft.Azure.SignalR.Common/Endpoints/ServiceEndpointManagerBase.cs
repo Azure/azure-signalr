@@ -23,12 +23,16 @@ namespace Microsoft.Azure.SignalR
         // Filtered valuable endpoints from ServiceOptions, use dict for fast search
         public IReadOnlyDictionary<ServiceEndpoint, ServiceEndpoint> Endpoints { get; private set; }
 
+        private event EndpointEventHandler OnCreate;
         public event EndpointEventHandler OnAdd;
         public event EndpointEventHandler OnRemove;
         
-        protected ServiceEndpointManagerBase(IServiceEndpointOptions options, ILogger logger)
+        protected ServiceEndpointManagerBase(IServiceEndpointOptions options, IAccessKeyManager manager, ILogger logger)
             : this(ServiceEndpointUtility.Merge(options.ConnectionString, options.Endpoints), logger)
         {
+            OnAdd += (e) => manager.AddHubServiceEndpoint(e);
+            OnCreate += (e) => manager.AddHubServiceEndpoint(e);
+            OnRemove += (e) => manager.RemoveHubServiceEndpoint(e);
         }
 
         // for test purpose
@@ -177,8 +181,9 @@ namespace Microsoft.Azure.SignalR
         private HubServiceEndpoint CreateHubServiceEndpoint(string hub, ServiceEndpoint endpoint, bool needScaleTcs = false)
         {
             var provider = GetEndpointProvider(endpoint);
-
-            return new HubServiceEndpoint(hub, provider, endpoint, needScaleTcs);
+            var hubEndpoint = new HubServiceEndpoint(hub, provider, endpoint, needScaleTcs);
+            OnCreate?.Invoke(hubEndpoint);
+            return hubEndpoint;
         }
 
         private IReadOnlyList<HubServiceEndpoint> CreateHubServiceEndpoints(string hub, IEnumerable<ServiceEndpoint> endpoints, bool needScaleTcs)
@@ -230,9 +235,6 @@ namespace Microsoft.Azure.SignalR
 
             // Set complete
             endpoint.CompleteScale();
-
-            // Dispose endpoint
-            endpoint.Dispose();
         }
 
         private void UpdateEndpoints(Dictionary<ServiceEndpoint, ServiceEndpoint> updatedEndpoints,
