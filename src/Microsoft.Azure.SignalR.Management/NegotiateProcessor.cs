@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Management
             _endpointsContainerFactory = endpointsContainerFactory;
         }
 
-        public async Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, CancellationToken cancellationToken = default)
+        public async Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, bool isDiagnosticClient = false, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR.Management
                 {
                     claimProvider = () => claims;
                 }
-                var claimsWithUserId = ClaimsUtility.BuildJwtClaims(httpContext?.User, userId: userId, claimProvider);
+                var claimsWithUserId = ClaimsUtility.BuildJwtClaims(httpContext?.User, userId: userId, claimProvider, isDiagnosticClient: isDiagnosticClient);
 
                 var tokenTask = provider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifetime);
                 await tokenTask.OrTimeout(cancellationToken, Timeout, GeneratingTokenTaskDescription);

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -58,6 +59,45 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 Assert.Equal(ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName, endpoints[i].Endpoint), accessInfo.Url);
                 Assert.Equal(expectedToken, tokenString);
             }
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task GetDiagnosticClientNegotiateResponseTest(bool isDiagnosticClient, bool hasClaims)
+        {
+            var endpoints = FakeEndpointUtils.GetFakeEndpoint(1).ToArray();
+            var routerMock = new Mock<IEndpointRouter>();
+            routerMock
+                .SetupSequence(router => router.GetNegotiateEndpoint(null, endpoints))
+                .Returns(endpoints[0]);
+            var router = routerMock.Object;
+            var manager = new ServiceContextBuilder()
+            .WithOptions(o =>
+            {
+                o.ServiceEndpoints = endpoints;
+            })
+            .WithRouter(router).Build();
+            var userId = "user";
+            var accessInfo = await manager.GetClientEndpointAsync(
+                HubName,
+                null,
+                userId, 
+                hasClaims ? new List<Claim> { new Claim("a", "1") } : null,
+                _tokenLifeTime,
+                isDiagnosticClient);
+            var tokenString = accessInfo.AccessToken;
+            var handler = new JwtSecurityTokenHandler();
+            var token = handler.ReadJwtToken(tokenString);
+
+            Assert.True(
+                isDiagnosticClient && token.Claims.Any(c => c.Type == Constants.ClaimType.DiagnosticClient && c.Value == "true") ||
+                !isDiagnosticClient && !token.Claims.Any(c => c.Type == Constants.ClaimType.DiagnosticClient));
+            Assert.True(
+                hasClaims && token.Claims.Any(c => c.Type == "a" && c.Value == "1") ||
+                !hasClaims && !token.Claims.Any(c => c.Type == "a"));
         }
 
         [Fact]
