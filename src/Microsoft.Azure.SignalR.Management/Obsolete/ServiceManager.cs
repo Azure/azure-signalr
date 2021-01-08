@@ -7,7 +7,10 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common.RestClients;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Rest;
 
@@ -16,22 +19,39 @@ namespace Microsoft.Azure.SignalR.Management
     internal class ServiceManager : IServiceManager
     {
         private readonly RestClientFactory _restClientFactory;
-        private readonly ServiceHubContextFactory _serviceHubContextFactory;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceCollection _services;
         private readonly ServiceEndpoint _endpoint;
         private readonly IServiceEndpointProvider _endpointProvider;
 
-        public ServiceManager(RestClientFactory restClientFactory, ServiceHubContextFactory serviceHubContextFactory, IServiceEndpointManager endpointManager, IServiceProvider serviceProvider)
+        public ServiceManager(IServiceCollection serviceDescriptors)
         {
-            _restClientFactory = restClientFactory;
-            _serviceHubContextFactory = serviceHubContextFactory;
-            _serviceProvider = serviceProvider;
+            _services = serviceDescriptors;
+            _serviceProvider = _services.BuildServiceProvider(); ;
+            _restClientFactory = _serviceProvider.GetService<RestClientFactory>();
+            var endpointManager = _serviceProvider.GetService<IServiceEndpointManager>();
             _endpoint = endpointManager.Endpoints.Single().Key;
             _endpointProvider = endpointManager.GetEndpointProvider(_endpoint);
         }
 
-        public Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default) =>
-            _serviceHubContextFactory.CreateAsync(hubName, loggerFactory, cancellationToken);
+        public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
+        {
+            var servicesPerHub = new ServiceCollection().Add(_services);
+            if (loggerFactory != null)
+            {
+                servicesPerHub.AddSingleton(loggerFactory);
+            }
+            servicesPerHub.AddSingleton<IServiceConnectionContainer>(sp =>
+            sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().GetOrCreate(hubName));
+            servicesPerHub.AddSingleton<IServiceHubLifetimeManager>(sp => sp.GetRequiredService<ServiceHubLifetimeManagerFactory>().Create(hubName));
+            servicesPerHub.AddSingleton(sp => (HubLifetimeManager<Hub>)sp.GetRequiredService<IServiceHubLifetimeManager>());
+            servicesPerHub.AddSingleton<IServiceHubContext, ServiceHubContext>();
+
+            var serviceProviderForHub = servicesPerHub.BuildServiceProvider();
+            var connectionContainer = serviceProviderForHub.GetRequiredService<IServiceConnectionContainer>();
+            await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
+            return serviceProviderForHub.GetRequiredService<IServiceHubContext>();
+        }
 
         public void Dispose()
         {

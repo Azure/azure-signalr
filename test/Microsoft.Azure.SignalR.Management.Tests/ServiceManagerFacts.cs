@@ -122,8 +122,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             services.AddSignalRServiceManager();
             services.Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
             services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, HttpStatusCode.OK));
-            using var serviceProvider = services.BuildServiceProvider();
-            var serviceManager = serviceProvider.GetRequiredService<IServiceManager>();
+            using var serviceManager = new ServiceManager(services);
             var actual = await serviceManager.IsServiceHealthy(default);
 
             Assert.True(actual);
@@ -139,8 +138,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             services.Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
             services.AddSignalRServiceManager();
             services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, statusCode));
-            using var serviceProvider = services.BuildServiceProvider();
-            var serviceManager = serviceProvider.GetRequiredService<IServiceManager>();
+            using var serviceManager = new ServiceManager(services);
 
             var actual = await serviceManager.IsServiceHealthy(default);
 
@@ -158,8 +156,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             services.AddSignalRServiceManager();
             services.Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
             services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, statusCode));
-            using var serviceProvider = services.BuildServiceProvider();
-            var serviceManager = serviceProvider.GetRequiredService<IServiceManager>();
+            using var serviceManager = new ServiceManager(services);
 
             var exception = await Assert.ThrowsAnyAsync<AzureSignalRException>(() => serviceManager.IsServiceHealthy(default));
             Assert.IsType(expectedException, exception);
