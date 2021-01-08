@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
@@ -12,20 +13,22 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class AadAccessKey : AccessKey, IDisposable
+    internal class AadAccessKey : AccessKey
     {
-        private const int AuthorizeIntervalInMinute = 55;
-        private const int AuthorizeMaxRetryTimes = 3;
-        private const int AuthorizeRetryIntervalInSec = 3;
+        internal const int AuthorizeIntervalInMinute = 55;
+        internal const int AuthorizeMaxRetryTimes = 3;
+        internal const int AuthorizeRetryIntervalInSec = 3;
 
         private static readonly TimeSpan AuthorizeInterval = TimeSpan.FromMinutes(AuthorizeIntervalInMinute);
         private static readonly TimeSpan AuthorizeRetryInterval = TimeSpan.FromSeconds(AuthorizeRetryIntervalInSec);
         private static readonly TimeSpan AuthorizeTimeout = TimeSpan.FromSeconds(10);
 
         private readonly TaskCompletionSource<object> _initializedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-        private readonly TimerAwaitable _timer = new TimerAwaitable(TimeSpan.Zero, AuthorizeInterval);
+
         private volatile bool _isAuthorized = false;
-        private int initialized = 0;
+
+        private DateTime _lastUpdatedTime = DateTime.MinValue;
+
         public bool Authorized => InitializedTask.IsCompleted && _isAuthorized;
 
         public AuthOptions Options { get; }
@@ -35,11 +38,6 @@ namespace Microsoft.Azure.SignalR
         public AadAccessKey(AuthOptions options, string endpoint, int? port) : base(endpoint, port)
         {
             Options = options;
-        }
-
-        public void Dispose()
-        {
-            ((IDisposable)_timer).Dispose();
         }
 
         public Task<string> GenerateAadToken()
@@ -65,16 +63,7 @@ namespace Microsoft.Azure.SignalR
             return await base.GenerateAccessToken(audience, claims, lifetime, algorithm);
         }
 
-        public Task UpdateAccessKeyAsync(IServerNameProvider provider, ILoggerFactory loggerFactory)
-        {
-            if (Interlocked.CompareExchange(ref initialized, 1, 0) == 0)
-            {
-                Task.Run(() => UpdateAccessKeyAsyncCore(provider, loggerFactory));
-            }
-            return Task.CompletedTask;
-        }
-
-        internal async Task AuthorizeAsync(string serverId, CancellationToken token = default)
+        private async Task AuthorizeAsync(string serverId, CancellationToken token = default)
         {
             var aadToken = await GenerateAadToken();
             await AuthorizeWithTokenAsync(Endpoint, Port, serverId, aadToken, token);
@@ -131,66 +120,35 @@ namespace Microsoft.Azure.SignalR
             return true;
         }
 
-        private async Task UpdateAccessKeyAsyncCore(IServerNameProvider provider, ILoggerFactory loggerFactory)
+        internal async Task UpdateAccessKeyAsync(string serverName)
         {
-            _timer.Start();
-
-            var logger = loggerFactory.CreateLogger<AadAccessKey>();
-
-            while (await _timer)
+            if (DateTime.UtcNow - _lastUpdatedTime < AuthorizeInterval)
             {
-                int i;
-                for (i = 0; i < AuthorizeMaxRetryTimes; i++)
+                return;
+            }
+
+            Exception latest = null;
+            for (int i = 0; i < AuthorizeMaxRetryTimes; i++)
+            {
+                var source = new CancellationTokenSource(AuthorizeTimeout);
+                try
                 {
-                    var source = new CancellationTokenSource(AuthorizeTimeout);
-                    try
-                    {
-                        await AuthorizeAsync(provider.GetName(), source.Token);
-                        Log.SucceedAuthorizeAccessKey(logger, Endpoint);
-                        _isAuthorized = true;
-                        break;
-                    }
-                    catch (Exception e)
-                    {
-                        Log.FailedAuthorizeAccessKey(logger, Endpoint, e);
-                        await Task.Delay(AuthorizeRetryInterval);
-                    }
+                    await AuthorizeAsync(serverName, source.Token);
+                    _lastUpdatedTime = DateTime.UtcNow;
+                    _isAuthorized = true;
+                    _initializedTcs.TrySetResult(null);
+                    return;
                 }
-
-                if (i == AuthorizeMaxRetryTimes)
+                catch (Exception e)
                 {
-                    _isAuthorized = false;
-                    Log.ErrorAuthorizeAccessKey(logger, Endpoint);
+                    latest = e;
+                    await Task.Delay(AuthorizeRetryInterval);
                 }
-                _initializedTcs.TrySetResult(null);
-            }
-        }
-
-        private static class Log
-        {
-            private static readonly Action<ILogger, string, Exception> _errorAuthorize =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(1, "ErrorAuthorizeAccessKey"), "Failed in authorizing AccessKey for '{endpoint}' after retried " + AuthorizeMaxRetryTimes + " times.");
-
-            private static readonly Action<ILogger, string, Exception> _failedAuthorize =
-                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(2, "FailedAuthorizeAccessKey"), "Failed in authorizing AccessKey for '{endpoint}', will retry in " + AuthorizeRetryIntervalInSec + " seconds");
-
-            private static readonly Action<ILogger, string, Exception> _succeedAuthorize =
-                LoggerMessage.Define<string>(LogLevel.Information, new EventId(3, "SucceedAuthorizeAccessKey"), "Succeed in authorizing AccessKey for '{endpoint}'");
-
-            public static void ErrorAuthorizeAccessKey(ILogger logger, string endpoint)
-            {
-                _errorAuthorize(logger, endpoint, null);
             }
 
-            public static void FailedAuthorizeAccessKey(ILogger logger, string endpoint, Exception e)
-            {
-                _failedAuthorize(logger, endpoint, e);
-            }
-
-            public static void SucceedAuthorizeAccessKey(ILogger logger, string endpoint)
-            {
-                _succeedAuthorize(logger, endpoint, null);
-            }
+            _isAuthorized = false;
+            _initializedTcs.TrySetResult(null);
+            throw latest;
         }
     }
 }
