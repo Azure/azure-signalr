@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Management
             _context = context.Value;
         }
 
-        public  IServiceHubLifetimeManager Create(string hubName)
+        public IServiceHubLifetimeManager Create(string hubName)
         {
             switch (_context.ServiceTransportType)
             {
