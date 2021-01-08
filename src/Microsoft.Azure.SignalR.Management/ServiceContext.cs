@@ -31,9 +31,19 @@ namespace Microsoft.Azure.SignalR.Management
             throw new NotImplementedException();
         }
 
-        public Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifetime = null, CancellationToken cancellationToken = default)
+        public Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifetime = null, bool isDiagnosticClient = false, CancellationToken cancellationToken = default)
         {
-            return _negotiateProcessor.GetClientEndpointAsync(hubName, httpContext, userId, claims, lifetime, cancellationToken);
+            var customClaims = new List<Claim>();
+            if (claims != null)
+            {
+                customClaims.AddRange(claims);
+            }
+            if (isDiagnosticClient)
+            {
+                customClaims.Add(new Claim(Constants.ClaimType.DiagnosticClient, "true"));
+            }
+
+            return _negotiateProcessor.GetClientEndpointAsync(hubName, httpContext, userId, customClaims, lifetime, cancellationToken);
         }
 
         public void Dispose()
