@@ -50,13 +50,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             .WithRouter(router).Build();
             for (int i = 0; i < 3; i++)
             {
-                var accessInfo = await manager.GetClientEndpointAsync(HubName, null, userId, claims, _tokenLifeTime);
-                var tokenString = accessInfo.AccessToken;
+                var negotiationResponse = await manager.NegotiateAsync(HubName, null, userId, claims, _tokenLifeTime);
+                var tokenString = negotiationResponse.AccessToken;
                 var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
                 string expectedToken = JwtTokenHelper.GenerateJwtBearer(ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName, endpoints[i].Endpoint), ClaimsUtility.BuildJwtClaims(null, userId, () => claims),token.ValidTo,token.ValidFrom,token.ValidFrom,endpoints[i].AccessKey);
 
-                Assert.Equal(ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName, endpoints[i].Endpoint), accessInfo.Url);
+                Assert.Equal(ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName, endpoints[i].Endpoint), negotiationResponse.Url);
                 Assert.Equal(expectedToken, tokenString);
             }
         }
@@ -81,14 +81,14 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             })
             .WithRouter(router).Build();
             var userId = "user";
-            var accessInfo = await manager.GetClientEndpointAsync(
+            var negotiationResponse = await manager.NegotiateAsync(
                 HubName,
                 null,
                 userId, 
                 hasClaims ? new List<Claim> { new Claim("a", "1") } : null,
                 _tokenLifeTime,
                 isDiagnosticClient);
-            var tokenString = accessInfo.AccessToken;
+            var tokenString = negotiationResponse.AccessToken;
             var handler = new JwtSecurityTokenHandler();
             var token = handler.ReadJwtToken(tokenString);
 
@@ -111,8 +111,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 o.ServiceEndpoints = endpoints;
             }).WithRouter(routerMock.Object).Build();
-            var clientEndpoint = (await manager.GetClientEndpointAsync(HubName)).Url;
-            Assert.Equal("https://remote/client/?hub=signalrbench", clientEndpoint);
+            var negotiationResponse = (await manager.NegotiateAsync(HubName)).Url;
+            Assert.Equal("https://remote/client/?hub=signalrbench", negotiationResponse);
         }
     }
 }
