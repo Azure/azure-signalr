@@ -29,10 +29,10 @@ namespace Microsoft.Azure.SignalR.Management.E2ETests
         {
             var hubName = "hub";
             ServiceCollection services = new ServiceCollection();
-            services.AddSignalRServiceContext<ContextOptionsSetup>();
+            services.AddSignalRServiceManager();
 
             //configure two fake service endpoints and one real endpoints.
-            services.Configure<ContextOptions>(o =>
+            services.Configure<ServiceManagerOptions>(o =>
             {
                 o.ServiceEndpoints = FakeEndpointUtils.GetFakeEndpoint(3).Append(new ServiceEndpoint(TestConfiguration.Instance.ConnectionString)).ToArray();
             });

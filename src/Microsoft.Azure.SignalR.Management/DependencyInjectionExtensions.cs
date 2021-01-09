@@ -76,7 +76,7 @@ namespace Microsoft.Azure.SignalR.Management
         }
 
         /// <summary>
-        /// Adds product info to <see cref="ContextOptions"/>
+        /// Adds product info to <see cref="ServiceManagerOptions"/>
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static IServiceCollection WithAssembly(this IServiceCollection services, Assembly assembly)
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.SignalR.Management
             .AddHttpClient()
             .AddSingleton(sp =>
             {
-                var options = sp.GetRequiredService<IOptions<ContextOptions>>().Value;
+                var options = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value;
                 var productInfo = options.ProductInfo;
                 var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
                 return new RestClientFactory(productInfo, httpClientFactory);
