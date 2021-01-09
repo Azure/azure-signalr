@@ -7,6 +7,7 @@
 using System;
 using System.ComponentModel;
 using System.Reflection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -33,6 +34,18 @@ namespace Microsoft.Azure.SignalR.Management
         public ServiceManagerBuilder WithLoggerFactory(ILoggerFactory loggerFactory)
         {
             _services.AddSingleton(loggerFactory);
+            return this;
+        }
+
+        public ServiceManagerBuilder WithConfiguration(IConfiguration configuration)
+        {
+            _services.AddSingleton(configuration);
+            return this;
+        }
+
+        public ServiceManagerBuilder WithRouter(IEndpointRouter router)
+        {
+            _services.AddSingleton(router);
             return this;
         }
 
