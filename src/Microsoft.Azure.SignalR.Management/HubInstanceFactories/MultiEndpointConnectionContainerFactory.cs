@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly int _connectionCount;
         private readonly IEndpointRouter _router;
 
-        public MultiEndpointConnectionContainerFactory(IServiceConnectionFactory connectionFactory, ILoggerFactory loggerFactory, IServiceEndpointManager serviceEndpointManager, IOptions<ContextOptions> options, IEndpointRouter router = null)
+        public MultiEndpointConnectionContainerFactory(IServiceConnectionFactory connectionFactory, ILoggerFactory loggerFactory, IServiceEndpointManager serviceEndpointManager, IOptions<ServiceManagerOptions> options, IEndpointRouter router = null)
         {
             _connectionFactory = connectionFactory;
             _loggerFactory = loggerFactory;

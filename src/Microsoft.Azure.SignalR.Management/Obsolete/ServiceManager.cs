@@ -12,6 +12,7 @@ using Microsoft.Azure.SignalR.Common.RestClients;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.Rest;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -28,9 +29,9 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _services = serviceDescriptors;
             _serviceProvider = _services.BuildServiceProvider(); ;
-            _restClientFactory = _serviceProvider.GetService<RestClientFactory>();
-            var endpointManager = _serviceProvider.GetService<IServiceEndpointManager>();
-            _endpoint = endpointManager.Endpoints.Single().Key;
+            _restClientFactory = _serviceProvider.GetRequiredService<RestClientFactory>();
+            var endpointManager = _serviceProvider.GetRequiredService<IServiceEndpointManager>();
+            _endpoint = new ServiceEndpoint(_serviceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ConnectionString);
             _endpointProvider = endpointManager.GetEndpointProvider(_endpoint);
         }
 
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public void Dispose()
         {
-            ((IDisposable)_serviceProvider).Dispose();
+            (_serviceProvider as IDisposable)?.Dispose();
         }
 
         public string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)

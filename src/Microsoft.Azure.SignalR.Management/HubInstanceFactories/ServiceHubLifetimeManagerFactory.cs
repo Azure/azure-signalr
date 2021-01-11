@@ -13,17 +13,17 @@ namespace Microsoft.Azure.SignalR.Management
     internal class ServiceHubLifetimeManagerFactory
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly ContextOptions _context;
+        private readonly ServiceManagerOptions _options;
 
-        public ServiceHubLifetimeManagerFactory(IServiceProvider sp, IOptions<ContextOptions> context)
+        public ServiceHubLifetimeManagerFactory(IServiceProvider sp, IOptions<ServiceManagerOptions> context)
         {
             _serviceProvider = sp;
-            _context = context.Value;
+            _options = context.Value;
         }
 
         public IServiceHubLifetimeManager Create(string hubName)
         {
-            switch (_context.ServiceTransportType)
+            switch (_options.ServiceTransportType)
             {
                 case ServiceTransportType.Persistent:
                     {
@@ -34,9 +34,9 @@ namespace Microsoft.Azure.SignalR.Management
                     }
                 case ServiceTransportType.Transient:
                     {
-                        return new RestHubLifetimeManager(hubName, _context.ServiceEndpoints.Single(), _context.ProductInfo, _context.ApplicationName);
+                        return new RestHubLifetimeManager(hubName, new ServiceEndpoint(_options.ConnectionString), _options.ProductInfo, _options.ApplicationName);
                     }
-                default: throw new InvalidEnumArgumentException(nameof(ContextOptions.ServiceTransportType), (int)_context.ServiceTransportType, typeof(ServiceTransportType));
+                default: throw new InvalidEnumArgumentException(nameof(ServiceManagerOptions.ServiceTransportType), (int)_options.ServiceTransportType, typeof(ServiceTransportType));
             }
         }
     }

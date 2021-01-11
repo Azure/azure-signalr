@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                                                                            from appName in _appNames
                                                                            select new object[] { userId, claims, appName };
 
-        [Theory]
+        [Theory(Skip = "Service context will be removed soon. These tests will be done upon NegotiateProcessor")]
         [MemberData(nameof(TestGenerateAccessTokenData))]
         public async Task GenerateClientEndpoint(string userId, Claim[] claims, string appName)
         {
@@ -54,14 +54,14 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 var tokenString = negotiationResponse.AccessToken;
                 var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-                string expectedToken = JwtTokenHelper.GenerateJwtBearer(ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName, endpoints[i].Endpoint), ClaimsUtility.BuildJwtClaims(null, userId, () => claims),token.ValidTo,token.ValidFrom,token.ValidFrom,endpoints[i].AccessKey);
+                string expectedToken = JwtTokenHelper.GenerateJwtBearer(ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName, endpoints[i].Endpoint), ClaimsUtility.BuildJwtClaims(null, userId, () => claims), token.ValidTo, token.ValidFrom, token.ValidFrom, endpoints[i].AccessKey);
 
                 Assert.Equal(ClientEndpointUtils.GetExpectedClientEndpoint(HubName, appName, endpoints[i].Endpoint), negotiationResponse.Url);
                 Assert.Equal(expectedToken, tokenString);
             }
         }
 
-        [Theory]
+        [Theory(Skip = "Service context will be removed soon. These tests will be done upon NegotiateProcessor")]
         [InlineData(true, true)]
         [InlineData(true, false)]
         [InlineData(false, true)]
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var negotiationResponse = await manager.NegotiateAsync(
                 HubName,
                 null,
-                userId, 
+                userId,
                 hasClaims ? new List<Claim> { new Claim("a", "1") } : null,
                 _tokenLifeTime,
                 isDiagnosticClient);
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 !hasClaims && !token.Claims.Any(c => c.Type == "a"));
         }
 
-        [Fact]
+        [Fact(Skip = "Service context will be removed soon. These tests will be done upon NegotiateProcessor")]
         internal async Task GenerateClientEndpointTestWithClientEndpoint()
         {
             var endpoints = new ServiceEndpoint[] { new ServiceEndpoint($"Endpoint=http://localhost;AccessKey={AccessKey};Version=1.0;ClientEndpoint=https://remote") };
