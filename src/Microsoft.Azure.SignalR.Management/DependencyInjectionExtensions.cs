@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Adds SignalR Service Manager to the specified services collection.
         /// </summary>
-        /// <param name="services"></param>
+        /// <param name="services">The services collection to add services</param>
         /// <param name="setupInstance">The setup instance. If null, service container will create the instance.</param>
         /// <typeparam name="TOptionsSetup">The type of class used to setup <see cref="ServiceManagerOptions"/>. </typeparam>
         public static IServiceCollection AddSignalRServiceManager<TOptionsSetup>(this IServiceCollection services, TOptionsSetup setupInstance = null) where TOptionsSetup : class, IConfigureOptions<ServiceManagerOptions>, IOptionsChangeTokenSource<ServiceManagerOptions>
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Adds SignalR Service Context to the specified services collection.
         /// </summary>
-        /// <param name="services"></param>
+        /// <param name="services">The services collection to add services</param>
         /// <param name="setupInstance">The setup instance. If null, service container will create the instance.</param>
         /// <typeparam name="TOptionsSetup">The type of class used to setup <see cref="ServiceManagerOptions"/>. </typeparam>
         public static IServiceCollection AddSignalRServiceContext<TOptionsSetup>(this IServiceCollection services, TOptionsSetup setupInstance = null) where TOptionsSetup : class, IConfigureOptions<ContextOptions>, IOptionsChangeTokenSource<ContextOptions>
