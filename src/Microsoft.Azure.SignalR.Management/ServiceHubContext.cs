@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
         public async Task DisposeAsync()
         {
             await _lifetimeManager.DisposeAsync();
-            (ServiceProvider as ServiceProvider)?.Dispose();
+            (ServiceProvider as IDisposable)?.Dispose();
         }
     }
 }
