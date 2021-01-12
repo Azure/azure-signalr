@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <param name="isDiagnosticClient">The flag whether the client to be connected is a diagnostic client.</param>
         /// <param name="cancellationToken">Cancellation token for aborting the operation. If null, the <see cref="HttpContext.RequestAborted"/> of <paramref name="httpContext"/> will be used. </param>
         /// <returns>Client endpoint and access token to Azure SignalR Service.</returns>
-        Task<NegotiationResponse> NegotiateAsync(HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifetime = null,bool isDiagnosticClient = false, CancellationToken cancellationToken = default);
+        Task<NegotiationResponse> NegotiateAsync(HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifetime = null, bool isDiagnosticClient = false, CancellationToken cancellationToken = default);
 
         IEnumerable<ServiceEndpoint> GetServiceEndpoints();
     }
