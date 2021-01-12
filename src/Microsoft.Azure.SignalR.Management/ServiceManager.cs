@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class ServiceManager : IServiceManager
     {
-        private const string EmptyConnectionStringMsg = "Connection string is null or empty or only contains whitespace.";
+        private const string EmptyConnectionStringMessage = "Connection string is null or empty or only contains whitespace.";
         private readonly RestClientFactory _restClientFactory;
         private readonly IServiceProvider _serviceProvider;
         private readonly IServiceCollection _services;
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             if (_endpointProvider == null)
             {
-                throw new InvalidOperationException(EmptyConnectionStringMsg);
+                throw new InvalidOperationException(EmptyConnectionStringMessage);
             }
             var claimsWithUserId = new List<Claim>();
             if (userId != null)
@@ -83,15 +83,14 @@ namespace Microsoft.Azure.SignalR.Management
 
         public string GetClientEndpoint(string hubName)
         {
-            return _endpointProvider == null ? throw new InvalidOperationException
-                (EmptyConnectionStringMsg) : _endpointProvider.GetClientEndpoint(hubName, null, null);
+            return _endpointProvider?.GetClientEndpoint(hubName, null, null) ?? throw new InvalidOperationException(EmptyConnectionStringMessage);
         }
 
         public async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
             if (_endpoint == null)
             {
-                throw new InvalidOperationException(EmptyConnectionStringMsg);
+                throw new InvalidOperationException(EmptyConnectionStringMessage);
             }
             using var restClient = _restClientFactory.Create(_endpoint);
             try
