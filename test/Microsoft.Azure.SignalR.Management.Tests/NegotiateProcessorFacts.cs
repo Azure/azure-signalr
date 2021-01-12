@@ -9,12 +9,13 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Tests;
 using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
-    public class ServiceContextFacts
+    public class NegotiateProcessorFacts
     {
         private const string AccessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
         private const string HubName = "signalrBench";
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                                                                            from appName in _appNames
                                                                            select new object[] { userId, claims, appName };
 
-        [Theory(Skip = "Service context will be removed soon. These tests will be done upon NegotiateProcessor")]
+        [Theory]
         [MemberData(nameof(TestGenerateAccessTokenData))]
         public async Task GenerateClientEndpoint(string userId, Claim[] claims, string appName)
         {
@@ -41,16 +42,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .Returns(endpoints[1])
                 .Returns(endpoints[2]);
             var router = routerMock.Object;
-            var manager = new ServiceContextBuilder()
-            .WithOptions(o =>
+            var provider = new ServiceCollection().AddSignalRServiceManager()
+            .Configure<ServiceManagerOptions>(o =>
             {
                 o.ApplicationName = appName;
                 o.ServiceEndpoints = endpoints;
             })
-            .WithRouter(router).Build();
+            .AddSingleton(router).BuildServiceProvider();
+            var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
             for (int i = 0; i < 3; i++)
             {
-                var negotiationResponse = await manager.NegotiateAsync(HubName, null, userId, claims, _tokenLifeTime);
+                var negotiationResponse = await negotiateProcessor.NegotiateAsync(HubName, null, userId, claims, _tokenLifeTime);
                 var tokenString = negotiationResponse.AccessToken;
                 var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
@@ -61,7 +63,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        [Theory(Skip = "Service context will be removed soon. These tests will be done upon NegotiateProcessor")]
+        [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]
         [InlineData(false, true)]
@@ -74,14 +76,15 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .SetupSequence(router => router.GetNegotiateEndpoint(null, endpoints))
                 .Returns(endpoints[0]);
             var router = routerMock.Object;
-            var manager = new ServiceContextBuilder()
-            .WithOptions(o =>
+            var provider = new ServiceCollection().AddSignalRServiceManager()
+            .Configure<ServiceManagerOptions>(o =>
             {
                 o.ServiceEndpoints = endpoints;
             })
-            .WithRouter(router).Build();
+            .AddSingleton(router).BuildServiceProvider();
             var userId = "user";
-            var negotiationResponse = await manager.NegotiateAsync(
+            var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
+            var negotiationResponse = await negotiateProcessor.NegotiateAsync(
                 HubName,
                 null,
                 userId,
@@ -100,18 +103,19 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 !hasClaims && !token.Claims.Any(c => c.Type == "a"));
         }
 
-        [Fact(Skip = "Service context will be removed soon. These tests will be done upon NegotiateProcessor")]
+        [Fact]
         internal async Task GenerateClientEndpointTestWithClientEndpoint()
         {
             var endpoints = new ServiceEndpoint[] { new ServiceEndpoint($"Endpoint=http://localhost;AccessKey={AccessKey};Version=1.0;ClientEndpoint=https://remote") };
             //if no mock router, then error throws because all endpoints are offline.
             var routerMock = new Mock<IEndpointRouter>();
             routerMock.Setup(router => router.GetNegotiateEndpoint(null, endpoints)).Returns(endpoints.Single());
-            var manager = new ServiceContextBuilder().WithOptions(o =>
+            var provider = new ServiceCollection().AddSignalRServiceManager().Configure<ServiceManagerOptions>(o =>
             {
                 o.ServiceEndpoints = endpoints;
-            }).WithRouter(routerMock.Object).Build();
-            var negotiationResponse = (await manager.NegotiateAsync(HubName)).Url;
+            }).AddSingleton(routerMock.Object).BuildServiceProvider();
+            var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
+            var negotiationResponse = (await negotiateProcessor.NegotiateAsync(HubName)).Url;
             Assert.Equal("https://remote/client/?hub=signalrbench", negotiationResponse);
         }
     }

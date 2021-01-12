@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +18,7 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class ServiceManager : IServiceManager
     {
+        private const string EmptyConnectionStringMsg = "Connection string is null or empty or only contains whitespace.";
         private readonly RestClientFactory _restClientFactory;
         private readonly IServiceProvider _serviceProvider;
         private readonly IServiceCollection _services;
@@ -31,8 +31,12 @@ namespace Microsoft.Azure.SignalR.Management
             _serviceProvider = _services.BuildServiceProvider(); ;
             _restClientFactory = _serviceProvider.GetRequiredService<RestClientFactory>();
             var endpointManager = _serviceProvider.GetRequiredService<IServiceEndpointManager>();
-            _endpoint = new ServiceEndpoint(_serviceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ConnectionString);
-            _endpointProvider = endpointManager.GetEndpointProvider(_endpoint);
+            var connectionString = _serviceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ConnectionString;
+            if (!string.IsNullOrWhiteSpace(connectionString))
+            {
+                _endpoint = new ServiceEndpoint(connectionString);
+                _endpointProvider = endpointManager.GetEndpointProvider(_endpoint);
+            }
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
@@ -46,7 +50,7 @@ namespace Microsoft.Azure.SignalR.Management
             sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().GetOrCreate(hubName));
             servicesPerHub.AddSingleton<IServiceHubLifetimeManager>(sp => sp.GetRequiredService<ServiceHubLifetimeManagerFactory>().Create(hubName));
             servicesPerHub.AddSingleton(sp => (HubLifetimeManager<Hub>)sp.GetRequiredService<IServiceHubLifetimeManager>());
-            servicesPerHub.AddSingleton<IServiceHubContext, ServiceHubContext>();
+            servicesPerHub.AddSingleton<IServiceHubContext>(sp => ActivatorUtilities.CreateInstance<ServiceHubContext>(sp, hubName));
 
             var serviceProviderForHub = servicesPerHub.BuildServiceProvider();
             var connectionContainer = serviceProviderForHub.GetRequiredService<IServiceConnectionContainer>();
@@ -61,6 +65,10 @@ namespace Microsoft.Azure.SignalR.Management
 
         public string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)
         {
+            if (_endpointProvider == null)
+            {
+                throw new InvalidOperationException(EmptyConnectionStringMsg);
+            }
             var claimsWithUserId = new List<Claim>();
             if (userId != null)
             {
@@ -75,11 +83,16 @@ namespace Microsoft.Azure.SignalR.Management
 
         public string GetClientEndpoint(string hubName)
         {
-            return _endpointProvider.GetClientEndpoint(hubName, null, null);
+            return _endpointProvider == null ? throw new InvalidOperationException
+                (EmptyConnectionStringMsg) : _endpointProvider.GetClientEndpoint(hubName, null, null);
         }
 
         public async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
+            if (_endpoint == null)
+            {
+                throw new InvalidOperationException(EmptyConnectionStringMsg);
+            }
             using var restClient = _restClientFactory.Create(_endpoint);
             try
             {

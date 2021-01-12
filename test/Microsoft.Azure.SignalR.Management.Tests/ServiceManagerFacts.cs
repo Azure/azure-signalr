@@ -168,5 +168,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var serviceManager = new ServiceManagerBuilder().WithOptions(o => o.ConnectionString = _testConnectionString).Build();
             serviceManager.Dispose();
         }
+
+        [Fact]
+        public async Task ConnectionStringNull_ServiceEndpointsExists_Test()
+        {
+            var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ServiceEndpoints = FakeEndpointUtils.GetFakeEndpoint(2).ToArray();
+            }).Build();
+            Assert.Throws<InvalidOperationException>(() => serviceManager.GetClientEndpoint(HubName));
+            Assert.Throws<InvalidOperationException>(() => serviceManager.GenerateClientAccessToken(HubName));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => serviceManager.IsServiceHealthy(default));
+        }
     }
 }
