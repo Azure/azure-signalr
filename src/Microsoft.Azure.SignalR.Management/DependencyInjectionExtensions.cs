@@ -40,6 +40,14 @@ namespace Microsoft.Azure.SignalR.Management
             return services.AddSignalRServiceCore();
         }
 
+        public static IServiceCollection AddHub(this IServiceCollection services, string hubName)
+        {
+            return services.AddSingleton<IServiceConnectionContainer>(sp =>
+sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().CreateAndStart(hubName))
+                .AddSingleton(sp => sp.GetRequiredService<ServiceHubLifetimeManagerFactory>().Create(hubName))
+                .AddSingleton(sp => (HubLifetimeManager<Hub>)sp.GetRequiredService<IServiceHubLifetimeManager>()).AddSingleton<IServiceHubContext>(sp => ActivatorUtilities.CreateInstance<ServiceHubContext>(sp, hubName));
+        }
+
         private static IServiceCollection AddSignalRServiceCore(this IServiceCollection services)
         {
             services.AddSingleton<IServiceManager, ServiceManager>();

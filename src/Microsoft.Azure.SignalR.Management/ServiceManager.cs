@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common.RestClients;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -40,17 +39,11 @@ namespace Microsoft.Azure.SignalR.Management
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
         {
-            var servicesPerHub = new ServiceCollection().Add(_services);
+            var servicesPerHub = new ServiceCollection().Add(_services).AddHub(hubName);
             if (loggerFactory != null)
             {
                 servicesPerHub.AddSingleton(loggerFactory);
             }
-            servicesPerHub.AddSingleton<IServiceConnectionContainer>(sp =>
-            sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().GetOrCreate(hubName));
-            servicesPerHub.AddSingleton<IServiceHubLifetimeManager>(sp => sp.GetRequiredService<ServiceHubLifetimeManagerFactory>().Create(hubName));
-            servicesPerHub.AddSingleton(sp => (HubLifetimeManager<Hub>)sp.GetRequiredService<IServiceHubLifetimeManager>());
-            servicesPerHub.AddSingleton<IServiceHubContext>(sp => ActivatorUtilities.CreateInstance<ServiceHubContext>(sp, hubName));
-
             var serviceProviderForHub = servicesPerHub.BuildServiceProvider();
             var connectionContainer = serviceProviderForHub.GetRequiredService<IServiceConnectionContainer>();
             await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);

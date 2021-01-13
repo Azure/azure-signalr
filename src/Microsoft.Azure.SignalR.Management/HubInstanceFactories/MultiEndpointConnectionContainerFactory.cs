@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Concurrent;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -11,7 +9,6 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class MultiEndpointConnectionContainerFactory
     {
-        private readonly ConcurrentDictionary<string, Lazy<MultiEndpointServiceConnectionContainer>> _hubConnectionContainers = new ConcurrentDictionary<string, Lazy<MultiEndpointServiceConnectionContainer>>();
         private readonly IServiceConnectionFactory _connectionFactory;
         private readonly ILoggerFactory _loggerFactory;
         private readonly IServiceEndpointManager _endpointManager;
@@ -27,31 +24,16 @@ namespace Microsoft.Azure.SignalR.Management
             _router = router;
         }
 
-        public MultiEndpointServiceConnectionContainer GetOrCreate(string hubName, ILoggerFactory loggerFactoryPerHub = null)
+        public MultiEndpointServiceConnectionContainer CreateAndStart(string hubName)
         {
-            return _hubConnectionContainers.GetOrAdd(hubName, (hubName) => Create(hubName, loggerFactoryPerHub)).Value;
-        }
-
-        /// <summary>
-        /// creates a lazy container object and starts it after creation.
-        /// </summary>
-        /// <remarks>
-        /// actually the <see cref="MultiEndpointServiceConnectionContainer"/> itself has mechanism to ensure being started only once, using Lazy and starting the container here just to avoid starting it everywhere else
-        /// </remarks>
-        private Lazy<MultiEndpointServiceConnectionContainer> Create(string hubName, ILoggerFactory loggerFactoryPerHub = null)
-        {
-            var loggerFactory = loggerFactoryPerHub ?? _loggerFactory;
-            return new Lazy<MultiEndpointServiceConnectionContainer>(() =>
-            {
-                var container = new MultiEndpointServiceConnectionContainer(
+            var container = new MultiEndpointServiceConnectionContainer(
                 hubName,
-                endpoint => new WeakServiceConnectionContainer(_connectionFactory, _connectionCount, endpoint, loggerFactory.CreateLogger<WeakServiceConnectionContainer>()),
+                endpoint => new WeakServiceConnectionContainer(_connectionFactory, _connectionCount, endpoint, _loggerFactory.CreateLogger<WeakServiceConnectionContainer>()),
                 _endpointManager,
                 _router,
-                loggerFactory);
-                container.StartAsync();
-                return container;
-            }, true);
+                _loggerFactory);
+            container.StartAsync();
+            return container;
         }
     }
 }
