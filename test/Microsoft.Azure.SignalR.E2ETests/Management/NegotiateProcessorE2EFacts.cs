@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Management.E2ETests
 
             //enable test output
             services.AddSingleton<ILoggerFactory>(new LoggerFactory(new List<ILoggerProvider> { new XunitLoggerProvider(_outputHelper) }));
-            var manager = new ServiceManager(services);
+            var manager = services.BuildServiceProvider().GetRequiredService<IServiceManager>();
             var hubContext = await manager.CreateHubContextAsync(hubName);
 
             var realEndpoint = new ServiceEndpoint(TestConfiguration.Instance.ConnectionString).Endpoint;
