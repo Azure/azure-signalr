@@ -21,17 +21,16 @@ namespace Microsoft.Azure.SignalR.Management
         private const string EmptyConnectionStringMessage = "Connection string is null or empty or only contains whitespace.";
         private readonly RestClientFactory _restClientFactory;
         private readonly IServiceProvider _serviceProvider;
-        private readonly IServiceCollection _services;
+        private readonly IReadOnlyCollection<ServiceDescriptor> _services;
         private readonly ServiceEndpoint _endpoint;
         private readonly IServiceEndpointProvider _endpointProvider;
 
-        public ServiceManager(IServiceCollection serviceDescriptors)
+        public ServiceManager(IReadOnlyCollection<ServiceDescriptor> services, IServiceProvider serviceProvider, RestClientFactory restClientFactory, IServiceEndpointManager endpointManager, IOptions<ServiceManagerOptions> options)
         {
-            _services = serviceDescriptors;
-            _serviceProvider = _services.BuildServiceProvider(); ;
-            _restClientFactory = _serviceProvider.GetRequiredService<RestClientFactory>();
-            var endpointManager = _serviceProvider.GetRequiredService<IServiceEndpointManager>();
-            var connectionString = _serviceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ConnectionString;
+            _services = services;
+            _serviceProvider = serviceProvider;
+            _restClientFactory = restClientFactory;
+            var connectionString = options.Value.ConnectionString;
             if (!string.IsNullOrWhiteSpace(connectionString))
             {
                 _endpoint = new ServiceEndpoint(connectionString);
