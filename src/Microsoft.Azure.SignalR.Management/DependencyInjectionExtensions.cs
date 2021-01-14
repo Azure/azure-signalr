@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -42,10 +40,10 @@ namespace Microsoft.Azure.SignalR.Management
 
         public static IServiceCollection AddHub(this IServiceCollection services, string hubName)
         {
-            return services.AddSingleton<IServiceConnectionContainer>(sp =>
-sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().CreateAndStart(hubName))
+            return services.AddSingleton<IServiceConnectionContainer>(sp => sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().Connect(hubName))
                 .AddSingleton(sp => sp.GetRequiredService<ServiceHubLifetimeManagerFactory>().Create(hubName))
-                .AddSingleton(sp => (HubLifetimeManager<Hub>)sp.GetRequiredService<IServiceHubLifetimeManager>()).AddSingleton<IServiceHubContext>(sp => ActivatorUtilities.CreateInstance<ServiceHubContext>(sp, hubName));
+                .AddSingleton(sp => (HubLifetimeManager<Hub>)sp.GetRequiredService<IServiceHubLifetimeManager>())
+                .AddSingleton<IServiceHubContext>(sp => ActivatorUtilities.CreateInstance<ServiceHubContext>(sp, hubName));
         }
 
         private static IServiceCollection AddSignalRServiceCore(this IServiceCollection services)
