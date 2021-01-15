@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class MultiEndpointServiceConnectionContainer : IMultiEndpointServiceConnectionContainer
+    internal class MultiEndpointServiceConnectionContainer : MultiEndpointServiceConnectionContainerBase
     {
         private readonly string _hubName;
         private readonly IMessageRouter _router;
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR
             IServiceEndpointManager endpointManager,
             IMessageRouter router,
             ILoggerFactory loggerFactory,
-            TimeSpan? scaleTimeout = null)
+            TimeSpan? scaleTimeout = null) : base(loggerFactory)
         {
             if (generator == null)
             {
@@ -99,9 +99,9 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public ServiceConnectionStatus Status => throw new NotSupportedException();
+        public override ServiceConnectionStatus Status => throw new NotSupportedException();
 
-        public Task ConnectionInitializedTask
+        public override Task ConnectionInitializedTask
         {
             get
             {
@@ -110,11 +110,11 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public string ServersTag => throw new NotSupportedException();
+        public override string ServersTag => throw new NotSupportedException();
 
-        public bool HasClients => throw new NotSupportedException();
+        public override bool HasClients => throw new NotSupportedException();
 
-        public Task StartAsync()
+        public override Task StartAsync()
         {
             //ensure started only once
             return _started == 1 || Interlocked.CompareExchange(ref _started, 1, 0) == 1
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.SignalR
                 }));
         }
 
-        public Task StopAsync()
+        public override Task StopAsync()
         {
             return Task.WhenAll(_routerEndpoints.endpoints.Select(s =>
             {
@@ -135,52 +135,22 @@ namespace Microsoft.Azure.SignalR
             }));
         }
 
-        public Task OfflineAsync(GracefulShutdownMode mode)
+        public override Task OfflineAsync(GracefulShutdownMode mode)
         {
             return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.OfflineAsync(mode)));
         }
 
-        public Task WriteAsync(ServiceMessage serviceMessage)
-        {
-            return WriteMultiEndpointMessageAsync(serviceMessage, connection => connection.WriteAsync(serviceMessage));
-        }
-
-        public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
-        {
-            // If we have multiple endpoints, we should wait to one of the following conditions hit
-            // 1. One endpoint responses "OK" state
-            // 2. All the endpoints response failed state including "NotFound", "Timeout" and waiting response to timeout
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            var writeMessageTask = WriteMultiEndpointMessageAsync(serviceMessage, async connection =>
-            {
-                var succeeded = await connection.WriteAckableMessageAsync(serviceMessage, cancellationToken);
-                if (succeeded)
-                {
-                    tcs.TrySetResult(true);
-                }
-            });
-
-            // If tcs.Task completes, one Endpoint responses "OK" state.
-            var task = await Task.WhenAny(tcs.Task, writeMessageTask);
-
-            // This will throw exceptions in tasks if exceptions exist
-            await task;
-
-            return tcs.Task.IsCompleted;
-        }
-
-        public Task StartGetServersPing()
+        public override Task StartGetServersPing()
         {
             return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.StartGetServersPing()));
         }
 
-        public Task StopGetServersPing()
+        public override Task StopGetServersPing()
         {
             return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.StopGetServersPing()));
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             foreach(var container in _routerEndpoints.endpoints)
             {
@@ -188,7 +158,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        internal IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
+        public override IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
         {
             if (!_routerEndpoints.needRouter)
             {
@@ -218,48 +188,6 @@ namespace Microsoft.Azure.SignalR
                 default:
                     throw new NotSupportedException(message.GetType().Name);
             }
-        }
-
-        private Task WriteMultiEndpointMessageAsync(ServiceMessage serviceMessage, Func<IServiceConnectionContainer, Task> inner)
-        {
-            var routed = GetRoutedEndpoints(serviceMessage)?
-                .Select(endpoint =>
-                {
-                    var connection = (endpoint as HubServiceEndpoint)?.ConnectionContainer;
-                    if (connection == null)
-                    {
-                        Log.EndpointNotExists(_logger, endpoint.ToString());
-                    }
-                    return (e: endpoint, c: connection);
-                })
-                .Where(c => c.c != null)
-                .Select(async s =>
-                {
-                    try
-                    {
-                        Log.RouteMessageToServiceEndpoint(_logger, serviceMessage, s.e.ToString());
-                        await inner(s.c);
-                    }
-                    catch (ServiceConnectionNotActiveException)
-                    {
-                        // log and don't stop other endpoints
-                        Log.FailedWritingMessageToEndpoint(_logger, serviceMessage.GetType().Name, (serviceMessage as IMessageWithTracingId)?.TracingId, s.e.ToString());
-                    }
-                }).ToArray();
-
-            if (routed == null || routed.Length == 0)
-            {
-                // check if the router returns any endpoint
-                Log.NoEndpointRouted(_logger, serviceMessage.GetType().Name);
-                return Task.CompletedTask;
-            }
-
-            if (routed.Length == 1)
-            {
-                return routed[0];
-            }
-
-            return Task.WhenAll(routed);
         }
 
         private void OnAdd(HubServiceEndpoint endpoint)
@@ -316,7 +244,7 @@ namespace Microsoft.Azure.SignalR
                 var container = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == endpoint.Endpoint && e.EndpointType == endpoint.EndpointType);
                 if (container == null)
                 {
-                    Log.EndpointNotExists(_logger, endpoint.ToString());
+                    MultiEndpointServiceConnectionContainerBase.Log.EndpointNotExists(_logger, endpoint.ToString());
                     return;
                 }
 
@@ -420,24 +348,13 @@ namespace Microsoft.Azure.SignalR
             Log.TimeoutWaitingClientsDisconnect(_logger, endpoint.ToString(), (int)_scaleTimeout.TotalSeconds);
         }
 
-        internal static class Log
+        internal new static class Log
         {
-            public const string FailedWritingMessageToEndpointTemplate = "{0} message {1} is not sent to endpoint {2} because all connections to this endpoint are offline.";
-
             private static readonly Action<ILogger, string, Exception> _startingConnection =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Staring connections for endpoint {endpoint}.");
 
             private static readonly Action<ILogger, string, Exception> _stoppingConnection =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(2, "StoppingConnection"), "Stopping connections for endpoint {endpoint}.");
-
-            private static readonly Action<ILogger, string, Exception> _endpointNotExists =
-                LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "EndpointNotExists"), "Endpoint {endpoint} from the router does not exists.");
-
-            private static readonly Action<ILogger, string, Exception> _noEndpointRouted =
-                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(4, "NoEndpointRouted"), "Message {messageType} is not sent because no endpoint is returned from the endpoint router.");
-
-            private static readonly Action<ILogger, string, ulong?, string, Exception> _failedWritingMessageToEndpoint =
-                LoggerMessage.Define<string, ulong?, string>(LogLevel.Warning, new EventId(5, "FailedWritingMessageToEndpoint"), FailedWritingMessageToEndpointTemplate);
 
             private static readonly Action<ILogger, string, Exception> _failedStartingConnectionForNewEndpoint =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, "FailedStartingConnectionForNewEndpoint"), "Fail to create and start server connection for new endpoint {endpoint}.");
@@ -451,16 +368,6 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _failedRemovingConnectionForEndpoint =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(10, "FailedRemovingConnectionForEndpoint"), "Fail to stop server connections for endpoint {endpoint}.");
 
-            private static readonly Action<ILogger, ulong?, string, Exception> _routeMessageToServiceEndpoint =
-                LoggerMessage.Define<ulong?, string>(LogLevel.Information, new EventId(11, "RouteMessageToServiceEndpoint"), "Route message {tracingId} to service endpoint {endpoint}.");
-
-            public static void RouteMessageToServiceEndpoint(ILogger logger, ServiceMessage message, string endpoint)
-            {
-                if (ServiceConnectionContainerScope.EnableMessageLog || ClientConnectionScope.IsDiagnosticClient)
-                {
-                    _routeMessageToServiceEndpoint(logger, (message as IMessageWithTracingId).TracingId, endpoint, null);
-                }
-            }
 
             public static void StartingConnection(ILogger logger, string endpoint)
             {
@@ -470,21 +377,6 @@ namespace Microsoft.Azure.SignalR
             public static void StoppingConnection(ILogger logger, string endpoint)
             {
                 _stoppingConnection(logger, endpoint, null);
-            }
-
-            public static void EndpointNotExists(ILogger logger, string endpoint)
-            {
-                _endpointNotExists(logger, endpoint, null);
-            }
-
-            public static void NoEndpointRouted(ILogger logger, string messageType)
-            {
-                _noEndpointRouted(logger, messageType, null);
-            }
-
-            public static void FailedWritingMessageToEndpoint(ILogger logger, string messageType, ulong? tracingId, string endpoint)
-            {
-                _failedWritingMessageToEndpoint(logger, messageType, tracingId, endpoint, null);
             }
 
             public static void FailedStartingConnectionForNewEndpoint(ILogger logger, string endpoint, Exception ex)
