@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Management
             var serviceProviderForHub = servicesPerHub.BuildServiceProvider();
             var connectionContainer = serviceProviderForHub.GetRequiredService<IServiceConnectionContainer>();
             await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
-            return serviceProviderForHub.GetRequiredService<IServiceHubContext>();
+            return serviceProviderForHub.GetRequiredService<ServiceHubContext>();
         }
 
         public void Dispose()

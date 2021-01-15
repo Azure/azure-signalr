@@ -41,9 +41,11 @@ namespace Microsoft.Azure.SignalR.Management
         public static IServiceCollection AddHub(this IServiceCollection services, string hubName)
         {
             return services.AddSingleton<IServiceConnectionContainer>(sp => sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().Connect(hubName))
+                .AddSingleton<ServiceHubLifetimeManagerFactory>()
                 .AddSingleton(sp => sp.GetRequiredService<ServiceHubLifetimeManagerFactory>().Create(hubName))
                 .AddSingleton(sp => (HubLifetimeManager<Hub>)sp.GetRequiredService<IServiceHubLifetimeManager>())
-                .AddSingleton<IServiceHubContext>(sp => ActivatorUtilities.CreateInstance<ServiceHubContext>(sp, hubName));
+                .AddSingleton(sp => ActivatorUtilities.CreateInstance<ServiceHubContext>(sp, hubName))
+                .AddLogging();
         }
 
         private static IServiceCollection AddSignalRServiceCore(this IServiceCollection services)
@@ -61,9 +63,6 @@ namespace Microsoft.Azure.SignalR.Management
                 .AddSingleton<IServiceConnectionFactory, ServiceConnectionFactory>()
                 .AddSingleton<MultiEndpointConnectionContainerFactory>()
                 .AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
-
-            services.AddLogging()
-                    .AddSingleton<ServiceHubLifetimeManagerFactory>();
 
             services.AddRestClientFactory();
             services.AddSingleton<NegotiateProcessor>();
