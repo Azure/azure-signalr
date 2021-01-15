@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -40,6 +38,16 @@ namespace Microsoft.Azure.SignalR.Management
             return services.AddSignalRServiceCore();
         }
 
+        public static IServiceCollection AddHub(this IServiceCollection services, string hubName)
+        {
+            return services.AddSingleton<IServiceConnectionContainer>(sp => sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().Connect(hubName))
+                .AddSingleton<ServiceHubLifetimeManagerFactory>()
+                .AddSingleton(sp => sp.GetRequiredService<ServiceHubLifetimeManagerFactory>().Create(hubName))
+                .AddSingleton(sp => (HubLifetimeManager<Hub>)sp.GetRequiredService<IServiceHubLifetimeManager>())
+                .AddSingleton(sp => ActivatorUtilities.CreateInstance<ServiceHubContext>(sp, hubName))
+                .AddLogging();
+        }
+
         private static IServiceCollection AddSignalRServiceCore(this IServiceCollection services)
         {
             services.AddSingleton<IServiceManager, ServiceManager>();
@@ -55,9 +63,6 @@ namespace Microsoft.Azure.SignalR.Management
                 .AddSingleton<IServiceConnectionFactory, ServiceConnectionFactory>()
                 .AddSingleton<MultiEndpointConnectionContainerFactory>()
                 .AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
-
-            services.AddLogging()
-                    .AddSingleton<ServiceHubLifetimeManagerFactory>();
 
             services.AddRestClientFactory();
             services.AddSingleton<NegotiateProcessor>();
