@@ -295,7 +295,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             {
                 var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
                 Assert.Single(warns);
-                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointServiceConnectionContainer.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
+                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointServiceConnectionContainerBase.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
                 return true;
             }))
             {
@@ -383,7 +383,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             {
                 var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
                 Assert.Equal(2, warns.Count);
-                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointServiceConnectionContainer.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
+                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointServiceConnectionContainerBase.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
                 return true;
             }))
             {
@@ -416,7 +416,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             {
                 var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
                 Assert.Single(warns);
-                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointServiceConnectionContainer.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
+                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointServiceConnectionContainerBase.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
                 return true;
             }))
             {
