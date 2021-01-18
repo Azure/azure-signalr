@@ -29,24 +29,25 @@ namespace Microsoft.Azure.SignalR.Management.E2ETests
         {
             var hubName = "hub";
             ServiceCollection services = new ServiceCollection();
-            services.AddSignalRServiceContext<ContextOptionsSetup>();
+            services.AddSignalRServiceManager();
 
             //configure two fake service endpoints and one real endpoints.
-            services.Configure<ContextOptions>(o =>
+            services.Configure<ServiceManagerOptions>(o =>
             {
-                o.ServiceEndpoints = FakeEndpointUtils.GetFakeEndpoint(3).Append(new ServiceEndpoint(TestConfiguration.Instance.ConnectionString)).ToArray();
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceEndpoints = FakeEndpointUtils.GetFakeEndpoint(3).ToArray();
             });
 
             //enable test output
             services.AddSingleton<ILoggerFactory>(new LoggerFactory(new List<ILoggerProvider> { new XunitLoggerProvider(_outputHelper) }));
-            var serviceProvider = services.BuildServiceProvider();
-            var negotiateProcessor = serviceProvider.GetRequiredService<NegotiateProcessor>();
+            var manager = services.BuildServiceProvider().GetRequiredService<IServiceManager>();
+            var hubContext = await manager.CreateHubContextAsync(hubName);
 
             var realEndpoint = new ServiceEndpoint(TestConfiguration.Instance.ConnectionString).Endpoint;
             //reduce the effect of randomness
             for (int i = 0; i < 5; i++)
             {
-                var clientEndoint = await negotiateProcessor.GetClientEndpointAsync(hubName);
+                var clientEndoint = await (hubContext as IInternalServiceHubContext).NegotiateAsync();
                 var expectedUrl = ClientEndpointUtils.GetExpectedClientEndpoint(hubName, null, realEndpoint);
                 Assert.Equal(expectedUrl, clientEndoint.Url);
             }

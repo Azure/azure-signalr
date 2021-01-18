@@ -5,10 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Security.Claims;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -28,10 +25,8 @@ namespace Microsoft.Azure.SignalR
         public IWebProxy Proxy { get; }
 
         public ServiceEndpointProvider(
-            IServerNameProvider provider,
             ServiceEndpoint endpoint,
-            ServiceOptions serviceOptions,
-            ILoggerFactory loggerFactory)
+            ServiceOptions serviceOptions)
         {
             _accessTokenLifetime = serviceOptions.AccessTokenLifetime;
             _accessKey = endpoint.AccessKey;
@@ -41,11 +36,6 @@ namespace Microsoft.Azure.SignalR
             Proxy = serviceOptions.Proxy;
 
             _generator = new DefaultServiceEndpointGenerator(endpoint);
-
-            if (endpoint.AccessKey is AadAccessKey key)
-            {
-                _ = key.UpdateAccessKeyAsync(provider, loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory)));
-            }
         }
 
         public Task<string> GenerateClientAccessTokenAsync(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
