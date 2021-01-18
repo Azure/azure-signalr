@@ -85,20 +85,18 @@ namespace Microsoft.Azure.SignalR
 
                 UpdateEndpoints(endpoints, out var addedEndpoints, out var removedEndpoints);
 
-                using (var addCts = new CancellationTokenSource(scaleTimeout))
+                using var addCts = new CancellationTokenSource(scaleTimeout);
+
+                if (!await WaitTaskOrTimeout(AddServiceEndpointsAsync(addedEndpoints, addCts.Token), addCts))
                 {
-                    if (!await WaitTaskOrTimeout(AddServiceEndpointsAsync(addedEndpoints, addCts.Token), addCts))
-                    {
-                        Log.AddEndpointsTimeout(_logger);
-                    }
+                    Log.AddEndpointsTimeout(_logger);
                 }
 
-                using (var removeCts = new CancellationTokenSource(scaleTimeout))
+                using var removeCts = new CancellationTokenSource(scaleTimeout);
+
+                if (!await WaitTaskOrTimeout(RemoveServiceEndpointsAsync(removedEndpoints, removeCts.Token), removeCts))
                 {
-                    if (!await WaitTaskOrTimeout(RemoveServiceEndpointsAsync(removedEndpoints, removeCts.Token), removeCts))
-                    {
-                        Log.RemoveEndpointsTimeout(_logger);
-                    }
+                    Log.RemoveEndpointsTimeout(_logger);
                 }
             }
             catch (Exception ex)
@@ -177,7 +175,6 @@ namespace Microsoft.Azure.SignalR
         private HubServiceEndpoint CreateHubServiceEndpoint(string hub, ServiceEndpoint endpoint, bool needScaleTcs = false)
         {
             var provider = GetEndpointProvider(endpoint);
-
             return new HubServiceEndpoint(hub, provider, endpoint, needScaleTcs);
         }
 

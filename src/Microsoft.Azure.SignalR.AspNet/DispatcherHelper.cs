@@ -61,7 +61,14 @@ namespace Microsoft.Azure.SignalR.AspNet
                 configuration.Resolver.Register(typeof(IServerNameProvider), () => serverNameProvider);
             }
 
-            var endpoint = new ServiceEndpointManager(serverNameProvider, options, loggerFactory);
+            var synchronizer = configuration.Resolver.Resolve<IAccessKeySynchronizer>();
+            if (synchronizer == null)
+            {
+                synchronizer = new AccessKeySynchronizer(serverNameProvider, loggerFactory);
+                configuration.Resolver.Register(typeof(IAccessKeySynchronizer), () => synchronizer);
+            }
+
+            var endpoint = new ServiceEndpointManager(synchronizer, options, loggerFactory);
             configuration.Resolver.Register(typeof(IServiceEndpointManager), () => endpoint);
 
             var requestIdProvider = configuration.Resolver.Resolve<IConnectionRequestIdProvider>();
