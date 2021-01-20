@@ -52,14 +52,14 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder().AddJsonFile(configPath, false, true).Build());
             using var provider = services.BuildServiceProvider();
             var optionsMonitor = provider.GetRequiredService<IOptionsMonitor<ServiceOptions>>();
-            Assert.Equal(originUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
+            Assert.Equal(originUrl, new ServiceEndpoint(optionsMonitor.CurrentValue.ConnectionString).Endpoint);
 
             //update json config file
             configObj.Azure.SignalR.ConnectionString = $"Endpoint={newUrl};AccessKey={AccessKey};Version=1.0;";
             File.WriteAllText(configPath, JsonConvert.SerializeObject(configObj));
 
             await Task.Delay(5000);
-            Assert.Equal(newUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
+            Assert.Equal(newUrl, new ServiceEndpoint(optionsMonitor.CurrentValue.ConnectionString).Endpoint);
         }
 
         [Fact]
@@ -74,54 +74,57 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .AddSingleton<IConfiguration>(new ConfigurationBuilder().Add(new ReloadableMemorySource(configProvider)).Build());
             using var provider = services.BuildServiceProvider();
             var optionsMonitor = provider.GetRequiredService<IOptionsMonitor<ServiceOptions>>();
-            Assert.Equal(originUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
+            Assert.Equal(originUrl, new ServiceEndpoint(optionsMonitor.CurrentValue.ConnectionString).Endpoint);
 
             //update
             configProvider.Set("Azure:SignalR:ConnectionString", $"Endpoint={newUrl};AccessKey={AccessKey};Version=1.0;");
-            Assert.Equal(newUrl, optionsMonitor.CurrentValue.Endpoints.Single().Endpoint);
+            Assert.Equal(newUrl, new ServiceEndpoint(optionsMonitor.CurrentValue.ConnectionString).Endpoint);
         }
 
         [Fact]
         public void ProductInfoDefaultValueNotNullFact()
         {
-            ServiceCollection services = new ServiceCollection();
-            services.AddSignalRServiceManager(o =>
+            var services = new ServiceCollection()
+                .AddSignalRServiceManager()
+                .Configure<ServiceManagerOptions>(o =>
             {
                 o.ConnectionString = TestConnectionString;
                 o.ServiceTransportType = ServiceTransportType.Persistent;
             });
             using var serviceProvider = services.BuildServiceProvider();
-            var productInfo = serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value.ProductInfo;
+            var productInfo = serviceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ProductInfo;
             Assert.Matches("^Microsoft.Azure.SignalR.Management/", productInfo);
         }
 
         [Fact]
         public void ProductInfoFromCallingAssemblyFact()
         {
-            ServiceCollection services = new ServiceCollection();
-            services.AddSignalRServiceManager(o =>
-            {
-                o.ConnectionString = TestConnectionString;
-                o.ServiceTransportType = ServiceTransportType.Persistent;
-            });
+            var services = new ServiceCollection()
+                .AddSignalRServiceManager()
+                .Configure<ServiceManagerOptions>(o =>
+                {
+                    o.ConnectionString = TestConnectionString;
+                    o.ServiceTransportType = ServiceTransportType.Persistent;
+                });
             services.WithAssembly(Assembly.GetExecutingAssembly());
             using var serviceProvider = services.BuildServiceProvider();
-            var productInfo = serviceProvider.GetRequiredService<IOptions<ServiceManagerContext>>().Value.ProductInfo;
+            var productInfo = serviceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ProductInfo;
             Assert.Matches("^Microsoft.Azure.SignalR.Management.Tests/", productInfo);
         }
 
         [Fact]
         public void ConfigureByDelegateFact()
         {
-            ServiceCollection services = new ServiceCollection();
-            services.AddSignalRServiceManager(o =>
-            {
-                o.ConnectionString = TestConnectionString;
-                o.ServiceTransportType = ServiceTransportType.Persistent;
-            });
+            var services = new ServiceCollection()
+                .AddSignalRServiceManager()
+                .Configure<ServiceManagerOptions>(o =>
+                {
+                    o.ConnectionString = TestConnectionString;
+                    o.ServiceTransportType = ServiceTransportType.Persistent;
+                });
             using var serviceProvider = services.BuildServiceProvider();
-            var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ServiceManagerContext>>();
-            Assert.Equal(Url, optionsMonitor.CurrentValue.ServiceEndpoints.Single().Endpoint);
+            var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ServiceManagerOptions>>();
+            Assert.Equal(Url, new ServiceEndpoint(optionsMonitor.CurrentValue.ConnectionString).Endpoint);
             Assert.Equal(ServiceTransportType.Persistent, optionsMonitor.CurrentValue.ServiceTransportType);
         }
 
@@ -134,19 +137,20 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var newAppName = "NewAppName";
             var configProvider = new ReloadableMemoryProvider();
             configProvider.Set("Azure:SignalR:ConnectionString", $"Endpoint={originUrl};AccessKey={AccessKey};Version=1.0;");
-            ServiceCollection services = new ServiceCollection();
-            services.AddSignalRServiceManager(o =>
-            {
-                o.ApplicationName = appName;
-            })
+            var services = new ServiceCollection()
+                .Configure<ServiceManagerOptions>(o =>
+                {
+                    o.ApplicationName = appName;
+                })
+                .AddSignalRServiceManager()
             .AddSingleton<IConfiguration>(new ConfigurationBuilder().Add(new ReloadableMemorySource(configProvider)).Build());
             using var serviceProvider = services.BuildServiceProvider();
-            var contextMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ServiceManagerContext>>();
+            var contextMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ServiceManagerOptions>>();
             Assert.Equal(appName, contextMonitor.CurrentValue.ApplicationName);
 
             configProvider.Set("Azure:SignalR:ConnectionString", $"Endpoint={newUrl};AccessKey={AccessKey};Version=1.0;");
             Assert.Equal(appName, contextMonitor.CurrentValue.ApplicationName);  // configuration via delegate is conserved after reload config.
-            Assert.Equal(newUrl, contextMonitor.CurrentValue.ServiceEndpoints.Single().Endpoint);
+            Assert.Equal(newUrl, new ServiceEndpoint(contextMonitor.CurrentValue.ConnectionString).Endpoint);
 
             configProvider.Set("Azure:SignalR:ApplicationName", newAppName);
             Assert.Equal(newAppName, contextMonitor.CurrentValue.ApplicationName);

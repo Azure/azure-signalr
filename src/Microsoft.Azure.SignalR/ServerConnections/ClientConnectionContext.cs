@@ -75,6 +75,8 @@ namespace Microsoft.Azure.SignalR
 
         public bool IsMigrated { get; }
 
+        public string Protocol { get; }
+
         // Send "Abort" to service on close except that Service asks SDK to close
         public bool AbortOnClose
         {
@@ -107,6 +109,7 @@ namespace Microsoft.Azure.SignalR
         public ClientConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
             ConnectionId = serviceMessage.ConnectionId;
+            Protocol = serviceMessage.Protocol;
             User = serviceMessage.GetUserPrincipal();
 
             // Create the Duplix Pipeline for the virtual connection

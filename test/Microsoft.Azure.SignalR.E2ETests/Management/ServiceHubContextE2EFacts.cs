@@ -318,6 +318,29 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
+        [ConditionalFact]
+        [SkipIfConnectionStringNotPresent]
+        public async Task ServiceHubContextIndependencyTest()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: context => context.EventId == new EventId(2, "EndpointOffline")))
+            {
+                using var serviceManager = new ServiceManagerBuilder()
+                    .WithOptions(o =>
+                    {
+                        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                        o.ServiceTransportType = ServiceTransportType.Persistent;
+                    })
+                    .WithLoggerFactory(loggerFactory)
+                    .Build();
+                var hubContext_1 = await serviceManager.CreateHubContextAsync(HubName);
+                var hubContext_2 = await serviceManager.CreateHubContextAsync(HubName);
+                await hubContext_1.Clients.All.SendAsync(MethodName, Message);
+                await hubContext_1.DisposeAsync();
+                await hubContext_2.Clients.All.SendAsync(MethodName, Message);
+                await hubContext_2.DisposeAsync();
+            }
+        }
+
         private static IDictionary<string, List<string>> GenerateUserGroupDict(IList<string> userNames, IList<string> groupNames)
         {
             return (from i in Enumerable.Range(0, userNames.Count)

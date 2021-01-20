@@ -9,14 +9,19 @@ namespace Microsoft.Azure.SignalR.AspNet
     {
         private readonly ServiceOptions _options;
 
-        private readonly IServerNameProvider _provider;
+        private readonly IAccessKeySynchronizer _synchronizer;
 
-        public ServiceEndpointManager(IServerNameProvider provider, ServiceOptions options, ILoggerFactory loggerFactory) : 
-            base(options,
-                loggerFactory?.CreateLogger<ServiceEndpointManager>())
+        public ServiceEndpointManager(
+            IAccessKeySynchronizer synchronizer,
+            ServiceOptions options,
+            ILoggerFactory loggerFactory) :
+            base(
+                options,
+                loggerFactory?.CreateLogger<ServiceEndpointManager>()
+            )
         {
-            _provider = provider;
             _options = options;
+            _synchronizer = synchronizer;
         }
 
         public override IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint)
@@ -26,7 +31,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                 return null;
             }
 
-            return new ServiceEndpointProvider(_provider, endpoint, _options);
+            _synchronizer.AddServiceEndpoint(endpoint);
+            return new ServiceEndpointProvider(endpoint, _options);
         }
     }
 }

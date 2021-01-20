@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.Azure.SignalR.Common.Endpoints;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
@@ -28,7 +27,7 @@ namespace Microsoft.Azure.SignalR
         public event EndpointEventHandler OnRemove;
         
         protected ServiceEndpointManagerBase(IServiceEndpointOptions options, ILogger logger)
-            : this(options.GetMergedEndpoints(), logger)
+            : this(ServiceEndpointUtility.Merge(options.ConnectionString, options.Endpoints), logger)
         {
         }
 
@@ -86,20 +85,18 @@ namespace Microsoft.Azure.SignalR
 
                 UpdateEndpoints(endpoints, out var addedEndpoints, out var removedEndpoints);
 
-                using (var addCts = new CancellationTokenSource(scaleTimeout))
+                using var addCts = new CancellationTokenSource(scaleTimeout);
+
+                if (!await WaitTaskOrTimeout(AddServiceEndpointsAsync(addedEndpoints, addCts.Token), addCts))
                 {
-                    if (!await WaitTaskOrTimeout(AddServiceEndpointsAsync(addedEndpoints, addCts.Token), addCts))
-                    {
-                        Log.AddEndpointsTimeout(_logger);
-                    }
+                    Log.AddEndpointsTimeout(_logger);
                 }
 
-                using (var removeCts = new CancellationTokenSource(scaleTimeout))
+                using var removeCts = new CancellationTokenSource(scaleTimeout);
+
+                if (!await WaitTaskOrTimeout(RemoveServiceEndpointsAsync(removedEndpoints, removeCts.Token), removeCts))
                 {
-                    if (!await WaitTaskOrTimeout(RemoveServiceEndpointsAsync(removedEndpoints, removeCts.Token), removeCts))
-                    {
-                        Log.RemoveEndpointsTimeout(_logger);
-                    }
+                    Log.RemoveEndpointsTimeout(_logger);
                 }
             }
             catch (Exception ex)
@@ -152,7 +149,7 @@ namespace Microsoft.Azure.SignalR
                 if (!endpoints.TryGetValue(hub, out var updatedEndpoints) 
                     || updatedEndpoints.Count == 0)
                 {
-                    return;
+                    continue;
                 }
                 var oldEndpoints = _endpointsPerHub[hub];
                 var newEndpoints = oldEndpoints.ToList();
@@ -178,7 +175,6 @@ namespace Microsoft.Azure.SignalR
         private HubServiceEndpoint CreateHubServiceEndpoint(string hub, ServiceEndpoint endpoint, bool needScaleTcs = false)
         {
             var provider = GetEndpointProvider(endpoint);
-
             return new HubServiceEndpoint(hub, provider, endpoint, needScaleTcs);
         }
 

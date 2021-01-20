@@ -63,31 +63,49 @@ namespace Microsoft.Azure.SignalR
 
             if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var serviceConnectionContext))
             {
-                var message = new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)).WithTracingId();
-                if (message.TracingId != null)
-                {
-                    MessageLog.StartToSendMessageToConnections(Logger, message);
-                }
-
+                var message = CreateMessage(connectionId, methodName, args, serviceConnectionContext);
+                var messageWithTracingId = (IMessageWithTracingId)message;
                 try
                 {
                     // Write directly to this connection
                     await serviceConnectionContext.ServiceConnection.WriteAsync(message);
-                    
-                    if (message.TracingId != null)
+
+                    if (messageWithTracingId.TracingId != null)
                     {
-                        MessageLog.SucceededToSendMessage(Logger, message);
+                        MessageLog.SucceededToSendMessage(Logger, messageWithTracingId);
                     }
                     return;
                 }
                 catch (Exception ex)
                 {
-                    MessageLog.FailedToSendMessage(Logger, message, ex);
+                    MessageLog.FailedToSendMessage(Logger, messageWithTracingId, ex);
                     throw;
                 }
             }
 
             await base.SendConnectionAsync(connectionId, methodName, args, cancellationToken);
+        }
+
+        private ServiceMessage CreateMessage(string connectionId, string methodName, object[] args, ClientConnectionContext serviceConnectionContext)
+        {
+            if (serviceConnectionContext.Protocol != null)
+            {
+                var message = new ConnectionDataMessage(connectionId, SerializeProtocol(serviceConnectionContext.Protocol, methodName, args)).WithTracingId();
+                if (message.TracingId != null)
+                {
+                    MessageLog.StartToSendMessageToConnection(Logger, message);
+                }
+                return message;
+            }
+            else
+            {
+                var message = new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)).WithTracingId();
+                if (message.TracingId != null)
+                {
+                    MessageLog.StartToSendMessageToConnections(Logger, message);
+                }
+                return message;
+            }
         }
     }
 }

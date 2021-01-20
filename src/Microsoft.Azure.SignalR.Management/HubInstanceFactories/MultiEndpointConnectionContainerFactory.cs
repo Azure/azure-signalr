@@ -1,9 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -17,7 +15,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly int _connectionCount;
         private readonly IEndpointRouter _router;
 
-        public MultiEndpointConnectionContainerFactory(IServiceConnectionFactory connectionFactory, ILoggerFactory loggerFactory, IServiceEndpointManager serviceEndpointManager, IOptions<ServiceManagerContext> options, IEndpointRouter router = null)
+        public MultiEndpointConnectionContainerFactory(IServiceConnectionFactory connectionFactory, ILoggerFactory loggerFactory, IServiceEndpointManager serviceEndpointManager, IOptions<ServiceManagerOptions> options, IEndpointRouter router = null)
         {
             _connectionFactory = connectionFactory;
             _loggerFactory = loggerFactory;
@@ -26,15 +24,16 @@ namespace Microsoft.Azure.SignalR.Management
             _router = router;
         }
 
-        public MultiEndpointServiceConnectionContainer Create(string hubName, ILoggerFactory loggerFactoryPerHub = null)
+        public MultiEndpointServiceConnectionContainer Connect(string hubName)
         {
-            var loggerFactory = loggerFactoryPerHub ?? _loggerFactory;
-            return new MultiEndpointServiceConnectionContainer(
+            var container = new MultiEndpointServiceConnectionContainer(
                 hubName,
-                endpoint => new WeakServiceConnectionContainer(_connectionFactory, _connectionCount, endpoint, loggerFactory.CreateLogger<WeakServiceConnectionContainer>()),
+                endpoint => new WeakServiceConnectionContainer(_connectionFactory, _connectionCount, endpoint, _loggerFactory.CreateLogger<WeakServiceConnectionContainer>()),
                 _endpointManager,
                 _router,
-                loggerFactory);
+                _loggerFactory);
+            container.StartAsync();
+            return container;
         }
     }
 }

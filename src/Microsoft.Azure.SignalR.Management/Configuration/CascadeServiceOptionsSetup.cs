@@ -6,14 +6,15 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class ServiceOptionsSetup : CascadeOptionsSetup<ServiceOptions, ServiceManagerContext>
+    internal class CascadeServiceOptionsSetup : CascadeOptionsSetup<ServiceOptions, ServiceManagerOptions>
     {
-        public ServiceOptionsSetup(IOptionsMonitor<ServiceManagerContext> sourceMonitor) : base(sourceMonitor)
+        public CascadeServiceOptionsSetup(IOptionsMonitor<ServiceManagerOptions> sourceMonitor) : base(sourceMonitor)
         {
         }
 
-        protected override void Convert(ServiceOptions target, ServiceManagerContext source)
+        protected override void Convert(ServiceOptions target, ServiceManagerOptions source)
         {
+            target.ConnectionString = source.ConnectionString;
             target.ApplicationName = source.ApplicationName;
             target.Endpoints = source.ServiceEndpoints;
             target.Proxy = source.Proxy;

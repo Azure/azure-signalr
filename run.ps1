@@ -123,11 +123,11 @@ function Get-KoreBuild {
                 [System.IO.Compression.ZipFile]::ExtractToDirectory($tmpfile, $korebuildPath)
             }
 			 
-            # Hack to use preview7
-            Write-Host "!!! Hack to use .NET Core SDK 3.1.401"
+            # Hack to use Core version
+            Write-Host "!!! Hack to use .NET Core SDK 5.0.100"
             $sdkversion = Get-ChildItem -Path $korebuildPath -Include sdk.version -Recurse
             $sdkpath = Join-Path $sdkversion.DirectoryName $sdkversion.Name
-            Set-Content -Path $sdkpath -Value "3.1.401"
+            Set-Content -Path $sdkpath -Value "5.0.100" -Force
         }
         catch {
             Remove-Item -Recurse -Force $korebuildPath -ErrorAction Ignore

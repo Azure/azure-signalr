@@ -28,11 +28,11 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly TimeSpan _accessTokenLifetime;
         private readonly AccessTokenAlgorithm _algorithm;
 
-        private readonly IServerNameProvider _provider;
-
         public IWebProxy Proxy { get; }
 
-        public ServiceEndpointProvider(IServerNameProvider provider, ServiceEndpoint endpoint, ServiceOptions options)
+        public ServiceEndpointProvider(
+            ServiceEndpoint endpoint,
+            ServiceOptions options)
         {
             _accessTokenLifetime = options.AccessTokenLifetime;
 
@@ -44,10 +44,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             _port = endpoint.Port;
             _algorithm = options.AccessTokenAlgorithm;
 
-            _provider = provider;
             Proxy = options.Proxy;
         }
-
 
         private string GetPrefixedHubName(string applicationName, string hubName)
         {
