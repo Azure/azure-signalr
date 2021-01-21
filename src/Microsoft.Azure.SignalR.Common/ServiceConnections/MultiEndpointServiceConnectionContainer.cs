@@ -203,7 +203,7 @@ namespace Microsoft.Azure.SignalR
 
         private RawMultiEndpointServiceConnectionContainer CreateRoutedContainer(ServiceMessage serviceMessage)
             {
-                var targetEndpoints = GetRoutedEndpoints(serviceMessage).Select(e => e as HubServiceEndpoint);
+                var targetEndpoints = GetRoutedEndpoints(serviceMessage)?.Select(e => e as HubServiceEndpoint);
                 return new RawMultiEndpointServiceConnectionContainer(targetEndpoints, _loggerFactory);
             }
 
