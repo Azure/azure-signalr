@@ -237,7 +237,9 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
 
         private Task SendAsync(IClientProxy client, string method, object[] arguments, CancellationToken cancellationToken = default)
         {
-            switch (arguments.Length)
+            var argsLen = arguments?.Length ?? 0;
+
+            switch (argsLen)
             {
                 case 0:
                     return client.SendAsync(method, cancellationToken);
