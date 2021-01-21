@@ -17,6 +17,8 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
 {
     internal class SignalRServiceEmulatorWebApi : SignalRServiceWebApiDefinition
     {
+        private const string HubPattern = "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$";
+        private const string GroupPattern = "^\\S{1,1024}$";
         private readonly DynamicHubContextStore _store;
         private readonly ILogger<SignalRServiceEmulatorWebApi> _logger;
 
@@ -26,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             this._logger = _logger;
         }
 
-        public override async Task<IActionResult> Broadcast([RegularExpression("^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$")] string hub, [FromBody] PayloadMessage message, [FromQuery(Name = "excluded")] IReadOnlyList<string> excluded)
+        public override async Task<IActionResult> Broadcast([RegularExpression(HubPattern)] string hub, [FromBody] PayloadMessage message, [FromQuery(Name = "excluded")] IReadOnlyList<string> excluded)
         {
             if (!ModelState.IsValid)
             {
@@ -44,7 +46,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Accepted();
         }
 
-        public override async Task<IActionResult> SendToUser([RegularExpression("^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$")] string hub, string user, [FromBody] PayloadMessage message)
+        public override async Task<IActionResult> SendToUser([RegularExpression(HubPattern)] string hub, string user, [FromBody] PayloadMessage message)
         {
             if (!ModelState.IsValid)
             {
@@ -62,7 +64,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Accepted();
         }
 
-        public override Task<IActionResult> CheckConnectionExistence([RegularExpression("^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$")] string hub, string connectionId)
+        public override Task<IActionResult> CheckConnectionExistence([RegularExpression(HubPattern)] string hub, string connectionId)
         {
             if (!ModelState.IsValid)
             {
@@ -82,7 +84,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(NotFound() as IActionResult);
         }
 
-        public override Task<IActionResult> CheckGroupExistence([RegularExpression("^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$")] string hub, string group)
+        public override Task<IActionResult> CheckGroupExistence([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group)
         {
             if (!ModelState.IsValid)
             {
@@ -100,7 +102,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(NotFound() as IActionResult);
         }
 
-        public override Task<IActionResult> CheckUserExistence([RegularExpression("^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$")] string hub, string user)
+        public override Task<IActionResult> CheckUserExistence([RegularExpression(HubPattern)] string hub, string user)
         {
             if (!ModelState.IsValid)
             {
@@ -121,7 +123,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(NotFound() as IActionResult);
         }
 
-        public override Task<IActionResult> CloseClientConnection([RegularExpression("^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$")] string hub, string connectionId, [FromQuery] string reason)
+        public override Task<IActionResult> CloseClientConnection([RegularExpression(HubPattern)] string hub, string connectionId, [FromQuery] string reason)
         {
             if (!ModelState.IsValid)
             {
@@ -141,7 +143,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(Accepted() as IActionResult);
         }
 
-        public override Task<IActionResult> RemoveConnectionFromGroup([RegularExpression("^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$")] string hub, string group, string connectionId)
+        public override Task<IActionResult> RemoveConnectionFromGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string connectionId)
         {
             if (!ModelState.IsValid)
             {
@@ -159,7 +161,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(NotFound() as IActionResult);
         }
 
-        public override Task<IActionResult> AddConnectionToGroup([RegularExpression("^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$")] string hub, string group, string connectionId)
+        public override Task<IActionResult> AddConnectionToGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string connectionId)
         {
             if (!ModelState.IsValid)
             {
@@ -180,7 +182,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(NotFound() as IActionResult);
         }
 
-        public override async Task<IActionResult> GroupBroadcast([RegularExpression("^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$")] string hub, string group, [FromBody] PayloadMessage message, [FromQuery(Name = "excluded")] IReadOnlyList<string> excluded)
+        public override async Task<IActionResult> GroupBroadcast([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, [FromBody] PayloadMessage message, [FromQuery(Name = "excluded")] IReadOnlyList<string> excluded)
         {
             if (!ModelState.IsValid)
             {
@@ -203,7 +205,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Accepted();
         }
 
-        public override async Task<IActionResult> SendToConnection([RegularExpression("^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$")] string hub, string connectionId, [FromBody] PayloadMessage message)
+        public override async Task<IActionResult> SendToConnection([RegularExpression(HubPattern)] string hub, string connectionId, [FromBody] PayloadMessage message)
         {
             if (!ModelState.IsValid)
             {
@@ -221,7 +223,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Accepted();
         }
 
-        public override Task<IActionResult> CheckUserExistenceInGroup([RegularExpression("^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$")] string hub, string group, string user)
+        public override Task<IActionResult> CheckUserExistenceInGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string user)
         {
             if (!ModelState.IsValid)
             {
@@ -239,7 +241,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(NotFound() as IActionResult);
         }
 
-        public override Task<IActionResult> AddUserToGroup([RegularExpression("^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$")] string hub, string group, string user, int? ttl = null)
+        public override Task<IActionResult> AddUserToGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string user, int? ttl = null)
         {
             if (!ModelState.IsValid)
             {
@@ -254,7 +256,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(Accepted() as IActionResult);
         }
 
-        public override Task<IActionResult> RemoveUserFromAllGroups([RegularExpression("^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$")] string hub, string user)
+        public override Task<IActionResult> RemoveUserFromAllGroups([RegularExpression(HubPattern)] string hub, string user)
         {
             if (!ModelState.IsValid)
             {
@@ -270,7 +272,7 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(Accepted() as IActionResult);
         }
 
-        public override Task<IActionResult> RemoveUserFromGroup([RegularExpression("^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$")] string hub, string group, string user)
+        public override Task<IActionResult> RemoveUserFromGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string user)
         {
             if (!ModelState.IsValid)
             {
