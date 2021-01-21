@@ -12,37 +12,21 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal abstract class MultiEndpointServiceConnectionContainerBase : IMultiEndpointServiceConnectionContainer
+    /// <summary>
+    /// A service connection container which sends message to multiple service endpoints.
+    /// </summary>
+    internal class RawMultiEndpointServiceConnectionContainer : IMultiEndpointServiceConnectionContainer
     {
         private readonly ILogger _logger;
+        internal IEnumerable<HubServiceEndpoint> TargetEndpoints { get; }
 
-        protected MultiEndpointServiceConnectionContainerBase(ILoggerFactory loggerFactory)
+        public RawMultiEndpointServiceConnectionContainer(IEnumerable<HubServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
         {
-            _logger = loggerFactory.CreateLogger<MultiEndpointServiceConnectionContainerBase>();
+            TargetEndpoints = targetEndpoints;
+            _logger = loggerFactory.CreateLogger<RawMultiEndpointServiceConnectionContainer>();
         }
 
-        #region abstract method
-
-        public abstract ServiceConnectionStatus Status { get; }
-        public abstract Task ConnectionInitializedTask { get; }
-        public abstract string ServersTag { get; }
-        public abstract bool HasClients { get; }
-
-        public abstract void Dispose();
-
-        public abstract IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message);
-
-        public abstract Task OfflineAsync(GracefulShutdownMode mode);
-
-        public abstract Task StartAsync();
-
-        public abstract Task StartGetServersPing();
-
-        public abstract Task StopAsync();
-
-        public abstract Task StopGetServersPing();
-
-        #endregion abstract method
+        public Task ConnectionInitializedTask => Task.WhenAll(from endpoint in TargetEndpoints select endpoint.ConnectionContainer.ConnectionInitializedTask);
 
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
@@ -76,7 +60,7 @@ namespace Microsoft.Azure.SignalR
 
         private Task WriteMultiEndpointMessageAsync(ServiceMessage serviceMessage, Func<IServiceConnectionContainer, Task> inner)
         {
-            var routed = GetRoutedEndpoints(serviceMessage)?
+            var routed = TargetEndpoints?
                 .Select(endpoint =>
                 {
                     var connection = (endpoint as HubServiceEndpoint)?.ConnectionContainer;
@@ -114,6 +98,14 @@ namespace Microsoft.Azure.SignalR
             }
 
             return Task.WhenAll(routed);
+        }
+
+        public Task StartAsync() => Task.CompletedTask;
+
+        public Task StopAsync() => Task.CompletedTask;
+
+        public void Dispose()
+        {
         }
 
         internal static class Log
@@ -155,5 +147,21 @@ namespace Microsoft.Azure.SignalR
                 _failedWritingMessageToEndpoint(logger, messageType, tracingId, endpoint, null);
             }
         }
+
+        #region Not supported method or properties
+
+        public ServiceConnectionStatus Status => throw new NotSupportedException();
+
+        public string ServersTag => throw new NotSupportedException();
+
+        public bool HasClients => throw new NotSupportedException();
+
+        public Task OfflineAsync(GracefulShutdownMode mode) => throw new NotSupportedException();
+
+        public Task StartGetServersPing() => throw new NotSupportedException();
+
+        public Task StopGetServersPing() => throw new NotSupportedException();
+
+        #endregion Not supported method or properties
     }
 }
