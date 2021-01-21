@@ -63,7 +63,7 @@ namespace Microsoft.Azure.SignalR
             var routed = TargetEndpoints?
                 .Select(endpoint =>
                 {
-                    var connection = (endpoint as HubServiceEndpoint)?.ConnectionContainer;
+                    var connection = endpoint?.ConnectionContainer;
                     if (connection == null)
                     {
                         Log.EndpointNotExists(_logger, endpoint.ToString());
