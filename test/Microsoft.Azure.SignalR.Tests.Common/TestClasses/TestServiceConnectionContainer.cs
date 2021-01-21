@@ -87,10 +87,5 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         public void Dispose()
         {
         }
-
-        public IEnumerable<ServiceEndpoint> GetRoutedEndpoints(ServiceMessage message)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
