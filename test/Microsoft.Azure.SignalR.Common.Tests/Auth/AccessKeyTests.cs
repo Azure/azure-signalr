@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         {
             var options = new AadApplicationOptions(TestClientId, TestTenantId).WithClientSecret(TestClientSecret);
             var key = new AadAccessKey(options, TestEndpoint, TestPort);
-            await key.AuthorizeAsync("serverId");
+            await key.UpdateAccessKeyAsync("serverId");
 
             Assert.True(key.Authorized);
             Assert.NotNull(key.Id);
