@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR
             _logger = loggerFactory.CreateLogger<MultiEndpointMessageWriter>();
         }
 
-        public Task ConnectionInitializedTask => Task.WhenAll(from endpoint in TargetEndpoints select endpoint.ConnectionContainer.ConnectionInitializedTask);
+        public Task ConnectionInitializedTask => TargetEndpoints == null ? Task.CompletedTask : Task.WhenAll(TargetEndpoints.Select(e => e.ConnectionContainer.ConnectionInitializedTask));
 
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
