@@ -39,7 +39,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .WithEndpoints(targetEndpoints);
             var container = (hubContext as ServiceHubContext)
                 .ServiceProvider.GetRequiredService<IServiceConnectionContainer>()
-                as RawMultiEndpointServiceConnectionContainer;
+                as MultiEndpointMessageWriter;
             var innerEndpoints = container.TargetEndpoints.Select(e => e).Where(e => e != null).ToArray();
             var hubEndpoints = serviceProvider.GetRequiredService<IServiceEndpointManager>().GetEndpoints(Hub);
             Assert.True(innerEndpoints.SequenceEqual(hubEndpoints.Take(selectedCount)));

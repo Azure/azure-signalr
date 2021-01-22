@@ -144,12 +144,12 @@ namespace Microsoft.Azure.SignalR
 
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
-            return CreateRoutedContainer(serviceMessage).WriteAsync(serviceMessage);
+            return CreateMessageWriter(serviceMessage).WriteAsync(serviceMessage);
         }
 
         public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            return CreateRoutedContainer(serviceMessage).WriteAckableMessageAsync(serviceMessage, cancellationToken);
+            return CreateMessageWriter(serviceMessage).WriteAckableMessageAsync(serviceMessage, cancellationToken);
         }
         public Task StartGetServersPing()
         {
@@ -201,10 +201,10 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private RawMultiEndpointServiceConnectionContainer CreateRoutedContainer(ServiceMessage serviceMessage)
+        private MultiEndpointMessageWriter CreateMessageWriter(ServiceMessage serviceMessage)
             {
                 var targetEndpoints = GetRoutedEndpoints(serviceMessage)?.Select(e => e as HubServiceEndpoint);
-                return new RawMultiEndpointServiceConnectionContainer(targetEndpoints, _loggerFactory);
+                return new MultiEndpointMessageWriter(targetEndpoints, _loggerFactory);
             }
 
 

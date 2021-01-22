@@ -15,15 +15,15 @@ namespace Microsoft.Azure.SignalR
     /// <summary>
     /// A service connection container which sends message to multiple service endpoints.
     /// </summary>
-    internal class RawMultiEndpointServiceConnectionContainer : IMultiEndpointServiceConnectionContainer
+    internal class MultiEndpointMessageWriter : IMultiEndpointServiceConnectionContainer
     {
         private readonly ILogger _logger;
-        internal IEnumerable<HubServiceEndpoint> TargetEndpoints { get; }
+        internal IReadOnlyCollection<HubServiceEndpoint> TargetEndpoints { get; }
 
-        public RawMultiEndpointServiceConnectionContainer(IEnumerable<HubServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
+        public MultiEndpointMessageWriter(IEnumerable<HubServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
         {
-            TargetEndpoints = targetEndpoints;
-            _logger = loggerFactory.CreateLogger<RawMultiEndpointServiceConnectionContainer>();
+            TargetEndpoints = targetEndpoints.ToList();
+            _logger = loggerFactory.CreateLogger<MultiEndpointMessageWriter>();
         }
 
         public Task ConnectionInitializedTask => Task.WhenAll(from endpoint in TargetEndpoints select endpoint.ConnectionContainer.ConnectionInitializedTask);
