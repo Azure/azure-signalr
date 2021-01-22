@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private const string Hub = nameof(Hub);
 
         [Fact]
-        public async Task CreateDirectContainer_WithReferenceNotEqualEndpoints()
+        public async Task CreateServiceHubContext_WithReferenceNotEqualEndpoints()
         {
             //prepare endpoints
             var totalCount = 3;
@@ -32,17 +32,15 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     o.ServiceTransportType = ServiceTransportType.Persistent;
                 });
             services.AddSingleton<IReadOnlyCollection<ServiceDescriptor>>(services.ToList());
-            var serviceProvider = services.BuildServiceProvider();
+            var serviceManager = services.BuildServiceProvider().GetRequiredService<IServiceManager>();
 
-            var hubContext = (await serviceProvider.GetRequiredService<IServiceManager>().CreateHubContextAsync(Hub)
-                as IInternalServiceHubContext)
+            var hubContext = (await serviceManager.CreateHubContextAsync(Hub) as IInternalServiceHubContext)
                 .WithEndpoints(targetEndpoints);
-            var container = (hubContext as ServiceHubContext)
-                .ServiceProvider.GetRequiredService<IServiceConnectionContainer>()
-                as MultiEndpointMessageWriter;
-            var innerEndpoints = container.TargetEndpoints.Select(e => e).Where(e => e != null).ToArray();
-            var hubEndpoints = serviceProvider.GetRequiredService<IServiceEndpointManager>().GetEndpoints(Hub);
-            Assert.True(innerEndpoints.SequenceEqual(hubEndpoints.Take(selectedCount)));
+            var serviceProvider = (hubContext as ServiceHubContext).ServiceProvider;
+            var container = serviceProvider.GetRequiredService<IServiceConnectionContainer>() as MultiEndpointMessageWriter;
+            var innerEndpoints = container.TargetEndpoints.ToArray();
+            var hubEndpoints = (hubContext as ServiceHubContext).ServiceProvider.GetRequiredService<IServiceEndpointManager>().GetEndpoints(Hub);
+            Assert.True(innerEndpoints.SequenceEqual(hubEndpoints.Take(selectedCount), ReferenceEqualityComparer.Instance));
         }
     }
 }
