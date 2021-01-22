@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR
 
         public MultiEndpointMessageWriter(IEnumerable<HubServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
         {
-            TargetEndpoints = targetEndpoints.ToList();
+            TargetEndpoints = targetEndpoints?.ToList();
             _logger = loggerFactory.CreateLogger<MultiEndpointMessageWriter>();
         }
 
