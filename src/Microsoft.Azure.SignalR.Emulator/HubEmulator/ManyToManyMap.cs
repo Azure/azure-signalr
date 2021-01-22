@@ -40,10 +40,12 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             _rtl.AddOrUpdate(right, new Set<TLeft>(_leftComparer) { left }, (_, items) => { lock (items) { items.Add(left); } return items; });
         }
 
-        public void Remove(TLeft left, TRight right)
+        public bool Remove(TLeft left, TRight right)
         {
-            RemoveLeftFromRight(left, right);
+            var exists = RemoveLeftFromRight(left, right);
             RemoveRightFromLeft(left, right);
+
+            return exists;
         }
 
         public void RemoveRightFromLeft(TLeft left, TRight right)
@@ -61,18 +63,24 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             }
         }
 
-        public void RemoveLeftFromRight(TLeft left, TRight right)
+        public bool RemoveLeftFromRight(TLeft left, TRight right)
         {
             if (_rtl.TryGetValue(right, out var rights))
             {
                 lock (rights)
                 {
-                    rights.Remove(left);
+                    var exists = rights.Remove(left);
                     if (rights.Count == 0)
                     {
                         ((ICollection<KeyValuePair<TRight, Set<TLeft>>>)_rtl).Remove(KeyValuePair.Create(right, rights));
                     }
+
+                    return exists;
                 }
+            }
+            else
+            {
+                return false;
             }
         }
 
