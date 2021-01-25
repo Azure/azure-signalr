@@ -73,6 +73,7 @@ The following documents describe more details about Azure SignalR Service.
 - [FAQ](./docs/faq.md)
 - [Troubleshooting Guide](./docs/tsg.md)
 - [Azure SignalR Local Emulator](./docs/emulator.md)
+
 Contributions are highly welcome. Keep reading if you want to contribute to our repository.
 
 ### Building from source
