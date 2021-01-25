@@ -22,6 +22,7 @@ Microsoft.Azure.SignalR.AspNet | The package to use when you are using **ASP.NET
 Microsoft.Azure.SignalR | The package to use when you are using **ASP.NET Core SignalR** | **.NET Standard 2.0**<br/> **.NET Core App 3.0**<br/> **.NET 5.0** |  [![Nuget](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.svg?label=NuGet)](https://www.nuget.org/packages/Microsoft.Azure.SignalR/) <br/> [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.svg?label=MyGet)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR)
 Microsoft.Azure.SignalR.Management | You can use the package to manage **ASP.NET Core SignalR** clients through Azure SignalR Service directly | **.NET Standard 2.0**<br/> **.NET Core App 3.0**<br/> **.NET 5.0** | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Management.svg?label=NuGet)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) <br/>  [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Management.svg?label=MyGet)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Management)
 | Microsoft.Azure.SignalR.Protocols | The package contains the data protocol between the SDK and the Azure SignalR Service | **.NET Standard 2.0** | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Protocols.svg?label=NuGet)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Protocols) <br/>  [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Protocols.svg?label=MyGet)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Protocols)
+| Microsoft.Azure.SignalR.Emulator | The emulator tool for serverless scenarios | **.NET Standard 2.0** | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Emulator.svg?label=NuGet)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Emulator) <br/>  [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Emulator.svg?label=MyGet)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Emulator)
 </div>
 
 ## Getting Started
@@ -71,7 +72,7 @@ The following documents describe more details about Azure SignalR Service.
 - [Internals of the Azure SignalR Service](./docs/internal.md)
 - [FAQ](./docs/faq.md)
 - [Troubleshooting Guide](./docs/tsg.md)
-
+- [Azure SignalR Local Emulator](./docs/emulator.md)
 Contributions are highly welcome. Keep reading if you want to contribute to our repository.
 
 ### Building from source
