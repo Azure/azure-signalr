@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ILogger _logger;
         internal IReadOnlyCollection<HubServiceEndpoint> TargetEndpoints { get; }
 
-        public MultiEndpointMessageWriter(IEnumerable<HubServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
+        public MultiEndpointMessageWriter(IReadOnlyCollection<HubServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
         {
             TargetEndpoints = targetEndpoints?.ToList();
             _logger = loggerFactory.CreateLogger<MultiEndpointMessageWriter>();

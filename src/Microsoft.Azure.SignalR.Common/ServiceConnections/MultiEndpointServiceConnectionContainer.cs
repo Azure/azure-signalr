@@ -203,7 +203,7 @@ namespace Microsoft.Azure.SignalR
 
         private MultiEndpointMessageWriter CreateMessageWriter(ServiceMessage serviceMessage)
             {
-                var targetEndpoints = GetRoutedEndpoints(serviceMessage)?.Select(e => e as HubServiceEndpoint);
+                var targetEndpoints = GetRoutedEndpoints(serviceMessage)?.Select(e => e as HubServiceEndpoint).ToList();
                 return new MultiEndpointMessageWriter(targetEndpoints, _loggerFactory);
             }
 
