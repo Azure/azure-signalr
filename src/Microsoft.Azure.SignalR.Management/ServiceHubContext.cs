@@ -58,6 +58,11 @@ namespace Microsoft.Azure.SignalR.Management
 
         IInternalServiceHubContext IInternalServiceHubContext.WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
+            if (endpoints is null)
+            {
+                throw new ArgumentNullException(nameof(endpoints));
+            }
+
             var targetEndpoints = _endpointManager.GetEndpoints(_hubName).Intersect(endpoints, EqualityComparer<ServiceEndpoint>.Default).Select(e => e as HubServiceEndpoint).ToList();
             var container = new MultiEndpointMessageWriter(targetEndpoints, ServiceProvider.GetRequiredService<ILoggerFactory>());
             return new ServiceCollection()
