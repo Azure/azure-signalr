@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
     /// </summary>
     internal class ConnectionTrackingMockService : IMockService
     {
-        private object _removeLock = new object();
+        private object _addRemoveLock = new object();
         ConcurrentBag<MockServiceSideConnection> _serviceSideConnections = new ConcurrentBag<MockServiceSideConnection>();
         ConcurrentBag<MockServiceConnection> _sdkSideConnections = new ConcurrentBag<MockServiceConnection>();
 
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 
         public void RegisterSDKConnection(MockServiceConnection sdkSideConnection)
         {
-            lock (_removeLock)
+            lock (_addRemoveLock)
             {
                 _sdkSideConnections.Add(sdkSideConnection);
             }
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 
         public MockServiceSideConnection RegisterSDKConnectionContext(MockServiceConnectionContext sdkSideConnCtx, HubServiceEndpoint endpoint, string target, IDuplexPipe pipe)
         {
-            lock (_removeLock)
+            lock (_addRemoveLock)
             {
                 // Loosely coupled and indirect way of instantiating SDK side ServiceConnection and ServiceConnectionContext objects created
                 // a unique problem: MockServiceConnection has no way of knowing which instance of MockServiceConnectionContext it is using.
@@ -117,8 +117,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
             }
 
             // lock to ensure we don't loose any connections while enumerating
-            // todo: lock on add as well?
-            lock (_removeLock)
+            lock (_addRemoveLock)
             {
                 var new_serviceSideConnections = new ConcurrentBag<MockServiceSideConnection>();
                 while (_serviceSideConnections.TryTake(out var c))
@@ -130,7 +129,6 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                     else
                     {
                         //also try removing its sdk side part
-                        //note: 
                         UnregisterMockServiceConnection(conn.SDKSideServiceConnection);
                     }
                 }
@@ -145,7 +143,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                 return;
             }
 
-            lock (_removeLock)
+            lock (_addRemoveLock)
             {               
                 var new_sdkSideConnections = new ConcurrentBag<MockServiceConnection>();
                 while (_sdkSideConnections.TryTake(out var c))
@@ -163,42 +161,23 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
                 _sdkSideConnections = new_sdkSideConnections;
             }
         }
-    }
 
-    internal class DefaultMockInvocationBinder : IInvocationBinder
-    {
-        public IReadOnlyList<Type> GetParameterTypes(string methodName)
+        internal class DefaultMockInvocationBinder : IInvocationBinder
         {
-            return new List<Type>(new Type[] { });
-        }
+            public IReadOnlyList<Type> GetParameterTypes(string methodName)
+            {
+                return new List<Type>(new Type[] { });
+            }
 
-        public Type GetReturnType(string invocationId)
-        {
-            return typeof(object);
-        }
+            public Type GetReturnType(string invocationId)
+            {
+                return typeof(object);
+            }
 
-        public Type GetStreamItemType(string streamId)
-        {
-            return typeof(object);
-        }
-    }
-
-    internal class TestHubBroadcastNCallsInvocationBinder : IInvocationBinder
-    {
-        public IReadOnlyList<Type> GetParameterTypes(string methodName)
-        {
-            return new List<Type>(new Type[] { typeof(int) });
-        }
-
-        public Type GetReturnType(string invocationId)
-        {
-            return typeof(bool);
-        }
-
-        public Type GetStreamItemType(string streamId)
-        {
-            return typeof(object);
+            public Type GetStreamItemType(string streamId)
+            {
+                return typeof(object);
+            }
         }
     }
-
 }
