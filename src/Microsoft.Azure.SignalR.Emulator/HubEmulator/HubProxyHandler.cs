@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Internal;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Serverless.Common;
@@ -258,9 +259,9 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
                         // No message limit, just parse and dispatch
                         while (TryParse(protocol, binder, ref buffer, out var message))
                         {
-                            if (message is InvocationMessage invocationMessage)
+                            if (message is InvocationMessage invocationMessage && TryGetPayload(protocol, invocationMessage, out var payload))
                             {
-                                var invocation = new ServerlessProtocol.InvocationMessage(new ReadOnlySequence<byte>(protocol.GetMessageBytes(invocationMessage)), invocationMessage.Target, invocationMessage.InvocationId);
+                                var invocation = new ServerlessProtocol.InvocationMessage(payload, invocationMessage.Target, invocationMessage.InvocationId);
                                 var response = await ((IUpstreamMessageHandler)_upstream).WriteMessageAsync(connection, invocation);
                                 if (response.Length > 0)
                                 {
@@ -304,6 +305,21 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             }
             buffer = seq;
             return false;
+        }
+
+        private static bool TryGetPayload(IHubProtocol protocol, InvocationMessage invocationMessage, out ReadOnlySequence<byte> payload)
+        {
+            var buffer = new ReadOnlySequence<byte>(protocol.GetMessageBytes(invocationMessage));
+            if (protocol is JsonHubProtocol)
+            {
+                return TextMessageParser.TryParseMessage(ref buffer, out payload);
+            }
+            else if (protocol is MessagePackHubProtocol)
+            {
+                return BinaryMessageParser.TryParseMessage(ref buffer, out payload);
+            }
+
+            throw new ArgumentException($"{protocol.GetType()} is not supported");
         }
 
         private static class Log
