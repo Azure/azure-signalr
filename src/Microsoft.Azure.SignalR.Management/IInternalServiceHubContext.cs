@@ -26,5 +26,7 @@ namespace Microsoft.Azure.SignalR.Management
         Task<NegotiationResponse> NegotiateAsync(HttpContext httpContext = null, string userId = null, IList<Claim> claims = null, TimeSpan? lifetime = null, bool isDiagnosticClient = false, CancellationToken cancellationToken = default);
 
         IEnumerable<ServiceEndpoint> GetServiceEndpoints();
+
+        IInternalServiceHubContext WithEndpoints(IEnumerable<ServiceEndpoint> endpoints);
     }
 }
