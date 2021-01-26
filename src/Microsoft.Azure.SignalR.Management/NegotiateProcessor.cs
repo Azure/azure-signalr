@@ -14,22 +14,19 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class NegotiateProcessor
     {
-        private const string ConnectionInitializedTaskDescription = "Waiting for connection initialized task";
         private const string GeneratingTokenTaskDescription = "Generating client access token task";
         private const string ErrorMsg = "Geting client endpoint operation was not completed successfully.";
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
         private readonly IServiceEndpointManager _serviceEndpointManager;
         private readonly IEndpointRouter _router;
-        private readonly MultiEndpointConnectionContainerFactory _endpointsContainerFactory;
 
-        public NegotiateProcessor(IServiceEndpointManager serviceEndpointManager, IEndpointRouter router, MultiEndpointConnectionContainerFactory endpointsContainerFactory)
+        public NegotiateProcessor(IServiceEndpointManager serviceEndpointManager, IEndpointRouter router)
         {
             _serviceEndpointManager = serviceEndpointManager;
             _router = router;
-            _endpointsContainerFactory = endpointsContainerFactory;
         }
 
-        public async Task<NegotiationResponse> GetClientEndpointAsync(string hubName, HttpContext httpContext = null, string userId = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, CancellationToken cancellationToken = default)
+        public async Task<NegotiationResponse> NegotiateAsync(string hubName, HttpContext httpContext = null, string userId = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, bool isDiagnosticClient = false, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -37,9 +34,6 @@ namespace Microsoft.Azure.SignalR.Management
                 {
                     cancellationToken = httpContext.RequestAborted;
                 }
-                var container = _endpointsContainerFactory.GetOrCreate(hubName);
-                //ensure connections to each endpoint are initialized, so that the online status of endpoints are valid
-                await container.ConnectionInitializedTask.OrTimeout(cancellationToken, Timeout, ConnectionInitializedTaskDescription);
 
                 var candidateEndpoints = _serviceEndpointManager.GetEndpoints(hubName);
                 var selectedEndpoint = _router.GetNegotiateEndpoint(httpContext, candidateEndpoints);
@@ -50,7 +44,7 @@ namespace Microsoft.Azure.SignalR.Management
                 {
                     claimProvider = () => claims;
                 }
-                var claimsWithUserId = ClaimsUtility.BuildJwtClaims(httpContext?.User, userId: userId, claimProvider);
+                var claimsWithUserId = ClaimsUtility.BuildJwtClaims(httpContext?.User, userId: userId, claimProvider, isDiagnosticClient: isDiagnosticClient);
 
                 var tokenTask = provider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifetime);
                 await tokenTask.OrTimeout(cancellationToken, Timeout, GeneratingTokenTaskDescription);
@@ -60,7 +54,7 @@ namespace Microsoft.Azure.SignalR.Management
                     AccessToken = tokenTask.Result
                 };
             }
-            catch (Exception e)
+            catch (Exception e) when (e is OperationCanceledException || e is TimeoutException)
             {
                 throw new AzureSignalRException(ErrorMsg, e);
             }

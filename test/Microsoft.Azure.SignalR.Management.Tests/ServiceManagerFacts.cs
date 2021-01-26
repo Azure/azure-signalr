@@ -118,12 +118,14 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [Fact]
         internal async Task IsServiceHealthy_ReturnTrue_Test()
         {
-            var services = new ServiceCollection();
-            services.AddSignalRServiceManager();
-            services.Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
-            services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, HttpStatusCode.OK));
-            using var serviceProvider = services.BuildServiceProvider();
-            var serviceManager = serviceProvider.GetRequiredService<IServiceManager>();
+            var services = new ServiceCollection()
+                .AddSignalRServiceManager()
+                .Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString)
+                .AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, HttpStatusCode.OK));
+            var serviceManager = services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>)
+                .BuildServiceProvider()
+                .GetRequiredService<IServiceManager>();
+            
             var actual = await serviceManager.IsServiceHealthy(default);
 
             Assert.True(actual);
@@ -139,8 +141,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             services.Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
             services.AddSignalRServiceManager();
             services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, statusCode));
-            using var serviceProvider = services.BuildServiceProvider();
-            var serviceManager = serviceProvider.GetRequiredService<IServiceManager>();
+            services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
+            using var serviceManager = services.BuildServiceProvider().GetRequiredService<IServiceManager>();
 
             var actual = await serviceManager.IsServiceHealthy(default);
 
@@ -158,8 +160,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             services.AddSignalRServiceManager();
             services.Configure<ServiceManagerOptions>(o => o.ConnectionString = _testConnectionString);
             services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, statusCode));
-            using var serviceProvider = services.BuildServiceProvider();
-            var serviceManager = serviceProvider.GetRequiredService<IServiceManager>();
+            services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
+            using var serviceManager = services.BuildServiceProvider().GetRequiredService<IServiceManager>();
 
             var exception = await Assert.ThrowsAnyAsync<AzureSignalRException>(() => serviceManager.IsServiceHealthy(default));
             Assert.IsType(expectedException, exception);
@@ -170,6 +172,18 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var serviceManager = new ServiceManagerBuilder().WithOptions(o => o.ConnectionString = _testConnectionString).Build();
             serviceManager.Dispose();
+        }
+
+        [Fact]
+        public async Task ConnectionStringNull_ServiceEndpointsExists_Test()
+        {
+            var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ServiceEndpoints = FakeEndpointUtils.GetFakeEndpoint(2).ToArray();
+            }).Build();
+            Assert.Throws<InvalidOperationException>(() => serviceManager.GetClientEndpoint(HubName));
+            Assert.Throws<InvalidOperationException>(() => serviceManager.GenerateClientAccessToken(HubName));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => serviceManager.IsServiceHealthy(default));
         }
     }
 }

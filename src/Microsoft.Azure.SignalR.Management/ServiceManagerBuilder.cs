@@ -5,8 +5,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -36,6 +39,18 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
+        public ServiceManagerBuilder WithConfiguration(IConfiguration configuration)
+        {
+            _services.AddSingleton(configuration);
+            return this;
+        }
+
+        public ServiceManagerBuilder WithRouter(IEndpointRouter router)
+        {
+            _services.AddSingleton(router);
+            return this;
+        }
+
         [EditorBrowsable(EditorBrowsableState.Never)]
         public ServiceManagerBuilder WithCallingAssembly()
         {
@@ -50,9 +65,10 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
         public IServiceManager Build()
         {
-            _services.AddSignalRServiceManager();
-            var serviceProvider = _services.BuildServiceProvider();
-            return serviceProvider.GetRequiredService<IServiceManager>();
+            return _services.AddSignalRServiceManager()
+                .AddSingleton(_services.ToList() as IReadOnlyCollection<ServiceDescriptor>)
+                .BuildServiceProvider()
+                .GetRequiredService<IServiceManager>();
         }
     }
 }

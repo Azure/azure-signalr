@@ -81,12 +81,13 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton(typeof(IServiceConnectionManager<>), typeof(ServiceConnectionManager<>))
                 .AddSingleton(typeof(IServiceEndpointManager), typeof(ServiceEndpointManager))
                 .AddSingleton(typeof(IServerNameProvider), typeof(DefaultServerNameProvider))
-                .AddSingleton(typeof(IBlazorDetector),typeof(DefaultBlazorDetector))
+                .AddSingleton(typeof(IBlazorDetector), typeof(DefaultBlazorDetector))
                 .AddSingleton(typeof(ServiceHubDispatcher<>))
                 .AddSingleton(typeof(ServerLifetimeManager))
                 .AddSingleton(typeof(AzureSignalRMarkerService))
                 .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
                 .AddSingleton<IHostedService, HeartBeat>()
+                .AddSingleton<IAccessKeySynchronizer, AccessKeySynchronizer>()
                 .AddSingleton(typeof(NegotiateHandler<>));
 
             // If a custom router is added, do not add the default router

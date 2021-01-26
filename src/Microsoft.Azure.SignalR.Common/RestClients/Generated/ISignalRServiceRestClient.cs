@@ -11,7 +11,6 @@
 namespace Microsoft.Azure.SignalR
 {
     using Microsoft.Rest;
-    using Models;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -44,11 +43,6 @@ namespace Microsoft.Azure.SignalR
         /// Gets the IHealthApi.
         /// </summary>
         IHealthApi HealthApi { get; }
-
-        /// <summary>
-        /// Gets the IServiceApi.
-        /// </summary>
-        IServiceApi ServiceApi { get; }
 
     }
 }

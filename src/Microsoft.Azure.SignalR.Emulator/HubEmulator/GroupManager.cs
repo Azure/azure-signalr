@@ -29,9 +29,9 @@ namespace Microsoft.Azure.SignalR.Emulator.HubEmulator
             _connectionGroupMap.Add(connectionId, group);
         }
 
-        public void RemoveConnectionFromGroup(string connectionId, string group)
+        public bool RemoveConnectionFromGroup(string connectionId, string group)
         {
-            _connectionGroupMap.Remove(connectionId, group);
+            return _connectionGroupMap.Remove(connectionId, group);
         }
 
         public void AddUserToGroup(string user, string group, DateTimeOffset expireAt)

@@ -11,7 +11,6 @@
 namespace Microsoft.Azure.SignalR
 {
     using Microsoft.Rest;
-    using Models;
     using System.Collections;
     using System.Collections.Generic;
     using System.Threading;
@@ -33,9 +32,6 @@ namespace Microsoft.Azure.SignalR
         /// </param>
         /// <exception cref="Microsoft.Rest.HttpOperationException">
         /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
         /// </exception>
         Task<HttpOperationResponse> GetHealthStatusWithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
     }
