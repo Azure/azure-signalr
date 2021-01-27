@@ -3,12 +3,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -50,6 +54,33 @@ namespace Microsoft.Azure.SignalR.Management
         {
             await _lifetimeManager.DisposeAsync();
             (ServiceProvider as IDisposable)?.Dispose();
+        }
+
+        IInternalServiceHubContext IInternalServiceHubContext.WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
+        {
+            if (endpoints is null)
+            {
+                throw new ArgumentNullException(nameof(endpoints));
+            }
+
+            var targetEndpoints = _endpointManager.GetEndpoints(_hubName).Intersect(endpoints, EqualityComparer<ServiceEndpoint>.Default).Select(e => e as HubServiceEndpoint).ToList();
+            var container = new MultiEndpointMessageWriter(targetEndpoints, ServiceProvider.GetRequiredService<ILoggerFactory>());
+            return new ServiceCollection()
+                .AddSignalR().Services
+
+                //add factory method
+                .AddHub(_hubName)
+
+                //overwrite container
+                .AddSingleton<IServiceConnectionContainer>(container)
+
+                //add required service instances
+                .AddSingleton(ServiceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>())
+                .AddSingleton(_negotiateProcessor)
+                .AddSingleton(_endpointManager)
+
+                .BuildServiceProvider()
+                .GetRequiredService<ServiceHubContext>();
         }
     }
 }

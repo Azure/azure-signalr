@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
@@ -9,6 +10,8 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly TaskCompletionSource<bool> _scaleTcs;
         private readonly ServiceEndpoint _endpoint;
+        private readonly long _uniqueIndex;
+        private static long s_currentIndex;
 
         public HubServiceEndpoint(
             string hub, 
@@ -21,6 +24,7 @@ namespace Microsoft.Azure.SignalR
             Provider = provider;
             _endpoint = endpoint;
             _scaleTcs = needScaleTcs ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : null;
+            _uniqueIndex = Interlocked.Increment(ref s_currentIndex);
         }
 
         // for tests
@@ -46,5 +50,7 @@ namespace Microsoft.Azure.SignalR
         {
             _scaleTcs?.TrySetResult(true);
         }
+
+        public long UniqueIndex => _uniqueIndex;
     }
 }
