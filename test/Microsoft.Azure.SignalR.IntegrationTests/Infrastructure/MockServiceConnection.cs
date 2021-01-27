@@ -29,6 +29,10 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 
         public int ConnectionNumber { get; private set; }
 
+        public IServiceConnection InnerServiceConnection => _serviceConnection;
+
+        public MockServiceConnectionContext MyConnectionContext { get; set; }
+
         public ServiceConnectionStatus Status => _serviceConnection.Status;
 
         public Task ConnectionInitializedTask => _serviceConnection.ConnectionInitializedTask;

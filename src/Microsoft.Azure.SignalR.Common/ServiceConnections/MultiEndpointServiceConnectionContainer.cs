@@ -16,6 +16,7 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly string _hubName;
         private readonly IMessageRouter _router;
+        private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
         private readonly IServiceEndpointManager _serviceEndpointManager;
         private readonly TimeSpan _scaleTimeout;
@@ -40,6 +41,7 @@ namespace Microsoft.Azure.SignalR
 
             _hubName = hub;
             _router = router ?? throw new ArgumentNullException(nameof(router));
+            _loggerFactory = loggerFactory;
             _logger = loggerFactory?.CreateLogger<MultiEndpointServiceConnectionContainer>() ?? throw new ArgumentNullException(nameof(loggerFactory));
             _serviceEndpointManager = endpointManager;
             _scaleTimeout = scaleTimeout ?? Constants.Periods.DefaultScaleTimeout;
@@ -142,34 +144,13 @@ namespace Microsoft.Azure.SignalR
 
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
-            return WriteMultiEndpointMessageAsync(serviceMessage, connection => connection.WriteAsync(serviceMessage));
+            return CreateMessageWriter(serviceMessage).WriteAsync(serviceMessage);
         }
 
-        public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
+        public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            // If we have multiple endpoints, we should wait to one of the following conditions hit
-            // 1. One endpoint responses "OK" state
-            // 2. All the endpoints response failed state including "NotFound", "Timeout" and waiting response to timeout
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            var writeMessageTask = WriteMultiEndpointMessageAsync(serviceMessage, async connection =>
-            {
-                var succeeded = await connection.WriteAckableMessageAsync(serviceMessage, cancellationToken);
-                if (succeeded)
-                {
-                    tcs.TrySetResult(true);
-                }
-            });
-
-            // If tcs.Task completes, one Endpoint responses "OK" state.
-            var task = await Task.WhenAny(tcs.Task, writeMessageTask);
-
-            // This will throw exceptions in tasks if exceptions exist
-            await task;
-
-            return tcs.Task.IsCompleted;
+            return CreateMessageWriter(serviceMessage).WriteAckableMessageAsync(serviceMessage, cancellationToken);
         }
-
         public Task StartGetServersPing()
         {
             return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.StartGetServersPing()));
@@ -220,47 +201,12 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private Task WriteMultiEndpointMessageAsync(ServiceMessage serviceMessage, Func<IServiceConnectionContainer, Task> inner)
-        {
-            var routed = GetRoutedEndpoints(serviceMessage)?
-                .Select(endpoint =>
-                {
-                    var connection = (endpoint as HubServiceEndpoint)?.ConnectionContainer;
-                    if (connection == null)
-                    {
-                        Log.EndpointNotExists(_logger, endpoint.ToString());
-                    }
-                    return (e: endpoint, c: connection);
-                })
-                .Where(c => c.c != null)
-                .Select(async s =>
-                {
-                    try
-                    {
-                        Log.RouteMessageToServiceEndpoint(_logger, serviceMessage, s.e.ToString());
-                        await inner(s.c);
-                    }
-                    catch (ServiceConnectionNotActiveException)
-                    {
-                        // log and don't stop other endpoints
-                        Log.FailedWritingMessageToEndpoint(_logger, serviceMessage.GetType().Name, (serviceMessage as IMessageWithTracingId)?.TracingId, s.e.ToString());
-                    }
-                }).ToArray();
-
-            if (routed == null || routed.Length == 0)
+        private MultiEndpointMessageWriter CreateMessageWriter(ServiceMessage serviceMessage)
             {
-                // check if the router returns any endpoint
-                Log.NoEndpointRouted(_logger, serviceMessage.GetType().Name);
-                return Task.CompletedTask;
+                var targetEndpoints = GetRoutedEndpoints(serviceMessage)?.Select(e => e as HubServiceEndpoint).ToList();
+                return new MultiEndpointMessageWriter(targetEndpoints, _loggerFactory);
             }
 
-            if (routed.Length == 1)
-            {
-                return routed[0];
-            }
-
-            return Task.WhenAll(routed);
-        }
 
         private void OnAdd(HubServiceEndpoint endpoint)
         {
@@ -422,8 +368,6 @@ namespace Microsoft.Azure.SignalR
 
         internal static class Log
         {
-            public const string FailedWritingMessageToEndpointTemplate = "{0} message {1} is not sent to endpoint {2} because all connections to this endpoint are offline.";
-
             private static readonly Action<ILogger, string, Exception> _startingConnection =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(1, "StartingConnection"), "Staring connections for endpoint {endpoint}.");
 
@@ -432,13 +376,6 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, Exception> _endpointNotExists =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "EndpointNotExists"), "Endpoint {endpoint} from the router does not exists.");
-
-            private static readonly Action<ILogger, string, Exception> _noEndpointRouted =
-                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(4, "NoEndpointRouted"), "Message {messageType} is not sent because no endpoint is returned from the endpoint router.");
-
-            private static readonly Action<ILogger, string, ulong?, string, Exception> _failedWritingMessageToEndpoint =
-                LoggerMessage.Define<string, ulong?, string>(LogLevel.Warning, new EventId(5, "FailedWritingMessageToEndpoint"), FailedWritingMessageToEndpointTemplate);
-
             private static readonly Action<ILogger, string, Exception> _failedStartingConnectionForNewEndpoint =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, "FailedStartingConnectionForNewEndpoint"), "Fail to create and start server connection for new endpoint {endpoint}.");
 
@@ -450,17 +387,6 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, Exception> _failedRemovingConnectionForEndpoint =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(10, "FailedRemovingConnectionForEndpoint"), "Fail to stop server connections for endpoint {endpoint}.");
-
-            private static readonly Action<ILogger, ulong?, string, Exception> _routeMessageToServiceEndpoint =
-                LoggerMessage.Define<ulong?, string>(LogLevel.Information, new EventId(11, "RouteMessageToServiceEndpoint"), "Route message {tracingId} to service endpoint {endpoint}.");
-
-            public static void RouteMessageToServiceEndpoint(ILogger logger, ServiceMessage message, string endpoint)
-            {
-                if (ServiceConnectionContainerScope.EnableMessageLog || ClientConnectionScope.IsDiagnosticClient)
-                {
-                    _routeMessageToServiceEndpoint(logger, (message as IMessageWithTracingId).TracingId, endpoint, null);
-                }
-            }
 
             public static void StartingConnection(ILogger logger, string endpoint)
             {
@@ -475,16 +401,6 @@ namespace Microsoft.Azure.SignalR
             public static void EndpointNotExists(ILogger logger, string endpoint)
             {
                 _endpointNotExists(logger, endpoint, null);
-            }
-
-            public static void NoEndpointRouted(ILogger logger, string messageType)
-            {
-                _noEndpointRouted(logger, messageType, null);
-            }
-
-            public static void FailedWritingMessageToEndpoint(ILogger logger, string messageType, ulong? tracingId, string endpoint)
-            {
-                _failedWritingMessageToEndpoint(logger, messageType, tracingId, endpoint, null);
             }
 
             public static void FailedStartingConnectionForNewEndpoint(ILogger logger, string endpoint, Exception ex)

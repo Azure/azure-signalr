@@ -45,9 +45,9 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
             }
         }
 
-        public async Task CloseConnection()
+        public async Task CloseConnection(string errorMsg = null)
         {
-            var closeClientMessage = new CloseConnectionMessage(ConnectionId, "bbb");
+            var closeClientMessage = new CloseConnectionMessage(ConnectionId, errorMsg);
             _servicePro.WriteMessage(closeClientMessage, ServiceSideConnection.MockServicePipe.Output);
             var flushResult = await ServiceSideConnection.MockServicePipe.Output.FlushAsync();
 
