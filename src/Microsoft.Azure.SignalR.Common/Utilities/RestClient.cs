@@ -17,6 +17,8 @@ namespace Microsoft.Azure.SignalR
 {
     internal class RestClient
     {
+        public JsonSerializerSettings JsonSerializerSettings { get; set; } = new JsonSerializerSettings();
+
         public Task SendAsync(
             RestApiEndpoint api,
             HttpMethod httpMethod,
@@ -134,7 +136,7 @@ namespace Microsoft.Azure.SignalR
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Headers.Add(Constants.AsrsUserAgent, productInfo);
-            request.Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
+            request.Content = new StringContent(JsonConvert.SerializeObject(payload, JsonSerializerSettings), Encoding.UTF8, "application/json");
             return request;
         }
     }
