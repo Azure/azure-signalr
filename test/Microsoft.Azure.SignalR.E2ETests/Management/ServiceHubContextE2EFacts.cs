@@ -300,7 +300,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
-                var services = new ServiceCollection().AddSignalRServiceManager().AddSingleton(TestConfiguration.Instance.Configuration).AddSingleton(loggerFactory);
+                var services = new ServiceCollection().AddSignalRServiceManager().AddSingleton(TestConfiguration.Instance.Configuration).AddSingleton(loggerFactory).Configure<ServiceManagerOptions>(o => o.ServiceTransportType = ServiceTransportType.Persistent);
                 var serviceProvider = services.AddSingleton<IReadOnlyCollection<ServiceDescriptor>>(services.ToList()).BuildServiceProvider();
                 var hubContext = await serviceProvider.GetRequiredService<IServiceManager>().CreateHubContextAsync(HubName);
                 var endpointManager = serviceProvider.GetRequiredService<IServiceEndpointManager>();
