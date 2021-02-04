@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -88,24 +89,28 @@ namespace Microsoft.Azure.SignalR
 
         private ServiceMessage CreateMessage(string connectionId, string methodName, object[] args, ClientConnectionContext serviceConnectionContext)
         {
+            IDictionary<string, ReadOnlyMemory<byte>> payloads;
             if (serviceConnectionContext.Protocol != null)
             {
-                var message = new ConnectionDataMessage(connectionId, SerializeProtocol(serviceConnectionContext.Protocol, methodName, args)).WithTracingId();
-                if (message.TracingId != null)
+                payloads = new Dictionary<string, ReadOnlyMemory<byte>>()
                 {
-                    MessageLog.StartToSendMessageToConnection(Logger, message);
-                }
-                return message;
+                    { serviceConnectionContext.Protocol, SerializeProtocol(serviceConnectionContext.Protocol, methodName, args) }
+                };
             }
             else
             {
-                var message = new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)).WithTracingId();
-                if (message.TracingId != null)
-                {
-                    MessageLog.StartToSendMessageToConnections(Logger, message);
-                }
-                return message;
+                payloads = SerializeAllProtocols(methodName, args);
             }
+
+            // don't use ConnectionDataMessage here, since handshake message is also wrapped into ConnectionDataMessage.
+            // otherwise it may cause the handshake failure due to hub invocation message is sent to client before handshake message, when there's high preasure on server.
+            // do use ConnectionDataMessage when the message is sent from client.
+            var message = new MultiConnectionDataMessage(new[] { connectionId }, payloads).WithTracingId();
+            if (message.TracingId != null)
+            {
+                MessageLog.StartToSendMessageToConnections(Logger, message);
+            }
+            return message;
         }
     }
 }
