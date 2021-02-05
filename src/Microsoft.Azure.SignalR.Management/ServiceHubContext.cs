@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -65,22 +66,21 @@ namespace Microsoft.Azure.SignalR.Management
 
             var targetEndpoints = _endpointManager.GetEndpoints(_hubName).Intersect(endpoints, EqualityComparer<ServiceEndpoint>.Default).Select(e => e as HubServiceEndpoint).ToList();
             var container = new MultiEndpointMessageWriter(targetEndpoints, ServiceProvider.GetRequiredService<ILoggerFactory>());
-            return new ServiceCollection()
-                .AddSignalR().Services
-
+            var servicesFromServiceManager = ServiceProvider.GetRequiredService<IReadOnlyCollection<ServiceDescriptor>>();
+            var services = new ServiceCollection()
+                .Add(servicesFromServiceManager)
+                //Allow chained call serviceHubContext.WithEndpoints(...).WithEndpoints(...)
+                .AddSingleton(servicesFromServiceManager)
                 //add factory method
                 .AddHub(_hubName)
-
                 //overwrite container
                 .AddSingleton<IServiceConnectionContainer>(container)
-
                 //add required service instances
                 .AddSingleton(ServiceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>())
                 .AddSingleton(_negotiateProcessor)
-                .AddSingleton(_endpointManager)
+                .AddSingleton(_endpointManager);
 
-                .BuildServiceProvider()
-                .GetRequiredService<ServiceHubContext>();
+            return services.BuildServiceProvider().GetRequiredService<ServiceHubContext>();
         }
     }
 }
