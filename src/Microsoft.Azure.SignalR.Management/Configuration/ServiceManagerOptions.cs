@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Newtonsoft.Json;
 using System;
 using System.Net;
 
@@ -41,8 +42,13 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
 
-        internal string ProductInfo { get; set; }
+        /// <summary>
+        /// Gets the json serializer settings that will be used to serialize content sent to Azure SignalR Service.
+        /// </summary>
+        public JsonSerializerSettings JsonSerializerSettings { get; } = new JsonSerializerSettings();
 
+        internal string ProductInfo { get; set; }
+        
         internal void ValidateOptions()
         {
             if ((ServiceEndpoints == null || ServiceEndpoints.Length == 0) && string.IsNullOrWhiteSpace(ConnectionString))

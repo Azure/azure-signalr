@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +17,8 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
 {
     internal class SignalRServiceEmulatorWebApi : SignalRServiceWebApiDefinition
     {
+        private const string HubPattern = "^[A-Za-z][A-Za-z0-9_`,.[\\]]{0,127}$";
+        private const string GroupPattern = "^\\S{1,1024}$";
         private readonly DynamicHubContextStore _store;
         private readonly ILogger<SignalRServiceEmulatorWebApi> _logger;
 
@@ -25,40 +28,49 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             this._logger = _logger;
         }
 
-        public override async Task<IActionResult> Broadcast(string hub, [FromBody] PayloadMessage message, [FromQuery(Name = "excluded")] IReadOnlyList<string> excluded)
+        public override async Task<IActionResult> Broadcast([RegularExpression(HubPattern)] string hub, [FromBody] PayloadMessage message, [FromQuery(Name = "excluded")] IReadOnlyList<string> excluded)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             if (_store.TryGetLifetimeContext(hub, out var c))
             {
                 var clients = c.ClientManager;
                 var arguments = SafeConvertToObjectArray(message);
 
                 await SendAsync(clients.AllExcept(excluded), message.Target, arguments);
-                return Accepted();
             }
-            else
-            {
-                return NotFound();
-            }
+
+            return Accepted();
         }
 
-        public override async Task<IActionResult> SendToUser(string hub, string user, [FromBody] PayloadMessage message)
+        public override async Task<IActionResult> SendToUser([RegularExpression(HubPattern)] string hub, string user, [FromBody] PayloadMessage message)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             if (_store.TryGetLifetimeContext(hub, out var c))
             {
                 var clients = c.ClientManager;
                 var arguments = SafeConvertToObjectArray(message);
 
                 await SendAsync(clients.User(user), message.Target, arguments);
-                return Accepted();
             }
-            else
-            {
-                return NotFound();
-            }
+
+            return Accepted();
         }
 
-        public override Task<IActionResult> CheckConnectionExistence(string hub, string connectionId)
+        public override Task<IActionResult> CheckConnectionExistence([RegularExpression(HubPattern)] string hub, string connectionId)
         {
+            if (!ModelState.IsValid)
+            {
+                return Task.FromResult(BadRequest() as IActionResult);
+            }
+
             if (_store.TryGetLifetimeContext(hub, out var c))
             {
                 var lifetime = c.LifetimeManager;
@@ -72,8 +84,13 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(NotFound() as IActionResult);
         }
 
-        public override Task<IActionResult> CheckGroupExistence(string hub, string group)
+        public override Task<IActionResult> CheckGroupExistence([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group)
         {
+            if (!ModelState.IsValid)
+            {
+                return Task.FromResult(BadRequest() as IActionResult);
+            }
+
             if (_store.TryGetLifetimeContext(hub, out var c))
             {
                 if (c.UserGroupManager.GroupContainsConnections(group))
@@ -85,8 +102,13 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(NotFound() as IActionResult);
         }
 
-        public override Task<IActionResult> CheckUserExistence(string hub, string user)
+        public override Task<IActionResult> CheckUserExistence([RegularExpression(HubPattern)] string hub, string user)
         {
+            if (!ModelState.IsValid)
+            {
+                return Task.FromResult(BadRequest() as IActionResult);
+            }
+
             if (_store.TryGetLifetimeContext(hub, out var c))
             {
                 foreach (var conn in c.LifetimeManager.Connections)
@@ -101,8 +123,13 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(NotFound() as IActionResult);
         }
 
-        public override Task<IActionResult> CloseClientConnection(string hub, string connectionId, [FromQuery] string reason)
+        public override Task<IActionResult> CloseClientConnection([RegularExpression(HubPattern)] string hub, string connectionId, [FromQuery] string reason)
         {
+            if (!ModelState.IsValid)
+            {
+                return Task.FromResult(BadRequest() as IActionResult);
+            }
+
             if (_store.TryGetLifetimeContext(hub, out var c))
             {
                 var lifetime = c.LifetimeManager;
@@ -116,34 +143,52 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(Accepted() as IActionResult);
         }
 
-        public override Task<IActionResult> RemoveConnectionFromGroup(string hub, string group, string connectionId)
+        public override Task<IActionResult> RemoveConnectionFromGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string connectionId)
         {
+            if (!ModelState.IsValid)
+            {
+                return Task.FromResult(BadRequest() as IActionResult);
+            }
+
             if (_store.TryGetLifetimeContext(hub, out var c))
             {
-                c.UserGroupManager.RemoveConnectionFromGroup(connectionId, group);
-                return Task.FromResult(Ok() as IActionResult);
+                if (c.UserGroupManager.RemoveConnectionFromGroup(connectionId, group))
+                {
+                    return Task.FromResult(Ok() as IActionResult);
+                }
             }
-            else
-            {
-                return Task.FromResult(NotFound() as IActionResult);
-            }
+
+            return Task.FromResult(NotFound() as IActionResult);
         }
 
-        public override Task<IActionResult> AddConnectionToGroup(string hub, string group, string connectionId)
+        public override Task<IActionResult> AddConnectionToGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string connectionId)
         {
+            if (!ModelState.IsValid)
+            {
+                return Task.FromResult(BadRequest() as IActionResult);
+            }
+
             if (_store.TryGetLifetimeContext(hub, out var c))
             {
-                c.UserGroupManager.AddConnectionIntoGroup(connectionId, group);
-                return Task.FromResult(Ok() as IActionResult);
+                var lifetime = c.LifetimeManager;
+                var connection = lifetime.Connections[connectionId];
+                if (connection != null)
+                {
+                    c.UserGroupManager.AddConnectionIntoGroup(connectionId, group);
+                    return Task.FromResult(Ok() as IActionResult);
+                }
             }
-            else
-            {
-                return Task.FromResult(NotFound() as IActionResult);
-            }
+
+            return Task.FromResult(NotFound() as IActionResult);
         }
 
-        public override async Task<IActionResult> GroupBroadcast(string hub, string group, [FromBody] PayloadMessage message, [FromQuery(Name = "excluded")] IReadOnlyList<string> excluded)
+        public override async Task<IActionResult> GroupBroadcast([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, [FromBody] PayloadMessage message, [FromQuery(Name = "excluded")] IReadOnlyList<string> excluded)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             if (_store.TryGetLifetimeContext(hub, out var c))
             {
                 var clients = c.ClientManager;
@@ -155,31 +200,36 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
                         await SendAsync(clients.Clients(lease.Value.Except(excluded).ToArray()), message.Target, arguments);
                     }
                 }
-
-                return Accepted();
             }
 
-            return NotFound();
+            return Accepted();
         }
 
-        public override async Task<IActionResult> SendToConnection(string hub, string connectionId, [FromBody] PayloadMessage message)
+        public override async Task<IActionResult> SendToConnection([RegularExpression(HubPattern)] string hub, string connectionId, [FromBody] PayloadMessage message)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
             if (_store.TryGetLifetimeContext(hub, out var c))
             {
                 var clients = c.ClientManager;
                 var arguments = SafeConvertToObjectArray(message);
 
                 await SendAsync(clients.Client(connectionId), message.Target, arguments);
-                return Accepted();
             }
-            else
-            {
-                return NotFound();
-            }
+
+            return Accepted();
         }
 
-        public override Task<IActionResult> CheckUserExistenceInGroup(string hub, string group, string user)
+        public override Task<IActionResult> CheckUserExistenceInGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string user)
         {
+            if (!ModelState.IsValid)
+            {
+                return Task.FromResult(BadRequest() as IActionResult);
+            }
+
             if (_store.TryGetLifetimeContext(hub, out var c))
             {
                 if (c.UserGroupManager.GroupContainsUser(user, group))
@@ -191,43 +241,50 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(NotFound() as IActionResult);
         }
 
-        public override Task<IActionResult> AddUserToGroup(string hub, string group, string user, int? ttl = null)
+        public override Task<IActionResult> AddUserToGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string user, int? ttl = null)
         {
+            if (!ModelState.IsValid)
+            {
+                return Task.FromResult(BadRequest() as IActionResult);
+            }
+
             if (_store.TryGetLifetimeContext(hub, out var c))
             {
                 c.UserGroupManager.AddUserToGroup(user, group, ttl == null ? DateTimeOffset.MaxValue : DateTimeOffset.Now.AddSeconds(ttl.Value));
-                return Task.FromResult(Ok() as IActionResult);
             }
-            else
-            {
-                return Task.FromResult(NotFound() as IActionResult);
-            }
+
+            return Task.FromResult(Accepted() as IActionResult);
         }
 
-        public override Task<IActionResult> RemoveUserFromAllGroups(string hub, string user)
+        public override Task<IActionResult> RemoveUserFromAllGroups([RegularExpression(HubPattern)] string hub, string user)
         {
+            if (!ModelState.IsValid)
+            {
+                return Task.FromResult(BadRequest() as IActionResult);
+            }
+
             if (_store.TryGetLifetimeContext(hub, out var c))
             {
                 c.UserGroupManager.RemoveUserFromAllGroups(user);
                 return Task.FromResult(Ok() as IActionResult);
             }
-            else
-            {
-                return Task.FromResult(NotFound() as IActionResult);
-            }
+
+            return Task.FromResult(Accepted() as IActionResult);
         }
 
-        public override Task<IActionResult> RemoveUserFromGroup(string hub, string group, string user)
+        public override Task<IActionResult> RemoveUserFromGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string user)
         {
+            if (!ModelState.IsValid)
+            {
+                return Task.FromResult(BadRequest() as IActionResult);
+            }
+
             if (_store.TryGetLifetimeContext(hub, out var c))
             {
                 c.UserGroupManager.RemoveUserFromGroup(user, group);
-                return Task.FromResult(Ok() as IActionResult);
             }
-            else
-            {
-                return Task.FromResult(NotFound() as IActionResult);
-            }
+
+            return Task.FromResult(Accepted() as IActionResult);
         }
 
         public override Task<IActionResult> GetHealthStatus()
@@ -237,7 +294,9 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
 
         private Task SendAsync(IClientProxy client, string method, object[] arguments, CancellationToken cancellationToken = default)
         {
-            switch (arguments.Length)
+            var argsLen = arguments?.Length ?? 0;
+
+            switch (argsLen)
             {
                 case 0:
                     return client.SendAsync(method, cancellationToken);
