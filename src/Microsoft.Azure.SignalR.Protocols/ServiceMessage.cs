@@ -225,6 +225,49 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
+    /// A service warning message
+    /// </summary>
+    public class ServiceWarningMessage : ExtensibleServiceMessage
+    {
+        /// <summary>
+        /// Gets or sets the type of warning object.
+        /// <list type="bullet">
+        /// <item>connection</item>
+        /// <item>user</item>
+        /// <item>group</item>
+        /// </list>
+        /// </summary>
+        public string Type { get; set; }
+
+        /// <summary>
+        /// Gets or sets the id of warning object.
+        /// </summary>
+        public string Id { get; set; }
+
+        /// <summary>
+        /// Gets or sets the kind of warning.
+        /// <list type="bullet">
+        /// <item>Invalid</item>
+        /// <item>NotExisted</item>
+        /// </list>
+        /// </summary>
+        public string WarningKind { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceWarningMessage"/> class.
+        /// </summary>
+        /// <param name="type">A type of warning object.</param>
+        /// <param name="id">An id of warning object.</param>
+        /// <param name="warningKind">A kind of warning.</param>
+        public ServiceWarningMessage(string type, string id, string warningKind)
+        {
+            Type = type;
+            Id = id;
+            WarningKind = warningKind;
+        }
+    }
+
+    /// <summary>
     /// A ack message to response ack-able message
     /// </summary>
     public class AckMessage : ExtensibleServiceMessage
