@@ -348,22 +348,19 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         //https://github.com/Azure/azure-signalr/pull/707/files  ServiceConnectionContainerBase or WeakConnectionContainer should be tested separately.
         internal async Task StopServiceHubContextTest()
         {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug, expectedErrors: context => context.EventId == new EventId(2, "EndpointOffline")))
-            {
-                var serviceManager = new ServiceManagerBuilder()
-                    .WithOptions(o =>
-                    {
-                        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                        o.ConnectionCount = 1;
-                        o.ServiceTransportType = ServiceTransportType.Persistent;
-                    })
-                    .Build();
-                var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", loggerFactory);
-                var connectionContainer = ((ServiceHubContext)serviceHubContext).ServiceProvider.GetRequiredService<IServiceConnectionContainer>();//TODO
-                await serviceHubContext.DisposeAsync();
-                await Task.Delay(500);
-                Assert.Equal(ServiceConnectionStatus.Disconnected, connectionContainer.Status);
-            }
+            var serviceManager = new ServiceManagerBuilder()
+                .WithOptions(o =>
+                {
+                    o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                    o.ConnectionCount = 1;
+                    o.ServiceTransportType = ServiceTransportType.Persistent;
+                })
+                .Build();
+            var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", LoggerFactory);
+            var connectionContainer = ((ServiceHubContext)serviceHubContext).ServiceProvider.GetRequiredService<IServiceConnectionContainer>();//TODO
+            await serviceHubContext.DisposeAsync();
+            await Task.Delay(500);
+            Assert.Equal(ServiceConnectionStatus.Disconnected, connectionContainer.Status);
         }
 
         [ConditionalFact]
@@ -480,16 +477,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private async Task<(string ClientEndpoint, IEnumerable<string> ClientAccessTokens, IServiceHubContext ServiceHubContext)> InitAsync(ServiceTransportType serviceTransportType, string appName, IEnumerable<string> userNames)
         {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
-            {
-                var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType, appName);
-                var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName, loggerFactory);
+            var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType, appName);
+            var serviceHubContext = await serviceManager.CreateHubContextAsync(HubName, LoggerFactory);
 
-                var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
-                var tokens = from userName in userNames
-                             select serviceManager.GenerateClientAccessToken(HubName, userName);
-                return (clientEndpoint, tokens, serviceHubContext);
-            }
+            var clientEndpoint = serviceManager.GetClientEndpoint(HubName);
+            var tokens = from userName in userNames
+                         select serviceManager.GenerateClientAccessToken(HubName, userName);
+            return (clientEndpoint, tokens, serviceHubContext);
         }
 
         private static string[] GenerateRandomNames(int count)
