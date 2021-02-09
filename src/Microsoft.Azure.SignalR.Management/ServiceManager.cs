@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IReadOnlyCollection<ServiceDescriptor> _services;
         private readonly ServiceEndpoint _endpoint;
         private readonly IServiceEndpointProvider _endpointProvider;
-        private readonly bool _needWait;
+        private readonly ServiceTransportType _transportType;
 
         public ServiceManager(IReadOnlyCollection<ServiceDescriptor> services, IServiceProvider serviceProvider, RestClientFactory restClientFactory, IServiceEndpointManager endpointManager, IOptions<ServiceManagerOptions> options)
         {
@@ -36,20 +36,20 @@ namespace Microsoft.Azure.SignalR.Management
                 _endpoint = new ServiceEndpoint(connectionString);
                 _endpointProvider = endpointManager.GetEndpointProvider(_endpoint);
             }
-            _needWait = options.Value.ServiceTransportType == ServiceTransportType.Persistent;
+            _transportType = options.Value.ServiceTransportType;
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
         {
-            var servicesPerHub = new ServiceCollection().Add(_services).AddSingleton(_services).AddHub(hubName);
+            var servicesPerHub = new ServiceCollection().Add(_services).AddSingleton(_services).AddHub(hubName, _transportType);
             if (loggerFactory != null)
             {
                 servicesPerHub.AddSingleton(loggerFactory);
             }
             var serviceProviderForHub = servicesPerHub.BuildServiceProvider();
-            if (_needWait)
+            var connectionContainer = serviceProviderForHub.GetService<IServiceConnectionContainer>();
+            if (connectionContainer != null)
             {
-                var connectionContainer = serviceProviderForHub.GetRequiredService<IServiceConnectionContainer>();
                 await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
             }
             return serviceProviderForHub.GetRequiredService<ServiceHubContext>();

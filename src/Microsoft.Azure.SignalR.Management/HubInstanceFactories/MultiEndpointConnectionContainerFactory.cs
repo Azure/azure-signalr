@@ -14,7 +14,6 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IServiceEndpointManager _endpointManager;
         private readonly int _connectionCount;
         private readonly IEndpointRouter _router;
-        private readonly bool _needStart;
 
         public MultiEndpointConnectionContainerFactory(IServiceConnectionFactory connectionFactory, ILoggerFactory loggerFactory, IServiceEndpointManager serviceEndpointManager, IOptions<ServiceManagerOptions> options, IEndpointRouter router = null)
         {
@@ -23,7 +22,6 @@ namespace Microsoft.Azure.SignalR.Management
             _endpointManager = serviceEndpointManager;
             _connectionCount = options.Value.ConnectionCount;
             _router = router;
-            _needStart = options.Value.ServiceTransportType == ServiceTransportType.Persistent;
         }
 
         public MultiEndpointServiceConnectionContainer Connect(string hubName)
@@ -34,10 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
                 _endpointManager,
                 _router,
                 _loggerFactory);
-            if (_needStart)
-            {
-                container.StartAsync();
-            }
+            container.StartAsync();
             return container;
         }
     }
