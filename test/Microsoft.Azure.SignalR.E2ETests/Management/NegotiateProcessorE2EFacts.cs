@@ -34,6 +34,7 @@ namespace Microsoft.Azure.SignalR.Management.E2ETests
             //configure two fake service endpoints and one real endpoints.
             services.Configure<ServiceManagerOptions>(o =>
             {
+                o.ServiceTransportType = ServiceTransportType.Persistent;
                 o.ConnectionString = TestConfiguration.Instance.ConnectionString;
                 o.ServiceEndpoints = FakeEndpointUtils.GetFakeEndpoint(3).ToArray();
             });
