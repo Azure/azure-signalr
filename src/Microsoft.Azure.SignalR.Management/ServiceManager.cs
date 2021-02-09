@@ -23,6 +23,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IReadOnlyCollection<ServiceDescriptor> _services;
         private readonly ServiceEndpoint _endpoint;
         private readonly IServiceEndpointProvider _endpointProvider;
+        private readonly bool _needWait;
 
         public ServiceManager(IReadOnlyCollection<ServiceDescriptor> services, IServiceProvider serviceProvider, RestClientFactory restClientFactory, IServiceEndpointManager endpointManager, IOptions<ServiceManagerOptions> options)
         {
@@ -35,6 +36,7 @@ namespace Microsoft.Azure.SignalR.Management
                 _endpoint = new ServiceEndpoint(connectionString);
                 _endpointProvider = endpointManager.GetEndpointProvider(_endpoint);
             }
+            _needWait = options.Value.ServiceTransportType == ServiceTransportType.Persistent;
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
@@ -45,8 +47,11 @@ namespace Microsoft.Azure.SignalR.Management
                 servicesPerHub.AddSingleton(loggerFactory);
             }
             var serviceProviderForHub = servicesPerHub.BuildServiceProvider();
-            var connectionContainer = serviceProviderForHub.GetRequiredService<IServiceConnectionContainer>();
-            await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
+            if (_needWait)
+            {
+                var connectionContainer = serviceProviderForHub.GetRequiredService<IServiceConnectionContainer>();
+                await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
+            }
             return serviceProviderForHub.GetRequiredService<ServiceHubContext>();
         }
 
