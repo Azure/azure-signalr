@@ -49,7 +49,6 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
                     o.GracefulShutdown.Mode = p.ShutdownMode;
                     o.Endpoints = p.ServiceEndpoints;
                     o.ClaimsProvider = context => new[] { new Claim(ClaimTypes.NameIdentifier, context.Request.Query["user"]) };  // todo: migrate to TParams
-                    o.ConnectionString = TestConfiguration.Instance.ConnectionString;
                     o.ApplicationName = applicationName;
                 });
 
