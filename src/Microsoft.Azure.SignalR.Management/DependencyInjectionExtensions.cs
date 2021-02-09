@@ -38,9 +38,16 @@ namespace Microsoft.Azure.SignalR.Management
             return services.AddSignalRServiceCore();
         }
 
-        public static IServiceCollection AddHub(this IServiceCollection services, string hubName)
+        public static IServiceCollection AddHub(this IServiceCollection services, string hubName, ServiceTransportType transportType)
         {
-            return services.AddSingleton<IServiceConnectionContainer>(sp => sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().Connect(hubName))
+            switch (transportType)
+            {
+                case ServiceTransportType.Persistent: 
+                    services.AddSingleton<IServiceConnectionContainer>(sp => sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().Connect(hubName));
+                    break;
+                case ServiceTransportType.Transient: break;
+            }
+            return services
                 .AddSingleton<ServiceHubLifetimeManagerFactory>()
                 .AddSingleton(sp => sp.GetRequiredService<ServiceHubLifetimeManagerFactory>().Create(hubName))
                 .AddSingleton(sp => (HubLifetimeManager<Hub>)sp.GetRequiredService<IServiceHubLifetimeManager>())
