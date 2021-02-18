@@ -227,43 +227,41 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A service warning message
     /// </summary>
-    public class ServiceWarningMessage : ExtensibleServiceMessage
+    public class ServiceEventMessage : ExtensibleServiceMessage
     {
         /// <summary>
-        /// Gets or sets the type of warning object.
-        /// <list type="bullet">
-        /// <item>connection</item>
-        /// <item>user</item>
-        /// <item>group</item>
-        /// </list>
+        /// Gets or sets the type of event object.
         /// </summary>
-        public string Type { get; set; }
+        public ServiceEventObjectType Type { get; set; }
 
         /// <summary>
-        /// Gets or sets the id of warning object.
+        /// Gets or sets the id of event object.
         /// </summary>
         public string Id { get; set; }
 
         /// <summary>
-        /// Gets or sets the kind of warning.
-        /// <list type="bullet">
-        /// <item>Invalid</item>
-        /// <item>NotExisted</item>
-        /// </list>
+        /// Gets or sets the kind of event.
         /// </summary>
-        public string WarningKind { get; set; }
+        public ServiceEventKind Kind { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ServiceWarningMessage"/> class.
+        /// Gets or sets the message of event.
         /// </summary>
-        /// <param name="type">A type of warning object.</param>
-        /// <param name="id">An id of warning object.</param>
-        /// <param name="warningKind">A kind of warning.</param>
-        public ServiceWarningMessage(string type, string id, string warningKind)
+        public string Message { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceEventMessage"/> class.
+        /// </summary>
+        /// <param name="type">A type of event object.</param>
+        /// <param name="id">An id of event object.</param>
+        /// <param name="kind">A kind of event.</param>
+        /// <param name="message">A message of event.</param>
+        public ServiceEventMessage(ServiceEventObjectType type, string id, ServiceEventKind kind, string message)
         {
             Type = type;
             Id = id;
-            WarningKind = warningKind;
+            Kind = kind;
+            Message = message;
         }
     }
 

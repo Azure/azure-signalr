@@ -79,8 +79,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateMultiGroupBroadcastDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.ServiceErrorMessageType:
                     return CreateServiceErrorMessage(ref reader);
-                case ServiceProtocolConstants.ServiceWarningMessageType:
-                    return CreateServiceWarningMessage(ref reader);
+                case ServiceProtocolConstants.ServiceEventMessageType:
+                    return CreateServiceEventMessage(ref reader);
                 case ServiceProtocolConstants.JoinGroupWithAckMessageType:
                     return CreateJoinGroupWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.LeaveGroupWithAckMessageType:
@@ -212,8 +212,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ServiceErrorMessage serviceErrorMessage:
                     WriteServiceErrorMessage(ref writer, serviceErrorMessage);
                     break;
-                case ServiceWarningMessage serviceWarningMessage:
-                    WriteServiceWarningMessage(ref writer, serviceWarningMessage);
+                case ServiceEventMessage serviceWarningMessage:
+                    WriteServiceEventMessage(ref writer, serviceWarningMessage);
                     break;
                 case AckMessage ackMessage:
                     WriteAckMessage(ref writer, ackMessage);
@@ -399,13 +399,14 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.Write(message.ErrorMessage);
         }
 
-        private static void WriteServiceWarningMessage(ref MessagePackWriter writer, ServiceWarningMessage message)
+        private static void WriteServiceEventMessage(ref MessagePackWriter writer, ServiceEventMessage message)
         {
             writer.WriteArrayHeader(5);
-            writer.Write(ServiceProtocolConstants.ServiceWarningMessageType);
-            writer.Write(message.Type);
+            writer.Write(ServiceProtocolConstants.ServiceEventMessageType);
+            writer.Write((int)message.Type);
             writer.Write(message.Id);
-            writer.Write(message.WarningKind);
+            writer.Write((int)message.Kind);
+            writer.Write(message.Message);
             message.WriteExtensionMembers(ref writer);
         }
 
@@ -743,12 +744,13 @@ namespace Microsoft.Azure.SignalR.Protocol
             return new ServiceErrorMessage(errorMessage);
         }
 
-        private static ServiceWarningMessage CreateServiceWarningMessage(ref MessagePackReader reader)
+        private static ServiceEventMessage CreateServiceEventMessage(ref MessagePackReader reader)
         {
-            var type = ReadString(ref reader, "type");
+            var type = ReadInt32(ref reader, "type");
             var id = ReadString(ref reader, "id");
-            var warningKind = ReadString(ref reader, "warningKind");
-            var result = new ServiceWarningMessage(type, id, warningKind);
+            var kind = ReadInt32(ref reader, "kind");
+            var message = ReadString(ref reader, "message");
+            var result = new ServiceEventMessage((ServiceEventObjectType)type, id, (ServiceEventKind)kind, message);
             result.ReadExtensionMembers(ref reader);
             return result;
         }

@@ -503,8 +503,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "lRWkdXNlcqVncm91cAOBAc0E0g=="),
             new ProtocolTestData(
                 name: "ServiceWarningMessage",
-                message: new ServiceWarningMessage("user", "abc", "NotExisted"),
-                binary: "lRakdXNlcqNhYmOqTm90RXhpc3RlZIA="),
+                message: new ServiceEventMessage(ServiceEventObjectType.User, "abc", ServiceEventKind.NotExisted,"User abc is not existed."),
+                binary: "lRYCo2FiYwK4VXNlciBhYmMgaXMgbm90IGV4aXN0ZWQugA=="),
         }.ToDictionary(t => t.Name);
 
         [Theory]
