@@ -23,6 +23,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IReadOnlyCollection<ServiceDescriptor> _services;
         private readonly ServiceEndpoint _endpoint;
         private readonly IServiceEndpointProvider _endpointProvider;
+        private readonly ServiceTransportType _transportType;
 
         public ServiceManager(IReadOnlyCollection<ServiceDescriptor> services, IServiceProvider serviceProvider, RestClientFactory restClientFactory, IServiceEndpointManager endpointManager, IOptions<ServiceManagerOptions> options)
         {
@@ -35,18 +36,22 @@ namespace Microsoft.Azure.SignalR.Management
                 _endpoint = new ServiceEndpoint(connectionString);
                 _endpointProvider = endpointManager.GetEndpointProvider(_endpoint);
             }
+            _transportType = options.Value.ServiceTransportType;
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
         {
-            var servicesPerHub = new ServiceCollection().Add(_services).AddSingleton(_services).AddHub(hubName);
+            var servicesPerHub = new ServiceCollection().Add(_services).AddSingleton(_services).AddHub(hubName, _transportType);
             if (loggerFactory != null)
             {
                 servicesPerHub.AddSingleton(loggerFactory);
             }
             var serviceProviderForHub = servicesPerHub.BuildServiceProvider();
-            var connectionContainer = serviceProviderForHub.GetRequiredService<IServiceConnectionContainer>();
-            await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
+            var connectionContainer = serviceProviderForHub.GetService<IServiceConnectionContainer>();
+            if (connectionContainer != null)
+            {
+                await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
+            }
             return serviceProviderForHub.GetRequiredService<ServiceHubContext>();
         }
 
