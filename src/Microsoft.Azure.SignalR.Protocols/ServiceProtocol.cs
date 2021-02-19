@@ -79,6 +79,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateMultiGroupBroadcastDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.ServiceErrorMessageType:
                     return CreateServiceErrorMessage(ref reader);
+                case ServiceProtocolConstants.ServiceEventMessageType:
+                    return CreateServiceEventMessage(ref reader);
                 case ServiceProtocolConstants.JoinGroupWithAckMessageType:
                     return CreateJoinGroupWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.LeaveGroupWithAckMessageType:
@@ -209,6 +211,9 @@ namespace Microsoft.Azure.SignalR.Protocol
                     break;
                 case ServiceErrorMessage serviceErrorMessage:
                     WriteServiceErrorMessage(ref writer, serviceErrorMessage);
+                    break;
+                case ServiceEventMessage serviceWarningMessage:
+                    WriteServiceEventMessage(ref writer, serviceWarningMessage);
                     break;
                 case AckMessage ackMessage:
                     WriteAckMessage(ref writer, ackMessage);
@@ -392,6 +397,17 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.WriteArrayHeader(2);
             writer.Write(ServiceProtocolConstants.ServiceErrorMessageType);
             writer.Write(message.ErrorMessage);
+        }
+
+        private static void WriteServiceEventMessage(ref MessagePackWriter writer, ServiceEventMessage message)
+        {
+            writer.WriteArrayHeader(5);
+            writer.Write(ServiceProtocolConstants.ServiceEventMessageType);
+            writer.Write((int)message.Type);
+            writer.Write(message.Id);
+            writer.Write((int)message.Kind);
+            writer.Write(message.Message);
+            message.WriteExtensionMembers(ref writer);
         }
 
         private static void WriteJoinGroupWithAckMessage(ref MessagePackWriter writer, JoinGroupWithAckMessage message)
@@ -726,6 +742,17 @@ namespace Microsoft.Azure.SignalR.Protocol
             var errorMessage = ReadString(ref reader, "errorMessage");
 
             return new ServiceErrorMessage(errorMessage);
+        }
+
+        private static ServiceEventMessage CreateServiceEventMessage(ref MessagePackReader reader)
+        {
+            var type = ReadInt32(ref reader, "type");
+            var id = ReadString(ref reader, "id");
+            var kind = ReadInt32(ref reader, "kind");
+            var message = ReadString(ref reader, "message");
+            var result = new ServiceEventMessage((ServiceEventObjectType)type, id, (ServiceEventKind)kind, message);
+            result.ReadExtensionMembers(ref reader);
+            return result;
         }
 
         private static JoinGroupWithAckMessage CreateJoinGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)

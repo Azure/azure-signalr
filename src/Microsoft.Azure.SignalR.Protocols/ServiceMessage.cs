@@ -225,6 +225,47 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
+    /// A service warning message
+    /// </summary>
+    public class ServiceEventMessage : ExtensibleServiceMessage
+    {
+        /// <summary>
+        /// Gets or sets the type of event object.
+        /// </summary>
+        public ServiceEventObjectType Type { get; set; }
+
+        /// <summary>
+        /// Gets or sets the id of event object.
+        /// </summary>
+        public string Id { get; set; }
+
+        /// <summary>
+        /// Gets or sets the kind of event.
+        /// </summary>
+        public ServiceEventKind Kind { get; set; }
+
+        /// <summary>
+        /// Gets or sets the message of event.
+        /// </summary>
+        public string Message { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceEventMessage"/> class.
+        /// </summary>
+        /// <param name="type">A type of event object.</param>
+        /// <param name="id">An id of event object.</param>
+        /// <param name="kind">A kind of event.</param>
+        /// <param name="message">A message of event.</param>
+        public ServiceEventMessage(ServiceEventObjectType type, string id, ServiceEventKind kind, string message)
+        {
+            Type = type;
+            Id = id;
+            Kind = kind;
+            Message = message;
+        }
+    }
+
+    /// <summary>
     /// A ack message to response ack-able message
     /// </summary>
     public class AckMessage : ExtensibleServiceMessage

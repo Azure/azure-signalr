@@ -501,6 +501,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "CheckUserInGroupWithAckWithMessage",
                 message: new CheckUserInGroupWithAckMessage("user", "group", 3, 1234L),
                 binary: "lRWkdXNlcqVncm91cAOBAc0E0g=="),
+            new ProtocolTestData(
+                name: "ServiceWarningMessage",
+                message: new ServiceEventMessage(ServiceEventObjectType.User, "abc", ServiceEventKind.NotExisted,"User abc is not existed."),
+                binary: "lRYCo2FiYwK4VXNlciBhYmMgaXMgbm90IGV4aXN0ZWQugA=="),
         }.ToDictionary(t => t.Name);
 
         [Theory]

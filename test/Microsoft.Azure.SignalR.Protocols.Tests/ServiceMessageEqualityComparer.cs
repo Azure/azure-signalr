@@ -67,6 +67,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return CheckUserInGroupWithAckMessageEqual(checkUserInGroupWithAckMessage, (CheckUserInGroupWithAckMessage)y);
                 case AckMessage ackMessage:
                     return AckMessageEqual(ackMessage, (AckMessage)y);
+                case ServiceEventMessage serviceWarningMessage:
+                    return ServiceWarningMessageEqual(serviceWarningMessage, (ServiceEventMessage)y);
                 default:
                     throw new InvalidOperationException($"Unknown message type: {x.GetType().FullName}");
             }
@@ -214,6 +216,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return x.AckId == y.AckId &&
                    x.Status == y.Status &&
                    StringEqual(x.Message, y.Message);
+        }
+
+        private bool ServiceWarningMessageEqual(ServiceEventMessage x, ServiceEventMessage y)
+        {
+            return x.Type == y.Type &&
+                StringEqual(x.Id, y.Id) &&
+                x.Kind == y.Kind &&
+                StringEqual(x.Message, y.Message);
         }
 
         private static bool StringEqual(string x, string y)
