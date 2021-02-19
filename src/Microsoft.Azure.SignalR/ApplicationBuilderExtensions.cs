@@ -5,6 +5,7 @@ using System;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Azure.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Builder
 {
@@ -36,6 +37,13 @@ namespace Microsoft.AspNetCore.Builder
             var routes = new RouteBuilder(app);
             configure(new ServiceRouteBuilder(routes));
             app.UseRouter(routes.Build());
+#if !NETSTANDARD2_0
+            var logger = app.ApplicationServices.GetService<ILogger<ThreadStarvationDetector>>();
+            if (logger != null)
+            {
+                new ThreadStarvationDetector(logger);
+            }
+#endif
             return app;
         }
     }
