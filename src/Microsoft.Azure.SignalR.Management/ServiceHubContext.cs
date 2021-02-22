@@ -46,7 +46,7 @@ namespace Microsoft.Azure.SignalR.Management
             _transportType = options.Value.ServiceTransportType;
         }
 
-        Task<NegotiationResponse> IInternalServiceHubContext.NegotiateAsync(HttpContext httpContext, string userId, IList<Claim> claims, TimeSpan? lifetime, bool isDiagnosticClient, CancellationToken cancellationToken)
+        public Task<NegotiationResponse> NegotiateAsync(HttpContext httpContext, string userId, IList<Claim> claims, TimeSpan? lifetime, bool isDiagnosticClient, CancellationToken cancellationToken)
         {
             return _negotiateProcessor.NegotiateAsync(_hubName, httpContext, userId, claims, lifetime, isDiagnosticClient, cancellationToken);
         }
