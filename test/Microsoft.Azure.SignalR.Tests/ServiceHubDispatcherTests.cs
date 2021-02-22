@@ -39,6 +39,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new TestRouter(),
                 null,
                 null,
+                null,
                 null
             );
 

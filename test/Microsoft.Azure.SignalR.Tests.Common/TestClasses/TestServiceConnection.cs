@@ -27,13 +27,15 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false,
             ILogger logger = null,
-            IServiceMessageHandler serviceMessageHandler = null
+            IServiceMessageHandler serviceMessageHandler = null,
+            IServiceEventHandler serviceEventHandler = null
             ) : base(
             new ServiceProtocol(),
             "serverId",
             Guid.NewGuid().ToString(),
             new HubServiceEndpoint(),
             serviceMessageHandler,
+            serviceEventHandler,
             ServiceConnectionType.Default,
             logger ?? NullLogger.Instance
         )

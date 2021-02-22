@@ -127,11 +127,18 @@ namespace Microsoft.Azure.SignalR.AspNet
             var smb = new ServiceMessageBus(configuration.Resolver, loggerFactory.CreateLogger<ServiceMessageBus>());
             configuration.Resolver.Register(typeof(IMessageBus), () => smb);
 
+            var serviceEventHandler = configuration.Resolver.Resolve<IServiceEventHandler>();
+            if (serviceEventHandler == null)
+            {
+                serviceEventHandler = new DefaultServiceEventHandler(loggerFactory);
+                configuration.Resolver.Register(typeof(IServiceEventHandler), () => serviceEventHandler);
+            }
+
             var scf = configuration.Resolver.Resolve<IServiceConnectionFactory>();
             if (scf == null)
             {
                 var connectionFactory = new ConnectionFactory(serverNameProvider, loggerFactory);
-                scf = new ServiceConnectionFactory(serviceProtocol, ccm, connectionFactory, loggerFactory, serverNameProvider);
+                scf = new ServiceConnectionFactory(serviceProtocol, ccm, connectionFactory, loggerFactory, serverNameProvider, serviceEventHandler);
                 configuration.Resolver.Register(typeof(IServiceConnectionFactory), () => scf);
             }
 

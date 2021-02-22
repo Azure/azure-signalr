@@ -38,6 +38,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ServiceConnectionType _connectionType;
 
         private readonly IServiceMessageHandler _serviceMessageHandler;
+        private readonly IServiceEventHandler _serviceEventHandler;
         private readonly object _statusLock = new object();
 
         private volatile string _errorMessage;
@@ -96,6 +97,7 @@ namespace Microsoft.Azure.SignalR
             string connectionId,
             HubServiceEndpoint endpoint,
             IServiceMessageHandler serviceMessageHandler,
+            IServiceEventHandler serviceEventHandler,
             ServiceConnectionType connectionType,
             ILogger logger,
             GracefulShutdownMode mode = GracefulShutdownMode.Off)
@@ -117,6 +119,7 @@ namespace Microsoft.Azure.SignalR
 
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _serviceMessageHandler = serviceMessageHandler;
+            _serviceEventHandler = serviceEventHandler;
         }
 
         /// <summary>
@@ -278,7 +281,7 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
                 return CleanupClientConnections(instanceId);
-            } 
+            }
             if (RuntimeServicePingMessage.IsFinAck(pingMessage))
             {
                 _serviceConnectionOfflineTcs.TrySetResult(null);
@@ -291,6 +294,11 @@ namespace Microsoft.Azure.SignalR
         {
             _serviceMessageHandler.HandleAck(ackMessage);
             return Task.CompletedTask;
+        }
+
+        private Task OnEventMessage(ServiceEventMessage message)
+        {
+            return _serviceEventHandler?.HandleAsync(ConnectionId, message) ?? Task.CompletedTask;
         }
 
         private async Task<ConnectionContext> EstablishConnectionAsync(string target)
@@ -495,22 +503,17 @@ namespace Microsoft.Azure.SignalR
 
         private Task DispatchMessageAsync(ServiceMessage message)
         {
-            switch (message)
+            return message switch
             {
-                case OpenConnectionMessage openConnectionMessage:
-                    return OnClientConnectedAsync(openConnectionMessage);
-                case CloseConnectionMessage closeConnectionMessage:
-                    return OnClientDisconnectedAsync(closeConnectionMessage);
-                case ConnectionDataMessage connectionDataMessage:
-                    return OnClientMessageAsync(connectionDataMessage);
-                case ServiceErrorMessage serviceErrorMessage:
-                    return OnServiceErrorAsync(serviceErrorMessage);
-                case PingMessage pingMessage:
-                    return OnPingMessageAsync(pingMessage);
-                case AckMessage ackMessage:
-                    return OnAckMessageAsync(ackMessage);
-            }
-            return Task.CompletedTask;
+                OpenConnectionMessage openConnectionMessage => OnClientConnectedAsync(openConnectionMessage),
+                CloseConnectionMessage closeConnectionMessage => OnClientDisconnectedAsync(closeConnectionMessage),
+                ConnectionDataMessage connectionDataMessage => OnClientMessageAsync(connectionDataMessage),
+                ServiceErrorMessage serviceErrorMessage => OnServiceErrorAsync(serviceErrorMessage),
+                PingMessage pingMessage => OnPingMessageAsync(pingMessage),
+                AckMessage ackMessage => OnAckMessageAsync(ackMessage),
+                ServiceEventMessage eventMessage => OnEventMessage(eventMessage),
+                _ => Task.CompletedTask,
+            };
         }
 
         private TimerAwaitable StartKeepAliveTimer()
