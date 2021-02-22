@@ -107,13 +107,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         internal async Task GenerateClientEndpointTestWithClientEndpoint()
         {
             var endpoints = new ServiceEndpoint[] { new ServiceEndpoint($"Endpoint=http://localhost;AccessKey={AccessKey};Version=1.0;ClientEndpoint=https://remote") };
-            //if no mock router, then error throws because all endpoints are offline.
-            var routerMock = new Mock<IEndpointRouter>();
-            routerMock.Setup(router => router.GetNegotiateEndpoint(null, endpoints)).Returns(endpoints.Single());
             var provider = new ServiceCollection().AddSignalRServiceManager().Configure<ServiceManagerOptions>(o =>
             {
                 o.ServiceEndpoints = endpoints;
-            }).AddSingleton(routerMock.Object).BuildServiceProvider();
+                o.ServiceTransportType = ServiceTransportType.Transient;
+            }).BuildServiceProvider();
             var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
             var negotiationResponse = (await negotiateProcessor.NegotiateAsync(HubName)).Url;
             Assert.Equal("https://remote/client/?hub=signalrbench", negotiationResponse);
