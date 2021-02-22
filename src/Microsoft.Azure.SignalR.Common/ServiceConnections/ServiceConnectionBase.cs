@@ -296,7 +296,7 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        private Task OnEventMessage(ServiceEventMessage message)
+        private Task OnEventMessageAsync(ServiceEventMessage message)
         {
             return _serviceEventHandler?.HandleAsync(ConnectionId, message) ?? Task.CompletedTask;
         }
@@ -511,7 +511,7 @@ namespace Microsoft.Azure.SignalR
                 ServiceErrorMessage serviceErrorMessage => OnServiceErrorAsync(serviceErrorMessage),
                 PingMessage pingMessage => OnPingMessageAsync(pingMessage),
                 AckMessage ackMessage => OnAckMessageAsync(ackMessage),
-                ServiceEventMessage eventMessage => OnEventMessage(eventMessage),
+                ServiceEventMessage eventMessage => OnEventMessageAsync(eventMessage),
                 _ => Task.CompletedTask,
             };
         }
