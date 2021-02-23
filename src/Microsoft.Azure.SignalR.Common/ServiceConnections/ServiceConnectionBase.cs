@@ -298,7 +298,8 @@ namespace Microsoft.Azure.SignalR
 
         private Task OnEventMessageAsync(ServiceEventMessage message)
         {
-            return _serviceEventHandler?.HandleAsync(ConnectionId, message) ?? Task.CompletedTask;
+            _ = _serviceEventHandler?.HandleAsync(ConnectionId, message);
+            return Task.CompletedTask;
         }
 
         private async Task<ConnectionContext> EstablishConnectionAsync(string target)
