@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
@@ -43,9 +44,9 @@ namespace Microsoft.Azure.SignalR.Management
             _transportType = options.Value.ServiceTransportType;
         }
 
-        public Task<NegotiationResponse> NegotiateAsync(NegotiationOptions options)
+        public Task<NegotiationResponse> NegotiateAsync(NegotiationOptions options, CancellationToken cancellationToken)
         {
-            return _negotiateProcessor.NegotiateAsync(_hubName, options.HttpContext, options.UserId, options.Claims, options.Lifetime, options.IsDiagnosticClient, options.CancellationToken);
+            return _negotiateProcessor.NegotiateAsync(_hubName, options.HttpContext, options.UserId, options.Claims, options.Lifetime, options.IsDiagnosticClient, cancellationToken);
         }
 
         IEnumerable<ServiceEndpoint> IInternalServiceHubContext.GetServiceEndpoints() => _endpointManager.GetEndpoints(_hubName);
