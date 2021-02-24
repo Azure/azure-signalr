@@ -26,8 +26,17 @@ namespace Microsoft.Azure.SignalR.Management
             _router = router;
         }
 
-        public async Task<NegotiationResponse> NegotiateAsync(string hubName, HttpContext httpContext = null, string userId = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null, bool isDiagnosticClient = false, CancellationToken cancellationToken = default)
+        public async Task<NegotiationResponse> NegotiateAsync(string hubName, NegotiationOptions negotiationOptions, CancellationToken cancellationToken = default)
         {
+            if (negotiationOptions == null)
+            {
+                negotiationOptions = new NegotiationOptions();
+            }
+            var httpContext = negotiationOptions.HttpContext;
+            var userId = negotiationOptions.UserId;
+            var claims = negotiationOptions.Claims;
+            var isDiagnosticClient = negotiationOptions.IsDiagnosticClient;
+            var lifetime = negotiationOptions.TokenLifetime;
             try
             {
                 if (cancellationToken == default && httpContext != null)
