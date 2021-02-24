@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
-using System.Threading;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 
@@ -36,10 +35,5 @@ namespace Microsoft.Azure.SignalR.Management
         /// Gets or sets the flag indicates whether the client is a diagnostic client.
         /// </summary>
         public bool IsDiagnosticClient { get; set; } = false;
-
-        /// <summary>
-        /// Notifies when the negotiation operation should be cancelled. If null, the <see cref="HttpContext.RequestAborted"/> of <see cref="HttpContext"/> will be used.
-        /// </summary>
-        public CancellationToken CancellationToken { get; set; }
     }
 }
