@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Common;
 
@@ -28,10 +27,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public async Task<NegotiationResponse> NegotiateAsync(string hubName, NegotiationOptions negotiationOptions, CancellationToken cancellationToken = default)
         {
-            if (negotiationOptions == null)
-            {
-                negotiationOptions = new NegotiationOptions();
-            }
+            negotiationOptions ??= NegotiationOptions.Default;
             var httpContext = negotiationOptions.HttpContext;
             var userId = negotiationOptions.UserId;
             var claims = negotiationOptions.Claims;

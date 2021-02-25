@@ -11,6 +11,8 @@ namespace Microsoft.Azure.SignalR.Management
 {
     public class NegotiationOptions
     {
+        internal static readonly NegotiationOptions Default = new NegotiationOptions();
+
         /// <summary>
         /// Gets or sets the HTTP context object that might provide information for routing and generating access token.
         /// </summary>
