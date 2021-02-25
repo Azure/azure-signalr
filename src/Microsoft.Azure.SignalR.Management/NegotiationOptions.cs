@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Gets or sets the lifetime of <see cref="NegotiationResponse.AccessToken"/>. Default value is one hour.
         /// </summary>
-        public TimeSpan Lifetime { get; set; } = TimeSpan.FromHours(1);
+        public TimeSpan TokenLifetime { get; set; } = TimeSpan.FromHours(1);
 
         /// <summary>
         /// Gets or sets the flag indicates whether the client is a diagnostic client.

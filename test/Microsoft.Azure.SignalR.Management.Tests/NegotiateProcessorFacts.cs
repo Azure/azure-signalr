@@ -52,7 +52,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
             for (int i = 0; i < 3; i++)
             {
-                var negotiationResponse = await negotiateProcessor.NegotiateAsync(HubName, null, userId, claims, _tokenLifeTime);
+                var negotiationResponse = await negotiateProcessor.NegotiateAsync(HubName, new NegotiationOptions { UserId = userId, Claims = claims, TokenLifetime = _tokenLifeTime });
                 var tokenString = negotiationResponse.AccessToken;
                 var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
@@ -86,11 +86,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
             var negotiationResponse = await negotiateProcessor.NegotiateAsync(
                 HubName,
-                null,
-                userId,
-                hasClaims ? new List<Claim> { new Claim("a", "1") } : null,
-                _tokenLifeTime,
-                isDiagnosticClient);
+                new NegotiationOptions
+                {
+                    UserId = userId,
+                    Claims = hasClaims ? new List<Claim> { new Claim("a", "1") } : null,
+                    IsDiagnosticClient = isDiagnosticClient,
+                    TokenLifetime = _tokenLifeTime
+                });
             var tokenString = negotiationResponse.AccessToken;
             var handler = new JwtSecurityTokenHandler();
             var token = handler.ReadJwtToken(tokenString);
@@ -113,7 +115,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 o.ServiceTransportType = ServiceTransportType.Transient;
             }).BuildServiceProvider();
             var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
-            var negotiationResponse = (await negotiateProcessor.NegotiateAsync(HubName)).Url;
+            var negotiationResponse = (await negotiateProcessor.NegotiateAsync(HubName, null)).Url;
             Assert.Equal("https://remote/client/?hub=signalrbench", negotiationResponse);
         }
     }

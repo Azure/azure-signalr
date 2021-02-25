@@ -46,7 +46,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public Task<NegotiationResponse> NegotiateAsync(NegotiationOptions options, CancellationToken cancellationToken)
         {
-            return _negotiateProcessor.NegotiateAsync(_hubName, options?.HttpContext, options?.UserId, options?.Claims, options?.Lifetime, options != null && options.IsDiagnosticClient, cancellationToken);
+            return _negotiateProcessor.NegotiateAsync(_hubName, options, cancellationToken);
         }
 
         IEnumerable<ServiceEndpoint> IInternalServiceHubContext.GetServiceEndpoints() => _endpointManager.GetEndpoints(_hubName);
