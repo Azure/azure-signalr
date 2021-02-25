@@ -41,6 +41,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             IClientConnectionManager clientConnectionManager,
             ILoggerFactory loggerFactory,
             IServiceMessageHandler serviceMessageHandler,
+            IServiceEventHandler serviceEventHandler,
             ServiceConnectionType connectionType = ServiceConnectionType.Default)
             : base(
                   serviceProtocol,
@@ -48,6 +49,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                   connectionId,
                   endpoint,
                   serviceMessageHandler,
+                  serviceEventHandler,
                   connectionType,
                   loggerFactory?.CreateLogger<ServiceConnection>())
         {

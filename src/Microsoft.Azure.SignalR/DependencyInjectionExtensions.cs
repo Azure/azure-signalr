@@ -94,6 +94,9 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.TryAddSingleton(typeof(IEndpointRouter), typeof(DefaultEndpointRouter));
             builder.Services.TryAddSingleton(typeof(IConnectionRequestIdProvider), typeof(DefaultConnectionRequestIdProvider));
 
+            // If a custom service event handler is added, do not add the default handler.
+            builder.Services.TryAddSingleton<IServiceEventHandler, DefaultServiceEventHandler>();
+
 #if !NETSTANDARD2_0
             builder.Services.TryAddSingleton<AzureSignalRHostedService>();
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IStartupFilter, AzureSignalRStartupFilter>());

@@ -51,10 +51,11 @@ namespace Microsoft.Azure.SignalR
                                  string connectionId,
                                  HubServiceEndpoint endpoint,
                                  IServiceMessageHandler serviceMessageHandler,
+                                 IServiceEventHandler serviceEventHandler,
                                  ServiceConnectionType connectionType = ServiceConnectionType.Default,
                                  GracefulShutdownMode mode = GracefulShutdownMode.Off,
                                  int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds
-            ): base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode)
+            ): base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, serviceEventHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode)
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
