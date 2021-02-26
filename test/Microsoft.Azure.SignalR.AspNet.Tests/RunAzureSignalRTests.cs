@@ -619,7 +619,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     // 2. test other requests should not be handled
                     response = await client.GetAsync("/not-exists");
-                    Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+                    Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
                 }
             }
         }
