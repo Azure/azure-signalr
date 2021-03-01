@@ -357,7 +357,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 })
                 .Build();
             var serviceHubContext = await serviceManager.CreateHubContextAsync("hub", LoggerFactory);
-            var connectionContainer = ((ServiceHubContext)serviceHubContext).ServiceProvider.GetRequiredService<IServiceConnectionContainer>();//TODO
+            var connectionContainer = ((ServiceHubContextImpl)serviceHubContext).ServiceProvider.GetRequiredService<IServiceConnectionContainer>();//TODO
             await serviceHubContext.DisposeAsync();
             await Task.Delay(500);
             Assert.Equal(ServiceConnectionStatus.Disconnected, connectionContainer.Status);
