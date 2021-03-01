@@ -36,10 +36,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             var hubContext = (await serviceManager.CreateHubContextAsync(Hub) as IInternalServiceHubContext)
                 .WithEndpoints(targetEndpoints);
-            var serviceProvider = (hubContext as ServiceHubContext).ServiceProvider;
+            var serviceProvider = (hubContext as ServiceHubContextImpl).ServiceProvider;
             var container = serviceProvider.GetRequiredService<IServiceConnectionContainer>() as MultiEndpointMessageWriter;
             var innerEndpoints = container.TargetEndpoints.ToArray();
-            var hubEndpoints = (hubContext as ServiceHubContext).ServiceProvider.GetRequiredService<IServiceEndpointManager>().GetEndpoints(Hub);
+            var hubEndpoints = (hubContext as ServiceHubContextImpl).ServiceProvider.GetRequiredService<IServiceEndpointManager>().GetEndpoints(Hub);
             Assert.True(innerEndpoints.SequenceEqual(hubEndpoints.Take(selectedCount), ReferenceEqualityComparer.Instance));
         }
     }

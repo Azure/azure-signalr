@@ -15,7 +15,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class ServiceHubContext : IInternalServiceHubContext
+    internal class ServiceHubContextImpl : IInternalServiceHubContext
     {
         private readonly string _hubName;
         private readonly IHubContext<Hub> _hubContext;
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public IUserGroupManager UserGroups { get; }
 
-        public ServiceHubContext(string hubName, IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager, IOptions<ServiceManagerOptions> options)
+        public ServiceHubContextImpl(string hubName, IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager,IOptions<ServiceManagerOptions> options)
         {
             _hubName = hubName;
             _hubContext = hubContext;
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.SignalR.Management
                 .AddSingleton(_negotiateProcessor)
                 .AddSingleton(_endpointManager);
 
-            return services.BuildServiceProvider().GetRequiredService<ServiceHubContext>();
+            return services.BuildServiceProvider().GetRequiredService<ServiceHubContextImpl>();
         }
     }
 }

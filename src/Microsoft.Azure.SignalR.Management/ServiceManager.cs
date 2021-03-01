@@ -52,7 +52,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
             }
-            return serviceProviderForHub.GetRequiredService<ServiceHubContext>();
+            return serviceProviderForHub.GetRequiredService<ServiceHubContextImpl>();
         }
 
         public void Dispose()
