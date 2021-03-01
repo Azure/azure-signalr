@@ -4,10 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public IUserGroupManager UserGroups { get; }
 
-        public ServiceHubContext(string hubName, IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager,IOptions<ServiceManagerOptions> options)
+        public ServiceHubContext(string hubName, IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager, IOptions<ServiceManagerOptions> options)
         {
             _hubName = hubName;
             _hubContext = hubContext;
@@ -46,9 +44,9 @@ namespace Microsoft.Azure.SignalR.Management
             _transportType = options.Value.ServiceTransportType;
         }
 
-        Task<NegotiationResponse> IInternalServiceHubContext.NegotiateAsync(HttpContext httpContext, string userId, IList<Claim> claims, TimeSpan? lifetime, bool isDiagnosticClient, CancellationToken cancellationToken)
+        Task<NegotiationResponse> IInternalServiceHubContext.NegotiateAsync(NegotiationOptions options, CancellationToken cancellationToken)
         {
-            return _negotiateProcessor.NegotiateAsync(_hubName, httpContext, userId, claims, lifetime, isDiagnosticClient, cancellationToken);
+            return _negotiateProcessor.NegotiateAsync(_hubName, options, cancellationToken);
         }
 
         IEnumerable<ServiceEndpoint> IInternalServiceHubContext.GetServiceEndpoints() => _endpointManager.GetEndpoints(_hubName);
