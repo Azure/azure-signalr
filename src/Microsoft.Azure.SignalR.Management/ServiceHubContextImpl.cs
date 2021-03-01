@@ -15,7 +15,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class ServiceHubContextImpl : IInternalServiceHubContext
+    internal class ServiceHubContextImpl : ServiceHubContext, IInternalServiceHubContext
     {
         private readonly string _hubName;
         private readonly IHubContext<Hub> _hubContext;
@@ -25,11 +25,11 @@ namespace Microsoft.Azure.SignalR.Management
 
         internal IServiceProvider ServiceProvider { get; }
 
-        public IHubClients Clients => _hubContext.Clients;
+        public override IHubClients Clients => _hubContext.Clients;
 
-        public IGroupManager Groups => _hubContext.Groups;
+        public override IGroupManager Groups => _hubContext.Groups;
 
-        public IUserGroupManager UserGroups { get; }
+        public override IUserGroupManager UserGroups { get; }
 
         public ServiceHubContextImpl(string hubName, IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager)
         {
@@ -42,14 +42,14 @@ namespace Microsoft.Azure.SignalR.Management
             _endpointManager = endpointManager;
         }
 
-        Task<NegotiationResponse> IInternalServiceHubContext.NegotiateAsync(NegotiationOptions options, CancellationToken cancellationToken)
+        public override Task<NegotiationResponse> NegotiateAsync(NegotiationOptions options, CancellationToken cancellationToken)
         {
             return _negotiateProcessor.NegotiateAsync(_hubName, options, cancellationToken);
         }
 
         IEnumerable<ServiceEndpoint> IInternalServiceHubContext.GetServiceEndpoints() => _endpointManager.GetEndpoints(_hubName);
 
-        public async Task DisposeAsync()
+        public override async Task DisposeAsync()
         {
             await _lifetimeManager.DisposeAsync();
             (ServiceProvider as IDisposable)?.Dispose();
