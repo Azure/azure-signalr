@@ -22,7 +22,6 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IServiceHubLifetimeManager _lifetimeManager;
         private readonly NegotiateProcessor _negotiateProcessor;
         private readonly IServiceEndpointManager _endpointManager;
-        private readonly ServiceTransportType _transportType;
 
         internal IServiceProvider ServiceProvider { get; }
 
@@ -32,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public IUserGroupManager UserGroups { get; }
 
-        public ServiceHubContextImpl(string hubName, IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager,IOptions<ServiceManagerOptions> options)
+        public ServiceHubContextImpl(string hubName, IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager)
         {
             _hubName = hubName;
             _hubContext = hubContext;
@@ -41,7 +40,6 @@ namespace Microsoft.Azure.SignalR.Management
             ServiceProvider = serviceProvider;
             _negotiateProcessor = negotiateProcessor;
             _endpointManager = endpointManager;
-            _transportType = options.Value.ServiceTransportType;
         }
 
         Task<NegotiationResponse> IInternalServiceHubContext.NegotiateAsync(NegotiationOptions options, CancellationToken cancellationToken)
@@ -71,8 +69,6 @@ namespace Microsoft.Azure.SignalR.Management
                 .Add(servicesFromServiceManager)
                 //Allow chained call serviceHubContext.WithEndpoints(...).WithEndpoints(...)
                 .AddSingleton(servicesFromServiceManager)
-                //add factory method
-                .AddHub(_hubName, _transportType)
                 //overwrite container
                 .AddSingleton<IServiceConnectionContainer>(container)
                 //add required service instances
