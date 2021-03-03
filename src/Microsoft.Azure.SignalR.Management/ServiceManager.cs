@@ -11,7 +11,6 @@ using Microsoft.Azure.SignalR.Common.RestClients;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.Rest;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -23,33 +22,25 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IReadOnlyCollection<ServiceDescriptor> _services;
         private readonly ServiceEndpoint _endpoint;
         private readonly IServiceEndpointProvider _endpointProvider;
-        private readonly ServiceTransportType _transportType;
 
-        public ServiceManager(IReadOnlyCollection<ServiceDescriptor> services, IServiceProvider serviceProvider, RestClientFactory restClientFactory, IServiceEndpointManager endpointManager, IOptions<ServiceManagerOptions> options)
+        public ServiceManager(IReadOnlyCollection<ServiceDescriptor> services, IServiceProvider serviceProvider, RestClientFactory restClientFactory, IServiceEndpointManager endpointManager)
         {
             _services = services;
             _serviceProvider = serviceProvider;
             _restClientFactory = restClientFactory;
             _endpoint = endpointManager.Endpoints.Keys.First();
             _endpointProvider = endpointManager.GetEndpointProvider(_endpoint);
-            _transportType = options.Value.ServiceTransportType;
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
         {
-            var servicesPerHub = new ServiceCollection().Add(_services).AddHub(hubName, _transportType);
-            servicesPerHub.AddSingleton(servicesPerHub.ToList() as IReadOnlyCollection<ServiceDescriptor>);
+            var builder = new ServiceHubContextBuilder(new ServiceCollection().Add(_services));
             if (loggerFactory != null)
             {
-                servicesPerHub.AddSingleton(loggerFactory);
+                builder.WithLoggerFactory(loggerFactory);
             }
-            var serviceProviderForHub = servicesPerHub.BuildServiceProvider();
-            var connectionContainer = serviceProviderForHub.GetService<IServiceConnectionContainer>();
-            if (connectionContainer != null)
-            {
-                await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
-            }
-            return serviceProviderForHub.GetRequiredService<ServiceHubContextImpl>();
+            var serviceHubContext = await builder.CreateAsync(hubName, cancellationToken);
+            return serviceHubContext;
         }
 
         public void Dispose()
