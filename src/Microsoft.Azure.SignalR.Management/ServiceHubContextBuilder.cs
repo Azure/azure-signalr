@@ -77,12 +77,13 @@ namespace Microsoft.Azure.SignalR.Management
             //add requried services
             var transportType = _services.BuildServiceProvider()
                 .GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ServiceTransportType;
-            _services.AddHub(hubName, transportType);
-            _configureAction?.Invoke(_services);
-            _services.AddSingleton(_services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
+            var services = new ServiceCollection().Add(_services);
+            services.AddHub(hubName, transportType);
+            _configureAction?.Invoke(services);
+            services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
 
             //build
-            var serviceHubContext = _services.BuildServiceProvider()
+            var serviceHubContext = services.BuildServiceProvider()
                 .GetRequiredService<ServiceHubContextImpl>();
 
             //initialize
