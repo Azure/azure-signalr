@@ -8,7 +8,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 {
     public class ConnectionStringParserFacts
     {
-
         [Theory]
         [InlineData("https://aaa", "endpoint=https://aaa;AccessKey=bbb;")]
         [InlineData("https://aaa", "ENDPOINT=https://aaa/;ACCESSKEY=bbb;")]
@@ -25,7 +24,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         }
 
         [Theory]
-        [InlineData("endpoint=https://aaa;AuthType=aad;clientId=123")]
         [InlineData("endpoint=https://aaa;AuthType=aad;clientId=123;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
         public void InvliadApplicationConnectionString(string connectionString)
         {
@@ -33,16 +31,24 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         }
 
         [Theory]
-        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;")]
-        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientSecret=xxxx;")]
-        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;tenantId=xxxx;")]
-        public void ValidMSIConnectionString(string expectedEndpoint, string connectionString)
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;", ManagedIdentityType.System)]
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientSecret=xxxx;", ManagedIdentityType.System)] // simply ignore the clientSecret
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;tenantId=xxxx;", ManagedIdentityType.System)] // simply ignore the tenantId
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientId=123;", ManagedIdentityType.UserAssigned)]
+        internal void ValidMSIConnectionString(string expectedEndpoint, string connectionString, ManagedIdentityType expectedType)
         {
             var (accessKey, version, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
 
             Assert.Equal(expectedEndpoint, accessKey.Endpoint);
             Assert.IsType<AadAccessKey>(accessKey);
-            Assert.IsType<AadManagedIdentityOptions>(((AadAccessKey)accessKey).Options);
+            if (accessKey is AadAccessKey aadAccessKey)
+            {
+                Assert.IsType<AadManagedIdentityOptions>(aadAccessKey.Options);
+                if (aadAccessKey.Options is AadManagedIdentityOptions options)
+                {
+                    Assert.Equal(expectedType, options.ManagedIdentityType);
+                }
+            }
             Assert.Null(version);
             Assert.Null(accessKey.Port);
             Assert.Null(clientEndpoint);
@@ -56,7 +62,10 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 
             Assert.Equal(expectedEndpoint, accessKey.Endpoint);
             Assert.IsType<AadAccessKey>(accessKey);
-            Assert.IsType<AadApplicationOptions>(((AadAccessKey)accessKey).Options);
+            if (accessKey is AadAccessKey aadAccessKey)
+            {
+                Assert.IsType<AadApplicationOptions>(aadAccessKey.Options);
+            }
             Assert.Null(version);
             Assert.Null(accessKey.Port);
             Assert.Null(clientEndpoint);
