@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -65,6 +66,13 @@ namespace Microsoft.Azure.SignalR.Management
         internal ServiceHubContextBuilder ConfigureServices(Action<IServiceCollection> configureAction)
         {
             _configureAction = configureAction;
+            return this;
+        }
+
+        internal ServiceHubContextBuilder WithCallingAssembly()
+        {
+            var assembly = Assembly.GetCallingAssembly();
+            _services.WithAssembly(assembly);
             return this;
         }
 
