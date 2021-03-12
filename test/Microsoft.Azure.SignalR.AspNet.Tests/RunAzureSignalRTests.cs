@@ -620,6 +620,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                     // 2. test other requests should not be handled
                     response = await client.GetAsync("/not-exists");
                     Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+                    response = await client.GetAsync("/signalr/reconnect");
+                    Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
                 }
             }
         }
