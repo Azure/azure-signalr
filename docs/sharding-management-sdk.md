@@ -18,8 +18,10 @@ You can add multiple SignalR Service endpoint entries in your configuration, the
 builder.WithConfiguration(configuration);
 ```
 
-Management SDK supports endpoint hot reload as long as your [Configuration providers](https://docs.microsoft.com/en-us/dotnet/core/extensions/configuration-providers) are enabled with `reloadOnChange`. So you don't have to restart app server when you need to add/remove an service endpoint.
+Management SDK supports endpoint hot reload as long as your [Configuration providers](https://docs.microsoft.com/en-us/dotnet/core/extensions/configuration-providers) are enabled with `reloadOnChange`. So you don't have to restart your app when you need to add/remove an service endpoint.
 
+[TODO]
+Add configuration code example
 
 ## How to add multiple endpoints from code
 You can configure multiple instance endpoints when using Management SDK through `ServiceHubContextBuilder`:
