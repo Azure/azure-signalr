@@ -2,14 +2,24 @@
 As a preview feature, we add support for multiple SignalR service instances in Management SDK for **persisent mode only** based on Server SDK, so most content in [Multiple SignalR service endpoint support](sharding.md) is applicable to management SDK. We'll focus on the difference in the following doc.
 
 ## How to add multiple endpoints from config
-See [How to add multiple endpoints from config](sharding.md#How-to-add-multiple-endpoints-from-config)
 
-Then don't forget to add the `IConfiguration` instance to the `ServiceHubContextBuilder`.
+We assume you have basic knowledge about [Configuration in .NET](https://docs.microsoft.com/en-us/dotnet/core/extensions/configuration).
+
+Each SignalR Service endpoint entry follows this format:
+```
+Azure:SignalR:Endpoints:{Name}:{EndpointType} = <ConnectionString> 
+```
+`Name` and `EndpointType` are properties of the `ServiceEndpoint` object. `Name` will be useful if you want to further customize the routing behavior among multiple endpoints. `EndpointType` is optional and has two valid value: (default)`Primary` and `Secondary`.
+
+You can add multiple SignalR Service endpoint entries in your configuration, then add the `IConfiguration` instance to the `ServiceHubContextBuilder`.
 
 ```cs
 // var builder = new ServiceHubContextBuilder();
 builder.WithConfiguration(configuration);
 ```
+
+Management SDK supports endpoint hot reload as long as your [Configuration providers](https://docs.microsoft.com/en-us/dotnet/core/extensions/configuration-providers) are enabled with `reloadOnChange`. So you don't have to restart app server when you need to add/remove an service endpoint.
+
 
 ## How to add multiple endpoints from code
 You can configure multiple instance endpoints when using Management SDK through `ServiceHubContextBuilder`:
