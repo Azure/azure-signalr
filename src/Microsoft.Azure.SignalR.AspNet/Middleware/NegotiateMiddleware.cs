@@ -78,8 +78,18 @@ namespace Microsoft.Azure.SignalR.AspNet
             {
                 return ProcessNegotiationRequest(owinContext, context);
             }
+            
+            // Trim any trailing slashes
+            var normalized = context.Request.LocalPath.TrimEnd('/');
 
-            return Next.Invoke(owinContext);
+            if (normalized.EndsWith("/hubs", StringComparison.OrdinalIgnoreCase) ||
+                normalized.EndsWith("/js", StringComparison.OrdinalIgnoreCase))
+            {
+                return Next.Invoke(owinContext);
+            }
+
+            context.Response.StatusCode = 404;
+            return context.Response.End("NotFound");
         }
 
         private Task ProcessNegotiationRequest(IOwinContext owinContext, HostContext context)

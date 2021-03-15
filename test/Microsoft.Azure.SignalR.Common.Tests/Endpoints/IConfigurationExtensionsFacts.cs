@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
     public class IConfigurationExtensionsFacts
     {
         [Theory]
-        [InlineData("a") ]
+        [InlineData("a")]
         [InlineData("a:primary")]
         [InlineData("secondary")]
         [InlineData("a:secondary")]
@@ -24,19 +24,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             configuration[connectionStringKey] = connectionString;
             configuration[$"{connectionStringKey}:{relativePath}"] = connectionString;
             Assert.Single(configuration.GetEndpoints(connectionStringKey));
-        }
-
-        [Fact]
-        public void GetEndpoints_IncludeNoSuffixEndpoint()
-        {
-            var count = 3;
-            var connectionStrings = FakeEndpointUtils.GetFakeConnectionString(count).ToArray();
-            var configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
-            var connectionStringKey = "key";
-            configuration[connectionStringKey] = connectionStrings[0];
-            configuration[$"{connectionStringKey}:a"] = connectionStrings[1];
-            configuration[$"{connectionStringKey}:a:primary"] = connectionStrings[2];
-            Assert.Equal(count, configuration.GetEndpoints(connectionStringKey, true).Count());
         }
     }
 }
