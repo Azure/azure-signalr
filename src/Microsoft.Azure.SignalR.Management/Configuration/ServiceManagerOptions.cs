@@ -61,9 +61,9 @@ namespace Microsoft.Azure.SignalR.Management
                 {
                     throw new InvalidOperationException($"{nameof(ConnectionString)} must be set for transient mode.");
                 }
-                if (ServiceEndpoints != null && ServiceEndpoints.Length > 0)
+                if (ServiceEndpoints?.Length > 0)
                 {
-                    throw new NotImplementedException($"Multiple endpoints are not supported for persistent mode. Please unset {nameof(ServiceEndpoints)}");
+                    throw new NotSupportedException($"Multiple endpoints are not supported for transient mode. Please unset {nameof(ServiceEndpoints)}");
                 }
             }
         }
