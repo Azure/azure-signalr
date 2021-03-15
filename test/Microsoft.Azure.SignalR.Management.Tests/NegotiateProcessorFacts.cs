@@ -47,6 +47,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 o.ApplicationName = appName;
                 o.ServiceEndpoints = endpoints;
+                o.ServiceTransportType = ServiceTransportType.Persistent;
             })
             .AddSingleton(router).BuildServiceProvider();
             var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
@@ -80,6 +81,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             .Configure<ServiceManagerOptions>(o =>
             {
                 o.ServiceEndpoints = endpoints;
+                o.ServiceTransportType = ServiceTransportType.Persistent;
             })
             .AddSingleton(router).BuildServiceProvider();
             var userId = "user";
@@ -112,7 +114,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var provider = new ServiceCollection().AddSignalRServiceManager().Configure<ServiceManagerOptions>(o =>
             {
                 o.ServiceEndpoints = endpoints;
-                o.ServiceTransportType = ServiceTransportType.Transient;
+                o.ServiceTransportType = ServiceTransportType.Persistent;
             }).BuildServiceProvider();
             var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
             var negotiationResponse = (await negotiateProcessor.NegotiateAsync(HubName, null)).Url;
