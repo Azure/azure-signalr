@@ -180,22 +180,37 @@ namespace Microsoft.Azure.SignalR
             {
                 case BroadcastDataMessage bdm:
                     return _router.GetEndpointsForBroadcast(endpoints);
+
                 case GroupBroadcastDataMessage gbdm:
                     return _router.GetEndpointsForGroup(gbdm.GroupName, endpoints);
+
                 case JoinGroupWithAckMessage jgm:
                     return _router.GetEndpointsForGroup(jgm.GroupName, endpoints);
+
                 case LeaveGroupWithAckMessage lgm:
                     return _router.GetEndpointsForGroup(lgm.GroupName, endpoints);
+
                 case MultiGroupBroadcastDataMessage mgbdm:
                     return mgbdm.GroupList.SelectMany(g => _router.GetEndpointsForGroup(g, endpoints)).Distinct();
+
                 case ConnectionDataMessage cdm:
                     return _router.GetEndpointsForConnection(cdm.ConnectionId, endpoints);
+
                 case MultiConnectionDataMessage mcd:
                     return mcd.ConnectionList.SelectMany(c => _router.GetEndpointsForConnection(c, endpoints)).Distinct();
+
                 case UserDataMessage udm:
                     return _router.GetEndpointsForUser(udm.UserId, endpoints);
+
                 case MultiUserDataMessage mudm:
                     return mudm.UserList.SelectMany(g => _router.GetEndpointsForUser(g, endpoints)).Distinct();
+
+                case UserJoinGroupMessage ujgm:
+                    return _router.GetEndpointsForGroup(ujgm.GroupName, endpoints).Intersect(_router.GetEndpointsForUser(ujgm.UserId, endpoints));
+
+                case UserLeaveGroupMessage ulgm:
+                    return _router.GetEndpointsForGroup(ulgm.GroupName, endpoints).Intersect(_router.GetEndpointsForUser(ulgm.UserId, endpoints));
+
                 default:
                     throw new NotSupportedException(message.GetType().Name);
             }

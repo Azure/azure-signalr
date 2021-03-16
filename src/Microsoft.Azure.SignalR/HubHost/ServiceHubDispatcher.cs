@@ -29,6 +29,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly IEndpointRouter _router;
         private readonly string _hubName;
+        private readonly IServiceEventHandler _serviceEventHandler;
 
         protected readonly IServerNameProvider _nameProvider;
 
@@ -43,7 +44,8 @@ namespace Microsoft.Azure.SignalR
             IEndpointRouter router,
             IServerNameProvider nameProvider,
             ServerLifetimeManager serverLifetimeManager,
-            IClientConnectionFactory clientConnectionFactory)
+            IClientConnectionFactory clientConnectionFactory,
+            IServiceEventHandler serviceEventHandler)
         {
             _serviceProtocol = serviceProtocol;
             _serviceConnectionManager = serviceConnectionManager;
@@ -59,6 +61,7 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionFactory = clientConnectionFactory;
             _nameProvider = nameProvider;
             _hubName = typeof(THub).Name;
+            _serviceEventHandler = serviceEventHandler;
 
             serverLifetimeManager?.Register(ShutdownAsync);
         }
@@ -146,7 +149,8 @@ namespace Microsoft.Azure.SignalR
                 _loggerFactory,
                 connectionDelegate,
                 _clientConnectionFactory,
-                _nameProvider)
+                _nameProvider,
+                _serviceEventHandler)
             {
                 ConfigureContext = contextConfig,
                 ShutdownMode = _options.GracefulShutdown.Mode

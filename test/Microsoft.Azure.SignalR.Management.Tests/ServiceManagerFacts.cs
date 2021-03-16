@@ -125,7 +125,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var serviceManager = services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>)
                 .BuildServiceProvider()
                 .GetRequiredService<IServiceManager>();
-            
+
             var actual = await serviceManager.IsServiceHealthy(default);
 
             Assert.True(actual);
@@ -175,15 +175,9 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public async Task ConnectionStringNull_ServiceEndpointsExists_Test()
+        public void ConnectionStringAbsent_Throw_Test()
         {
-            var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
-            {
-                o.ServiceEndpoints = FakeEndpointUtils.GetFakeEndpoint(2).ToArray();
-            }).Build();
-            Assert.Throws<InvalidOperationException>(() => serviceManager.GetClientEndpoint(HubName));
-            Assert.Throws<InvalidOperationException>(() => serviceManager.GenerateClientAccessToken(HubName));
-            await Assert.ThrowsAsync<InvalidOperationException>(() => serviceManager.IsServiceHealthy(default));
+            Assert.Throws<InvalidOperationException>(() => new ServiceManagerBuilder().Build());
         }
     }
 }

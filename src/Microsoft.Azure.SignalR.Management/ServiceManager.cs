@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,49 +11,36 @@ using Microsoft.Azure.SignalR.Common.RestClients;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.Rest;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     internal class ServiceManager : IServiceManager
     {
-        private const string EmptyConnectionStringMessage = "Connection string is null or empty or only contains whitespace.";
         private readonly RestClientFactory _restClientFactory;
         private readonly IServiceProvider _serviceProvider;
         private readonly IReadOnlyCollection<ServiceDescriptor> _services;
         private readonly ServiceEndpoint _endpoint;
         private readonly IServiceEndpointProvider _endpointProvider;
-        private readonly ServiceTransportType _transportType;
 
-        public ServiceManager(IReadOnlyCollection<ServiceDescriptor> services, IServiceProvider serviceProvider, RestClientFactory restClientFactory, IServiceEndpointManager endpointManager, IOptions<ServiceManagerOptions> options)
+        public ServiceManager(IReadOnlyCollection<ServiceDescriptor> services, IServiceProvider serviceProvider, RestClientFactory restClientFactory, IServiceEndpointManager endpointManager)
         {
             _services = services;
             _serviceProvider = serviceProvider;
             _restClientFactory = restClientFactory;
-            var connectionString = options.Value.ConnectionString;
-            if (!string.IsNullOrWhiteSpace(connectionString))
-            {
-                _endpoint = new ServiceEndpoint(connectionString);
-                _endpointProvider = endpointManager.GetEndpointProvider(_endpoint);
-            }
-            _transportType = options.Value.ServiceTransportType;
+            _endpoint = endpointManager.Endpoints.Keys.First();
+            _endpointProvider = endpointManager.GetEndpointProvider(_endpoint);
         }
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)
         {
-            var servicesPerHub = new ServiceCollection().Add(_services).AddSingleton(_services).AddHub(hubName, _transportType);
+            var builder = new ServiceHubContextBuilder(new ServiceCollection().Add(_services));
             if (loggerFactory != null)
             {
-                servicesPerHub.AddSingleton(loggerFactory);
+                builder.WithLoggerFactory(loggerFactory);
             }
-            var serviceProviderForHub = servicesPerHub.BuildServiceProvider();
-            var connectionContainer = serviceProviderForHub.GetService<IServiceConnectionContainer>();
-            if (connectionContainer != null)
-            {
-                await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
-            }
-            return serviceProviderForHub.GetRequiredService<ServiceHubContext>();
+            var serviceHubContext = await builder.CreateAsync(hubName, cancellationToken);
+            return serviceHubContext;
         }
 
         public void Dispose()
@@ -62,10 +50,6 @@ namespace Microsoft.Azure.SignalR.Management
 
         public string GenerateClientAccessToken(string hubName, string userId = null, IList<Claim> claims = null, TimeSpan? lifeTime = null)
         {
-            if (_endpointProvider == null)
-            {
-                throw new InvalidOperationException(EmptyConnectionStringMessage);
-            }
             var claimsWithUserId = new List<Claim>();
             if (userId != null)
             {
@@ -80,15 +64,11 @@ namespace Microsoft.Azure.SignalR.Management
 
         public string GetClientEndpoint(string hubName)
         {
-            return _endpointProvider?.GetClientEndpoint(hubName, null, null) ?? throw new InvalidOperationException(EmptyConnectionStringMessage);
+            return _endpointProvider.GetClientEndpoint(hubName, null, null);
         }
 
         public async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
-            if (_endpoint == null)
-            {
-                throw new InvalidOperationException(EmptyConnectionStringMessage);
-            }
             using var restClient = _restClientFactory.Create(_endpoint);
             try
             {

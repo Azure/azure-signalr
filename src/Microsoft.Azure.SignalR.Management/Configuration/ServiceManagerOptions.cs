@@ -1,9 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Newtonsoft.Json;
 using System;
 using System.Net;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Gets or sets multiple service endpoints of Azure SignalR Service instances.
         /// </summary>
-        internal ServiceEndpoint[] ServiceEndpoints { get; set; }
+        public ServiceEndpoint[] ServiceEndpoints { get; set; }
 
         /// <summary>
         /// Gets or sets the proxy used when ServiceManager will attempt to connect to Azure SignalR Service.
@@ -48,12 +48,23 @@ namespace Microsoft.Azure.SignalR.Management
         public JsonSerializerSettings JsonSerializerSettings { get; } = new JsonSerializerSettings();
 
         internal string ProductInfo { get; set; }
-        
+
         internal void ValidateOptions()
         {
             if ((ServiceEndpoints == null || ServiceEndpoints.Length == 0) && string.IsNullOrWhiteSpace(ConnectionString))
             {
                 throw new InvalidOperationException($"{nameof(ServiceEndpoints)} is empty. {nameof(ConnectionString)} is  null, empty, or consists only of white-space.");
+            }
+            if (ServiceTransportType == ServiceTransportType.Transient)
+            {
+                if (string.IsNullOrWhiteSpace(ConnectionString))
+                {
+                    throw new InvalidOperationException($"{nameof(ConnectionString)} must be set for transient mode.");
+                }
+                if (ServiceEndpoints?.Length > 0)
+                {
+                    throw new NotSupportedException($"Multiple endpoints are not supported for transient mode. Please unset {nameof(ServiceEndpoints)}");
+                }
             }
         }
     }

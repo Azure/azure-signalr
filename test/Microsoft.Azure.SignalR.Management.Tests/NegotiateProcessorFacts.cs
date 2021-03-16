@@ -47,12 +47,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 o.ApplicationName = appName;
                 o.ServiceEndpoints = endpoints;
+                o.ServiceTransportType = ServiceTransportType.Persistent;
             })
             .AddSingleton(router).BuildServiceProvider();
             var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
             for (int i = 0; i < 3; i++)
             {
-                var negotiationResponse = await negotiateProcessor.NegotiateAsync(HubName, null, userId, claims, _tokenLifeTime);
+                var negotiationResponse = await negotiateProcessor.NegotiateAsync(HubName, new NegotiationOptions { UserId = userId, Claims = claims, TokenLifetime = _tokenLifeTime });
                 var tokenString = negotiationResponse.AccessToken;
                 var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
@@ -80,17 +81,20 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             .Configure<ServiceManagerOptions>(o =>
             {
                 o.ServiceEndpoints = endpoints;
+                o.ServiceTransportType = ServiceTransportType.Persistent;
             })
             .AddSingleton(router).BuildServiceProvider();
             var userId = "user";
             var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
             var negotiationResponse = await negotiateProcessor.NegotiateAsync(
                 HubName,
-                null,
-                userId,
-                hasClaims ? new List<Claim> { new Claim("a", "1") } : null,
-                _tokenLifeTime,
-                isDiagnosticClient);
+                new NegotiationOptions
+                {
+                    UserId = userId,
+                    Claims = hasClaims ? new List<Claim> { new Claim("a", "1") } : null,
+                    IsDiagnosticClient = isDiagnosticClient,
+                    TokenLifetime = _tokenLifeTime
+                });
             var tokenString = negotiationResponse.AccessToken;
             var handler = new JwtSecurityTokenHandler();
             var token = handler.ReadJwtToken(tokenString);
@@ -107,15 +111,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         internal async Task GenerateClientEndpointTestWithClientEndpoint()
         {
             var endpoints = new ServiceEndpoint[] { new ServiceEndpoint($"Endpoint=http://localhost;AccessKey={AccessKey};Version=1.0;ClientEndpoint=https://remote") };
-            //if no mock router, then error throws because all endpoints are offline.
-            var routerMock = new Mock<IEndpointRouter>();
-            routerMock.Setup(router => router.GetNegotiateEndpoint(null, endpoints)).Returns(endpoints.Single());
             var provider = new ServiceCollection().AddSignalRServiceManager().Configure<ServiceManagerOptions>(o =>
             {
                 o.ServiceEndpoints = endpoints;
-            }).AddSingleton(routerMock.Object).BuildServiceProvider();
+                o.ServiceTransportType = ServiceTransportType.Persistent;
+            }).BuildServiceProvider();
             var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
-            var negotiationResponse = (await negotiateProcessor.NegotiateAsync(HubName)).Url;
+            var negotiationResponse = (await negotiateProcessor.NegotiateAsync(HubName, null)).Url;
             Assert.Equal("https://remote/client/?hub=signalrbench", negotiationResponse);
         }
     }

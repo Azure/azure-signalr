@@ -42,7 +42,8 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
                 router,
                 nameProvider,
                 serverLifetimeManager,
-                clientConnectionFactory)
+                clientConnectionFactory,
+                null)
         {
             MockService = new ConnectionTrackingMockService();
 
