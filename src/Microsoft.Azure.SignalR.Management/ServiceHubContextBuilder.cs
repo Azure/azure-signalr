@@ -15,7 +15,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class ServiceHubContextBuilder
+    public class ServiceHubContextBuilder
     {
         private readonly IServiceCollection _services;
 

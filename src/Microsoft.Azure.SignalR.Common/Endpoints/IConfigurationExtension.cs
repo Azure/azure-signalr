@@ -11,14 +11,12 @@ namespace Microsoft.Azure.SignalR
     {
         /// <param name="configuration"></param>
         /// <param name="sectionName"></param>
-        /// <param name="includeNoSuffixEndpoint">Include the service endpoint whose key has no suffix. </param>
-        public static IEnumerable<ServiceEndpoint> GetEndpoints(this IConfiguration configuration, string sectionName, bool includeNoSuffixEndpoint = false)
+        public static IEnumerable<ServiceEndpoint> GetEndpoints(this IConfiguration configuration, string sectionName)
         {
             var section = configuration.GetSection(sectionName);
-            var suffixedEndpoints = section.AsEnumerable(true)
-                                           .Where(entry => !string.IsNullOrEmpty(entry.Value))
-                                           .Select(entry => new ServiceEndpoint(entry.Key, entry.Value));
-            return includeNoSuffixEndpoint ? ServiceEndpointUtility.Merge(configuration[sectionName], suffixedEndpoints) : suffixedEndpoints;
+            return section.AsEnumerable(true)
+                          .Where(entry => !string.IsNullOrEmpty(entry.Value))
+                          .Select(entry => new ServiceEndpoint(entry.Key, entry.Value));
         }
     }
 }

@@ -25,8 +25,11 @@ namespace Microsoft.Azure.SignalR.Management
             if (_configuration != null)
             {
                 _configuration.GetSection(Constants.Keys.AzureSignalRSectionKey).Bind(options);
-
-                options.ServiceEndpoints = _configuration.GetEndpoints(Constants.Keys.ConnectionStringDefaultKey).ToArray();
+                var endpoints = _configuration.GetEndpoints(Constants.Keys.AzureSignalREndpointsKey).ToArray();
+                if (endpoints.Length > 0)
+                {
+                    options.ServiceEndpoints = endpoints;
+                }
             }
         }
 

@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal abstract class ServiceHubContext : IServiceHubContext
+    public abstract class ServiceHubContext : IServiceHubContext
     {
         /// <summary>
         /// Gets a user group manager instance which implements <see cref="IUserGroupManager"/> that can be used to add and remove users to named groups.
