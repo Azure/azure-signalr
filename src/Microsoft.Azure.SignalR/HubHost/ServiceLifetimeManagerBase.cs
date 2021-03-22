@@ -255,8 +255,8 @@ namespace Microsoft.Azure.SignalR
         protected Task WriteAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId =>
             WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAsync(message));
 
-        protected Task WriteAckableMessageAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId => 
-            WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAckableMessageAsync(m));
+        protected Task<bool> WriteAckableMessageAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId =>
+            WriteAckableCoreAsync(message, m => ServiceConnectionContainer.WriteAckableMessageAsync(m));
 
         protected static bool IsInvalidArgument(string value)
         {
@@ -294,10 +294,27 @@ namespace Microsoft.Azure.SignalR
                 MessageLog.FailedToSendMessage(Logger, message, ex);
                 throw;
             }
-            
             if (message.TracingId != null)
             {
                 MessageLog.SucceededToSendMessage(Logger, message);
+            }
+        }
+
+        private async Task<bool> WriteAckableCoreAsync<T>(T message, Func<T, Task<bool>> task) where T : ServiceMessage, IMessageWithTracingId
+        {
+            try
+            {
+                var result = await task(message);
+                if (message.TracingId != null)
+                {
+                    MessageLog.SucceededToSendMessage(Logger, message);
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                MessageLog.FailedToSendMessage(Logger, message, ex);
+                throw;
             }
         }
     }

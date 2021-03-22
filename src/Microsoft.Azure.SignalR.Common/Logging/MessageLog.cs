@@ -1,9 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
-using System;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -24,6 +24,7 @@ namespace Microsoft.Azure.SignalR
         public const string StartToAddUserToGroupWithTtlTemplate = "Start to send message {0} to add user {1} to group {2} with TTL {3} seconds.";
         public const string StartToRemoveUserFromGroupTemplate = "Start to send message {0} to remove user {1} from group {2}.";
         public const string StartToRemoveUserFromAllGroupsTemplate = "Start to send message {0} to remove user {1} from all groups.";
+        public const string StartToCheckIfUserInGroupTemplate = "Start to send message {0} to check if user {1} in group {2}.";
         public const string FailedToSendMessageTemplate = "Failed to send message {0}.";
         public const string SucceededToSendMessageTemplate = "Succeeded to send message {0}.";
 
@@ -135,6 +136,12 @@ namespace Microsoft.Azure.SignalR
                     new EventId(120, "RecieveMessageFromService"),
                     "Received message {tracingId} from client connection {connectionId}.");
 
+        private static readonly Action<ILogger, ulong?, string, string, Exception> _startToCheckIfUserInGroup =
+                LoggerMessage.Define<ulong?, string, string>(
+                    LogLevel.Information,
+                new EventId(130, "StartToCheckIfUserInGroup"),
+                StartToCheckIfUserInGroupTemplate);
+
         public static void ReceiveMessageFromService(ILogger logger, ConnectionDataMessage message)
         {
             _receivedMessageFromService(logger, message.TracingId, message.ConnectionId, null);
@@ -237,6 +244,11 @@ namespace Microsoft.Azure.SignalR
             {
                 _startToRemoveUserFromGroup(logger, message.TracingId, message.UserId, message.GroupName, null);
             }
+        }
+
+        public static void StartToCheckIfUserInGroup(ILogger logger, CheckUserInGroupWithAckMessage message)
+        {
+            _startToCheckIfUserInGroup(logger, message.TracingId, message.UserId, message.GroupName, null);
         }
     }
 }
