@@ -33,13 +33,14 @@ namespace Microsoft.Azure.SignalR.Tests
             return Task.CompletedTask;
         }
 
-        public Task WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
+        public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
             if (serviceMessage is IAckableMessage)
             {
-                return WriteAsync(serviceMessage);
+                await WriteAsync(serviceMessage);
+                return true;
             }
-            return Task.CompletedTask;
+            return true;
         }
 
         public int GetCallCount(Type type)
