@@ -9,6 +9,6 @@ namespace Microsoft.Azure.SignalR.Management
     {
         IEnumerable<ServiceEndpoint> GetServiceEndpoints();
 
-        IInternalServiceHubContext WithEndpoints(IEnumerable<ServiceEndpoint> endpoints);
+        ServiceHubContext WithEndpoints(IEnumerable<ServiceEndpoint> endpoints);
     }
 }
