@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 var randomEndpoint = ServiceEndpoints[StaticRandom.Next(0, Count)];
                 var negotiationResponse = await (hubContext as IInternalServiceHubContext)
-                    .WithEndpoints(Enumerable.Repeat(randomEndpoint, 1))
+                    .WithEndpoints(new ServiceEndpoint[] { randomEndpoint })
                     .NegotiateAsync();
 
                 Assert.Equal(ClientEndpointUtils.GetExpectedClientEndpoint(Hub, null, randomEndpoint.Endpoint), negotiationResponse.Url);
