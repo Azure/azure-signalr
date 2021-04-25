@@ -100,7 +100,22 @@ namespace Microsoft.Azure.SignalR.Management
 
         public Task<bool> IsUserInGroup(string userId, string groupName, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
+            }
+
+            if (string.IsNullOrEmpty(groupName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
+            }
+
+            var message = new CheckUserInGroupWithAckMessage(userId, groupName).WithTracingId();
+            if (message.TracingId != null)
+            {
+                MessageLog.StartToCheckIfUserInGroup(Logger, message);
+            }
+            return WriteAckableMessageAsync(message);
         }
 
         public Task DisposeAsync()

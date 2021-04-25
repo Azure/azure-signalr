@@ -130,31 +130,33 @@ namespace Microsoft.Azure.SignalR
 
         private static AccessKey BuildAadAccessKey(Dictionary<string, string> dict, string endpoint, int? port)
         {
-            if (dict.ContainsKey(ClientIdProperty))
+            if (dict.TryGetValue(ClientIdProperty, out var clientId))
             {
-                if (!dict.ContainsKey(TenantIdProperty))
+                if (dict.TryGetValue(TenantIdProperty, out var tenantId))
                 {
-                    throw new ArgumentException(MissingTenantIdProperty, TenantIdProperty);
-                }
+                    var options = new AadApplicationOptions(clientId, tenantId);
 
-                var options = new AadApplicationOptions(dict[ClientIdProperty], dict[TenantIdProperty]);
-
-                if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
-                {
-                    return new AadAccessKey(options.WithClientSecret(clientSecret), endpoint, port);
-                }
-                else if (dict.TryGetValue(ClientCertProperty, out var clientCert))
-                {
-                    if (!File.Exists(clientCert))
+                    if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
                     {
-                        throw new FileNotFoundException(FileNotExists, clientCert);
+                        return new AadAccessKey(options.WithClientSecret(clientSecret), endpoint, port);
                     }
-                    var cert = new X509Certificate2(clientCert);
-                    return new AadAccessKey(options.WithClientCert(cert), endpoint, port);
+                    else if (dict.TryGetValue(ClientCertProperty, out var clientCert))
+                    {
+                        if (!File.Exists(clientCert))
+                        {
+                            throw new FileNotFoundException(FileNotExists, clientCert);
+                        }
+                        var cert = new X509Certificate2(clientCert);
+                        return new AadAccessKey(options.WithClientCert(cert), endpoint, port);
+                    }
+                    else
+                    {
+                        throw new ArgumentException(MissingClientSecretProperty, ClientSecretProperty);
+                    }
                 }
                 else
                 {
-                    throw new ArgumentException(MissingClientSecretProperty, ClientSecretProperty);
+                    return new AadAccessKey(new AadManagedIdentityOptions(clientId), endpoint, port);
                 }
             }
             else

@@ -147,7 +147,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 StopIndex = Interlocked.Increment(ref _index.Value);
             }
 
-            public Task WriteAckableMessageAsync(ServiceMessage seviceMessage, CancellationToken cancellationToken = default)
+            public Task<bool> WriteAckableMessageAsync(ServiceMessage seviceMessage, CancellationToken cancellationToken = default)
             {
                 throw new NotImplementedException();
             }

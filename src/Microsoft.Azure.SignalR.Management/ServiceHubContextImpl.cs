@@ -55,7 +55,7 @@ namespace Microsoft.Azure.SignalR.Management
             (ServiceProvider as IDisposable)?.Dispose();
         }
 
-        IInternalServiceHubContext IInternalServiceHubContext.WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
+        ServiceHubContext IInternalServiceHubContext.WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
             if (endpoints is null)
             {
@@ -73,8 +73,8 @@ namespace Microsoft.Azure.SignalR.Management
                 .AddSingleton<IServiceConnectionContainer>(container)
                 //add required service instances
                 .AddSingleton(ServiceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>())
-                .AddSingleton(_negotiateProcessor)
-                .AddSingleton(_endpointManager);
+                .AddSingleton(_endpointManager)
+                .AddSingleton<IEndpointRouter>(new FixedEndpointRouter(targetEndpoints));
 
             return services.BuildServiceProvider().GetRequiredService<ServiceHubContextImpl>();
         }
