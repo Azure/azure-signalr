@@ -30,7 +30,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Gets or sets multiple service endpoints of Azure SignalR Service instances.
         /// </summary>
-        public ServiceEndpoint[] ServiceEndpoints { get; set; }
+        internal ServiceEndpoint[] ServiceEndpoints { get; set; }
 
         /// <summary>
         /// Gets or sets the proxy used when ServiceManager will attempt to connect to Azure SignalR Service.
