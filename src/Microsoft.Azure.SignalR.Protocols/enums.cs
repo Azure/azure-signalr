@@ -21,6 +21,10 @@
         /// The group.
         /// </summary>
         Group,
+        /// <summary>
+        /// The server connection.
+        /// </summary>
+        ServerConnection,
     }
 
     /// <summary>
@@ -40,5 +44,9 @@
         /// The id is not existed.
         /// </summary>
         NotExisted,
+        /// <summary>
+        /// The overload-protecting event.
+        /// </summary>
+        OverloadProtecting,
     }
 }
