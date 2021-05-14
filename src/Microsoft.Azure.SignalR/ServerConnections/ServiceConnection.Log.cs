@@ -27,6 +27,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, Exception> _applicationComplete =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(4, "ApplicationComplete"), "Application task completes.");
 
+            private static readonly Action<ILogger, int, Exception> _startToCleanupClientConnections =
+                LoggerMessage.Define<int>(LogLevel.Information, new EventId(5, "StartToCleanupClientConnections"), "Start to cleanup {clientCount} client connections.");
+
             private static readonly Action<ILogger, Exception> _failedToCleanupConnections =
                 LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailedToCleanupConnection"), "Failed to clean up client connections.");
 
@@ -95,6 +98,11 @@ namespace Microsoft.Azure.SignalR
             public static void ApplicationComplete(ILogger logger)
             {
                 _applicationComplete(logger, null);
+            }
+
+            public static void StartToCleanupClientConnection(ILogger logger, int clientCount)
+            {
+                _startToCleanupClientConnections(logger, clientCount, null);
             }
 
             public static void FailedToCleanupConnections(ILogger logger, Exception exception)
