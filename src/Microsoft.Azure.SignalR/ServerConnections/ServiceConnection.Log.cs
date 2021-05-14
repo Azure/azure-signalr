@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define(LogLevel.Debug, new EventId(4, "ApplicationComplete"), "Application task completes.");
 
             private static readonly Action<ILogger, int, Exception> _startToCleanupClientConnections =
-                LoggerMessage.Define<int>(LogLevel.Information, new EventId(5, "StartToCleanupClientConnections"), "Start to cleanup {clientCount} client connections.");
+                LoggerMessage.Define<int>(LogLevel.Information, new EventId(5, "StartToCleanupClientConnections"), "Start to cleanup {clientCount} client connections, can be triggered by a service connection drop or app server shutdown.");
 
             private static readonly Action<ILogger, Exception> _failedToCleanupConnections =
                 LoggerMessage.Define(LogLevel.Error, new EventId(5, "FailedToCleanupConnection"), "Failed to clean up client connections.");

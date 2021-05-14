@@ -134,6 +134,10 @@ namespace Microsoft.Azure.SignalR.AspNet
                 {
                     connectionIds = _clientConnections.Where(s => s.Value.InstanceId == instanceId).Select(s => s.Key);
                 }
+                if (connectionIds.Count() != 0)
+                {
+                    Log.StartToCleanupClientConnection(Logger, connectionIds.Count());
+                }
                 await Task.WhenAll(connectionIds.Select(s => PerformDisconnectCore(s, true, false)));
             }
             catch (Exception ex)

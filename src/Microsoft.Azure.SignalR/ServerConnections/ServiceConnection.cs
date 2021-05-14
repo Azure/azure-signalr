@@ -32,8 +32,10 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly int _closeTimeOutMilliseconds;
         private readonly IClientConnectionManager _clientConnectionManager;
+
         private readonly ConcurrentDictionary<string, string> _connectionIds =
             new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+
         private readonly string[] _pingMessages =
             new string[4] { ClientConnectionCountInHub, null, ClientConnectionCountInServiceConnection, null };
 
@@ -55,7 +57,7 @@ namespace Microsoft.Azure.SignalR
                                  ServiceConnectionType connectionType = ServiceConnectionType.Default,
                                  GracefulShutdownMode mode = GracefulShutdownMode.Off,
                                  int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds
-            ): base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, serviceEventHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode)
+            ) : base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, serviceEventHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode)
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
@@ -76,7 +78,7 @@ namespace Microsoft.Azure.SignalR
 
         protected override async Task CleanupClientConnections(string fromInstanceId = null)
         {
-            // To gracefully complete client connections, let the client itself owns the connection lifetime 
+            // To gracefully complete client connections, let the client itself owns the connection lifetime
             try
             {
                 if (_connectionIds.Count == 0)
@@ -88,8 +90,10 @@ namespace Microsoft.Azure.SignalR
                 {
                     connectionIds = _connectionIds.Where(s => s.Value == fromInstanceId).Select(s => s.Key);
                 }
-
-                Log.StartToCleanupClientConnection(Logger, _connectionIds.Count);
+                if (connectionIds.Count() != 0)
+                {
+                    Log.StartToCleanupClientConnection(Logger, connectionIds.Count());
+                }
                 await Task.WhenAll(connectionIds.Select(PerformDisconnectAsyncCore));
             }
             catch (Exception ex)
@@ -213,7 +217,7 @@ namespace Microsoft.Azure.SignalR
                     // there is no need to write to the transport as application is no longer running
                     Log.WaitingForTransport(Logger);
 
-                    // app task completes connection.Transport.Output, which will completes connection.Application.Input and ends the transport 
+                    // app task completes connection.Transport.Output, which will completes connection.Application.Input and ends the transport
                     // Transports are written by us and are well behaved, wait for them to drain
                     connection.CancelOutgoing(_closeTimeOutMilliseconds);
 
@@ -314,7 +318,7 @@ namespace Microsoft.Azure.SignalR
                     using var source = CancellationTokenSource.CreateLinkedTokenSource(token, timeoutToken.Token);
 
                     // A handshake response is not expected to be given
-                    // if the connection was migrated from another server, 
+                    // if the connection was migrated from another server,
                     // since the connection hasn't been `dropped` from the client point of view.
                     if (!await SkipHandshakeResponse(connection, source.Token))
                     {
@@ -333,7 +337,7 @@ namespace Microsoft.Azure.SignalR
 
                     var buffer = result.Buffer;
 
-                    if (!buffer.IsEmpty) 
+                    if (!buffer.IsEmpty)
                     {
                         try
                         {
@@ -433,7 +437,7 @@ namespace Microsoft.Azure.SignalR
                 // Let the connection complete incoming
                 connection.CompleteIncoming();
 
-                // lock and wait 
+                // lock and wait
                 // Register the cancellation after timeout
                 connection.CancelApplication(_closeTimeOutMilliseconds);
 

@@ -11,6 +11,9 @@ namespace Microsoft.Azure.SignalR.AspNet
         private static class Log
         {
             // Category: ServiceConnection
+            private static readonly Action<ILogger, int, Exception> _startToCleanupClientConnections =
+                LoggerMessage.Define<int>(LogLevel.Information, new EventId(1, "StartToCleanupClientConnections"), "Start to cleanup {clientCount} client connections, can be triggered by a service connection drop or app server shutdown.");
+
             private static readonly Action<ILogger, Exception> _failedToCleanupConnections =
                 LoggerMessage.Define(LogLevel.Error, new EventId(1, "FailedToCleanupConnection"), "Failed to clean up client connections.");
 
@@ -40,6 +43,11 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             private static readonly Action<ILogger, Exception> _applicationTaskTimedOut =
                 LoggerMessage.Define(LogLevel.Error, new EventId(10, "ApplicationTaskTimedOut"), "Timed out waiting for the application task to complete.");
+
+            public static void StartToCleanupClientConnection(ILogger logger, int clientCount)
+            {
+                _startToCleanupClientConnections(logger, clientCount, null);
+            }
 
             public static void FailedToCleanupConnections(ILogger logger, Exception exception)
             {
