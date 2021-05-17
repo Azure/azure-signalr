@@ -137,14 +137,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 var tasks = connectionIds.Select(s => PerformDisconnectCore(s, true, false)).ToArray();
                 if (tasks.Length > 0)
                 {
-                    if (string.IsNullOrEmpty(instanceId))
-                    {
-                        Log.ClosingClientConnections(Logger, tasks.Length, ConnectionId);
-                    }
-                    else
-                    {
-                        Log.ClosingClientConnectionsFromInstance(Logger, tasks.Length, ConnectionId, instanceId);
-                    }
+                    Log.ClosingClientConnections(Logger, tasks.Length, ConnectionId);
                     await Task.WhenAll(tasks);
                 }
             }

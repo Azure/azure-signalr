@@ -27,9 +27,6 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, Exception> _applicationComplete =
                 LoggerMessage.Define(LogLevel.Debug, new EventId(4, "ApplicationComplete"), "Application task completes.");
 
-            private static readonly Action<ILogger, int, string, string, Exception> _closingClientConnectionsFromInstance =
-                LoggerMessage.Define<int, string, string>(LogLevel.Information, new EventId(5, "ClosingClientConnectionsFromInstance"), "Closing {ClientCount} client connection(s) for server connection {ServerConnectionId} from Azure SignalR instance {InstanceId}.");
-
             private static readonly Action<ILogger, int, string, Exception> _closingClientConnections =
                 LoggerMessage.Define<int, string>(LogLevel.Information, new EventId(5, "ClosingClientConnections"), "Closing {ClientCount} client connection(s) for server connection {ServerConnectionId}.");
 
@@ -101,11 +98,6 @@ namespace Microsoft.Azure.SignalR
             public static void ApplicationComplete(ILogger logger)
             {
                 _applicationComplete(logger, null);
-            }
-
-            public static void ClosingClientConnectionsFromInstance(ILogger logger, int clientCount, string serverConnectionId, string instanceId)
-            {
-                _closingClientConnectionsFromInstance(logger, clientCount, serverConnectionId, instanceId, null);
             }
 
             public static void ClosingClientConnections(ILogger logger, int clientCount, string serverConnectionId)

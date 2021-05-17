@@ -93,14 +93,7 @@ namespace Microsoft.Azure.SignalR
                 var tasks = connectionIds.Select(PerformDisconnectAsyncCore).ToArray();
                 if (tasks.Length > 0)
                 {
-                    if (string.IsNullOrEmpty(fromInstanceId))
-                    {
-                        Log.ClosingClientConnections(Logger, tasks.Length, ConnectionId);
-                    }
-                    else
-                    {
-                        Log.ClosingClientConnectionsFromInstance(Logger, tasks.Length, ConnectionId, fromInstanceId);
-                    }
+                    Log.ClosingClientConnections(Logger, tasks.Length, ConnectionId);
                     await Task.WhenAll(tasks);
                 }
             }

@@ -11,9 +11,6 @@ namespace Microsoft.Azure.SignalR.AspNet
         private static class Log
         {
             // Category: ServiceConnection
-            private static readonly Action<ILogger, int, string, string, Exception> _closingClientConnectionsFromInstance =
-                LoggerMessage.Define<int, string, string>(LogLevel.Information, new EventId(1, "ClosingClientConnectionsFromInstance"), "Closing {ClientCount} client connection(s) for server connection {ServerConnectionId} from Azure SignalR instance {InstanceId}.");
-
             private static readonly Action<ILogger, int, string, Exception> _closingClientConnections =
                 LoggerMessage.Define<int, string>(LogLevel.Information, new EventId(1, "ClosingClientConnections"), "Closing {ClientCount} client connection(s) for server connection {ServerConnectionId}.");
 
@@ -46,11 +43,6 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             private static readonly Action<ILogger, Exception> _applicationTaskTimedOut =
                 LoggerMessage.Define(LogLevel.Error, new EventId(10, "ApplicationTaskTimedOut"), "Timed out waiting for the application task to complete.");
-
-            public static void ClosingClientConnectionsFromInstance(ILogger logger, int clientCount, string serverConnectionId, string instanceId)
-            {
-                _closingClientConnectionsFromInstance(logger, clientCount, serverConnectionId, instanceId, null);
-            }
 
             public static void ClosingClientConnections(ILogger logger, int clientCount, string serverConnectionId)
             {
