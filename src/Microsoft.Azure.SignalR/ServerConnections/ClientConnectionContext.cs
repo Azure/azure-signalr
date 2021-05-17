@@ -111,11 +111,11 @@ namespace Microsoft.Azure.SignalR
 
         public CancellationToken ApplicationAborted => _abortApplicationCts.Token;
 
-        public DateTime LastMessageReceivedAt => new DateTime(Volatile.Read(ref _lastMessageReceivedAt));
+        public DateTime LastMessageReceivedAtUtc => new DateTime(Volatile.Read(ref _lastMessageReceivedAt), DateTimeKind.Utc);
 
-        public DateTime StartedAt { get; } = DateTime.Now;
+        public DateTime StartedAtUtc { get; } = DateTime.UtcNow;
 
-        public long ReveivedBytes => Volatile.Read(ref _reveivedBytes);
+        public long ReceivedBytes => Volatile.Read(ref _reveivedBytes);
 
         public ClientConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.SignalR
 
             try
             {
-                _lastMessageReceivedAt = DateTime.Now.Ticks;
+                _lastMessageReceivedAt = DateTime.UtcNow.Ticks;
                 _reveivedBytes += payload.Length;
                 // Start write
                 await WriteMessageAsyncCore(payload);

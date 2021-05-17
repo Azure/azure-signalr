@@ -76,13 +76,13 @@ namespace ChatSample.CoreApp3
 
             public void HeartBeat()
             {
-                if (_stat.LastMessageReceivedAt != _lastMessageReceivedAt)
+                if (_stat.LastMessageReceivedAtUtc != _lastMessageReceivedAt)
                 {
                     _ = _context.Clients.Client(_connectionId).SendAsync(
                         "echo",
                         "sys",
-                        $"last recieve message at: {_stat.LastMessageReceivedAt}, total size: {_stat.ReveivedBytes}.");
-                    _lastMessageReceivedAt = _stat.LastMessageReceivedAt;
+                        $"last recieve message at: {_stat.LastMessageReceivedAtUtc}, total size: {_stat.ReceivedBytes}.");
+                    _lastMessageReceivedAt = _stat.LastMessageReceivedAtUtc;
                 }
             }
         }
