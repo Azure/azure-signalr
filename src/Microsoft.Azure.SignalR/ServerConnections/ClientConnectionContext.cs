@@ -76,7 +76,7 @@ namespace Microsoft.Azure.SignalR
 
         private long _lastMessageReceivedAt;
 
-        private long _reveivedBytes;
+        private long _receivedBytes;
 
         public bool IsMigrated { get; }
 
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.SignalR
 
         public DateTime StartedAtUtc { get; } = DateTime.UtcNow;
 
-        public long ReceivedBytes => Volatile.Read(ref _reveivedBytes);
+        public long ReceivedBytes => Volatile.Read(ref _receivedBytes);
 
         public ClientConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.SignalR
             try
             {
                 _lastMessageReceivedAt = DateTime.UtcNow.Ticks;
-                _reveivedBytes += payload.Length;
+                _receivedBytes += payload.Length;
                 // Start write
                 await WriteMessageAsyncCore(payload);
             }
