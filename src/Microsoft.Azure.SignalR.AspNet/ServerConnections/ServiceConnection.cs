@@ -134,7 +134,12 @@ namespace Microsoft.Azure.SignalR.AspNet
                 {
                     connectionIds = _clientConnections.Where(s => s.Value.InstanceId == instanceId).Select(s => s.Key);
                 }
-                await Task.WhenAll(connectionIds.Select(s => PerformDisconnectCore(s, true, false)));
+                var tasks = connectionIds.Select(s => PerformDisconnectCore(s, true, false)).ToArray();
+                if (tasks.Length > 0)
+                {
+                    Log.ClosingClientConnections(Logger, tasks.Length, ConnectionId);
+                    await Task.WhenAll(tasks);
+                }
             }
             catch (Exception ex)
             {

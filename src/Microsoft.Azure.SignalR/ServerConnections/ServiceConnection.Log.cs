@@ -72,6 +72,9 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _processConnectionFailed =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(24, "ProcessConnectionFailed"), "Error processing the connection {TransportConnectionId}.");
 
+            private static readonly Action<ILogger, int, string, Exception> _closingClientConnections =
+                LoggerMessage.Define<int, string>(LogLevel.Information, new EventId(25, "ClosingClientConnections"), "Closing {ClientCount} client connection(s) for server connection {ServerConnectionId}.");
+
             public static void WaitingForTransport(ILogger logger)
             {
                 _waitingForTransport(logger, null);
@@ -95,6 +98,11 @@ namespace Microsoft.Azure.SignalR
             public static void ApplicationComplete(ILogger logger)
             {
                 _applicationComplete(logger, null);
+            }
+
+            public static void ClosingClientConnections(ILogger logger, int clientCount, string serverConnectionId)
+            {
+                _closingClientConnections(logger, clientCount, serverConnectionId, null);
             }
 
             public static void FailedToCleanupConnections(ILogger logger, Exception exception)
