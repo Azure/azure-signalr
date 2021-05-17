@@ -90,9 +90,10 @@ namespace Microsoft.Azure.SignalR
                 {
                     connectionIds = _connectionIds.Where(s => s.Value == fromInstanceId).Select(s => s.Key);
                 }
-                if (connectionIds.Count() != 0)
+                connectionIds = connectionIds.ToArray();
+                if (connectionIds.Any())
                 {
-                    Log.StartToCleanupClientConnection(Logger, connectionIds.Count());
+                    Log.ClosingClientConnection(Logger, connectionIds.Count(), ConnectionId, fromInstanceId);
                 }
                 await Task.WhenAll(connectionIds.Select(PerformDisconnectAsyncCore));
             }
