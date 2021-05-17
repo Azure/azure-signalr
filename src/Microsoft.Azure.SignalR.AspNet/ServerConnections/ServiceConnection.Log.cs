@@ -11,8 +11,11 @@ namespace Microsoft.Azure.SignalR.AspNet
         private static class Log
         {
             // Category: ServiceConnection
-            private static readonly Action<ILogger, int, string, string, Exception> _closingClientConnections =
-                LoggerMessage.Define<int, string, string>(LogLevel.Information, new EventId(1, "ClosingClientConnections"), "Closing {clientCount} client connections for server connection {serverConnectionId} (and instanceId {fromInstanceId} when it is not null). This can be triggered by a service connection drop or app server shutdown.");
+            private static readonly Action<ILogger, int, string, string, Exception> _closingClientConnectionsFromInstance =
+                LoggerMessage.Define<int, string, string>(LogLevel.Information, new EventId(1, "ClosingClientConnectionsFromInstance"), "Closing {ClientCount} client connection(s) for server connection {ServerConnectionId} from Azure SignalR instance {InstanceId}.");
+
+            private static readonly Action<ILogger, int, string, Exception> _closingClientConnections =
+                LoggerMessage.Define<int, string>(LogLevel.Information, new EventId(1, "ClosingClientConnections"), "Closing {ClientCount} client connection(s) for server connection {ServerConnectionId}.");
 
             private static readonly Action<ILogger, Exception> _failedToCleanupConnections =
                 LoggerMessage.Define(LogLevel.Error, new EventId(1, "FailedToCleanupConnection"), "Failed to clean up client connections.");
@@ -44,9 +47,14 @@ namespace Microsoft.Azure.SignalR.AspNet
             private static readonly Action<ILogger, Exception> _applicationTaskTimedOut =
                 LoggerMessage.Define(LogLevel.Error, new EventId(10, "ApplicationTaskTimedOut"), "Timed out waiting for the application task to complete.");
 
-            public static void ClosingClientConnection(ILogger logger, int clientCount, string serverConnectionId, string instanceId)
+            public static void ClosingClientConnectionsFromInstance(ILogger logger, int clientCount, string serverConnectionId, string instanceId)
             {
-                _closingClientConnections(logger, clientCount, serverConnectionId, instanceId, null);
+                _closingClientConnectionsFromInstance(logger, clientCount, serverConnectionId, instanceId, null);
+            }
+
+            public static void ClosingClientConnections(ILogger logger, int clientCount, string serverConnectionId)
+            {
+                _closingClientConnections(logger, clientCount, serverConnectionId, null);
             }
 
             public static void FailedToCleanupConnections(ILogger logger, Exception exception)
