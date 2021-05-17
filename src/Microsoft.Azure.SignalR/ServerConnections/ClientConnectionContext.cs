@@ -113,7 +113,7 @@ namespace Microsoft.Azure.SignalR
 
         public DateTime LastMessageReceivedAt => new DateTime(Volatile.Read(ref _lastMessageReceivedAt));
 
-        public DateTime StartAt { get; } = DateTime.Now;
+        public DateTime StartedAt { get; } = DateTime.Now;
 
         public long ReveivedBytes => Volatile.Read(ref _reveivedBytes);
 

@@ -7,7 +7,7 @@ namespace Microsoft.Azure.SignalR
 {
     public interface IConnectionStatFeature
     {
-        DateTime StartAt { get; }
+        DateTime StartedAt { get; }
         DateTime LastMessageReceivedAt { get; }
         long ReveivedBytes { get; }
     }
