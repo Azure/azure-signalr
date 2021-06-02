@@ -61,6 +61,49 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
         [MemberData(nameof(TestData))]
+        internal async Task BroadcastExceptTest(ServiceTransportType serviceTransportType, string appName)
+        {
+            var method = nameof(BroadcastExceptTest);
+            var msg = Guid.NewGuid().ToString();
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var logger = loggerFactory.CreateLogger<ServiceHubContextE2EFacts>();
+                var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType, appName);
+                var hubContext = await serviceManager.CreateHubContextAsync(HubName) as ServiceHubContextImpl;
+                var connectionCount = 3;
+                var tcsDict = new ConcurrentDictionary<string, TaskCompletionSource>();
+                logger.LogInformation($"Message is {msg}");
+                var connections = await Task.WhenAll(Enumerable.Range(0, connectionCount).Select(async _ =>
+                 {
+                     var negotiationResponse = await hubContext.NegotiateAsync(null, default);
+                     var connection = CreateHubConnection(negotiationResponse.Url, negotiationResponse.AccessToken);
+                     await connection.StartAsync();
+                     var src = new TaskCompletionSource();
+                     tcsDict.TryAdd(connection.ConnectionId, src);
+                     connection.On(method, (string receivedMsg) =>
+                     {
+                         logger.LogInformation($"Connection {connection.ConnectionId} received msg : {receivedMsg}");
+                         if (receivedMsg == msg)
+                         {
+                             src.SetResult();
+                         }
+                     });
+                     return connection;
+                 }));
+                var excluded = connections.First().ConnectionId;
+                await hubContext.Clients.AllExcept(new string[] { excluded }).SendAsync(method, msg);
+                await Task.WhenAll(tcsDict.Where(item => item.Key != excluded).Select(i => i.Value.Task)).OrTimeout(); // await included connections to receive msg
+                Assert.False(tcsDict[excluded].Task.IsCompleted);
+
+                //clean
+                await Task.WhenAll(connections.Select(conn => conn.DisposeAsync()));
+                await hubContext.DisposeAsync();
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [MemberData(nameof(TestData))]
         internal async Task SendToUserTest(ServiceTransportType serviceTransportType, string appName)
         {
             var userNames = GenerateRandomNames(ClientConnectionCount);
@@ -114,6 +157,53 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             finally
             {
                 await serviceHubContext.DisposeAsync();
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [MemberData(nameof(TestData))]
+        internal async Task SendToGroupExceptTest(ServiceTransportType serviceTransportType, string appName)
+        {
+            var method = nameof(SendToGroupExceptTest);
+            var msg = Guid.NewGuid().ToString();
+            var group = nameof(SendToGroupExceptTest);
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var logger = loggerFactory.CreateLogger<ServiceHubContextE2EFacts>();
+                var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType, appName);
+                var hubContext = await serviceManager.CreateHubContextAsync(HubName) as ServiceHubContextImpl;
+                var connectionCount = 3;
+                var tcsDict = new ConcurrentDictionary<string, TaskCompletionSource>();
+                logger.LogInformation($"Message is {msg}");
+                var connections = await Task.WhenAll(Enumerable.Range(0, connectionCount).Select(async _ =>
+                {
+                    var negotiationResponse = await hubContext.NegotiateAsync(null, default);
+                    var connection = CreateHubConnection(negotiationResponse.Url, negotiationResponse.AccessToken);
+                    await connection.StartAsync();
+                    var src = new TaskCompletionSource();
+                    tcsDict.TryAdd(connection.ConnectionId, src);
+                    connection.On(method, (string receivedMsg) =>
+                    {
+                        logger.LogInformation($"Connection {connection.ConnectionId} received msg : {receivedMsg}");
+                        if (receivedMsg == msg)
+                        {
+                            src.SetResult();
+                        }
+                    });
+                    await hubContext.Groups.AddToGroupAsync(connection.ConnectionId, group);
+                    return connection;
+                }));
+                var excluded = connections.First().ConnectionId;
+                await hubContext.Clients.GroupExcept(group, excluded).SendAsync(method, msg);
+                
+                // await included connections to receive msg
+                await Task.WhenAll(tcsDict.Where(item => item.Key != excluded).Select(i => i.Value.Task)).OrTimeout();
+                Assert.False(tcsDict[excluded].Task.IsCompleted);
+
+                //clean
+                await Task.WhenAll(connections.Select(conn => conn.DisposeAsync()));
+                await hubContext.DisposeAsync();
             }
         }
 
