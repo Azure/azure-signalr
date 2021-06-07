@@ -515,7 +515,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "lBimY29ubklkAYEBAg=="),
             new ProtocolTestData(
                 name: "CheckAnyConnectionInUserWithAckMessage",
-                message: new CheckAnyConnectionInUserWithAckMessage("uid", 4, 23),
+                message: new CheckUserExistenceWithAckMessage("uid", 4, 23),
                 binary: "lBmjdWlkBIEBFw=="),
         }.ToDictionary(t => t.Name);
 

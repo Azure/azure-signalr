@@ -69,8 +69,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return CheckAnyConnectionInGroupWithAckMessageEqual(checkAnyConnectionInGroupWithAckMessage, (CheckAnyConnectionInGroupWithAckMessage)y);
                 case CheckConnectionExistenceWithAckMessage checkConnectionExistenceWithAckMessage:
                     return CheckConnectionExistenceWithAckMessageEqual(checkConnectionExistenceWithAckMessage, (CheckConnectionExistenceWithAckMessage)y);
-                case CheckAnyConnectionInUserWithAckMessage checkConnectionExistenceAsUserWithAckMessage:
-                    return CheckAnyConnectionInUserWithAckMessageEqual(checkConnectionExistenceAsUserWithAckMessage, (CheckAnyConnectionInUserWithAckMessage)y);
+                case CheckUserExistenceWithAckMessage checkConnectionExistenceAsUserWithAckMessage:
+                    return CheckUserExistenceWithAckMessageEqual(checkConnectionExistenceAsUserWithAckMessage, (CheckUserExistenceWithAckMessage)y);
                 case AckMessage ackMessage:
                     return AckMessageEqual(ackMessage, (AckMessage)y);
                 case ServiceEventMessage serviceWarningMessage:
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                    x.TracingId == y.TracingId;
         }
 
-        private bool CheckAnyConnectionInUserWithAckMessageEqual(CheckAnyConnectionInUserWithAckMessage x, CheckAnyConnectionInUserWithAckMessage y)
+        private bool CheckUserExistenceWithAckMessageEqual(CheckUserExistenceWithAckMessage x, CheckUserExistenceWithAckMessage y)
         {
             return StringEqual(x.UserId, y.UserId) &&
                    x.AckId == y.AckId &&

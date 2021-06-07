@@ -99,9 +99,9 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
-    /// A waiting for ack check-any-connection-in-user message.
+    /// A waiting for ack check-user-existence message.
     /// </summary>
-    public class CheckAnyConnectionInUserWithAckMessage : CheckWithAckMessage
+    public class CheckUserExistenceWithAckMessage : CheckWithAckMessage
     {
         /// <summary>
         /// Gets or sets the user Id.
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="userId">The user Id.</param>
         /// <param name="ackId">The ack Id</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public CheckAnyConnectionInUserWithAckMessage(string userId, int ackId = 0, ulong? tracingId = null) : base(ackId, tracingId)
+        public CheckUserExistenceWithAckMessage(string userId, int ackId = 0, ulong? tracingId = null) : base(ackId, tracingId)
         {
             UserId = userId;
         }
