@@ -91,7 +91,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateGroupExistenceWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.CheckConnectionExistenceWithAckMessageType:
                     return CreateCheckConnectionExistenceWithAckMessage(ref reader, arrayLength);
-                case ServiceProtocolConstants.CheckAnyConnectionInUserWithAckMessageType:
+                case ServiceProtocolConstants.CheckUserExistenceWithAckMessageType:
                     return CreateCheckUserExistenceWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.AckMessageType:
                     return CreateAckMessage(ref reader, arrayLength);
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                     WriteCheckUserInGroupWithAckMessage(ref writer, checkUserInGroupWithAckMessage);
                     break;
                 case CheckGroupExistenceWithAckMessage checkAnyConnectionInGroupWithAckMessage:
-                    WriteCheckAnyConnectionInGroupWithAckMessage(ref writer, checkAnyConnectionInGroupWithAckMessage);
+                    WriteCheckGroupExistenceWithAckMessage(ref writer, checkAnyConnectionInGroupWithAckMessage);
                     break;
                 case CheckConnectionExistenceWithAckMessage checkConnectionExistenceWithAckMessage:
                     WriteCheckConnectionExistenceWithAckMessage(ref writer, checkConnectionExistenceWithAckMessage);
@@ -455,7 +455,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             message.WriteExtensionMembers(ref writer);
         }
 
-        private static void WriteCheckAnyConnectionInGroupWithAckMessage(ref MessagePackWriter writer, CheckGroupExistenceWithAckMessage message)
+        private static void WriteCheckGroupExistenceWithAckMessage(ref MessagePackWriter writer, CheckGroupExistenceWithAckMessage message)
         {
             writer.WriteArrayHeader(4);
             writer.Write(ServiceProtocolConstants.CheckGroupExistenceWithAckMessageType);
@@ -476,7 +476,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         private static void WriteCheckUserExistenceWithAckMessage(ref MessagePackWriter writer, CheckUserExistenceWithAckMessage message)
         {
             writer.WriteArrayHeader(4);
-            writer.Write(ServiceProtocolConstants.CheckAnyConnectionInUserWithAckMessageType);
+            writer.Write(ServiceProtocolConstants.CheckUserExistenceWithAckMessageType);
             writer.Write(message.UserId);
             writer.Write(message.AckId);
             message.WriteExtensionMembers(ref writer);

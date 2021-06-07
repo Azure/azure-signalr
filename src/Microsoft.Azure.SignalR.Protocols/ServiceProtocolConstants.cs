@@ -29,6 +29,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         public const int ServiceEventMessageType = 22;
         public const int CheckGroupExistenceWithAckMessageType = 23;
         public const int CheckConnectionExistenceWithAckMessageType = 24;
-        public const int CheckAnyConnectionInUserWithAckMessageType = 25;
+        public const int CheckUserExistenceWithAckMessageType = 25;
     }
 }
