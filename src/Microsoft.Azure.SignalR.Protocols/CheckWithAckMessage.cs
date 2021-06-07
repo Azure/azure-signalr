@@ -41,11 +41,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string GroupName { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="LeaveGroupWithAckMessage"/> class.
+        /// Initializes a new instance of the <see cref="CheckUserInGroupWithAckMessage"/> class.
         /// </summary>
         /// <param name="userId">The user Id.</param>
-        /// <param name="groupName">The group name, from which the connection will leave.</param>
-        /// <param name="ackId">The ack Id</param>
+        /// <param name="groupName">The group name to check whether the user is in or not.</param>
+        /// <param name="ackId">The ack Id.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
         public CheckUserInGroupWithAckMessage(string userId, string groupName, int ackId = 0, ulong? tracingId = null) : base(ackId, tracingId)
         {
