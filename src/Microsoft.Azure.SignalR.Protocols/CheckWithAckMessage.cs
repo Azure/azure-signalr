@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <summary>
         /// Initializes a new instance of the <see cref="LeaveGroupWithAckMessage"/> class.
         /// </summary>
-        /// <param name="userId">The connection Id.</param>
+        /// <param name="userId">The user Id.</param>
         /// <param name="groupName">The group name, from which the connection will leave.</param>
         /// <param name="ackId">The ack Id</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
