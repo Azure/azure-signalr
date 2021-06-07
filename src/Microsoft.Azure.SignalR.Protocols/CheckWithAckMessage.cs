@@ -99,7 +99,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
-    /// A waiting for ack check-connection-existence-as-user message.
+    /// A waiting for ack check-any-connection-in-user message.
     /// </summary>
     public class CheckAnyConnectionInUserWithAckMessage : CheckWithAckMessage
     {
