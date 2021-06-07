@@ -845,10 +845,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             var ackId = ReadInt32(ref reader, "ackId");
             
             var result = new CheckAnyConnectionInGroupWithAckMessage(groupName, ackId);
-            if (arrayLength >= 4)
-            {
-                result.ReadExtensionMembers(ref reader);
-            }
+            result.ReadExtensionMembers(ref reader);
             return result;
         }
 
@@ -858,10 +855,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             var ackId = ReadInt32(ref reader, "ackId");
 
             var result = new CheckConnectionExistenceWithAckMessage(connectionId, ackId);
-            if (arrayLength >= 4)
-            {
-                result.ReadExtensionMembers(ref reader);
-            }
+            result.ReadExtensionMembers(ref reader);
             return result;
         }
 
@@ -871,10 +865,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             var ackId = ReadInt32(ref reader, "ackId");
 
             var result = new CheckAnyConnectionInUserWithAckMessage(userId, ackId);
-            if (arrayLength >= 4)
-            {
-                result.ReadExtensionMembers(ref reader);
-            }
+            result.ReadExtensionMembers(ref reader);
             return result;
         }
 
