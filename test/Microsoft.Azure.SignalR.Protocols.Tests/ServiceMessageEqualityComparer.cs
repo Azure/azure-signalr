@@ -65,8 +65,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return LeaveGroupWithAckMessageEqual(leaveGroupWithAckMessage, (LeaveGroupWithAckMessage)y);
                 case CheckUserInGroupWithAckMessage checkUserInGroupWithAckMessage:
                     return CheckUserInGroupWithAckMessageEqual(checkUserInGroupWithAckMessage, (CheckUserInGroupWithAckMessage)y);
-                case CheckAnyConnectionInGroupWithAckMessage checkAnyConnectionInGroupWithAckMessage:
-                    return CheckAnyConnectionInGroupWithAckMessageEqual(checkAnyConnectionInGroupWithAckMessage, (CheckAnyConnectionInGroupWithAckMessage)y);
+                case CheckGroupExistenceWithAckMessage checkAnyConnectionInGroupWithAckMessage:
+                    return CheckGroupExistenceWithAckMessageEqual(checkAnyConnectionInGroupWithAckMessage, (CheckGroupExistenceWithAckMessage)y);
                 case CheckConnectionExistenceWithAckMessage checkConnectionExistenceWithAckMessage:
                     return CheckConnectionExistenceWithAckMessageEqual(checkConnectionExistenceWithAckMessage, (CheckConnectionExistenceWithAckMessage)y);
                 case CheckUserExistenceWithAckMessage checkConnectionExistenceAsUserWithAckMessage:
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                    x.TracingId == y.TracingId;
         }
 
-        private bool CheckAnyConnectionInGroupWithAckMessageEqual(CheckAnyConnectionInGroupWithAckMessage x, CheckAnyConnectionInGroupWithAckMessage y)
+        private bool CheckGroupExistenceWithAckMessageEqual(CheckGroupExistenceWithAckMessage x, CheckGroupExistenceWithAckMessage y)
         {
             return StringEqual(x.GroupName, y.GroupName) &&
                    x.AckId == y.AckId &&

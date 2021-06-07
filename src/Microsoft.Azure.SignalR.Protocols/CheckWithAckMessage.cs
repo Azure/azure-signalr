@@ -57,7 +57,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A waiting for ack check-any-connection-in-group message.
     /// </summary>
-    public class CheckAnyConnectionInGroupWithAckMessage : CheckWithAckMessage
+    public class CheckGroupExistenceWithAckMessage : CheckWithAckMessage
     {
         /// <summary>
         /// Gets or sets the group name.
@@ -65,12 +65,12 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string GroupName { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CheckAnyConnectionInGroupWithAckMessage"/> class.
+        /// Initializes a new instance of the <see cref="CheckGroupExistenceWithAckMessage"/> class.
         /// </summary>
-        /// <param name="groupName">The group name, from which the connection will leave.</param>
+        /// <param name="groupName">The group name.</param>
         /// <param name="ackId">The ack Id</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public CheckAnyConnectionInGroupWithAckMessage(string groupName, int ackId = 0, ulong? tracingId = null) : base(ackId, tracingId)
+        public CheckGroupExistenceWithAckMessage(string groupName, int ackId = 0, ulong? tracingId = null) : base(ackId, tracingId)
         {
             GroupName = groupName;
         }
