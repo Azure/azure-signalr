@@ -109,7 +109,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public string UserId { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CheckConnectionExistenceWithAckMessage"/> class.
+        /// Initializes a new instance of the <see cref="CheckUserExistenceWithAckMessage"/> class.
         /// </summary>
         /// <param name="userId">The user Id.</param>
         /// <param name="ackId">The ack Id</param>
