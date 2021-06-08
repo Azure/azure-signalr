@@ -45,7 +45,7 @@
         /// </summary>
         NotExisted,
         /// <summary>
-        /// The buffer-full event.
+        /// The buffer-full event. Normally it caused by sending messages rapidly.
         /// </summary>
         BufferFull,
     }
