@@ -45,7 +45,7 @@
         /// </summary>
         NotExisted,
         /// <summary>
-        /// The buffer-full event. Normally it caused by sending messages rapidly.
+        /// The buffer-full event. When the server is sending too many messages at the same time, the service would back-pressure the messages to the server-side and also trigger this `BufferFull` event.
         /// </summary>
         BufferFull,
     }
