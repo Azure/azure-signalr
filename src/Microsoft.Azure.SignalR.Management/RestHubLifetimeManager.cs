@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
             _productInfo = productInfo;
             _appName = appName;
             _hubName = hubName;
-            
+
             _restClient.JsonSerializerSettings = jsonSerializerSettings;
         }
 
@@ -78,20 +78,20 @@ namespace Microsoft.Azure.SignalR.Management
             await _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
-        public override async Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
+        public override Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
+        {
+            return SendAllExceptAsync(methodName, args, null, cancellationToken);
+        }
+
+        public override async Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(methodName))
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var api = await _restApiProvider.GetBroadcastEndpointAsync(_appName, _hubName);
+            var api = await _restApiProvider.GetBroadcastEndpointAsync(_appName, _hubName, excluded: excludedConnectionIds);
             await _restClient.SendAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
-        }
-
-        public override Task SendAllExceptAsync(string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
-        {
-            throw new NotSupportedException();
         }
 
         public override async Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
@@ -115,7 +115,12 @@ namespace Microsoft.Azure.SignalR.Management
             await Task.WhenAll(connectionIds.Select(id => SendConnectionAsync(id, methodName, args, cancellationToken)));
         }
 
-        public override async Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
+        public override Task SendGroupAsync(string groupName, string methodName, object[] args, CancellationToken cancellationToken = default)
+        {
+            return SendGroupExceptAsync(groupName, methodName, args, null, cancellationToken);
+        }
+
+        public override async Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(methodName))
             {
@@ -127,13 +132,8 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var api = await _restApiProvider.GetSendToGroupEndpointAsync(_appName, _hubName, groupName);
+            var api = await _restApiProvider.GetSendToGroupEndpointAsync(_appName, _hubName, groupName, excluded: excludedConnectionIds);
             await _restClient.SendAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
-        }
-
-        public override Task SendGroupExceptAsync(string groupName, string methodName, object[] args, IReadOnlyList<string> excludedConnectionIds, CancellationToken cancellationToken = default)
-        {
-            throw new NotSupportedException();
         }
 
         public override async Task SendGroupsAsync(IReadOnlyList<string> groupNames, string methodName, object[] args, CancellationToken cancellationToken = default)

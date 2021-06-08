@@ -2,7 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -34,9 +37,10 @@ namespace Microsoft.Azure.SignalR.Management
             return new RestApiEndpoint(url, token);
         }
 
-        public Task<RestApiEndpoint> GetBroadcastEndpointAsync(string appName, string hubName, TimeSpan? lifetime = null)
+        public Task<RestApiEndpoint> GetBroadcastEndpointAsync(string appName, string hubName, TimeSpan? lifetime = null, IReadOnlyList<string> excluded = null)
         {
-            return GenerateRestApiEndpointAsync(appName, hubName, "", lifetime);
+            var queries = excluded == null ? null : new Dictionary<string, StringValues>() { { "excluded", excluded.ToArray() } };
+            return GenerateRestApiEndpointAsync(appName, hubName, "", lifetime, queries);
         }
 
         public Task<RestApiEndpoint> GetUserGroupManagementEndpointAsync(string appName, string hubName, string userId, string groupName, TimeSpan? lifetime = null)
@@ -49,9 +53,10 @@ namespace Microsoft.Azure.SignalR.Management
             return GenerateRestApiEndpointAsync(appName, hubName, $"/users/{Uri.EscapeDataString(userId)}", lifetime);
         }
 
-        public Task<RestApiEndpoint> GetSendToGroupEndpointAsync(string appName, string hubName, string groupName, TimeSpan? lifetime = null)
+        public Task<RestApiEndpoint> GetSendToGroupEndpointAsync(string appName, string hubName, string groupName, TimeSpan? lifetime = null, IReadOnlyList<string> excluded = null)
         {
-            return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{Uri.EscapeDataString(groupName)}", lifetime);
+            var queries = excluded == null ? null : new Dictionary<string, StringValues>() { { "excluded", excluded.ToArray() } };
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{Uri.EscapeDataString(groupName)}", lifetime, queries);
         }
 
         public Task<RestApiEndpoint> GetRemoveUserFromAllGroupsAsync(string appName, string hubName, string userId, TimeSpan? lifetime = null)
@@ -69,14 +74,14 @@ namespace Microsoft.Azure.SignalR.Management
             return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{Uri.EscapeDataString(groupName)}/connections/{Uri.EscapeDataString(connectionId)}", lifetime);
         }
 
-        private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null)
+        private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
         {
             var portText = _port == null ? string.Empty : $":{_port.Value}";
             var requestPrefixWithHub = $"{_baseEndpoint}{portText}/api/{Version}/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
             // todo: should be same with `requestPrefixWithHub`, need to confirm with emulator.
             var audiencePrefixWithHub = $"{_baseEndpoint}/api/{Version}/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
             var token = await _restApiAccessTokenGenerator.Generate($"{audiencePrefixWithHub}{pathAfterHub}", lifetime);
-            return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token);
+            return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token) { Query = queries };
         }
     }
 }
