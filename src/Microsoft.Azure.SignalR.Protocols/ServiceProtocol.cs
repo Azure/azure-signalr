@@ -87,6 +87,12 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateLeaveGroupWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.CheckUserInGroupWithAckMessageType:
                     return CreateCheckUserInGroupWithAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.CheckGroupExistenceWithAckMessageType:
+                    return CreateGroupExistenceWithAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.CheckConnectionExistenceWithAckMessageType:
+                    return CreateCheckConnectionExistenceWithAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.CheckUserExistenceWithAckMessageType:
+                    return CreateCheckUserExistenceWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.AckMessageType:
                     return CreateAckMessage(ref reader, arrayLength);
                 default:
@@ -196,6 +202,15 @@ namespace Microsoft.Azure.SignalR.Protocol
                     break;
                 case CheckUserInGroupWithAckMessage checkUserInGroupWithAckMessage:
                     WriteCheckUserInGroupWithAckMessage(ref writer, checkUserInGroupWithAckMessage);
+                    break;
+                case CheckGroupExistenceWithAckMessage checkAnyConnectionInGroupWithAckMessage:
+                    WriteCheckGroupExistenceWithAckMessage(ref writer, checkAnyConnectionInGroupWithAckMessage);
+                    break;
+                case CheckConnectionExistenceWithAckMessage checkConnectionExistenceWithAckMessage:
+                    WriteCheckConnectionExistenceWithAckMessage(ref writer, checkConnectionExistenceWithAckMessage);
+                    break;
+                case CheckUserExistenceWithAckMessage checkConnectionExistenceAsUserWithAckMessage:
+                    WriteCheckUserExistenceWithAckMessage(ref writer, checkConnectionExistenceAsUserWithAckMessage);
                     break;
                 case UserJoinGroupMessage userJoinGroupMessage:
                     WriteUserJoinGroupMessage(ref writer, userJoinGroupMessage);
@@ -436,6 +451,33 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.Write(ServiceProtocolConstants.CheckUserInGroupWithAckMessageType);
             writer.Write(message.UserId);
             writer.Write(message.GroupName);
+            writer.Write(message.AckId);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteCheckGroupExistenceWithAckMessage(ref MessagePackWriter writer, CheckGroupExistenceWithAckMessage message)
+        {
+            writer.WriteArrayHeader(4);
+            writer.Write(ServiceProtocolConstants.CheckGroupExistenceWithAckMessageType);
+            writer.Write(message.GroupName);
+            writer.Write(message.AckId);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteCheckConnectionExistenceWithAckMessage(ref MessagePackWriter writer, CheckConnectionExistenceWithAckMessage message)
+        {
+            writer.WriteArrayHeader(4);
+            writer.Write(ServiceProtocolConstants.CheckConnectionExistenceWithAckMessageType);
+            writer.Write(message.ConnectionId);
+            writer.Write(message.AckId);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteCheckUserExistenceWithAckMessage(ref MessagePackWriter writer, CheckUserExistenceWithAckMessage message)
+        {
+            writer.WriteArrayHeader(4);
+            writer.Write(ServiceProtocolConstants.CheckUserExistenceWithAckMessageType);
+            writer.Write(message.UserId);
             writer.Write(message.AckId);
             message.WriteExtensionMembers(ref writer);
         }
@@ -794,6 +836,36 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 result.ReadExtensionMembers(ref reader);
             }
+            return result;
+        }
+
+        private static CheckGroupExistenceWithAckMessage CreateGroupExistenceWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var groupName = ReadString(ref reader, "groupName");
+            var ackId = ReadInt32(ref reader, "ackId");
+            
+            var result = new CheckGroupExistenceWithAckMessage(groupName, ackId);
+            result.ReadExtensionMembers(ref reader);
+            return result;
+        }
+
+        private static CheckConnectionExistenceWithAckMessage CreateCheckConnectionExistenceWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var connectionId = ReadString(ref reader, "connectionId");
+            var ackId = ReadInt32(ref reader, "ackId");
+
+            var result = new CheckConnectionExistenceWithAckMessage(connectionId, ackId);
+            result.ReadExtensionMembers(ref reader);
+            return result;
+        }
+
+        private static CheckUserExistenceWithAckMessage CreateCheckUserExistenceWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var userId = ReadString(ref reader, "userId");
+            var ackId = ReadInt32(ref reader, "ackId");
+
+            var result = new CheckUserExistenceWithAckMessage(userId, ackId);
+            result.ReadExtensionMembers(ref reader);
             return result;
         }
 

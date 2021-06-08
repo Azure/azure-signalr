@@ -65,6 +65,12 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return LeaveGroupWithAckMessageEqual(leaveGroupWithAckMessage, (LeaveGroupWithAckMessage)y);
                 case CheckUserInGroupWithAckMessage checkUserInGroupWithAckMessage:
                     return CheckUserInGroupWithAckMessageEqual(checkUserInGroupWithAckMessage, (CheckUserInGroupWithAckMessage)y);
+                case CheckGroupExistenceWithAckMessage checkAnyConnectionInGroupWithAckMessage:
+                    return CheckGroupExistenceWithAckMessageEqual(checkAnyConnectionInGroupWithAckMessage, (CheckGroupExistenceWithAckMessage)y);
+                case CheckConnectionExistenceWithAckMessage checkConnectionExistenceWithAckMessage:
+                    return CheckConnectionExistenceWithAckMessageEqual(checkConnectionExistenceWithAckMessage, (CheckConnectionExistenceWithAckMessage)y);
+                case CheckUserExistenceWithAckMessage checkConnectionExistenceAsUserWithAckMessage:
+                    return CheckUserExistenceWithAckMessageEqual(checkConnectionExistenceAsUserWithAckMessage, (CheckUserExistenceWithAckMessage)y);
                 case AckMessage ackMessage:
                     return AckMessageEqual(ackMessage, (AckMessage)y);
                 case ServiceEventMessage serviceWarningMessage:
@@ -207,6 +213,27 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             return StringEqual(x.UserId, y.UserId) &&
                    StringEqual(x.GroupName, y.GroupName) &&
+                   x.AckId == y.AckId &&
+                   x.TracingId == y.TracingId;
+        }
+
+        private bool CheckGroupExistenceWithAckMessageEqual(CheckGroupExistenceWithAckMessage x, CheckGroupExistenceWithAckMessage y)
+        {
+            return StringEqual(x.GroupName, y.GroupName) &&
+                   x.AckId == y.AckId &&
+                   x.TracingId == y.TracingId;
+        }
+
+        private bool CheckConnectionExistenceWithAckMessageEqual(CheckConnectionExistenceWithAckMessage x, CheckConnectionExistenceWithAckMessage y)
+        {
+            return StringEqual(x.ConnectionId, y.ConnectionId) &&
+                   x.AckId == y.AckId &&
+                   x.TracingId == y.TracingId;
+        }
+
+        private bool CheckUserExistenceWithAckMessageEqual(CheckUserExistenceWithAckMessage x, CheckUserExistenceWithAckMessage y)
+        {
+            return StringEqual(x.UserId, y.UserId) &&
                    x.AckId == y.AckId &&
                    x.TracingId == y.TracingId;
         }
