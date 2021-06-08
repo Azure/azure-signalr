@@ -30,9 +30,11 @@ namespace Microsoft.Azure.SignalR.Management
         /// Close a connection asynchronously.
         /// </summary>
         /// <param name="connectionId">The connection to close</param>
+        /// <param name="reason">The reason to close the connection. </param>
         /// <param name="cancellationToken"></param>
         /// <returns>The created <see cref="System.Threading.Tasks.Task{TResult}">Task</see> that represents the asynchronous operation.</returns>
-        public virtual Task CloseConnectionAsync(string connectionId, CancellationToken cancellationToken) => null;
+        /// <remarks>To get the <paramref name="reason"/> from connection closed event, client should set <see cref="NegotiationOptions.EnableDetailedErrors"/> during negotiation.</remarks>
+        public virtual Task CloseConnectionAsync(string connectionId, string reason = null, CancellationToken cancellationToken = default) => null;
 
         public virtual Task DisposeAsync() => Task.CompletedTask;
     }

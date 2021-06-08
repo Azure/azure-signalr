@@ -240,13 +240,13 @@ namespace Microsoft.Azure.SignalR.Management
             return isUserInGroup;
         }
 
-        public async Task CloseConnectionAsync(string connectionId, CancellationToken cancellationToken)
+        public async Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(connectionId))
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
             }
-            var api = await _restApiProvider.GetCloseConnectionEndpointAsync(_appName, _hubName, connectionId);
+            var api = await _restApiProvider.GetCloseConnectionEndpointAsync(_appName, _hubName, connectionId, reason);
             await _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 

@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal interface IServiceHubLifetimeManager : IHubLifetimeManager, IUserGroupHubLifetimeManager
     {
-        Task CloseConnectionAsync(string connectionId, CancellationToken cancellationToken);
+        Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken);
 
         Task DisposeAsync();
     }

@@ -118,7 +118,7 @@ namespace Microsoft.Azure.SignalR.Management
             return WriteAckableMessageAsync(message);
         }
 
-        public Task CloseConnectionAsync(string connectionId, CancellationToken cancellationToken)
+        public Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

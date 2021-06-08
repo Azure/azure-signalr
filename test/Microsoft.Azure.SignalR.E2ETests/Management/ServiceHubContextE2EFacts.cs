@@ -395,6 +395,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [InlineData(ServiceTransportType.Transient)]
         public async Task CloseConnectionTest(ServiceTransportType serviceTransportType)
         {
+            const string reason = "This is a test reason.";
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
                 var serviceManager = new ServiceManagerBuilder()
@@ -406,17 +407,25 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     .WithLoggerFactory(loggerFactory)
                     .Build();
                 var serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
-                var negotiationRes = await serviceHubContext.NegotiateAsync();
+                var negotiationRes = await serviceHubContext.NegotiateAsync(new NegotiationOptions { EnableDetailedErrors = true });
                 var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
-                var tcs = new TaskCompletionSource();
+                var tcs = new TaskCompletionSource<string>();
                 conn.Closed += ex =>
                 {
-                    tcs.SetResult();
+                    if (ex is null)
+                    {
+                        tcs.SetException(new Exception("close exception is null"));
+                    }
+                    tcs.SetResult(ex.Message);
                     return Task.CompletedTask;
                 };
                 await conn.StartAsync();
-                await serviceHubContext.CloseConnectionAsync(conn.ConnectionId, default);
-                await tcs.Task.OrTimeout();
+                await serviceHubContext.CloseConnectionAsync(conn.ConnectionId, reason);
+                
+                var actualReason = await tcs.Task.OrTimeout();
+                Assert.Contains(reason, actualReason);
+                
+                await serviceHubContext.DisposeAsync();
             }
         }
 

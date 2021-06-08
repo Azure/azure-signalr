@@ -47,9 +47,9 @@ namespace Microsoft.Azure.SignalR.Management
             return _negotiateProcessor.NegotiateAsync(_hubName, options, cancellationToken);
         }
 
-        public override Task CloseConnectionAsync(string connectionId, CancellationToken cancellationToken)
+        public override Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken)
         {
-            return _lifetimeManager.CloseConnectionAsync(connectionId, cancellationToken);
+            return _lifetimeManager.CloseConnectionAsync(connectionId, reason, cancellationToken);
         }
 
         IEnumerable<ServiceEndpoint> IInternalServiceHubContext.GetServiceEndpoints() => _endpointManager.GetEndpoints(_hubName);
