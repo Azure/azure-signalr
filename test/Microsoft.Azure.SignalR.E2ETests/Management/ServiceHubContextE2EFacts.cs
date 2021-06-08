@@ -196,7 +196,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 }));
                 var excluded = connections.First().ConnectionId;
                 await hubContext.Clients.GroupExcept(group, excluded).SendAsync(method, msg);
-                
+
                 // await included connections to receive msg
                 await Task.WhenAll(tcsDict.Where(item => item.Key != excluded).Select(i => i.Value.Task)).OrTimeout();
                 Assert.False(tcsDict[excluded].Task.IsCompleted);
@@ -387,6 +387,36 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             finally
             {
                 await serviceHubContext.DisposeAsync();
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [InlineData(ServiceTransportType.Transient)]
+        public async Task CloseConnectionTest(ServiceTransportType serviceTransportType)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var serviceManager = new ServiceManagerBuilder()
+                    .WithOptions(o =>
+                    {
+                        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                        o.ServiceTransportType = serviceTransportType;
+                    })
+                    .WithLoggerFactory(loggerFactory)
+                    .Build();
+                var serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
+                var negotiationRes = await serviceHubContext.NegotiateAsync();
+                var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
+                var tcs = new TaskCompletionSource();
+                conn.Closed += ex =>
+                {
+                    tcs.SetResult();
+                    return Task.CompletedTask;
+                };
+                await conn.StartAsync();
+                await serviceHubContext.CloseConnectionAsync(conn.ConnectionId, default);
+                await tcs.Task.OrTimeout();
             }
         }
 

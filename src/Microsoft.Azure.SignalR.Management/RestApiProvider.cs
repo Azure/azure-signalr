@@ -74,6 +74,11 @@ namespace Microsoft.Azure.SignalR.Management
             return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{Uri.EscapeDataString(groupName)}/connections/{Uri.EscapeDataString(connectionId)}", lifetime);
         }
 
+        public Task<RestApiEndpoint> GetCloseConnectionEndpointAsync(string appName, string hubName, string connectionId)
+        {
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}");
+        }
+
         private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
         {
             var portText = _port == null ? string.Empty : $":{_port.Value}";

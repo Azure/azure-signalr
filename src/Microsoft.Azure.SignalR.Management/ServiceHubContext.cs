@@ -26,6 +26,14 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>A negotiation response object that contains an endpoint url and an access token for the client to connect to the Azure SignalR instance. </returns>
         public virtual Task<NegotiationResponse> NegotiateAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
+        /// <summary>
+        /// Close a connection asynchronously.
+        /// </summary>
+        /// <param name="connectionId">The connection to close</param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>The created <see cref="System.Threading.Tasks.Task{TResult}">Task</see> that represents the asynchronous operation.</returns>
+        public virtual Task CloseConnectionAsync(string connectionId, CancellationToken cancellationToken) => null;
+
         public virtual Task DisposeAsync() => Task.CompletedTask;
     }
 }
