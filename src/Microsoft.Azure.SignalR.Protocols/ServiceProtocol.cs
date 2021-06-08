@@ -416,7 +416,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteServiceEventMessage(ref MessagePackWriter writer, ServiceEventMessage message)
         {
-            writer.WriteArrayHeader(5);
+            writer.WriteArrayHeader(6);
             writer.Write(ServiceProtocolConstants.ServiceEventMessageType);
             writer.Write((int)message.Type);
             writer.Write(message.Id);
