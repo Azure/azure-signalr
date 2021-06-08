@@ -45,8 +45,8 @@
         /// </summary>
         NotExisted,
         /// <summary>
-        /// The overload-protecting event.
+        /// The buffer-full event.
         /// </summary>
-        OverloadProtecting,
+        BufferFull,
     }
 }
