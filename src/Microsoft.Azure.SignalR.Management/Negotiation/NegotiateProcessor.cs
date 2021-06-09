@@ -32,6 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
             var userId = negotiationOptions.UserId;
             var claims = negotiationOptions.Claims;
             var isDiagnosticClient = negotiationOptions.IsDiagnosticClient;
+            var enableDetailedErrors = negotiationOptions.EnableDetailedErrors;
             var lifetime = negotiationOptions.TokenLifetime;
             try
             {
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.SignalR.Management
                 {
                     claimProvider = () => claims;
                 }
-                var claimsWithUserId = ClaimsUtility.BuildJwtClaims(httpContext?.User, userId: userId, claimProvider, isDiagnosticClient: isDiagnosticClient);
+                var claimsWithUserId = ClaimsUtility.BuildJwtClaims(httpContext?.User, userId: userId, claimProvider, enableDetailedErrors: enableDetailedErrors, isDiagnosticClient: isDiagnosticClient);
 
                 var tokenTask = provider.GenerateClientAccessTokenAsync(hubName, claimsWithUserId, lifetime);
                 await tokenTask.OrTimeout(cancellationToken, Timeout, GeneratingTokenTaskDescription);
