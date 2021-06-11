@@ -269,6 +269,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new OpenConnectionMessage("conn1", null),
                 binary: "lgSlY29ubjGAgKCA"),
             new ProtocolTestData(
+                name: "OpenConnectionWithTracingId",
+                message: new OpenConnectionMessage("conn1", null) { TracingId = 888UL },
+                binary: "lgSlY29ubjGAgKCBAc0DeA=="),
+            new ProtocolTestData(
                 name: "OpenConnectionWithClaims",
                 message: new OpenConnectionMessage("conn2", new [] {new Claim(ClaimTypes.NameIdentifier, "user1")}),
                 binary: "lgSlY29ubjKB2URodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllcqV1c2VyMYCggA=="),

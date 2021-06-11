@@ -28,8 +28,13 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A open-connection message.
     /// </summary>
-    public class OpenConnectionMessage : ConnectionMessage, IHasProtocol
+    public class OpenConnectionMessage : ConnectionMessage, IHasProtocol, IMessageWithTracingId
     {
+        /// <summary>
+        /// Gets or sets the tracing Id
+        /// </summary>
+        public ulong? TracingId { get; set; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="OpenConnectionMessage"/> class.
         /// </summary>
