@@ -73,6 +73,10 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateUserJoinGroupMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.UserLeaveGroupMessageType:
                     return CreateUserLeaveGroupMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.UserJoinGroupWithAckMessageType:
+                    return CreateUserJoinGroupWithAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.UserLeaveGroupWithAckMessageType:
+                    return CreateUserLeaveGroupWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.GroupBroadcastDataMessageType:
                     return CreateGroupBroadcastDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.MultiGroupBroadcastDataMessageType:
@@ -217,6 +221,12 @@ namespace Microsoft.Azure.SignalR.Protocol
                     break;
                 case UserLeaveGroupMessage userLeaveGroupMessage:
                     WriteUserLeaveGroupMessage(ref writer, userLeaveGroupMessage);
+                    break;
+                case UserJoinGroupWithAckMessage userJoinGroupWithAckMessage:
+                    WriteUserJoinGroupWithAckMessage(ref writer, userJoinGroupWithAckMessage);
+                    break;
+                case UserLeaveGroupWithAckMessage userLeaveGroupWithAckMessage:
+                    WriteUserLeaveGroupWithAckMessage(ref writer, userLeaveGroupWithAckMessage);
                     break;
                 case GroupBroadcastDataMessage groupBroadcastDataMessage:
                     WriteGroupBroadcastDataMessage(ref writer, groupBroadcastDataMessage);
@@ -385,6 +395,26 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.Write(ServiceProtocolConstants.UserLeaveGroupMessageType);
             writer.Write(message.UserId);
             writer.Write(message.GroupName);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteUserJoinGroupWithAckMessage(ref MessagePackWriter writer, UserJoinGroupWithAckMessage message)
+        {
+            writer.WriteArrayHeader(5);
+            writer.Write(ServiceProtocolConstants.UserJoinGroupWithAckMessageType);
+            writer.Write(message.UserId);
+            writer.Write(message.GroupName);
+            writer.Write(message.AckId);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteUserLeaveGroupWithAckMessage(ref MessagePackWriter writer, UserLeaveGroupWithAckMessage message)
+        {
+            writer.WriteArrayHeader(5);
+            writer.Write(ServiceProtocolConstants.UserLeaveGroupWithAckMessageType);
+            writer.Write(message.UserId);
+            writer.Write(message.GroupName);
+            writer.Write(message.AckId);
             message.WriteExtensionMembers(ref writer);
         }
 
@@ -749,6 +779,28 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 result.ReadExtensionMembers(ref reader);
             }
+            return result;
+        }
+
+        private static UserJoinGroupWithAckMessage CreateUserJoinGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var userId = ReadString(ref reader, "userId");
+            var groupName = ReadString(ref reader, "groupName");
+            var ackId = ReadInt32(ref reader, "ackId");
+
+            var result = new UserJoinGroupWithAckMessage(userId, groupName, ackId);
+            result.ReadExtensionMembers(ref reader);
+            return result;
+        }
+
+        private static UserLeaveGroupWithAckMessage CreateUserLeaveGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var userId = ReadString(ref reader, "userId");
+            var groupName = ReadString(ref reader, "groupName");
+            var ackId = ReadInt32(ref reader, "ackId");
+
+            var result = new UserLeaveGroupWithAckMessage(userId, groupName, ackId);
+            result.ReadExtensionMembers(ref reader);
             return result;
         }
 

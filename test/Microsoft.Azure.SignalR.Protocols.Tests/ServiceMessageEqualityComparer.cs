@@ -52,6 +52,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return UserJoinGroupMessagesEqual(userJoinGroupMessage, (UserJoinGroupMessage)y);
                 case UserLeaveGroupMessage userLeaveGroupMessage:
                     return UserLeaveGroupMessagesEqual(userLeaveGroupMessage, (UserLeaveGroupMessage)y);
+                case UserJoinGroupWithAckMessage userJoinGroupWithAckMessage:
+                    return UserJoinGroupWithAckMessagesEqual(userJoinGroupWithAckMessage, (UserJoinGroupWithAckMessage)y);
+                case UserLeaveGroupWithAckMessage userLeaveGroupWithAckMessage:
+                    return UserLeaveGroupWithAckMessagesEqual(userLeaveGroupWithAckMessage, (UserLeaveGroupWithAckMessage)y);
                 case GroupBroadcastDataMessage groupBroadcastDataMessage:
                     return GroupBroadcastDataMessagesEqual(groupBroadcastDataMessage, (GroupBroadcastDataMessage)y);
                 case MultiGroupBroadcastDataMessage multiGroupBroadcastDataMessage:
@@ -172,6 +176,24 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                    StringEqual(x.GroupName, y.GroupName) &&
                    x.TracingId == y.TracingId;
         }
+
+        private bool UserJoinGroupWithAckMessagesEqual(UserJoinGroupWithAckMessage x, UserJoinGroupWithAckMessage y)
+        {
+            return StringEqual(x.UserId, y.UserId) &&
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   x.TracingId == y.TracingId &&
+                   x.Ttl == y.Ttl &&
+                   x.AckId == y.AckId;
+        }
+
+        private bool UserLeaveGroupWithAckMessagesEqual(UserLeaveGroupWithAckMessage x, UserLeaveGroupWithAckMessage y)
+        {
+            return StringEqual(x.UserId, y.UserId) &&
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   x.TracingId == y.TracingId &&
+                   x.AckId == y.AckId;
+        }
+
         private bool GroupBroadcastDataMessagesEqual(GroupBroadcastDataMessage x, GroupBroadcastDataMessage y)
         {
             return StringEqual(x.GroupName, y.GroupName) &&
