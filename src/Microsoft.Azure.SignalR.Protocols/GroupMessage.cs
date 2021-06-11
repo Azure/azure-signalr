@@ -145,6 +145,95 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
+    /// A waiting for ack user-join-group message.
+    /// </summary>
+    public class UserJoinGroupWithAckMessage : ExtensibleServiceMessage, IMessageWithTracingId, IHasTtl, IAckableMessage
+    {
+        /// <summary>
+        /// Gets or sets the user Id.
+        /// </summary>
+        public string UserId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the group name.
+        /// </summary>
+        public string GroupName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the tracing Id
+        /// </summary>
+        public ulong? TracingId { get; set; }
+
+        /// <summary>
+        /// Time to live for the user in the group.
+        /// </summary>
+        public int? Ttl { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ack id.
+        /// </summary>
+        public int AckId { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserJoinGroupMessage"/> class.
+        /// </summary>
+        /// <param name="userId">The user Id.</param>
+        /// <param name="groupName">The group name, to which the user will join.</param>
+        /// <param name="ackId">The ack Id.</param>
+        /// <param name="ttl">Time to live for the user in the group.</param>
+        /// <param name="tracingId">The tracing Id of the message.</param>
+        public UserJoinGroupWithAckMessage(string userId, string groupName, int ackId, int? ttl = null, ulong? tracingId = null)
+        {
+            UserId = userId;
+            GroupName = groupName;
+            TracingId = tracingId;
+            AckId = ackId;
+            Ttl = ttl;
+        }
+    }
+
+    /// <summary>
+    /// A waiting for ack  user-leave-group message.
+    /// </summary>
+    public class UserLeaveGroupWithAckMessage : ExtensibleServiceMessage, IMessageWithTracingId, IAckableMessage
+    {
+        /// <summary>
+        /// Gets or sets the user Id.
+        /// </summary>
+        public string UserId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the group name.
+        /// </summary>
+        public string GroupName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the tracing Id
+        /// </summary>
+        public ulong? TracingId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ack id.
+        /// </summary>
+        public int AckId { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserLeaveGroupMessage"/> class.
+        /// </summary>
+        /// <param name="userId">The user Id.</param>
+        /// <param name="groupName">The group name, from which the user will leave.</param>
+        /// <param name="ackId">The ack Id.</param>
+        /// <param name="tracingId">The tracing Id of the message.</param>
+        public UserLeaveGroupWithAckMessage(string userId, string groupName, int ackId, ulong? tracingId = null)
+        {
+            UserId = userId;
+            GroupName = groupName;
+            TracingId = tracingId;
+            AckId = ackId;
+        }
+    }
+
+    /// <summary>
     /// A waiting for ack join-group message.
     /// </summary>
     public class JoinGroupWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
