@@ -499,8 +499,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "lROmY29ubjE1pmdyb3VwMgGBAc0E0g=="),
             new ProtocolTestData(
                 name: "UserJoinGroupWithAckWithTracingId",
-                message: new UserJoinGroupWithAckMessage("conn14", "group1", 1, tracingId: 1234L),
-                binary: "lRqmY29ubjE0pmdyb3VwMQGBAc0E0g=="),
+                message: new UserJoinGroupWithAckMessage("conn14", "group1", 1, tracingId: 1234L, ttl: 666),
+                binary: "lRqmY29ubjE0pmdyb3VwMQGCAc0E0gLNApo="),
             new ProtocolTestData(
                 name: "UserLeaveGroupWithAckWithTracingId",
                 message: new UserLeaveGroupWithAckMessage("conn15", "group2", 1, tracingId: 1234L),
