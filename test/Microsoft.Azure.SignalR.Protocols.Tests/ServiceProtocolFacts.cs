@@ -269,6 +269,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new OpenConnectionMessage("conn1", null),
                 binary: "lgSlY29ubjGAgKCA"),
             new ProtocolTestData(
+                name: "OpenConnectionWithTracingId",
+                message: new OpenConnectionMessage("conn1", null) { TracingId = 888UL },
+                binary: "lgSlY29ubjGAgKCBAc0DeA=="),
+            new ProtocolTestData(
                 name: "OpenConnectionWithClaims",
                 message: new OpenConnectionMessage("conn2", new [] {new Claim(ClaimTypes.NameIdentifier, "user1")}),
                 binary: "lgSlY29ubjKB2URodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllcqV1c2VyMYCggA=="),
@@ -301,6 +305,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "CloseConnectionWithError",
                 message: new CloseConnectionMessage("conn4", "Error message."),
                 binary: "lQWlY29ubjSuRXJyb3IgbWVzc2FnZS6AgA=="),
+            new ProtocolTestData(
+                name: "CloseConnectionWithTracingId",
+                message: new CloseConnectionMessage("conn4") { TracingId = 123UL },
+                binary: "lQWlY29ubjSggIEBew=="),
             new ProtocolTestData(
                 name: "ConnectionData",
                 message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}),
