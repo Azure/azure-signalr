@@ -110,7 +110,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         private bool CloseConnectionMessagesEqual(CloseConnectionMessage x, CloseConnectionMessage y)
         {
-            return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.ErrorMessage, y.ErrorMessage);
+            return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.ErrorMessage, y.ErrorMessage) && x.TracingId == y.TracingId;
         }
 
         private bool ConnectionDataMessagesEqual(ConnectionDataMessage x, ConnectionDataMessage y)

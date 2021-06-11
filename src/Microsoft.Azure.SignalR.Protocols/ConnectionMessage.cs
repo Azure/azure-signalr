@@ -79,8 +79,13 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A close-connection message.
     /// </summary>
-    public class CloseConnectionMessage : ConnectionMessage
+    public class CloseConnectionMessage : ConnectionMessage, IMessageWithTracingId
     {
+        /// <summary>
+        /// Gets or sets the tracing Id
+        /// </summary>
+        public ulong? TracingId { get; set; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CloseConnectionMessage"/> class.
         /// </summary>

@@ -302,6 +302,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new CloseConnectionMessage("conn4", "Error message."),
                 binary: "lQWlY29ubjSuRXJyb3IgbWVzc2FnZS6AgA=="),
             new ProtocolTestData(
+                name: "CloseConnectionWithTracingId",
+                message: new CloseConnectionMessage("conn4") { TracingId = 123UL },
+                binary: "lQWlY29ubjSggIEBew=="),
+            new ProtocolTestData(
                 name: "ConnectionData",
                 message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}),
                 binary: "lAalY29ubjXEBwECAwQFBgeA"),
