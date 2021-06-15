@@ -269,6 +269,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new OpenConnectionMessage("conn1", null),
                 binary: "lgSlY29ubjGAgKCA"),
             new ProtocolTestData(
+                name: "OpenConnectionWithTracingId",
+                message: new OpenConnectionMessage("conn1", null) { TracingId = 888UL },
+                binary: "lgSlY29ubjGAgKCBAc0DeA=="),
+            new ProtocolTestData(
                 name: "OpenConnectionWithClaims",
                 message: new OpenConnectionMessage("conn2", new [] {new Claim(ClaimTypes.NameIdentifier, "user1")}),
                 binary: "lgSlY29ubjKB2URodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllcqV1c2VyMYCggA=="),
@@ -301,6 +305,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "CloseConnectionWithError",
                 message: new CloseConnectionMessage("conn4", "Error message."),
                 binary: "lQWlY29ubjSuRXJyb3IgbWVzc2FnZS6AgA=="),
+            new ProtocolTestData(
+                name: "CloseConnectionWithTracingId",
+                message: new CloseConnectionMessage("conn4") { TracingId = 123UL },
+                binary: "lQWlY29ubjSggIEBew=="),
             new ProtocolTestData(
                 name: "ConnectionData",
                 message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}),
@@ -498,13 +506,33 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new LeaveGroupWithAckMessage("conn15", "group2", 1, tracingId: 1234L),
                 binary: "lROmY29ubjE1pmdyb3VwMgGBAc0E0g=="),
             new ProtocolTestData(
+                name: "UserJoinGroupWithAckWithTracingId",
+                message: new UserJoinGroupWithAckMessage("conn14", "group1", 1, tracingId: 1234L, ttl: 666),
+                binary: "lRqmY29ubjE0pmdyb3VwMQGCAc0E0gLNApo="),
+            new ProtocolTestData(
+                name: "UserLeaveGroupWithAckWithTracingId",
+                message: new UserLeaveGroupWithAckMessage("conn15", "group2", 1, tracingId: 1234L),
+                binary: "lRumY29ubjE1pmdyb3VwMgGBAc0E0g=="),
+            new ProtocolTestData(
                 name: "CheckUserInGroupWithAckWithMessage",
                 message: new CheckUserInGroupWithAckMessage("user", "group", 3, 1234L),
                 binary: "lRWkdXNlcqVncm91cAOBAc0E0g=="),
             new ProtocolTestData(
                 name: "ServiceWarningMessage",
                 message: new ServiceEventMessage(ServiceEventObjectType.User, "abc", ServiceEventKind.NotExisted,"User abc is not existed."),
-                binary: "lRYCo2FiYwK4VXNlciBhYmMgaXMgbm90IGV4aXN0ZWQugA=="),
+                binary: "lhYCo2FiYwK4VXNlciBhYmMgaXMgbm90IGV4aXN0ZWQugA=="),
+            new ProtocolTestData(
+                name: "CheckGroupExistenceWithAckMessage",
+                message: new CheckGroupExistenceWithAckMessage("group", 0, 3),
+                binary: "lBelZ3JvdXAAgQED"),
+            new ProtocolTestData(
+                name: "CheckConnectionExistenceWithAckMessage",
+                message: new CheckConnectionExistenceWithAckMessage("connId", 1, 2),
+                binary: "lBimY29ubklkAYEBAg=="),
+            new ProtocolTestData(
+                name: "CheckUserExistenceWithAckMessage",
+                message: new CheckUserExistenceWithAckMessage("uid", 4, 23),
+                binary: "lBmjdWlkBIEBFw=="),
         }.ToDictionary(t => t.Name);
 
         [Theory]

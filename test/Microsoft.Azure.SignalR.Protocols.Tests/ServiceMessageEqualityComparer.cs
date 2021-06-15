@@ -52,6 +52,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return UserJoinGroupMessagesEqual(userJoinGroupMessage, (UserJoinGroupMessage)y);
                 case UserLeaveGroupMessage userLeaveGroupMessage:
                     return UserLeaveGroupMessagesEqual(userLeaveGroupMessage, (UserLeaveGroupMessage)y);
+                case UserJoinGroupWithAckMessage userJoinGroupWithAckMessage:
+                    return UserJoinGroupWithAckMessagesEqual(userJoinGroupWithAckMessage, (UserJoinGroupWithAckMessage)y);
+                case UserLeaveGroupWithAckMessage userLeaveGroupWithAckMessage:
+                    return UserLeaveGroupWithAckMessagesEqual(userLeaveGroupWithAckMessage, (UserLeaveGroupWithAckMessage)y);
                 case GroupBroadcastDataMessage groupBroadcastDataMessage:
                     return GroupBroadcastDataMessagesEqual(groupBroadcastDataMessage, (GroupBroadcastDataMessage)y);
                 case MultiGroupBroadcastDataMessage multiGroupBroadcastDataMessage:
@@ -65,6 +69,12 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return LeaveGroupWithAckMessageEqual(leaveGroupWithAckMessage, (LeaveGroupWithAckMessage)y);
                 case CheckUserInGroupWithAckMessage checkUserInGroupWithAckMessage:
                     return CheckUserInGroupWithAckMessageEqual(checkUserInGroupWithAckMessage, (CheckUserInGroupWithAckMessage)y);
+                case CheckGroupExistenceWithAckMessage checkAnyConnectionInGroupWithAckMessage:
+                    return CheckGroupExistenceWithAckMessageEqual(checkAnyConnectionInGroupWithAckMessage, (CheckGroupExistenceWithAckMessage)y);
+                case CheckConnectionExistenceWithAckMessage checkConnectionExistenceWithAckMessage:
+                    return CheckConnectionExistenceWithAckMessageEqual(checkConnectionExistenceWithAckMessage, (CheckConnectionExistenceWithAckMessage)y);
+                case CheckUserExistenceWithAckMessage checkConnectionExistenceAsUserWithAckMessage:
+                    return CheckUserExistenceWithAckMessageEqual(checkConnectionExistenceAsUserWithAckMessage, (CheckUserExistenceWithAckMessage)y);
                 case AckMessage ackMessage:
                     return AckMessageEqual(ackMessage, (AckMessage)y);
                 case ServiceEventMessage serviceWarningMessage:
@@ -95,12 +105,13 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                    ClaimsEqual(x.Claims, y.Claims) &&
                    HeadersEqual(x.Headers, y.Headers) &&
                    StringEqual(x.QueryString, y.QueryString) &&
-                   StringEqual(x.Protocol, y.Protocol);
+                   StringEqual(x.Protocol, y.Protocol) &&
+                   x.TracingId == y.TracingId;
         }
 
         private bool CloseConnectionMessagesEqual(CloseConnectionMessage x, CloseConnectionMessage y)
         {
-            return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.ErrorMessage, y.ErrorMessage);
+            return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.ErrorMessage, y.ErrorMessage) && x.TracingId == y.TracingId;
         }
 
         private bool ConnectionDataMessagesEqual(ConnectionDataMessage x, ConnectionDataMessage y)
@@ -166,6 +177,24 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                    StringEqual(x.GroupName, y.GroupName) &&
                    x.TracingId == y.TracingId;
         }
+
+        private bool UserJoinGroupWithAckMessagesEqual(UserJoinGroupWithAckMessage x, UserJoinGroupWithAckMessage y)
+        {
+            return StringEqual(x.UserId, y.UserId) &&
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   x.TracingId == y.TracingId &&
+                   x.Ttl == y.Ttl &&
+                   x.AckId == y.AckId;
+        }
+
+        private bool UserLeaveGroupWithAckMessagesEqual(UserLeaveGroupWithAckMessage x, UserLeaveGroupWithAckMessage y)
+        {
+            return StringEqual(x.UserId, y.UserId) &&
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   x.TracingId == y.TracingId &&
+                   x.AckId == y.AckId;
+        }
+
         private bool GroupBroadcastDataMessagesEqual(GroupBroadcastDataMessage x, GroupBroadcastDataMessage y)
         {
             return StringEqual(x.GroupName, y.GroupName) &&
@@ -207,6 +236,27 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             return StringEqual(x.UserId, y.UserId) &&
                    StringEqual(x.GroupName, y.GroupName) &&
+                   x.AckId == y.AckId &&
+                   x.TracingId == y.TracingId;
+        }
+
+        private bool CheckGroupExistenceWithAckMessageEqual(CheckGroupExistenceWithAckMessage x, CheckGroupExistenceWithAckMessage y)
+        {
+            return StringEqual(x.GroupName, y.GroupName) &&
+                   x.AckId == y.AckId &&
+                   x.TracingId == y.TracingId;
+        }
+
+        private bool CheckConnectionExistenceWithAckMessageEqual(CheckConnectionExistenceWithAckMessage x, CheckConnectionExistenceWithAckMessage y)
+        {
+            return StringEqual(x.ConnectionId, y.ConnectionId) &&
+                   x.AckId == y.AckId &&
+                   x.TracingId == y.TracingId;
+        }
+
+        private bool CheckUserExistenceWithAckMessageEqual(CheckUserExistenceWithAckMessage x, CheckUserExistenceWithAckMessage y)
+        {
+            return StringEqual(x.UserId, y.UserId) &&
                    x.AckId == y.AckId &&
                    x.TracingId == y.TracingId;
         }

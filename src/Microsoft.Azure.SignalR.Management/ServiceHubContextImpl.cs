@@ -31,12 +31,15 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override IUserGroupManager UserGroups { get; }
 
+        public override ClientManager ClientManager { get; }
+
         public ServiceHubContextImpl(string hubName, IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager)
         {
             _hubName = hubName;
             _hubContext = hubContext;
             _lifetimeManager = lifetimeManager;
             UserGroups = new UserGroupsManager(lifetimeManager);
+            ClientManager = new DefaultClientManager(lifetimeManager);
             ServiceProvider = serviceProvider;
             _negotiateProcessor = negotiateProcessor;
             _endpointManager = endpointManager;
