@@ -60,6 +60,12 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
+        public ServiceHubContextBuilder WithNewtonsoftJsonHubProtocol(Action<IOptions<NewtonsoftServiceHubProtocolOptions>> configure)
+        {
+            _services.AddNewtonsoftHubProtocol(configure);
+            return this;
+        }
+
         /// <summary>
         /// Provides a hook to configure services before building.
         /// </summary>
