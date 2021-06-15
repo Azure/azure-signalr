@@ -20,6 +20,8 @@ namespace Microsoft.Azure.SignalR.Management
 
         public virtual IGroupManager Groups => null;
 
+        public virtual ClientManager ClientManager => null;
+
         /// <summary>
         /// Performs a negotiation operation asynchronously that routes a client to a Azure SignalR instance.
         /// </summary>
