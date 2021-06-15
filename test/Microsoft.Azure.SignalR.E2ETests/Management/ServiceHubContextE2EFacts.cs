@@ -420,7 +420,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     return Task.CompletedTask;
                 };
                 await conn.StartAsync();
-                await serviceHubContext.CloseConnectionAsync(conn.ConnectionId, reason);
+                await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId, reason);
                 
                 var actualReason = await tcs.Task.OrTimeout();
                 Assert.Contains(reason, actualReason);

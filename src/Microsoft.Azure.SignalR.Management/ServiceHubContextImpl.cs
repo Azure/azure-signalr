@@ -31,12 +31,15 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override IUserGroupManager UserGroups { get; }
 
+        public override ClientManager ClientManager { get; }
+
         public ServiceHubContextImpl(string hubName, IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager)
         {
             _hubName = hubName;
             _hubContext = hubContext;
             _lifetimeManager = lifetimeManager;
             UserGroups = new UserGroupsManager(lifetimeManager);
+            ClientManager = new DefaultClientManager(lifetimeManager);
             ServiceProvider = serviceProvider;
             _negotiateProcessor = negotiateProcessor;
             _endpointManager = endpointManager;
@@ -45,11 +48,6 @@ namespace Microsoft.Azure.SignalR.Management
         public override Task<NegotiationResponse> NegotiateAsync(NegotiationOptions options, CancellationToken cancellationToken)
         {
             return _negotiateProcessor.NegotiateAsync(_hubName, options, cancellationToken);
-        }
-
-        public override Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken)
-        {
-            return _lifetimeManager.CloseConnectionAsync(connectionId, reason, cancellationToken);
         }
 
         IEnumerable<ServiceEndpoint> IInternalServiceHubContext.GetServiceEndpoints() => _endpointManager.GetEndpoints(_hubName);
