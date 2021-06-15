@@ -69,13 +69,6 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
-        internal ServiceHubContextBuilder WithCallingAssembly()
-        {
-            var assembly = Assembly.GetCallingAssembly();
-            _services.WithAssembly(assembly);
-            return this;
-        }
-
         /// <summary>
         /// Builds <see cref="ServiceHubContext"/> instances.
         /// </summary>
