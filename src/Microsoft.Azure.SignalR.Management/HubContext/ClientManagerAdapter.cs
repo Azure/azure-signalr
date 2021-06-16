@@ -6,18 +6,15 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class DefaultClientManager : ClientManager
+    internal class ClientManagerAdapter : ClientManager
     {
         private readonly IServiceHubLifetimeManager _lifetimeManager;
 
-        public DefaultClientManager(IServiceHubLifetimeManager lifetimeManager)
+        public ClientManagerAdapter(IServiceHubLifetimeManager lifetimeManager)
         {
             _lifetimeManager = lifetimeManager;
         }
 
-        public override Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken)
-        {
-            return _lifetimeManager.CloseConnectionAsync(connectionId, reason, cancellationToken);
-        }
+        public override Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken) => _lifetimeManager.CloseConnectionAsync(connectionId, reason, cancellationToken);
     }
 }

@@ -27,9 +27,9 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override IHubClients Clients => _hubContext.Clients;
 
-        public override IGroupManager Groups => _hubContext.Groups;
+        public override GroupManager Groups { get; }
 
-        public override IUserGroupManager UserGroups { get; }
+        public override UserGroupManager UserGroups { get; }
 
         public override ClientManager ClientManager { get; }
 
@@ -38,8 +38,9 @@ namespace Microsoft.Azure.SignalR.Management
             _hubName = hubName;
             _hubContext = hubContext;
             _lifetimeManager = lifetimeManager;
-            UserGroups = new UserGroupsManager(lifetimeManager);
-            ClientManager = new DefaultClientManager(lifetimeManager);
+            Groups = new GroupManagerAdapter(_hubContext.Groups);
+            UserGroups = new UserGroupsManagerAdapter(lifetimeManager);
+            ClientManager = new ClientManagerAdapter(lifetimeManager);
             ServiceProvider = serviceProvider;
             _negotiateProcessor = negotiateProcessor;
             _endpointManager = endpointManager;
