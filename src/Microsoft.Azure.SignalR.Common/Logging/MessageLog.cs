@@ -142,16 +142,10 @@ namespace Microsoft.Azure.SignalR
                 new EventId(130, "StartToCheckIfUserInGroup"),
                 StartToCheckIfUserInGroupTemplate);
 
-        private static readonly Action<ILogger, ulong?, string, Exception> _startToCloseConnection =
-                LoggerMessage.Define<ulong?, string>(
-                    LogLevel.Information,
-                    new EventId(140, "StartToCloseConnection"),
-                    "Start to send message {tracingId} to close connection {connectionId}.");
-
-        private static readonly Action<ILogger, ulong?, string, string, Exception> _startToCloseConnectionWithReason =
+        private static readonly Action<ILogger, ulong?, string, string, Exception> _startToCloseConnection =
                 LoggerMessage.Define<ulong?, string, string>(
                     LogLevel.Information,
-                    new EventId(141, "StartToCloseConnectionWithReason"),
+                    new EventId(140, "StartToCloseConnection"),
                     "Start to send message {tracingId} to close connection {connectionId} for reason: '{reason}'.");
 
         public static void ReceiveMessageFromService(ILogger logger, ConnectionDataMessage message)
@@ -265,14 +259,7 @@ namespace Microsoft.Azure.SignalR
 
         public static void StartToCloseConnection(ILogger logger, CloseConnectionMessage message)
         {
-            if (message.ErrorMessage == null)
-            {
-                _startToCloseConnection(logger, message.TracingId, message.ConnectionId, null);
-            }
-            else
-            {
-                _startToCloseConnectionWithReason(logger, message.TracingId, message.ConnectionId, message.ErrorMessage, null);
-            }
+            _startToCloseConnection(logger, message.TracingId, message.ConnectionId, message.ErrorMessage, null);
         }
     }
 }
