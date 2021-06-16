@@ -120,7 +120,17 @@ namespace Microsoft.Azure.SignalR.Management
 
         public Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
+            var message = new CloseConnectionMessage(connectionId, reason).WithTracingId();
+            if (message.TracingId != null)
+            {
+                MessageLog.StartToCloseConnection(Logger, message);
+            }
+            return WriteAsync(message);
         }
 
         public Task DisposeAsync()

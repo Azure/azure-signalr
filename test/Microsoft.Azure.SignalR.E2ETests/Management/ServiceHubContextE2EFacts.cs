@@ -392,22 +392,24 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
-        [InlineData(ServiceTransportType.Transient)]
-        public async Task CloseConnectionTest(ServiceTransportType serviceTransportType)
+        [MemberData(nameof(TestData))]
+        public async Task CloseConnectionTest(ServiceTransportType serviceTransportType, string appName)
         {
-            const string reason = "This is a test reason.";
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+            using (StartLog(out var loggerFactory))
             {
+                const string reason = "This is a test reason.";
                 var serviceManager = new ServiceManagerBuilder()
                     .WithOptions(o =>
                     {
                         o.ConnectionString = TestConfiguration.Instance.ConnectionString;
                         o.ServiceTransportType = serviceTransportType;
+                        o.ApplicationName = appName;
                     })
                     .WithLoggerFactory(loggerFactory)
                     .Build();
                 var serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
-                var negotiationRes = await serviceHubContext.NegotiateAsync(new NegotiationOptions { EnableDetailedErrors = true });
+                var negotiationRes = await serviceHubContext.NegotiateAsync(new NegotiationOptions { EnableDetailedErrors = true, IsDiagnosticClient = true });
                 var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
                 var tcs = new TaskCompletionSource<string>();
                 conn.Closed += ex =>
@@ -421,10 +423,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 };
                 await conn.StartAsync();
                 await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId, reason);
-                
+
                 var actualReason = await tcs.Task.OrTimeout();
                 Assert.Contains(reason, actualReason);
-                
+
                 await serviceHubContext.DisposeAsync();
             }
         }
