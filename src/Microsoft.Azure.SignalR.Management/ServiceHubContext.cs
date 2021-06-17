@@ -14,11 +14,13 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Gets a user group manager instance which implements <see cref="IUserGroupManager"/> that can be used to add and remove users to named groups.
         /// </summary>
-        public virtual IUserGroupManager UserGroups => null;
+        public virtual UserGroupManager UserGroups => null;
+        IUserGroupManager IServiceHubContext.UserGroups => UserGroups;
 
         public virtual IHubClients Clients => null;
 
-        public virtual IGroupManager Groups => null;
+        public virtual GroupManager Groups => null;
+        IGroupManager IHubContext<Hub>.Groups => Groups;
 
         public virtual ClientManager ClientManager => null;
 
