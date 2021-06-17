@@ -6,7 +6,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    public class NewtonsoftServiceHubProtocolOptions
+    internal class NewtonsoftServiceHubProtocolOptions
     {
         /// <summary>
         /// Gets or sets the settings used to serialize invocation arguments and return values.
