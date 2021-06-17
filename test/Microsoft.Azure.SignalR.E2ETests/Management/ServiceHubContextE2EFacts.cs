@@ -452,11 +452,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
                 await conn.StartAsync();
 
-                var exists = await serviceHubContext.ClientManager.CheckIfConnectionExistsAsync(conn.ConnectionId);
+                var exists = await serviceHubContext.ClientManager.ConnectionExistsAsync(conn.ConnectionId);
                 Assert.True(exists);
 
                 await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId);
-                exists = await serviceHubContext.ClientManager.CheckIfConnectionExistsAsync(conn.ConnectionId);
+                exists = await serviceHubContext.ClientManager.ConnectionExistsAsync(conn.ConnectionId);
                 Assert.False(exists);
 
                 await serviceHubContext.DisposeAsync();
@@ -485,11 +485,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
                 await conn.StartAsync();
 
-                var exists = await serviceHubContext.ClientManager.CheckIfUserExistsAsync(userId);
+                var exists = await serviceHubContext.ClientManager.UserExistsAsync(userId);
                 Assert.True(exists);
 
                 await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId);
-                exists = await serviceHubContext.ClientManager.CheckIfUserExistsAsync(userId);
+                exists = await serviceHubContext.ClientManager.UserExistsAsync(userId);
                 Assert.False(exists);
 
                 await serviceHubContext.DisposeAsync();
@@ -518,15 +518,15 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
                 await conn.StartAsync();
 
-                var exists = await serviceHubContext.ClientManager.CheckIfGroupExistsAsync(groupName);
+                var exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
                 Assert.False(exists);
 
                 await serviceHubContext.Groups.AddToGroupAsync(conn.ConnectionId, groupName);
-                exists = await serviceHubContext.ClientManager.CheckIfGroupExistsAsync(groupName);
+                exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
                 Assert.True(exists);
 
                 await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId);
-                exists = await serviceHubContext.ClientManager.CheckIfGroupExistsAsync(groupName);
+                exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
                 Assert.False(exists);
 
                 await serviceHubContext.DisposeAsync();

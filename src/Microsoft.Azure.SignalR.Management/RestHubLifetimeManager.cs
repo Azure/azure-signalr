@@ -263,7 +263,7 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
-        public async Task<bool> CheckIfConnectionExistsAsync(string connectionId, CancellationToken cancellationToken = default)
+        public async Task<bool> ConnectionExistsAsync(string connectionId, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(connectionId))
             {
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.SignalR.Management
             return exists;
         }
 
-        public async Task<bool> CheckIfUserExistsAsync(string userId, CancellationToken cancellationToken = default)
+        public async Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(userId))
             {
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.SignalR.Management
             return exists;
         }
 
-        public async Task<bool> CheckIfGroupExistsAsync(string groupName, CancellationToken cancellationToken = default)
+        public async Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(groupName))
             {

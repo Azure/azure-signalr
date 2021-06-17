@@ -17,10 +17,10 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken) => _lifetimeManager.CloseConnectionAsync(connectionId, reason, cancellationToken);
 
-        public override Task<bool> CheckIfConnectionExistsAsync(string connectionId, CancellationToken cancellationToken) => _lifetimeManager.CheckIfConnectionExistsAsync(connectionId, cancellationToken);
+        public override Task<bool> ConnectionExistsAsync(string connectionId, CancellationToken cancellationToken) => _lifetimeManager.ConnectionExistsAsync(connectionId, cancellationToken);
 
-        public override Task<bool> CheckIfGroupExistsAsync(string groupName, CancellationToken cancellationToken) => _lifetimeManager.CheckIfGroupExistsAsync(groupName, cancellationToken);
+        public override Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken) => _lifetimeManager.GroupExistsAsync(groupName, cancellationToken);
 
-        public override Task<bool> CheckIfUserExistsAsync(string userId, CancellationToken cancellationToken) => _lifetimeManager.CheckIfUserExistsAsync(userId, cancellationToken);
+        public override Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken) => _lifetimeManager.UserExistsAsync(userId, cancellationToken);
     }
 }
