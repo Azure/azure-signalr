@@ -133,6 +133,21 @@ namespace Microsoft.Azure.SignalR.Management
             return WriteAsync(message);
         }
 
+        public Task<bool> CheckIfConnectionExistsAsync(string connectionId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> CheckIfUserExistsAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> CheckIfGroupExistsAsync(string groupName, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task DisposeAsync()
         {
             return ServiceConnectionContainer.StopAsync();

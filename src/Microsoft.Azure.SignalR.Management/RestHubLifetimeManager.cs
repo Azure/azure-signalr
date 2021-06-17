@@ -263,6 +263,78 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
+        public async Task<bool> CheckIfConnectionExistsAsync(string connectionId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+            var exists = false;
+            var api = await _restApiProvider.GetCheckConnectionExistsEndpointAsync(_appName, _hubName, connectionId);
+            await _restClient.SendAsync(api, HttpMethod.Head, _productInfo, handleExpectedResponse: response =>
+            {
+                switch (response.StatusCode)
+                {
+                    case HttpStatusCode.OK:
+                        exists = true;
+                        return true;
+                    case HttpStatusCode.NotFound:
+                        return true;
+                    default:
+                        return false;
+                }
+            }, cancellationToken: cancellationToken);
+            return exists;
+        }
+
+        public async Task<bool> CheckIfUserExistsAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
+            }
+            var exists = false;
+            var api = await _restApiProvider.GetCheckUserExistsEndpointAsync(_appName, _hubName, userId);
+            await _restClient.SendAsync(api, HttpMethod.Head, _productInfo, handleExpectedResponse: response =>
+            {
+                switch (response.StatusCode)
+                {
+                    case HttpStatusCode.OK:
+                        exists = true;
+                        return true;
+                    case HttpStatusCode.NotFound:
+                        return true;
+                    default:
+                        return false;
+                }
+            }, cancellationToken: cancellationToken);
+            return exists;
+        }
+
+        public async Task<bool> CheckIfGroupExistsAsync(string groupName, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(groupName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
+            }
+            var exists = false;
+            var api = await _restApiProvider.GetCheckGroupExistsEndpointAsync(_appName, _hubName, groupName);
+            await _restClient.SendAsync(api, HttpMethod.Head, _productInfo, handleExpectedResponse: response =>
+            {
+                switch (response.StatusCode)
+                {
+                    case HttpStatusCode.OK:
+                        exists = true;
+                        return true;
+                    case HttpStatusCode.NotFound:
+                        return true;
+                    default:
+                        return false;
+                }
+            }, cancellationToken: cancellationToken);
+            return exists;
+        }
+
         public Task DisposeAsync() => Task.CompletedTask;
     }
 }
