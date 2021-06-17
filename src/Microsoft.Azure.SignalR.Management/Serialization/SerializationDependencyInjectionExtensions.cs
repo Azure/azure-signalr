@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Management
         public static IServiceCollection AddNewtonsoftHubProtocol(this IServiceCollection services, Action<IOptions<NewtonsoftServiceHubProtocolOptions>> configure)
         {
             services.Configure(configure);
-
+            
             // for persistent transport type only:
 #if NETCOREAPP3_0_OR_GREATER
             services.AddSingleton<IHubProtocol, NewtonsoftJsonHubProtocol>();
@@ -23,6 +23,8 @@ namespace Microsoft.Azure.SignalR.Management
             services.ConfigureOptions<JsonHubProtocolOptionsSetup>();
 #endif
 
+            // for transient transport type only:
+            services.AddSingleton<IRestHubProtocol, NewtonsoftRestHubProtocol>();
             return services;
         }
     }

@@ -33,10 +33,12 @@ namespace Microsoft.Azure.SignalR.Management
                     }
                 case ServiceTransportType.Transient:
                     {
-                        var newtonsoftServiceHubProtocolOptions = _serviceProvider.GetService<IOptions<NewtonsoftServiceHubProtocolOptions>>();
+                        var restHubProtocol = _serviceProvider.GetService<IRestHubProtocol>();
                         var payloadSerializerSettings = _options.JsonSerializerSettings;
-                        if (newtonsoftServiceHubProtocolOptions != null)
+                        //Currently RestHubProtocol only has Newtonsoft
+                        if (restHubProtocol != null)
                         {
+                            var newtonsoftServiceHubProtocolOptions = _serviceProvider.GetService<IOptions<NewtonsoftServiceHubProtocolOptions>>();
                             payloadSerializerSettings = newtonsoftServiceHubProtocolOptions.Value.PayloadSerializerSettings;
                         }
                         return new RestHubLifetimeManager(hubName, new ServiceEndpoint(_options.ConnectionString), _options.ProductInfo, _options.ApplicationName, payloadSerializerSettings);
