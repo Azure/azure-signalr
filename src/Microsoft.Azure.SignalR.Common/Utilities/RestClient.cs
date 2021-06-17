@@ -17,7 +17,20 @@ namespace Microsoft.Azure.SignalR
 {
     internal class RestClient
     {
-        public JsonSerializerSettings JsonSerializerSettings { get; set; } = new JsonSerializerSettings();
+        private readonly JsonSerializerSettings _jsonSerializerSettings;
+        private readonly IHttpClientFactory _httpClientFactory;
+
+        public RestClient(IHttpClientFactory httpClientFactory, JsonSerializerSettings jsonSerializerSettings)
+        {
+            _httpClientFactory = httpClientFactory;
+            _jsonSerializerSettings = jsonSerializerSettings;
+        }
+
+        public RestClient()
+        {
+            _httpClientFactory = HttpClientFactory.Instance;
+            _jsonSerializerSettings = new JsonSerializerSettings();
+        }
 
         public Task SendAsync(
             RestApiEndpoint api,
@@ -45,7 +58,7 @@ namespace Microsoft.Azure.SignalR
             Func<HttpResponseMessage, Task<bool>> handleExpectedResponseAsync = null,
             CancellationToken cancellationToken = default)
         {
-            var httpClient = HttpClientFactory.CreateClient();
+            var httpClient = _httpClientFactory.CreateClient();
             var request = BuildRequest(api, httpMethod, productInfo, methodName, args);
             HttpResponseMessage response;
 
@@ -136,7 +149,7 @@ namespace Microsoft.Azure.SignalR
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Headers.Add(Constants.AsrsUserAgent, productInfo);
-            request.Content = new StringContent(JsonConvert.SerializeObject(payload, JsonSerializerSettings), Encoding.UTF8, "application/json");
+            request.Content = new StringContent(JsonConvert.SerializeObject(payload, _jsonSerializerSettings), Encoding.UTF8, "application/json");
             return request;
         }
     }
