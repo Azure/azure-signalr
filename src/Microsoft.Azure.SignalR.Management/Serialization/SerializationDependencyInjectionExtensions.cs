@@ -10,7 +10,7 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal static class SerializationDependencyInjectionExtensions
     {
-        public static IServiceCollection AddNewtonsoftHubProtocol(this IServiceCollection services, Action<IOptions<NewtonsoftServiceHubProtocolOptions>> configure)
+        public static IServiceCollection AddNewtonsoftHubProtocol(this IServiceCollection services, Action<NewtonsoftServiceHubProtocolOptions> configure)
         {
             services.Configure(configure);
             

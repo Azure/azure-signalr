@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Gets or sets the settings used to serialize invocation arguments and return values.
         /// </summary>
-        public JsonSerializerSettings PayloadSerializerSettings { get; } = new()
+        public JsonSerializerSettings PayloadSerializerSettings { get; set; } = new()
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver()
         };
