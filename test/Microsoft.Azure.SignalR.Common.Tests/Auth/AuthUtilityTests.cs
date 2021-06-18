@@ -13,9 +13,9 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 {
     public class AuthUtilityTests
     {
-        private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         private const string Audience = "https://localhost/aspnetclient?hub=testhub";
-        private static TimeSpan DefaultLifetime = TimeSpan.FromHours(1);
+        private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        private static readonly TimeSpan DefaultLifetime = TimeSpan.FromHours(1);
 
         [Fact]
         public void TestAccessTokenTooLongThrowsException()

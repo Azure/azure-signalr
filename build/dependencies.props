@@ -22,15 +22,14 @@
     <MicrosoftAspNetCoreLocalizationPackageVersion>2.1.0</MicrosoftAspNetCoreLocalizationPackageVersion>
     <MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>3.19.1</MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>
     <MicrosoftAzureKeyVaultPackageVersion>2.3.2</MicrosoftAzureKeyVaultPackageVersion>
-    <SystemBuffersPackageVersion>4.5.0</SystemBuffersPackageVersion>
-    <SystemMemoryPackageVersion>4.5.3</SystemMemoryPackageVersion>
-    <SystemRuntimeCompilerServicesUnsafePackageVersion>4.5.2</SystemRuntimeCompilerServicesUnsafePackageVersion>
+    <SystemBuffersPackageVersion>4.5.1</SystemBuffersPackageVersion>
+    <SystemMemoryPackageVersion>4.5.4</SystemMemoryPackageVersion>
+    <SystemRuntimeCompilerServicesUnsafePackageVersion>4.6.0</SystemRuntimeCompilerServicesUnsafePackageVersion>
     <SystemIdentityModelTokensJwtPackageVersion>5.5.0</SystemIdentityModelTokensJwtPackageVersion>
+    <AzureIdentityPackageVersion>1.4.0</AzureIdentityPackageVersion>
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.0</MicrosoftExtensionsPrimitivesPackageVersion>
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>
-    <MicrosoftIdentityClientVersion>4.9.0</MicrosoftIdentityClientVersion>
-    <MicrosoftAzureServicesAppAuthentication>1.5.0</MicrosoftAzureServicesAppAuthentication>
     <MicrosoftRestClientRuntimePackageVersion>2.3.21</MicrosoftRestClientRuntimePackageVersion>
 
     <!-- Azure ASP.NET SignalR -->
