@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="1.1.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
+    <PackageReference Include="xunit" Version="2.4.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Azure.SignalR.Tests.Common\Microsoft.Azure.SignalR.Tests.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' != 'true' ">
+    <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.Management\Microsoft.Azure.SignalR.Management.csproj" />
+    <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(AzureSignalRSDKE2ETest)' == 'true' ">
+    <PackageReference Include="Microsoft.Azure.SignalR.Management" Version="$(VersionPrefix)-*" />
+  </ItemGroup>
+</Project>
