@@ -29,10 +29,10 @@ namespace Microsoft.Azure.SignalR
         {
             if (_accessKey is AadAccessKey key)
             {
-                return key.GenerateAadToken();
+                return key.GenerateAadTokenAsync();
             }
 
-            return _accessKey.GenerateAccessToken(
+            return _accessKey.GenerateAccessTokenAsync(
                 audience,
                 _claims,
                 lifetime ?? Constants.Periods.DefaultAccessTokenLifetime,

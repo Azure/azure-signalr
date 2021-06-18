@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
@@ -29,11 +30,12 @@ namespace Microsoft.Azure.SignalR
             Port = port;
         }
 
-        public virtual Task<string> GenerateAccessToken(
+        public virtual Task<string> GenerateAccessTokenAsync(
             string audience,
             IEnumerable<Claim> claims,
             TimeSpan lifetime,
-            AccessTokenAlgorithm algorithm)
+            AccessTokenAlgorithm algorithm,
+            CancellationToken ctoken = default)
         {
             var token = AuthUtility.GenerateAccessToken(this, audience, claims, lifetime, algorithm);
             return Task.FromResult(token);

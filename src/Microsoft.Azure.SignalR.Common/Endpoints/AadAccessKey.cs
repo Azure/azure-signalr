@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR
             Options = options;
         }
 
-        public Task<string> GenerateAadToken()
+        public Task<string> GenerateAadTokenAsync(CancellationToken ctoken = default)
         {
             if (Options is IAadTokenGenerator options)
             {
@@ -49,24 +49,25 @@ namespace Microsoft.Azure.SignalR
             throw new InvalidOperationException("This accesskey is not able to generate AccessToken, a TokenBasedAuthOptions is required.");
         }
 
-        public override async Task<string> GenerateAccessToken(
+        public override async Task<string> GenerateAccessTokenAsync(
             string audience,
             IEnumerable<Claim> claims,
             TimeSpan lifetime,
-            AccessTokenAlgorithm algorithm)
+            AccessTokenAlgorithm algorithm,
+            CancellationToken ctoken = default)
         {
             await InitializedTask;
             if (!Authorized)
             {
                 throw new AzureSignalRAccessTokenNotAuthorizedException();
             }
-            return await base.GenerateAccessToken(audience, claims, lifetime, algorithm);
+            return await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm);
         }
 
-        private async Task AuthorizeAsync(string serverId, CancellationToken token = default)
+        private async Task AuthorizeAsync(string serverId, CancellationToken ctoken = default)
         {
-            var aadToken = await GenerateAadToken();
-            await AuthorizeWithTokenAsync(Endpoint, Port, serverId, aadToken, token);
+            var aadToken = await GenerateAadTokenAsync(ctoken);
+            await AuthorizeWithTokenAsync(Endpoint, Port, serverId, aadToken, ctoken);
         }
 
         private async Task AuthorizeWithTokenAsync(string endpoint, int? port, string serverId, string accessToken, CancellationToken token = default)
