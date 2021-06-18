@@ -42,6 +42,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
 
+        // TODO: make obsolete once `ServiceHubContextBuilder.WithNewtonsoftJsonHubProtocol()` are public.
         /// <summary>
         /// Gets the json serializer settings that will be used to serialize content sent to Azure SignalR Service.
         /// </summary>
