@@ -59,7 +59,7 @@ namespace Microsoft.Azure.SignalR
             CancellationToken cancellationToken = default)
         {
             using var httpClient = _httpClientFactory.CreateClient();
-            var request = BuildRequest(api, httpMethod, productInfo, methodName, args);
+            using var request = BuildRequest(api, httpMethod, productInfo, methodName, args);
             HttpResponseMessage response = null;
 
             try
@@ -84,7 +84,6 @@ namespace Microsoft.Azure.SignalR
             finally
             {
                 response?.Dispose();
-                request.Dispose();
             }
         }
 
