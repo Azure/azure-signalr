@@ -10,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Primitives;
-using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -19,21 +18,19 @@ namespace Microsoft.Azure.SignalR.Management
         private const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
         private const string TtlOutOfRangeErrorMessage = "Ttl cannot be less than 0.";
 
-        private static readonly RestClient _restClient = new RestClient();
-
+        private readonly RestClient _restClient;
         private readonly RestApiProvider _restApiProvider;
         private readonly string _productInfo;
         private readonly string _hubName;
         private readonly string _appName;
 
-        public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string productInfo, string appName, JsonSerializerSettings jsonSerializerSettings)
+        public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string productInfo, string appName, RestClient restClient)
         {
             _restApiProvider = new RestApiProvider(endpoint);
             _productInfo = productInfo;
             _appName = appName;
             _hubName = hubName;
-
-            _restClient.JsonSerializerSettings = jsonSerializerSettings;
+            _restClient = restClient;
         }
 
         public override async Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)

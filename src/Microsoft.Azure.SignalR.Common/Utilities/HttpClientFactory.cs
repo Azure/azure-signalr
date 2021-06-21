@@ -6,22 +6,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class HttpClientFactory
+    internal static class HttpClientFactory
     {
-        private readonly static IHttpClientFactory _httpClientFactory;
-
-        static HttpClientFactory()
-        {
-            var serviceCollection = new ServiceCollection();
-            serviceCollection.AddHttpClient();
-            var services = serviceCollection.BuildServiceProvider();
-
-            _httpClientFactory = services.GetRequiredService<IHttpClientFactory>();
-        }
-
-        public static HttpClient CreateClient()
-        {
-            return _httpClientFactory.CreateClient();
-        }
+        public static IHttpClientFactory Instance { get; } = new ServiceCollection().AddHttpClient()
+                                                                                    .BuildServiceProvider()
+                                                                                    .GetRequiredService<IHttpClientFactory>();
     }
 }

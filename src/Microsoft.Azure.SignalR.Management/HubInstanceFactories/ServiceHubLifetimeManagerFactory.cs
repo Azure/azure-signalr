@@ -3,6 +3,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Net.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -41,7 +42,9 @@ namespace Microsoft.Azure.SignalR.Management
                             var newtonsoftServiceHubProtocolOptions = _serviceProvider.GetService<IOptions<NewtonsoftServiceHubProtocolOptions>>();
                             payloadSerializerSettings = newtonsoftServiceHubProtocolOptions.Value.PayloadSerializerSettings;
                         }
-                        return new RestHubLifetimeManager(hubName, new ServiceEndpoint(_options.ConnectionString), _options.ProductInfo, _options.ApplicationName, payloadSerializerSettings);
+                        var httpClientFactory = _serviceProvider.GetRequiredService<IHttpClientFactory>();
+                        var restClient = new RestClient(httpClientFactory, payloadSerializerSettings);
+                        return new RestHubLifetimeManager(hubName, new ServiceEndpoint(_options.ConnectionString), _options.ProductInfo, _options.ApplicationName, restClient);
                     }
                 default: throw new InvalidEnumArgumentException(nameof(ServiceManagerOptions.ServiceTransportType), (int)_options.ServiceTransportType, typeof(ServiceTransportType));
             }
