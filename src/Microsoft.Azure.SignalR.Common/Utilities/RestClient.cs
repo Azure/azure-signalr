@@ -58,32 +58,34 @@ namespace Microsoft.Azure.SignalR
             Func<HttpResponseMessage, Task<bool>> handleExpectedResponseAsync = null,
             CancellationToken cancellationToken = default)
         {
-            var httpClient = _httpClientFactory.CreateClient();
+            using var httpClient = _httpClientFactory.CreateClient();
             var request = BuildRequest(api, httpMethod, productInfo, methodName, args);
-            HttpResponseMessage response;
+            HttpResponseMessage response = null;
 
             try
             {
                 response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                if (handleExpectedResponseAsync == null)
+                {
+                    await ThrowExceptionOnResponseFailureAsync(response);
+                }
+                else
+                {
+                    if (!await handleExpectedResponseAsync(response))
+                    {
+                        await ThrowExceptionOnResponseFailureAsync(response);
+                    }
+                }
             }
             catch (HttpRequestException ex)
             {
                 throw new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), ex);
             }
-
-            if (handleExpectedResponseAsync == null)
+            finally
             {
-                await ThrowExceptionOnResponseFailureAsync(response);
+                response?.Dispose();
+                request.Dispose();
             }
-            else
-            {
-                if (!await handleExpectedResponseAsync(response))
-                {
-                    await ThrowExceptionOnResponseFailureAsync(response);
-                }
-            }
-
-            response.Dispose();
         }
 
         public async Task ThrowExceptionOnResponseFailureAsync(HttpResponseMessage response)
