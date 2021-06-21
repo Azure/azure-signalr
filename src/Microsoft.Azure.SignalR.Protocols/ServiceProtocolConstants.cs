@@ -32,5 +32,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         public const int CheckUserExistenceWithAckMessageType = 25;
         public const int UserJoinGroupWithAckMessageType = 26;
         public const int UserLeaveGroupWithAckMessageType = 27;
+        public const int AccessKeyRequestType = 28;
+        public const int AccessKeyResponseType = 29;
     }
 }

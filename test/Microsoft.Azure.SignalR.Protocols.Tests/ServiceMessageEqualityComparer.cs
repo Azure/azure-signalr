@@ -28,6 +28,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return HandshakeRequestMessagesEqual(handshakeRequestMessage, (HandshakeRequestMessage)y);
                 case HandshakeResponseMessage handshakeResponseMessage:
                     return HandshakeResponseMessagesEqual(handshakeResponseMessage, (HandshakeResponseMessage)y);
+                case AccessKeyRequestMessage accessKeyRequestMessage:
+                    return AccessKeyRequestMessageEqual(accessKeyRequestMessage, (AccessKeyRequestMessage)y);
+                case AccessKeyResponseMessage accessKeyResponseMessage:
+                    return AccessKeyResponseMessageEqual(accessKeyResponseMessage, (AccessKeyResponseMessage)y);
                 case PingMessage _:
                     return y is PingMessage;
                 case OpenConnectionMessage openConnectionMessage:
@@ -97,6 +101,20 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         private bool HandshakeResponseMessagesEqual(HandshakeResponseMessage x, HandshakeResponseMessage y)
         {
             return StringEqual(x.ErrorMessage, y.ErrorMessage);
+        }
+
+        private bool AccessKeyRequestMessageEqual(AccessKeyRequestMessage x, AccessKeyRequestMessage y)
+        {
+            return StringEqual(x.Token, y.Token) &&
+                StringEqual(x.Kid, y.Kid);
+        }
+
+        private bool AccessKeyResponseMessageEqual(AccessKeyResponseMessage x, AccessKeyResponseMessage y)
+        {
+            return StringEqual(x.Kid, y.Kid) &&
+                StringEqual(x.AccessKey, y.AccessKey) &&
+                StringEqual(x.ErrorType, y.ErrorType) &&
+                StringEqual(x.ErrorMessage, y.ErrorMessage);
         }
 
         private bool OpenConnectionMessagesEqual(OpenConnectionMessage x, OpenConnectionMessage y)
