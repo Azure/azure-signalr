@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.IO.Pipelines;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -24,6 +25,8 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         public IDuplexPipe Application { get; private set; }
 
         public Task ConnectionCreated => _created.Task;
+
+        public ConcurrentQueue<ServiceMessage> ReceivedMessages { get; } = new();
 
         public TestServiceConnection(ServiceConnectionStatus status = ServiceConnectionStatus.Connected, bool throws = false,
             ILogger logger = null,
@@ -107,6 +110,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             {
                 return Task.FromResult(false);
             }
+            ReceivedMessages.Enqueue(serviceMessage);
 
             return Task.FromResult(true);
         }
