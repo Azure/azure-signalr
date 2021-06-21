@@ -257,6 +257,24 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new HandshakeResponseMessage("Version mismatch."),
                 binary: "kwKxVmVyc2lvbiBtaXNtYXRjaC6A"),
             new ProtocolTestData(
+                name: "AccessKeyRequestMessage",
+                message: new AccessKeyRequestMessage("token"),
+                binary: "lByldG9rZW7AgA=="),
+            new ProtocolTestData(
+                name: "AccessKeyRequestMessageWithKid",
+                message: new AccessKeyRequestMessage("token") {
+                    Kid = "kid"
+                },
+                binary: "lByldG9rZW6ja2lkgA=="),
+            new ProtocolTestData(
+                name: "AccessKeyResponseMessage",
+                message: new AccessKeyResponseMessage("kid", "key"),
+                binary: "lh2ja2lko2tlecDAgA=="),
+            new ProtocolTestData(
+                name: "AccessKeyResponseMessageWithException",
+                message: new AccessKeyResponseMessage(new ArgumentNullException("token invalid")),
+                binary: "lh3AwLVBcmd1bWVudE51bGxFeGNlcHRpb27ZMVZhbHVlIGNhbm5vdCBiZSBudWxsLiAoUGFyYW1ldGVyICd0b2tlbiBpbnZhbGlkJymA"),
+            new ProtocolTestData(
                 name: "Ping",
                 message: PingMessage.Instance,
                 binary: "kQM="),
