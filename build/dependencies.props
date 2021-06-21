@@ -47,6 +47,8 @@
     <MicrosoftConfigurationUserSecretVersion>2.2.0</MicrosoftConfigurationUserSecretVersion>
     <MicrosoftConfigurationEnvironmentVariablesVersion>2.2.0</MicrosoftConfigurationEnvironmentVariablesVersion>
     <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.0.11</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
+    <MicrosoftAspNetCoreSignalRProtocolsNewtonsoftJson3_0Version>3.0.0</MicrosoftAspNetCoreSignalRProtocolsNewtonsoftJson3_0Version>
+    <MicrosoftAspNetCoreSignalRProtocolsNewtonsoftJson5_0Version>5.0.1</MicrosoftAspNetCoreSignalRProtocolsNewtonsoftJson5_0Version>
 
     <!-- Signing -->
     <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>

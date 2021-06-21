@@ -51,6 +51,19 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
+        // todo: make public
+        internal ServiceManagerBuilder WithNewtonsoftJsonHubProtocol(Action<NewtonsoftServiceHubProtocolOptions> configure)
+        {
+            _services.AddNewtonsoftHubProtocol(configure);
+            return this;
+        }
+
+        // todo: make public
+        internal ServiceManagerBuilder WithNewtonsoftJsonHubProtocol()
+        {
+            return WithNewtonsoftJsonHubProtocol(o => { });
+        }
+
         [EditorBrowsable(EditorBrowsableState.Never)]
         public ServiceManagerBuilder WithCallingAssembly()
         {

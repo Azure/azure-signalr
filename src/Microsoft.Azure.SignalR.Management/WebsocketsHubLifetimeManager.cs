@@ -120,6 +120,31 @@ namespace Microsoft.Azure.SignalR.Management
 
         public Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken)
         {
+            if (string.IsNullOrEmpty(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
+            var message = new CloseConnectionMessage(connectionId, reason).WithTracingId();
+            if (message.TracingId != null)
+            {
+                MessageLog.StartToCloseConnection(Logger, message);
+            }
+            return WriteAsync(message);
+        }
+
+        public Task<bool> ConnectionExistsAsync(string connectionId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken = default)
+        {
             throw new NotImplementedException();
         }
 

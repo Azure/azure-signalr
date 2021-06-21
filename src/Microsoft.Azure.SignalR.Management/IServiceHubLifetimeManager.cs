@@ -10,6 +10,12 @@ namespace Microsoft.Azure.SignalR.Management
     {
         Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken);
 
+        Task<bool> ConnectionExistsAsync(string connectionId, CancellationToken cancellationToken);
+
+        Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken);
+
+        Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken);
+
         Task DisposeAsync();
     }
 }
