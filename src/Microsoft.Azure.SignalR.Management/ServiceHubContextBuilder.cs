@@ -87,8 +87,8 @@ namespace Microsoft.Azure.SignalR.Management
         public async Task<ServiceHubContext> CreateAsync(string hubName, CancellationToken cancellationToken)
         {
             //add requried services
-            var transportType = _services.BuildServiceProvider()
-                .GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ServiceTransportType;
+            using var serviceProvider = _services.BuildServiceProvider();
+            var transportType = serviceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ServiceTransportType;
             var services = new ServiceCollection().Add(_services);
             services.AddHub(hubName, transportType);
             _configureAction?.Invoke(services);
