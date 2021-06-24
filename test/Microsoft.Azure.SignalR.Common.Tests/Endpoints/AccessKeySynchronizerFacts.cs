@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalR.Common
     {
         private static AccessKeySynchronizer GetInstanceForTest()
         {
-            return new AccessKeySynchronizer(new DefaultServerNameProvider(), NullLoggerFactory.Instance, false);
+            return new AccessKeySynchronizer(NullLoggerFactory.Instance, false);
         }
 
         [Fact]
