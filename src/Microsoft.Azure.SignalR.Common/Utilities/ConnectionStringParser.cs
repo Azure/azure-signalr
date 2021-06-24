@@ -3,9 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using Azure.Identity;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -18,7 +17,6 @@ namespace Microsoft.Azure.SignalR
         private const string ClientIdProperty = "clientId";
         private const string ClientSecretProperty = "clientSecret";
         private const string EndpointProperty = "endpoint";
-        private const string FileNotExists = "Client cert file not exists.";
         private const string InvalidVersionValueFormat = "Version {0} is not supported.";
         private const string PortProperty = "port";
         // For SDK 1.x, only support Azure SignalR Service 1.x
@@ -134,20 +132,13 @@ namespace Microsoft.Azure.SignalR
             {
                 if (dict.TryGetValue(TenantIdProperty, out var tenantId))
                 {
-                    var options = new AadApplicationOptions(clientId, tenantId);
-
                     if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
                     {
-                        return new AadAccessKey(options.WithClientSecret(clientSecret), endpoint, port);
+                        return new AadAccessKey(new ClientSecretCredential(tenantId, clientId, clientSecret), endpoint, port);
                     }
-                    else if (dict.TryGetValue(ClientCertProperty, out var clientCert))
+                    else if (dict.TryGetValue(ClientCertProperty, out var clientCertPath))
                     {
-                        if (!File.Exists(clientCert))
-                        {
-                            throw new FileNotFoundException(FileNotExists, clientCert);
-                        }
-                        var cert = new X509Certificate2(clientCert);
-                        return new AadAccessKey(options.WithClientCert(cert), endpoint, port);
+                        return new AadAccessKey(new ClientCertificateCredential(tenantId, clientId, clientCertPath), endpoint, port);
                     }
                     else
                     {
@@ -156,12 +147,12 @@ namespace Microsoft.Azure.SignalR
                 }
                 else
                 {
-                    return new AadAccessKey(new AadManagedIdentityOptions(clientId), endpoint, port);
+                    return new AadAccessKey(new ManagedIdentityCredential(clientId), endpoint, port);
                 }
             }
             else
             {
-                return new AadAccessKey(new AadManagedIdentityOptions(), endpoint, port);
+                return new AadAccessKey(new ManagedIdentityCredential(), endpoint, port);
             }
         }
 
