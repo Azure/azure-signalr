@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    /// TODO: make public later
-    internal abstract class ClientManager
+    /// <summary>
+    /// A manager abstraction for managing the clients in a hub.
+    /// </summary>
+    public abstract class ClientManager
     {
         /// <summary>
         /// Close a connection asynchronously.
