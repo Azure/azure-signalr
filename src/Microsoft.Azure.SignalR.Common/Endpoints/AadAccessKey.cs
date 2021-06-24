@@ -64,22 +64,19 @@ namespace Microsoft.Azure.SignalR
             return await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm);
         }
 
-        private async Task AuthorizeAsync(string serverId, CancellationToken ctoken = default)
+        private async Task AuthorizeAsync(CancellationToken ctoken = default)
         {
             var aadToken = await GenerateAadTokenAsync(ctoken);
-            await AuthorizeWithTokenAsync(Endpoint, Port, serverId, aadToken, ctoken);
+            await AuthorizeWithTokenAsync(Endpoint, Port, aadToken, ctoken);
         }
 
-        private async Task AuthorizeWithTokenAsync(string endpoint, int? port, string serverId, string accessToken, CancellationToken token = default)
+        private async Task AuthorizeWithTokenAsync(string endpoint, int? port, string accessToken, CancellationToken token = default)
         {
             if (port != null && port != 443)
             {
                 endpoint += $":{port}";
             }
-            var api = new RestApiEndpoint(endpoint + "/api/v1/auth/accessKey", accessToken)
-            {
-                Query = new Dictionary<string, StringValues> { { "serverId", serverId } }
-            };
+            var api = new RestApiEndpoint(endpoint + "/api/v1/auth/accessKey", accessToken);
 
             await new RestClient().SendAsync(
                 api,
@@ -121,7 +118,7 @@ namespace Microsoft.Azure.SignalR
             return true;
         }
 
-        internal async Task UpdateAccessKeyAsync(string serverName)
+        internal async Task UpdateAccessKeyAsync()
         {
             if (DateTime.UtcNow - _lastUpdatedTime < AuthorizeInterval)
             {
@@ -134,7 +131,7 @@ namespace Microsoft.Azure.SignalR
                 var source = new CancellationTokenSource(AuthorizeTimeout);
                 try
                 {
-                    await AuthorizeAsync(serverName, source.Token);
+                    await AuthorizeAsync(source.Token);
                     _lastUpdatedTime = DateTime.UtcNow;
                     _isAuthorized = true;
                     _initializedTcs.TrySetResult(null);

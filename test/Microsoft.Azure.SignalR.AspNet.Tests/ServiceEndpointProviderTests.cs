@@ -69,10 +69,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { });
 
-            var clientToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
+            var serverToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
 
             var handler = new JwtSecurityTokenHandler();
-            var principal = handler.ValidateToken(clientToken, new TokenValidationParameters
+            var principal = handler.ValidateToken(serverToken, new TokenValidationParameters
             {
                 ValidateIssuer = false,
                 IssuerSigningKey = SecurityKey,
@@ -90,10 +90,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { ApplicationName = "prefix" });
 
-            var clientToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
+            var serverToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
 
             var handler = new JwtSecurityTokenHandler();
-            var principal = handler.ValidateToken(clientToken, new TokenValidationParameters
+            var principal = handler.ValidateToken(serverToken, new TokenValidationParameters
             {
                 ValidateIssuer = false,
                 IssuerSigningKey = SecurityKey,
@@ -132,10 +132,10 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
             var connectionString = "Endpoint=http://localhost;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(connectionString), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
-            var generatedToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
+            var serverToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
 
             var handler = new JwtSecurityTokenHandler();
-            var token = handler.ReadJwtToken(generatedToken);
+            var token = handler.ReadJwtToken(serverToken);
 
             Assert.Equal(algorithm.ToString(), token.SignatureAlgorithm);
         }

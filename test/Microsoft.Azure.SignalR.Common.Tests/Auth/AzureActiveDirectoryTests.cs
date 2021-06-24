@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         {
             var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
             var key = new AadAccessKey(options, "https://localhost", 8080);
-            await key.UpdateAccessKeyAsync("serverId");
+            await key.UpdateAccessKeyAsync();
 
             Assert.True(key.Authorized);
             Assert.NotNull(key.Id);
