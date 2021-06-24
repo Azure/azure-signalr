@@ -42,6 +42,8 @@ namespace Microsoft.Azure.SignalR
             public static readonly TimeSpan DefaultServersPingInterval = TimeSpan.FromSeconds(5);
             // Depends on DefaultStatusPingInterval, make 1/2 to fast check.
             public static readonly TimeSpan DefaultCloseDelayInterval = TimeSpan.FromSeconds(5);
+
+            public static readonly TimeSpan DefaultClientCloseTimeout = TimeSpan.FromSeconds(15);
             
             // Custom handshake timeout of SignalR Service
             public const int DefaultHandshakeTimeout = 15;

@@ -225,30 +225,30 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Cancel the outgoing process
         /// </summary>
-        public void CancelOutgoing(int millisecondsDelay = 0)
+        public void CancelOutgoing(TimeSpan? delay = null)
         {
-            if (millisecondsDelay <= 0)
+            if (!delay.HasValue)
             {
                 _abortOutgoingCts.Cancel();
             }
             else
             {
-                _abortOutgoingCts.CancelAfter(millisecondsDelay);
+                _abortOutgoingCts.CancelAfter(delay.Value);
             }
         }
 
         /// <summary>
         /// Cancel the application task
         /// </summary>
-        public void CancelApplication(int millisecondsDelay = 0)
+        public void CancelApplication(TimeSpan? delay = null)
         {
-            if (millisecondsDelay <= 0)
+            if (!delay.HasValue)
             {
                 _abortApplicationCts.Cancel();
             }
             else
             {
-                _abortApplicationCts.CancelAfter(millisecondsDelay);
+                _abortApplicationCts.CancelAfter(delay.Value);
             }
         }
 

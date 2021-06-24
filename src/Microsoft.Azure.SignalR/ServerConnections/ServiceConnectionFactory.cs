@@ -16,8 +16,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly IServerNameProvider _nameProvider;
         private readonly IServiceEventHandler _serviceEventHandler;
-
-        public GracefulShutdownMode ShutdownMode { get; set; } = GracefulShutdownMode.Off;
+        private readonly ServiceOptions _options;
 
         public Action<HttpContext> ConfigureContext { get; set; }
 
@@ -29,7 +28,8 @@ namespace Microsoft.Azure.SignalR
             ConnectionDelegate connectionDelegate,
             IClientConnectionFactory clientConnectionFactory,
             IServerNameProvider nameProvider,
-            IServiceEventHandler serviceEventHandler)
+            IServiceEventHandler serviceEventHandler,
+            ServiceOptions options)
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
@@ -39,6 +39,7 @@ namespace Microsoft.Azure.SignalR
             _clientConnectionFactory = clientConnectionFactory;
             _nameProvider = nameProvider;
             _serviceEventHandler = serviceEventHandler;
+            _options = options;
         }
 
         public virtual IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
@@ -56,7 +57,8 @@ namespace Microsoft.Azure.SignalR
                 serviceMessageHandler,
                 _serviceEventHandler,
                 type,
-                ShutdownMode
+                _options.GracefulShutdown?.Mode ?? GracefulShutdownMode.Off,
+                _options.ClientCloseTimeout
             )
             {
                 ConfigureContext = ConfigureContext

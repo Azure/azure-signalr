@@ -19,8 +19,6 @@ namespace Microsoft.Azure.SignalR
 {
     internal partial class ServiceConnection : ServiceConnectionBase
     {
-        private const int DefaultCloseTimeoutMilliseconds = 5000;
-
         // Fix issue: https://github.com/Azure/azure-signalr/issues/198
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
         private static readonly Dictionary<string, string> CustomHeader = new Dictionary<string, string> { { Constants.AsrsUserAgent, ProductInfo.GetProductInfo() } };
@@ -30,7 +28,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionFactory _clientConnectionFactory;
-        private readonly int _closeTimeOutMilliseconds;
+        private readonly TimeSpan? _closeTimeOut;
         private readonly IClientConnectionManager _clientConnectionManager;
 
         private readonly ConcurrentDictionary<string, string> _connectionIds =
@@ -56,14 +54,13 @@ namespace Microsoft.Azure.SignalR
                                  IServiceEventHandler serviceEventHandler,
                                  ServiceConnectionType connectionType = ServiceConnectionType.Default,
                                  GracefulShutdownMode mode = GracefulShutdownMode.Off,
-                                 int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds
-            ) : base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, serviceEventHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode)
+                                 TimeSpan? closeTimeOut = null) : base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, serviceEventHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode)
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
-            _closeTimeOutMilliseconds = closeTimeOutMilliseconds;
+            _closeTimeOut = closeTimeOut;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
@@ -220,7 +217,7 @@ namespace Microsoft.Azure.SignalR
 
                     // app task completes connection.Transport.Output, which will completes connection.Application.Input and ends the transport
                     // Transports are written by us and are well behaved, wait for them to drain
-                    connection.CancelOutgoing(_closeTimeOutMilliseconds);
+                    connection.CancelOutgoing(_closeTimeOut);
 
                     // transport never throws
                     await transport;
@@ -231,7 +228,7 @@ namespace Microsoft.Azure.SignalR
                     Log.WaitingForApplication(Logger);
 
                     // Wait on the application task to complete
-                    connection.CancelApplication(_closeTimeOutMilliseconds);
+                    connection.CancelApplication(_closeTimeOut);
                     try
                     {
                         await app;
@@ -440,7 +437,7 @@ namespace Microsoft.Azure.SignalR
 
                 // lock and wait
                 // Register the cancellation after timeout
-                connection.CancelApplication(_closeTimeOutMilliseconds);
+                connection.CancelApplication(_closeTimeOut);
 
                 // wait for the connection's lifetime task to end
                 await connection.LifetimeTask;

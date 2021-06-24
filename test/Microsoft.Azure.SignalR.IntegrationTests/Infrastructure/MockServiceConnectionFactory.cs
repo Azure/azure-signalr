@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
                   connectionDelegate,
                   clientConnectionFactory,
                   nameProvider,
-                  null)
+                  null, new ServiceOptions())
         {
             _mockService = mockService;
         }

@@ -90,5 +90,11 @@ namespace Microsoft.Azure.SignalR
         /// Default value is 5, limited to [1, 300].
         /// </summary>
         public int? MaxPollIntervalInSeconds { get; set; }
+
+        /// <summary>
+        /// After the transport layer for the client ends, if the client hub logic fails to end in this period, it will be terminated.
+        /// The default value is 15 seconds
+        /// </summary>
+        public TimeSpan ClientCloseTimeout { get; set; } = Constants.Periods.DefaultClientCloseTimeout;
     }
 }

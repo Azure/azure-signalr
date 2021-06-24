@@ -150,10 +150,10 @@ namespace Microsoft.Azure.SignalR
                 connectionDelegate,
                 _clientConnectionFactory,
                 _nameProvider,
-                _serviceEventHandler)
+                _serviceEventHandler,
+                _options)
             {
                 ConfigureContext = contextConfig,
-                ShutdownMode = _options.GracefulShutdown.Mode
             };
         }
 
