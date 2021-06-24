@@ -302,6 +302,19 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
+        private Task OnAccessKeyMessageAsync(AccessKeyResponseMessage keyMessage)
+        {
+            if (string.IsNullOrEmpty(keyMessage.ErrorType))
+            {
+                return _serviceMessageHandler.HandleKeyAsync(keyMessage);
+            }
+            else
+            {
+                Log.AuthorizeFailed(Logger, new AzureSignalRAccessTokenNotAuthorizedException(keyMessage.ErrorMessage));
+                return Task.CompletedTask;
+            }
+        }
+
         private async Task<ConnectionContext> EstablishConnectionAsync(string target)
         {
             try
@@ -513,6 +526,7 @@ namespace Microsoft.Azure.SignalR
                 PingMessage pingMessage => OnPingMessageAsync(pingMessage),
                 AckMessage ackMessage => OnAckMessageAsync(ackMessage),
                 ServiceEventMessage eventMessage => OnEventMessageAsync(eventMessage),
+                AccessKeyResponseMessage keyMessage => OnAccessKeyMessageAsync(keyMessage),
                 _ => Task.CompletedTask,
             };
         }
@@ -652,9 +666,17 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _receivedInstanceOfflinePing =
                 LoggerMessage.Define<string>(LogLevel.Information, new EventId(31, "ReceivedInstanceOfflinePing"), "Received instance offline service ping: {InstanceId}");
 
+            private static readonly Action<ILogger, Exception> _authorizeFailed =
+                LoggerMessage.Define(LogLevel.Error, new EventId(32, "AuthorizeFailed"), "Server connection authorize failed, please check the role assignments, role changes may take up to 10 minutes to take effect.");
+
             public static void FailedToWrite(ILogger logger, ulong? tracingId, string serviceConnectionId, Exception exception)
             {
                 _failedToWrite(logger, tracingId, exception.Message, serviceConnectionId, null);
+            }
+
+            public static void AuthorizeFailed(ILogger logger, Exception exception)
+            {
+                _authorizeFailed(logger, exception);
             }
 
             public static void FailedToConnect(ILogger logger, string endpoint, string serviceConnectionId, Exception exception)
