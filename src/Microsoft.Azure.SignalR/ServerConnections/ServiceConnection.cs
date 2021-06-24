@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IConnectionFactory _connectionFactory;
         private readonly IClientConnectionFactory _clientConnectionFactory;
-        private readonly TimeSpan? _closeTimeOut;
+        private readonly TimeSpan _closeTimeOut;
         private readonly IClientConnectionManager _clientConnectionManager;
 
         private readonly ConcurrentDictionary<string, string> _connectionIds =
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.SignalR
             _connectionFactory = connectionFactory;
             _connectionDelegate = connectionDelegate;
             _clientConnectionFactory = clientConnectionFactory;
-            _closeTimeOut = closeTimeOut;
+            _closeTimeOut = closeTimeOut.HasValue ? closeTimeOut.Value : Constants.Periods.DefaultClientCloseTimeout;
         }
 
         protected override Task<ConnectionContext> CreateConnection(string target = null)
