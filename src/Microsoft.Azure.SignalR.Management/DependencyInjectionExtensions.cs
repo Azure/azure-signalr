@@ -67,7 +67,7 @@ namespace Microsoft.Azure.SignalR.Management
                 .AddSingleton<ConnectionFactory>()
                 .AddSingleton<IConnectionFactory, ManagementConnectionFactory>()
                 .AddSingleton<ConnectionDelegate>((connectionContext) => Task.CompletedTask)
-                .AddSingleton<IServiceConnectionFactory, ServiceConnectionFactory>()
+                .AddSingleton<IServiceConnectionFactory, ServiceWeakConnectionFactory>()
                 .AddSingleton<MultiEndpointConnectionContainerFactory>()
                 .AddSingleton<IConfigureOptions<HubOptions>, ManagementHubOptionsSetup>();
 
