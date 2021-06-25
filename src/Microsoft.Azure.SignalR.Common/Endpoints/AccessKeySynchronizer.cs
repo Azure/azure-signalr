@@ -8,7 +8,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -17,13 +16,11 @@ namespace Microsoft.Azure.SignalR
         private readonly ConcurrentDictionary<ServiceEndpoint, object> _endpoints = new ConcurrentDictionary<ServiceEndpoint, object>(ReferenceEqualityComparer.Instance);
 
         private readonly ILoggerFactory _factory;
-        private readonly IServerNameProvider _provider;
         private readonly TimerAwaitable _timer = new TimerAwaitable(TimeSpan.Zero, TimeSpan.FromMinutes(5));
 
         public AccessKeySynchronizer(
-            IServerNameProvider nameProvider,
             ILoggerFactory loggerFactory
-            ) : this(nameProvider, loggerFactory, true)
+            ) : this(loggerFactory, true)
         {
         }
 
@@ -31,7 +28,6 @@ namespace Microsoft.Azure.SignalR
         /// For test only.
         /// </summary>
         internal AccessKeySynchronizer(
-            IServerNameProvider serverNameProvider,
             ILoggerFactory loggerFactory,
             bool start
         )
@@ -41,7 +37,6 @@ namespace Microsoft.Azure.SignalR
                 _ = UpdateAsync();
             }
 
-            _provider = serverNameProvider ?? throw new ArgumentNullException(nameof(serverNameProvider));
             _factory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
@@ -90,11 +85,9 @@ namespace Microsoft.Azure.SignalR
         private async Task UpdateAccessKeyAsync(AadAccessKey key)
         {
             var logger = _factory.CreateLogger<AadAccessKey>();
-            var serverName = _provider.GetName();
-
             try
             {
-                await key.UpdateAccessKeyAsync(serverName);
+                await key.UpdateAccessKeyAsync();
                 Log.SucceedToAuthorizeAccessKey(logger, key.Endpoint);
             }
             catch (Exception e)

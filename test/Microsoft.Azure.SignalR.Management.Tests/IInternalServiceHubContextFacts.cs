@@ -90,7 +90,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             Task testAction(ServiceHubContext hubContext) => hubContext.UserGroups.AddToGroupAsync(UserId, GroupName);
 
-            void assertAction(ConcurrentDictionary<HubServiceEndpoint, List<MessageVerifiableConnection>> createdConnections)
+            void assertAction(Dictionary<HubServiceEndpoint, List<TestServiceConnection>> createdConnections)
             {
                 foreach (var list in createdConnections.Values)
                 {
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             Task testAction(ServiceHubContext hubContext) => hubContext.UserGroups.AddToGroupAsync(UserId, GroupName, ttl);
 
-            void assertAction(ConcurrentDictionary<HubServiceEndpoint, List<MessageVerifiableConnection>> createdConnections)
+            void assertAction(Dictionary<HubServiceEndpoint, List<TestServiceConnection>> createdConnections)
             {
                 foreach (var list in createdConnections.Values)
                 {
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             Task testAction(ServiceHubContext hubContext) => hubContext.UserGroups.RemoveFromGroupAsync(userId, group);
 
-            void assertAction(ConcurrentDictionary<HubServiceEndpoint, List<MessageVerifiableConnection>> createdConnections)
+            void assertAction(Dictionary<HubServiceEndpoint, List<TestServiceConnection>> createdConnections)
             {
                 foreach (var list in createdConnections.Values)
                 {
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             Task testAction(ServiceHubContext hubContext) => hubContext.UserGroups.RemoveFromAllGroupsAsync(userId);
 
-            void assertAction(ConcurrentDictionary<HubServiceEndpoint, List<MessageVerifiableConnection>> createdConnections)
+            void assertAction(Dictionary<HubServiceEndpoint, List<TestServiceConnection>> createdConnections)
             {
                 foreach (var list in createdConnections.Values)
                 {
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             await MockConnectionTestAsync(serviceTransportType, testAction, assertAction);
         }
 
-        private async Task MockConnectionTestAsync(ServiceTransportType serviceTransportType, Func<ServiceHubContext, Task> testAction, Action<ConcurrentDictionary<HubServiceEndpoint, List<MessageVerifiableConnection>>> assertAction)
+        private async Task MockConnectionTestAsync(ServiceTransportType serviceTransportType, Func<ServiceHubContext, Task> testAction, Action<Dictionary<HubServiceEndpoint, List<TestServiceConnection>>> assertAction)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
                 await testAction.Invoke(hubContext);
 
-                var createdConnections = connectionFactory.CreatedConnections;
+                var createdConnections = connectionFactory.CreatedConnections.ToDictionary(p => p.Key, p => p.Value.Select(conn => conn as TestServiceConnection).ToList());
                 assertAction.Invoke(createdConnections);
             }
         }

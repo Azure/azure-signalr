@@ -8,7 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -23,11 +22,16 @@ namespace Microsoft.Azure.SignalR
             _userId = nameProvider?.GetName();
         }
 
-        public async Task<ConnectionContext> ConnectAsync(HubServiceEndpoint endpoint, TransferFormat transferFormat, string connectionId, string target, CancellationToken cancellationToken = default, IDictionary<string, string> headers = null)
+        public async Task<ConnectionContext> ConnectAsync(HubServiceEndpoint hubServiceEndpoint,
+                                                          TransferFormat transferFormat,
+                                                          string connectionId,
+                                                          string target,
+                                                          CancellationToken cancellationToken = default,
+                                                          IDictionary<string, string> headers = null)
         {
-            var provider = endpoint.Provider;
-            var hubName = endpoint.Hub;
-            Func<Task<string>> accessTokenGenerater = () => provider.GenerateServerAccessTokenAsync(hubName, _userId);
+            var provider = hubServiceEndpoint.Provider;
+            var hubName = hubServiceEndpoint.Hub;
+            Task<string> accessTokenGenerater() => provider.GenerateServerAccessTokenAsync(hubName, _userId);
             var url = GetServiceUrl(provider, hubName, connectionId, target);
             var connectionOptions = new WebSocketConnectionOptions
             {

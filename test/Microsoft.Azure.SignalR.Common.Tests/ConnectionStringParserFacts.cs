@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using Azure.Identity;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests
@@ -31,11 +32,13 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         }
 
         [Theory]
-        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;", ManagedIdentityType.System)]
-        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientSecret=xxxx;", ManagedIdentityType.System)] // simply ignore the clientSecret
-        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;tenantId=xxxx;", ManagedIdentityType.System)] // simply ignore the tenantId
-        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientId=123;", ManagedIdentityType.UserAssigned)]
-        internal void ValidMSIConnectionString(string expectedEndpoint, string connectionString, ManagedIdentityType expectedType)
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;")]
+        // simply ignore the clientSecret
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientSecret=xxxx;")]
+        // simply ignore the tenantId
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;tenantId=xxxx;")]
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientId=123;")]
+        internal void ValidMSIConnectionString(string expectedEndpoint, string connectionString)
         {
             var (accessKey, version, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
 
@@ -43,11 +46,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             Assert.IsType<AadAccessKey>(accessKey);
             if (accessKey is AadAccessKey aadAccessKey)
             {
-                Assert.IsType<AadManagedIdentityOptions>(aadAccessKey.Options);
-                if (aadAccessKey.Options is AadManagedIdentityOptions options)
-                {
-                    Assert.Equal(expectedType, options.ManagedIdentityType);
-                }
+                Assert.IsType<ManagedIdentityCredential>(aadAccessKey.TokenCredential);
             }
             Assert.Null(version);
             Assert.Null(accessKey.Port);
@@ -64,7 +63,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             Assert.IsType<AadAccessKey>(accessKey);
             if (accessKey is AadAccessKey aadAccessKey)
             {
-                Assert.IsType<AadApplicationOptions>(aadAccessKey.Options);
+                Assert.IsType<ClientSecretCredential>(aadAccessKey.TokenCredential);
             }
             Assert.Null(version);
             Assert.Null(accessKey.Port);

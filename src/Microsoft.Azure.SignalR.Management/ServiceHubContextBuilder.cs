@@ -60,19 +60,28 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
+        public ServiceHubContextBuilder WithNewtonsoftJsonHubProtocol(Action<NewtonsoftServiceHubProtocolOptions> configure)
+        {
+            if (configure is null)
+            {
+                throw new ArgumentNullException(nameof(configure));
+            }
+
+            _services.AddNewtonsoftHubProtocol(configure);
+            return this;
+        }
+
+        public ServiceHubContextBuilder WithNewtonsoftJsonHubProtocol()
+        {
+            return WithNewtonsoftJsonHubProtocol(o => { });
+        }
+
         /// <summary>
         /// Provides a hook to configure services before building.
         /// </summary>
         internal ServiceHubContextBuilder ConfigureServices(Action<IServiceCollection> configureAction)
         {
             _configureAction = configureAction;
-            return this;
-        }
-
-        internal ServiceHubContextBuilder WithCallingAssembly()
-        {
-            var assembly = Assembly.GetCallingAssembly();
-            _services.WithAssembly(assembly);
             return this;
         }
 
@@ -83,8 +92,8 @@ namespace Microsoft.Azure.SignalR.Management
         public async Task<ServiceHubContext> CreateAsync(string hubName, CancellationToken cancellationToken)
         {
             //add requried services
-            var transportType = _services.BuildServiceProvider()
-                .GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ServiceTransportType;
+            using var serviceProvider = _services.BuildServiceProvider();
+            var transportType = serviceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ServiceTransportType;
             var services = new ServiceCollection().Add(_services);
             services.AddHub(hubName, transportType);
             _configureAction?.Invoke(services);

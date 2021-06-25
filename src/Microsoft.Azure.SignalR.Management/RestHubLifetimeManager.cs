@@ -10,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Primitives;
-using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -19,21 +18,19 @@ namespace Microsoft.Azure.SignalR.Management
         private const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
         private const string TtlOutOfRangeErrorMessage = "Ttl cannot be less than 0.";
 
-        private static readonly RestClient _restClient = new RestClient();
-
+        private readonly RestClient _restClient;
         private readonly RestApiProvider _restApiProvider;
         private readonly string _productInfo;
         private readonly string _hubName;
         private readonly string _appName;
 
-        public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string productInfo, string appName, JsonSerializerSettings jsonSerializerSettings)
+        public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string productInfo, string appName, RestClient restClient)
         {
             _restApiProvider = new RestApiProvider(endpoint);
             _productInfo = productInfo;
             _appName = appName;
             _hubName = hubName;
-
-            _restClient.JsonSerializerSettings = jsonSerializerSettings;
+            _restClient = restClient;
         }
 
         public override async Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -240,6 +237,16 @@ namespace Microsoft.Azure.SignalR.Management
             return isUserInGroup;
         }
 
+        public async Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+            var api = await _restApiProvider.GetCloseConnectionEndpointAsync(_appName, _hubName, connectionId, reason);
+            await _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
+        }
+
         private static void ValidateUserIdAndGroupName(string userId, string groupName)
         {
             if (string.IsNullOrEmpty(userId))
@@ -251,6 +258,78 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
+        }
+
+        public async Task<bool> ConnectionExistsAsync(string connectionId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+            var exists = false;
+            var api = await _restApiProvider.GetCheckConnectionExistsEndpointAsync(_appName, _hubName, connectionId);
+            await _restClient.SendAsync(api, HttpMethod.Head, _productInfo, handleExpectedResponse: response =>
+            {
+                switch (response.StatusCode)
+                {
+                    case HttpStatusCode.OK:
+                        exists = true;
+                        return true;
+                    case HttpStatusCode.NotFound:
+                        return true;
+                    default:
+                        return false;
+                }
+            }, cancellationToken: cancellationToken);
+            return exists;
+        }
+
+        public async Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
+            }
+            var exists = false;
+            var api = await _restApiProvider.GetCheckUserExistsEndpointAsync(_appName, _hubName, userId);
+            await _restClient.SendAsync(api, HttpMethod.Head, _productInfo, handleExpectedResponse: response =>
+            {
+                switch (response.StatusCode)
+                {
+                    case HttpStatusCode.OK:
+                        exists = true;
+                        return true;
+                    case HttpStatusCode.NotFound:
+                        return true;
+                    default:
+                        return false;
+                }
+            }, cancellationToken: cancellationToken);
+            return exists;
+        }
+
+        public async Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(groupName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
+            }
+            var exists = false;
+            var api = await _restApiProvider.GetCheckGroupExistsEndpointAsync(_appName, _hubName, groupName);
+            await _restClient.SendAsync(api, HttpMethod.Head, _productInfo, handleExpectedResponse: response =>
+            {
+                switch (response.StatusCode)
+                {
+                    case HttpStatusCode.OK:
+                        exists = true;
+                        return true;
+                    case HttpStatusCode.NotFound:
+                        return true;
+                    default:
+                        return false;
+                }
+            }, cancellationToken: cancellationToken);
+            return exists;
         }
 
         public Task DisposeAsync() => Task.CompletedTask;

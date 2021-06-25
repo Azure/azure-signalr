@@ -61,7 +61,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var hub2 = new MultiEndpointServiceConnectionContainer(connectionFactory2, "hub2", 2, sem, router,
                     loggerFactory);
 
-                var connections = connectionFactory1.CreatedConnections.ToArray();
+                var connections = connectionFactory1.CreatedConnections.SelectMany(kv => kv.Value).ToArray();
                 Assert.Equal(4, connections.Length);
 
                 var connection1 = connections[0] as TestServiceConnection;

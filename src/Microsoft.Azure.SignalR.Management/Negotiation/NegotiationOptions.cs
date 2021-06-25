@@ -37,5 +37,10 @@ namespace Microsoft.Azure.SignalR.Management
         /// Gets or sets the flag indicates whether the client is a diagnostic client.
         /// </summary>
         public bool IsDiagnosticClient { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the flag indicates whether detailed errors are logged in the client side.
+        /// </summary>
+        public bool EnableDetailedErrors { get; set; } = false;
     }
 }

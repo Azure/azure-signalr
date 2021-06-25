@@ -103,6 +103,93 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
+    /// An access key request message.
+    /// </summary>
+    public class AccessKeyRequestMessage : ExtensibleServiceMessage
+    {
+        /// <summary>
+        /// Gets or sets the Azure Active Directory token.
+        /// </summary>
+        public string Token { get; set; }
+
+        /// <summary>
+        /// Gets or sets the key Id.
+        /// <c>null</c> 
+        /// </summary>
+        public string Kid { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AccessKeyRequestMessage"/> class.
+        /// </summary>
+        public AccessKeyRequestMessage()
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AccessKeyRequestMessage"/> class.
+        /// </summary>
+        /// <param name="token"></param>
+        public AccessKeyRequestMessage(string token)
+        {
+            Token = token;
+        }
+    }
+
+    /// <summary>
+    /// An access key response message.
+    /// </summary>
+    public class AccessKeyResponseMessage : ExtensibleServiceMessage
+    {
+        /// <summary>
+        /// Gets or sets the key Id.
+        /// </summary>
+        public string Kid { get; set; }
+
+        /// <summary>
+        /// Gets or sets the access key.
+        /// </summary>
+        public string AccessKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets error type.
+        /// </summary>
+        public string ErrorType { get; set; }
+
+        /// <summary>
+        /// Gets or sets error message.
+        /// </summary>
+        public string ErrorMessage { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AccessKeyResponseMessage"/> class.
+        /// </summary>
+        public AccessKeyResponseMessage()
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AccessKeyResponseMessage"/> class.
+        /// </summary>
+        /// <param name="kid"></param>
+        /// <param name="key"></param>
+        public AccessKeyResponseMessage(string kid, string key)
+        {
+            Kid = kid;
+            AccessKey = key;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AccessKeyResponseMessage"/> class.
+        /// </summary>
+        /// <param name="e"></param>
+        public AccessKeyResponseMessage(Exception e)
+        {
+            ErrorType = e.GetType().Name;
+            ErrorMessage = e.Message;
+        }
+    }
+
+    /// <summary>
     /// A handshake request message.
     /// </summary>
     public class HandshakeRequestMessage : ExtensibleServiceMessage

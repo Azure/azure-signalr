@@ -257,6 +257,24 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 message: new HandshakeResponseMessage("Version mismatch."),
                 binary: "kwKxVmVyc2lvbiBtaXNtYXRjaC6A"),
             new ProtocolTestData(
+                name: "AccessKeyRequestMessage",
+                message: new AccessKeyRequestMessage("token"),
+                binary: "lByldG9rZW7AgA=="),
+            new ProtocolTestData(
+                name: "AccessKeyRequestMessageWithKid",
+                message: new AccessKeyRequestMessage("token") {
+                    Kid = "kid"
+                },
+                binary: "lByldG9rZW6ja2lkgA=="),
+            new ProtocolTestData(
+                name: "AccessKeyResponseMessage",
+                message: new AccessKeyResponseMessage("kid", "key"),
+                binary: "lh2ja2lko2tlecDAgA=="),
+            new ProtocolTestData(
+                name: "AccessKeyResponseMessageWithException",
+                message: new AccessKeyResponseMessage(new ArgumentNullException("token invalid")),
+                binary: "lh3AwLVBcmd1bWVudE51bGxFeGNlcHRpb27ZMVZhbHVlIGNhbm5vdCBiZSBudWxsLiAoUGFyYW1ldGVyICd0b2tlbiBpbnZhbGlkJymA"),
+            new ProtocolTestData(
                 name: "Ping",
                 message: PingMessage.Instance,
                 binary: "kQM="),
@@ -268,6 +286,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "OpenConnection",
                 message: new OpenConnectionMessage("conn1", null),
                 binary: "lgSlY29ubjGAgKCA"),
+            new ProtocolTestData(
+                name: "OpenConnectionWithTracingId",
+                message: new OpenConnectionMessage("conn1", null) { TracingId = 888UL },
+                binary: "lgSlY29ubjGAgKCBAc0DeA=="),
             new ProtocolTestData(
                 name: "OpenConnectionWithClaims",
                 message: new OpenConnectionMessage("conn2", new [] {new Claim(ClaimTypes.NameIdentifier, "user1")}),
@@ -301,6 +323,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "CloseConnectionWithError",
                 message: new CloseConnectionMessage("conn4", "Error message."),
                 binary: "lQWlY29ubjSuRXJyb3IgbWVzc2FnZS6AgA=="),
+            new ProtocolTestData(
+                name: "CloseConnectionWithTracingId",
+                message: new CloseConnectionMessage("conn4") { TracingId = 123UL },
+                binary: "lQWlY29ubjSggIEBew=="),
             new ProtocolTestData(
                 name: "ConnectionData",
                 message: new ConnectionDataMessage("conn5", new byte[] {1, 2, 3, 4, 5, 6, 7}),
@@ -497,6 +523,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "LeaveGroupWithAckWithTracingId",
                 message: new LeaveGroupWithAckMessage("conn15", "group2", 1, tracingId: 1234L),
                 binary: "lROmY29ubjE1pmdyb3VwMgGBAc0E0g=="),
+            new ProtocolTestData(
+                name: "UserJoinGroupWithAckWithTracingId",
+                message: new UserJoinGroupWithAckMessage("conn14", "group1", 1, tracingId: 1234L, ttl: 666),
+                binary: "lRqmY29ubjE0pmdyb3VwMQGCAc0E0gLNApo="),
+            new ProtocolTestData(
+                name: "UserLeaveGroupWithAckWithTracingId",
+                message: new UserLeaveGroupWithAckMessage("conn15", "group2", 1, tracingId: 1234L),
+                binary: "lRumY29ubjE1pmdyb3VwMgGBAc0E0g=="),
             new ProtocolTestData(
                 name: "CheckUserInGroupWithAckWithMessage",
                 message: new CheckUserInGroupWithAckMessage("user", "group", 3, 1234L),

@@ -28,6 +28,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return HandshakeRequestMessagesEqual(handshakeRequestMessage, (HandshakeRequestMessage)y);
                 case HandshakeResponseMessage handshakeResponseMessage:
                     return HandshakeResponseMessagesEqual(handshakeResponseMessage, (HandshakeResponseMessage)y);
+                case AccessKeyRequestMessage accessKeyRequestMessage:
+                    return AccessKeyRequestMessageEqual(accessKeyRequestMessage, (AccessKeyRequestMessage)y);
+                case AccessKeyResponseMessage accessKeyResponseMessage:
+                    return AccessKeyResponseMessageEqual(accessKeyResponseMessage, (AccessKeyResponseMessage)y);
                 case PingMessage _:
                     return y is PingMessage;
                 case OpenConnectionMessage openConnectionMessage:
@@ -52,6 +56,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return UserJoinGroupMessagesEqual(userJoinGroupMessage, (UserJoinGroupMessage)y);
                 case UserLeaveGroupMessage userLeaveGroupMessage:
                     return UserLeaveGroupMessagesEqual(userLeaveGroupMessage, (UserLeaveGroupMessage)y);
+                case UserJoinGroupWithAckMessage userJoinGroupWithAckMessage:
+                    return UserJoinGroupWithAckMessagesEqual(userJoinGroupWithAckMessage, (UserJoinGroupWithAckMessage)y);
+                case UserLeaveGroupWithAckMessage userLeaveGroupWithAckMessage:
+                    return UserLeaveGroupWithAckMessagesEqual(userLeaveGroupWithAckMessage, (UserLeaveGroupWithAckMessage)y);
                 case GroupBroadcastDataMessage groupBroadcastDataMessage:
                     return GroupBroadcastDataMessagesEqual(groupBroadcastDataMessage, (GroupBroadcastDataMessage)y);
                 case MultiGroupBroadcastDataMessage multiGroupBroadcastDataMessage:
@@ -95,18 +103,33 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return StringEqual(x.ErrorMessage, y.ErrorMessage);
         }
 
+        private bool AccessKeyRequestMessageEqual(AccessKeyRequestMessage x, AccessKeyRequestMessage y)
+        {
+            return StringEqual(x.Token, y.Token) &&
+                StringEqual(x.Kid, y.Kid);
+        }
+
+        private bool AccessKeyResponseMessageEqual(AccessKeyResponseMessage x, AccessKeyResponseMessage y)
+        {
+            return StringEqual(x.Kid, y.Kid) &&
+                StringEqual(x.AccessKey, y.AccessKey) &&
+                StringEqual(x.ErrorType, y.ErrorType) &&
+                StringEqual(x.ErrorMessage, y.ErrorMessage);
+        }
+
         private bool OpenConnectionMessagesEqual(OpenConnectionMessage x, OpenConnectionMessage y)
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) &&
                    ClaimsEqual(x.Claims, y.Claims) &&
                    HeadersEqual(x.Headers, y.Headers) &&
                    StringEqual(x.QueryString, y.QueryString) &&
-                   StringEqual(x.Protocol, y.Protocol);
+                   StringEqual(x.Protocol, y.Protocol) &&
+                   x.TracingId == y.TracingId;
         }
 
         private bool CloseConnectionMessagesEqual(CloseConnectionMessage x, CloseConnectionMessage y)
         {
-            return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.ErrorMessage, y.ErrorMessage);
+            return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.ErrorMessage, y.ErrorMessage) && x.TracingId == y.TracingId;
         }
 
         private bool ConnectionDataMessagesEqual(ConnectionDataMessage x, ConnectionDataMessage y)
@@ -172,6 +195,24 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                    StringEqual(x.GroupName, y.GroupName) &&
                    x.TracingId == y.TracingId;
         }
+
+        private bool UserJoinGroupWithAckMessagesEqual(UserJoinGroupWithAckMessage x, UserJoinGroupWithAckMessage y)
+        {
+            return StringEqual(x.UserId, y.UserId) &&
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   x.TracingId == y.TracingId &&
+                   x.Ttl == y.Ttl &&
+                   x.AckId == y.AckId;
+        }
+
+        private bool UserLeaveGroupWithAckMessagesEqual(UserLeaveGroupWithAckMessage x, UserLeaveGroupWithAckMessage y)
+        {
+            return StringEqual(x.UserId, y.UserId) &&
+                   StringEqual(x.GroupName, y.GroupName) &&
+                   x.TracingId == y.TracingId &&
+                   x.AckId == y.AckId;
+        }
+
         private bool GroupBroadcastDataMessagesEqual(GroupBroadcastDataMessage x, GroupBroadcastDataMessage y)
         {
             return StringEqual(x.GroupName, y.GroupName) &&
