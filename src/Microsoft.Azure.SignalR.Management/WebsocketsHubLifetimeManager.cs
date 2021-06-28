@@ -160,13 +160,13 @@ namespace Microsoft.Azure.SignalR.Management
 
         protected override T AppendMessageTracingId<T>(T message)
         {
-            message = base.AppendMessageTracingId(message);
-            if (message.TracingId == null && _serviceManagerOptions.Value.EnableMessageTracing)
+            if (_serviceManagerOptions.Value.EnableMessageTracing)
             {
-                var id = MessageWithTracingIdHelper.Generate(ClientConnectionScope.IsDiagnosticClient);
-                message.TracingId = id;
+                message.TracingId = MessageWithTracingIdHelper.Generate(false);
+                return message;
             }
-            return message;
+
+            return base.AppendMessageTracingId(message);
         }
     }
 }

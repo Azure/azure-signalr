@@ -646,7 +646,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 await context.UserGroups.AddToGroupAsync(user, group).OrTimeout();
                 await Task.Delay(200);
-                Assert.Equal(enableMessageTracing, loggerFactory.Logger.EventIds.Contains(80));
+                Assert.Equal(enableMessageTracing, loggerFactory.Logger.EventIds.Contains(new EventId(80, "StartToAddUserToGroup")));
             }
             finally
             {
@@ -844,7 +844,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             public class TestLogger : ILogger
             {
-                public List<int> EventIds = new List<int>();
+                public List<EventId> EventIds = new List<EventId>();
 
                 public IDisposable BeginScope<TState>(TState state)
                 {
@@ -858,7 +858,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
                 public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
                 {
-                    EventIds.Add(eventId.Id);
+                    EventIds.Add(eventId);
                 }
             }
         }
