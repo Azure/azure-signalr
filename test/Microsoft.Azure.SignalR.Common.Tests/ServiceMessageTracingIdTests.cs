@@ -16,12 +16,10 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             {
                 MessageWithTracingIdHelper.Prefix = (ulong)(Guid.NewGuid().GetHashCode() & 0x0FFF_FFFF) << 32;
 
-                var id1 = MessageWithTracingIdHelper.Generate(true);
-                var id2 = MessageWithTracingIdHelper.Generate(false);
+                var id1 = MessageWithTracingIdHelper.Generate();
+                var id2 = MessageWithTracingIdHelper.Generate();
 
-                Assert.Equal((id1 & 0x0FFF_FFFF_FFFF_FFFF) + 1, id2 & 0x0FFF_FFFF_FFFF_FFFF);
-                Assert.Equal(id1 & 0x1000_0000_0000_0000, (ulong)0x1000_0000_0000_0000);
-                Assert.Equal(id2 & 0x1000_0000_0000_0000, (ulong)0);
+                Assert.Equal(id1 + 1, id2);
             }
         }
 
