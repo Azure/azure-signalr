@@ -13,10 +13,13 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IServiceHubLifetimeManager where THub : Hub
     {
+        private IOptions<ServiceManagerOptions> _serviceManagerOptions;
+
         public WebSocketsHubLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver,
-            IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILoggerFactory loggerFactory) :
+            IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILoggerFactory loggerFactory, IOptions<ServiceManagerOptions> serviceManagerOptions) :
             base(serviceConnectionManager, protocolResolver, globalHubOptions, hubOptions, loggerFactory?.CreateLogger(nameof(WebSocketsHubLifetimeManager<Hub>)))
         {
+            _serviceManagerOptions = serviceManagerOptions ?? throw new ArgumentNullException(nameof(serviceManagerOptions));
         }
 
         public Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
@@ -31,7 +34,9 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new UserJoinGroupMessage(userId, groupName).WithTracingId();
+            // todo: apply to other methods
+            // todo: apply to transient mode
+            var message = AppendMessageTracingId(new UserJoinGroupMessage(userId, groupName));
             if (message.TracingId != null)
             {
                 MessageLog.StartToAddUserToGroup(Logger, message);
@@ -151,6 +156,17 @@ namespace Microsoft.Azure.SignalR.Management
         public Task DisposeAsync()
         {
             return ServiceConnectionContainer.StopAsync();
+        }
+
+        protected override T AppendMessageTracingId<T>(T message)
+        {
+            message = base.AppendMessageTracingId(message);
+            if (message.TracingId == null && _serviceManagerOptions.Value.EnableMessageTracing)
+            {
+                var id = MessageWithTracingIdHelper.Generate(ClientConnectionScope.IsDiagnosticClient);
+                message.TracingId = id;
+            }
+            return message;
         }
     }
 }

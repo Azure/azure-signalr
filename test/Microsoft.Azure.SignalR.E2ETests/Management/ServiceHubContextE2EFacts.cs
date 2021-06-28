@@ -625,6 +625,35 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [InlineData(true)]
+        [InlineData(false)]
+        internal async Task EnableMessageTracingTest(bool enableMessageTracing)
+        {
+            var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Persistent;
+                o.EnableMessageTracing = enableMessageTracing;
+            }).Build();
+            var loggerFactory = new TestLoggerFactory();
+            var context = await serviceManager.CreateHubContextAsync(HubName, loggerFactory: loggerFactory);
+            var user = GenerateRandomNames(1)[0];
+            var group = GenerateRandomNames(1)[0];
+
+            try
+            {
+                await context.UserGroups.AddToGroupAsync(user, group).OrTimeout();
+                await Task.Delay(200);
+                Assert.Equal(enableMessageTracing, loggerFactory.Logger.EventIds.Contains(80));
+            }
+            finally
+            {
+                await context.DisposeAsync();
+            }
+        }
+
         private static IDictionary<string, List<string>> GenerateUserGroupDict(IList<string> userNames, IList<string> groupNames)
         {
             return (from i in Enumerable.Range(0, userNames.Count)
@@ -794,6 +823,43 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     cancellationTokenSource.Cancel();
                     return Task.CompletedTask;
                 };
+            }
+        }
+
+        private class TestLoggerFactory : ILoggerFactory
+        {
+            public TestLogger Logger { get; } = new TestLogger();
+            public void AddProvider(ILoggerProvider provider)
+            {
+            }
+
+            public ILogger CreateLogger(string categoryName)
+            {
+                return Logger;
+            }
+
+            public void Dispose()
+            {
+            }
+
+            public class TestLogger : ILogger
+            {
+                public List<int> EventIds = new List<int>();
+
+                public IDisposable BeginScope<TState>(TState state)
+                {
+                    return null;
+                }
+
+                public bool IsEnabled(LogLevel logLevel)
+                {
+                    return true;
+                }
+
+                public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+                {
+                    EventIds.Add(eventId.Id);
+                }
             }
         }
     }
