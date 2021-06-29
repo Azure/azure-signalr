@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR
         // - EnableMessageTracing is true for Management SDK
         public static ulong Generate()
         {
-            return Prefix + (ulong)Interlocked.Increment(ref _index);
+            return Prefix + (uint)Interlocked.Increment(ref _index);
         }
     }
 }
