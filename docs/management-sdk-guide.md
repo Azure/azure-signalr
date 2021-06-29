@@ -6,14 +6,15 @@
 
 ## Build Status
 
-[![Travis build status](https://img.shields.io/travis/Azure/azure-signalr.svg?label=travis-ci&branch=dev&style=flat-square)](https://travis-ci.org/Azure/azure-signalr/branches)
-[![AppVeyor build status](https://img.shields.io/appveyor/ci/vicancy/azure-signalr/dev.svg?label=appveyor&style=flat-square)](https://ci.appveyor.com/project/vicancy/azure-signalr)
+[![Windows](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-Windows/dev?label=Windows)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Windowns)
+[![Ubuntu](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-Ubuntu/dev?label=Ubuntu)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Ubuntu)
+[![OSX](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-OSX/dev?label=OSX)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-OSX)
 
 ## Nuget Packages
 
 Package Name | Target Framework | NuGet | MyGet
 ---|---|---|---
-Microsoft.Azure.SignalR.Management | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Management.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Management.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Management)
+Microsoft.Azure.SignalR.Management | .NET Standard 2.0 <br/> .NET Core App 3.0 <br/> .NET 5.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Management.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Management.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Management)
 
 
 ## Getting Started
@@ -25,14 +26,14 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 |                                     | Transient          | Persistent         |
 |-------------------------------------|--------------------|--------------------|
 | Broadcast                           | :heavy_check_mark: | :heavy_check_mark: |
-| Broadcast except some clients       | `N/A`              | :heavy_check_mark: |
-| Send to a client                    | `N/A`              | :heavy_check_mark: |
-| Send to clients                     | `N/A`              | :heavy_check_mark: |
+| Broadcast except some clients       | :heavy_check_mark: | :heavy_check_mark: |
+| Send to a client                    | :heavy_check_mark: | :heavy_check_mark: |
+| Send to clients                     | :heavy_check_mark: | :heavy_check_mark: |
 | Send to a user                      | :heavy_check_mark: | :heavy_check_mark: |
-| Send to users                       | `N/A`              | :heavy_check_mark: |
+| Send to users                       | :heavy_check_mark: | :heavy_check_mark: |
 | Send to a group                     | :heavy_check_mark: | :heavy_check_mark: |
-| Send to groups                      | `N/A`              | :heavy_check_mark: |
-| Send to a group except some clients | `N/A`              | :heavy_check_mark: |
+| Send to groups                      | :heavy_check_mark: | :heavy_check_mark: |
+| Send to a group except some clients | :heavy_check_mark: | :heavy_check_mark: |
 | Add a user to a group               | :heavy_check_mark: | :heavy_check_mark: |
 | Remove a user from a group          | :heavy_check_mark: | :heavy_check_mark: |
 
@@ -141,7 +142,7 @@ Build service manager.
 
 Interface for managing Azure SignalR service.
 
-#### `ServiceHubContext CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)`
+#### `IServiceHubContext CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory = null, CancellationToken cancellationToken = default)`
 
 Create service hub context to publish messages.
 If in Persistent mode, IServiceManager also starts a WebSockets connection to Azure SignalR Service for each `IServiceHubContext`. All messages will be sent in this connection.
