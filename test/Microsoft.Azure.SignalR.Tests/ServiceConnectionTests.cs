@@ -247,7 +247,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
 
                 // since the service connection ends, the client connection is cleaned up from the collection...
-                Assert.Single(ccm.ClientConnections);
+                Assert.Empty(ccm.ClientConnections);
             }
         }
 
