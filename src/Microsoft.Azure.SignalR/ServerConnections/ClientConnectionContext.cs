@@ -64,7 +64,6 @@ namespace Microsoft.Azure.SignalR
 
         private readonly TaskCompletionSource<object> _connectionEndTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
-        private readonly CancellationTokenSource _abortApplicationCts = new CancellationTokenSource();
 
         private int _connectionState = IdleState;
 
@@ -108,8 +107,6 @@ namespace Microsoft.Azure.SignalR
         public HttpContext HttpContext { get; set; }
 
         public CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
-
-        public CancellationToken ApplicationAborted => _abortApplicationCts.Token;
 
         public DateTime LastMessageReceivedAtUtc => new DateTime(Volatile.Read(ref _lastMessageReceivedAt), DateTimeKind.Utc);
 
@@ -234,21 +231,6 @@ namespace Microsoft.Azure.SignalR
             else
             {
                 _abortOutgoingCts.CancelAfter(millisecondsDelay);
-            }
-        }
-
-        /// <summary>
-        /// Cancel the application task
-        /// </summary>
-        public void CancelApplication(int millisecondsDelay = 0)
-        {
-            if (millisecondsDelay <= 0)
-            {
-                _abortApplicationCts.Cancel();
-            }
-            else
-            {
-                _abortApplicationCts.CancelAfter(millisecondsDelay);
             }
         }
 
