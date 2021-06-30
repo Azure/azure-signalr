@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (ServiceConnectionContainerScope.EnableMessageLog || ClientConnectionScope.IsDiagnosticClient)
             {
-                var id = MessageWithTracingIdHelper.Generate(ClientConnectionScope.IsDiagnosticClient);
+                var id = MessageWithTracingIdHelper.Generate();
                 message.TracingId = id;
             }
             return message;
