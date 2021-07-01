@@ -162,7 +162,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             if (_serviceManagerOptions.Value.EnableMessageTracing)
             {
-                message.TracingId = MessageWithTracingIdHelper.Generate(false);
+                message.TracingId = MessageWithTracingIdHelper.Generate();
                 return message;
             }
 
