@@ -48,6 +48,12 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public JsonSerializerSettings JsonSerializerSettings { get; } = new JsonSerializerSettings();
 
+        /// <summary>
+        /// Gets or sets a value indicating whether message tracing ID is append to messages.
+        /// </summary>
+        // not ready
+        internal bool EnableMessageTracing { get; set; } = false;
+
         internal string ProductInfo { get; set; }
 
         internal void ValidateOptions()

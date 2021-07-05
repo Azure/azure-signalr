@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal partial class ServiceConnection : ServiceConnectionBase
     {
-        private const int DefaultCloseTimeoutMilliseconds = 5000;
+        private const int DefaultCloseTimeoutMilliseconds = 30000;
 
         // Fix issue: https://github.com/Azure/azure-signalr/issues/198
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
@@ -76,31 +76,22 @@ namespace Microsoft.Azure.SignalR
             return _connectionFactory.DisposeAsync(connection);
         }
 
-        protected override async Task CleanupClientConnections(string fromInstanceId = null)
+        protected override Task CleanupClientConnections(string fromInstanceId = null)
         {
             // To gracefully complete client connections, let the client itself owns the connection lifetime
-            try
+
+            foreach (var connection in _connectionIds)
             {
-                if (_connectionIds.Count == 0)
+                if (!string.IsNullOrEmpty(fromInstanceId) && connection.Value != fromInstanceId)
                 {
-                    return;
+                    continue;
                 }
-                var connectionIds = _connectionIds.Select(s => s.Key);
-                if (!string.IsNullOrEmpty(fromInstanceId))
-                {
-                    connectionIds = _connectionIds.Where(s => s.Value == fromInstanceId).Select(s => s.Key);
-                }
-                var tasks = connectionIds.Select(PerformDisconnectAsyncCore).ToArray();
-                if (tasks.Length > 0)
-                {
-                    Log.ClosingClientConnections(Logger, tasks.Length, ConnectionId);
-                    await Task.WhenAll(tasks);
-                }
+
+                // We should not wait until all the clients' lifetime ends to restart another service connection
+                _ = PerformDisconnectAsyncCore(connection.Key);
             }
-            catch (Exception ex)
-            {
-                Log.FailedToCleanupConnections(Logger, ex);
-            }
+
+            return Task.CompletedTask;
         }
 
         protected override ReadOnlyMemory<byte> GetPingMessage()
@@ -230,10 +221,10 @@ namespace Microsoft.Azure.SignalR
                     // transport task ends first, no data will be dispatched out
                     Log.WaitingForApplication(Logger);
 
-                    // Wait on the application task to complete
-                    connection.CancelApplication(_closeTimeOutMilliseconds);
                     try
                     {
+                        // Wait on the application task to complete
+                        // We wait gracefully here to be consistent with self-host SignalR
                         await app;
                     }
                     catch (Exception e)
@@ -387,19 +378,15 @@ namespace Microsoft.Azure.SignalR
             // application task can end when exception, or Context.Abort() from hub
             var app = ProcessApplicationTaskAsyncCore(connection);
 
-            var cancelTask = connection.ApplicationAborted.AsTask();
-            var task = await Task.WhenAny(app, cancelTask);
+            var task = await Task.WhenAny(app, Task.Delay(_closeTimeOutMilliseconds));
 
-            if (task == app)
+            if (!app.IsCompleted)
             {
-                await task;
+                Log.DetectedLongRunningApplicationTask(Logger, connection.ConnectionId);
             }
-            else
-            {
-                // cancel the application task, to end the outgoing task
-                connection.Application.Input.CancelPendingRead();
-                throw new AzureSignalRException("Cancelled running application task, probably caused by time out.");
-            }
+
+            // always wait for the application to complete
+            await app;
         }
 
         private async Task ProcessApplicationTaskAsyncCore(ClientConnectionContext connection)
@@ -437,10 +424,6 @@ namespace Microsoft.Azure.SignalR
                 // We're done writing to the application output
                 // Let the connection complete incoming
                 connection.CompleteIncoming();
-
-                // lock and wait
-                // Register the cancellation after timeout
-                connection.CancelApplication(_closeTimeOutMilliseconds);
 
                 // wait for the connection's lifetime task to end
                 await connection.LifetimeTask;

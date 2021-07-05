@@ -46,7 +46,8 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)).WithTracingId();
+            // todo: apply to other methods
+            var message = AppendMessageTracingId(new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToBroadcastMessage(Logger, message);
@@ -282,6 +283,11 @@ namespace Microsoft.Azure.SignalR
 
         protected ReadOnlyMemory<byte> SerializeProtocol(string protocol, string method, object[] args) =>
             _messageSerializer.SerializeMessage(protocol, new InvocationMessage(method, args));
+
+        protected virtual T AppendMessageTracingId<T>(T message) where T : ServiceMessage, IMessageWithTracingId
+        {
+            return message.WithTracingId();
+        }
 
         private async Task WriteCoreAsync<T>(T message, Func<T, Task> task) where T : ServiceMessage, IMessageWithTracingId
         {
