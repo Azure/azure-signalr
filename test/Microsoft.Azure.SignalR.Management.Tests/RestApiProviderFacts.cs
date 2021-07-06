@@ -33,6 +33,20 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.Equal(expectedTokenString, api.Token);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        internal async Task EnableMessageTracingIdInRestApiTest(bool enable)
+        {
+            var api = await _restApiProvider.GetBroadcastEndpointAsync("app", "hub").WithTracingIdAsync(enable);
+            Assert.Equal(enable, api.Query?.ContainsKey(Constants.Headers.AsrsMessageTracingId) ?? false);
+            if (enable)
+            {
+                var id = Convert.ToUInt64(api.Query[Constants.Headers.AsrsMessageTracingId]);
+                Assert.Equal(MessageWithTracingIdHelper.Prefix, id);
+            }
+        }
+
         public static IEnumerable<object[]> GetTestData() =>
             from context in GetContext()
             from pair in GetTestDataByContext(context)

@@ -23,14 +23,16 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly string _productInfo;
         private readonly string _hubName;
         private readonly string _appName;
+        private readonly bool _enableMessageTracing;
 
-        public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string productInfo, string appName, RestClient restClient)
+        public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string productInfo, string appName, RestClient restClient, bool enableMessageTracing)
         {
             _restApiProvider = new RestApiProvider(endpoint);
             _productInfo = productInfo;
             _appName = appName;
             _hubName = hubName;
             _restClient = restClient;
+            _enableMessageTracing = enableMessageTracing;
         }
 
         public override async Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -87,7 +89,8 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var api = await _restApiProvider.GetBroadcastEndpointAsync(_appName, _hubName, excluded: excludedConnectionIds);
+            // todo: apply to others
+            var api = await _restApiProvider.GetBroadcastEndpointAsync(_appName, _hubName, excluded: excludedConnectionIds).WithTracingIdAsync(_enableMessageTracing);
             await _restClient.SendAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
