@@ -151,8 +151,9 @@ namespace Microsoft.Azure.SignalR
                 {
                     context.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(ServerId, to));
                     // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
-                    // Since all user-created messages will be sent to `ServiceConnection` directly.
+                    // Since all data messages will be sent to `ServiceConnection` directly.
                     // We can simply ignore all messages came from the application pipe.
+                    context.Application.Input.CancelPendingRead();
                 }
             }
 
