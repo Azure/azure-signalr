@@ -148,7 +148,6 @@ namespace Microsoft.Azure.SignalR
         {
             var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Headers.Add(Constants.AsrsUserAgent, productInfo);
             request.Content = new StringContent(JsonConvert.SerializeObject(payload, _jsonSerializerSettings), Encoding.UTF8, "application/json");
             return request;
