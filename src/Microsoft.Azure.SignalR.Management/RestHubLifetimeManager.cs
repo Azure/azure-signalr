@@ -23,16 +23,14 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly string _productInfo;
         private readonly string _hubName;
         private readonly string _appName;
-        private readonly bool _enableMessageTracing;
 
-        public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string productInfo, string appName, RestClient restClient, bool enableMessageTracing)
+        public RestHubLifetimeManager(string hubName, ServiceEndpoint endpoint, string productInfo, string appName, RestClient restClient)
         {
             _restApiProvider = new RestApiProvider(endpoint);
             _productInfo = productInfo;
             _appName = appName;
             _hubName = hubName;
             _restClient = restClient;
-            _enableMessageTracing = enableMessageTracing;
         }
 
         public override async Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)

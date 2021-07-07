@@ -160,7 +160,7 @@ namespace Microsoft.Azure.SignalR
             return request;
         }
 
-        public void AddTracingId(RestApiEndpoint api)
+        private void AddTracingId(RestApiEndpoint api)
         {
             var id = MessageWithTracingIdHelper.Generate();
             if (api.Query == null)
