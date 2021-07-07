@@ -89,8 +89,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            // todo: apply to others
-            var api = await _restApiProvider.GetBroadcastEndpointAsync(_appName, _hubName, excluded: excludedConnectionIds).WithTracingIdAsync(_enableMessageTracing);
+            var api = await _restApiProvider.GetBroadcastEndpointAsync(_appName, _hubName, excluded: excludedConnectionIds);
             await _restClient.SendAsync(api, HttpMethod.Post, _productInfo, methodName, args, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 

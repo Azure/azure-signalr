@@ -30,20 +30,5 @@ namespace Microsoft.Azure.SignalR.Management
                 }
             }
         }
-
-        public static async Task<RestApiEndpoint> WithTracingIdAsync(this Task<RestApiEndpoint> task, bool enable = false)
-        {
-            var api = await task;
-            if (enable)
-            {
-                var id = MessageWithTracingIdHelper.Generate();
-                if (api.Query == null)
-                {
-                    api.Query = new Dictionary<string, StringValues>();
-                }
-                api.Query.Add(Constants.Headers.AsrsMessageTracingId, id.ToString());
-            }
-            return api;
-        }
     }
 }

@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR.Management
                             payloadSerializerSettings = newtonsoftServiceHubProtocolOptions.Value.PayloadSerializerSettings;
                         }
                         var httpClientFactory = _serviceProvider.GetRequiredService<IHttpClientFactory>();
-                        var restClient = new RestClient(httpClientFactory, payloadSerializerSettings);
+                        var restClient = new RestClient(httpClientFactory, payloadSerializerSettings, _options.EnableMessageTracing);
                         return new RestHubLifetimeManager(hubName, new ServiceEndpoint(_options.ConnectionString), _options.ProductInfo, _options.ApplicationName, restClient, _options.EnableMessageTracing);
                     }
                 default: throw new InvalidEnumArgumentException(nameof(ServiceManagerOptions.ServiceTransportType), (int)_options.ServiceTransportType, typeof(ServiceTransportType));
