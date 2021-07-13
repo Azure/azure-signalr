@@ -46,7 +46,6 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            // todo: apply to other methods
             var message = AppendMessageTracingId(new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
@@ -62,7 +61,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToBroadcastMessage(Logger, message);
@@ -82,7 +81,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToSendMessageToConnections(Logger, message);
@@ -102,7 +101,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToSendMessageToConnections(Logger, message);
@@ -122,7 +121,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToBroadcastMessageToGroup(Logger, message);
@@ -142,7 +141,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToBroadcastMessageToGroups(Logger, message);
@@ -164,7 +163,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToBroadcastMessageToGroup(Logger, message);
@@ -184,7 +183,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new UserDataMessage(userId, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new UserDataMessage(userId, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToSendMessageToUser(Logger, message);
@@ -205,7 +204,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToSendMessageToUsers(Logger, message);
@@ -225,7 +224,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new JoinGroupWithAckMessage(connectionId, groupName).WithTracingId();
+            var message = AppendMessageTracingId(new JoinGroupWithAckMessage(connectionId, groupName));
             if (message.TracingId != null)
             {
                 MessageLog.StartToAddConnectionToGroup(Logger, message);
@@ -245,7 +244,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new LeaveGroupWithAckMessage(connectionId, groupName).WithTracingId();
+            var message = AppendMessageTracingId(new LeaveGroupWithAckMessage(connectionId, groupName));
             if (message.TracingId != null)
             {
                 MessageLog.StartToRemoveConnectionFromGroup(Logger, message);
