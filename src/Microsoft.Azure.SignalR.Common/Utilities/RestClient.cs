@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly bool _enableMessageTracing;
 
-        public RestClient(IHttpClientFactory httpClientFactory, JsonSerializerSettings jsonSerializerSettings, bool enableMessageTracing = false)
+        public RestClient(IHttpClientFactory httpClientFactory, JsonSerializerSettings jsonSerializerSettings, bool enableMessageTracing)
         {
             _httpClientFactory = httpClientFactory;
             _jsonSerializerSettings = jsonSerializerSettings;
