@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 {
     internal class MockServiceConnectionContextFactory : IConnectionFactory
     {
-        IMockService _mockService;
+        private IMockService _mockService;
         public MockServiceConnectionContextFactory(IMockService mockService)
         {
             _mockService = mockService;

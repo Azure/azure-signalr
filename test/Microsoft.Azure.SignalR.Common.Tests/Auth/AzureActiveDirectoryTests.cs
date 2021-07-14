@@ -1,5 +1,4 @@
-﻿using System;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Threading.Tasks;
 using Azure.Core;
 using Azure.Identity;

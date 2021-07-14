@@ -1,12 +1,12 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.AspNetCore.SignalR.Protocol;
-using Microsoft.Azure.SignalR.Protocol;
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Protocol;
 
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
@@ -29,8 +29,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
         public TaskCompletionSource<string> HandshakeCompleted { get; } = new TaskCompletionSource<string>();
         public bool CloseMessageReceivedFromSdk { get; set; }
 
-
-        int _invId = 0;
+        private int _invId = 0;
 
         public async Task SendMessage(string target, object[] args)
         {

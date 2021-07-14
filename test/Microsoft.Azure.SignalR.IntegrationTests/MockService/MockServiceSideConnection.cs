@@ -1,19 +1,18 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.AspNetCore.SignalR.Protocol;
-using Microsoft.Azure.SignalR;
-using Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
-using Microsoft.Azure.SignalR.Protocol;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR.Protocol;
+using Microsoft.Azure.SignalR;
+using Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
+using Microsoft.Azure.SignalR.Protocol;
 using HandshakeRequestMessage = Microsoft.Azure.SignalR.Protocol.HandshakeRequestMessage;
 using HandshakeResponseMessage = Microsoft.Azure.SignalR.Protocol.HandshakeResponseMessage;
 using ServicePingMessage = Microsoft.Azure.SignalR.Protocol.PingMessage;

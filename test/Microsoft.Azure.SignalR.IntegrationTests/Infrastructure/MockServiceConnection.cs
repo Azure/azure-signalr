@@ -14,10 +14,10 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
     /// </summary>
     internal class MockServiceConnection : IServiceConnection
     {
-        static int s_num = 0;
+        private static int s_num = 0;
 
         private readonly IServiceConnection _serviceConnection;
-        IMockService _mockService;
+        private IMockService _mockService;
         
         internal MockServiceConnection(IMockService mockService, IServiceConnection serviceConnection)
         {

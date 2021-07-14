@@ -7,19 +7,19 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Xunit;
-using Xunit.Abstractions;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
+using Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
+using Microsoft.Azure.SignalR.IntegrationTests.Infrastructure.MessageOrderTests;
+using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
-using Microsoft.Azure.SignalR.IntegrationTests.Infrastructure.MessageOrderTests;
-using Microsoft.Azure.SignalR.IntegrationTests.MockService;
+using Xunit;
+using Xunit.Abstractions;
 using AspNetTestServer = Microsoft.AspNetCore.TestHost.TestServer;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests
         }
 
         // Helper method to pull raw messages received by the mock service and count them per service connection
-        async static Task<ConcurrentDictionary<MockServiceSideConnection, int>> DrainBroadcastMessages(
+        private static async Task<ConcurrentDictionary<MockServiceSideConnection, int>> DrainBroadcastMessages(
             int endpointCount, int msgNum, IMockService mockSvc, 
             ConcurrentDictionary<MockServiceSideConnection, int> counts = null)
         {

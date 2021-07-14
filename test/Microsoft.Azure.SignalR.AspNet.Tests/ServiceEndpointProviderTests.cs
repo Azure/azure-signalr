@@ -8,7 +8,6 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.IdentityModel.Tokens;
 using Xunit;
 
