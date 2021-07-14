@@ -130,7 +130,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             }
         }
 
-        static ServiceConnectionContainerBase.CustomizedPingTimer CreatePingTimer(ILoggerFactory loggerFactory, Action counter) =>
+        private static ServiceConnectionContainerBase.CustomizedPingTimer CreatePingTimer(ILoggerFactory loggerFactory, Action counter) =>
             CustomizedPingTimerFactory.CreateCustomizedPingTimer(loggerFactory.CreateLogger(
                 nameof(BasicStartStopTest)), nameof(BasicStartStopTest),
                 () => {

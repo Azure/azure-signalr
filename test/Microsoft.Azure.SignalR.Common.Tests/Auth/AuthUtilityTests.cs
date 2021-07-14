@@ -6,8 +6,8 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using Xunit;
 using Microsoft.IdentityModel.Tokens;
+using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 {

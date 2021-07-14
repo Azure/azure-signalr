@@ -1,9 +1,9 @@
-﻿using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Azure.SignalR.Tests.Common;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
