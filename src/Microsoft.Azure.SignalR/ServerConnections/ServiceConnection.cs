@@ -224,15 +224,6 @@ namespace Microsoft.Azure.SignalR
 
                     try
                     {
-                        // Wait on the application task to complete
-                        // We wait gracefully here to be consistent with self-host SignalR
-                        await Task.WhenAny(app, Task.Delay(_closeTimeOutMilliseconds));
-
-                        if (!app.IsCompleted)
-                        {
-                            Log.DetectedLongRunningApplicationTask(Logger, connection.ConnectionId);
-                        }
-
                         // always wait for the application to complete
                         await app;
                     }
@@ -418,7 +409,18 @@ namespace Microsoft.Azure.SignalR
                 connection.CompleteIncoming();
 
                 // wait for the connection's lifetime task to end
-                await connection.LifetimeTask;
+                var lifetime = connection.LifetimeTask;
+
+                // Wait on the application task to complete
+                // We wait gracefully here to be consistent with self-host SignalR
+                await Task.WhenAny(lifetime, Task.Delay(_closeTimeOutMilliseconds));
+
+                if (!lifetime.IsCompleted)
+                {
+                    Log.DetectedLongRunningApplicationTask(Logger, connectionId);
+                }
+
+                await lifetime;
             }
         }
 
