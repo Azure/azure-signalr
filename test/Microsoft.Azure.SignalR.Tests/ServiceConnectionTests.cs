@@ -485,68 +485,6 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        [Fact]
-        public async Task TestServiceConnectionForMigratedIn()
-        {
-            var factory = new TestClientConnectionFactory();
-
-            CancellationTokenSource cts = new();
-            var connection = MockServiceConnection(cts, null, factory);
-
-            // create a connection with migration header.
-            await connection.OnClientConnectedAsyncForTest(new OpenConnectionMessage("foo", new Claim[0])
-            {
-                Headers = new Dictionary<string, StringValues>{
-                    { Constants.AsrsMigrateFrom, "another-server" }
-                }
-            });
-
-            Assert.Equal(1, factory.Connections.Count);
-            var context = factory.Connections[0];
-            Assert.True(context.IsMigrated);
-
-            var message = new AspNetCore.SignalR.Protocol.HandshakeResponseMessage("");
-            HandshakeProtocol.WriteResponseMessage(message, context.Transport.Output);
-            await context.Transport.Output.FlushAsync();
-
-            var task = context.Transport.Input.ReadAsync();
-            await Task.Delay(100);
-
-            // nothing should be written into the transport
-            Assert.False(task.IsCompleted);
-            Assert.True(context.IsMigrated);
-
-            var feature = context.Features.Get<IConnectionMigrationFeature>();
-            Assert.NotNull(feature);
-            Assert.Equal("another-server", feature.MigrateFrom);
-        }
-
-        [Fact]
-        public async Task TestServiceConnectionForMigratedOut()
-        {
-            var factory = new TestClientConnectionFactory();
-
-            CancellationTokenSource cts = new();
-            var connection = MockServiceConnection(cts, null, factory, mode: GracefulShutdownMode.MigrateClients);
-
-            // create a connection with migration header.
-            await connection.OnClientConnectedAsyncForTest(new OpenConnectionMessage("foo", new Claim[0]));
-
-            var context = factory.Connections[0];
-
-            var closeMessage = new CloseConnectionMessage(context.ConnectionId);
-            closeMessage.Headers.Add(Constants.AsrsMigrateTo, "another-server");
-
-            var disconnect = connection.OnClientDisconnectedAsyncForTest(closeMessage);
-
-            var feature = context.Features.Get<IConnectionMigrationFeature>();
-            Assert.NotNull(feature);
-            Assert.Equal("another-server", feature.MigrateTo);
-
-            cts.Cancel();
-            await disconnect.OrTimeout();
-        }
-
         private sealed class TestConnectionHandler : ConnectionHandler
         {
             private TaskCompletionSource<object> _startedTcs = new TaskCompletionSource<object>();
@@ -574,65 +512,6 @@ namespace Microsoft.Azure.SignalR.Tests
                     }
                 }
             }
-        }
-
-        private sealed class TestServiceConnection : ServiceConnection
-        {
-            public TestServiceConnection(IConnectionFactory serviceConnectionFactory,
-                                         IClientConnectionFactory clientConnectionFactory,
-                                         ILoggerFactory loggerFactory,
-                                         ConnectionDelegate handler,
-                                         GracefulShutdownMode mode = GracefulShutdownMode.Off) : base(
-                new ServiceProtocol(),
-                new TestClientConnectionManager(),
-                serviceConnectionFactory,
-                loggerFactory,
-                handler,
-                clientConnectionFactory,
-                "serverId",
-                Guid.NewGuid().ToString("N"),
-                null,
-                null,
-                null,
-                mode: mode
-            )
-            {
-            }
-
-            public Task OnClientConnectedAsyncForTest(OpenConnectionMessage message)
-            {
-                return base.OnClientConnectedAsync(message);
-            }
-
-            public Task OnClientDisconnectedAsyncForTest(CloseConnectionMessage message)
-            {
-                return base.OnClientDisconnectedAsync(message);
-            }
-        }
-
-        private TestServiceConnection MockServiceConnection(CancellationTokenSource cts, IConnectionFactory serviceConnectionFactory = null,
-                                                            IClientConnectionFactory clientConnectionFactory = null,
-                                                            ILoggerFactory loggerFactory = null,
-                                                            GracefulShutdownMode mode = GracefulShutdownMode.Off)
-        {
-            clientConnectionFactory ??= new ClientConnectionFactory();
-            serviceConnectionFactory ??= new TestConnectionFactory(conn => Task.CompletedTask);
-            loggerFactory ??= NullLoggerFactory.Instance;
-
-            var services = new ServiceCollection();
-            var connectionHandler = new EndlessConnectionHandler(cts);
-            services.AddSingleton(connectionHandler);
-            var builder = new ConnectionBuilder(services.BuildServiceProvider());
-            builder.UseConnectionHandler<EndlessConnectionHandler>();
-            ConnectionDelegate handler = builder.Build();
-
-            return new TestServiceConnection(
-                serviceConnectionFactory,
-                clientConnectionFactory,
-                loggerFactory,
-                handler,
-                mode: mode
-            );
         }
 
         private sealed class LastWillConnectionHandler : ConnectionHandler
