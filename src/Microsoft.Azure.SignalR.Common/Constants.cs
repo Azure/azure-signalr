@@ -91,5 +91,11 @@ namespace Microsoft.Azure.SignalR
         {
             public const string BlazorPack = "blazorpack";
         }
+
+        public static class Headers
+        {
+            public const string AsrsHeaderPrefix = "X-ASRS-";
+            public const string AsrsMessageTracingId = AsrsHeaderPrefix + "Message-Tracing-Id";
+        }
     }
 }
