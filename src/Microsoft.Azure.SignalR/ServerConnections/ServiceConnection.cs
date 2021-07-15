@@ -194,7 +194,7 @@ namespace Microsoft.Azure.SignalR
                 var transport = ProcessOutgoingMessagesAsync(connection, connection.OutgoingAborted);
 
                 // Waiting for the application to shutdown so we can clean up the connection
-                var app = ProcessIncomingMessageAsync(connection);
+                var app = ProcessApplicationTaskAsyncCore(connection);
 
                 var task = await Task.WhenAny(app, transport);
 
@@ -224,8 +224,7 @@ namespace Microsoft.Azure.SignalR
 
                     try
                     {
-                        // Wait on the application task to complete
-                        // We wait gracefully here to be consistent with self-host SignalR
+                        // always wait for the application to complete
                         await app;
                     }
                     catch (Exception e)
@@ -373,23 +372,6 @@ namespace Microsoft.Azure.SignalR
             _connectionIds.TryAdd(connection.ConnectionId, instanceId);
         }
 
-        private async Task ProcessIncomingMessageAsync(ClientConnectionContext connection)
-        {
-            // Wait for the application task to complete
-            // application task can end when exception, or Context.Abort() from hub
-            var app = ProcessApplicationTaskAsyncCore(connection);
-
-            var task = await Task.WhenAny(app, Task.Delay(_closeTimeOutMilliseconds));
-
-            if (!app.IsCompleted)
-            {
-                Log.DetectedLongRunningApplicationTask(Logger, connection.ConnectionId);
-            }
-
-            // always wait for the application to complete
-            await app;
-        }
-
         private async Task ProcessApplicationTaskAsyncCore(ClientConnectionContext connection)
         {
             Exception exception = null;
@@ -427,7 +409,18 @@ namespace Microsoft.Azure.SignalR
                 connection.CompleteIncoming();
 
                 // wait for the connection's lifetime task to end
-                await connection.LifetimeTask;
+                var lifetime = connection.LifetimeTask;
+
+                // Wait on the application task to complete
+                // We wait gracefully here to be consistent with self-host SignalR
+                await Task.WhenAny(lifetime, Task.Delay(_closeTimeOutMilliseconds));
+
+                if (!lifetime.IsCompleted)
+                {
+                    Log.DetectedLongRunningApplicationTask(Logger, connectionId);
+                }
+
+                await lifetime;
             }
         }
 
