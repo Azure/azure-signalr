@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -15,7 +14,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class ServiceHubContextBuilder
+    public class ServiceHubContextBuilder
     {
         private readonly IServiceCollection _services;
 
@@ -60,6 +59,11 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
+        /// <summary>
+        /// Uses Newtonsoft.Json library to serialize messages sent to SignalR.
+        /// </summary>
+        /// <param name="configure">A delegate that can be used to configure the <see cref="NewtonsoftServiceHubProtocolOptions"/>.</param>
+        /// <returns>The <see cref="ServiceHubContextBuilder"/> instance itself.</returns>
         public ServiceHubContextBuilder WithNewtonsoftJsonHubProtocol(Action<NewtonsoftServiceHubProtocolOptions> configure)
         {
             if (configure is null)
@@ -71,6 +75,10 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
+        /// <summary>
+        /// Uses Newtonsoft.Json library to serialize messages sent to SignalR.
+        /// </summary>
+        /// <returns>The <see cref="ServiceHubContextBuilder"/> instance itself.</returns>
         public ServiceHubContextBuilder WithNewtonsoftJsonHubProtocol()
         {
             return WithNewtonsoftJsonHubProtocol(o => { });
