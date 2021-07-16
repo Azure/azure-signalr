@@ -140,17 +140,47 @@ namespace Microsoft.Azure.SignalR.Management
 
         public Task<bool> ConnectionExistsAsync(string connectionId, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
+            var message = AppendMessageTracingId(new CheckConnectionExistenceWithAckMessage(connectionId));
+            if (message.TracingId != null)
+            {
+                MessageLog.StartToCheckIfConnectionExists(Logger, message);
+            }
+            return WriteAckableMessageAsync(message);
         }
 
         public Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
+            }
+
+            var message = AppendMessageTracingId(new CheckUserExistenceWithAckMessage(userId));
+            if (message.TracingId != null)
+            {
+                MessageLog.StartToCheckIfUserExists(Logger, message);
+            }
+            return WriteAckableMessageAsync(message);
         }
 
         public Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(groupName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
+            }
+
+            var message = AppendMessageTracingId(new CheckGroupExistenceWithAckMessage(groupName));
+            if (message.TracingId != null)
+            {
+                MessageLog.StartToCheckIfGroupExists(Logger, message);
+            }
+            return WriteAckableMessageAsync(message);
         }
 
         public Task DisposeAsync()
