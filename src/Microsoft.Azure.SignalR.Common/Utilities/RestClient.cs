@@ -19,17 +19,20 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly JsonSerializerSettings _jsonSerializerSettings;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly bool _enableMessageTracing;
 
-        public RestClient(IHttpClientFactory httpClientFactory, JsonSerializerSettings jsonSerializerSettings)
+        public RestClient(IHttpClientFactory httpClientFactory, JsonSerializerSettings jsonSerializerSettings, bool enableMessageTracing)
         {
             _httpClientFactory = httpClientFactory;
             _jsonSerializerSettings = jsonSerializerSettings;
+            _enableMessageTracing = enableMessageTracing;
         }
 
         public RestClient()
         {
             _httpClientFactory = HttpClientFactory.Instance;
             _jsonSerializerSettings = new JsonSerializerSettings();
+            _enableMessageTracing = false;
         }
 
         public Task SendAsync(
@@ -141,6 +144,10 @@ namespace Microsoft.Azure.SignalR
         private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, string productInfo, string methodName = null, object[] args = null)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
+            if (_enableMessageTracing)
+            {
+                AddTracingId(api);
+            }
             return GenerateHttpRequest(api.Audience, api.Query, httpMethod, payload, api.Token, productInfo);
         }
 
@@ -151,6 +158,16 @@ namespace Microsoft.Azure.SignalR
             request.Headers.Add(Constants.AsrsUserAgent, productInfo);
             request.Content = new StringContent(JsonConvert.SerializeObject(payload, _jsonSerializerSettings), Encoding.UTF8, "application/json");
             return request;
+        }
+
+        private void AddTracingId(RestApiEndpoint api)
+        {
+            var id = MessageWithTracingIdHelper.Generate();
+            if (api.Query == null)
+            {
+                api.Query = new Dictionary<string, StringValues>();
+            }
+            api.Query.Add(Constants.Headers.AsrsMessageTracingId, id.ToString());
         }
     }
 }

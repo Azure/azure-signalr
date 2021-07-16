@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -39,19 +38,17 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             public ProbeResult[] Results;
         }
 
-        TimeSpan _0s = TimeSpan.FromSeconds(0);
-        TimeSpan _1s = TimeSpan.FromSeconds(1);
-        TimeSpan _2s = TimeSpan.FromSeconds(2);
-        TimeSpan _10s = TimeSpan.FromSeconds(10);
-        static TimeSpan _overrunLeeway = TimeSpan.FromMilliseconds(250);
-        static TimeSpan _underrunLeeway = TimeSpan.FromMilliseconds(50);
-
-        static TimeSpan DefaultBackOff = TimeSpan.FromSeconds(2);
-        static Func<int, TimeSpan> DefaultBackOffFunc = (i) => DefaultBackOff;
-
-        static TimeSpan _1stBackOff = TimeSpan.FromSeconds(1.5);
-        static TimeSpan _2ndBackOff = TimeSpan.FromSeconds(2.5);
-        static TimeSpan _nxtBackOff = TimeSpan.FromSeconds(4.5);
+        private TimeSpan _0s = TimeSpan.FromSeconds(0);
+        private TimeSpan _1s = TimeSpan.FromSeconds(1);
+        private TimeSpan _2s = TimeSpan.FromSeconds(2);
+        private TimeSpan _10s = TimeSpan.FromSeconds(10);
+        private static TimeSpan _overrunLeeway = TimeSpan.FromMilliseconds(250);
+        private static TimeSpan _underrunLeeway = TimeSpan.FromMilliseconds(50);
+        private static TimeSpan DefaultBackOff = TimeSpan.FromSeconds(2);
+        private static Func<int, TimeSpan> DefaultBackOffFunc = (i) => DefaultBackOff;
+        private static TimeSpan _1stBackOff = TimeSpan.FromSeconds(1.5);
+        private static TimeSpan _2ndBackOff = TimeSpan.FromSeconds(2.5);
+        private static TimeSpan _nxtBackOff = TimeSpan.FromSeconds(4.5);
 
         [Fact]
         public async Task AllProbesSuccessfulTest()
@@ -145,7 +142,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             });
         }
 
-        static async Task RunProbeTests(TestData testData)
+        private static async Task RunProbeTests(TestData testData)
         {
             // initialize a few things
             int _funcCallNumber = 0;

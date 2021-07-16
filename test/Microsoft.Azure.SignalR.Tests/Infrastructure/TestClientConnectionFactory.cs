@@ -5,7 +5,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
-    class TestClientConnectionFactory : IClientConnectionFactory
+    internal class TestClientConnectionFactory : IClientConnectionFactory
     {
         public IList<ClientConnectionContext> Connections = new List<ClientConnectionContext>();
 

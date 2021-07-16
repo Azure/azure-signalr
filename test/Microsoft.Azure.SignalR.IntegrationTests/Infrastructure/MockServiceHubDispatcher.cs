@@ -5,20 +5,20 @@ using System;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 {
     internal class MockServiceHubDispatcher<THub> : ServiceHubDispatcher<THub> 
         where THub : Hub 
     {
-        ILoggerFactory _loggerFactory;
-        IClientConnectionManager _clientConnectionManager;
-        IServiceProtocol _serviceProtocol;
-        IClientConnectionFactory _clientConnectionFactory;
+        private ILoggerFactory _loggerFactory;
+        private IClientConnectionManager _clientConnectionManager;
+        private IServiceProtocol _serviceProtocol;
+        private IClientConnectionFactory _clientConnectionFactory;
 
         public MockServiceHubDispatcher(
             IServiceProtocol serviceProtocol,

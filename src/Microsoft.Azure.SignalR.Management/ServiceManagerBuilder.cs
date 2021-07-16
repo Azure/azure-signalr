@@ -51,8 +51,12 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
-        // todo: make public
-        internal ServiceManagerBuilder WithNewtonsoftJsonHubProtocol(Action<NewtonsoftServiceHubProtocolOptions> configure)
+        /// <summary>
+        /// Uses Newtonsoft.Json library to serialize messages sent to SignalR.
+        /// </summary>
+        /// <param name="configure">A delegate that can be used to configure the <see cref="NewtonsoftServiceHubProtocolOptions"/>.</param>
+        /// <returns>The <see cref="ServiceManagerBuilder"/> instance itself.</returns>
+        public ServiceManagerBuilder WithNewtonsoftJson(Action<NewtonsoftServiceHubProtocolOptions> configure)
         {
             if (configure is null)
             {
@@ -63,10 +67,13 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
-        // todo: make public
-        internal ServiceManagerBuilder WithNewtonsoftJsonHubProtocol()
+        /// <summary>
+        /// Uses Newtonsoft.Json library to serialize messages sent to SignalR.
+        /// </summary>
+        /// <returns>The <see cref="ServiceHubContextBuilder"/> instance itself.</returns>
+        public ServiceManagerBuilder WithNewtonsoftJson()
         {
-            return WithNewtonsoftJsonHubProtocol(o => { });
+            return WithNewtonsoftJson(o => { });
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]

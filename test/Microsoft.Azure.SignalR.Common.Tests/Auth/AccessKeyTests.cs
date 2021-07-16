@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-using Azure.Identity;
-using Xunit;
+﻿using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 {

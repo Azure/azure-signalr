@@ -8,7 +8,6 @@ using System.Linq;
 using System.Text;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
-using Microsoft.AspNet.SignalR.Json;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging.Abstractions;
