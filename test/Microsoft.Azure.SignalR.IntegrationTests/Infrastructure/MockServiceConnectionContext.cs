@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
         public override IDictionary<object, object> Items { get; set; }
         public override IDuplexPipe Transport { get; set; }
 
-        IMockService _mockService;
+        private IMockService _mockService;
         public MockServiceSideConnection MyServiceSideConnection { get; private set; }
         public MockServiceConnection MyMockServiceConnetion { get; set; }
 

@@ -60,7 +60,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 throw new ArgumentOutOfRangeException(nameof(ttl), TtlOutOfRangeErrorMessage);
             }
-            var message = new UserJoinGroupMessage(userId, groupName) { Ttl = (int)ttl.TotalSeconds }.WithTracingId();
+            var message = AppendMessageTracingId(new UserJoinGroupMessage(userId, groupName) { Ttl = (int)ttl.TotalSeconds });
             if (message.TracingId != null)
             {
                 MessageLog.StartToAddUserToGroup(Logger, message);
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new UserLeaveGroupMessage(userId, groupName).WithTracingId();
+            var message = AppendMessageTracingId(new UserLeaveGroupMessage(userId, groupName));
             if (message.TracingId != null)
             {
                 MessageLog.StartToRemoveUserFromGroup(Logger, message);
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
             }
 
-            var message = new UserLeaveGroupMessage(userId, null).WithTracingId();
+            var message = AppendMessageTracingId(new UserLeaveGroupMessage(userId, null));
             if (message.TracingId != null)
             {
                 MessageLog.StartToRemoveUserFromGroup(Logger, message);
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new CheckUserInGroupWithAckMessage(userId, groupName).WithTracingId();
+            var message = AppendMessageTracingId(new CheckUserInGroupWithAckMessage(userId, groupName));
             if (message.TracingId != null)
             {
                 MessageLog.StartToCheckIfUserInGroup(Logger, message);
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
             }
 
-            var message = new CloseConnectionMessage(connectionId, reason).WithTracingId();
+            var message = AppendMessageTracingId(new CloseConnectionMessage(connectionId, reason));
             if (message.TracingId != null)
             {
                 MessageLog.StartToCloseConnection(Logger, message);
