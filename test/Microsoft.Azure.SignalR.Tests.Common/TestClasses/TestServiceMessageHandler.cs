@@ -13,14 +13,13 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         {
         }
 
-        public Task HandlePingAsync(PingMessage pingMessage)
-        {
-            return Task.CompletedTask;
-        }
+        public Task HandlePingAsync(PingMessage pingMessage) => Task.CompletedTask;
 
         public void HandleAck(AckMessage serviceMessage)
         {
             throw new NotImplementedException();
         }
+
+        public Task HandleKeyAsync(AccessKeyResponseMessage keyMessage) => Task.CompletedTask;
     }
 }

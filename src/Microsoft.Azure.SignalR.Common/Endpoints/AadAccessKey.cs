@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.SignalR
@@ -56,12 +55,15 @@ namespace Microsoft.Azure.SignalR
             AccessTokenAlgorithm algorithm,
             CancellationToken ctoken = default)
         {
-            await InitializedTask;
-            if (!Authorized)
+            if (InitializedTask == await Task.WhenAny(InitializedTask, ctoken.AsTask()))
             {
-                throw new AzureSignalRAccessTokenNotAuthorizedException();
+                if (!Authorized)
+                {
+                    throw new AzureSignalRAccessTokenNotAuthorizedException();
+                }
+                return await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm);
             }
-            return await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm);
+            throw new TaskCanceledException();
         }
 
         private async Task AuthorizeAsync(CancellationToken ctoken = default)
@@ -113,9 +115,17 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new AzureSignalRException("Missing required <AccessKey> field.");
             }
-            Key = new Tuple<string, string>(keyId.ToString(), key.ToString());
 
+            UpdateAccessKey(keyId.ToString(), key.ToString());
             return true;
+        }
+
+        internal void UpdateAccessKey(string kid, string accessKey)
+        {
+            Key = new Tuple<string, string>(kid, accessKey);
+            _lastUpdatedTime = DateTime.UtcNow;
+            _isAuthorized = true;
+            _initializedTcs.TrySetResult(null);
         }
 
         internal async Task UpdateAccessKeyAsync()
@@ -132,9 +142,6 @@ namespace Microsoft.Azure.SignalR
                 try
                 {
                     await AuthorizeAsync(source.Token);
-                    _lastUpdatedTime = DateTime.UtcNow;
-                    _isAuthorized = true;
-                    _initializedTcs.TrySetResult(null);
                     return;
                 }
                 catch (Exception e)
