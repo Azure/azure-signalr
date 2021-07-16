@@ -1,4 +1,4 @@
-# Azure SignalR Service Management SDK (Obsolete)
+# Azure SignalR Service Management SDK (Legacy)
 
 **This is a guide for version 1.9.x and before. For guide on the latest SDK version, see [Azure SignalR Service Management SDK](./management-sdk-guide.md).**
 

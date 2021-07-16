@@ -3,7 +3,19 @@
 > **NOTE**
 >
 > Azure SignalR Service only supports this SDK for ASP.NET CORE SignalR clients.
+<!-- TOC -->
 
+- [Azure SignalR Service Management SDK](#azure-signalr-service-management-sdk)
+  - [Build Status](#build-status)
+  - [Nuget Packages](#nuget-packages)
+  - [Getting Started](#getting-started)
+    - [Features](#features)
+  - [Create Service Hub Context](#create-service-hub-context)
+  - [Negotiation](#negotiation)
+  - [Send Messages and Manage Groups](#send-messages-and-manage-groups)
+  - [Transport Type](#transport-type)
+
+<!-- /TOC -->
 ## Build Status
 
 [![Windows](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-Windows/dev?label=Windows)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Windowns)
@@ -21,7 +33,7 @@ Microsoft.Azure.SignalR.Management | .NET Standard 2.0 <br/> .NET Core App 3.0 <
 
 Azure SignalR Service Management SDK helps you to manage SignalR clients through Azure SignalR Service directly such as broadcast messages. Therefore, this SDK can be but not limited to be used in [serverless](https://azure.microsoft.com/zh-cn/solutions/serverless/) environments. You can use this SDK to manage SignalR clients connected to your Azure SignalR Service in any environment, such as in a console app, in an Azure function or in a web server.
 
-**To see guides for SDK version 1.9.x and before, go to [Azure SignalR Service Management SDK (Obsolete)](./management-sdk-guide-obsolete.md)**
+**To see guides for SDK version 1.9.x and before, go to [Azure SignalR Service Management SDK (Legacy)](./management-sdk-guide-legacy.md)**
 
 <!--Add migration guide-->
 
