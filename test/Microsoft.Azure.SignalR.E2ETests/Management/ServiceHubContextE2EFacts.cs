@@ -478,7 +478,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 }
                 finally
                 {
-                    await serviceHubContext.DisposeAsync();
+                    await serviceHubContext?.DisposeAsync();
                 }
             }
         }
@@ -521,12 +521,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     await tcs.Task;
                     exists = await serviceHubContext.ClientManager.UserExistsAsync(userId);
                     Assert.False(exists);
-
-                    await serviceHubContext.DisposeAsync();
                 }
                 finally
                 {
-                    await serviceHubContext.DisposeAsync();
+                    await serviceHubContext?.DisposeAsync();
                 }
             }
         }
