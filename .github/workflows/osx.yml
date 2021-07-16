@@ -26,6 +26,10 @@ jobs:
           - '*.targets'
           - '*.sh'
           - '*.sln'
+    - name: Setup .NET 2.1
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '2.1.x'
 
     - name: Update SubModules
       if: steps.filter.outputs.src == 'true'

@@ -26,6 +26,12 @@ jobs:
           - '*.targets'
           - '*.sh'
           - '*.sln'
+    - name: Setup .NET 2.1
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '2.1.x'
+      env:
+        DOTNET_INSTALL_DIR: '%HOME%\.dotnet\'
     - name: Update SubModules
       run: git submodule update --init --recursive
       if: steps.filter.outputs.src == 'true'
@@ -34,3 +40,4 @@ jobs:
       shell: powershell
       run: .\run.ps1 default-build
       if: steps.filter.outputs.src == 'true'
+
