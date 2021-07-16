@@ -398,138 +398,187 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
             using (StartLog(out var loggerFactory))
             {
-                const string reason = "This is a test reason.";
-                var serviceManager = new ServiceManagerBuilder()
-                    .WithOptions(o =>
-                    {
-                        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                        o.ServiceTransportType = serviceTransportType;
-                        o.ApplicationName = appName;
-                    })
-                    .WithLoggerFactory(loggerFactory)
-                    .Build();
-                var serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
-                var negotiationRes = await serviceHubContext.NegotiateAsync(new NegotiationOptions { EnableDetailedErrors = true, IsDiagnosticClient = true });
-                var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
-                var tcs = new TaskCompletionSource<string>();
-                conn.Closed += ex =>
+                ServiceHubContext serviceHubContext = null;
+                try
                 {
-                    if (ex is null)
+                    const string reason = "This is a test reason.";
+                    var serviceManager = new ServiceManagerBuilder()
+                        .WithOptions(o =>
+                        {
+                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                            o.ServiceTransportType = serviceTransportType;
+                            o.ApplicationName = appName;
+                        })
+                        .WithLoggerFactory(loggerFactory)
+                        .Build();
+                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
+                    var negotiationRes = await serviceHubContext.NegotiateAsync(new NegotiationOptions { EnableDetailedErrors = true, IsDiagnosticClient = true });
+                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
+                    var tcs = new TaskCompletionSource<string>();
+                    conn.Closed += ex =>
                     {
-                        tcs.SetException(new Exception("close exception is null"));
-                    }
-                    tcs.SetResult(ex.Message);
-                    return Task.CompletedTask;
-                };
-                await conn.StartAsync();
-                await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId, reason);
+                        if (ex is null)
+                        {
+                            tcs.SetException(new Exception("close exception is null"));
+                        }
+                        tcs.SetResult(ex.Message);
+                        return Task.CompletedTask;
+                    };
+                    await conn.StartAsync();
+                    await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId, reason);
 
-                var actualReason = await tcs.Task.OrTimeout();
-                Assert.Contains(reason, actualReason);
-
-                await serviceHubContext.DisposeAsync();
+                    var actualReason = await tcs.Task.OrTimeout();
+                    Assert.Contains(reason, actualReason);
+                }
+                finally
+                {
+                    await serviceHubContext?.DisposeAsync();
+                }
             }
         }
 
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
         [InlineData(ServiceTransportType.Transient)]
+        [InlineData(ServiceTransportType.Persistent)]
         public async Task CheckConnectionExistsTest(ServiceTransportType serviceTransportType)
         {
             //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+            ServiceHubContext serviceHubContext = null;
             using (StartLog(out var loggerFactory))
             {
-                var serviceManager = new ServiceManagerBuilder()
-                    .WithOptions(o =>
+                try
+                {
+                    var serviceManager = new ServiceManagerBuilder()
+                        .WithOptions(o =>
+                        {
+                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                            o.ServiceTransportType = serviceTransportType;
+                        })
+                        .WithLoggerFactory(loggerFactory)
+                        .Build();
+                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
+                    var negotiationRes = await serviceHubContext.NegotiateAsync();
+                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
+                    var tcs = new TaskCompletionSource();
+                    conn.Closed += ex =>
                     {
-                        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                        o.ServiceTransportType = serviceTransportType;
-                    })
-                    .WithLoggerFactory(loggerFactory)
-                    .Build();
-                var serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
-                var negotiationRes = await serviceHubContext.NegotiateAsync();
-                var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
-                await conn.StartAsync();
+                        tcs.SetResult();
+                        return Task.CompletedTask;
+                    };
+                    await conn.StartAsync();
+                    var connId = conn.ConnectionId;
+                    var exists = await serviceHubContext.ClientManager.ConnectionExistsAsync(connId);
+                    Assert.True(exists);
 
-                var exists = await serviceHubContext.ClientManager.ConnectionExistsAsync(conn.ConnectionId);
-                Assert.True(exists);
-
-                await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId);
-                exists = await serviceHubContext.ClientManager.ConnectionExistsAsync(conn.ConnectionId);
-                Assert.False(exists);
-
-                await serviceHubContext.DisposeAsync();
+                    await serviceHubContext.ClientManager.CloseConnectionAsync(connId);
+                    await tcs.Task;
+                    exists = await serviceHubContext.ClientManager.ConnectionExistsAsync(connId);
+                    Assert.False(exists);
+                }
+                finally
+                {
+                    await serviceHubContext?.DisposeAsync();
+                }
             }
         }
 
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
         [InlineData(ServiceTransportType.Transient)]
+        [InlineData(ServiceTransportType.Persistent)]
         public async Task CheckUserExistsTest(ServiceTransportType serviceTransportType)
         {
             //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+            ServiceHubContext serviceHubContext = null;
             using (StartLog(out var loggerFactory))
             {
-                var userId = "TestUser";
-                var serviceManager = new ServiceManagerBuilder()
-                    .WithOptions(o =>
+                try
+                {
+                    var userId = "TestUser";
+                    var serviceManager = new ServiceManagerBuilder()
+                        .WithOptions(o =>
+                        {
+                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                            o.ServiceTransportType = serviceTransportType;
+                        })
+                        .WithLoggerFactory(loggerFactory)
+                        .Build();
+                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
+                    var negotiationRes = await serviceHubContext.NegotiateAsync(new() { UserId = userId });
+                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
+                    await conn.StartAsync();
+                    var tcs = new TaskCompletionSource();
+                    conn.Closed += ex =>
                     {
-                        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                        o.ServiceTransportType = serviceTransportType;
-                    })
-                    .WithLoggerFactory(loggerFactory)
-                    .Build();
-                var serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
-                var negotiationRes = await serviceHubContext.NegotiateAsync(new() { UserId = userId });
-                var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
-                await conn.StartAsync();
+                        tcs.SetResult();
+                        return Task.CompletedTask;
+                    };
+                    var exists = await serviceHubContext.ClientManager.UserExistsAsync(userId);
+                    Assert.True(exists);
 
-                var exists = await serviceHubContext.ClientManager.UserExistsAsync(userId);
-                Assert.True(exists);
-
-                await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId);
-                exists = await serviceHubContext.ClientManager.UserExistsAsync(userId);
-                Assert.False(exists);
-
-                await serviceHubContext.DisposeAsync();
+                    await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId);
+                    await tcs.Task;
+                    exists = await serviceHubContext.ClientManager.UserExistsAsync(userId);
+                    Assert.False(exists);
+                }
+                finally
+                {
+                    await serviceHubContext?.DisposeAsync();
+                }
             }
         }
 
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
         [InlineData(ServiceTransportType.Transient)]
+        [InlineData(ServiceTransportType.Persistent)]
         public async Task CheckGroupExistsTest(ServiceTransportType serviceTransportType)
         {
             //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+            ServiceHubContext serviceHubContext = null;
             using (StartLog(out var loggerFactory))
             {
-                var groupName = "TestGroup";
-                var serviceManager = new ServiceManagerBuilder()
-                    .WithOptions(o =>
+                try
+                {
+                    var groupName = "TestGroup";
+                    var serviceManager = new ServiceManagerBuilder()
+                        .WithOptions(o =>
+                        {
+                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                            o.ServiceTransportType = serviceTransportType;
+                        })
+                        .WithLoggerFactory(loggerFactory)
+                        .Build();
+                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
+                    var negotiationRes = await serviceHubContext.NegotiateAsync();
+                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
+                    await conn.StartAsync();
+                    var tcs = new TaskCompletionSource();
+                    conn.Closed += ex =>
                     {
-                        o.ConnectionString = TestConfiguration.Instance.ConnectionString;
-                        o.ServiceTransportType = serviceTransportType;
-                    })
-                    .WithLoggerFactory(loggerFactory)
-                    .Build();
-                var serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
-                var negotiationRes = await serviceHubContext.NegotiateAsync();
-                var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
-                await conn.StartAsync();
+                        tcs.SetResult();
+                        return Task.CompletedTask;
+                    };
 
-                var exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
-                Assert.False(exists);
+                    var exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
+                    Assert.False(exists);
 
-                await serviceHubContext.Groups.AddToGroupAsync(conn.ConnectionId, groupName);
-                exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
-                Assert.True(exists);
+                    await serviceHubContext.Groups.AddToGroupAsync(conn.ConnectionId, groupName);
+                    exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
+                    Assert.True(exists);
 
-                await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId);
-                exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
-                Assert.False(exists);
+                    await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId);
+                    await tcs.Task;
+                    exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
+                    Assert.False(exists);
 
-                await serviceHubContext.DisposeAsync();
+                    await serviceHubContext.DisposeAsync();
+                }
+                finally
+                {
+                    await serviceHubContext.DisposeAsync();
+                }
             }
         }
 
