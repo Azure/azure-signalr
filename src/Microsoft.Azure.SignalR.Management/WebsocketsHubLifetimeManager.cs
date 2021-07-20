@@ -183,11 +183,6 @@ namespace Microsoft.Azure.SignalR.Management
             return WriteAckableMessageAsync(message);
         }
 
-        public Task DisposeAsync()
-        {
-            return ServiceConnectionContainer.StopAsync();
-        }
-
         protected override T AppendMessageTracingId<T>(T message)
         {
             if (_serviceManagerOptions.Value.EnableMessageTracing)

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -19,7 +20,6 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private readonly string _hubName;
         private readonly IHubContext<Hub> _hubContext;
-        private readonly IServiceHubLifetimeManager _lifetimeManager;
         private readonly NegotiateProcessor _negotiateProcessor;
         private readonly IServiceEndpointManager _endpointManager;
 
@@ -37,7 +37,6 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _hubName = hubName;
             _hubContext = hubContext;
-            _lifetimeManager = lifetimeManager;
             Groups = new GroupManagerAdapter(_hubContext.Groups);
             UserGroups = new UserGroupsManagerAdapter(lifetimeManager);
             ClientManager = new ClientManagerAdapter(lifetimeManager);
@@ -55,8 +54,9 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override async Task DisposeAsync()
         {
-            await _lifetimeManager.DisposeAsync();
-            (ServiceProvider as IDisposable)?.Dispose();
+            var host = ServiceProvider.GetRequiredService<IHost>();
+            await host.StopAsync();
+            host.Dispose();
         }
 
         ServiceHubContext IInternalServiceHubContext.WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
