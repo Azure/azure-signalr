@@ -3,6 +3,7 @@
 
 using System;
 using System.Net;
+using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -42,10 +43,10 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
 
-        // TODO: make obsolete once `ServiceHubContextBuilder.WithNewtonsoftJsonHubProtocol()` are public.
         /// <summary>
         /// Gets the json serializer settings that will be used to serialize content sent to Azure SignalR Service.
         /// </summary>
+        [Obsolete("Use ServiceManagerBuilder.WithNewtonsoftJson instead.")]
         public JsonSerializerSettings JsonSerializerSettings { get; } = new JsonSerializerSettings();
 
         /// <summary>
