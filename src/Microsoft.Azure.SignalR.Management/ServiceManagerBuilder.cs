@@ -9,9 +9,13 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -20,7 +24,19 @@ namespace Microsoft.Azure.SignalR.Management
     /// </summary>
     public class ServiceManagerBuilder : IServiceManagerBuilder
     {
-        private readonly IServiceCollection _services = new ServiceCollection();
+        private readonly IServiceCollection _services;
+
+        internal ServiceManagerBuilder(IServiceCollection services)
+        {
+            _services = services;
+        }
+
+        public ServiceManagerBuilder() : this(new ServiceCollection())
+        {
+            _services.AddSignalRServiceManager();
+        }
+
+        private Action<IServiceCollection> _configureAction;
 
         /// <summary>
         /// Registers an action used to configure <see cref="IServiceManager"/>.
@@ -84,16 +100,56 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
+        internal ServiceManagerBuilder ConfigureServices(Action<IServiceCollection> configureAction)
+        {
+            _configureAction = configureAction;
+            return this;
+        }
+
         /// <summary>
         /// Builds <see cref="IServiceManager"/> instances.
         /// </summary>
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
         public IServiceManager Build()
         {
-            return _services.AddSignalRServiceManager()
-                .AddSingleton(_services.ToList() as IReadOnlyCollection<ServiceDescriptor>)
-                .BuildServiceProvider()
+            var serviceCollection = new ServiceCollection().Add(_services)
+                .AddSingleton(_services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
+            _configureAction?.Invoke(serviceCollection);
+            return serviceCollection.BuildServiceProvider()
                 .GetRequiredService<IServiceManager>();
+        }
+
+        /// <summary>
+        /// Builds <see cref="ServiceHubContext"/> instances.
+        /// </summary>
+        /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
+        public async Task<ServiceHubContext> CreateHubContextAsync(string hubName, CancellationToken cancellationToken)
+        {
+            //add requried services
+            using var serviceProvider = _services.BuildServiceProvider();
+            var transportType = serviceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ServiceTransportType;
+            var services = new ServiceCollection().Add(_services);
+            services.AddHub(hubName, transportType);
+            _configureAction?.Invoke(services);
+            services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
+
+            //build
+            var serviceHubContext = services.BuildServiceProvider()
+                .GetRequiredService<ServiceHubContextImpl>();
+
+            //initialize
+            var connectionContainer = serviceHubContext.ServiceProvider.GetService<IServiceConnectionContainer>();
+            if (connectionContainer != null)
+            {
+                await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                await serviceHubContext?.DisposeAsync();
+                throw new OperationCanceledException(cancellationToken);
+            }
+            return serviceHubContext.ServiceProvider.GetRequiredService<ServiceHubContextImpl>();
         }
     }
 }
