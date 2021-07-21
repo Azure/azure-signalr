@@ -25,6 +25,7 @@ namespace Microsoft.Azure.SignalR.Management
     public class ServiceManagerBuilder : IServiceManagerBuilder
     {
         private readonly IServiceCollection _services;
+        private Action<IServiceCollection> _configureAction;
 
         internal ServiceManagerBuilder(IServiceCollection services)
         {
@@ -35,8 +36,6 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _services.AddSignalRServiceManager();
         }
-
-        private Action<IServiceCollection> _configureAction;
 
         /// <summary>
         /// Registers an action used to configure <see cref="IServiceManager"/>.
@@ -112,9 +111,9 @@ namespace Microsoft.Azure.SignalR.Management
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
         public IServiceManager Build()
         {
-            var serviceCollection = new ServiceCollection().Add(_services)
-                .AddSingleton(_services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
+            var serviceCollection = new ServiceCollection().Add(_services);
             _configureAction?.Invoke(serviceCollection);
+            serviceCollection.AddSingleton(_services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
             return serviceCollection.BuildServiceProvider()
                 .GetRequiredService<IServiceManager>();
         }
@@ -123,7 +122,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// Builds <see cref="ServiceHubContext"/> instances.
         /// </summary>
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
-        public async Task<ServiceHubContext> CreateHubContextAsync(string hubName, CancellationToken cancellationToken)
+        internal async Task<ServiceHubContext> CreateHubContextAsync(string hubName, CancellationToken cancellationToken)
         {
             //add requried services
             using var serviceProvider = _services.BuildServiceProvider();
