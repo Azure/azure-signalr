@@ -131,24 +131,25 @@ namespace Microsoft.Azure.SignalR.Management
             services.AddHub(hubName, transportType);
             _configureAction?.Invoke(services);
             services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
-
-            //build
-            var serviceHubContext = services.BuildServiceProvider()
-                .GetRequiredService<ServiceHubContextImpl>();
-
-            //initialize
-            var connectionContainer = serviceHubContext.ServiceProvider.GetService<IServiceConnectionContainer>();
-            if (connectionContainer != null)
+            ServiceHubContextImpl serviceHubContext = null;
+            try
             {
-                await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
+                //build
+                serviceHubContext = services.BuildServiceProvider()
+                    .GetRequiredService<ServiceHubContextImpl>();
+                //initialize
+                var connectionContainer = serviceHubContext.ServiceProvider.GetService<IServiceConnectionContainer>();
+                if (connectionContainer != null)
+                {
+                    await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
+                }
+                return serviceHubContext.ServiceProvider.GetRequiredService<ServiceHubContextImpl>();
             }
-
-            if (cancellationToken.IsCancellationRequested)
+            catch (Exception)
             {
                 await serviceHubContext?.DisposeAsync();
-                throw new OperationCanceledException(cancellationToken);
+                throw;
             }
-            return serviceHubContext.ServiceProvider.GetRequiredService<ServiceHubContextImpl>();
         }
     }
 }
