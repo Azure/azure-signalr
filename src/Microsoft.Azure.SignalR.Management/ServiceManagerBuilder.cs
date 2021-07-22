@@ -145,9 +145,12 @@ namespace Microsoft.Azure.SignalR.Management
                 }
                 return serviceHubContext.ServiceProvider.GetRequiredService<ServiceHubContextImpl>();
             }
-            catch (Exception)
+            catch
             {
-                await serviceHubContext?.DisposeAsync();
+                if (serviceHubContext is not null)
+                {
+                    await serviceHubContext.DisposeAsync();
+                }
                 throw;
             }
         }
