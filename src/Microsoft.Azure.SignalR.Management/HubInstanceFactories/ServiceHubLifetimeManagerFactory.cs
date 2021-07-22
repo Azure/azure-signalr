@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR.Management
 #pragma warning disable CS0618 // Type or member is obsolete
                         var payloadSerializerSettings = _options.JsonSerializerSettings;
 #pragma warning restore CS0618 // Type or member is obsolete
-                              //Currently RestHubProtocol only has Newtonsoft
+                        //Currently RestHubProtocol only has Newtonsoft
                         if (restHubProtocol != null)
                         {
                             var newtonsoftServiceHubProtocolOptions = _serviceProvider.GetService<IOptions<NewtonsoftServiceHubProtocolOptions>>();
