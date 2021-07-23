@@ -9,13 +9,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -123,6 +120,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// Builds <see cref="ServiceManager"/> instances.
         /// </summary>
         /// <returns>The instance of the <see cref="ServiceManager"/>.</returns>
+        /// todo make public
         internal ServiceManager BuildServiceManager()
         {
             var serviceCollection = new ServiceCollection().Add(_services);

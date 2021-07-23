@@ -76,7 +76,6 @@ namespace Microsoft.Azure.SignalR.Management
             }
         }
 
-
         public override void Dispose()
         {
             (_serviceProvider as IDisposable)?.Dispose();
