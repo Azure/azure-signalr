@@ -120,14 +120,10 @@ namespace Microsoft.Azure.SignalR.Management
         /// Builds <see cref="ServiceManager"/> instances.
         /// </summary>
         /// <returns>The instance of the <see cref="ServiceManager"/>.</returns>
-        /// todo make public
+        /// todo: public
         internal ServiceManager BuildServiceManager()
         {
-            var serviceCollection = new ServiceCollection().Add(_services);
-            _configureAction?.Invoke(serviceCollection);
-            serviceCollection.AddSingleton(_services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
-            return serviceCollection.BuildServiceProvider()
-                .GetRequiredService<IServiceManager>() as ServiceManager;
+            return Build() as ServiceManager;
         }
     }
 }
