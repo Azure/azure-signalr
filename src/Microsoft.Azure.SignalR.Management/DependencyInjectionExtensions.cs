@@ -57,7 +57,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         private static IServiceCollection AddSignalRServiceCore(this IServiceCollection services)
         {
-            services.AddSingleton<IServiceManager, ServiceManager>();
+            services.AddSingleton<IServiceManager, ServiceManagerImpl>();
             services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
             services.AddSignalR()
                 .AddAzureSignalR<CascadeServiceOptionsSetup>();

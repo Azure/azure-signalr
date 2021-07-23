@@ -9,13 +9,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -109,6 +106,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// Builds <see cref="IServiceManager"/> instances.
         /// </summary>
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
+        /// todo: obsolete
         public IServiceManager Build()
         {
             var serviceCollection = new ServiceCollection().Add(_services);
@@ -119,40 +117,13 @@ namespace Microsoft.Azure.SignalR.Management
         }
 
         /// <summary>
-        /// Builds <see cref="ServiceHubContext"/> instances.
+        /// Builds <see cref="ServiceManager"/> instances.
         /// </summary>
-        /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
-        internal async Task<ServiceHubContext> CreateHubContextAsync(string hubName, CancellationToken cancellationToken)
+        /// <returns>The instance of the <see cref="ServiceManager"/>.</returns>
+        /// todo: public
+        internal ServiceManager BuildServiceManager()
         {
-            //add requried services
-            using var serviceProvider = _services.BuildServiceProvider();
-            var transportType = serviceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ServiceTransportType;
-            var services = new ServiceCollection().Add(_services);
-            services.AddHub(hubName, transportType);
-            _configureAction?.Invoke(services);
-            services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
-            ServiceHubContextImpl serviceHubContext = null;
-            try
-            {
-                //build
-                serviceHubContext = services.BuildServiceProvider()
-                    .GetRequiredService<ServiceHubContextImpl>();
-                //initialize
-                var connectionContainer = serviceHubContext.ServiceProvider.GetService<IServiceConnectionContainer>();
-                if (connectionContainer != null)
-                {
-                    await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
-                }
-                return serviceHubContext.ServiceProvider.GetRequiredService<ServiceHubContextImpl>();
-            }
-            catch
-            {
-                if (serviceHubContext is not null)
-                {
-                    await serviceHubContext.DisposeAsync();
-                }
-                throw;
-            }
+            return Build() as ServiceManager;
         }
     }
 }
