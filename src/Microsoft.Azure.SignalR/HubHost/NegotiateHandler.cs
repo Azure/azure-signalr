@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Localization;
@@ -18,6 +19,27 @@ namespace Microsoft.Azure.SignalR
 {
     internal class NegotiateHandler<THub> where THub : Hub
     {
+        //AvailableTransport copy from https://github.com/dotnet/aspnetcore/tree/2be49d930a5fb53e781abd175c3b2a8f8b7827d4/src/SignalR/common/Http.Connections/src/Internal/HttpConnectionDispatcher.cs
+        private static readonly AvailableTransport _webSocketAvailableTransport =
+            new()
+            {
+                Transport = nameof(HttpTransportType.WebSockets),
+                TransferFormats = new List<string> { nameof(TransferFormat.Text), nameof(TransferFormat.Binary) }
+            };
+
+        private static readonly AvailableTransport _serverSentEventsAvailableTransport =
+            new()
+            {
+                Transport = nameof(HttpTransportType.ServerSentEvents),
+                TransferFormats = new List<string> { nameof(TransferFormat.Text) }
+            };
+
+        private static readonly AvailableTransport _longPollingAvailableTransport =
+            new()
+            {
+                Transport = nameof(HttpTransportType.LongPolling),
+                TransferFormats = new List<string> { nameof(TransferFormat.Text), nameof(TransferFormat.Binary) }
+            };
         private readonly IUserIdProvider _userIdProvider;
         private readonly IConnectionRequestIdProvider _connectionRequestIdProvider;
         private readonly Func<HttpContext, IEnumerable<Claim>> _claimsProvider;
@@ -33,15 +55,16 @@ namespace Microsoft.Azure.SignalR
         private readonly int _customHandshakeTimeout;
         private readonly string _hubName;
         private readonly ILogger<NegotiateHandler<THub>> _logger;
+        private readonly Func<HttpContext, HttpTransportType> _transportTypeProvider;
 
         public NegotiateHandler(
             IOptions<HubOptions> globalHubOptions,
             IOptions<HubOptions<THub>> hubOptions,
-            IServiceEndpointManager endpointManager, 
-            IEndpointRouter router, 
-            IUserIdProvider userIdProvider, 
-            IServerNameProvider nameProvider, 
-            IConnectionRequestIdProvider connectionRequestIdProvider, 
+            IServiceEndpointManager endpointManager,
+            IEndpointRouter router,
+            IUserIdProvider userIdProvider,
+            IServerNameProvider nameProvider,
+            IConnectionRequestIdProvider connectionRequestIdProvider,
             IOptions<ServiceOptions> options,
             IBlazorDetector blazorDetector,
             ILogger<NegotiateHandler<THub>> logger)
@@ -59,6 +82,7 @@ namespace Microsoft.Azure.SignalR
             _enableDetailedErrors = globalHubOptions.Value.EnableDetailedErrors == true;
             _endpointsCount = options.Value.Endpoints.Length;
             _maxPollInterval = options.Value.MaxPollIntervalInSeconds;
+            _transportTypeProvider = options.Value.TransportTypeProvider;
             _customHandshakeTimeout = GetCustomHandshakeTimeout(hubOptions.Value.HandshakeTimeout ?? globalHubOptions.Value.HandshakeTimeout);
             _hubName = typeof(THub).Name;
         }
@@ -77,13 +101,14 @@ namespace Microsoft.Azure.SignalR
             }
 
             var queryString = GetQueryString(request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : null, cultureName);
+            var availableTransports = GetAvailableTransports(_transportTypeProvider.Invoke(context));
 
             return new NegotiationResponse
             {
                 Url = provider.GetClientEndpoint(_hubName, originalPath, queryString),
                 AccessToken = await provider.GenerateClientAccessTokenAsync(_hubName, claims),
                 // Need to set this even though it's technically protocol violation https://github.com/aspnet/SignalR/issues/2133
-                AvailableTransports = new List<AvailableTransport>()
+                AvailableTransports = availableTransports
             };
         }
 
@@ -164,6 +189,24 @@ namespace Microsoft.Azure.SignalR
             return path.EndsWith(Constants.Path.Negotiate)
                 ? path.Substring(0, path.Length - Constants.Path.Negotiate.Length)
                 : string.Empty;
+        }
+
+        private static List<AvailableTransport> GetAvailableTransports(HttpTransportType httpTransportType)
+        {
+            var availableTransports = new List<AvailableTransport>();
+            if ((httpTransportType & HttpTransportType.WebSockets) != 0)
+            {
+                availableTransports.Add(_webSocketAvailableTransport);
+            }
+            if ((httpTransportType & HttpTransportType.ServerSentEvents) != 0)
+            {
+                availableTransports.Add(_serverSentEventsAvailableTransport);
+            }
+            if ((httpTransportType & HttpTransportType.LongPolling) != 0)
+            {
+                availableTransports.Add(_longPollingAvailableTransport);
+            }
+            return availableTransports;
         }
 
         private static class Log

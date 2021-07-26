@@ -75,7 +75,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.StartsWith("http://redirect/client/?hub=hub", negotiateResponse.Url);
             Assert.NotNull(negotiateResponse.AccessToken);
             Assert.Null(negotiateResponse.ConnectionId);
-            Assert.Empty(negotiateResponse.AvailableTransports);
+            Assert.Equal(3, negotiateResponse.AvailableTransports.Count);
 
             var token = JwtSecurityTokenHandler.ReadJwtToken(negotiateResponse.AccessToken);
             Assert.Equal(expectedUserId, token.Claims.FirstOrDefault(x => x.Type == Constants.ClaimType.UserId)?.Value);
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.NotNull(negotiateResponse.Url);
             Assert.NotNull(negotiateResponse.AccessToken);
             Assert.Null(negotiateResponse.ConnectionId);
-            Assert.Empty(negotiateResponse.AvailableTransports);
+            Assert.Equal(3, negotiateResponse.AvailableTransports.Count);
 
             var token = JwtSecurityTokenHandler.ReadJwtToken(negotiateResponse.AccessToken);
             Assert.Equal(DefaultUserId, token.Claims.FirstOrDefault(x => x.Type == Constants.ClaimType.UserId)?.Value);
@@ -513,7 +513,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.NotNull(negotiateResponse.Url);
             Assert.NotNull(negotiateResponse.AccessToken);
             Assert.Null(negotiateResponse.ConnectionId);
-            Assert.Empty(negotiateResponse.AvailableTransports);
+            Assert.Equal(3, negotiateResponse.AvailableTransports.Count);
 
             var token = JwtSecurityTokenHandler.ReadJwtToken(negotiateResponse.AccessToken);
 

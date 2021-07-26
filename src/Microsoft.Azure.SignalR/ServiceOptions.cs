@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Azure.SignalR
@@ -90,5 +91,10 @@ namespace Microsoft.Azure.SignalR
         /// Default value is 5, limited to [1, 300].
         /// </summary>
         public int? MaxPollIntervalInSeconds { get; set; }
+
+        /// <summary>
+        /// Gets or sets a bitmask combining one or more <see cref="HttpTransportType"/> values that specify what transports the server should use to receive HTTP requests.
+        /// </summary>
+        public Func<HttpContext, HttpTransportType> TransportTypeProvider { get; set; } = context => HttpTransports.All;
     }
 }
