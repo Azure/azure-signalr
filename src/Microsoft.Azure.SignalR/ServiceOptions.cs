@@ -93,8 +93,8 @@ namespace Microsoft.Azure.SignalR
         public int? MaxPollIntervalInSeconds { get; set; }
 
         /// <summary>
-        /// Gets or sets a bitmask combining one or more <see cref="HttpTransportType"/> values that specify what transports the server should use to receive HTTP requests.
+        /// Gets or sets a function which accepts <see cref="HttpContext"/> and returns a bitmask combining one or more <see cref="HttpTransportType"/> values that specify what transports the service should use to receive HTTP requests.
         /// </summary>
-        public Func<HttpContext, HttpTransportType> TransportTypeProvider { get; set; } = context => HttpTransports.All;
+        public Func<HttpContext, HttpTransportType> TransportTypeDetector { get; set; } = null;
     }
 }
