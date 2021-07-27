@@ -17,10 +17,10 @@ namespace Microsoft.Azure.SignalR.Management
             _connectionContainer = connectionContainer;
         }
 
-        public async Task StartAsync(CancellationToken token)
+        public Task StartAsync(CancellationToken token)
         {
             _ = _connectionContainer.StartAsync();
-            await _connectionContainer.ConnectionInitializedTask.OrTimeout(token, TimeSpan.FromMinutes(1), "establishing service connections");
+            return _connectionContainer.ConnectionInitializedTask.OrTimeout(token, TimeSpan.FromMinutes(1), "establishing service connections");
         }
 
         public Task StopAsync(CancellationToken _)

@@ -41,6 +41,7 @@ namespace Microsoft.Azure.SignalR.Management
             });
 
             IHost host = null;
+            var shouldDispose = false;
             try
             {
                 host = _hostBuilder.Build();
@@ -49,12 +50,19 @@ namespace Microsoft.Azure.SignalR.Management
             }
             catch
             {
+                shouldDispose = true;
                 if (host != null)
                 {
                     await host.StopAsync();
-                    host.Dispose();
                 }
                 throw;
+            }
+            finally
+            {
+                if(shouldDispose && host!=null)
+                {
+                    host.Dispose();
+                }
             }
         }
     }
