@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR.Management
             _router = router;
         }
 
-        public MultiEndpointServiceConnectionContainer Connect(string hubName)
+        public MultiEndpointServiceConnectionContainer Create(string hubName)
         {
             var container = new MultiEndpointServiceConnectionContainer(
                 hubName,
@@ -32,7 +32,6 @@ namespace Microsoft.Azure.SignalR.Management
                 _endpointManager,
                 _router,
                 _loggerFactory);
-            container.StartAsync();
             return container;
         }
     }

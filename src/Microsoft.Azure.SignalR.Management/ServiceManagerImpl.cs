@@ -9,14 +9,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Common.RestClients;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.Rest;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    //todo public
+    //todo public [ServiceManager]
     internal class ServiceManagerImpl : ServiceManager, IServiceManager
     {
         private readonly RestClientFactory _restClientFactory;
@@ -36,44 +34,19 @@ namespace Microsoft.Azure.SignalR.Management
 
         public async Task<IServiceHubContext> CreateHubContextAsync(string hubName, ILoggerFactory loggerFactory, CancellationToken cancellationToken)
         {
-            var builder = new ServiceHubContextBuilder(new ServiceCollection().Add(_services));
+            var builder = new ServiceHubContextBuilder(_services);
             if (loggerFactory != null)
             {
-                builder.WithLoggerFactory(loggerFactory);
+                builder.ConfigureServices(services => services.AddSingleton(loggerFactory));
             }
             var serviceHubContext = await builder.CreateAsync(hubName, cancellationToken);
             return serviceHubContext;
         }
 
-        public override async Task<ServiceHubContext> CreateHubContextAsync(string hubName, CancellationToken cancellationToken)
+        public override Task<ServiceHubContext> CreateHubContextAsync(string hubName, CancellationToken cancellationToken)
         {
-            var services = new ServiceCollection().Add(_services);
-            using var serviceProvider = services.BuildServiceProvider();
-            var transportType = serviceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ServiceTransportType;
-            services.AddSingleton(_services);
-            services.AddHub(hubName, transportType);
-            ServiceHubContextImpl serviceHubContext = null;
-            try
-            {
-                //build
-                serviceHubContext = services.BuildServiceProvider()
-                    .GetRequiredService<ServiceHubContextImpl>();
-                //initialize
-                var connectionContainer = serviceHubContext.ServiceProvider.GetService<IServiceConnectionContainer>();
-                if (connectionContainer != null)
-                {
-                    await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
-                }
-                return serviceHubContext.ServiceProvider.GetRequiredService<ServiceHubContextImpl>();
-            }
-            catch
-            {
-                if (serviceHubContext is not null)
-                {
-                    await serviceHubContext.DisposeAsync();
-                }
-                throw;
-            }
+            var builder = new ServiceHubContextBuilder(_services);
+            return builder.CreateAsync(hubName, cancellationToken);
         }
 
         public override void Dispose()

@@ -59,13 +59,14 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [Theory]
         public async Task Call_NegotiateAsync_After_WithEndpoints(ServiceTransportType serviceTransportType)
         {
-            var hubContext = await new ServiceHubContextBuilder()
-                                .WithOptions(o =>
-                                {
-                                    o.ServiceTransportType = serviceTransportType;
-                                    o.ServiceEndpoints = ServiceEndpoints;
-                                })
-                                .CreateAsync(Hub, default);
+            var serviceManager = new ServiceManagerBuilder()
+                .WithOptions(o =>
+                {
+                    o.ServiceTransportType = serviceTransportType;
+                    o.ServiceEndpoints = ServiceEndpoints;
+                })
+                .BuildServiceManager();
+            var hubContext = await serviceManager.CreateHubContextAsync(Hub, default);
             for (var i = 0; i < 5; i++)
             {
                 var randomEndpoint = ServiceEndpoints[StaticRandom.Next(0, Count)];
@@ -169,18 +170,19 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private async Task MockConnectionTestAsync(ServiceTransportType serviceTransportType, Func<ServiceHubContext, Task> testAction, Action<Dictionary<HubServiceEndpoint, List<TestServiceConnection>>> assertAction)
         {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            using (StartLog(out var loggerFactory, LogLevel.Debug))
             {
                 var connectionFactory = new TestServiceConnectionFactory();
-                var hubContext = await new ServiceHubContextBuilder()
-                                .WithOptions(o =>
-                                {
-                                    o.ServiceTransportType = serviceTransportType;
-                                    o.ServiceEndpoints = ServiceEndpoints;
-                                })
-                                .WithLoggerFactory(loggerFactory)
-                                .ConfigureServices(services => services.AddSingleton<IServiceConnectionFactory>(connectionFactory))
-                                .CreateAsync(Hub, default);
+                var serviceManager = new ServiceManagerBuilder()
+                    .WithOptions(o =>
+                    {
+                        o.ServiceTransportType = serviceTransportType;
+                        o.ServiceEndpoints = ServiceEndpoints;
+                    })
+                    .WithLoggerFactory(loggerFactory)
+                    .ConfigureServices(services => services.AddSingleton<IServiceConnectionFactory>(connectionFactory))
+                    .BuildServiceManager();
+                var hubContext = await serviceManager.CreateHubContextAsync(Hub,default);
 
                 await testAction.Invoke(hubContext);
 
