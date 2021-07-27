@@ -43,11 +43,10 @@ namespace Microsoft.Azure.SignalR.Management
             return serviceHubContext;
         }
 
-        public async override Task<ServiceHubContext> CreateHubContextAsync(string hubName, CancellationToken cancellationToken)
+        public override Task<ServiceHubContext> CreateHubContextAsync(string hubName, CancellationToken cancellationToken)
         {
             var builder = new ServiceHubContextBuilder(_services);
-            var serviceHubContext = await builder.CreateAsync(hubName, cancellationToken);
-            return serviceHubContext;
+            return builder.CreateAsync(hubName, cancellationToken);
         }
 
         public override void Dispose()

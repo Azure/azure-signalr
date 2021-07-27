@@ -54,9 +54,8 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override async Task DisposeAsync()
         {
-            var host = ServiceProvider.GetRequiredService<IHost>();
+            using var host = ServiceProvider.GetRequiredService<IHost>();
             await host.StopAsync();
-            host.Dispose();
         }
 
         ServiceHubContext IInternalServiceHubContext.WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
