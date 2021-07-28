@@ -33,15 +33,16 @@ namespace Microsoft.Azure.SignalR
         private readonly int _customHandshakeTimeout;
         private readonly string _hubName;
         private readonly ILogger<NegotiateHandler<THub>> _logger;
+        private readonly Func<HttpContext, HttpTransportType> _transportTypeDetector;
 
         public NegotiateHandler(
             IOptions<HubOptions> globalHubOptions,
             IOptions<HubOptions<THub>> hubOptions,
-            IServiceEndpointManager endpointManager, 
-            IEndpointRouter router, 
-            IUserIdProvider userIdProvider, 
-            IServerNameProvider nameProvider, 
-            IConnectionRequestIdProvider connectionRequestIdProvider, 
+            IServiceEndpointManager endpointManager,
+            IEndpointRouter router,
+            IUserIdProvider userIdProvider,
+            IServerNameProvider nameProvider,
+            IConnectionRequestIdProvider connectionRequestIdProvider,
             IOptions<ServiceOptions> options,
             IBlazorDetector blazorDetector,
             ILogger<NegotiateHandler<THub>> logger)
@@ -59,6 +60,7 @@ namespace Microsoft.Azure.SignalR
             _enableDetailedErrors = globalHubOptions.Value.EnableDetailedErrors == true;
             _endpointsCount = options.Value.Endpoints.Length;
             _maxPollInterval = options.Value.MaxPollIntervalInSeconds;
+            _transportTypeDetector = options.Value.TransportTypeDetector;
             _customHandshakeTimeout = GetCustomHandshakeTimeout(hubOptions.Value.HandshakeTimeout ?? globalHubOptions.Value.HandshakeTimeout);
             _hubName = typeof(THub).Name;
         }
@@ -111,7 +113,8 @@ namespace Microsoft.Azure.SignalR
             // Make sticky mode required if detect using blazor
             var mode = _blazorDetector.IsBlazor(_hubName) ? ServerStickyMode.Required : _mode;
             var userId = _userIdProvider.GetUserId(new ServiceHubConnectionContext(context));
-            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(context), _customHandshakeTimeout).ToList();
+            var httpTransportType = _transportTypeDetector?.Invoke(context);
+            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(context), _customHandshakeTimeout, httpTransportType).ToList();
         }
 
         private Func<IEnumerable<Claim>> GetClaimsProvider(HttpContext context)
