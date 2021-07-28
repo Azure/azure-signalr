@@ -41,8 +41,8 @@
     <SignedPackageFile Include="$(PublishDir)MessagePack.dll" Certificate="$(ThirdPartyAssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Authentication.JwtBearer.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Connections.Abstractions.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
-    <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Http.Features.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Http.Connections.Common.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Http.Features.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.JsonPatch.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.SignalR.Common.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
