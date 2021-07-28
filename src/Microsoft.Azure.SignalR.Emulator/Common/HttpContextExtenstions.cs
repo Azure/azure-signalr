@@ -5,6 +5,7 @@ using System.Security.Claims;
 
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace Microsoft.Azure.SignalR.Common
 {
@@ -12,7 +13,12 @@ namespace Microsoft.Azure.SignalR.Common
     {
         internal static string GetUserIdentifier(this ConnectionContext connectionContext)
         {
-            var user = connectionContext.Features.Get<IConnectionUserFeature>()?.User;
+            return connectionContext.Features.GetUserIdentifier();
+        }
+
+        internal static string GetUserIdentifier(this IFeatureCollection userFeature)
+        {
+            var user = userFeature.Get<IConnectionUserFeature>()?.User;
             if (user != null)
             {
                 var customUserIdClaim = user.FindFirst(Constants.ClaimTypes.UserIdClaimType);
