@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Emulator.HubEmulator;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -73,6 +74,7 @@ namespace Microsoft.Azure.SignalR.Emulator
         {
             services.AddSingleton(typeof(HubLifetimeManager<>), typeof(CachedHubLifetimeManager<>));
             services.AddSingleton(typeof(HubProxyHandler<>));
+            services.AddSingleton<IUserIdProvider, AzureSignalRCustomUserIdProvider>();
             services.AddSingleton(typeof(HttpServerlessMessageHandler<>));
             services.AddSingleton<IHttpUpstreamTrigger, HttpUpstreamTrigger>();
             services.AddSingleton<DynamicHubContextStore>();
@@ -101,6 +103,14 @@ namespace Microsoft.Azure.SignalR.Emulator
             }
 
             return null;
+        }
+
+        private sealed class AzureSignalRCustomUserIdProvider : IUserIdProvider
+        {
+            public string GetUserId(HubConnectionContext connection)
+            {
+                return connection.Features.GetUserIdentifier();
+            }
         }
     }
 }
