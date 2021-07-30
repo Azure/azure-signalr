@@ -12,7 +12,8 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestHealthCheckService : IHostedService
     {
-        //used by test
+        //internal by test
+        //An acceptable time to wait before retry when clients negotiate fail
         internal static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(10);
 
         private readonly RestClientFactory _clientFactory;
