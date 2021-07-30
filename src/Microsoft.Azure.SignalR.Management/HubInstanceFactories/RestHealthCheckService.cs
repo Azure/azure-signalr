@@ -12,7 +12,8 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestHealthCheckService : IHostedService
     {
-        private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(2);
+        //used by test
+        internal static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(2);
 
         private readonly RestClientFactory _clientFactory;
         private readonly IServiceEndpointManager _serviceEndpointManager;
