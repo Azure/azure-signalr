@@ -114,7 +114,7 @@ namespace Microsoft.Azure.SignalR
             var mode = _blazorDetector.IsBlazor(_hubName) ? ServerStickyMode.Required : _mode;
             var userId = _userIdProvider.GetUserId(new ServiceHubConnectionContext(context));
             var httpTransportType = _transportTypeDetector?.Invoke(context);
-            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(context), _customHandshakeTimeout, httpTransportType).ToList();
+            return ClaimsUtility.BuildJwtClaims(context.User, userId, GetClaimsProvider(context), _serverName, mode, _enableDetailedErrors, _endpointsCount, _maxPollInterval, IsDiagnosticClient(context), _customHandshakeTimeout, httpTransportType);
         }
 
         private Func<IEnumerable<Claim>> GetClaimsProvider(HttpContext context)
