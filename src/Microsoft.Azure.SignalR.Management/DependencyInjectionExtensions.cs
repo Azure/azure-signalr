@@ -60,9 +60,11 @@ namespace Microsoft.Azure.SignalR.Management
         {
             services.AddSingleton<IServiceManager, ServiceManagerImpl>();
             services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
-            services.AddSignalR()
-                .AddAzureSignalR<CascadeServiceOptionsSetup>();
-
+            
+            var tempServices = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR<CascadeServiceOptionsSetup>().Services;
+            services.Add(tempServices.Where(service => service.ServiceType != typeof(IHostedService)));
+            
             //add dependencies for persistent mode only
             services
                 .AddSingleton<ConnectionFactory>()
