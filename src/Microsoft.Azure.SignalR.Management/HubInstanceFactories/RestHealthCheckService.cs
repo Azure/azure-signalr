@@ -19,8 +19,6 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly ILogger<RestHealthCheckService> _logger;
         private readonly string _hubName;
 
-        private readonly CancellationTokenSource _cancellationTokenSource;
-        private readonly CancellationToken _cancellationToken;
         private readonly TimerAwaitable _timer = new(TimeSpan.Zero, CheckInterval);
 
         public RestHealthCheckService(RestClientFactory clientFactory, IServiceEndpointManager serviceEndpointManager, ILogger<RestHealthCheckService> logger, string hubName)
@@ -29,8 +27,6 @@ namespace Microsoft.Azure.SignalR.Management
             _serviceEndpointManager = serviceEndpointManager;
             _logger = logger;
             _hubName = hubName;
-            _cancellationTokenSource = new();
-            _cancellationToken = _cancellationTokenSource.Token;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -42,7 +38,6 @@ namespace Microsoft.Azure.SignalR.Management
 
         public Task StopAsync(CancellationToken _)
         {
-            _cancellationTokenSource.Cancel();
             _timer.Stop();
             return Task.CompletedTask;
         }
@@ -54,12 +49,8 @@ namespace Microsoft.Azure.SignalR.Management
                 try
                 {
                     using var client = _clientFactory.Create(endpoint);
-                    var isHealthy = await client.IsServiceHealthy(_cancellationToken);
+                    var isHealthy = await client.IsServiceHealthy(_);
                     endpoint.Online = isHealthy;
-                }
-                catch (OperationCanceledException ex) when (ex.CancellationToken == _cancellationToken)
-                {
-                    // the health checker is stopping.
                 }
                 catch (Exception ex)
                 {
