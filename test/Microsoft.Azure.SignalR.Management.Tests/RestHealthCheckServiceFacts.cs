@@ -48,6 +48,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .BuildServiceManager()
                 .CreateHubContextAsync(HubName, default);
             await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync());
+            await serviceHubContext.DisposeAsync();
         }
 
         [Fact]
