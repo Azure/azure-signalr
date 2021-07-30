@@ -10,6 +10,7 @@
   - [Nuget Packages](#nuget-packages)
   - [Getting Started](#getting-started)
     - [Features](#features)
+  - [Create Service Manager](#create-service-manager)
   - [Create Service Hub Context](#create-service-hub-context)
   - [Negotiation](#negotiation)
   - [Send Messages and Manage Groups](#send-messages-and-manage-groups)
@@ -52,46 +53,50 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 | Send to a group except some clients | :heavy_check_mark: | :heavy_check_mark: |
 | Add a user to a group               | :heavy_check_mark: | :heavy_check_mark: |
 | Remove a user from a group          | :heavy_check_mark: | :heavy_check_mark: |
+|
+
+**Features only come with new API**
+|                                     | Transient          | Persistent         |
+|-------------------------------------|--------------------|--------------------|
 | Check if a user in a group          | :heavy_check_mark: | :heavy_check_mark: |
-| Check if a connection exists        | :heavy_check_mark: | `N/A`              |
-| Check if a group exists             | :heavy_check_mark: | `N/A`              |
-| Check if a user exists              | :heavy_check_mark: | `N/A`              |
+| Check if a connection exists        | :heavy_check_mark: | :heavy_check_mark: |
+| Check if a group exists             | :heavy_check_mark: | :heavy_check_mark: |
+| Check if a user exists              | :heavy_check_mark: | :heavy_check_mark: |
 | Close a client connection           | :heavy_check_mark: | :heavy_check_mark: |
 
 
 > More details about different modes can be found [here](#Transport-Type).
 
-## Create Service Hub Context
+## Create Service Manager
 
-Build your instance of `ServiceHubContext` from a `ServiceHubContextBuilder`:
+Build your instance of `ServiceManager` from a `ServiceManagerBuilder`
 
 ``` C#
-var serviceHubContext = await new ServiceHubContextBuilder()
-        .WithOptions(options => options.ConnectionString = "<Your Azure SignalR Service Connection String>")
-        .CreateAsync("<Your hub name>", default);
+
+var serviceManager = new ServiceManagerBuilder()
+                    .WithOptions(option => 
+                    {
+                        option.ConnectionString = "<Your Azure SignalR Service Connection String>";
+                    })
+                    .BuildServiceManager();
+    
 ```
 
-Instead of setting the options directly, you can specify a `IConfiguration` instance via method `ServiceHubContextBuilder.WithConfiguration(IConfiguration configuration)` and the configuration section `Azure:SignalR` will be bound to [ServiceManagerOptions](https://github.com/Azure/azure-signalr/blob/dev/src/Microsoft.Azure.SignalR.Management/Configuration/ServiceManagerOptions.cs). This is useful when you want to change your SignalR Service instances dynamically. Here is a code sample and a configuration JSON file sample:
+You can use `ServiceManager` to check the Azure SignalR endpoint health and create service hub context. The following [section](#create-service-hub-context) provides details about creating service hub context. 
 
-```C#
-var serviceHubContext = await new ServiceHubContextBuilder()
-        .WithConfiguration(configuration)
-        .CreateAsync("<Your hub name>", default);
+To check the Azure SignalR endpoint health, you can use `ServiceManager.IsServiceHealthy` method. Note that if you have multiple Azure SignalR endpoints, only the first endpoint will be checked.
+
+```cs
+var health = await serviceManager.IsServiceHealthy(cancellationToken);
 ```
-<!--Todo: Add sample link-->
+<!--Todo: Add multiple endpoint guide-->
+## Create Service Hub Context
 
-```json
-{
-    "Azure": {
-        "SignalR": {
-            "ConnectionString": "<YourConnectionString>",
-            "ApplicationName": "ManagementApp",
-            "ServiceTransportType": "Transient"
-        }
-    }
-}
+Create your instance of `ServiceHubContext` from a `ServiceManager`:
+
+``` C#
+var serviceHubContext = await serviceManager.CreateServiceHubContext("<Your Hub Name>",cancellationToken);
 ```
-
 ## Negotiation
 
 > In server mode, an endpoint `/<Your Hub Name>/negotiate` is exposed for negotiation by Azure SignalR Service SDK. SignalR clients will reach this endpoint and then redirect to Azure SignalR Service later.
@@ -127,13 +132,13 @@ The `ServiceHubContext` we build from `ServiceHubContextBuilder` is a class that
 try
 {
     // Broadcast
-    hubContext.Clients.All.SendAsync(callbackName, obj1, obj2, ...);
+    await hubContext.Clients.All.SendAsync(callbackName, obj1, obj2, ...);
 
     // Send to user
-    hubContext.Clients.User(userId).SendAsync(callbackName, obj1, obj2, ...);
+    await hubContext.Clients.User(userId).SendAsync(callbackName, obj1, obj2, ...);
 
     // Send to group
-    hubContext.Clients.Group(groupId).SendAsync(callbackName, obj1, obj2, ...);
+    await hubContext.Clients.Group(groupId).SendAsync(callbackName, obj1, obj2, ...);
 
     // add user to group
     await hubContext.UserGroups.AddToGroupAsync(userId, groupName);

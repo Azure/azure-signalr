@@ -1,13 +1,14 @@
-# `ServiceManagerBuilder` to `ServiceHubContextBuilder` Migration guidance
+# `IServiceManager` to `ServiceManager` Migration guidance
 
-This guidance is intended to assist in the migration to `ServiceHubContextBuilder` from `ServiceManagerBuilder`. It will focus on side-by-side comparisons for similar operations between the legacy and the new APIs. The new APIs will be released in version 10.0.0 .
+This guidance is intended to assist in the migration to `ServiceManager` from `IServiceManager`. It will focus on side-by-side comparisons for similar operations between the legacy and the new APIs. The new APIs will be released in version 10.0.0 .
 
 We assume that you are familiar with the usage of `ServiceManagerBuilder` and the related APIs, otherwise, please refer the [Azure SignalR Service Management SDK ](management-sdk-guide.md) other than this guidance.
-- [`ServiceManagerBuilder` to `ServiceHubContextBuilder` Migration guidance](#servicemanagerbuilder-to-servicehubcontextbuilder-migration-guidance)
+- [`IServiceManager` to `ServiceManager` Migration guidance](#iservicemanager-to-servicemanager-migration-guidance)
   - [Migration Benefits](#migration-benefits)
   - [Change Overview](#change-overview)
   - [API comparisons](#api-comparisons)
-    - [Entry point](#entry-point)
+    - [Build service manager](#build-service-manager)
+    - [Create service hub context](#create-service-hub-context)
     - [Negotiate](#negotiate)
     - [Send Messages and Manage Groups](#send-messages-and-manage-groups)
     - [Health check](#health-check)
@@ -17,34 +18,43 @@ We assume that you are familiar with the usage of `ServiceManagerBuilder` and th
 ## Migration Benefits
 * The new APIs provide more functionalities to manage your clients and groups, such as closing a connection by connection id, checking if a connection exists, if a user exists, if a group exists. 
 * The new APIs provide more options for negotiation, such as whether the client is a diagnostic client.
-* The new APIs are more friendly for negotiation with multiple SignalR Service instances. `IServiceManager.GetClientEndpoint` and `IServiceManager.GenerateClientAccessToken` are combined into one method to make sure the client endpoint and the access token come from the same SignalR Service endpoint. An `HttpContext` instance is allowed to passed into the endpoint router to provide more information for the routing. <!--Todo Add link about sharding doc-->
+* The new APIs are more friendly for negotiation with multiple SignalR Service instances. `IServiceManager.GetClientEndpoint` and `IServiceManager.GenerateClientAccessToken` are combined into one method to make sure the client endpoint and the access token come from the same SignalR Service endpoint. An `HttpContext` instance is allowed to passed into the endpoint router to provide more information for the routing. 
+<!--Todo Add link about sharding doc-->
 
 ## Change Overview
-The following image shows the relation for the legacy APIs (green blocks) and the new APIs (blue blocks). Currently, to get a `ServiceHubContext` which implements `IServiceHubContext` interface, you just need to create it directly from `ServiceHubContextBuilder`. The `ServiceHubContext` abstract class combines the functionalities of `IServiceManager` and `IServiceHubContext`.
-
-![image](./images/migration-class-diagram.png)
-
+Generally we use abstract classes to replace interfaces for better extensibility under different frameworks (.Net Standard 2.0, .Net Core 3.1, ...). `IServiceManager` is replaced by abstract class `ServiceManager`; `IServiceHubContext` is replaced by `ServiceHubContext`. What's more, negotiation is moved from `IServiceManager` to `ServiceHubContext`.
 ## API comparisons
-
-### Entry point
+### Build service manager
 
 **Legacy APIs**
 ```cs
 var serviceManager = new ServiceManagerBuilder()
     .WithOptions(o => o.ConnectionString = "<Your ConnectionString>")
-    .Build();
+    .Build(); //build method is changed
 ```
 
 **New APIs**
 ```cs
-var serviceHubContext = await new ServiceHubContextBuilder()
+var serviceManager = new ServiceManagerBuilder()
     .WithOptions(o => o.ConnectionString = "<Your ConnectionString>")
-    .CreateAsync("<Your Hub Name>", cancellationToken);
+    .WithLoggerFactory(loggerFactory) // optional, specify a custom logger factory instance for the whole management SDK
+    .BuildServiceManager(); // note this
 ```
+
 <!--Add sharding link-->
+### Create service hub context
 
-Note that you need to specify a hub name at the beginning in the new APIs.
+**Legacy APIs**
+```cs
+var serviceHubContext = await serviceManager.CreateServiceHubContextAsync("<Your Hub Name>", loggerFactory, cancellationToken);
+```
 
+**New APIs**
+```cs
+var serviceHubContext = await serviceManager.CreateServiceHubContextAsync("<Your Hub Name>", cancellationToken);
+```
+
+If you have custom logger factory, you should specify it when you create the service manager with new APIs. [See sample in the previous section](#build-service-manager)
 ### Negotiate
 
 **Legacy APIs**
