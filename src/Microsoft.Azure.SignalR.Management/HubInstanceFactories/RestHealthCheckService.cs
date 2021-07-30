@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Management
     internal class RestHealthCheckService : IHostedService
     {
         //used by test
-        internal static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(2);
+        internal static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(10);
 
         private readonly RestClientFactory _clientFactory;
         private readonly IServiceEndpointManager _serviceEndpointManager;
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.SignalR.Management
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Check health status failed for endpoint {endpoint}", endpoint.Endpoint);
+                    Log.RestHealthCheckFailed(_logger, endpoint.Endpoint, ex);
                     endpoint.Online = false;
                 }
             }));
@@ -66,10 +66,20 @@ namespace Microsoft.Azure.SignalR.Management
             using (_timer)
             {
                 _timer.Start();
-                while(await _timer)
+                while (await _timer)
                 {
                     await CheckEndpointHealthAsync();
                 }
+            }
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, string, Exception> _restHealthCheckFailed = LoggerMessage.Define<string>(LogLevel.Error, new EventId(1, nameof(RestHealthCheckFailed)), "Failed to check health state for endpoint {endpoint}");
+
+            public static void RestHealthCheckFailed(ILogger logger, string endpoint, Exception exception)
+            {
+                _restHealthCheckFailed(logger, endpoint, exception);
             }
         }
     }

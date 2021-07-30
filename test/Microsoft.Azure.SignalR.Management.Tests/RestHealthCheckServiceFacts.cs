@@ -74,7 +74,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.NotNull(serviceHubContext.NegotiateAsync().Result);
 
             //Wait until the next health check finish
-            await Task.Delay(RestHealthCheckService.CheckInterval.Add(TimeSpan.FromSeconds(10)));
+            await Task.Delay(RestHealthCheckService.CheckInterval.Add(TimeSpan.FromSeconds(1)));
             await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync());
 
             await serviceHubContext.DisposeAsync();
