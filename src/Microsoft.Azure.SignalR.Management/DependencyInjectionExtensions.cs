@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR.Management
             services.AddSingleton<IServiceConnectionContainer>(sp => sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().Create(hubName))
                 .AddSingleton<ConnectionService>();
             //for transient
-            services.AddSingleton<RestHealthCheckService>();
+            services.AddSingleton(sp => ActivatorUtilities.CreateInstance<RestHealthCheckService>(sp, hubName));
 
             return services
                 .AddSingleton<ServiceHubLifetimeManagerFactory>()

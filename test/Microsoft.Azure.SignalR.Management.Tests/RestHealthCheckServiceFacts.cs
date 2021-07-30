@@ -1,0 +1,82 @@
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.SignalR.Common;
+using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Testing;
+using Microsoft.Extensions.Options;
+using Moq;
+using Moq.Protected;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace Microsoft.Azure.SignalR.Management.Tests
+{
+    public class RestHealthCheckServiceFacts : LoggedTest
+    {
+        private const string HubName = "hub";
+        public static IEnumerable<object[]> TestRestClientFactoryData
+        {
+            get
+            {
+                yield return new object[] { new TestRestClientFactory("userAgent", HttpStatusCode.BadGateway) };
+                yield return new object[] { new TestRestClientFactory("userAgent", HttpStatusCode.NotFound) };
+                yield return new object[] { new TestRestClientFactory("userAgent", (req, token) => throw new HttpRequestException()) };
+            }
+        }
+        public RestHealthCheckServiceFacts(ITestOutputHelper output = null) : base(output)
+        {
+        }
+
+        [Theory]
+        [MemberData(nameof(TestRestClientFactoryData))]
+        internal async Task TestRestHealthCheckServiceWithUnhealthyEndpoint(RestClientFactory implementationInstance)
+        {
+            using var _ = StartLog(out var loggerFactory);
+            var serviceHubContext = await new ServiceManagerBuilder()
+                .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
+                .WithLoggerFactory(loggerFactory)
+                .ConfigureServices(services => services.AddSingleton(implementationInstance))
+                .BuildServiceManager()
+                .CreateHubContextAsync(HubName, default);
+            await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync());
+        }
+
+        [Fact]
+        public async Task TestRestHealthCheckServiceWithEndpointFromHealthyToUnhealthy()
+        {
+            var handlerMock = new Mock<DelegatingHandler>();
+            // mock health api calls first return healthy then unhealthy.
+            handlerMock.Protected().SetupSequence<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+               .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK))
+               .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadGateway));
+            
+            using var _ = StartLog(out var loggerFactory);
+            var services = new ServiceCollection()
+                .AddHttpClient(Options.DefaultName).ConfigurePrimaryHttpMessageHandler(() => handlerMock.Object).Services
+                .AddSignalRServiceManager();
+            var serviceHubContext = await new ServiceManagerBuilder(services)
+                .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
+                .WithLoggerFactory(loggerFactory)
+                .BuildServiceManager()
+                .CreateHubContextAsync(HubName, default);
+            
+            //The first negotiation is OK
+            Assert.NotNull(serviceHubContext.NegotiateAsync().Result);
+
+            //Wait until the next health check finish
+            await Task.Delay(TimeSpan.FromMinutes(2.01));
+            await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync());
+
+            await serviceHubContext.DisposeAsync();
+        }
+    }
+}
