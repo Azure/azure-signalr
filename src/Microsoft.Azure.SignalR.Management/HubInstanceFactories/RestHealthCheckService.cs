@@ -51,7 +51,6 @@ namespace Microsoft.Azure.SignalR.Management
 
         private async void CheckEndpointHealthAsync(object _)
         {
-            var endpoints = _serviceEndpointManager.GetEndpoints(_hubName);
             await Task.WhenAll(_serviceEndpointManager.GetEndpoints(_hubName).Select(async endpoint =>
             {
                 try
@@ -69,11 +68,9 @@ namespace Microsoft.Azure.SignalR.Management
                     _logger.LogError(ex, "Check health status failed for endpoint {endpoint}", endpoint.Endpoint);
                     endpoint.Online = false;
                 }
-                finally
-                {
-                    _firstCheckCompletionSource.TrySetResult(true);
-                }
             })).OrTimeout(_cancellationToken, CheckHealthTimeout, nameof(CheckEndpointHealthAsync));
+            _firstCheckCompletionSource.TrySetResult(true);
+
         }
 
         public void Dispose()
