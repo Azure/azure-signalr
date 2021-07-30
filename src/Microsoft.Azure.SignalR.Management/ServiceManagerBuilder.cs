@@ -111,7 +111,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             var serviceCollection = new ServiceCollection().Add(_services);
             _configureAction?.Invoke(serviceCollection);
-            serviceCollection.AddSingleton(_services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
+            serviceCollection.AddSingleton(serviceCollection.ToList() as IReadOnlyCollection<ServiceDescriptor>);
             return serviceCollection.BuildServiceProvider()
                 .GetRequiredService<IServiceManager>();
         }

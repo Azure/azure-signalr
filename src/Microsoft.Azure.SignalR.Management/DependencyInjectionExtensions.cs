@@ -1,12 +1,15 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 using System.ComponentModel;
+using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -60,9 +63,11 @@ namespace Microsoft.Azure.SignalR.Management
         {
             services.AddSingleton<IServiceManager, ServiceManagerImpl>();
             services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
-            services.AddSignalR()
-                .AddAzureSignalR<CascadeServiceOptionsSetup>();
-
+            
+            var tempServices = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR<CascadeServiceOptionsSetup>().Services;
+            services.Add(tempServices.Where(service => service.ServiceType != typeof(IHostedService)));
+            
             //add dependencies for persistent mode only
             services
                 .AddSingleton<ConnectionFactory>()
