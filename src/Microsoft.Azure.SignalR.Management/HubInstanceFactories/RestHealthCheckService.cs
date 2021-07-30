@@ -49,7 +49,7 @@ namespace Microsoft.Azure.SignalR.Management
                 try
                 {
                     using var client = _clientFactory.Create(endpoint);
-                    var isHealthy = await client.IsServiceHealthy(_);
+                    var isHealthy = await client.IsServiceHealthy(default);
                     endpoint.Online = isHealthy;
                 }
                 catch (Exception ex)
