@@ -10,21 +10,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class RestHealthCheckService : IDisposable, IHostedService
+    internal class RestHealthCheckService : IHostedService
     {
         private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(2);
-        // CheckHealthTimeout is a little shorter than CheckInterval, make sure before each check start, the last check finish.
-        private static readonly TimeSpan CheckHealthTimeout = TimeSpan.FromSeconds(110);
 
         private readonly RestClientFactory _clientFactory;
         private readonly IServiceEndpointManager _serviceEndpointManager;
         private readonly ILogger<RestHealthCheckService> _logger;
         private readonly string _hubName;
 
-        private readonly TaskCompletionSource<bool> _firstCheckCompletionSource = new();
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly CancellationToken _cancellationToken;
-        private Timer _timer;
+        private readonly TimerAwaitable _timer = new(TimeSpan.Zero, CheckInterval);
 
         public RestHealthCheckService(RestClientFactory clientFactory, IServiceEndpointManager serviceEndpointManager, ILogger<RestHealthCheckService> logger, string hubName)
         {
@@ -36,20 +33,21 @@ namespace Microsoft.Azure.SignalR.Management
             _cancellationToken = _cancellationTokenSource.Token;
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
-            _timer = new Timer(CheckEndpointHealthAsync, null, TimeSpan.Zero, CheckInterval);
-            return _firstCheckCompletionSource.Task.OrTimeout(cancellationToken);
+            // wait for the first health check finished
+            await CheckEndpointHealthAsync();
+            _ = LoopAsync();
         }
 
         public Task StopAsync(CancellationToken _)
         {
             _cancellationTokenSource.Cancel();
-            _firstCheckCompletionSource.TrySetCanceled();
+            _timer.Stop();
             return Task.CompletedTask;
         }
 
-        private async void CheckEndpointHealthAsync(object _)
+        private async Task CheckEndpointHealthAsync()
         {
             await Task.WhenAll(_serviceEndpointManager.GetEndpoints(_hubName).Select(async endpoint =>
             {
@@ -68,14 +66,19 @@ namespace Microsoft.Azure.SignalR.Management
                     _logger.LogError(ex, "Check health status failed for endpoint {endpoint}", endpoint.Endpoint);
                     endpoint.Online = false;
                 }
-            })).OrTimeout(_cancellationToken, CheckHealthTimeout, nameof(CheckEndpointHealthAsync));
-            _firstCheckCompletionSource.TrySetResult(true);
-
+            }));
         }
 
-        public void Dispose()
+        private async Task LoopAsync()
         {
-            _timer.Dispose();
+            using (_timer)
+            {
+                _timer.Start();
+                while(await _timer)
+                {
+                    await CheckEndpointHealthAsync();
+                }
+            }
         }
     }
 }
