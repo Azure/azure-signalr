@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly ILogger<RestHealthCheckService> _logger;
         private readonly string _hubName;
 
-        private readonly TimerAwaitable _timer = new(TimeSpan.Zero, CheckInterval);
+        private readonly TimerAwaitable _timer = new(CheckInterval, CheckInterval);
 
         public RestHealthCheckService(RestClientFactory clientFactory, IServiceEndpointManager serviceEndpointManager, ILogger<RestHealthCheckService> logger, string hubName)
         {
