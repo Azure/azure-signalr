@@ -15,7 +15,5 @@ namespace Microsoft.Azure.SignalR.Management
         Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken);
 
         Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken);
-
-        Task DisposeAsync();
     }
 }

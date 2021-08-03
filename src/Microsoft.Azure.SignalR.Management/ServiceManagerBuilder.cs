@@ -11,6 +11,7 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -20,7 +21,18 @@ namespace Microsoft.Azure.SignalR.Management
     /// </summary>
     public class ServiceManagerBuilder : IServiceManagerBuilder
     {
-        private readonly IServiceCollection _services = new ServiceCollection();
+        private readonly IServiceCollection _services;
+        private Action<IServiceCollection> _configureAction;
+
+        internal ServiceManagerBuilder(IServiceCollection services)
+        {
+            _services = services;
+        }
+
+        public ServiceManagerBuilder() : this(new ServiceCollection())
+        {
+            _services.AddSignalRServiceManager();
+        }
 
         /// <summary>
         /// Registers an action used to configure <see cref="IServiceManager"/>.
@@ -84,16 +96,34 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
+        internal ServiceManagerBuilder ConfigureServices(Action<IServiceCollection> configureAction)
+        {
+            _configureAction = configureAction;
+            return this;
+        }
+
         /// <summary>
         /// Builds <see cref="IServiceManager"/> instances.
         /// </summary>
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
+        /// todo: obsolete
         public IServiceManager Build()
         {
-            return _services.AddSignalRServiceManager()
-                .AddSingleton(_services.ToList() as IReadOnlyCollection<ServiceDescriptor>)
-                .BuildServiceProvider()
+            var serviceCollection = new ServiceCollection().Add(_services);
+            _configureAction?.Invoke(serviceCollection);
+            serviceCollection.AddSingleton(serviceCollection.ToList() as IReadOnlyCollection<ServiceDescriptor>);
+            return serviceCollection.BuildServiceProvider()
                 .GetRequiredService<IServiceManager>();
+        }
+
+        /// <summary>
+        /// Builds <see cref="ServiceManager"/> instances.
+        /// </summary>
+        /// <returns>The instance of the <see cref="ServiceManager"/>.</returns>
+        /// todo: public
+        internal ServiceManager BuildServiceManager()
+        {
+            return Build() as ServiceManager;
         }
     }
 }

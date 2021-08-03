@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
@@ -34,7 +35,8 @@ namespace Microsoft.Azure.SignalR
             bool enableDetailedErrors = false, 
             int endpointsCount = 1,
             int? maxPollInterval = null,
-            bool isDiagnosticClient = false, int handshakeTimeout = Constants.Periods.DefaultHandshakeTimeout)
+            bool isDiagnosticClient = false, int handshakeTimeout = Constants.Periods.DefaultHandshakeTimeout,
+            HttpTransportType? httpTransportType = null)
         {
             if (userId != null)
             {
@@ -97,6 +99,11 @@ namespace Microsoft.Azure.SignalR
             if (maxPollInterval.HasValue)
             {
                 yield return new Claim(Constants.ClaimType.MaxPollInterval, maxPollInterval.Value.ToString());
+            }
+
+            if (httpTransportType.HasValue)
+            {
+                yield return new Claim(Constants.ClaimType.HttpTransportType, ((int)httpTransportType).ToString());
             }
 
             // return customer's claims

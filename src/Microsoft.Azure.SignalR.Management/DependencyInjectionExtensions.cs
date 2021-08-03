@@ -1,12 +1,15 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 using System.ComponentModel;
+using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -38,17 +41,18 @@ namespace Microsoft.Azure.SignalR.Management
             return services.AddSignalRServiceCore();
         }
 
-        public static IServiceCollection AddHub(this IServiceCollection services, string hubName, ServiceTransportType transportType)
+
+        public static IServiceCollection AddHub(this IServiceCollection services, string hubName)
         {
-            switch (transportType)
-            {
-                case ServiceTransportType.Persistent: 
-                    services.AddSingleton<IServiceConnectionContainer>(sp => sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().Connect(hubName));
-                    break;
-                case ServiceTransportType.Transient: break;
-            }
+            //for persistent
+            services.AddSingleton<IServiceConnectionContainer>(sp => sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().Create(hubName))
+                .AddSingleton<ConnectionService>();
+            //for transient
+            services.AddSingleton<RestHealthCheckService>();
+
             return services
                 .AddSingleton<ServiceHubLifetimeManagerFactory>()
+                .AddSingleton(sp => ActivatorUtilities.CreateInstance<HostedServiceFactory>(sp).Create())
                 .AddSingleton(sp => sp.GetRequiredService<ServiceHubLifetimeManagerFactory>().Create(hubName))
                 .AddSingleton(sp => (HubLifetimeManager<Hub>)sp.GetRequiredService<IServiceHubLifetimeManager>())
                 .AddSingleton(sp => ActivatorUtilities.CreateInstance<ServiceHubContextImpl>(sp, hubName))
@@ -57,11 +61,13 @@ namespace Microsoft.Azure.SignalR.Management
 
         private static IServiceCollection AddSignalRServiceCore(this IServiceCollection services)
         {
-            services.AddSingleton<IServiceManager, ServiceManager>();
+            services.AddSingleton<IServiceManager, ServiceManagerImpl>();
             services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
-            services.AddSignalR()
-                .AddAzureSignalR<CascadeServiceOptionsSetup>();
-
+            
+            var tempServices = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR<CascadeServiceOptionsSetup>().Services;
+            services.Add(tempServices.Where(service => service.ServiceType != typeof(IHostedService)));
+            
             //add dependencies for persistent mode only
             services
                 .AddSingleton<ConnectionFactory>()

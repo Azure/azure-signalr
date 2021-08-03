@@ -65,6 +65,7 @@ namespace Microsoft.Azure.SignalR
             public const string MaxPollInterval = AzureSignalRSysPrefix + "ttl";
             public const string DiagnosticClient = AzureSignalRSysPrefix + "dc";
             public const string CustomHandshakeTimeout = AzureSignalRSysPrefix + "cht";
+            public const string HttpTransportType = AzureSignalRSysPrefix + "htt";
 
             public const string AzureSignalRUserPrefix = "asrs.u.";
         }
