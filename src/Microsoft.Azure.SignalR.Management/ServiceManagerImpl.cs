@@ -74,23 +74,10 @@ namespace Microsoft.Azure.SignalR.Management
             return _endpointProvider.GetClientEndpoint(hubName, null, null);
         }
 
-        public override async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
+        public override Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
             using var restClient = _restClientFactory.Create(_endpoint);
-            try
-            {
-                var healthApi = restClient.HealthApi;
-                using var response = await healthApi.GetHealthStatusWithHttpMessagesAsync(cancellationToken: cancellationToken);
-                return true;
-            }
-            catch (HttpOperationException e) when ((int)e.Response.StatusCode >= 500 && (int)e.Response.StatusCode < 600)
-            {
-                return false;
-            }
-            catch (Exception ex)
-            {
-                throw ex.WrapAsAzureSignalRException(restClient.BaseUri);
-            }
+            return restClient.IsServiceHealthy(cancellationToken);
         }
     }
 }
