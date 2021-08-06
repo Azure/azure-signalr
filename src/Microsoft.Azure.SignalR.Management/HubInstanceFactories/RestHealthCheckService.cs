@@ -15,6 +15,8 @@ namespace Microsoft.Azure.SignalR.Management
         //internal by test
         //An acceptable time to wait before retry when clients negotiate fail
         internal static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(10);
+        internal static readonly TimeSpan RetryInterval = TimeSpan.FromSeconds(1);
+        private const int MaxRetries = 2;
 
         private readonly RestClientFactory _clientFactory;
         private readonly IServiceEndpointManager _serviceEndpointManager;
@@ -48,17 +50,29 @@ namespace Microsoft.Azure.SignalR.Management
         {
             await Task.WhenAll(_serviceEndpointManager.GetEndpoints(_hubName).Select(async endpoint =>
             {
-                try
+                var retry = 0;
+                var isHealthy = false;
+                bool needRetry;
+                do
                 {
-                    using var client = _clientFactory.Create(endpoint);
-                    var isHealthy = await client.IsServiceHealthy(default);
-                    endpoint.Online = isHealthy;
-                }
-                catch (Exception ex)
-                {
-                    Log.RestHealthCheckFailed(_logger, endpoint.Endpoint, ex);
-                    endpoint.Online = false;
-                }
+                    try
+                    {
+                        using var client = _clientFactory.Create(endpoint);
+                        isHealthy = await client.IsServiceHealthy(default);
+                    }
+                    catch (Exception ex)
+                    {
+                        //Hard to tell if it is transient error, retry anyway.
+                        Log.RestHealthCheckFailed(_logger, endpoint.Endpoint, ex, retry == MaxRetries);
+                    }
+                    needRetry = !isHealthy && retry < MaxRetries;
+                    if (needRetry)
+                    {
+                        await Task.Delay(RetryInterval);
+                    }
+                    retry++;
+                } while (needRetry);
+                endpoint.Online = isHealthy;
             }));
         }
 
@@ -76,11 +90,20 @@ namespace Microsoft.Azure.SignalR.Management
 
         private static class Log
         {
-            private static readonly Action<ILogger, string, Exception> _restHealthCheckFailed = LoggerMessage.Define<string>(LogLevel.Error, new EventId(1, nameof(RestHealthCheckFailed)), "Failed to check health state for endpoint {endpoint}");
+            private static readonly Action<ILogger, string, Exception> _restHealthCheckFailed = LoggerMessage.Define<string>(LogLevel.Information, new EventId(1, nameof(RestHealthCheckFailed)), "Failed to check health state for endpoint {endpoint}");
 
-            public static void RestHealthCheckFailed(ILogger logger, string endpoint, Exception exception)
+            private static readonly Action<ILogger, string, Exception> _restHealthLastCheckFailed = LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, nameof(RestHealthCheckFailed)), "Failed to check health state for endpoint {endpoint}");
+
+            public static void RestHealthCheckFailed(ILogger logger, string endpoint, Exception exception, bool lastRetry)
             {
-                _restHealthCheckFailed(logger, endpoint, exception);
+                if (lastRetry)
+                {
+                    _restHealthLastCheckFailed(logger, endpoint, exception);
+                }
+                else
+                {
+                    _restHealthCheckFailed(logger, endpoint, exception);
+                }
             }
         }
     }

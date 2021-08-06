@@ -58,6 +58,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             // mock health api calls first return healthy then unhealthy.
             handlerMock.Protected().SetupSequence<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK))
+               .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadGateway))
+               .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadGateway))
                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadGateway));
             
             using var _ = StartLog(out var loggerFactory);
@@ -74,7 +76,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.NotNull(serviceHubContext.NegotiateAsync().Result);
 
             //Wait until the next health check finish
-            await Task.Delay(RestHealthCheckService.CheckInterval.Add(TimeSpan.FromSeconds(1)));
+            await Task.Delay(RestHealthCheckService.CheckInterval.Add(TimeSpan.FromSeconds(3)));
             await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync());
 
             await serviceHubContext.DisposeAsync();
