@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -152,11 +151,12 @@ namespace Microsoft.Azure.SignalR
                     context.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(ServerId, to));
                     // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
                     // Since all data messages will be sent to `ServiceConnection` directly.
-                    // We can simply ignore all messages came from the application pipe.
-                    context.Application.Input.CancelPendingRead();
+                    // We can simply ignore all messages came from the application.
+                    context.CancelOutgoing();
+                    // The close connection message must be the last message, so we could complete the pipe.
+                    context.CompleteIncoming();
                 }
             }
-
             return PerformDisconnectAsyncCore(connectionId);
         }
 
