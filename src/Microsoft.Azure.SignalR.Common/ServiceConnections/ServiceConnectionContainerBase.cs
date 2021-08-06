@@ -214,6 +214,15 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
+        public Task HandleKeyAsync(AccessKeyResponseMessage keyMessage)
+        {
+            if (Endpoint.AccessKey is AadAccessKey key)
+            {
+                key.UpdateAccessKey(keyMessage.Kid, keyMessage.AccessKey);
+            }
+            return Task.CompletedTask;
+        }
+
         public void HandleAck(AckMessage ackMessage)
         {
             _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status);
@@ -229,7 +238,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            if (!(serviceMessage is IAckableMessage ackableMessage))
+            if (serviceMessage is not IAckableMessage ackableMessage)
             {
                 throw new ArgumentException($"{nameof(serviceMessage)} is not {nameof(IAckableMessage)}");
             }

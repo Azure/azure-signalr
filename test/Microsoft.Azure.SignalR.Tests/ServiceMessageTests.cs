@@ -24,8 +24,58 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class ServiceMessageTests : VerifiableLoggedTest
     {
+        private static readonly AccessKeyResponseMessage Error = new AccessKeyResponseMessage()
+        {
+            ErrorType = nameof(ArgumentException),
+            ErrorMessage = "This is a error messsage"
+        };
+
+        private static readonly AccessKeyResponseMessage Normal = new AccessKeyResponseMessage()
+        {
+            Kid = "foo",
+            AccessKey = "This is a long long key",
+        };
+
         public ServiceMessageTests(ITestOutputHelper output) : base(output)
         {
+        }
+
+        [Theory]
+        [InlineData("normal", 0)]
+        [InlineData("error", 1)]
+        public async Task TestHandleAccessKeyMessage(string messageType, int logCount)
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Error, expectedErrors: c => logCount > 0,
+                logChecker: logs =>
+                {
+                    Assert.Equal(logCount, logs.Count);
+                    return true;
+                }))
+            {
+                var conn = CreateServiceConnection(loggerFactory: loggerFactory);
+                var ccm = conn.ClientConnectionManager;
+
+                var connectionTask = conn.StartAsync();
+
+                // completed handshake
+                await conn.ConnectionInitializedTask.OrTimeout();
+                Assert.Equal(ServiceConnectionStatus.Connected, conn.Status);
+
+                var message = messageType switch
+                {
+                    "normal" => Normal,
+                    "error" => Error,
+                    _ => throw new NotImplementedException(),
+                };
+                await conn.WriteFromServiceAsync(message);
+
+                // complete reading to end the connection
+                conn.CompleteWriteFromService();
+
+                await connectionTask.OrTimeout();
+                Assert.Equal(ServiceConnectionStatus.Disconnected, conn.Status);
+                Assert.Empty(ccm.ClientConnections);
+            }
         }
 
         [Fact]
@@ -139,17 +189,38 @@ namespace Microsoft.Azure.SignalR.Tests
             );
         }
 
-        private sealed class TestServiceEventHandler : IServiceEventHandler
-        {
-            public Task HandleAsync(string connectionId, ServiceEventMessage message)
-            {
-                return Task.CompletedTask;
-            }
-        }
-
         private sealed class TestConnectionContainer
         {
             public TestConnection Instance { get; set; }
+        }
+
+        private sealed class TestConnectionHandler : ConnectionHandler
+        {
+            private TaskCompletionSource<object> _startedTcs = new TaskCompletionSource<object>();
+
+            public Task Started => _startedTcs.Task;
+
+            public override async Task OnConnectedAsync(ConnectionContext connection)
+            {
+                _startedTcs.TrySetResult(null);
+
+                while (true)
+                {
+                    var result = await connection.Transport.Input.ReadAsync();
+
+                    try
+                    {
+                        if (result.IsCompleted)
+                        {
+                            break;
+                        }
+                    }
+                    finally
+                    {
+                        connection.Transport.Input.AdvanceTo(result.Buffer.End);
+                    }
+                }
+            }
         }
 
         ///<summary>
@@ -241,32 +312,11 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private sealed class TestConnectionHandler : ConnectionHandler
+        private sealed class TestServiceEventHandler : IServiceEventHandler
         {
-            private TaskCompletionSource<object> _startedTcs = new TaskCompletionSource<object>();
-
-            public Task Started => _startedTcs.Task;
-
-            public override async Task OnConnectedAsync(ConnectionContext connection)
+            public Task HandleAsync(string connectionId, ServiceEventMessage message)
             {
-                _startedTcs.TrySetResult(null);
-
-                while (true)
-                {
-                    var result = await connection.Transport.Input.ReadAsync();
-
-                    try
-                    {
-                        if (result.IsCompleted)
-                        {
-                            break;
-                        }
-                    }
-                    finally
-                    {
-                        connection.Transport.Input.AdvanceTo(result.Buffer.End);
-                    }
-                }
+                return Task.CompletedTask;
             }
         }
     }

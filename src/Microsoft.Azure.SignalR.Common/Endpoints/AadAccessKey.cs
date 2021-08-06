@@ -7,21 +7,19 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.SignalR
 {
     internal class AadAccessKey : AccessKey
     {
-        private const string DefaultScope = "https://signalr.azure.com/.default";
-
-        private static readonly TokenRequestContext _defaultRequestContext = new TokenRequestContext(new string[] { DefaultScope });
-
         internal const int AuthorizeIntervalInMinute = 55;
         internal const int AuthorizeMaxRetryTimes = 3;
         internal const int AuthorizeRetryIntervalInSec = 3;
 
+        private const string DefaultScope = "https://signalr.azure.com/.default";
+
+        private static readonly TokenRequestContext _defaultRequestContext = new TokenRequestContext(new string[] { DefaultScope });
         private static readonly TimeSpan AuthorizeInterval = TimeSpan.FromMinutes(AuthorizeIntervalInMinute);
         private static readonly TimeSpan AuthorizeRetryInterval = TimeSpan.FromSeconds(AuthorizeRetryIntervalInSec);
         private static readonly TimeSpan AuthorizeTimeout = TimeSpan.FromSeconds(10);
@@ -56,12 +54,60 @@ namespace Microsoft.Azure.SignalR
             AccessTokenAlgorithm algorithm,
             CancellationToken ctoken = default)
         {
-            await InitializedTask;
-            if (!Authorized)
+            var task = await Task.WhenAny(InitializedTask, ctoken.AsTask());
+
+            if (task == InitializedTask || InitializedTask.IsCompleted)
             {
-                throw new AzureSignalRAccessTokenNotAuthorizedException();
+                await task;
+                if (Authorized)
+                {
+                    return await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm);
+                }
+                else
+                {
+                    throw new AzureSignalRAccessTokenNotAuthorizedException("The given AzureAD identity don't have the permission to generate access token.");
+                }
             }
-            return await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm);
+            else
+            {
+                throw new TaskCanceledException("Timeout reached when authorizing AzureAD identity.");
+            }
+        }
+
+        internal void UpdateAccessKey(string kid, string accessKey)
+        {
+            Key = new Tuple<string, string>(kid, accessKey);
+            _lastUpdatedTime = DateTime.UtcNow;
+            _isAuthorized = true;
+            _initializedTcs.TrySetResult(null);
+        }
+
+        internal async Task UpdateAccessKeyAsync()
+        {
+            if (DateTime.UtcNow - _lastUpdatedTime < AuthorizeInterval)
+            {
+                return;
+            }
+
+            Exception latest = null;
+            for (int i = 0; i < AuthorizeMaxRetryTimes; i++)
+            {
+                var source = new CancellationTokenSource(AuthorizeTimeout);
+                try
+                {
+                    await AuthorizeAsync(source.Token);
+                    return;
+                }
+                catch (Exception e)
+                {
+                    latest = e;
+                    await Task.Delay(AuthorizeRetryInterval);
+                }
+            }
+
+            _isAuthorized = false;
+            _initializedTcs.TrySetResult(null);
+            throw latest;
         }
 
         private async Task AuthorizeAsync(CancellationToken ctoken = default)
@@ -113,40 +159,9 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new AzureSignalRException("Missing required <AccessKey> field.");
             }
-            Key = new Tuple<string, string>(keyId.ToString(), key.ToString());
 
+            UpdateAccessKey(keyId.ToString(), key.ToString());
             return true;
-        }
-
-        internal async Task UpdateAccessKeyAsync()
-        {
-            if (DateTime.UtcNow - _lastUpdatedTime < AuthorizeInterval)
-            {
-                return;
-            }
-
-            Exception latest = null;
-            for (int i = 0; i < AuthorizeMaxRetryTimes; i++)
-            {
-                var source = new CancellationTokenSource(AuthorizeTimeout);
-                try
-                {
-                    await AuthorizeAsync(source.Token);
-                    _lastUpdatedTime = DateTime.UtcNow;
-                    _isAuthorized = true;
-                    _initializedTcs.TrySetResult(null);
-                    return;
-                }
-                catch (Exception e)
-                {
-                    latest = e;
-                    await Task.Delay(AuthorizeRetryInterval);
-                }
-            }
-
-            _isAuthorized = false;
-            _initializedTcs.TrySetResult(null);
-            throw latest;
         }
     }
 }
