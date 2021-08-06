@@ -90,15 +90,15 @@ namespace Microsoft.Azure.SignalR.Management
 
         private static class Log
         {
-            private static readonly Action<ILogger, string, Exception> _restHealthCheckFailed = LoggerMessage.Define<string>(LogLevel.Information, new EventId(1, nameof(RestHealthCheckFailed)), "Failed to check health state for endpoint {endpoint}");
+            private static readonly Action<ILogger, string, Exception> _restHealthCheckFailed = LoggerMessage.Define<string>(LogLevel.Information, new EventId(1, nameof(RestHealthCheckFailed)), "Will retry health check for endpoint {endpoint} after a delay of due to exception");
 
-            private static readonly Action<ILogger, string, Exception> _restHealthLastCheckFailed = LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, nameof(RestHealthCheckFailed)), "Failed to check health state for endpoint {endpoint}");
+            private static readonly Action<ILogger, string, Exception> _finalRestHealthCheckFailed = LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, nameof(RestHealthCheckFailed)), "Failed to check health state for endpoint {endpoint}");
 
             public static void RestHealthCheckFailed(ILogger logger, string endpoint, Exception exception, bool lastRetry)
             {
                 if (lastRetry)
                 {
-                    _restHealthLastCheckFailed(logger, endpoint, exception);
+                    _finalRestHealthCheckFailed(logger, endpoint, exception);
                 }
                 else
                 {
