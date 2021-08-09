@@ -122,6 +122,9 @@ var connection = new HubConnectionBuilder().WithUrl("http://<Your Host Name>/<Yo
 await connection.StartAsync();
 ```
 
+Please note that by default we have a mechanism to check if your SignalR Service is healthy. If none of your SignalR Service is healthy during negotiation, then an `AzureSignalRNotConnectedException` is thrown.
+<!--TODO: After sharding document is ready, add link to sharding doc.-->
+
 The sample on how to use Management SDK to redirect SignalR clients to Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
 
 ## Send Messages and Manage Groups

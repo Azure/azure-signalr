@@ -71,7 +71,7 @@ var accessToken = negotiationResponse.AccessToken;
 ```
 The negotiation API is async now because there is an async operation behind if you use AAD connection string. In the old negotiation API, you just wait for the result synchronously.
 
-Except for the API change, there is also an implementation change. In [Persistent mode](management-sdk-guide.md#transport-type), you will call negotiation API after trying to establish WebSocket connections to Azure SignalR Service, so that you know whether the SignalR Service is healthy/online through the connection status. Therefore, the negotiation API only returns an healthy SignalR endpoint, if there is no healthy SignalR endpoint, an `AzureSignalRNotConnectedException` is thrown. In [Transient mode](management-sdk-guide.md#transport-type), we also have a plan to implement an endpoint health checker.
+Except for the API change, we have also intergrated a health check mechanism with negotiation process. That is, the negotiation only returns a **healthy** SignalR endpoint. If none of your SignalR endpoints is healthy when you negotiate, then an `AzureSignalRNotConnectedException` is thrown.
 
 ### Send Messages and Manage Groups
 **Legacy APIs**
@@ -113,13 +113,9 @@ finally
 With legacy APIs, you need to create a hub context from `IServiceManager`, but with new APIs, you have built a hub context from `ServiceHubContextBuilder` at the beginning. The usages of hub context are nearly the same, except that in the legacy APIs you get an interface `IServiceHubContext` while in the new APIs you get an abstract class `ServiceHubContext`.
 
 ### Health check
-**Legacy APIs**
+The health check API is unchanged.
+
 ```cs
 var isHealthy = await serviceManager.IsServiceHealthy(cancellationToken);
 ```
-
-**New APIs**
-
-N/A
-
-Currently in new APIs, you can't check service health directly. But the health check is integrated into negotiation API partially (implemented in [Persistent mode](management-sdk-guide.md#transport-type) but not yet for [Transient mode](management-sdk-guide.md#transport-type). If you need to check the service health yourself, you could call our [health check REST API](https://docs.microsoft.com/en-us/azure/azure-signalr/signalr-quickstart-rest-api#service-health) yourself.
+If you have multiple SignalR Service instances, only the health status of the first instance is returned.
