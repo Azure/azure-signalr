@@ -1,15 +1,15 @@
-# `IServiceManager` to `ServiceManager` Migration guidance
+# `IServiceManager` to `ServiceManager` Migration Guidance
 
 This guidance is intended to assist in the migration to `ServiceManager` from `IServiceManager`. It will focus on side-by-side comparisons for similar operations between the legacy and the new APIs. The new APIs will be released in version 10.0.0 .
 
 We assume that you are familiar with the usage of `ServiceManagerBuilder` and the related APIs, otherwise, please refer the [Azure SignalR Service Management SDK ](management-sdk-guide.md) other than this guidance.
-- [`IServiceManager` to `ServiceManager` Migration guidance](#iservicemanager-to-servicemanager-migration-guidance)
+- [`IServiceManager` to `ServiceManager` Migration Guidance](#iservicemanager-to-servicemanager-migration-guidance)
   - [Migration Benefits](#migration-benefits)
   - [Change Overview](#change-overview)
   - [API comparisons](#api-comparisons)
     - [Build service manager](#build-service-manager)
     - [Create service hub context](#create-service-hub-context)
-    - [Negotiate](#negotiate)
+    - [Negotiation](#negotiation)
     - [Send Messages and Manage Groups](#send-messages-and-manage-groups)
     - [Health check](#health-check)
 
@@ -18,7 +18,7 @@ We assume that you are familiar with the usage of `ServiceManagerBuilder` and th
 ## Migration Benefits
 * The new APIs provide more functionalities to manage your clients and groups, such as closing a connection by connection id, checking if a connection exists, if a user exists, if a group exists. 
 * The new APIs provide more options for negotiation, such as whether the client is a diagnostic client.
-* The new APIs are more friendly for negotiation with multiple SignalR Service instances. `IServiceManager.GetClientEndpoint` and `IServiceManager.GenerateClientAccessToken` are combined into one method to make sure the client endpoint and the access token come from the same SignalR Service endpoint. An `HttpContext` instance is allowed to passed into the endpoint router to provide more information for the routing. 
+* The new APIs are more friendly for negotiation with multiple SignalR Service instances. `IServiceManager.GetClientEndpoint` and `IServiceManager.GenerateClientAccessToken` are combined into one method to make sure the client endpoint and the access token come from the same SignalR Service endpoint. An `HttpContext` instance is passed into the endpoint router to provide more information for the routing. 
 <!--Todo Add link about sharding doc-->
 
 ## Change Overview
@@ -55,7 +55,7 @@ var serviceHubContext = await serviceManager.CreateServiceHubContextAsync("<Your
 ```
 
 If you have custom logger factory, you should specify it when you create the service manager with new APIs. [See sample in the previous section](#build-service-manager)
-### Negotiate
+### Negotiation
 
 **Legacy APIs**
 ```cs
@@ -81,7 +81,7 @@ try
     var hubcontext = await serviceManager.CreateHubContextAsync("<Your Hub Name>");
 
     // Broadcast
-    hubContext.Clients.All.SendAsync(callbackName, obj1, obj2, ...);
+    await hubContext.Clients.All.SendAsync(callbackName, obj1, obj2, ...);
     
     //...
     
@@ -99,7 +99,7 @@ finally
 try
 {
     // Broadcast
-    hubContext.Clients.All.SendAsync(callbackName, obj1, obj2, ...);
+    await hubContext.Clients.All.SendAsync(callbackName, obj1, obj2, ...);
 
     // add user to group
     await hubContext.UserGroups.AddToGroupAsync(userId, groupName);
