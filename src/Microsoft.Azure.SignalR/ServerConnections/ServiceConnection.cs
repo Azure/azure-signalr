@@ -148,6 +148,7 @@ namespace Microsoft.Azure.SignalR
             {
                 if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
                 {
+                    context.AbortOnClose = false;
                     context.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(ServerId, to));
                     // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
                     // Since all data messages will be sent to `ServiceConnection` directly.

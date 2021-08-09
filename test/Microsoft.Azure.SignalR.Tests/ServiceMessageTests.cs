@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Buffers;
+using System.IO;
 using System.IO.Pipelines;
 using System.Security.Claims;
 using System.Text;
@@ -92,7 +94,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>());
             openConnectionMessage.Headers.Add(Constants.AsrsMigrateFrom, "another-server");
             _ = connection.WriteFromServiceAsync(openConnectionMessage);
-            await connection.ClientConnectionStartedTask;
+            await connection.ConnectedTask;
 
             Assert.Equal(1, clientConnectionFactory.Connections.Count);
             var clientConnection = clientConnectionFactory.Connections[0];
@@ -122,13 +124,13 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var clientConnectionFactory = new TestClientConnectionFactory();
 
-            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(2000, "foobar"));
+            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"));
             _ = connection.StartAsync();
             _ = connection.WriteFromServiceAsync(new HandshakeResponseMessage());
 
             var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>());
             _ = connection.WriteFromServiceAsync(openConnectionMessage);
-            await connection.ClientConnectionStartedTask;
+            await connection.ConnectedTask;
 
             Assert.Equal(1, clientConnectionFactory.Connections.Count);
             var clientConnection = clientConnectionFactory.Connections[0];
@@ -139,30 +141,36 @@ namespace Microsoft.Azure.SignalR.Tests
             SignalRProtocol.HandshakeProtocol.WriteResponseMessage(message, clientConnection.Transport.Output);
             await clientConnection.Transport.Output.FlushAsync();
 
-            // write a close connection message
+            // write a close connection message with migration header
             var closeMessage = new CloseConnectionMessage(clientConnection.ConnectionId);
             closeMessage.Headers.Add(Constants.AsrsMigrateTo, "another-server");
             await connection.WriteFromServiceAsync(closeMessage);
 
-            // write a signalr close message
-            var protocol = new SignalRProtocol.JsonHubProtocol();
-            protocol.WriteMessage(SignalRProtocol.CloseMessage.Empty, clientConnection.Transport.Output);
-            await clientConnection.Transport.Output.FlushAsync();
+            // wait until app task completed.
+            // await Assert.ThrowsAsync<TimeoutException>(async () => await clientConnection.LifetimeTask.OrTimeout(1000));
+            await clientConnection.LifetimeTask;
 
             // expect a handshake response message.
-            await connection.ExpectSignalRMessageAsync(SignalRProtocol.HandshakeResponseMessage.Empty);
+            using (var writer = new MemoryBufferWriter())
+            {
+                SignalRProtocol.HandshakeProtocol.WriteResponseMessage(SignalRProtocol.HandshakeResponseMessage.Empty, writer);
+                var dataMessage = new ConnectionDataMessage(clientConnection.ConnectionId, writer.ToArray());
+                await connection.ExpectConnectionDataMessage(dataMessage);
+            }
 
-            // wait until app task completed.
-            await Assert.ThrowsAsync<TimeoutException>(async () => await clientConnection.LifetimeTask.OrTimeout(500));
-            await clientConnection.LifetimeTask;
+            // signalr close message should be skipped.
+            using (var writer = new MemoryBufferWriter())
+            {
+                var protocol = new SignalRProtocol.JsonHubProtocol();
+                protocol.WriteMessage(SignalRProtocol.CloseMessage.Empty, writer);
+                var dataMessage = new ConnectionDataMessage(clientConnection.ConnectionId, writer.ToArray());
+                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+                await Assert.ThrowsAsync<OperationCanceledException>(async () => await connection.ExpectConnectionDataMessage(dataMessage, cts.Token));
+            }
 
             var feature = clientConnection.Features.Get<IConnectionMigrationFeature>();
             Assert.NotNull(feature);
             Assert.Equal("another-server", feature.MigrateTo);
-
-            // signalr close message should be skipped.
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            await Assert.ThrowsAsync<OperationCanceledException>(async () => await connection.ExpectSignalRMessageAsync(SignalRProtocol.CloseMessage.Empty, protocol, cts.Token));
 
             await connection.StopAsync();
         }
@@ -172,13 +180,13 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var clientConnectionFactory = new TestClientConnectionFactory();
 
-            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(2000, "foobar"));
+            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"));
             _ = connection.StartAsync();
             _ = connection.WriteFromServiceAsync(new HandshakeResponseMessage());
 
             var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>());
             _ = connection.WriteFromServiceAsync(openConnectionMessage);
-            await connection.ClientConnectionStartedTask;
+            await connection.ConnectedTask;
 
             Assert.Equal(1, clientConnectionFactory.Connections.Count);
             var clientConnection = clientConnectionFactory.Connections[0];
@@ -187,25 +195,29 @@ namespace Microsoft.Azure.SignalR.Tests
             var message = new SignalRProtocol.HandshakeResponseMessage("");
             SignalRProtocol.HandshakeProtocol.WriteResponseMessage(message, clientConnection.Transport.Output);
 
-            // write a close connection message
-            var closeMessage = new CloseConnectionMessage(clientConnection.ConnectionId);
-            await connection.WriteFromServiceAsync(closeMessage);
-
-            // write a signalr close message
-            var protocol = new SignalRProtocol.JsonHubProtocol();
-            protocol.WriteMessage(SignalRProtocol.CloseMessage.Empty, clientConnection.Transport.Output);
-            await clientConnection.Transport.Output.FlushAsync();
-
-            // expect a signalr handshake response and a signalr close message.
-            await connection.ExpectSignalRMessageAsync(SignalRProtocol.HandshakeResponseMessage.Empty);
-            await connection.ExpectSignalRMessageAsync(SignalRProtocol.CloseMessage.Empty, protocol);
+            // write close connection message
+            await connection.WriteFromServiceAsync(new CloseConnectionMessage(clientConnection.ConnectionId));
 
             // wait until app task completed.
-            await Assert.ThrowsAsync<TimeoutException>(async () => await clientConnection.LifetimeTask.OrTimeout(500));
+            // await Assert.ThrowsAsync<TimeoutException>(async () => await clientConnection.LifetimeTask.OrTimeout(1000));
             await clientConnection.LifetimeTask;
 
-            // expect a last words.
-            await connection.ExpectServiceMessageAsync(new ConnectionDataMessage("foo", Encoding.UTF8.GetBytes("foobar")));
+            using (var writer = new MemoryBufferWriter())
+            {
+                SignalRProtocol.HandshakeProtocol.WriteResponseMessage(SignalRProtocol.HandshakeResponseMessage.Empty, writer);
+                writer.Write(Encoding.UTF8.GetBytes("foobar"));
+                var dataMessage = new ConnectionDataMessage(clientConnection.ConnectionId, writer.ToArray());
+                await connection.ExpectConnectionDataMessage(dataMessage);
+            }
+
+            // expect a signalr close message.
+            using (var writer = new MemoryBufferWriter())
+            {
+                var protocol = clientConnectionFactory.HubProtocol;
+                protocol.WriteMessage(SignalRProtocol.CloseMessage.Empty, writer);
+                var dataMessage = new ConnectionDataMessage(clientConnection.ConnectionId, writer.ToArray());
+                await connection.ExpectConnectionDataMessage(dataMessage);
+            }
 
             await connection.StopAsync();
         }
@@ -265,10 +277,6 @@ namespace Microsoft.Azure.SignalR.Tests
             private readonly int _shutdownAfter = 0;
             private readonly string _lastWords;
 
-            private TaskCompletionSource<object> _startedTcs = new TaskCompletionSource<object>();
-
-            public Task Started => _startedTcs.Task;
-
             public TestConnectionHandler(int shutdownAfter = 0, string lastWords = null)
             {
                 _shutdownAfter = shutdownAfter;
@@ -277,8 +285,6 @@ namespace Microsoft.Azure.SignalR.Tests
 
             public override async Task OnConnectedAsync(ConnectionContext connection)
             {
-                _startedTcs.TrySetResult(null);
-
                 while (true)
                 {
                     var result = await connection.Transport.Input.ReadAsync();
@@ -287,15 +293,6 @@ namespace Microsoft.Azure.SignalR.Tests
                     {
                         if (result.IsCompleted)
                         {
-                            if (_shutdownAfter > 0)
-                            {
-                                await Task.Delay(_shutdownAfter);
-                            }
-                            if (!string.IsNullOrEmpty(_lastWords))
-                            {
-                                await connection.Transport.Output.WriteAsync(Encoding.UTF8.GetBytes(_lastWords));
-                                await connection.Transport.Output.FlushAsync();
-                            }
                             break;
                         }
                     }
@@ -304,6 +301,24 @@ namespace Microsoft.Azure.SignalR.Tests
                         connection.Transport.Input.AdvanceTo(result.Buffer.End);
                     }
                 }
+
+                // wait application task
+                if (_shutdownAfter > 0)
+                {
+                    await Task.Delay(_shutdownAfter);
+                }
+
+                // write last words
+                if (!string.IsNullOrEmpty(_lastWords))
+                {
+                    await connection.Transport.Output.WriteAsync(Encoding.UTF8.GetBytes(_lastWords));
+                    await connection.Transport.Output.FlushAsync();
+                }
+
+                // write signalr close message
+                var protocol = new SignalRProtocol.JsonHubProtocol();
+                protocol.WriteMessage(SignalRProtocol.CloseMessage.Empty, connection.Transport.Output);
+                await connection.Transport.Output.FlushAsync();
             }
         }
 
@@ -327,13 +342,15 @@ namespace Microsoft.Azure.SignalR.Tests
             private readonly TestConnectionContainer _container;
 
             private readonly TaskCompletionSource _connectedTcs = new TaskCompletionSource();
+            private readonly TaskCompletionSource _disconnectedTcs = new TaskCompletionSource();
 
             public TestClientConnectionManager ClientConnectionManager { get; }
 
             public PipeReader Reader => _connection.Application.Input;
             public PipeWriter Writer => _connection.Application.Output;
 
-            public Task ClientConnectionStartedTask => _connectedTcs.Task;
+            public Task ConnectedTask => _connectedTcs.Task;
+            public Task DisconnectedTask => _disconnectedTcs.Task;
 
             private TestConnection _connection
             {
@@ -379,57 +396,32 @@ namespace Microsoft.Azure.SignalR.Tests
                 ClientConnectionManager = clientConnectionManager;
             }
 
-            public async Task ExpectServiceMessageAsync<T>(T expected, CancellationToken token = default) where T : ServiceMessage
+            private ReadOnlySequence<byte> _payload = new ReadOnlySequence<byte>();
+
+            public async Task ExpectConnectionDataMessage(ConnectionDataMessage expected, CancellationToken token = default)
             {
-                var result = await Reader.ReadAsync(token);
-                var buffer = result.Buffer;
-
-                Assert.True(ServiceProtocol.TryParseMessage(ref buffer, out var actual));
-                Assert.IsType<T>(actual);
-
-                if (expected is ConnectionDataMessage p)
+                ReadOnlySequence<byte> payload;
+                if (_payload.IsEmpty)
                 {
-                    var q = (ConnectionDataMessage)actual;
-                    Assert.Equal(p.ConnectionId, q.ConnectionId);
-                    Assert.Equal(Encoding.UTF8.GetString(p.Payload), Encoding.UTF8.GetString(q.Payload));
-                }
-            }
-
-            public async Task ExpectSignalRMessageAsync<T>(T expected, SignalRProtocol.IHubProtocol hubProtocol = null, CancellationToken token = default) where T : SignalRProtocol.HubMessage
-            {
-                var result = await Reader.ReadAsync(token);
-
-                var buffer = result.Buffer;
-
-                Assert.True(ServiceProtocol.TryParseMessage(ref buffer, out var message));
-                Assert.IsType<ConnectionDataMessage>(message);
-                var dataMessage = (ConnectionDataMessage)message;
-                var payload = dataMessage.Payload;
-
-                if (expected is SignalRProtocol.HandshakeRequestMessage req)
-                {
-                    Assert.True(SignalRProtocol.HandshakeProtocol.TryParseRequestMessage(ref payload, out var actual));
-                    Assert.Equal(req, actual);
-                }
-                else if (expected is SignalRProtocol.HandshakeResponseMessage)
-                {
-                    Assert.True(SignalRProtocol.HandshakeProtocol.TryParseResponseMessage(ref payload, out var actual));
-                    Assert.IsType<T>(actual);
+                    var result = await Reader.ReadAsync(token);
+                    var buffer = result.Buffer;
+                    Assert.True(ServiceProtocol.TryParseMessage(ref buffer, out var message));
+                    Assert.IsType<ConnectionDataMessage>(message);
+                    var dataMessage = (ConnectionDataMessage)message;
+                    Assert.Equal(expected.ConnectionId, dataMessage.ConnectionId);
+                    payload = dataMessage.Payload;
+                    Reader.AdvanceTo(buffer.Start);
                 }
                 else
                 {
-                    Assert.NotNull(hubProtocol);
-                    Assert.True(hubProtocol.TryParseMessage(ref payload, null, out var actual));
-                    Assert.IsType<T>(actual);
+                    payload = _payload;
                 }
-                Reader.AdvanceTo(buffer.Start);
 
-                if (!payload.IsEmpty)
-                {
-                    var data = new ConnectionDataMessage(dataMessage.ConnectionId, payload.Slice(payload.Start));
-                    ServiceProtocol.WriteMessage(data, _connection.Transport.Output);
-                    await _connection.Transport.Output.FlushAsync();
-                }
+                Assert.True(payload.Length >= expected.Payload.Length);
+                var actual = payload.Slice(0, expected.Payload.Length);
+                Assert.Equal(Encoding.UTF8.GetString(expected.Payload), Encoding.UTF8.GetString(actual));
+
+                _payload = payload.Slice(expected.Payload.Length);
             }
 
             public void CompleteWriteFromService()
@@ -440,12 +432,24 @@ namespace Microsoft.Azure.SignalR.Tests
             public async Task WriteFromServiceAsync(ServiceMessage message)
             {
                 await Writer.WriteAsync(DefaultProtocol.GetMessageBytes(message));
+                await Writer.FlushAsync();
+            }
+
+            protected override ValueTask TrySendPingAsync()
+            {
+                return ValueTask.CompletedTask;
             }
 
             protected override async Task OnClientConnectedAsync(OpenConnectionMessage message)
             {
                 await base.OnClientConnectedAsync(message);
                 _connectedTcs.TrySetResult();
+            }
+
+            protected override async Task OnClientDisconnectedAsync(CloseConnectionMessage message)
+            {
+                await base.OnClientDisconnectedAsync(message);
+                _disconnectedTcs.TrySetResult();
             }
         }
 

@@ -567,7 +567,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async ValueTask TrySendPingAsync()
+        protected virtual async ValueTask TrySendPingAsync()
         {
             if (!_writeLock.Wait(0))
             {
