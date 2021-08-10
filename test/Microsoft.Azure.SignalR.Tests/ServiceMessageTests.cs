@@ -2,23 +2,27 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
+using System.Buffers;
+using System.IO;
 using System.IO.Pipelines;
 using System.Security.Claims;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Primitives;
+
 using Xunit;
 using Xunit.Abstractions;
+
 using static Microsoft.Azure.SignalR.Tests.ServiceConnectionTests;
+
+using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
@@ -79,75 +83,154 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async Task TestServiceConnectionForMigratedIn()
+        public async Task TestOpenConnectionMessageWithMigrateIn()
         {
             var clientConnectionFactory = new TestClientConnectionFactory();
 
             var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory);
+            _ = connection.StartAsync();
+            _ = connection.WriteFromServiceAsync(new HandshakeResponseMessage());
 
-            // create a connection with migration header.
-            await connection.OnClientConnectedAsyncForTest(new OpenConnectionMessage("foo", new Claim[0])
-            {
-                Headers = new Dictionary<string, StringValues>{
-                    { Constants.AsrsMigrateFrom, "another-server" }
-                }
-            });
+            var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>());
+            openConnectionMessage.Headers.Add(Constants.AsrsMigrateFrom, "another-server");
+            _ = connection.WriteFromServiceAsync(openConnectionMessage);
+            await connection.ConnectedTask;
 
             Assert.Equal(1, clientConnectionFactory.Connections.Count);
-            var context = clientConnectionFactory.Connections[0];
-            Assert.True(context.IsMigrated);
+            var clientConnection = clientConnectionFactory.Connections[0];
+            Assert.True(clientConnection.IsMigrated);
 
-            var message = new AspNetCore.SignalR.Protocol.HandshakeResponseMessage("");
-            HandshakeProtocol.WriteResponseMessage(message, context.Transport.Output);
-            await context.Transport.Output.FlushAsync();
+            // write a handshake response
+            var message = new SignalRProtocol.HandshakeResponseMessage("");
+            SignalRProtocol.HandshakeProtocol.WriteResponseMessage(message, clientConnection.Transport.Output);
+            await clientConnection.Transport.Output.FlushAsync();
 
-            var task = context.Transport.Input.ReadAsync();
+            var task = clientConnection.Transport.Input.ReadAsync();
             await Task.Delay(100);
 
             // nothing should be written into the transport
             Assert.False(task.IsCompleted);
-            Assert.True(context.IsMigrated);
+            Assert.True(clientConnection.IsMigrated);
 
-            var feature = context.Features.Get<IConnectionMigrationFeature>();
+            var feature = clientConnection.Features.Get<IConnectionMigrationFeature>();
             Assert.NotNull(feature);
             Assert.Equal("another-server", feature.MigrateFrom);
+
+            await connection.StopAsync();
         }
 
         [Fact]
-        public async Task TestServiceConnectionForMigratedOut()
+        public async Task TestCloseConnectionMessageWithMigrateOut()
         {
-            var factory = new TestClientConnectionFactory();
+            var clientConnectionFactory = new TestClientConnectionFactory();
 
-            CancellationTokenSource cts = new();
-            var connection = CreateServiceConnection(clientConnectionFactory: factory, mode: GracefulShutdownMode.MigrateClients);
+            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"));
+            _ = connection.StartAsync();
+            _ = connection.WriteFromServiceAsync(new HandshakeResponseMessage());
 
-            // create a connection with migration header.
-            await connection.OnClientConnectedAsyncForTest(new OpenConnectionMessage("foo", new Claim[0]));
+            var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>());
+            _ = connection.WriteFromServiceAsync(openConnectionMessage);
+            await connection.ConnectedTask;
 
-            var context = factory.Connections[0];
+            Assert.Equal(1, clientConnectionFactory.Connections.Count);
+            var clientConnection = clientConnectionFactory.Connections[0];
+            Assert.False(clientConnection.IsMigrated);
 
-            var closeMessage = new CloseConnectionMessage(context.ConnectionId);
+            // write a signalr handshake response
+            var message = new SignalRProtocol.HandshakeResponseMessage("");
+            SignalRProtocol.HandshakeProtocol.WriteResponseMessage(message, clientConnection.Transport.Output);
+            await clientConnection.Transport.Output.FlushAsync();
+
+            // write a close connection message with migration header
+            var closeMessage = new CloseConnectionMessage(clientConnection.ConnectionId);
             closeMessage.Headers.Add(Constants.AsrsMigrateTo, "another-server");
+            await connection.WriteFromServiceAsync(closeMessage);
 
-            var disconnect = connection.OnClientDisconnectedAsyncForTest(closeMessage);
+            // wait until app task completed.
+            // await Assert.ThrowsAsync<TimeoutException>(async () => await clientConnection.LifetimeTask.OrTimeout(1000));
+            await clientConnection.LifetimeTask;
 
-            var feature = context.Features.Get<IConnectionMigrationFeature>();
+            // expect a handshake response message.
+            using (var writer = new MemoryBufferWriter())
+            {
+                SignalRProtocol.HandshakeProtocol.WriteResponseMessage(SignalRProtocol.HandshakeResponseMessage.Empty, writer);
+                var dataMessage = new ConnectionDataMessage(clientConnection.ConnectionId, writer.ToArray());
+                await connection.ExpectConnectionDataMessage(dataMessage);
+            }
+
+            // signalr close message should be skipped.
+            using (var writer = new MemoryBufferWriter())
+            {
+                var protocol = new SignalRProtocol.JsonHubProtocol();
+                protocol.WriteMessage(SignalRProtocol.CloseMessage.Empty, writer);
+                var dataMessage = new ConnectionDataMessage(clientConnection.ConnectionId, writer.ToArray());
+                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+                await Assert.ThrowsAsync<OperationCanceledException>(async () => await connection.ExpectConnectionDataMessage(dataMessage, cts.Token));
+            }
+
+            var feature = clientConnection.Features.Get<IConnectionMigrationFeature>();
             Assert.NotNull(feature);
             Assert.Equal("another-server", feature.MigrateTo);
 
-            cts.Cancel();
-            await disconnect.OrTimeout();
+            await connection.StopAsync();
         }
 
-        private static TestServiceConnection CreateServiceConnection(Action<ConnectionBuilder> use = null,
-                                                                      TestClientConnectionManager clientConnectionManager = null,
-                                                                      string serverId = null,
-                                                                      string connectionId = null,
-                                                                      GracefulShutdownMode? mode = null,
-                                                                      IServiceMessageHandler messageHandler = null,
-                                                                      IServiceEventHandler eventHandler = null,
-                                                                      IClientConnectionFactory clientConnectionFactory = null,
-                                                                      ILoggerFactory loggerFactory = null)
+        [Fact]
+        public async Task TestCloseConnectionMessage()
+        {
+            var clientConnectionFactory = new TestClientConnectionFactory();
+
+            var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"));
+            _ = connection.StartAsync();
+            _ = connection.WriteFromServiceAsync(new HandshakeResponseMessage());
+
+            var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>());
+            _ = connection.WriteFromServiceAsync(openConnectionMessage);
+            await connection.ConnectedTask;
+
+            Assert.Equal(1, clientConnectionFactory.Connections.Count);
+            var clientConnection = clientConnectionFactory.Connections[0];
+
+            // write a signalr handshake response
+            var message = new SignalRProtocol.HandshakeResponseMessage("");
+            SignalRProtocol.HandshakeProtocol.WriteResponseMessage(message, clientConnection.Transport.Output);
+
+            // write close connection message
+            await connection.WriteFromServiceAsync(new CloseConnectionMessage(clientConnection.ConnectionId));
+
+            // wait until app task completed.
+            // await Assert.ThrowsAsync<TimeoutException>(async () => await clientConnection.LifetimeTask.OrTimeout(1000));
+            await clientConnection.LifetimeTask;
+
+            using (var writer = new MemoryBufferWriter())
+            {
+                SignalRProtocol.HandshakeProtocol.WriteResponseMessage(SignalRProtocol.HandshakeResponseMessage.Empty, writer);
+                writer.Write(Encoding.UTF8.GetBytes("foobar"));
+                var dataMessage = new ConnectionDataMessage(clientConnection.ConnectionId, writer.ToArray());
+                await connection.ExpectConnectionDataMessage(dataMessage);
+            }
+
+            // expect a signalr close message.
+            using (var writer = new MemoryBufferWriter())
+            {
+                var protocol = clientConnectionFactory.HubProtocol;
+                protocol.WriteMessage(SignalRProtocol.CloseMessage.Empty, writer);
+                var dataMessage = new ConnectionDataMessage(clientConnection.ConnectionId, writer.ToArray());
+                await connection.ExpectConnectionDataMessage(dataMessage);
+            }
+
+            await connection.StopAsync();
+        }
+
+        private static TestServiceConnection CreateServiceConnection(ConnectionHandler handler = null,
+                                                                     TestClientConnectionManager clientConnectionManager = null,
+                                                                     string serverId = null,
+                                                                     string connectionId = null,
+                                                                     GracefulShutdownMode? mode = null,
+                                                                     IServiceMessageHandler messageHandler = null,
+                                                                     IServiceEventHandler eventHandler = null,
+                                                                     IClientConnectionFactory clientConnectionFactory = null,
+                                                                     ILoggerFactory loggerFactory = null)
         {
             clientConnectionManager ??= new TestClientConnectionManager();
             clientConnectionFactory ??= new ClientConnectionFactory();
@@ -162,15 +245,10 @@ namespace Microsoft.Azure.SignalR.Tests
             var services = new ServiceCollection();
             var builder = new ConnectionBuilder(services.BuildServiceProvider());
 
-            if (use == null)
+            if (handler == null)
             {
-                use = (builder) => builder.UseConnectionHandler<TestConnectionHandler>();
+                handler = new TestConnectionHandler();
             }
-            use(builder);
-
-            builder.UseConnectionHandler<TestConnectionHandler>();
-
-            ConnectionDelegate handler = builder.Build();
 
             return new TestServiceConnection(
                 container,
@@ -178,7 +256,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 clientConnectionManager,
                 connectionFactory,
                 loggerFactory ?? NullLoggerFactory.Instance,
-                handler,
+                handler.OnConnectedAsync,
                 clientConnectionFactory,
                 serverId ?? "serverId",
                 connectionId ?? Guid.NewGuid().ToString("N"),
@@ -196,14 +274,17 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private sealed class TestConnectionHandler : ConnectionHandler
         {
-            private TaskCompletionSource<object> _startedTcs = new TaskCompletionSource<object>();
+            private readonly int _shutdownAfter = 0;
+            private readonly string _lastWords;
 
-            public Task Started => _startedTcs.Task;
+            public TestConnectionHandler(int shutdownAfter = 0, string lastWords = null)
+            {
+                _shutdownAfter = shutdownAfter;
+                _lastWords = lastWords;
+            }
 
             public override async Task OnConnectedAsync(ConnectionContext connection)
             {
-                _startedTcs.TrySetResult(null);
-
                 while (true)
                 {
                     var result = await connection.Transport.Input.ReadAsync();
@@ -220,38 +301,62 @@ namespace Microsoft.Azure.SignalR.Tests
                         connection.Transport.Input.AdvanceTo(result.Buffer.End);
                     }
                 }
+
+                // wait application task
+                if (_shutdownAfter > 0)
+                {
+                    await Task.Delay(_shutdownAfter);
+                }
+
+                // write last words
+                if (!string.IsNullOrEmpty(_lastWords))
+                {
+                    await connection.Transport.Output.WriteAsync(Encoding.UTF8.GetBytes(_lastWords));
+                    await connection.Transport.Output.FlushAsync();
+                }
+
+                // write signalr close message
+                var protocol = new SignalRProtocol.JsonHubProtocol();
+                protocol.WriteMessage(SignalRProtocol.CloseMessage.Empty, connection.Transport.Output);
+                await connection.Transport.Output.FlushAsync();
             }
         }
 
         ///<summary>
-        ///   ------------------------- Client Connection-------------------------------                   ------------Service Connection---------
-        ///  |                                      Transport              Application  |                 |   Transport              Application  |
-        ///  | ========================            =============         ============   |                 |  =============         ============   |
-        ///  | |                      |            |   Input   |         |   Output |   |                 |  |   Input   |         |   Output |   |
-        ///  | |      User's          |  /-------  |     |---------------------|    |   |    /-------     |  |     |---------------------|    |   |
-        ///  | |      Delegated       |  \-------  |     |---------------------|    |   |    \-------     |  |     |---------------------|    |   |
-        ///  | |      Handler         |            |           |         |          |   |                 |  |           |         |          |   |
-        ///  | |                      |            |           |         |          |   |                 |  |           |         |          |   |
-        ///  | |                      |  -------\  |     |---------------------|    |   |    -------\     |  |     |---------------------|    |   |
-        ///  | |                      |  -------/  |     |---------------------|    |   |    -------/     |  |     |---------------------|    |   |
-        ///  | |                      |            |   Output  |         |   Input  |   |                 |  |   Output  |         |   Input  |   |
-        ///  | ========================            ============         ============    |                 |  ============         ============    |
-        ///   --------------------------------------------------------------------------                   ---------------------------------------
+        ///   ------------------------- Client Connection------------------------------                 -------------Service Connection---------
+        ///  |                                      Transport           Application   |                 |    Transport           Application   |
+        ///  | ========================            ============         ===========   |                 |   ============         ===========   |
+        ///  | |                      |            |  Input   |         |  Output |   |                 |   |  Input   |         |  Output |   |
+        ///  | |      User's          |  /-------  |    |---------------------|   |   |    /-------     |   |    |---------------------|   |   |
+        ///  | |      Delegated       |  \-------  |    |---------------------|   |   |    \-------     |   |    |---------------------|   |   |
+        ///  | |      Handler         |            |          |         |         |   |                 |   |          |         |         |   |
+        ///  | |                      |            |          |         |         |   |                 |   |          |         |         |   |
+        ///  | |                      |  -------\  |    |---------------------|   |   |    -------\     |   |    |---------------------|   |   |
+        ///  | |                      |  -------/  |    |---------------------|   |   |    -------/     |   |    |---------------------|   |   |
+        ///  | |                      |            |  Output  |         |  Input  |   |                 |   |  Output  |         |  Input  |   |
+        ///  | ========================            ============        ============   |                 |   ===========          ===========   |
+        ///   -------------------------------------------------------------------------                 ----------------------------------------
         /// </summary>
         private sealed class TestServiceConnection : ServiceConnection
         {
             private readonly TestConnectionContainer _container;
 
+            private readonly TaskCompletionSource _connectedTcs = new TaskCompletionSource();
+            private readonly TaskCompletionSource _disconnectedTcs = new TaskCompletionSource();
+
             public TestClientConnectionManager ClientConnectionManager { get; }
 
-            public PipeReader Reader => _connection.Transport.Input;
+            public PipeReader Reader => _connection.Application.Input;
             public PipeWriter Writer => _connection.Application.Output;
+
+            public Task ConnectedTask => _connectedTcs.Task;
+            public Task DisconnectedTask => _disconnectedTcs.Task;
 
             private TestConnection _connection
             {
                 get
                 {
-                    return _container.Instance == null ? throw new System.Exception("connection needs to be started") : _container.Instance;
+                    return _container.Instance == null ? throw new Exception("connection needs to be started") : _container.Instance;
                 }
             }
 
@@ -291,24 +396,60 @@ namespace Microsoft.Azure.SignalR.Tests
                 ClientConnectionManager = clientConnectionManager;
             }
 
+            private ReadOnlySequence<byte> _payload = new ReadOnlySequence<byte>();
+
+            public async Task ExpectConnectionDataMessage(ConnectionDataMessage expected, CancellationToken token = default)
+            {
+                ReadOnlySequence<byte> payload;
+                if (_payload.IsEmpty)
+                {
+                    var result = await Reader.ReadAsync(token);
+                    var buffer = result.Buffer;
+                    Assert.True(ServiceProtocol.TryParseMessage(ref buffer, out var message));
+                    Assert.IsType<ConnectionDataMessage>(message);
+                    var dataMessage = (ConnectionDataMessage)message;
+                    Assert.Equal(expected.ConnectionId, dataMessage.ConnectionId);
+                    payload = dataMessage.Payload;
+                    Reader.AdvanceTo(buffer.Start);
+                }
+                else
+                {
+                    payload = _payload;
+                }
+
+                Assert.True(payload.Length >= expected.Payload.Length);
+                var actual = payload.Slice(0, expected.Payload.Length);
+                Assert.Equal(Encoding.UTF8.GetString(expected.Payload), Encoding.UTF8.GetString(actual));
+
+                _payload = payload.Slice(expected.Payload.Length);
+            }
+
             public void CompleteWriteFromService()
             {
                 _connection.Application.Output.Complete();
             }
 
-            public Task OnClientConnectedAsyncForTest(OpenConnectionMessage message)
-            {
-                return OnClientConnectedAsync(message);
-            }
-
-            public Task OnClientDisconnectedAsyncForTest(CloseConnectionMessage message)
-            {
-                return OnClientDisconnectedAsync(message);
-            }
-
             public async Task WriteFromServiceAsync(ServiceMessage message)
             {
                 await Writer.WriteAsync(DefaultProtocol.GetMessageBytes(message));
+                await Writer.FlushAsync();
+            }
+
+            protected override ValueTask TrySendPingAsync()
+            {
+                return ValueTask.CompletedTask;
+            }
+
+            protected override async Task OnClientConnectedAsync(OpenConnectionMessage message)
+            {
+                await base.OnClientConnectedAsync(message);
+                _connectedTcs.TrySetResult();
+            }
+
+            protected override async Task OnClientDisconnectedAsync(CloseConnectionMessage message)
+            {
+                await base.OnClientDisconnectedAsync(message);
+                _disconnectedTcs.TrySetResult();
             }
         }
 

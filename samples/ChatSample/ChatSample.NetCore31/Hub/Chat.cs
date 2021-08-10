@@ -38,7 +38,7 @@ namespace ChatSample.CoreApp3
                 c => ((HeartBeatContext)c).HeartBeat(),
                 new HeartBeatContext(_context, Context.Features.Get<IConnectionStatFeature>(), Context.ConnectionId));
 
-            var feature = Context.GetHttpContext().Features.Get<IConnectionMigrationFeature>();
+            var feature = Context.Features.Get<IConnectionMigrationFeature>();
             if (feature != null)
             {
                 Console.WriteLine($"[{feature.MigrateTo}] {Context.ConnectionId} is migrated from {feature.MigrateFrom}.");
@@ -51,7 +51,7 @@ namespace ChatSample.CoreApp3
         {
             Console.WriteLine($"{Context.ConnectionId} disconnected.");
 
-            var feature = Context.GetHttpContext().Features.Get<IConnectionMigrationFeature>();
+            var feature = Context.Features.Get<IConnectionMigrationFeature>();
             if (feature != null)
             {
                 Console.WriteLine($"[{feature.MigrateFrom}] {Context.ConnectionId} will be migrated to {feature.MigrateTo}.");

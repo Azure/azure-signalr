@@ -11,13 +11,12 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Primitives;
+
 using Xunit;
 using Xunit.Abstractions;
 
