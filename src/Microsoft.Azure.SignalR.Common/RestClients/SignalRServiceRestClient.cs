@@ -5,7 +5,8 @@ using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Common.RestClients;
+
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Rest;
 
 namespace Microsoft.Azure.SignalR
