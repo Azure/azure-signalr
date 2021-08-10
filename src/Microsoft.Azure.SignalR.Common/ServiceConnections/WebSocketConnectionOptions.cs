@@ -34,5 +34,7 @@ namespace Microsoft.Azure.SignalR
         public bool? UseDefaultCredentials { get; set; }
       
         public Action<ClientWebSocketOptions> WebSocketConfiguration { get; set; }
+
+        public AuthType AuthType { get; set; }
     }
 }

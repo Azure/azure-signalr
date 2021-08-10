@@ -8,6 +8,8 @@ using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Connections.Client.Internal
@@ -18,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
     internal partial class WebSocketsTransport : IDuplexPipe
     {
         public static PipeOptions DefaultOptions = new PipeOptions(writerScheduler: PipeScheduler.ThreadPool, readerScheduler: PipeScheduler.ThreadPool, useSynchronizationContext: false, pauseWriterThreshold: 0, resumeWriterThreshold: 0);
-        
+
         private readonly WebSocketMessageType _webSocketMessageType = WebSocketMessageType.Binary;
         private readonly ClientWebSocket _webSocket;
         private readonly Func<Task<string>> _accessTokenProvider;
@@ -26,6 +28,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
         private readonly ILogger _logger;
         private readonly TimeSpan _closeTimeout;
         private volatile bool _aborted;
+        private readonly WebSocketConnectionOptions _connectionOptions;
 
         private IDuplexPipe _transport;
 
@@ -39,6 +42,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
         {
             _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<WebSocketsTransport>();
             _webSocket = new ClientWebSocket();
+            _connectionOptions = connectionOptions;
 
             // Issue in ClientWebSocket prevents user-agent being set - https://github.com/dotnet/corefx/issues/26627
             //_webSocket.Options.SetRequestHeader("User-Agent", Constants.UserAgentHeader.ToString());
@@ -116,10 +120,10 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
             {
                 await _webSocket.ConnectAsync(resolvedUrl, cancellationToken);
             }
-            catch
+            catch (Exception e)
             {
                 _webSocket.Dispose();
-                throw;
+                throw e.WrapAsAzureSignalRException(_connectionOptions);
             }
 
             Log.StartedTransport(_logger);

@@ -37,6 +37,7 @@ namespace Microsoft.Azure.SignalR
             {
                 Headers = headers,
                 Proxy = provider.Proxy,
+                AuthType = hubServiceEndpoint.AccessKey.AuthType
             };
             var connection = new WebSocketConnectionContext(connectionOptions, _loggerFactory, accessTokenGenerater);
             try

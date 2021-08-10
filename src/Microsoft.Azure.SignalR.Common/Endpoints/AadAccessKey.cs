@@ -30,6 +30,8 @@ namespace Microsoft.Azure.SignalR
 
         private DateTime _lastUpdatedTime = DateTime.MinValue;
 
+        public override AuthType AuthType => AuthType.AzureAd;
+
         public bool Authorized => InitializedTask.IsCompleted && _isAuthorized;
 
         public TokenCredential TokenCredential { get; }

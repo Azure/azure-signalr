@@ -7,10 +7,8 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Common.RestClients;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Rest;
 
 namespace Microsoft.Azure.SignalR.Management
 {
