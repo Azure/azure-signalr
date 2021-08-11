@@ -1,6 +1,6 @@
 # `IServiceManager` to `ServiceManager` Migration Guidance
 
-This guidance is intended to assist in the migration to `ServiceManager` from `IServiceManager`. It will focus on side-by-side comparisons for similar operations between the legacy and the new APIs. The new APIs will be released in version 10.0.0 .
+This guidance is intended to assist in the migration to `ServiceManager` from `IServiceManager`. It will focus on side-by-side comparisons for similar operations between the legacy and the new APIs. The new APIs will be released in 10.0.0 version.
 
 We assume that you are familiar with the usage of `ServiceManagerBuilder` and the related APIs, otherwise, please refer the [Azure SignalR Service Management SDK ](management-sdk-guide.md) other than this guidance.
 - [`IServiceManager` to `ServiceManager` Migration Guidance](#iservicemanager-to-servicemanager-migration-guidance)
@@ -46,13 +46,14 @@ var serviceManager = new ServiceManagerBuilder()
 
 **Legacy APIs**
 ```cs
-var serviceHubContext = await serviceManager.CreateServiceHubContextAsync("<Your Hub Name>", loggerFactory, cancellationToken);
+var serviceHubContext = await serviceManager.CreateHubContextAsync("<Your Hub Name>", loggerFactory, cancellationToken);
 ```
 
 **New APIs**
 ```cs
-var serviceHubContext = await serviceManager.CreateServiceHubContextAsync("<Your Hub Name>", cancellationToken);
+var serviceHubContext = await serviceManager.CreateHubContextAsync("<Your Hub Name>", cancellationToken);
 ```
+The created hub context is an abstract class instead of an interface now.
 
 If you have custom logger factory, you should specify it when you create the service manager with new APIs. [See sample in the previous section](#build-service-manager)
 ### Negotiation
@@ -74,12 +75,12 @@ The negotiation API is async now because there is an async operation behind if y
 Except for the API change, we have also intergrated a health check mechanism with negotiation process. That is, the negotiation only returns a **healthy** SignalR endpoint. If none of your SignalR endpoints is healthy when you negotiate, then an `AzureSignalRNotConnectedException` is thrown.
 
 ### Send Messages and Manage Groups
-**Legacy APIs**
+
+This part is unchanged.
+
 ```cs
 try
 {
-    var hubcontext = await serviceManager.CreateHubContextAsync("<Your Hub Name>");
-
     // Broadcast
     await hubContext.Clients.All.SendAsync(callbackName, obj1, obj2, ...);
     
@@ -93,24 +94,6 @@ finally
     await hubContext.DisposeAsync();
 }
 ```
-
-**New APIs**
-```cs
-try
-{
-    // Broadcast
-    await hubContext.Clients.All.SendAsync(callbackName, obj1, obj2, ...);
-
-    // add user to group
-    await hubContext.UserGroups.AddToGroupAsync(userId, groupName);
-}
-finally
-{
-    await hubContext.DisposeAsync();
-}
-```
-
-With legacy APIs, you need to create a hub context from `IServiceManager`, but with new APIs, you have built a hub context from `ServiceHubContextBuilder` at the beginning. The usages of hub context are nearly the same, except that in the legacy APIs you get an interface `IServiceHubContext` while in the new APIs you get an abstract class `ServiceHubContext`.
 
 ### Health check
 The health check API is unchanged.

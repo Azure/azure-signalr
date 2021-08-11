@@ -78,6 +78,7 @@ var serviceManager = new ServiceManagerBuilder()
                     {
                         option.ConnectionString = "<Your Azure SignalR Service Connection String>";
                     })
+                    .WithLoggerFactory(loggerFactory)
                     .BuildServiceManager();
     
 ```
@@ -95,7 +96,7 @@ var health = await serviceManager.IsServiceHealthy(cancellationToken);
 Create your instance of `ServiceHubContext` from a `ServiceManager`:
 
 ``` C#
-var serviceHubContext = await serviceManager.CreateServiceHubContext("<Your Hub Name>",cancellationToken);
+var serviceHubContext = await serviceManager.CreateHubContextAsync("<Your Hub Name>",cancellationToken);
 ```
 ## Negotiation
 
