@@ -21,6 +21,8 @@ namespace ChatSample.CoreApp3
                     option.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
                     option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(30);
 
+                    option.ConnectionString = "Endpoint=http://localhost;Port=8080;AuthType=aad;ClientId=604aca3a-0b10-4a04-8a7f-dfb59137a607;ClientSecret=yRM~82qhk87naAhubq05f-f3_p.WN_H~gN;TenantId=72f988bf-86f1-41af-91ab-2d7cd011db47;Version=1.0;";
+
                     option.GracefulShutdown.Add<Chat>(async (c) =>
                     {
                         await c.Clients.All.SendAsync("exit");

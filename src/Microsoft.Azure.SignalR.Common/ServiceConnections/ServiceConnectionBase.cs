@@ -24,6 +24,8 @@ namespace Microsoft.Azure.SignalR
         // Service will abort both server and client connections link to this server when server is down.
         // App server ping is triggered by incoming requests and send by checking last send timestamp.
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
+        // App server update its azure identity by sending a AccessKeyRequestMessage with Azure AD Token every 10 minutes.
+        private static readonly TimeSpan DefaultSyncAzureIdentityInterval = TimeSpan.FromMinutes(10);
         private static readonly long DefaultKeepAliveTicks = (long)DefaultKeepAliveInterval.TotalSeconds * Stopwatch.Frequency;
 
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
@@ -145,12 +147,15 @@ namespace Microsoft.Azure.SignalR
                 _serviceConnectionStartTcs.TrySetResult(true);
                 try
                 {
+                    var syncTimer = new TimerAwaitable(TimeSpan.Zero, DefaultSyncAzureIdentityInterval);
                     try
                     {
+                        _ = UpdateAzureIdentityAsync(HubEndpoint.AccessKey, syncTimer);
                         await ProcessIncomingAsync(connection);
                     }
                     finally
                     {
+                        syncTimer.Stop();
                         // when ProcessIncoming completes, clean up the connection
 
                         // TODO: Never cleanup connections unless Service asks us to do that
@@ -451,6 +456,22 @@ namespace Microsoft.Azure.SignalR
                 finally
                 {
                     input.AdvanceTo(consumed, examined);
+                }
+            }
+        }
+
+        private async Task UpdateAzureIdentityAsync(AccessKey key, TimerAwaitable timer)
+        {
+            if (key is AadAccessKey aadKey)
+            {
+                using (timer)
+                {
+                    timer.Start();
+                    while (await timer)
+                    {
+                        var message = new AccessKeyRequestMessage(await aadKey.GenerateAadTokenAsync());
+                        await SafeWriteAsync(message);
+                    }
                 }
             }
         }
