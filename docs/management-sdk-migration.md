@@ -1,6 +1,6 @@
 # `IServiceManager` to `ServiceManager` Migration Guidance
 
-This guidance is intended to assist in the migration to `ServiceManager` from `IServiceManager`. It will focus on side-by-side comparisons for similar operations between the legacy and the new APIs. The new APIs will be released in 10.0.0 version.
+This guidance is intended to assist in the migration to `ServiceManager` from `IServiceManager`. It will focus on side-by-side comparisons for similar operations between the legacy and the new APIs. The new APIs will be released in 1.10.0 version.
 
 We assume that you are familiar with the usage of `ServiceManagerBuilder` and the related APIs, otherwise, please refer the [Azure SignalR Service Management SDK ](management-sdk-guide.md) other than this guidance.
 - [`IServiceManager` to `ServiceManager` Migration Guidance](#iservicemanager-to-servicemanager-migration-guidance)
