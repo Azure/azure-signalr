@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR
             TokenCredential = credential;
         }
 
-        public async Task<string> GenerateAadTokenAsync(CancellationToken ctoken = default)
+        public virtual async Task<string> GenerateAadTokenAsync(CancellationToken ctoken = default)
         {
             var token = await TokenCredential.GetTokenAsync(_defaultRequestContext, ctoken);
             return token.Token;
