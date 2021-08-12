@@ -34,9 +34,8 @@ namespace Microsoft.Azure.SignalR
         {
             if (start)
             {
-                _ = UpdateAsync();
+                _ = UpdateAccessKeyAsync();
             }
-
             _factory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
@@ -66,7 +65,7 @@ namespace Microsoft.Azure.SignalR
 
         internal IEnumerable<AadAccessKey> FilterAadAccessKeys() => _endpoints.Select(e => e.Key.AccessKey).OfType<AadAccessKey>();
 
-        private async Task UpdateAsync()
+        private async Task UpdateAccessKeyAsync()
         {
             using (_timer)
             {

@@ -214,15 +214,6 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
-        public Task HandleKeyAsync(AccessKeyResponseMessage keyMessage)
-        {
-            if (Endpoint.AccessKey is AadAccessKey key)
-            {
-                key.UpdateAccessKey(keyMessage.Kid, keyMessage.AccessKey);
-            }
-            return Task.CompletedTask;
-        }
-
         public void HandleAck(AckMessage ackMessage)
         {
             _ackHandler.TriggerAck(ackMessage.AckId, (AckStatus)ackMessage.Status);

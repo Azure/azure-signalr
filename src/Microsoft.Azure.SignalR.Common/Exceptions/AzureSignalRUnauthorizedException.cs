@@ -15,6 +15,10 @@ namespace Microsoft.Azure.SignalR.Common
         {
         }
 
+        internal AzureSignalRUnauthorizedException(Exception innerException) : base(ErrorMessage, innerException)
+        {
+        }
+
         protected AzureSignalRUnauthorizedException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
