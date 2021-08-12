@@ -3,11 +3,9 @@
 
 using System;
 using System.Buffers;
-using System.IO;
 using System.IO.Pipelines;
 using System.Security.Claims;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
@@ -28,58 +26,14 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class ServiceMessageTests : VerifiableLoggedTest
     {
-        private static readonly AccessKeyResponseMessage Error = new AccessKeyResponseMessage()
-        {
-            ErrorType = nameof(ArgumentException),
-            ErrorMessage = "This is a error messsage"
-        };
+        private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-        private static readonly AccessKeyResponseMessage Normal = new AccessKeyResponseMessage()
-        {
-            Kid = "foo",
-            AccessKey = "This is a long long key",
-        };
+        private const string AadConnectionString = "endpoint=https://localhost;authType=aad;";
+
+        private const string keyConnectionString = "endpoint=https://localhost;accessKey=" + SigningKey;
 
         public ServiceMessageTests(ITestOutputHelper output) : base(output)
         {
-        }
-
-        [Theory]
-        [InlineData("normal", 0)]
-        [InlineData("error", 1)]
-        public async Task TestHandleAccessKeyMessage(string messageType, int logCount)
-        {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Error, expectedErrors: c => logCount > 0,
-                logChecker: logs =>
-                {
-                    Assert.Equal(logCount, logs.Count);
-                    return true;
-                }))
-            {
-                var conn = CreateServiceConnection(loggerFactory: loggerFactory);
-                var ccm = conn.ClientConnectionManager;
-
-                var connectionTask = conn.StartAsync();
-
-                // completed handshake
-                await conn.ConnectionInitializedTask.OrTimeout();
-                Assert.Equal(ServiceConnectionStatus.Connected, conn.Status);
-
-                var message = messageType switch
-                {
-                    "normal" => Normal,
-                    "error" => Error,
-                    _ => throw new NotImplementedException(),
-                };
-                await conn.WriteFromServiceAsync(message);
-
-                // complete reading to end the connection
-                conn.CompleteWriteFromService();
-
-                await connectionTask.OrTimeout();
-                Assert.Equal(ServiceConnectionStatus.Disconnected, conn.Status);
-                Assert.Empty(ccm.ClientConnections);
-            }
         }
 
         [Fact]
@@ -195,14 +149,81 @@ namespace Microsoft.Azure.SignalR.Tests
             await connection.StopAsync();
         }
 
+        [Theory]
+        [InlineData(typeof(AccessKey), keyConnectionString)]
+        [InlineData(typeof(AadAccessKey), AadConnectionString)]
+        public async Task TestAccessKeyResponseMessage(Type type, string connectionString)
+        {
+            var endpoint = new ServiceEndpoint(connectionString);
+            Assert.Equal(type.Name, endpoint.AccessKey.GetType().Name);
+            var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
+
+            var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint);
+            _ = connection.StartAsync();
+            _ = connection.WriteFromServiceAsync(new HandshakeResponseMessage());
+
+            var message = new AccessKeyResponseMessage()
+            {
+                Kid = "foo",
+                AccessKey = SigningKey
+            };
+            await connection.WriteFromServiceAsync(message);
+
+            var audience = "http://localhost/chat";
+            var claims = Array.Empty<Claim>();
+            var lifetime = TimeSpan.FromHours(1);
+            var algorithm = AccessTokenAlgorithm.HS256;
+
+            var clientToken = await endpoint.AccessKey.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm).OrTimeout(TimeSpan.FromSeconds(3));
+            Assert.NotNull(clientToken);
+
+            await connection.StopAsync();
+        }
+
+        [Fact]
+        public async Task TestAccessKeyResponseMessageWithError()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Error, expectedErrors: c => true,
+                logChecker: logs =>
+                {
+                    Assert.Equal(1, logs.Count);
+                    return true;
+                }))
+            {
+                var conn = CreateServiceConnection(loggerFactory: loggerFactory);
+                var ccm = conn.ClientConnectionManager;
+
+                var connectionTask = conn.StartAsync();
+
+                // completed handshake
+                await conn.ConnectionInitializedTask.OrTimeout();
+                Assert.Equal(ServiceConnectionStatus.Connected, conn.Status);
+
+                var message = new AccessKeyResponseMessage()
+                {
+                    ErrorType = nameof(ArgumentException),
+                    ErrorMessage = "This is a error messsage"
+                };
+                await conn.WriteFromServiceAsync(message);
+
+                // complete reading to end the connection
+                conn.CompleteWriteFromService();
+
+                await connectionTask.OrTimeout();
+                Assert.Equal(ServiceConnectionStatus.Disconnected, conn.Status);
+                Assert.Empty(ccm.ClientConnections);
+            }
+        }
+
         private static TestServiceConnection CreateServiceConnection(ConnectionHandler handler = null,
-                                                                     TestClientConnectionManager clientConnectionManager = null,
+                                                                             TestClientConnectionManager clientConnectionManager = null,
                                                                      string serverId = null,
                                                                      string connectionId = null,
                                                                      GracefulShutdownMode? mode = null,
                                                                      IServiceMessageHandler messageHandler = null,
                                                                      IServiceEventHandler eventHandler = null,
                                                                      IClientConnectionFactory clientConnectionFactory = null,
+                                                                     HubServiceEndpoint hubServiceEndpoint = null,
                                                                      ILoggerFactory loggerFactory = null)
         {
             clientConnectionManager ??= new TestClientConnectionManager();
@@ -233,7 +254,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 clientConnectionFactory,
                 serverId ?? "serverId",
                 connectionId ?? Guid.NewGuid().ToString("N"),
-                null,
+                hubServiceEndpoint ?? new HubServiceEndpoint(),
                 messageHandler ?? new TestServiceMessageHandler(),
                 eventHandler ?? new TestServiceEventHandler(),
                 mode: mode ?? GracefulShutdownMode.Off
@@ -294,7 +315,6 @@ namespace Microsoft.Azure.SignalR.Tests
                 await connection.Transport.Output.FlushAsync();
             }
         }
-
         ///<summary>
         ///   ------------------------- Client Connection------------------------------                 -------------Service Connection---------
         ///  |                                      Transport           Application   |                 |    Transport           Application   |
@@ -317,6 +337,7 @@ namespace Microsoft.Azure.SignalR.Tests
             private readonly TaskCompletionSource _connectedTcs = new TaskCompletionSource();
             private readonly TaskCompletionSource _disconnectedTcs = new TaskCompletionSource();
 
+            private ReadOnlySequence<byte> _payload = new ReadOnlySequence<byte>();
             public TestClientConnectionManager ClientConnectionManager { get; }
 
             public PipeReader Reader => _connection.Application.Input;
@@ -325,6 +346,10 @@ namespace Microsoft.Azure.SignalR.Tests
             public Task ConnectedTask => _connectedTcs.Task;
             public Task DisconnectedTask => _disconnectedTcs.Task;
 
+            public ServiceProtocol DefaultServiceProtocol { get; } = new ServiceProtocol();
+
+            public SignalRProtocol.IHubProtocol DefaultHubProtocol { get; } = new SignalRProtocol.JsonHubProtocol();
+
             private TestConnection _connection
             {
                 get
@@ -332,11 +357,6 @@ namespace Microsoft.Azure.SignalR.Tests
                     return _container.Instance == null ? throw new Exception("connection needs to be started") : _container.Instance;
                 }
             }
-
-            public ServiceProtocol DefaultServiceProtocol { get; } = new ServiceProtocol();
-
-            public SignalRProtocol.IHubProtocol DefaultHubProtocol { get; } = new SignalRProtocol.JsonHubProtocol();
-
             public TestServiceConnection(TestConnectionContainer container,
                                          IServiceProtocol serviceProtocol,
                                          TestClientConnectionManager clientConnectionManager,
@@ -370,33 +390,6 @@ namespace Microsoft.Azure.SignalR.Tests
                 _container = container;
                 ClientConnectionManager = clientConnectionManager;
             }
-
-            private ReadOnlySequence<byte> _payload = new ReadOnlySequence<byte>();
-
-            private async Task<ReadOnlySequence<byte>> GetPayloadAsync(string connectionId = null)
-            {
-                if (_payload.IsEmpty)
-                {
-                    var result = await Reader.ReadAsync();
-                    var buffer = result.Buffer;
-
-                    Assert.True(ServiceProtocol.TryParseMessage(ref buffer, out var message));
-                    Assert.IsType<ConnectionDataMessage>(message);
-                    var dataMessage = (ConnectionDataMessage)message;
-
-                    if (!string.IsNullOrEmpty(connectionId))
-                    {
-                        Assert.Equal(connectionId, dataMessage.ConnectionId);
-                    }
-                    Reader.AdvanceTo(buffer.Start);
-                    return dataMessage.Payload;
-                }
-                else
-                {
-                    return _payload;
-                }
-            }
-
             public async Task ExpectStringMessage(string expected, string connectionId = null)
             {
                 var payload = await GetPayloadAsync(connectionId: connectionId);
@@ -455,6 +448,30 @@ namespace Microsoft.Azure.SignalR.Tests
             {
                 await base.OnClientDisconnectedAsync(message);
                 _disconnectedTcs.TrySetResult();
+            }
+
+            private async Task<ReadOnlySequence<byte>> GetPayloadAsync(string connectionId = null)
+            {
+                if (_payload.IsEmpty)
+                {
+                    var result = await Reader.ReadAsync();
+                    var buffer = result.Buffer;
+
+                    Assert.True(ServiceProtocol.TryParseMessage(ref buffer, out var message));
+                    Assert.IsType<ConnectionDataMessage>(message);
+                    var dataMessage = (ConnectionDataMessage)message;
+
+                    if (!string.IsNullOrEmpty(connectionId))
+                    {
+                        Assert.Equal(connectionId, dataMessage.ConnectionId);
+                    }
+                    Reader.AdvanceTo(buffer.Start);
+                    return dataMessage.Payload;
+                }
+                else
+                {
+                    return _payload;
+                }
             }
         }
 

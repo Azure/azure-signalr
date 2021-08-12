@@ -311,13 +311,15 @@ namespace Microsoft.Azure.SignalR
         {
             if (string.IsNullOrEmpty(keyMessage.ErrorType))
             {
-                return _serviceMessageHandler.HandleKeyAsync(keyMessage);
+                if (HubEndpoint.AccessKey is AadAccessKey key)
+                {
+                    key.UpdateAccessKey(keyMessage.Kid, keyMessage.AccessKey);
+                }
             }
             else
             {
-                Log.AuthorizeFailed(Logger, new AzureSignalRAccessTokenNotAuthorizedException(keyMessage.ErrorMessage));
-                return Task.CompletedTask;
             }
+            return Task.CompletedTask;
         }
 
         private async Task<ConnectionContext> EstablishConnectionAsync(string target)

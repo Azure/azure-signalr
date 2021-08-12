@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR.Common
         {
         }
 
-        public AzureSignalRUnauthorizedException(Exception innerException) : base(ErrorMessage, innerException)
+        internal AzureSignalRUnauthorizedException(Exception innerException) : base(ErrorMessage, innerException)
         {
         }
 
