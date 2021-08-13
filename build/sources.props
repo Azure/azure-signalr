@@ -15,6 +15,7 @@
       https://api.nuget.org/v3/index.json;
     </RestoreSources>
     <RestoreSources Condition="'$(AzureSignalRSDKE2ETest)' == 'true'">
+      https://msazure.pkgs.visualstudio.com/One/_packaging/signalr-service-private/nuget/v3/index.json;
       https://www.myget.org/F/azure-signalr-dev/api/v3/index.json;
       https://api.nuget.org/v3/index.json;
     </RestoreSources>
