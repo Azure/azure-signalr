@@ -3,7 +3,6 @@
 
 using System;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,8 +16,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         {
         }
 
-        [ConditionalTheory]
-        [SkipIfConnectionStringNotPresent]
+        [SkipIfConnectionStringNotPresentTheory]
         [MemberData(nameof(TestDataBase))]
         public Task RunE2ETests(string methodName, int expectedMessageCount, Func<string, ITestClientSet, Task> coreTask)
         {
