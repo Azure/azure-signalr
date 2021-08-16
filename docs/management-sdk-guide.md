@@ -53,12 +53,11 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 | Send to a group except some clients | :heavy_check_mark: | :heavy_check_mark: |
 | Add a user to a group               | :heavy_check_mark: | :heavy_check_mark: |
 | Remove a user from a group          | :heavy_check_mark: | :heavy_check_mark: |
-|
+| Check if a user in a group          | :heavy_check_mark: | :heavy_check_mark: |
 
 **Features only come with new API**
 |                                     | Transient          | Persistent         |
 |-------------------------------------|--------------------|--------------------|
-| Check if a user in a group          | :heavy_check_mark: | :heavy_check_mark: |
 | Check if a connection exists        | :heavy_check_mark: | :heavy_check_mark: |
 | Check if a group exists             | :heavy_check_mark: | :heavy_check_mark: |
 | Check if a user exists              | :heavy_check_mark: | :heavy_check_mark: |
