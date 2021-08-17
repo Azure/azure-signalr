@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -19,8 +21,8 @@ namespace Microsoft.Azure.SignalR.Tests
             await conn.ConnectionCreated;
 
             // open 2 new connections (to create 2 new outgoing tasks
-            proto.WriteMessage(new OpenConnectionMessage(Guid.NewGuid().ToString(), new Claim[0]), conn.Application.Output);
-            proto.WriteMessage(new OpenConnectionMessage(Guid.NewGuid().ToString(), new Claim[0]), conn.Application.Output);
+            proto.WriteMessage(new OpenConnectionMessage(Guid.NewGuid().ToString(), Array.Empty<Claim>()), conn.Application.Output);
+            proto.WriteMessage(new OpenConnectionMessage(Guid.NewGuid().ToString(), Array.Empty<Claim>()), conn.Application.Output);
             await conn.Application.Output.FlushAsync();
 
             while (true)
@@ -49,7 +51,7 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private PingMessage BuildPingMessage(string key, string val)
+        private static PingMessage BuildPingMessage(string key, string val)
         {
             return new PingMessage
             {
@@ -57,15 +59,15 @@ namespace Microsoft.Azure.SignalR.Tests
             };
         }
 
-        private async Task MockServiceAsyncWithException(TestServiceConnectionForCloseAsync conn)
+        private static async Task MockServiceAsyncWithException(TestServiceConnectionForCloseAsync conn)
         {
             IServiceProtocol proto = new ServiceProtocol();
 
             await conn.ConnectionCreated;
 
             // open 2 new connections (to create 2 new outgoing tasks
-            proto.WriteMessage(new OpenConnectionMessage(Guid.NewGuid().ToString(), new Claim[0]), conn.Application.Output);
-            proto.WriteMessage(new OpenConnectionMessage(Guid.NewGuid().ToString(), new Claim[0]), conn.Application.Output);
+            proto.WriteMessage(new OpenConnectionMessage(Guid.NewGuid().ToString(), Array.Empty<Claim>()), conn.Application.Output);
+            proto.WriteMessage(new OpenConnectionMessage(Guid.NewGuid().ToString(), Array.Empty<Claim>()), conn.Application.Output);
             await conn.Application.Output.FlushAsync();
 
             await Task.Delay(TimeSpan.FromSeconds(1));
@@ -73,18 +75,11 @@ namespace Microsoft.Azure.SignalR.Tests
             await conn.Application.Output.FlushAsync();
         }
 
-        private async Task AssertTask(Task task, TimeSpan timeout)
-        {
-            // prevent our test cases from running permanently
-            Task r = await Task.WhenAny(task, Task.Delay(timeout));
-            Assert.Equal(r, task);
-        }
-
         [Fact]
         public async void TestCloseAsync()
         {
             var conn = new TestServiceConnectionForCloseAsync();
-            var hub = new HubServiceEndpoint();
+            var hub = new TestHubServiceEndpoint();
             using var container = new TestBaseServiceConnectionContainer(new List<IServiceConnection> { conn }, hub);
 
             _ = conn.StartAsync();
@@ -99,7 +94,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void TestCloseAsyncWithoutStartAsync()
         {
             var conn = new TestServiceConnectionForCloseAsync();
-            var hub = new HubServiceEndpoint();
+            var hub = new TestHubServiceEndpoint();
             using var container = new TestBaseServiceConnectionContainer(new List<IServiceConnection> { conn }, hub);
 
             // await AssertTask(container.CloseClientConnectionForTest(conn), TimeSpan.FromSeconds(5));
@@ -109,7 +104,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public async void TestCloseAsyncWithExceptionAndNoFinAck()
         {
             var conn = new TestServiceConnectionForCloseAsync();
-            var hub = new HubServiceEndpoint();
+            var hub = new TestHubServiceEndpoint();
             using var container = new TestBaseServiceConnectionContainer(new List<IServiceConnection> { conn }, hub);
 
             _ = conn.StartAsync();

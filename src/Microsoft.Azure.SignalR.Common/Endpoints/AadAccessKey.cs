@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR
 
         private Task<object> InitializedTask => _initializedTcs.Task;
 
-        public AadAccessKey(TokenCredential credential, string endpoint, int? port) : base(endpoint, port)
+        public AadAccessKey(Uri endpoint, TokenCredential credential) : base(endpoint, "")
         {
             TokenCredential = credential;
         }

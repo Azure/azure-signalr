@@ -1,11 +1,15 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System;
+using System.IdentityModel.Tokens.Jwt;
 using System.Threading.Tasks;
+
 using Azure.Core;
 using Azure.Identity;
+
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth
@@ -23,8 +27,9 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         [Fact(Skip = "Provide valid aad options")]
         public async Task TestAcquireAccessToken()
         {
-            var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
-            var key = new AadAccessKey(options, "https://localhost", 8080);
+            var credential = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
+            var endpoint = new Uri("https://localhost:8080");
+            var key = new AadAccessKey(endpoint, credential);
             var token = await key.GenerateAadTokenAsync();
             Assert.NotNull(token);
         }
@@ -70,8 +75,9 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         [Fact(Skip = "Provide valid aad options")]
         internal async Task TestAuthenticateAsync()
         {
-            var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
-            var key = new AadAccessKey(options, "https://localhost", 8080);
+            var credential = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
+            var endpoint = new Uri("https://localhost:8080");
+            var key = new AadAccessKey(endpoint, credential);
             await key.UpdateAccessKeyAsync();
 
             Assert.True(key.Authorized);

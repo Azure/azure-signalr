@@ -3,6 +3,8 @@
 
 using System;
 
+using Azure.Core;
+
 namespace Microsoft.Azure.SignalR
 {
     public class ServiceEndpoint
@@ -66,6 +68,20 @@ namespace Microsoft.Azure.SignalR
             Name = name;
         }
 
+        public ServiceEndpoint(string key, Uri endpoint, TokenCredential credential) : this(endpoint, credential)
+        {
+            (Name, EndpointType) = ParseKey(key);
+        }
+
+        public ServiceEndpoint(Uri endpoint, TokenCredential credential)
+        {
+            AccessKey = new AadAccessKey(endpoint, credential);
+        }
+
+        /// <summary>
+        /// Copy constructor
+        /// </summary>
+        /// <param name="endpoint"></param>
         public ServiceEndpoint(ServiceEndpoint endpoint)
         {
             if (endpoint != null)
@@ -77,15 +93,6 @@ namespace Microsoft.Azure.SignalR
                 AccessKey = endpoint.AccessKey;
                 ClientEndpoint = endpoint.ClientEndpoint;
             }
-        }
-
-        // test only
-        internal ServiceEndpoint() { }
-
-        // test only
-        internal ServiceEndpoint(AadAccessKey aadKey)
-        {
-            AccessKey = aadKey;
         }
 
         public override string ToString()

@@ -6,12 +6,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -60,7 +61,7 @@ namespace Microsoft.Azure.SignalR.Tests
             ServerNameProvider = new DefaultServerNameProvider();
 
             // these two lines should be located in the end of this constructor.
-            ServiceConnectionContainer = new StrongServiceConnectionContainer(this, connectionCount, new HubServiceEndpoint(), NullLogger.Instance);
+            ServiceConnectionContainer = new StrongServiceConnectionContainer(this, connectionCount, new TestHubServiceEndpoint(), NullLogger.Instance);
             ServiceMessageHandler = (StrongServiceConnectionContainer) ServiceConnectionContainer;
         }
 

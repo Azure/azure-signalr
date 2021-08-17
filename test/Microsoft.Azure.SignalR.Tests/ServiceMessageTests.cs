@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Tests
     {
         private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-        private const string AadConnectionString = "endpoint=https://localhost;authType=aad;";
+        private const string aadConnectionString = "endpoint=https://localhost;authType=aad;";
 
         private const string keyConnectionString = "endpoint=https://localhost;accessKey=" + SigningKey;
 
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var endpoint = keyType switch
             {
                 nameof(AccessKey) => new ServiceEndpoint(keyConnectionString),
-                nameof(AadAccessKey) => new ServiceEndpoint(new TestAadAccessKey()),
+                nameof(AadAccessKey) => new ServiceEndpoint(aadConnectionString),
                 _ => throw new NotImplementedException()
             };
             var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [InlineData(typeof(AccessKey), keyConnectionString)]
-        [InlineData(typeof(AadAccessKey), AadConnectionString)]
+        [InlineData(typeof(AadAccessKey), aadConnectionString)]
         public async Task TestAccessKeyResponseMessage(Type type, string connectionString)
         {
             var endpoint = new ServiceEndpoint(connectionString);
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 clientConnectionFactory,
                 serverId ?? "serverId",
                 connectionId ?? Guid.NewGuid().ToString("N"),
-                hubServiceEndpoint ?? new HubServiceEndpoint(),
+                hubServiceEndpoint ?? new TestHubServiceEndpoint(),
                 messageHandler ?? new TestServiceMessageHandler(),
                 eventHandler ?? new TestServiceEventHandler(),
                 mode: mode ?? GracefulShutdownMode.Off
@@ -298,7 +298,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             public string Token { get; } = Guid.NewGuid().ToString();
 
-            public TestAadAccessKey() : base(null, "localhost", 80)
+            public TestAadAccessKey() : base(new Uri("http://localhost"), null)
             {
             }
 

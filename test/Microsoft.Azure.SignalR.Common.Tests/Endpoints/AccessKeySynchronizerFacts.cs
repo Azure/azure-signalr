@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+
+using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -16,8 +18,8 @@ namespace Microsoft.Azure.SignalR.Common
         {
             var synchronizer = GetInstanceForTest();
 
-            var endpoint1 = new ServiceEndpoint() { Name = "foo" };
-            var endpoint2 = new ServiceEndpoint() { Name = "foo" };
+            var endpoint1 = new TestHubServiceEndpoint("foo");
+            var endpoint2 = new TestHubServiceEndpoint("bar");
 
             Assert.Equal(0, synchronizer.ServiceEndpointsCount());
             synchronizer.UpdateServiceEndpoints(new List<ServiceEndpoint>() { endpoint1 });

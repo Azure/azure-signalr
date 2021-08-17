@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+
 using Azure.Identity;
 
 namespace Microsoft.Azure.SignalR
@@ -38,8 +39,6 @@ namespace Microsoft.Azure.SignalR
         private static readonly string MissingEndpointProperty =
                                             $"Connection string missing required properties {EndpointProperty}.";
 
-        private static readonly string MissingTenantIdProperty =
-            $"Connection string missing required properties {TenantIdProperty}.";
         private static readonly char[] PropertySeparator = { ';' };
 
         internal static (AccessKey accessKey, string version, string clientEndpoint) Parse(string connectionString)
@@ -111,11 +110,16 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
+            var uri = new UriBuilder(endpoint)
+            {
+                Port = port ?? 443
+            };
+
             dict.TryGetValue(AuthTypeProperty, out string type);
             AccessKey accessKey = type?.ToLower() switch
             {
-                "aad" => BuildAadAccessKey(dict, endpoint, port),
-                _ => BuildAccessKey(dict, endpoint, port),
+                "aad" => BuildAadAccessKey(dict, uri.Uri),
+                _ => BuildAccessKey(dict, uri.Uri),
             };
             return (accessKey, version, clientEndpoint);
         }
@@ -126,7 +130,7 @@ namespace Microsoft.Azure.SignalR
                    (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         }
 
-        private static AccessKey BuildAadAccessKey(Dictionary<string, string> dict, string endpoint, int? port)
+        private static AccessKey BuildAadAccessKey(Dictionary<string, string> dict, Uri endpoint)
         {
             if (dict.TryGetValue(ClientIdProperty, out var clientId))
             {
@@ -134,11 +138,11 @@ namespace Microsoft.Azure.SignalR
                 {
                     if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
                     {
-                        return new AadAccessKey(new ClientSecretCredential(tenantId, clientId, clientSecret), endpoint, port);
+                        return new AadAccessKey(endpoint, new ClientSecretCredential(tenantId, clientId, clientSecret));
                     }
                     else if (dict.TryGetValue(ClientCertProperty, out var clientCertPath))
                     {
-                        return new AadAccessKey(new ClientCertificateCredential(tenantId, clientId, clientCertPath), endpoint, port);
+                        return new AadAccessKey(endpoint, new ClientCertificateCredential(tenantId, clientId, clientCertPath));
                     }
                     else
                     {
@@ -147,20 +151,20 @@ namespace Microsoft.Azure.SignalR
                 }
                 else
                 {
-                    return new AadAccessKey(new ManagedIdentityCredential(clientId), endpoint, port);
+                    return new AadAccessKey(endpoint, new ManagedIdentityCredential(clientId));
                 }
             }
             else
             {
-                return new AadAccessKey(new ManagedIdentityCredential(), endpoint, port);
+                return new AadAccessKey(endpoint, new ManagedIdentityCredential());
             }
         }
 
-        private static AccessKey BuildAccessKey(Dictionary<string, string> dict, string endpoint, int? port)
+        private static AccessKey BuildAccessKey(Dictionary<string, string> dict, Uri endpoint)
         {
-            if (dict.TryGetValue(AccessKeyProperty, out var key))
+            if (dict.TryGetValue(AccessKeyProperty, out var accessKey))
             {
-                return new AccessKey(key, endpoint, port);
+                return new AccessKey(endpoint, accessKey);
             }
             throw new ArgumentException(MissingAccessKeyProperty, AccessKeyProperty);
         }
