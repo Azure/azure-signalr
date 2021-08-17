@@ -24,6 +24,8 @@ namespace Microsoft.Azure.SignalR
         // Service will abort both server and client connections link to this server when server is down.
         // App server ping is triggered by incoming requests and send by checking last send timestamp.
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
+        // App server update its azure identity by sending a AccessKeyRequestMessage with Azure AD Token every 10 minutes.
+        private static readonly TimeSpan DefaultSyncAzureIdentityInterval = TimeSpan.FromMinutes(10);
         private static readonly long DefaultKeepAliveTicks = (long)DefaultKeepAliveInterval.TotalSeconds * Stopwatch.Frequency;
 
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
@@ -145,12 +147,19 @@ namespace Microsoft.Azure.SignalR
                 _serviceConnectionStartTcs.TrySetResult(true);
                 try
                 {
+                    TimerAwaitable syncTimer = null;
                     try
                     {
+                        if (HubEndpoint != null && HubEndpoint.AccessKey is AadAccessKey aadKey)
+                        {
+                            syncTimer = new TimerAwaitable(TimeSpan.Zero, DefaultSyncAzureIdentityInterval);
+                            _ = UpdateAzureIdentityAsync(aadKey, syncTimer);
+                        }
                         await ProcessIncomingAsync(connection);
                     }
                     finally
                     {
+                        syncTimer?.Stop();
                         // when ProcessIncoming completes, clean up the connection
 
                         // TODO: Never cleanup connections unless Service asks us to do that
@@ -306,13 +315,18 @@ namespace Microsoft.Azure.SignalR
         {
             if (string.IsNullOrEmpty(keyMessage.ErrorType))
             {
-                return _serviceMessageHandler.HandleKeyAsync(keyMessage);
+                if (HubEndpoint.AccessKey is AadAccessKey key)
+                {
+                    key.UpdateAccessKey(keyMessage.Kid, keyMessage.AccessKey);
+                }
             }
             else
             {
-                Log.AuthorizeFailed(Logger, new AzureSignalRAccessTokenNotAuthorizedException(keyMessage.ErrorMessage));
+                var exception = new AzureSignalRUnauthorizedException(new AzureSignalRException(keyMessage.ErrorMessage));
+                Log.AuthorizeFailed(Logger, exception);
                 return Task.CompletedTask;
             }
+            return Task.CompletedTask;
         }
 
         private async Task<ConnectionContext> EstablishConnectionAsync(string target)
@@ -451,6 +465,20 @@ namespace Microsoft.Azure.SignalR
                 finally
                 {
                     input.AdvanceTo(consumed, examined);
+                }
+            }
+        }
+
+        private async Task UpdateAzureIdentityAsync(AadAccessKey key, TimerAwaitable timer)
+        {
+            using (timer)
+            {
+                timer.Start();
+                while (await timer)
+                {
+                    var token = await key.GenerateAadTokenAsync();
+                    var message = new AccessKeyRequestMessage(token);
+                    await SafeWriteAsync(message);
                 }
             }
         }
@@ -667,7 +695,7 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define<string>(LogLevel.Information, new EventId(31, "ReceivedInstanceOfflinePing"), "Received instance offline service ping: {InstanceId}");
 
             private static readonly Action<ILogger, Exception> _authorizeFailed =
-                LoggerMessage.Define(LogLevel.Error, new EventId(32, "AuthorizeFailed"), "Server connection authorize failed, please check the role assignments, role changes may take up to 10 minutes to take effect.");
+                LoggerMessage.Define(LogLevel.Error, new EventId(32, "AuthorizeFailed"), "Service returned 401 unauthorized.");
 
             public static void FailedToWrite(ILogger logger, ulong? tracingId, string serviceConnectionId, Exception exception)
             {

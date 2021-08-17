@@ -8,6 +8,8 @@ using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Connections.Client.Internal
@@ -18,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
     internal partial class WebSocketsTransport : IDuplexPipe
     {
         public static PipeOptions DefaultOptions = new PipeOptions(writerScheduler: PipeScheduler.ThreadPool, readerScheduler: PipeScheduler.ThreadPool, useSynchronizationContext: false, pauseWriterThreshold: 0, resumeWriterThreshold: 0);
-        
+
         private readonly WebSocketMessageType _webSocketMessageType = WebSocketMessageType.Binary;
         private readonly ClientWebSocket _webSocket;
         private readonly Func<Task<string>> _accessTokenProvider;
@@ -116,10 +118,10 @@ namespace Microsoft.Azure.SignalR.Connections.Client.Internal
             {
                 await _webSocket.ConnectAsync(resolvedUrl, cancellationToken);
             }
-            catch
+            catch (Exception e)
             {
                 _webSocket.Dispose();
-                throw;
+                throw e.WrapAsAzureSignalRException();
             }
 
             Log.StartedTransport(_logger);
