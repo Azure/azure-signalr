@@ -1,6 +1,6 @@
 # Azure SignalR Service Management SDK (Legacy)
 
-**This is a guide for version 1.9.x and before. For guide on the latest SDK version, see [Azure SignalR Service Management SDK](./management-sdk-guide.md).**
+**This is a guide for version 1.9.x and before. For guide on the latest SDK version, see [Azure SignalR Service Management SDK](./management-sdk-guide.md). Please check [Migration guidance](./management-sdk-migration.md) to see how to migrate from version 1.9.x and below to 1.10.0.**
 
 > **NOTE**
 >

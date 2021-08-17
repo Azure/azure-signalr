@@ -34,7 +34,7 @@ Microsoft.Azure.SignalR.Management | .NET Standard 2.0 <br/> .NET Core App 3.0 <
 
 Azure SignalR Service Management SDK helps you to manage SignalR clients through Azure SignalR Service directly such as broadcast messages. Therefore, this SDK can be but not limited to be used in [serverless](https://azure.microsoft.com/zh-cn/solutions/serverless/) environments. You can use this SDK to manage SignalR clients connected to your Azure SignalR Service in any environment, such as in a console app, in an Azure function or in a web server.
 
-**To see guides for SDK version 1.9.x and before, go to [Azure SignalR Service Management SDK (Legacy)](./management-sdk-guide-legacy.md)**
+**To see guides for SDK version 1.9.x and before, go to [Azure SignalR Service Management SDK (Legacy)](./management-sdk-guide-legacy.md). You might also want to read [Migration guidance](./management-sdk-migration.md).**
 
 <!--Add migration guide-->
 
