@@ -45,9 +45,9 @@ namespace Microsoft.Azure.SignalR.Management
             _endpointManager = endpointManager;
         }
 
-        public override Task<NegotiationResponse> NegotiateAsync(NegotiationOptions options, CancellationToken cancellationToken)
+        public override ValueTask<NegotiationResponse> NegotiateAsync(NegotiationOptions options, CancellationToken cancellationToken)
         {
-            return _negotiateProcessor.NegotiateAsync(_hubName, options, cancellationToken);
+            return new ValueTask<NegotiationResponse>(_negotiateProcessor.NegotiateAsync(_hubName, options, cancellationToken));
         }
 
         IEnumerable<ServiceEndpoint> IInternalServiceHubContext.GetServiceEndpoints() => _endpointManager.GetEndpoints(_hubName);

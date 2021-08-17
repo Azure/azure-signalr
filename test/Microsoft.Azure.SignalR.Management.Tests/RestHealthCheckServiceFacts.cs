@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .ConfigureServices(services => services.AddSingleton(implementationInstance))
                 .BuildServiceManager()
                 .CreateHubContextAsync(HubName, default);
-            await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync());
+            await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync().AsTask());
             await serviceHubContext.DisposeAsync();
         }
 
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             //Wait until the next health check finish
             await Task.Delay(RestHealthCheckService.CheckInterval.Add(TimeSpan.FromSeconds(3)));
-            await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync());
+            await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync().AsTask());
 
             await serviceHubContext.DisposeAsync();
         }
