@@ -7,8 +7,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    //todo: public [ServiceManager]
-    internal abstract class ServiceManager : IDisposable
+    public abstract class ServiceManager : IDisposable
     {
         public abstract Task<ServiceHubContext> CreateHubContextAsync(string hubName, CancellationToken cancellationToken);
 
