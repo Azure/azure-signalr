@@ -79,15 +79,6 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        // test only
-        internal ServiceEndpoint() { }
-
-        // test only
-        internal ServiceEndpoint(AadAccessKey aadKey)
-        {
-            AccessKey = aadKey;
-        }
-
         public override string ToString()
         {
             var prefix = string.IsNullOrEmpty(Name) ? "" : $"[{Name}]";

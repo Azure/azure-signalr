@@ -9,8 +9,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Azure.Core;
-
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
@@ -29,11 +27,11 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     public class ServiceMessageTests : VerifiableLoggedTest
     {
-        private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        private const string _signingKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-        private const string AadConnectionString = "endpoint=https://localhost;authType=aad;";
+        private const string _aadConnectionString = "endpoint=https://localhost;authType=aad;";
 
-        private const string keyConnectionString = "endpoint=https://localhost;accessKey=" + SigningKey;
+        private const string _keyConnectionString = "endpoint=https://localhost;accessKey=" + _signingKey;
 
         public ServiceMessageTests(ITestOutputHelper output) : base(output)
         {
@@ -158,8 +156,8 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var endpoint = keyType switch
             {
-                nameof(AccessKey) => new ServiceEndpoint(keyConnectionString),
-                nameof(AadAccessKey) => new ServiceEndpoint(new TestAadAccessKey()),
+                nameof(AccessKey) => new ServiceEndpoint(_keyConnectionString),
+                nameof(AadAccessKey) => new ServiceEndpoint(_aadConnectionString),
                 _ => throw new NotImplementedException()
             };
             var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
@@ -180,8 +178,8 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [InlineData(typeof(AccessKey), keyConnectionString)]
-        [InlineData(typeof(AadAccessKey), AadConnectionString)]
+        [InlineData(typeof(AccessKey), _keyConnectionString)]
+        [InlineData(typeof(AadAccessKey), _aadConnectionString)]
         public async Task TestAccessKeyResponseMessage(Type type, string connectionString)
         {
             var endpoint = new ServiceEndpoint(connectionString);
@@ -195,7 +193,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var message = new AccessKeyResponseMessage()
             {
                 Kid = "foo",
-                AccessKey = SigningKey
+                AccessKey = _signingKey
             };
             await connection.WriteFromServiceAsync(message);
 
@@ -287,7 +285,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 clientConnectionFactory,
                 serverId ?? "serverId",
                 connectionId ?? Guid.NewGuid().ToString("N"),
-                hubServiceEndpoint ?? new HubServiceEndpoint(),
+                hubServiceEndpoint ?? new TestHubServiceEndpoint(),
                 messageHandler ?? new TestServiceMessageHandler(),
                 eventHandler ?? new TestServiceEventHandler(),
                 mode: mode ?? GracefulShutdownMode.Off
