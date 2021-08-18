@@ -14,8 +14,8 @@ namespace Microsoft.Azure.SignalR.Management
     {
         //internal by test
         //An acceptable time to wait before retry when clients negotiate fail
-        internal static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(10);
-        internal static readonly TimeSpan RetryInterval = TimeSpan.FromSeconds(1);
+        internal static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(2);
+        internal static readonly TimeSpan RetryInterval = TimeSpan.FromSeconds(3);
         private const int MaxRetries = 2;
 
         private readonly RestClientFactory _clientFactory;
