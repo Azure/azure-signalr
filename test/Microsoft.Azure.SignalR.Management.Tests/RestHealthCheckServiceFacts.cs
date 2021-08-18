@@ -71,12 +71,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .WithLoggerFactory(loggerFactory)
                 .BuildServiceManager()
                 .CreateHubContextAsync(HubName, default);
-            
-            //The first negotiation is OK
-            Assert.NotNull(serviceHubContext.NegotiateAsync().Result);
 
+            //The first negotiation is OK
+            Assert.NotNull(serviceHubContext.NegotiateAsync().AsTask().Result);
+
+            var retryTime = RestHealthCheckService.MaxRetries * RestHealthCheckService.RetryInterval;
             //Wait until the next health check finish
-            await Task.Delay(RestHealthCheckService.CheckInterval.Add(TimeSpan.FromSeconds(3)));
+            await Task.Delay(RestHealthCheckService.CheckInterval + retryTime + TimeSpan.FromSeconds(1));
             await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync().AsTask());
 
             await serviceHubContext.DisposeAsync();
