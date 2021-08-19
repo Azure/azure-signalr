@@ -43,7 +43,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                     return true;
                 }))
             {
-                var endpoint1 = new HubServiceEndpoint();
+                var endpoint1 = new TestHubServiceEndpoint();
                 var conn1 = new TestServiceConnection();
                 var scf = new TestServiceConnectionFactory(endpoint1 => conn1);
                 var container = new WeakServiceConnectionContainer(scf, 5, endpoint1, loggerFactory.CreateLogger(nameof(TestWeakConnectionStatus)));
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                     return true;
                 }))
             {
-                var endpoint1 = new HubServiceEndpoint();
+                var endpoint1 = new TestHubServiceEndpoint();
                 var conn1 = new TestServiceConnection();
                 var scf = new TestServiceConnectionFactory(endpoint1 => conn1);
                 var container = new StrongServiceConnectionContainer(scf, 5, endpoint1, loggerFactory.CreateLogger(nameof(TestStrongConnectionStatus)));
