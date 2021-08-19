@@ -21,10 +21,10 @@ namespace Microsoft.Azure.SignalR.AspNet
         private const string ServerPath = "aspnetserver";
 
         private readonly string _endpoint;
+        private readonly string _serverEndpoint;
         private readonly string _clientEndpoint;
         private readonly AccessKey _accessKey;
         private readonly string _appName;
-        private readonly int? _port;
         private readonly TimeSpan _accessTokenLifetime;
         private readonly AccessTokenAlgorithm _algorithm;
 
@@ -38,10 +38,10 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             // Version is ignored for aspnet signalr case
             _endpoint = endpoint.Endpoint;
-            _clientEndpoint = endpoint.ClientEndpoint ?? endpoint.Endpoint;
+            _serverEndpoint = endpoint.ServerEndpoint;
+            _clientEndpoint = endpoint.ClientEndpoint;
             _accessKey = endpoint.AccessKey;
             _appName = options.ApplicationName;
-            _port = endpoint.Port;
             _algorithm = options.AccessTokenAlgorithm;
 
             Proxy = options.Proxy;
@@ -55,7 +55,6 @@ namespace Microsoft.Azure.SignalR.AspNet
         public Task<string> GenerateClientAccessTokenAsync(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
         {
             var audience = $"{_endpoint}/{ClientPath}";
-
             return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
@@ -76,46 +75,41 @@ namespace Microsoft.Azure.SignalR.AspNet
             }
 
             var audience = $"{_endpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
-
             return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
         public string GetClientEndpoint(string hubName = null, string originalPath = null, string queryString = null)
         {
-            var queryBuilder = new StringBuilder();
-
-            if (!string.IsNullOrEmpty(queryString))
+            var uriBuilder = new UriBuilder(_clientEndpoint)
             {
-                queryBuilder.Append(queryString);
-            }
+                Path = ClientPath
+            };
+
+            var queryBuilder = new StringBuilder(queryString?.TrimStart('?'));
 
             if (!string.IsNullOrEmpty(originalPath))
             {
-                if (queryBuilder.Length == 0)
-                {
-                    queryBuilder.Append("?");
-                }
-                else
+                if (queryBuilder.Length != 0)
                 {
                     queryBuilder.Append("&");
                 }
-
                 queryBuilder
                     .Append(Constants.QueryParameter.OriginalPath)
                     .Append("=")
                     .Append(WebUtility.UrlEncode(originalPath));
             }
-
-            return _port.HasValue ?
-                $"{_clientEndpoint}:{_port}/{ClientPath}{queryBuilder}" :
-                $"{_clientEndpoint}/{ClientPath}{queryBuilder}";
+            uriBuilder.Query = queryBuilder.ToString();
+            return uriBuilder.Uri.AbsoluteUri;
         }
 
         public string GetServerEndpoint(string hubName)
         {
-            return _port.HasValue ?
-                $"{_endpoint}:{_port}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}" :
-                $"{_endpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
+            var uriBuilder = new UriBuilder(_serverEndpoint)
+            {
+                Path = $"{ServerPath}/",
+                Query = $"hub={GetPrefixedHubName(_appName, hubName)}"
+            };
+            return uriBuilder.Uri.AbsoluteUri;
         }
     }
 }

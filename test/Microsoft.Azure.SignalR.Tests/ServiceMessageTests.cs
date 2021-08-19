@@ -296,7 +296,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             public string Token { get; } = Guid.NewGuid().ToString();
 
-            public TestAadAccessKey() : base(null, "localhost", 80)
+            public TestAadAccessKey() : base(new Uri("http://localhost"), null)
             {
             }
 

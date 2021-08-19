@@ -52,14 +52,14 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder().AddJsonFile(configPath, false, true).Build());
             using var provider = services.BuildServiceProvider();
             var optionsMonitor = provider.GetRequiredService<IOptionsMonitor<ServiceOptions>>();
-            Assert.Equal(originUrl, new ServiceEndpoint(optionsMonitor.CurrentValue.ConnectionString).Endpoint);
+            Assert.Equal(originUrl, new ServiceEndpoint(optionsMonitor.CurrentValue.ConnectionString).Endpoint, ignoreCase: true);
 
             //update json config file
             configObj.Azure.SignalR.ConnectionString = $"Endpoint={newUrl};AccessKey={AccessKey};Version=1.0;";
             File.WriteAllText(configPath, JsonConvert.SerializeObject(configObj));
 
             await Task.Delay(5000);
-            Assert.Equal(newUrl, new ServiceEndpoint(optionsMonitor.CurrentValue.ConnectionString).Endpoint);
+            Assert.Equal(newUrl, new ServiceEndpoint(optionsMonitor.CurrentValue.ConnectionString).Endpoint, ignoreCase: true);
         }
 
         [Fact]
@@ -74,11 +74,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .AddSingleton<IConfiguration>(new ConfigurationBuilder().Add(new ReloadableMemorySource(configProvider)).Build());
             using var provider = services.BuildServiceProvider();
             var optionsMonitor = provider.GetRequiredService<IOptionsMonitor<ServiceOptions>>();
-            Assert.Equal(originUrl, new ServiceEndpoint(optionsMonitor.CurrentValue.ConnectionString).Endpoint);
+            Assert.Equal(originUrl, new ServiceEndpoint(optionsMonitor.CurrentValue.ConnectionString).Endpoint, ignoreCase: true);
 
             //update
             configProvider.Set("Azure:SignalR:ConnectionString", $"Endpoint={newUrl};AccessKey={AccessKey};Version=1.0;");
-            Assert.Equal(newUrl, new ServiceEndpoint(optionsMonitor.CurrentValue.ConnectionString).Endpoint);
+            Assert.Equal(newUrl, new ServiceEndpoint(optionsMonitor.CurrentValue.ConnectionString).Endpoint, ignoreCase: true);
         }
 
         [Fact]
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             configProvider.Set("Azure:SignalR:ConnectionString", $"Endpoint={newUrl};AccessKey={AccessKey};Version=1.0;");
             Assert.Equal(appName, contextMonitor.CurrentValue.ApplicationName);  // configuration via delegate is conserved after reload config.
-            Assert.Equal(newUrl, new ServiceEndpoint(contextMonitor.CurrentValue.ConnectionString).Endpoint);
+            Assert.Equal(newUrl, new ServiceEndpoint(contextMonitor.CurrentValue.ConnectionString).Endpoint, ignoreCase: true);
 
             configProvider.Set("Azure:SignalR:ApplicationName", newAppName);
             Assert.Equal(newAppName, contextMonitor.CurrentValue.ApplicationName);

@@ -21,7 +21,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             Assert.Equal(expectedEndpoint, accessKey.Endpoint);
             Assert.Equal("bbb", accessKey.Value);
             Assert.Null(version);
-            Assert.Null(accessKey.Port);
         }
 
         [Theory]
@@ -49,7 +48,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                 Assert.IsType<ManagedIdentityCredential>(aadAccessKey.TokenCredential);
             }
             Assert.Null(version);
-            Assert.Null(accessKey.Port);
             Assert.Null(clientEndpoint);
         }
 
@@ -66,14 +64,13 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                 Assert.IsType<ClientSecretCredential>(aadAccessKey.TokenCredential);
             }
             Assert.Null(version);
-            Assert.Null(accessKey.Port);
             Assert.Null(clientEndpoint);
         }
 
         [Theory]
-        [InlineData("https://aaa", "1.0", null, "endpoint=https://aaa;AccessKey=bbb;version=1.0")]
-        [InlineData("https://aaa", "1.0-preview", null, "ENDPOINT=https://aaa/;ACCESSKEY=bbb;VERSION=1.0-preview")]
-        [InlineData("http://aaa", "1.1", null, "endpoint=http://aaa;AccessKey=bbb;Version=1.1")]
+        [InlineData("https://aaa", "1.0", 443, "endpoint=https://aaa;AccessKey=bbb;version=1.0")]
+        [InlineData("https://aaa", "1.0-preview", 443, "ENDPOINT=https://aaa/;ACCESSKEY=bbb;VERSION=1.0-preview")]
+        [InlineData("http://aaa", "1.1", 80, "endpoint=http://aaa;AccessKey=bbb;Version=1.1")]
         [InlineData("http://aaa", "1.1-beta2", 1234, "ENDPOINT=http://aaa/;ACCESSKEY=bbb;Version=1.1-beta2;Port=1234")]
         public void ValidConnectionString(string expectedEndpoint, string expectedVersion, int? expectedPort, string connectionString)
         {

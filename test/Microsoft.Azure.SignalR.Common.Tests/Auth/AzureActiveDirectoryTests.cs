@@ -1,4 +1,5 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System;
+using System.IdentityModel.Tokens.Jwt;
 using System.Threading.Tasks;
 using Azure.Core;
 using Azure.Identity;
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         public async Task TestAcquireAccessToken()
         {
             var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
-            var key = new AadAccessKey(options, "https://localhost", 8080);
+            var key = new AadAccessKey(new Uri("https://localhost"), options);
             var token = await key.GenerateAadTokenAsync();
             Assert.NotNull(token);
         }
@@ -70,8 +71,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         [Fact(Skip = "Provide valid aad options")]
         internal async Task TestAuthenticateAsync()
         {
-            var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
-            var key = new AadAccessKey(options, "https://localhost", 8080);
+            var credential = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
+            var key = new AadAccessKey(new Uri("https://localhost"), credential);
             await key.UpdateAccessKeyAsync();
 
             Assert.True(key.Authorized);

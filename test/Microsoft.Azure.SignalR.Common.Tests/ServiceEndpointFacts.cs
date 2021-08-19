@@ -78,13 +78,15 @@ namespace Microsoft.Azure.SignalR.Common.Tests
 
         [Theory]
         [InlineData("http://localhost", "http://localhost", 80)]
+        [InlineData("http://localhost:80", "http://localhost", 80)]
         [InlineData("https://localhost", "https://localhost", 443)]
+        [InlineData("https://localhost:443", "https://localhost", 443)]
         [InlineData("http://localhost:5050", "http://localhost", 5050)]
         [InlineData("https://localhost:5050", "https://localhost", 5050)]
         [InlineData("http://localhost/", "http://localhost", 80)]
         [InlineData("http://localhost/foo", "http://localhost", 80)]
         [InlineData("https://localhost/foo/", "https://localhost", 443)]
-        public void TestAadConstructor(string url, string endpoint, int port)
+        public void TestAadConstructor(string url, string endpoint, int? port)
         {
             var uri = new Uri(url);
             var serviceEndpoint = new ServiceEndpoint(uri, new DefaultAzureCredential());

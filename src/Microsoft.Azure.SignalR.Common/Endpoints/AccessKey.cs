@@ -14,20 +14,20 @@ namespace Microsoft.Azure.SignalR
         public string Id => Key?.Item1;
         public string Value => Key?.Item2;
 
+        public string Endpoint { get; }
+        public int Port { get; }
+
         protected Tuple<string, string> Key { get; set; }
 
-        public string Endpoint { get; }
-        public int? Port { get; }
-
-        public AccessKey(string key, string endpoint, int? port) : this(endpoint, port)
+        public AccessKey(Uri endpoint, string key) : this(endpoint)
         {
             Key = new Tuple<string, string>(key.GetHashCode().ToString(), key);
         }
 
-        protected AccessKey(string endpoint, int? port)
+        protected AccessKey(Uri endpoint)
         {
-            Endpoint = endpoint;
-            Port = port;
+            Endpoint = $"{endpoint.Scheme}://{endpoint.Host}";
+            Port = endpoint.Port;
         }
 
         public virtual Task<string> GenerateAccessTokenAsync(

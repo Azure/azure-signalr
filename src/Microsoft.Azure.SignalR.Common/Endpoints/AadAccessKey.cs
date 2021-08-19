@@ -5,8 +5,11 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Azure.Core;
+
 using Microsoft.Azure.SignalR.Common;
+
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.SignalR
@@ -36,7 +39,7 @@ namespace Microsoft.Azure.SignalR
 
         private Task<object> InitializedTask => _initializedTcs.Task;
 
-        public AadAccessKey(TokenCredential credential, string endpoint, int? port) : base(endpoint, port)
+        public AadAccessKey(Uri endpoint, TokenCredential credential) : base(endpoint)
         {
             TokenCredential = credential;
         }

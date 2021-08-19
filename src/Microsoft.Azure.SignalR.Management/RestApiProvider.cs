@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -13,13 +14,13 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private const string Version = "v1";
         private readonly RestApiAccessTokenGenerator _restApiAccessTokenGenerator;
-        private readonly string _baseEndpoint;
-        private readonly int? _port;
+        private readonly string _endpoint;
+        private readonly string _serverEndpoint;
 
         public RestApiProvider(ServiceEndpoint endpoint)
         {
-            _baseEndpoint = endpoint.Endpoint;
-            _port = endpoint.Port;
+            _endpoint = endpoint.Endpoint;
+            _serverEndpoint = endpoint.ServerEndpoint;
             _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(endpoint.AccessKey);
         }
 
@@ -30,11 +31,13 @@ namespace Microsoft.Azure.SignalR.Management
 
         public async Task<RestApiEndpoint> GetServiceHealthEndpointAsync()
         {
-            var port = _port == null ? "" : $":{_port}";
-            var url = $"{_baseEndpoint}{port}/api/{Version}/health";
-            var audience = $"{_baseEndpoint}/api/{Version}/health";
+            var builder = new UriBuilder(_serverEndpoint)
+            {
+                Path = $"/api/{Version}/health",
+            };
+            var audience = $"{_endpoint}/api/{Version}/health";
             var token = await _restApiAccessTokenGenerator.Generate(audience);
-            return new RestApiEndpoint(url, token);
+            return new RestApiEndpoint(builder.Uri.AbsoluteUri, token);
         }
 
         public Task<RestApiEndpoint> GetBroadcastEndpointAsync(string appName, string hubName, TimeSpan? lifetime = null, IReadOnlyList<string> excluded = null)
@@ -97,12 +100,14 @@ namespace Microsoft.Azure.SignalR.Management
 
         private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
         {
-            var portText = _port == null ? string.Empty : $":{_port.Value}";
-            var requestPrefixWithHub = $"{_baseEndpoint}{portText}/api/{Version}/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
+            var builder = new UriBuilder(_serverEndpoint)
+            {
+                Path = $"/api/{Version}/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}{pathAfterHub}",
+            };
             // todo: should be same with `requestPrefixWithHub`, need to confirm with emulator.
-            var audiencePrefixWithHub = $"{_baseEndpoint}/api/{Version}/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
+            var audiencePrefixWithHub = $"{_endpoint}/api/{Version}/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
             var token = await _restApiAccessTokenGenerator.Generate($"{audiencePrefixWithHub}{pathAfterHub}", lifetime);
-            return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token) { Query = queries };
+            return new RestApiEndpoint(builder.Uri.AbsoluteUri, token) { Query = queries };
         }
     }
 }

@@ -11,19 +11,18 @@ namespace Microsoft.Azure.SignalR
     {
         private const string ClientPath = "client";
         private const string ServerPath = "server";
-        public string Endpoint { get; }
 
         public string Version { get; }
 
-        public int? Port { get; }
-
+        public string Endpoint { get; }
+        public string ServerEndpoint { get; }
         public string ClientEndpoint { get; }
 
         public DefaultServiceEndpointGenerator(ServiceEndpoint endpoint)
         {
-            Endpoint = endpoint.Endpoint;
             Version = endpoint.Version;
-            Port = endpoint.Port;
+            Endpoint = endpoint.Endpoint;
+            ServerEndpoint = endpoint.ServerEndpoint;
             ClientEndpoint = endpoint.ClientEndpoint;
         }
 
@@ -33,7 +32,14 @@ namespace Microsoft.Azure.SignalR
 
         public string GetClientEndpoint(string hubName, string applicationName, string originalPath, string queryString)
         {
-            var queryBuilder = new StringBuilder();
+            var uriBuilder = new UriBuilder(ClientEndpoint)
+            {
+                Path = $"{ClientPath}/"
+            };
+
+            var hub = GetPrefixedHubName(applicationName, hubName);
+            var queryBuilder = new StringBuilder("hub=").Append(hub);
+
             if (!string.IsNullOrEmpty(originalPath))
             {
                 queryBuilder.Append("&")
@@ -44,28 +50,29 @@ namespace Microsoft.Azure.SignalR
 
             if (!string.IsNullOrEmpty(queryString))
             {
-                queryBuilder.Append("&").Append(queryString);
+                queryBuilder.Append("&").Append(queryString.TrimStart('?'));
             }
 
-            return $"{InternalGetEndpoint(ClientPath, hubName, applicationName, ClientEndpoint ?? Endpoint)}{queryBuilder}";
+            uriBuilder.Query = queryBuilder.ToString();
+            return uriBuilder.Uri.AbsoluteUri;
         }
 
         public string GetServerAudience(string hubName, string applicationName) =>
             InternalGetAudience(ServerPath, hubName, applicationName);
 
-        public string GetServerEndpoint(string hubName, string applicationName) =>
-            InternalGetEndpoint(ServerPath, hubName, applicationName, Endpoint);
+        public string GetServerEndpoint(string hubName, string applicationName)
+        {
+            var uriBuilder = new UriBuilder(ServerEndpoint)
+            {
+                Path = $"{ServerPath}/",
+                Query = $"hub={GetPrefixedHubName(applicationName, hubName)}",
+            };
+            return uriBuilder.Uri.AbsoluteUri;
+        }
 
         private string GetPrefixedHubName(string applicationName, string hubName)
         {
             return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
-        }
-
-        private string InternalGetEndpoint(string path, string hubName, string applicationName, string target)
-        {
-            return Port.HasValue ?
-                $"{target}:{Port}/{path}/?hub={GetPrefixedHubName(applicationName, hubName)}" :
-                $"{target}/{path}/?hub={GetPrefixedHubName(applicationName, hubName)}";
         }
 
         private string InternalGetAudience(string path, string hubName, string applicationName)

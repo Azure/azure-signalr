@@ -17,6 +17,10 @@ namespace Microsoft.Azure.SignalR
 
         public string Endpoint => AccessKey?.Endpoint;
 
+        public string ServerEndpoint => Port.HasValue ? $"{Endpoint}:{Port}" : Endpoint;
+
+        public string ClientEndpoint => _clientEndpoint ?? ServerEndpoint;
+
         internal int? Port => AccessKey?.Port;
 
         /// <summary>
@@ -40,14 +44,14 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public EndpointMetrics EndpointMetrics { get; internal set; } = new EndpointMetrics();
 
-        /// <summary>
-        /// The customized endpoint that the client will be redirected to
-        /// </summary>
-        internal string ClientEndpoint { get; }
-
         internal string Version { get; }
 
         internal AccessKey AccessKey { get; private set; }
+
+        /// <summary>
+        /// The customized endpoint that the client will be redirected to
+        /// </summary>
+        private readonly string _clientEndpoint;
 
         /// <summary>
         /// Connection string constructor with nameWithEndpointType
@@ -72,7 +76,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException($"'{nameof(connectionString)}' cannot be null or whitespace", nameof(connectionString));
             }
 
-            (AccessKey, Version, ClientEndpoint) = ConnectionStringParser.Parse(connectionString);
+            (AccessKey, Version, _clientEndpoint) = ConnectionStringParser.Parse(connectionString);
 
             EndpointType = type;
             ConnectionString = connectionString;
@@ -107,7 +111,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ArgumentException("Endpoint scheme must be 'http://' or 'https://'");
             }
-            AccessKey = new AadAccessKey(credential, $"{endpoint.Scheme}://{endpoint.Host}", endpoint.Port);
+            AccessKey = new AadAccessKey(endpoint, credential);
             (Name, EndpointType) = (name, endpointType);
         }
 
@@ -124,7 +128,7 @@ namespace Microsoft.Azure.SignalR
                 Name = other.Name;
                 Version = other.Version;
                 AccessKey = other.AccessKey;
-                ClientEndpoint = other.ClientEndpoint;
+                _clientEndpoint = other._clientEndpoint;
             }
         }
 
