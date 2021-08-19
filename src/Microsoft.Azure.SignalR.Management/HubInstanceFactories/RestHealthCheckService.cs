@@ -105,7 +105,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         private static class Log
         {
-            private static readonly Action<ILogger, string, TimeSpan, Exception> _restHealthCheckFailed = LoggerMessage.Define<string, TimeSpan>(LogLevel.Information, new EventId(1, nameof(RestHealthCheckFailed)), "Will retry health check for endpoint {{endpoint}} after a delay of {retryInterval} due to exception.");
+            private static readonly Action<ILogger, string, TimeSpan, Exception> _restHealthCheckFailed = LoggerMessage.Define<string, TimeSpan>(LogLevel.Information, new EventId(1, nameof(RestHealthCheckFailed)), "Will retry health check for endpoint {endpoint} after a delay of {retryInterval} due to exception.");
 
             private static readonly Action<ILogger, string, Exception> _finalRestHealthCheckFailed = LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, nameof(RestHealthCheckFailed)), "Failed to check health state for endpoint {endpoint}.");
 
