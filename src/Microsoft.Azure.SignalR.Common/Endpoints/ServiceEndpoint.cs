@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR
         internal AccessKey AccessKey { get; private set; }
 
         /// <summary>
-        /// Connection string constructor with dict key
+        /// Connection string constructor with nameWithEndpointType
         /// </summary>
         /// <param name="nameWithEndpointType"></param>
         /// <param name="connectionString"></param>
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         /// <summary>
-        /// Azure active directory constructor with dict key
+        /// Azure active directory constructor with nameWithEndpointType
         /// </summary>
         /// <param name="nameWithEndpointType"></param>
         /// <param name="endpoint"></param>
@@ -99,7 +99,11 @@ namespace Microsoft.Azure.SignalR
         /// <param name="name"></param>
         public ServiceEndpoint(Uri endpoint, TokenCredential credential, EndpointType endpointType = EndpointType.Primary, string name = "")
         {
-            if (endpoint.Scheme != Uri.UriSchemeHttp && endpoint.Scheme != Uri.UriSchemeHttps)
+            if (endpoint == null)
+            {
+                throw new ArgumentNullException(nameof(endpoint));
+            }
+            else if (endpoint.Scheme != Uri.UriSchemeHttp && endpoint.Scheme != Uri.UriSchemeHttps)
             {
                 throw new ArgumentException("Endpoint scheme must be 'http://' or 'https://'");
             }
@@ -108,7 +112,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         /// <summary>
-        /// Copy constructor
+        /// Copy constructor with no exception
         /// </summary>
         /// <param name="other"></param>
         public ServiceEndpoint(ServiceEndpoint other)
