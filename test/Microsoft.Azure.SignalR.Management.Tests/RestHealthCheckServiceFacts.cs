@@ -17,6 +17,7 @@ using Moq;
 using Moq.Protected;
 using Xunit;
 using Xunit.Abstractions;
+using static Microsoft.Azure.SignalR.Management.RestHealthCheckService;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
@@ -62,10 +63,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadGateway))
                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadGateway));
             
+            var checkInterval = TimeSpan.FromSeconds(3);
+            var retryInterval = TimeSpan.FromSeconds(0.5);
             using var _ = StartLog(out var loggerFactory);
             var services = new ServiceCollection()
                 .AddHttpClient(Options.DefaultName).ConfigurePrimaryHttpMessageHandler(() => handlerMock.Object).Services
-                .AddSignalRServiceManager();
+                .AddSignalRServiceManager()
+                .Configure<HealthCheckOption>(o =>
+                {
+                    o.CheckInterval = checkInterval;
+                    o.RetryInterval = retryInterval;
+                });
             var serviceHubContext = await new ServiceManagerBuilder(services)
                 .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
                 .WithLoggerFactory(loggerFactory)
@@ -73,11 +81,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .CreateHubContextAsync(HubName, default);
 
             //The first negotiation is OK
-            Assert.NotNull(serviceHubContext.NegotiateAsync().AsTask().Result);
+            var negotiateResult = await serviceHubContext.NegotiateAsync();
+            Assert.NotNull(negotiateResult);
 
-            var retryTime = RestHealthCheckService.MaxRetries * RestHealthCheckService.RetryInterval;
+            var retryTime = MaxRetries * retryInterval;
             //Wait until the next health check finish
-            await Task.Delay(RestHealthCheckService.CheckInterval + retryTime + TimeSpan.FromSeconds(1));
+            await Task.Delay(checkInterval + retryTime + TimeSpan.FromSeconds(1));
             await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync().AsTask());
 
             await serviceHubContext.DisposeAsync();
