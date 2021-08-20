@@ -17,7 +17,6 @@ using Moq;
 using Moq.Protected;
 using Xunit;
 using Xunit.Abstractions;
-using static Microsoft.Azure.SignalR.Management.RestHealthCheckService;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
@@ -84,7 +83,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var negotiateResult = await serviceHubContext.NegotiateAsync();
             Assert.NotNull(negotiateResult);
 
-            var retryTime = MaxRetries * retryInterval;
+            var retryTime = RestHealthCheckService.MaxRetries * retryInterval;
             //Wait until the next health check finish
             await Task.Delay(checkInterval + retryTime + TimeSpan.FromSeconds(1));
             await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync().AsTask());

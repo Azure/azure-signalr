@@ -54,13 +54,6 @@ namespace Microsoft.Azure.SignalR.Management
             return Task.CompletedTask;
         }
 
-        //used to reduce test time
-        internal class HealthCheckOption
-        {
-            public TimeSpan CheckInterval { get; set; }
-            public TimeSpan RetryInterval { get; set; }
-        }
-
         private async Task CheckEndpointHealthAsync()
         {
             await Task.WhenAll(_serviceEndpointManager.GetEndpoints(_hubName).Select(async endpoint =>
