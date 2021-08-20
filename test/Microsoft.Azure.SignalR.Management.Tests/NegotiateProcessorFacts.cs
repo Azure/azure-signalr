@@ -72,18 +72,12 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         public async Task GetDiagnosticClientNegotiateResponseTest(bool isDiagnosticClient, bool hasClaims)
         {
             var endpoints = FakeEndpointUtils.GetFakeEndpoint(1).ToArray();
-            var routerMock = new Mock<IEndpointRouter>();
-            routerMock
-                .SetupSequence(router => router.GetNegotiateEndpoint(null, endpoints))
-                .Returns(endpoints[0]);
-            var router = routerMock.Object;
             var provider = new ServiceCollection().AddSignalRServiceManager()
             .Configure<ServiceManagerOptions>(o =>
             {
                 o.ServiceEndpoints = endpoints;
                 o.ServiceTransportType = ServiceTransportType.Persistent;
-            })
-            .AddSingleton(router).BuildServiceProvider();
+            }).BuildServiceProvider();
             var userId = "user";
             var negotiateProcessor = provider.GetRequiredService<NegotiateProcessor>();
             var negotiationResponse = await negotiateProcessor.NegotiateAsync(
