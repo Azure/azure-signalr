@@ -12,7 +12,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    //todo public [ServiceManager]
     internal class ServiceManagerImpl : ServiceManager, IServiceManager
     {
         private readonly RestClientFactory _restClientFactory;

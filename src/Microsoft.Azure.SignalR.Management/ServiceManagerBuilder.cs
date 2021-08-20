@@ -120,8 +120,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// Builds <see cref="ServiceManager"/> instances.
         /// </summary>
         /// <returns>The instance of the <see cref="ServiceManager"/>.</returns>
-        /// todo: public
-        internal ServiceManager BuildServiceManager()
+        public ServiceManager BuildServiceManager()
         {
             return Build() as ServiceManager;
         }
