@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -84,7 +86,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public async void TestCloseAsync()
         {
             var conn = new TestServiceConnectionForCloseAsync();
-            var hub = new HubServiceEndpoint();
+            var hub = new TestHubServiceEndpoint();
             using var container = new TestBaseServiceConnectionContainer(new List<IServiceConnection> { conn }, hub);
 
             _ = conn.StartAsync();
@@ -99,7 +101,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void TestCloseAsyncWithoutStartAsync()
         {
             var conn = new TestServiceConnectionForCloseAsync();
-            var hub = new HubServiceEndpoint();
+            var hub = new TestHubServiceEndpoint();
             using var container = new TestBaseServiceConnectionContainer(new List<IServiceConnection> { conn }, hub);
 
             // await AssertTask(container.CloseClientConnectionForTest(conn), TimeSpan.FromSeconds(5));
@@ -109,7 +111,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public async void TestCloseAsyncWithExceptionAndNoFinAck()
         {
             var conn = new TestServiceConnectionForCloseAsync();
-            var hub = new HubServiceEndpoint();
+            var hub = new TestHubServiceEndpoint();
             using var container = new TestBaseServiceConnectionContainer(new List<IServiceConnection> { conn }, hub);
 
             _ = conn.StartAsync();

@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             new ServiceProtocol(),
             "serverId",
             Guid.NewGuid().ToString(),
-            new HubServiceEndpoint(),
+            new TestHubServiceEndpoint(),
             serviceMessageHandler,
             serviceEventHandler,
             ServiceConnectionType.Default,
