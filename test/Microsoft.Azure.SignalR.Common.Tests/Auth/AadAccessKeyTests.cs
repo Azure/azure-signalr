@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         {
             var credential = new EnvironmentCredential();
             var endpoint = "http://localhost";
-            var key = new AadAccessKey(credential, endpoint, 80);
+            var key = new AadAccessKey(endpoint, credential);
 
             var audience = "http://localhost/chat";
             var claims = Array.Empty<Claim>();
@@ -39,8 +39,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         public async Task TestInitializeFailed()
         {
             var credential = new EnvironmentCredential();
-            var endpoint = "http://localhost";
-            var key = new AadAccessKey(credential, endpoint, 80);
+            var key = new AadAccessKey("http://localhost", credential);
 
             var audience = "http://localhost/chat";
             var claims = Array.Empty<Claim>();

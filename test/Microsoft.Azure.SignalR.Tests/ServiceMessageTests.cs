@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Azure.Identity;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
@@ -296,7 +298,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             public string Token { get; } = Guid.NewGuid().ToString();
 
-            public TestAadAccessKey() : base(null, "localhost", 80)
+            public TestAadAccessKey() : base("http://localhost:80", new DefaultAzureCredential())
             {
             }
 

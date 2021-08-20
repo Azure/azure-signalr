@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Management
         public RestApiProvider(ServiceEndpoint endpoint)
         {
             _audienceBaseUrl = endpoint.AudienceBaseUrl;
-            _serverEndpoint = endpoint.ServerEndpoint;
+            _serverEndpoint = endpoint.Endpoint;
             _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(endpoint.AccessKey);
         }
 

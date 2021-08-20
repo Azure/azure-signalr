@@ -22,28 +22,10 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         private const string DefaultKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
         [Theory]
-        [ClassData(typeof(EndpointEndWithSlash))]
-        public void TestEndpointEndWithSlash(string connectionString, string expectedEndpoint)
-        {
-            var (key, _, _) = ConnectionStringParser.Parse(connectionString);
-            Assert.Equal(expectedEndpoint, key.Endpoint);
-            Assert.Equal(DefaultKey, key.Value);
-        }
-
-        [Theory]
         [InlineData("endpoint=https://aaa;AuthType=aad;clientId=123;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
         public void InvalidAzureApplication(string connectionString)
         {
             Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-        }
-
-        [Theory]
-        [ClassData(typeof(EndpointAndPortTestData))]
-        public void TestEndpointAndPort(string connectionString, string expectedEndpoint, int? expectedPort)
-        {
-            var (key, _, _) = ConnectionStringParser.Parse(connectionString);
-            Assert.Equal(expectedEndpoint, key.Endpoint);
-            Assert.Equal(expectedPort, key.Port);
         }
 
         [Theory]
@@ -117,13 +99,11 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         }
 
         [Theory]
-        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientId=foo;clientSecret=bar;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
-        // TODO client cert
-        public void TestAzureApplication(string expectedEndpoint, string connectionString)
+        [InlineData("endpoint=https://aaa;AuthType=aad;clientId=foo;clientSecret=bar;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
+        public void TestAzureApplication(string connectionString)
         {
             var (accessKey, version, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
 
-            Assert.Equal(expectedEndpoint, accessKey.Endpoint);
             Assert.IsType<AadAccessKey>(accessKey);
             if (accessKey is AadAccessKey aadAccessKey)
             {
@@ -144,7 +124,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         {
             var (accessKey, version, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
 
-            Assert.Equal(expectedEndpoint, accessKey.Endpoint);
+            Assert.Equal(expectedEndpoint, accessKey.Endpoint.AbsoluteUri.TrimEnd('/'));
             Assert.IsType<AadAccessKey>(accessKey);
             if (accessKey is AadAccessKey aadAccessKey)
             {
@@ -162,39 +142,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                 yield return new object[] { $"endpoint={HttpEndpoint}/;accesskey={DefaultKey}", HttpEndpoint};
                 yield return new object[] { $"endpoint={HttpsEndpoint};accesskey={DefaultKey}", HttpsEndpoint};
                 yield return new object[] { $"endpoint={HttpsEndpoint}/;accesskey={DefaultKey}", HttpsEndpoint};
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        }
-
-        public class EndpointAndPortTestData : IEnumerable<object[]>
-        {
-            public IEnumerator<object[]> GetEnumerator()
-            {
-                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", HttpEndpoint, null};
-                yield return new object[] { $"endpoint={HttpEndpoint.ToUpper()};accesskey={DefaultKey}", HttpEndpoint.ToUpper(), null};
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", HttpEndpoint + ":500", null};
-                yield return new object[] { $"endpoint={HttpsEndpoint};accesskey={DefaultKey}", HttpsEndpoint, null};
-                yield return new object[] { $"endpoint={HttpsEndpoint}:500;accesskey={DefaultKey}", HttpsEndpoint + ":500", null};
-                yield return new object[] { $"endpoint={HttpsEndpoint};accesskey={DefaultKey};port=500", HttpsEndpoint, 500};
-                yield return new object[] { $"endpoint={HttpsEndpoint}:500;accesskey={DefaultKey};port=443", HttpsEndpoint + ":500", 443};
-                yield return new object[] { $"endpoint={HttpsEndpoint}:500;accesskey={DefaultKey};port=443", HttpsEndpoint + ":500", 443};
-                yield return new object[] { $"ENDPOINT={HttpEndpoint};ACCESSKEY={DefaultKey}", HttpEndpoint, null};
-                yield return new object[] { $"ENDPOINT={HttpsEndpoint}:500;ACCESSKEY={DefaultKey};PORT=443", HttpsEndpoint + ":500", 443};
-            }
-
-            public IEnumerable<object[]> GetNewEnumerator()
-            {
-                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", HttpEndpoint, 80};
-                yield return new object[] { $"endpoint={HttpEndpoint.ToUpper()};accesskey={DefaultKey}", HttpEndpoint, 80};
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", HttpEndpoint, 500};
-                yield return new object[] { $"endpoint={HttpsEndpoint};accesskey={DefaultKey}", HttpsEndpoint, 443};
-                yield return new object[] { $"endpoint={HttpsEndpoint}:500;accesskey={DefaultKey}", HttpsEndpoint, 500};
-                yield return new object[] { $"endpoint={HttpsEndpoint};accesskey={DefaultKey};port=500", HttpsEndpoint, 500};
-                yield return new object[] { $"endpoint={HttpsEndpoint}:500;accesskey={DefaultKey};port=443", HttpsEndpoint, 443};
-                yield return new object[] { $"endpoint={HttpsEndpoint}:500;accesskey={DefaultKey};port=443", HttpsEndpoint, 443};
-                yield return new object[] { $"ENDPOINT={HttpEndpoint};ACCESSKEY={DefaultKey}", HttpEndpoint, 80};
-                yield return new object[] { $"ENDPOINT={HttpsEndpoint}:500;ACCESSKEY={DefaultKey};PORT=443", HttpsEndpoint, 443};
             }
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
