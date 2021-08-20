@@ -17,8 +17,6 @@ namespace Microsoft.Azure.SignalR
 
         public string Endpoint => AccessKey?.Endpoint;
 
-        internal int? Port => AccessKey?.Port;
-
         /// <summary>
         /// When current app server instance has server connections connected to the target endpoint for current hub, it can deliver messages to that endpoint.
         /// The endpoint is then considered as *Online*; otherwise, *Offline*.
@@ -40,9 +38,10 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public EndpointMetrics EndpointMetrics { get; internal set; } = new EndpointMetrics();
 
-        /// <summary>
-        /// The customized endpoint that the client will be redirected to
-        /// </summary>
+        internal string AudienceBaseUrl => Endpoint;
+
+        internal string ServerEndpoint { get; }
+
         internal string ClientEndpoint { get; }
 
         internal string Version { get; }
@@ -73,6 +72,8 @@ namespace Microsoft.Azure.SignalR
             }
 
             (AccessKey, Version, ClientEndpoint) = ConnectionStringParser.Parse(connectionString);
+            ServerEndpoint = BuildServerEndpoint(AccessKey);
+            ClientEndpoint ??= ServerEndpoint;
 
             EndpointType = type;
             ConnectionString = connectionString;
@@ -108,6 +109,9 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException("Endpoint scheme must be 'http://' or 'https://'");
             }
             AccessKey = new AadAccessKey(credential, $"{endpoint.Scheme}://{endpoint.Host}", endpoint.Port);
+            ServerEndpoint = BuildServerEndpoint(AccessKey);
+            ClientEndpoint ??= ServerEndpoint;
+
             (Name, EndpointType) = (name, endpointType);
         }
 
@@ -124,6 +128,7 @@ namespace Microsoft.Azure.SignalR
                 Name = other.Name;
                 Version = other.Version;
                 AccessKey = other.AccessKey;
+                ServerEndpoint = other.ServerEndpoint;
                 ClientEndpoint = other.ClientEndpoint;
             }
         }
@@ -158,6 +163,11 @@ namespace Microsoft.Azure.SignalR
             }
 
             return Endpoint == that.Endpoint && EndpointType == that.EndpointType && Name == that.Name;
+        }
+
+        private static string BuildServerEndpoint(AccessKey key)
+        {
+            return new Uri(key.Port.HasValue ? $"{key.Endpoint}:{key.Port}" : key.Endpoint).AbsoluteUri.TrimEnd('/');
         }
 
         private static (string, EndpointType) Parse(string nameWithEndpointType)

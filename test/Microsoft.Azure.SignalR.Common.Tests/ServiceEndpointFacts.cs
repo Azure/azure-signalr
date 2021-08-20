@@ -90,8 +90,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var serviceEndpoint = new ServiceEndpoint(uri, new DefaultAzureCredential());
             Assert.IsType<AadAccessKey>(serviceEndpoint.AccessKey);
             Assert.Equal(endpoint, serviceEndpoint.Endpoint);
-            Assert.Equal(port, serviceEndpoint.Port);
             Assert.Equal("", serviceEndpoint.Name);
+            Assert.Equal(port, serviceEndpoint.AccessKey.Port);
             Assert.Equal(EndpointType.Primary, serviceEndpoint.EndpointType);
             TestCopyConstructor(serviceEndpoint);
         }
@@ -141,7 +141,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             Assert.Equal(endpoint.Name, other.Name);
             Assert.Equal(endpoint.EndpointType, other.EndpointType);
             Assert.Equal(endpoint.Endpoint, other.Endpoint);
-            Assert.Equal(endpoint.Port, other.Port);
             Assert.Equal(endpoint.ClientEndpoint, other.ClientEndpoint);
             Assert.Equal(endpoint.Version, other.Version);
             Assert.Equal(endpoint.AccessKey, other.AccessKey);

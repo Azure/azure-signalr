@@ -20,11 +20,12 @@ namespace Microsoft.Azure.SignalR.AspNet
         private const string ClientPath = "aspnetclient";
         private const string ServerPath = "aspnetserver";
 
-        private readonly string _endpoint;
+        private readonly string _audienceBaseUrl;
         private readonly string _clientEndpoint;
+        private readonly string _serverEndpoint;
+
         private readonly AccessKey _accessKey;
         private readonly string _appName;
-        private readonly int? _port;
         private readonly TimeSpan _accessTokenLifetime;
         private readonly AccessTokenAlgorithm _algorithm;
 
@@ -37,11 +38,11 @@ namespace Microsoft.Azure.SignalR.AspNet
             _accessTokenLifetime = options.AccessTokenLifetime;
 
             // Version is ignored for aspnet signalr case
-            _endpoint = endpoint.Endpoint;
-            _clientEndpoint = endpoint.ClientEndpoint ?? endpoint.Endpoint;
+            _audienceBaseUrl = endpoint.AudienceBaseUrl;
+            _clientEndpoint = endpoint.ClientEndpoint;
+            _serverEndpoint = endpoint.ServerEndpoint;
             _accessKey = endpoint.AccessKey;
             _appName = options.ApplicationName;
-            _port = endpoint.Port;
             _algorithm = options.AccessTokenAlgorithm;
 
             Proxy = options.Proxy;
@@ -54,7 +55,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public Task<string> GenerateClientAccessTokenAsync(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
         {
-            var audience = $"{_endpoint}/{ClientPath}";
+            var audience = $"{_audienceBaseUrl}/{ClientPath}";
 
             return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
@@ -75,7 +76,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 };
             }
 
-            var audience = $"{_endpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
+            var audience = $"{_audienceBaseUrl}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
 
             return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
@@ -106,16 +107,12 @@ namespace Microsoft.Azure.SignalR.AspNet
                     .Append(WebUtility.UrlEncode(originalPath));
             }
 
-            return _port.HasValue ?
-                $"{_clientEndpoint}:{_port}/{ClientPath}{queryBuilder}" :
-                $"{_clientEndpoint}/{ClientPath}{queryBuilder}";
+            return $"{_clientEndpoint}/{ClientPath}{queryBuilder}";
         }
 
         public string GetServerEndpoint(string hubName)
         {
-            return _port.HasValue ?
-                $"{_endpoint}:{_port}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}" :
-                $"{_endpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
+            return $"{_serverEndpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
         }
     }
 }
