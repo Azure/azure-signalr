@@ -7,30 +7,38 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestHealthCheckService : IHostedService
     {
-        //internal by test
+        internal const int MaxRetries = 2;
+
         //An acceptable time to wait before retry when clients negotiate fail
-        internal static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(10);
-        internal static readonly TimeSpan RetryInterval = TimeSpan.FromSeconds(1);
-        private const int MaxRetries = 2;
+        private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(2);
+
+        private readonly TimeSpan _retryInterval = TimeSpan.FromSeconds(3);
 
         private readonly RestClientFactory _clientFactory;
         private readonly IServiceEndpointManager _serviceEndpointManager;
         private readonly ILogger<RestHealthCheckService> _logger;
         private readonly string _hubName;
 
-        private readonly TimerAwaitable _timer = new(CheckInterval, CheckInterval);
+        private readonly TimerAwaitable _timer;
 
-        public RestHealthCheckService(RestClientFactory clientFactory, IServiceEndpointManager serviceEndpointManager, ILogger<RestHealthCheckService> logger, string hubName)
+        public RestHealthCheckService(RestClientFactory clientFactory, IServiceEndpointManager serviceEndpointManager, ILogger<RestHealthCheckService> logger, string hubName, IOptions<HealthCheckOption> options = null)
         {
             _clientFactory = clientFactory;
             _serviceEndpointManager = serviceEndpointManager;
             _logger = logger;
             _hubName = hubName;
+            if (options != null)
+            {
+                _checkInterval = options.Value.CheckInterval;
+                _retryInterval = options.Value.RetryInterval;
+            }
+            _timer = new TimerAwaitable(_checkInterval, _checkInterval);
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -63,12 +71,12 @@ namespace Microsoft.Azure.SignalR.Management
                     catch (Exception ex)
                     {
                         //Hard to tell if it is transient error, retry anyway.
-                        Log.RestHealthCheckFailed(_logger, endpoint.Endpoint, ex, retry == MaxRetries);
+                        Log.RestHealthCheckFailed(_logger, endpoint.Endpoint, ex, retry == MaxRetries, _retryInterval);
                     }
                     needRetry = !isHealthy && retry < MaxRetries;
                     if (needRetry)
                     {
-                        await Task.Delay(RetryInterval);
+                        await Task.Delay(_retryInterval);
                     }
                     retry++;
                 } while (needRetry);
@@ -90,11 +98,11 @@ namespace Microsoft.Azure.SignalR.Management
 
         private static class Log
         {
-            private static readonly Action<ILogger, string, Exception> _restHealthCheckFailed = LoggerMessage.Define<string>(LogLevel.Information, new EventId(1, nameof(RestHealthCheckFailed)), $"Will retry health check for endpoint {{endpoint}} after a delay of {RetryInterval} due to exception.");
+            private static readonly Action<ILogger, string, TimeSpan, Exception> _restHealthCheckFailed = LoggerMessage.Define<string, TimeSpan>(LogLevel.Information, new EventId(1, nameof(RestHealthCheckFailed)), "Will retry health check for endpoint {endpoint} after a delay of {retryInterval} due to exception.");
 
             private static readonly Action<ILogger, string, Exception> _finalRestHealthCheckFailed = LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, nameof(RestHealthCheckFailed)), "Failed to check health state for endpoint {endpoint}.");
 
-            public static void RestHealthCheckFailed(ILogger logger, string endpoint, Exception exception, bool lastRetry)
+            public static void RestHealthCheckFailed(ILogger logger, string endpoint, Exception exception, bool lastRetry, TimeSpan retryInterval)
             {
                 if (lastRetry)
                 {
@@ -102,7 +110,7 @@ namespace Microsoft.Azure.SignalR.Management
                 }
                 else
                 {
-                    _restHealthCheckFailed(logger, endpoint, exception);
+                    _restHealthCheckFailed(logger, endpoint, retryInterval, exception);
                 }
             }
         }
