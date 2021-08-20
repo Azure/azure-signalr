@@ -26,31 +26,39 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly string _hubName;
 
         private readonly TimerAwaitable _timer;
+        private readonly bool _enable;
 
         public RestHealthCheckService(RestClientFactory clientFactory, IServiceEndpointManager serviceEndpointManager, ILogger<RestHealthCheckService> logger, string hubName, IOptions<HealthCheckOption> options = null)
         {
-            _clientFactory = clientFactory;
-            _serviceEndpointManager = serviceEndpointManager;
-            _logger = logger;
-            _hubName = hubName;
-            if (options != null)
+            _enable = serviceEndpointManager.Endpoints.Count > 1 || options != null;
+            if (_enable)
             {
-                _checkInterval = options.Value.CheckInterval;
-                _retryInterval = options.Value.RetryInterval;
+                _clientFactory = clientFactory;
+                _serviceEndpointManager = serviceEndpointManager;
+                _logger = logger;
+                _hubName = hubName;
+                if (options != null)
+                {
+                    _checkInterval = options.Value.CheckInterval;
+                    _retryInterval = options.Value.RetryInterval;
+                }
+                _timer = new TimerAwaitable(_checkInterval, _checkInterval);
             }
-            _timer = new TimerAwaitable(_checkInterval, _checkInterval);
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            // wait for the first health check finished
-            await CheckEndpointHealthAsync();
-            _ = LoopAsync();
+            if (_enable)
+            {
+                // wait for the first health check finished
+                await CheckEndpointHealthAsync();
+                _ = LoopAsync();
+            }
         }
 
         public Task StopAsync(CancellationToken _)
         {
-            _timer.Stop();
+            _timer?.Stop();
             return Task.CompletedTask;
         }
 
