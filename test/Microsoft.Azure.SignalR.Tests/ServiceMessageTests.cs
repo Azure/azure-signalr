@@ -105,7 +105,7 @@ namespace Microsoft.Azure.SignalR.Tests
             await clientConnection.LifetimeTask.OrTimeout(3000);
 
             // expect a handshake response message.
-            await connection.ExpectSignalRMessage(SignalRProtocol.HandshakeResponseMessage.Empty).OrTimeout(1000);
+            await connection.ExpectSignalRMessage(SignalRProtocol.HandshakeResponseMessage.Empty).OrTimeout(3000);
 
             // signalr close message should be skipped.
             await Assert.ThrowsAsync<TimeoutException>(async () => await connection.ExpectSignalRMessage(SignalRProtocol.CloseMessage.Empty).OrTimeout(1000));
