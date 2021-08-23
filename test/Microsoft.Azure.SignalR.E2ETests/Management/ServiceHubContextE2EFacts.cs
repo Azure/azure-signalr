@@ -17,6 +17,8 @@ using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 
+#pragma warning disable CS0618 // Type or member is obsolete
+
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
     public class ServiceHubContextE2EFacts : VerifiableLoggedTest
