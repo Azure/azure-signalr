@@ -34,11 +34,17 @@ namespace Microsoft.Azure.SignalR
 
         public TokenCredential TokenCredential { get; }
 
+        private string AuthorizeUrl { get; }
+
         private Task<object> InitializedTask => _initializedTcs.Task;
 
         public AadAccessKey(string uri, TokenCredential credential) : this(new Uri(uri), credential)
         {
-
+            var builder = new UriBuilder(Endpoint)
+            {
+                Path = "/api/v1/auth/accessKey"
+            };
+            AuthorizeUrl = builder.Uri.AbsoluteUri;
         }
 
         public AadAccessKey(Uri uri, TokenCredential credential): base(uri)
@@ -123,12 +129,7 @@ namespace Microsoft.Azure.SignalR
 
         private async Task AuthorizeWithTokenAsync(string accessToken, CancellationToken token = default)
         {
-            var builder = new UriBuilder(Endpoint)
-            {
-                Path = "/api/v1/auth/accessKey"
-            };
-
-            var api = new RestApiEndpoint(builder.Uri.AbsoluteUri, accessToken);
+            var api = new RestApiEndpoint(AuthorizeUrl, accessToken);
 
             await new RestClient().SendAsync(
                 api,
