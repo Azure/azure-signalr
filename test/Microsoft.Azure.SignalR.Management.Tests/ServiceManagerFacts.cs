@@ -16,6 +16,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
 
+#pragma warning disable CS0618 // Type or member is obsolete
+
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
     public class ServiceManagerFacts
