@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             // Version is ignored for aspnet signalr case
             _audienceBaseUrl = endpoint.AudienceBaseUrl;
             _clientEndpoint = endpoint.ClientEndpoint;
-            _serverEndpoint = endpoint.ServerEndpoint;
+            _serverEndpoint = endpoint.Endpoint;
             _accessKey = endpoint.AccessKey;
             _appName = options.ApplicationName;
             _algorithm = options.AccessTokenAlgorithm;

@@ -34,9 +34,20 @@ namespace Microsoft.Azure.SignalR
 
         public TokenCredential TokenCredential { get; }
 
+        private string AuthorizeUrl { get; }
+
         private Task<object> InitializedTask => _initializedTcs.Task;
 
-        public AadAccessKey(TokenCredential credential, string endpoint, int? port) : base(endpoint, port)
+        public AadAccessKey(string uri, TokenCredential credential) : this(new Uri(uri), credential)
+        {
+            var builder = new UriBuilder(Endpoint)
+            {
+                Path = "/api/v1/auth/accessKey"
+            };
+            AuthorizeUrl = builder.Uri.AbsoluteUri;
+        }
+
+        public AadAccessKey(Uri uri, TokenCredential credential): base(uri)
         {
             TokenCredential = credential;
         }
@@ -113,16 +124,12 @@ namespace Microsoft.Azure.SignalR
         private async Task AuthorizeAsync(CancellationToken ctoken = default)
         {
             var aadToken = await GenerateAadTokenAsync(ctoken);
-            await AuthorizeWithTokenAsync(Endpoint, Port, aadToken, ctoken);
+            await AuthorizeWithTokenAsync(aadToken, ctoken);
         }
 
-        private async Task AuthorizeWithTokenAsync(string endpoint, int? port, string accessToken, CancellationToken token = default)
+        private async Task AuthorizeWithTokenAsync(string accessToken, CancellationToken token = default)
         {
-            if (port != null && port != 443)
-            {
-                endpoint += $":{port}";
-            }
-            var api = new RestApiEndpoint(endpoint + "/api/v1/auth/accessKey", accessToken);
+            var api = new RestApiEndpoint(AuthorizeUrl, accessToken);
 
             await new RestClient().SendAsync(
                 api,
