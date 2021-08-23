@@ -516,7 +516,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var initTask = conn.StartAsync();
                 await conn.ConnectionInitializedTask;
                 conn.Stop();
-                var completedTask = Task.WhenAny(initTask, Task.Delay(TimeSpan.FromSeconds(1))).Result;
+                var completedTask = Task.WhenAny(initTask, Task.Delay(3000)).Result;
                 Assert.Equal(initTask, completedTask);
             }
             finally
