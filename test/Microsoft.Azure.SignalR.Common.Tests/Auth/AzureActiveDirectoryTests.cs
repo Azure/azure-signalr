@@ -24,7 +24,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         public async Task TestAcquireAccessToken()
         {
             var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
-            var key = new AadAccessKey(options, "https://localhost", 8080);
+            var key = new AadAccessKey("https://localhost:8080", options);
             var token = await key.GenerateAadTokenAsync();
             Assert.NotNull(token);
         }
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         internal async Task TestAuthenticateAsync()
         {
             var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
-            var key = new AadAccessKey(options, "https://localhost", 8080);
+            var key = new AadAccessKey("https://localhost:8080", options);
             await key.UpdateAccessKeyAsync();
 
             Assert.True(key.Authorized);

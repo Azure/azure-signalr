@@ -34,8 +34,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             // to avoid possible file name conflict with another FileConfigHotReloadTest
             string configPath = nameof(DependencyInjectionExtensionFacts);
-            var originUrl = "http://originUrl";
-            var newUrl = "http://newUrl";
+            var originUrl = "http://origin.url";
+            var newUrl = "http://new.url";
             var configObj = new
             {
                 Azure = new
@@ -65,8 +65,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [Fact]
         public void MemoryConfigHotReloadTest()
         {
-            var originUrl = "http://originUrl";
-            var newUrl = "http://newUrl";
+            var originUrl = "http://origin.url";
+            var newUrl = "http://new.url";
             var configProvider = new ReloadableMemoryProvider();
             configProvider.Set("Azure:SignalR:ConnectionString", $"Endpoint={originUrl};AccessKey={AccessKey};Version=1.0;");
             var services = new ServiceCollection()
@@ -131,8 +131,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [Fact]
         public void ConfigureByFileAndDelegateFact()
         {
-            var originUrl = "http://originUrl";
-            var newUrl = "http://newUrl";
+            var originUrl = "http://origin.url";
+            var newUrl = "http://new.url";
             var appName = "AppName";
             var newAppName = "NewAppName";
             var configProvider = new ReloadableMemoryProvider();
