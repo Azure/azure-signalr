@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.Common
          /// <summary>
         /// Initializes a new instance of the <see cref="AzureSignalRAccessTokenNotAuthorizedException"/> class.
         /// </summary>
-        public AzureSignalRAccessTokenNotAuthorizedException() : base("This AccessKey doesn't have the permission to generate access token.")
+        public AzureSignalRAccessTokenNotAuthorizedException(string message) : base(message)
         {
         }
     }

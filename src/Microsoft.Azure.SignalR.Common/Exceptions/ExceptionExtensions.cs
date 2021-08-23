@@ -4,9 +4,11 @@
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Net.WebSockets;
+
 using Microsoft.Rest;
 
-namespace Microsoft.Azure.SignalR.Common.RestClients
+namespace Microsoft.Azure.SignalR.Common
 {
     internal static class ExceptionExtensions
     {
@@ -33,6 +35,20 @@ namespace Microsoft.Azure.SignalR.Common.RestClients
                     return new AzureSignalRInaccessibleEndpointException(baseUri.ToString(), requestException);
                 default:
                     return e;
+            }
+        }
+
+        internal static Exception WrapAsAzureSignalRException(this Exception e)
+        {
+            switch (e)
+            {
+                case WebSocketException webSocketException:
+                    if (e.Message.StartsWith("The server returned status code \"401\""))
+                    {
+                        return new AzureSignalRUnauthorizedException(webSocketException);
+                    }
+                    return e;
+                default: return e;
             }
         }
     }

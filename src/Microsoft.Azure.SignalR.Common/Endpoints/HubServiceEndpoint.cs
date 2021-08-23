@@ -27,12 +27,6 @@ namespace Microsoft.Azure.SignalR
             _uniqueIndex = Interlocked.Increment(ref s_currentIndex);
         }
 
-        // for tests
-        internal HubServiceEndpoint() : base() 
-        {
-            _endpoint = new ServiceEndpoint();
-        }
-
         public string Hub { get; }
 
         public override string Name => _endpoint.Name;

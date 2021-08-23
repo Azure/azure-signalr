@@ -48,7 +48,7 @@ namespace Microsoft.Azure.SignalR.Management
             services.AddSingleton<IServiceConnectionContainer>(sp => sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().Create(hubName))
                 .AddSingleton<ConnectionService>();
             //for transient
-            services.AddSingleton<RestHealthCheckService>();
+            services.AddSingleton(sp => ActivatorUtilities.CreateInstance<RestHealthCheckService>(sp, hubName));
 
             return services
                 .AddSingleton<ServiceHubLifetimeManagerFactory>()
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             services.AddSingleton<IServiceManager, ServiceManagerImpl>();
             services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
-            
+            services.TryAddSingleton<IEndpointRouter, AutoHealthCheckRouter>();
             var tempServices = new ServiceCollection().AddSignalR()
                 .AddAzureSignalR<CascadeServiceOptionsSetup>().Services;
             services.Add(tempServices.Where(service => service.ServiceType != typeof(IHostedService)));
