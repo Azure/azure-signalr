@@ -6,25 +6,28 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.AspNet
 {
     internal class ServiceConnectionManager : IServiceConnectionManager
     {
-        private IReadOnlyDictionary<string, IServiceConnectionContainer> _hubConnections = null;
-
         private readonly object _lock = new object();
-
         private readonly IReadOnlyList<string> _hubs;
         private readonly string _appName;
+        private readonly TaskCompletionSource<object> _managerInitializedTcs = new TaskCompletionSource<object>();
 
+        private IReadOnlyDictionary<string, IServiceConnectionContainer> _hubConnections = null;
         private IServiceConnectionContainer _appConnection;
 
         public ServiceConnectionStatus Status => throw new NotSupportedException();
 
-        public Task ConnectionInitializedTask => Task.WhenAll(from connection in GetConnections()
-                                                              select connection.ConnectionInitializedTask);
+        public Task ConnectionInitializedTask => ConnectionInitializedAsync();
+
+        public string ServersTag => throw new NotSupportedException();
+
+        public bool HasClients => throw new NotSupportedException();
 
         public ServiceConnectionManager(string appName, IReadOnlyList<string> hubs)
         {
@@ -69,6 +72,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                 }
 
                 _hubConnections = connections;
+
+                _managerInitializedTcs.TrySetResult(null);
             }
         }
 
@@ -89,7 +94,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public IServiceConnectionContainer WithHub(string hubName)
         {
-            if (_hubConnections == null ||!_hubConnections.TryGetValue(hubName, out var connection))
+            if (_hubConnections == null || !_hubConnections.TryGetValue(hubName, out var connection))
             {
                 throw new KeyNotFoundException($"Service connection with Hub {hubName} does not exist");
             }
@@ -127,12 +132,15 @@ namespace Microsoft.Azure.SignalR.AspNet
             return Task.WhenAll(GetConnections().Select(s => s.StopGetServersPing()));
         }
 
-        public string ServersTag => throw new NotSupportedException();
-
-        public bool HasClients => throw new NotSupportedException();
-
         public void Dispose()
         {
+        }
+
+        private async Task ConnectionInitializedAsync()
+        {
+            await _managerInitializedTcs.Task;
+
+            await Task.WhenAll(from connection in GetConnections() select connection.ConnectionInitializedTask);
         }
 
         private IEnumerable<IServiceConnectionContainer> GetConnections()
