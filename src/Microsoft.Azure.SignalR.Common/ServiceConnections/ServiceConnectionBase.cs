@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
@@ -372,21 +373,18 @@ namespace Microsoft.Azure.SignalR
 
             try
             {
-                using (var cts = new CancellationTokenSource())
+                using var cts = new CancellationTokenSource();
+                if (!Debugger.IsAttached)
                 {
-                    if (!Debugger.IsAttached)
-                    {
-                        cts.CancelAfter(DefaultHandshakeTimeout);
-                    }
-
-                    if (await ReceiveHandshakeResponseAsync(context.Transport.Input, cts.Token))
-                    {
-                        Log.HandshakeComplete(Logger);
-                        return true;
-                    }
-
-                    return false;
+                    cts.CancelAfter(DefaultHandshakeTimeout);
                 }
+
+                if (await ReceiveHandshakeResponseAsync(context.Transport.Input, cts.Token))
+                {
+                    Log.HandshakeComplete(Logger);
+                    return true;
+                }
+                return false;
             }
             catch (Exception ex)
             {
