@@ -44,7 +44,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var serviceHubContext = await new ServiceManagerBuilder()
                 .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
                 .WithLoggerFactory(loggerFactory)
-                .ConfigureServices(services => services.AddSingleton(implementationInstance))
+                .ConfigureServices(services =>
+                {
+                    services.AddSingleton(implementationInstance);
+                    services.Configure<HealthCheckOption>(o => o.EnabledForSingleEndpoint = true);
+                })
                 .BuildServiceManager()
                 .CreateHubContextAsync(HubName, default);
             await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync().AsTask());
@@ -72,6 +76,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 {
                     o.CheckInterval = checkInterval;
                     o.RetryInterval = retryInterval;
+                    o.EnabledForSingleEndpoint = true;
                 });
             var serviceHubContext = await new ServiceManagerBuilder(services)
                 .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
