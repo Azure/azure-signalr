@@ -28,20 +28,19 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly TimerAwaitable _timer;
         private readonly bool _enable;
 
-        public RestHealthCheckService(RestClientFactory clientFactory, IServiceEndpointManager serviceEndpointManager, ILogger<RestHealthCheckService> logger, string hubName, IOptions<HealthCheckOption> options = null)
+        public RestHealthCheckService(RestClientFactory clientFactory, IServiceEndpointManager serviceEndpointManager, ILogger<RestHealthCheckService> logger, string hubName, IOptions<HealthCheckOption> options)
         {
-            _enable = serviceEndpointManager.Endpoints.Count > 1 || options != null;
+            var checkOptions = options.Value;
+            _enable = serviceEndpointManager.Endpoints.Count > 1 || checkOptions.EnabledForSingleEndpoint;
             if (_enable)
             {
                 _clientFactory = clientFactory;
                 _serviceEndpointManager = serviceEndpointManager;
                 _logger = logger;
                 _hubName = hubName;
-                if (options != null)
-                {
-                    _checkInterval = options.Value.CheckInterval;
-                    _retryInterval = options.Value.RetryInterval;
-                }
+                
+                _checkInterval = checkOptions.CheckInterval.GetValueOrDefault(_checkInterval);
+                _retryInterval = checkOptions.RetryInterval.GetValueOrDefault(_retryInterval);
                 _timer = new TimerAwaitable(_checkInterval, _checkInterval);
             }
         }

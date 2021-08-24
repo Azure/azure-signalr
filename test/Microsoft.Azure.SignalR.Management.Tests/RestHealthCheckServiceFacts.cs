@@ -44,7 +44,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var serviceHubContext = await new ServiceManagerBuilder()
                 .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
                 .WithLoggerFactory(loggerFactory)
-                .ConfigureServices(services => services.AddSingleton(implementationInstance))
+                .ConfigureServices(services =>
+                {
+                    services.AddSingleton(implementationInstance);
+                    services.Configure<HealthCheckOption>(o => o.EnabledForSingleEndpoint = true);
+                })
                 .BuildServiceManager()
                 .CreateHubContextAsync(HubName, default);
             await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync().AsTask());
@@ -72,6 +76,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 {
                     o.CheckInterval = checkInterval;
                     o.RetryInterval = retryInterval;
+                    o.EnabledForSingleEndpoint = true;
                 });
             var serviceHubContext = await new ServiceManagerBuilder(services)
                 .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
@@ -89,6 +94,19 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync().AsTask());
 
             await serviceHubContext.DisposeAsync();
+        }
+
+        [Fact]
+        public async Task TestRestHealthCheckServiceDisabledWithSingleEndpoint()
+        {
+            using var _ = StartLog(out var loggerFactory);
+            var serviceHubContext = await new ServiceManagerBuilder()
+                .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
+                .WithLoggerFactory(loggerFactory)
+                .BuildServiceManager()
+                .CreateHubContextAsync(HubName, default);
+            var negotiateResult = await serviceHubContext.NegotiateAsync();
+            Assert.NotNull(negotiateResult);
         }
     }
 }
