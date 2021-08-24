@@ -229,7 +229,7 @@ namespace Microsoft.Azure.SignalR
 
         public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            if (!(serviceMessage is IAckableMessage ackableMessage))
+            if (serviceMessage is not IAckableMessage ackableMessage)
             {
                 throw new ArgumentException($"{nameof(serviceMessage)} is not {nameof(IAckableMessage)}");
             }

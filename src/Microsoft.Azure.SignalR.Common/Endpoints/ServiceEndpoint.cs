@@ -3,28 +3,17 @@
 
 using System;
 
+using Azure.Core;
+
 namespace Microsoft.Azure.SignalR
 {
     public class ServiceEndpoint
     {
         public string ConnectionString { get; }
 
-        public EndpointType EndpointType { get; }
+        public EndpointType EndpointType { get; } = EndpointType.Primary;
 
-        public virtual string Name { get; internal set; }
-
-        public string Endpoint => AccessKey?.Endpoint;
-
-        /// <summary>
-        /// The customized endpoint that the client will be redirected to
-        /// </summary>
-        internal string ClientEndpoint { get; }
-
-        internal string Version { get; }
-
-        internal AccessKey AccessKey { get; private set; }
-
-        internal int? Port => AccessKey?.Port;
+        public virtual string Name { get; internal set; } = "";
 
         /// <summary>
         /// When current app server instance has server connections connected to the target endpoint for current hub, it can deliver messages to that endpoint.
@@ -47,11 +36,32 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public EndpointMetrics EndpointMetrics { get; internal set; } = new EndpointMetrics();
 
-        public ServiceEndpoint(string key, string connectionString) : this(connectionString)
+        public string Endpoint { get; }
+
+        internal string AudienceBaseUrl { get; }
+
+        internal string ClientEndpoint { get; }
+
+        internal string Version { get; }
+
+        internal AccessKey AccessKey { get; private set; }
+
+        /// <summary>
+        /// Connection string constructor with nameWithEndpointType
+        /// </summary>
+        /// <param name="nameWithEndpointType"></param>
+        /// <param name="connectionString"></param>
+        public ServiceEndpoint(string nameWithEndpointType, string connectionString) : this(connectionString)
         {
-            (Name, EndpointType) = ParseKey(key);
+            (Name, EndpointType) = Parse(nameWithEndpointType);
         }
 
+        /// <summary>
+        /// Connection string constructor
+        /// </summary>
+        /// <param name="connectionString"></param>
+        /// <param name="type"></param>
+        /// <param name="name"></param>
         public ServiceEndpoint(string connectionString, EndpointType type = EndpointType.Primary, string name = "")
         {
             if (string.IsNullOrWhiteSpace(connectionString))
@@ -60,27 +70,69 @@ namespace Microsoft.Azure.SignalR
             }
 
             (AccessKey, Version, ClientEndpoint) = ConnectionStringParser.Parse(connectionString);
+            AudienceBaseUrl = BuildAudienceBaseUrl(AccessKey.Endpoint);
+            Endpoint = BuildServerEndpoint(AccessKey.Endpoint);
+            ClientEndpoint ??= Endpoint;
 
             EndpointType = type;
             ConnectionString = connectionString;
             Name = name;
         }
 
-        public ServiceEndpoint(ServiceEndpoint endpoint)
+        /// <summary>
+        /// Azure active directory constructor with nameWithEndpointType
+        /// </summary>
+        /// <param name="nameWithEndpointType"></param>
+        /// <param name="endpoint"></param>
+        /// <param name="credential"></param>
+        public ServiceEndpoint(string nameWithEndpointType, Uri endpoint, TokenCredential credential) : this(endpoint, credential)
         {
-            if (endpoint != null)
-            {
-                ConnectionString = endpoint.ConnectionString;
-                EndpointType = endpoint.EndpointType;
-                Name = endpoint.Name;
-                Version = endpoint.Version;
-                AccessKey = endpoint.AccessKey;
-                ClientEndpoint = endpoint.ClientEndpoint;
-            }
+            (Name, EndpointType) = Parse(nameWithEndpointType);
         }
 
-        // test only
-        internal ServiceEndpoint() { }
+        /// <summary>
+        /// Azure active directory constructor
+        /// </summary>
+        /// <param name="endpoint"></param>
+        /// <param name="credential"></param>
+        /// <param name="endpointType"></param>
+        /// <param name="name"></param>
+        public ServiceEndpoint(Uri endpoint, TokenCredential credential, EndpointType endpointType = EndpointType.Primary, string name = "")
+        {
+            if (endpoint == null)
+            {
+                throw new ArgumentNullException(nameof(endpoint));
+            }
+            else if (endpoint.Scheme != Uri.UriSchemeHttp && endpoint.Scheme != Uri.UriSchemeHttps)
+            {
+                throw new ArgumentException("Endpoint scheme must be 'http://' or 'https://'");
+            }
+            AccessKey = new AadAccessKey(endpoint, credential);
+            AudienceBaseUrl = BuildAudienceBaseUrl(endpoint);
+            Endpoint = BuildServerEndpoint(endpoint);
+            ClientEndpoint ??= Endpoint;
+
+            (Name, EndpointType) = (name, endpointType);
+        }
+
+        /// <summary>
+        /// Copy constructor with no exception
+        /// </summary>
+        /// <param name="other"></param>
+        public ServiceEndpoint(ServiceEndpoint other)
+        {
+            if (other != null)
+            {
+                ConnectionString = other.ConnectionString;
+                EndpointType = other.EndpointType;
+                Name = other.Name;
+                Version = other.Version;
+                AccessKey = other.AccessKey;
+                Endpoint = other.Endpoint;
+                ClientEndpoint = other.ClientEndpoint;
+                AudienceBaseUrl = other.AudienceBaseUrl;
+            }
+        }
 
         public override string ToString()
         {
@@ -114,14 +166,24 @@ namespace Microsoft.Azure.SignalR
             return Endpoint == that.Endpoint && EndpointType == that.EndpointType && Name == that.Name;
         }
 
-        internal static (string, EndpointType) ParseKey(string key)
+        private static string BuildAudienceBaseUrl(Uri uri)
         {
-            if (string.IsNullOrEmpty(key))
+            return $"{uri.Scheme}://{uri.Host}";
+        }
+
+        private static string BuildServerEndpoint(Uri uri)
+        {
+            return new Uri($"{uri.Scheme}://{uri.Host}:{uri.Port}").AbsoluteUri.TrimEnd('/');
+        }
+
+        private static (string, EndpointType) Parse(string nameWithEndpointType)
+        {
+            if (string.IsNullOrEmpty(nameWithEndpointType))
             {
                 return (string.Empty, EndpointType.Primary);
             }
 
-            var parts = key.Split(':');
+            var parts = nameWithEndpointType.Split(':');
             if (parts.Length == 1)
             {
                 return (parts[0], EndpointType.Primary);
@@ -132,7 +194,7 @@ namespace Microsoft.Azure.SignalR
             }
             else
             {
-                return (key, EndpointType.Primary);
+                return (nameWithEndpointType, EndpointType.Primary);
             }
         }
     }

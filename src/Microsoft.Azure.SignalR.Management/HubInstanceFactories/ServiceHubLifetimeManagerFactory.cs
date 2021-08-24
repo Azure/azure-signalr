@@ -35,7 +35,9 @@ namespace Microsoft.Azure.SignalR.Management
                 case ServiceTransportType.Transient:
                     {
                         var restHubProtocol = _serviceProvider.GetService<IRestHubProtocol>();
+#pragma warning disable CS0618 // Type or member is obsolete
                         var payloadSerializerSettings = _options.JsonSerializerSettings;
+#pragma warning restore CS0618 // Type or member is obsolete
                         //Currently RestHubProtocol only has Newtonsoft
                         if (restHubProtocol != null)
                         {

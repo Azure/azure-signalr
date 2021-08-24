@@ -148,6 +148,23 @@ namespace Microsoft.Azure.SignalR
                     new EventId(140, "StartToCloseConnection"),
                     "Start to send message {tracingId} to close connection {connectionId} for reason: '{reason}'.");
 
+        private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfConnectionExists = LoggerMessage.Define<ulong?, string>(
+                    LogLevel.Information,
+                    new EventId(150, "StartToCheckIfConnectionExists"),
+                    "Start to send message {tracingId} to check if connection {connectionId} exists.");
+
+        private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfUserExists =
+                LoggerMessage.Define<ulong?, string>(
+                    LogLevel.Information,
+                    new EventId(160, "StartToCheckIfUserExists"),
+                    "Start to send message {tracingId} to check if user {userId} exists.");
+
+        private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfGroupExists =
+                LoggerMessage.Define<ulong?, string>(
+                    LogLevel.Information,
+                    new EventId(170, "StartToCheckIfGroupExists"),
+                    "Start to send message {tracingId} to check if group {group} exists.");
+
         public static void ReceiveMessageFromService(ILogger logger, ConnectionDataMessage message)
         {
             _receivedMessageFromService(logger, message.TracingId, message.ConnectionId, null);
@@ -260,6 +277,21 @@ namespace Microsoft.Azure.SignalR
         public static void StartToCloseConnection(ILogger logger, CloseConnectionMessage message)
         {
             _startToCloseConnection(logger, message.TracingId, message.ConnectionId, message.ErrorMessage, null);
+        }
+
+        public static void StartToCheckIfConnectionExists(ILogger logger, CheckConnectionExistenceWithAckMessage message)
+        {
+            _startToCheckIfConnectionExists(logger, message.TracingId, message.ConnectionId, null);
+        }
+
+        public static void StartToCheckIfUserExists(ILogger logger, CheckUserExistenceWithAckMessage message)
+        {
+            _startToCheckIfUserExists(logger, message.TracingId, message.UserId, null);
+        }
+
+        public static void StartToCheckIfGroupExists(ILogger logger, CheckGroupExistenceWithAckMessage message)
+        {
+            _startToCheckIfGroupExists(logger, message.TracingId, message.GroupName, null);
         }
     }
 }

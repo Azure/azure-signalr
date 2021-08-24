@@ -6,6 +6,9 @@ using Newtonsoft.Json.Serialization;
 
 namespace Microsoft.Azure.SignalR.Management
 {
+    /// <summary>
+    /// Options to configure the hub serialization behaviours with Newtonsoft.Json hub protocol.
+    /// </summary>
     public class NewtonsoftServiceHubProtocolOptions
     {
         /// <summary>

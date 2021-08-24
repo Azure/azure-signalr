@@ -1,9 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,21 +8,33 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     /// <summary>
-    /// A builder for configuring <see cref="IServiceManager"/> instances.
+    /// A builder for configuring <see cref="ServiceManager"/> instances.
     /// </summary>
     public class ServiceManagerBuilder : IServiceManagerBuilder
     {
-        private readonly IServiceCollection _services = new ServiceCollection();
+        private readonly IServiceCollection _services;
+        private Action<IServiceCollection> _configureAction;
+
+        internal ServiceManagerBuilder(IServiceCollection services)
+        {
+            _services = services;
+        }
+
+        public ServiceManagerBuilder() : this(new ServiceCollection())
+        {
+            _services.AddSignalRServiceManager();
+        }
 
         /// <summary>
-        /// Registers an action used to configure <see cref="IServiceManager"/>.
+        /// Registers an action used to configure <see cref="ServiceManager"/>.
         /// </summary>
-        /// <param name="configure">A callback to configure the <see cref="IServiceManager"/>.</param>
+        /// <param name="configure">A callback to configure the <see cref="ServiceManager"/>.</param>
         /// <returns>The same instance of the <see cref="ServiceManagerBuilder"/> for chaining.</returns>
         public ServiceManagerBuilder WithOptions(Action<ServiceManagerOptions> configure)
         {
@@ -84,16 +93,33 @@ namespace Microsoft.Azure.SignalR.Management
             return this;
         }
 
+        internal ServiceManagerBuilder ConfigureServices(Action<IServiceCollection> configureAction)
+        {
+            _configureAction = configureAction;
+            return this;
+        }
+
         /// <summary>
         /// Builds <see cref="IServiceManager"/> instances.
         /// </summary>
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
+        [Obsolete("Use BuildServiceManager() instead. See https://github.com/Azure/azure-signalr/blob/dev/docs/management-sdk-migration.md for migration guide.")]
         public IServiceManager Build()
         {
-            return _services.AddSignalRServiceManager()
-                .AddSingleton(_services.ToList() as IReadOnlyCollection<ServiceDescriptor>)
-                .BuildServiceProvider()
-                .GetRequiredService<IServiceManager>();
+            return (IServiceManager)BuildServiceManager();
+        }
+
+        /// <summary>
+        /// Builds <see cref="ServiceManager"/> instances.
+        /// </summary>
+        /// <returns>The instance of the <see cref="ServiceManager"/>.</returns>
+        public ServiceManager BuildServiceManager()
+        {
+            var serviceCollection = new ServiceCollection().Add(_services);
+            _configureAction?.Invoke(serviceCollection);
+            serviceCollection.AddSingleton(serviceCollection.ToList() as IReadOnlyCollection<ServiceDescriptor>);
+            return serviceCollection.BuildServiceProvider()
+                .GetRequiredService<IServiceManager>() as ServiceManager;
         }
     }
 }

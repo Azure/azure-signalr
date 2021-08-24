@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+
+using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -27,7 +29,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [InlineData(new bool[] { false, false, true, true, false, false, false, false }, 3, 0, false)]
         public void TestGetServiceStatus(bool[] pingStatus, int checkWindow, int checkMilli, bool expectedStatus)
         {
-            var endpoint = new HubServiceEndpoint();
+            var endpoint = new TestHubServiceEndpoint();
             var container = new WeakServiceConnectionContainer(null, 0, endpoint, NullLogger.Instance);
             var checkTimeSpan = TimeSpan.FromMilliseconds(checkMilli);
             bool status = true;

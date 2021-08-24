@@ -3,6 +3,7 @@
 
 using System;
 using System.Net;
+using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// <summary>
         /// Gets or sets multiple service endpoints of Azure SignalR Service instances.
         /// </summary>
-        internal ServiceEndpoint[] ServiceEndpoints { get; set; }
+        public ServiceEndpoint[] ServiceEndpoints { get; set; }
 
         /// <summary>
         /// Gets or sets the proxy used when ServiceManager will attempt to connect to Azure SignalR Service.
@@ -42,10 +43,10 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         public ServiceTransportType ServiceTransportType { get; set; } = ServiceTransportType.Transient;
 
-        // TODO: make obsolete once `ServiceHubContextBuilder.WithNewtonsoftJsonHubProtocol()` are public.
         /// <summary>
         /// Gets the json serializer settings that will be used to serialize content sent to Azure SignalR Service.
         /// </summary>
+        [Obsolete("Use ServiceManagerBuilder.WithNewtonsoftJson instead.")]
         public JsonSerializerSettings JsonSerializerSettings { get; } = new JsonSerializerSettings();
 
         /// <summary>

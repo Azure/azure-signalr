@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal abstract class ServiceHubContext : IServiceHubContext
+    public abstract class ServiceHubContext : IServiceHubContext
     {
         /// <summary>
         /// Gets a user group manager instance which implements <see cref="IUserGroupManager"/> that can be used to add and remove users to named groups.
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR.Management
         /// Performs a negotiation operation asynchronously that routes a client to a Azure SignalR instance.
         /// </summary>
         /// <returns>A negotiation response object that contains an endpoint url and an access token for the client to connect to the Azure SignalR instance. </returns>
-        public virtual Task<NegotiationResponse> NegotiateAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public virtual ValueTask<NegotiationResponse> NegotiateAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         public virtual Task DisposeAsync() => Task.CompletedTask;
     }

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.E2ETests.Management
                 {
                     o.ConnectionString = TestConfiguration.Instance.ConnectionString;
                 })
-                .Build();
+                .BuildServiceManager();
 
             var isHealthy = await serviceManager.IsServiceHealthy(default);
             Assert.True(isHealthy);
