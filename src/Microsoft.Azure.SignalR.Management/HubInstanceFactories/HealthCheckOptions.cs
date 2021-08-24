@@ -8,7 +8,8 @@ namespace Microsoft.Azure.SignalR.Management
     //used to reduce test time
     internal class HealthCheckOption
     {
-        public TimeSpan CheckInterval { get; set; }
-        public TimeSpan RetryInterval { get; set; }
+        public TimeSpan? CheckInterval { get; set; }
+        public TimeSpan? RetryInterval { get; set; }
+        public bool EnabledForSingleEndpoint { get; set; } = false;
     }
 }
