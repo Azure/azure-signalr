@@ -90,5 +90,18 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             await serviceHubContext.DisposeAsync();
         }
+
+        [Fact]
+        public async Task TestRestHealthCheckServiceDisabledWithSingleEndpoint()
+        {
+            using var _ = StartLog(out var loggerFactory);
+            var serviceHubContext = await new ServiceManagerBuilder()
+                .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
+                .WithLoggerFactory(loggerFactory)
+                .BuildServiceManager()
+                .CreateHubContextAsync(HubName, default);
+            var negotiateResult = await serviceHubContext.NegotiateAsync();
+            Assert.NotNull(negotiateResult);
+        }
     }
 }
