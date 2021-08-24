@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalR.Management
     /// <summary>
     /// A builder abstraction for configuring <see cref="IServiceManager"/> instances.
     /// </summary>
-    [Obsolete]
+    [Obsolete("Use ServiceManagerBuilder.BuildServiceManager() to build an abstract class of ServiceManager instead.")]
     public interface IServiceManagerBuilder
     {
         /// <summary>
