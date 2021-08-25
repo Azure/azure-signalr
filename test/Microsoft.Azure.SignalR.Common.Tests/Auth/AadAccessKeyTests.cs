@@ -14,9 +14,9 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
         [Theory]
-        [InlineData("https://a.bc", "https://a.bc/api/v1/auth/accesskey")]
-        [InlineData("https://a.bc:80", "https://a.bc:80/api/v1/auth/accesskey")]
-        [InlineData("https://a.bc:443", "https://a.bc/api/v1/auth/accesskey")]
+        [InlineData("https://a.bc", "https://a.bc/api/v1/auth/accessKey")]
+        [InlineData("https://a.bc:80", "https://a.bc:80/api/v1/auth/accessKey")]
+        [InlineData("https://a.bc:443", "https://a.bc/api/v1/auth/accessKey")]
         public void TestConstructor(string endpoint, string expectedAuthorizeUrl)
         {
             var key = new AadAccessKey(new Uri(endpoint), new DefaultAzureCredential());
