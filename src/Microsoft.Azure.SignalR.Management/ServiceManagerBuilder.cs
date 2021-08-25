@@ -16,7 +16,9 @@ namespace Microsoft.Azure.SignalR.Management
     /// <summary>
     /// A builder for configuring <see cref="ServiceManager"/> instances.
     /// </summary>
+#pragma warning disable CS0618 // Type or member is obsolete
     public class ServiceManagerBuilder : IServiceManagerBuilder
+#pragma warning restore CS0618 // Type or member is obsolete
     {
         private readonly IServiceCollection _services;
         private Action<IServiceCollection> _configureAction;
