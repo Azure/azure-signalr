@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR;
 using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -88,7 +89,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
                 .AddSingleton<IHostedService, HeartBeat>()
                 .AddSingleton<IAccessKeySynchronizer, AccessKeySynchronizer>()
-                .AddSingleton(typeof(NegotiateHandler<>));
+                .AddSingleton(typeof(NegotiateHandler<>))
+                .AddAzureClientsCore();
 
             // If a custom router is added, do not add the default router
             builder.Services.TryAddSingleton(typeof(IEndpointRouter), typeof(DefaultEndpointRouter));

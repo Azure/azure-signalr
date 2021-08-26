@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
@@ -12,12 +13,14 @@ namespace Microsoft.Azure.SignalR
     internal class ServiceOptionsSetup : IConfigureOptions<ServiceOptions>, IOptionsChangeTokenSource<ServiceOptions>
     {
         private readonly IConfiguration _configuration;
+        private readonly AzureComponentFactory _azureComponentFactory;
 
         public string Name => Options.DefaultName;
 
-        public ServiceOptionsSetup(IConfiguration configuration)
+        public ServiceOptionsSetup(IConfiguration configuration, AzureComponentFactory azureComponentFactory)
         {
             _configuration = configuration;
+            _azureComponentFactory = azureComponentFactory;
         }
 
         public void Configure(ServiceOptions options)
@@ -53,6 +56,21 @@ namespace Microsoft.Azure.SignalR
             if (endpoints.Length == 0)
             {
                 endpoints = _configuration.GetEndpoints(Constants.Keys.ConnectionStringSecondaryKey).ToArray();
+            }
+
+            if(endpoints.Length == 0)
+            {
+                var section = _configuration.GetSection(Constants.Keys.AzureSignalRSectionKey);
+                //get multiple named endpoints.
+                var multipleEndpoints = _configuration.GetSection(Constants.Keys.AzureSignalREndpointsKey).GetEndpoints(_azureComponentFactory);
+                //try to get the single identity-based nameless endpoint. 
+                if (section.GetSection(Constants.Keys.IdentityBasedSingleEndpointKey).TryGetNamedEndpointFromIdentity(_azureComponentFactory, out var singleEndpoint))
+                {
+                    //reset the name
+                    singleEndpoint.Name = string.Empty;
+                    multipleEndpoints = multipleEndpoints.Append(singleEndpoint);
+                }
+                endpoints = multipleEndpoints.ToArray();
             }
 
             return (appName, connectionString, stickyMode, endpoints);
