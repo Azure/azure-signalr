@@ -23,8 +23,7 @@ namespace Microsoft.Azure.SignalR
         {
             foreach (var child in config.GetChildren())
             {
-                var serviceEndpoint = child.GetNamedEndpointFromIdentity(azureComponentFactory);
-                if (serviceEndpoint != null)
+                if (child.TryGetNamedEndpointFromIdentity(azureComponentFactory,out var serviceEndpoint))
                 {
                     yield return serviceEndpoint;
                 }
@@ -55,7 +54,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public static ServiceEndpoint GetNamedEndpointFromIdentity(this IConfigurationSection section, AzureComponentFactory azureComponentFactory)
+        public static bool TryGetNamedEndpointFromIdentity(this IConfigurationSection section, AzureComponentFactory azureComponentFactory, out ServiceEndpoint endpoint)
         {
             var uri = section[Constants.Keys.ServiceUriKey];
             if (uri != null)
@@ -63,9 +62,11 @@ namespace Microsoft.Azure.SignalR
                 var name = section.Key;
                 var type = section.GetValue(Constants.Keys.EndpointTypeKey, EndpointType.Primary);
                 var credential = azureComponentFactory.CreateTokenCredential(section);
-                return new ServiceEndpoint(new Uri(uri), credential, type, name);
+                endpoint = new ServiceEndpoint(new Uri(uri), credential, type, name);
+                return true;
             }
-            return null;
+            endpoint = null;
+            return false ;
         }
     }
 }

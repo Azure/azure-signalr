@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             services.AddAzureClientsCore();
             var factory = services.BuildServiceProvider().GetRequiredService<AzureComponentFactory>();
             var config = new ConfigurationBuilder().AddInMemoryCollection().Build();
-            Assert.Null(config.GetSection("eastus").GetNamedEndpointFromIdentity(factory));
+            Assert.False(config.GetSection("eastus").TryGetNamedEndpointFromIdentity(factory, out _));
         }
 
         [Fact]
@@ -34,8 +34,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var uri = "http://signalr.service.uri.com:441";
             config["eastus:serviceUri"] = uri;
 
-            var endpoint = config.GetSection("eastus").GetNamedEndpointFromIdentity(factory);
-            Assert.NotNull(endpoint);
+            Assert.True(config.GetSection("eastus").TryGetNamedEndpointFromIdentity(factory, out var endpoint));
             Assert.Equal("eastus", endpoint.Name);
             Assert.Equal(uri, endpoint.Endpoint);
             Assert.IsType<DefaultAzureCredential>((endpoint.AccessKey as AadAccessKey).TokenCredential);
@@ -55,8 +54,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             config["eastus:credential"] = "managedidentity";
             config["eastus:type"] = "secondary";
 
-            var endpoint = config.GetSection("eastus").GetNamedEndpointFromIdentity(factory);
-            Assert.NotNull(endpoint);
+            Assert.True(config.GetSection("eastus").TryGetNamedEndpointFromIdentity(factory, out var endpoint));
             Assert.Equal("eastus", endpoint.Name);
             Assert.Equal(uri, endpoint.Endpoint);
             Assert.IsType<ManagedIdentityCredential>((endpoint.AccessKey as AadAccessKey).TokenCredential);
