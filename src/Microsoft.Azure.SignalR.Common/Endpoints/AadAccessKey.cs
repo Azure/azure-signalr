@@ -5,8 +5,11 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Azure.Core;
+
 using Microsoft.Azure.SignalR.Common;
+
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.SignalR
@@ -34,21 +37,18 @@ namespace Microsoft.Azure.SignalR
 
         public TokenCredential TokenCredential { get; }
 
-        private string AuthorizeUrl { get; }
+        internal string AuthorizeUrl { get; }
 
         private Task<object> InitializedTask => _initializedTcs.Task;
 
-        public AadAccessKey(string uri, TokenCredential credential) : this(new Uri(uri), credential)
+        public AadAccessKey(Uri uri, TokenCredential credential): base(uri)
         {
             var builder = new UriBuilder(Endpoint)
             {
-                Path = "/api/v1/auth/accessKey"
+                Path = "/api/v1/auth/accessKey",
+                Port = uri.Port
             };
             AuthorizeUrl = builder.Uri.AbsoluteUri;
-        }
-
-        public AadAccessKey(Uri uri, TokenCredential credential): base(uri)
-        {
             TokenCredential = credential;
         }
 
