@@ -25,6 +25,7 @@ namespace Microsoft.Azure.SignalR
             // The followings are keys for identity-based service endpoint configuration.
             public const string ServiceUriKey = "ServiceUri";
             public const string EndpointTypeKey = "Type";
+            public const string IdentityBasedSingleEndpointKey = "Connection";
         }
 
         public const string AsrsMigrateFrom = "Asrs-Migrate-From";

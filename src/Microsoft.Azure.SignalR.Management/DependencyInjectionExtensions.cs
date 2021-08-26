@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -63,6 +64,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             services.AddSingleton<IServiceManager, ServiceManagerImpl>();
             services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
+            services.AddAzureClientsCore();
             services.TryAddSingleton<IEndpointRouter, AutoHealthCheckRouter>();
             var tempServices = new ServiceCollection().AddSignalR()
                 .AddAzureSignalR<CascadeServiceOptionsSetup>().Services;

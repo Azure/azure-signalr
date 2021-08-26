@@ -3,7 +3,9 @@
 
 using System.Linq;
 using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
@@ -20,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 configuration[$"{Constants.Keys.AzureSignalREndpointsKey}:{name}"] = connectionString;
             }
-            var optionsSetup = new ServiceManagerOptionsSetup(configuration);
+            var optionsSetup = new ServiceManagerOptionsSetup(GetAzureComponentFactory(), configuration);
             var options = new ServiceManagerOptions();
 
             optionsSetup.Configure(options);
@@ -45,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
             var connectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
             configuration[Constants.Keys.ConnectionStringDefaultKey] = connectionString;
-            var optionsSetup = new ServiceManagerOptionsSetup(configuration);
+            var optionsSetup = new ServiceManagerOptionsSetup(GetAzureComponentFactory(), configuration);
             var options = new ServiceManagerOptions();
 
             optionsSetup.Configure(options);
@@ -71,11 +73,36 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ServiceEndpoints = endpoints
             };
             var configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
-            var setup = new ServiceManagerOptionsSetup(configuration);
+            var setup = new ServiceManagerOptionsSetup(GetAzureComponentFactory(), configuration);
             setup.Configure(options);
             Assert.Equal(app, options.ApplicationName);
             Assert.Equal(connStr, options.ConnectionString);
             Assert.Equal(endpoints, options.ServiceEndpoints);
+        }
+
+        [Fact]
+        public void TestIdentityBasedConfiguration()
+        {
+            var config = new ConfigurationBuilder().AddInMemoryCollection().Build();
+            var setup = new ServiceManagerOptionsSetup(GetAzureComponentFactory(), config);
+            var uri1 = "http://localhost:88";
+            var uri2 = "http://localhost:99";
+            config["Azure:SignalR:Connection:ServiceUri"] = uri1;
+            config["Azure:SignalR:Endpoints:eastus:ServiceUri"] = uri2;
+            var options = new ServiceManagerOptions();
+            setup.Configure(options);
+
+            Assert.Equal(2, options.ServiceEndpoints.Length);
+            Assert.Contains(options.ServiceEndpoints, e => e.Endpoint == uri1);
+            Assert.Contains(options.ServiceEndpoints, e => e.Endpoint == uri2);
+        }
+
+
+        private AzureComponentFactory GetAzureComponentFactory()
+        {
+            var services = new ServiceCollection();
+            services.AddAzureClientsCore();
+            return services.BuildServiceProvider().GetRequiredService<AzureComponentFactory>();
         }
     }
 }
