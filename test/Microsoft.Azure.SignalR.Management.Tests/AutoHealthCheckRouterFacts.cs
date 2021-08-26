@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var router = new AutoHealthCheckRouter();
             var endpoints = new ServiceEndpoint[] { new ServiceEndpoint(FakeEndpointUtils.GetFakeConnectionString(1).First()) { Online = false } };
-            Assert.Equal(endpoints.Single(), router.GetNegotiateEndpoint(null, endpoints));
+            Assert.Equal(endpoints[0], router.GetNegotiateEndpoint(null, endpoints));
         }
     }
 }
