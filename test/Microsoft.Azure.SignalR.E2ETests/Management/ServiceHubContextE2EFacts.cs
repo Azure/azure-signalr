@@ -584,8 +584,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        [ConditionalFact]
-        [SkipIfConnectionStringNotPresent]
+        [SkipIfMultiEndpointsAbsentFact]
         internal async Task WithEndpointsTest()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
@@ -595,10 +594,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 var hubContext = await serviceProvider.GetRequiredService<IServiceManager>().CreateHubContextAsync(HubName);
                 var endpointManager = serviceProvider.GetRequiredService<IServiceEndpointManager>();
                 var endpoints = endpointManager.GetEndpoints(HubName).ToArray<ServiceEndpoint>();
-                if (endpoints.Length < 2)
-                {
-                    throw new InvalidOperationException("This test need at lease two Azure SignalR instance endpoints.");
-                };
                 var connections = endpoints.Select(endpoint =>
                 {
                     var provider = endpointManager.GetEndpointProvider(endpoint);
