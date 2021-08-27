@@ -10,7 +10,10 @@ namespace Microsoft.Azure.SignalR.Tests.Common
     {
         private static readonly string SkipReason = $"There are no multiple connection-string-based named endpoints under '{Constants.Keys.AzureSignalREndpointsKey}'.";
 
-        public override string Skip { get => MultiEndpointsExist() ? null : SkipReason; set => base.Skip = value; }
+        public SkipIfMultiEndpointsAbsentFactAttribute()
+        {
+            Skip = MultiEndpointsExist() ? null : SkipReason;
+        }
 
         private static bool MultiEndpointsExist()
         {
