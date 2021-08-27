@@ -10,6 +10,7 @@ using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
+
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Messaging;
@@ -23,8 +24,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Owin;
 using Microsoft.Owin.Hosting;
+
 using Newtonsoft.Json;
+
 using Owin;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -464,12 +468,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                 var scf = new TestServiceConnectionFactory(endpoint =>
                 {
-                    if (endpoint.Name != "es")
-                    {
-                        return new TestServiceConnection(ServiceConnectionStatus.Disconnected);
-                    };
-
-                    return new TestServiceConnection();
+                    var status = endpoint.Name == "es" ? ServiceConnectionStatus.Connected : ServiceConnectionStatus.Disconnected;
+                    return new TestServiceConnection(status);
                 });
                 hubConfig.Resolver.Register(typeof(IServiceConnectionFactory), () => scf);
 
@@ -619,7 +619,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                     // 2. test other requests should not be handled
                     response = await client.GetAsync("/not-exists");
-                    Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+                    Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+                    response = await client.GetAsync("/signalr/reconnect");
+                    Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
                 }
             }
         }

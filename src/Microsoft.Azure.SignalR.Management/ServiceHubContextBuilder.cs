@@ -9,62 +9,22 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     internal class ServiceHubContextBuilder
     {
-        private readonly IServiceCollection _services;
+        private readonly HostBuilder _hostBuilder = new();
 
-        internal ServiceHubContextBuilder(IServiceCollection services)
+        internal ServiceHubContextBuilder(IEnumerable<ServiceDescriptor> srcServices)
         {
-            _services = services;
+            _hostBuilder.ConfigureServices(collection => collection.Add(srcServices));
         }
 
-        public ServiceHubContextBuilder() : this(new ServiceCollection())
+        internal ServiceHubContextBuilder ConfigureServices(Action<IServiceCollection> configure)
         {
-            _services.AddSignalRServiceManager();
-        }
-
-        private Action<IServiceCollection> _configureAction;
-
-        /// <summary>
-        /// Registers an action used to configure <see cref="IServiceManager"/>.
-        /// </summary>
-        /// <param name="configure">A callback to configure the <see cref="IServiceManager"/>.</param>
-        /// <returns>The same instance of the <see cref="ServiceManagerBuilder"/> for chaining.</returns>
-        public ServiceHubContextBuilder WithOptions(Action<ServiceManagerOptions> configure)
-        {
-            _services.Configure(configure);
-            return this;
-        }
-
-        public ServiceHubContextBuilder WithLoggerFactory(ILoggerFactory loggerFactory)
-        {
-            _services.AddSingleton(loggerFactory);
-            return this;
-        }
-
-        public ServiceHubContextBuilder WithConfiguration(IConfiguration configuration)
-        {
-            _services.AddSingleton(configuration);
-            return this;
-        }
-
-        public ServiceHubContextBuilder WithRouter(IEndpointRouter router)
-        {
-            _services.AddSingleton(router);
-            return this;
-        }
-
-        /// <summary>
-        /// Provides a hook to configure services before building.
-        /// </summary>
-        internal ServiceHubContextBuilder ConfigureServices(Action<IServiceCollection> configureAction)
-        {
-            _configureAction = configureAction;
+            _hostBuilder.ConfigureServices(configure);
             return this;
         }
 
@@ -72,32 +32,29 @@ namespace Microsoft.Azure.SignalR.Management
         /// Builds <see cref="ServiceHubContext"/> instances.
         /// </summary>
         /// <returns>The instance of the <see cref="IServiceManager"/>.</returns>
-        public async Task<ServiceHubContext> CreateAsync(string hubName, CancellationToken cancellationToken)
+        internal async Task<ServiceHubContext> CreateAsync(string hubName, CancellationToken cancellationToken)
         {
-            //add requried services
-            var transportType = _services.BuildServiceProvider()
-                .GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ServiceTransportType;
-            _services.AddHub(hubName, transportType);
-            _configureAction?.Invoke(_services);
-            _services.AddSingleton(_services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
-
-            //build
-            var serviceHubContext = _services.BuildServiceProvider()
-                .GetRequiredService<ServiceHubContextImpl>();
-
-            //initialize
-            var connectionContainer = serviceHubContext.ServiceProvider.GetService<IServiceConnectionContainer>();
-            if (connectionContainer != null)
+            _hostBuilder.ConfigureServices(services =>
             {
-                await connectionContainer.ConnectionInitializedTask.OrTimeout(cancellationToken);
-            }
+                services.AddHub(hubName);
+                services.AddSingleton(services.ToList() as IReadOnlyCollection<ServiceDescriptor>);
+            });
 
-            if (cancellationToken.IsCancellationRequested)
+            IHost host = null;
+            try
             {
-                await serviceHubContext?.DisposeAsync();
-                return null;
+                host = _hostBuilder.Build();
+                await host.StartAsync(cancellationToken);
+                return host.Services.GetRequiredService<ServiceHubContextImpl>();
             }
-            return serviceHubContext.ServiceProvider.GetRequiredService<ServiceHubContextImpl>();
+            catch
+            {
+                using (host)
+                {
+                    await host.StopAsync();
+                }
+                throw;
+            }
         }
     }
 }

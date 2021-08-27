@@ -13,7 +13,10 @@ using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Xunit;
+
+#pragma warning disable CS0618 // Type or member is obsolete
 
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
@@ -178,6 +181,19 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         public void ConnectionStringAbsent_Throw_Test()
         {
             Assert.Throws<InvalidOperationException>(() => new ServiceManagerBuilder().Build());
+        }
+
+        [Fact]
+        public async Task TestCreateServiceHubContext()
+        {
+            var serviceHubContext = await new ServiceManagerBuilder()
+                .WithOptions(o => o.ConnectionString = _testConnectionString)
+                // avoid waiting for health check result for long time
+                .ConfigureServices(services => services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, HttpStatusCode.OK)))
+                .BuildServiceManager()
+                .CreateHubContextAsync(HubName, default);
+            Assert.Equal(3, (serviceHubContext as ServiceHubContextImpl).ServiceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ConnectionCount);
+            await serviceHubContext.DisposeAsync();
         }
     }
 }

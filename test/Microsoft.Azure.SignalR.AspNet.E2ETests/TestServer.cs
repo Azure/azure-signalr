@@ -1,16 +1,16 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.AspNet.SignalR;
-using Microsoft.Azure.SignalR.Tests.Common;
-using Microsoft.Extensions.Logging;
-using Microsoft.Owin.Hosting;
-using Owin;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.AspNet.SignalR;
+using Microsoft.Azure.SignalR.Tests.Common;
+using Microsoft.Extensions.Logging;
+using Microsoft.Owin.Hosting;
+using Owin;
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.AspNet.Tests

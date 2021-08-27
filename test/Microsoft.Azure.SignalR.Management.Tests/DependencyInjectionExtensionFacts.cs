@@ -34,8 +34,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             // to avoid possible file name conflict with another FileConfigHotReloadTest
             string configPath = nameof(DependencyInjectionExtensionFacts);
-            var originUrl = "http://originUrl";
-            var newUrl = "http://newUrl";
+            var originUrl = "http://origin.url";
+            var newUrl = "http://new.url";
             var configObj = new
             {
                 Azure = new
@@ -65,8 +65,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [Fact]
         public void MemoryConfigHotReloadTest()
         {
-            var originUrl = "http://originUrl";
-            var newUrl = "http://newUrl";
+            var originUrl = "http://origin.url";
+            var newUrl = "http://new.url";
             var configProvider = new ReloadableMemoryProvider();
             configProvider.Set("Azure:SignalR:ConnectionString", $"Endpoint={originUrl};AccessKey={AccessKey};Version=1.0;");
             var services = new ServiceCollection()
@@ -131,8 +131,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [Fact]
         public void ConfigureByFileAndDelegateFact()
         {
-            var originUrl = "http://originUrl";
-            var newUrl = "http://newUrl";
+            var originUrl = "http://origin.url";
+            var newUrl = "http://new.url";
             var appName = "AppName";
             var newAppName = "NewAppName";
             var configProvider = new ReloadableMemoryProvider();
@@ -154,6 +154,60 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
             configProvider.Set("Azure:SignalR:ApplicationName", newAppName);
             Assert.Equal(newAppName, contextMonitor.CurrentValue.ApplicationName);
+        }
+
+        [Fact]
+        public void ConnectionStringNull_TransientMode_Throw()
+        {
+            Assert.Throws<InvalidOperationException>(
+                () => new ServiceCollection().AddSignalRServiceManager()
+                                   .Configure<ServiceManagerOptions>(o => o.ServiceEndpoints = FakeEndpointUtils.GetFakeEndpoint(2).ToArray())
+                                   .BuildServiceProvider()
+                                   .GetRequiredService<IOptions<ServiceManagerOptions>>()
+                                   .Value);
+        }
+
+        [Fact]
+        public async Task ServiceEndpoints_NotAppliedToTransientModeAsync()
+        {
+            // to avoid possible file name conflict with another FileConfigHotReloadTest
+            string configPath = nameof(ServiceEndpoints_NotAppliedToTransientModeAsync);
+            var connStr = FakeEndpointUtils.GetFakeConnectionString(1).Single();
+            var configObj = new
+            {
+                Azure = new
+                {
+                    SignalR = new ServiceManagerOptions
+                    {
+                        ConnectionString = connStr
+                    }
+                }
+            };
+            File.WriteAllText(configPath, JsonConvert.SerializeObject(configObj));
+            var provider = new ServiceCollection().AddSignalRServiceManager()
+                .AddSingleton<IConfiguration>(new ConfigurationBuilder().AddJsonFile(configPath, false, true).Build())
+                .BuildServiceProvider();
+            var optionsMonitor = provider.GetRequiredService<IOptionsMonitor<ServiceOptions>>();
+            Assert.Equal(connStr, optionsMonitor.CurrentValue.ConnectionString);
+
+            //update json config file
+            var newConfigObj = new
+            {
+                Azure = new
+                {
+                    SignalR = new
+                    {
+                        Endpoints = new
+                        {
+                            First = FakeEndpointUtils.GetFakeConnectionString(1).Single()
+                        },
+                        ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single()
+                    }
+                }
+            };
+            File.WriteAllText(configPath, JsonConvert.SerializeObject(newConfigObj));
+            await Task.Delay(5000);
+            Assert.Equal(connStr, optionsMonitor.CurrentValue.ConnectionString);// new config not reloaded
         }
     }
 }

@@ -49,6 +49,10 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateHandshakeRequestMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.HandshakeResponseType:
                     return CreateHandshakeResponseMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.AccessKeyRequestType:
+                    return CreateAccessKeyRequestMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.AccessKeyResponseType:
+                    return CreateAccessKeyResponseMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.PingMessageType:
                     return CreatePingMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.OpenConnectionMessageType:
@@ -73,6 +77,10 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateUserJoinGroupMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.UserLeaveGroupMessageType:
                     return CreateUserLeaveGroupMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.UserJoinGroupWithAckMessageType:
+                    return CreateUserJoinGroupWithAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.UserLeaveGroupWithAckMessageType:
+                    return CreateUserLeaveGroupWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.GroupBroadcastDataMessageType:
                     return CreateGroupBroadcastDataMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.MultiGroupBroadcastDataMessageType:
@@ -87,6 +95,12 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateLeaveGroupWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.CheckUserInGroupWithAckMessageType:
                     return CreateCheckUserInGroupWithAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.CheckGroupExistenceWithAckMessageType:
+                    return CreateGroupExistenceWithAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.CheckConnectionExistenceWithAckMessageType:
+                    return CreateCheckConnectionExistenceWithAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.CheckUserExistenceWithAckMessageType:
+                    return CreateCheckUserExistenceWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.AckMessageType:
                     return CreateAckMessage(ref reader, arrayLength);
                 default:
@@ -158,6 +172,12 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case HandshakeResponseMessage handshakeResponseMessage:
                     WriteHandshakeResponseMessage(ref writer, handshakeResponseMessage);
                     break;
+                case AccessKeyRequestMessage accessKeyRequestMessage:
+                    WriteAccessKeyRequestMessage(ref writer, accessKeyRequestMessage);
+                    break;
+                case AccessKeyResponseMessage accessKeyResponseMessage:
+                    WriteAccessKeyResponseMessage(ref writer, accessKeyResponseMessage);
+                    break;
                 case PingMessage pingMessage:
                     WritePingMessage(ref writer, pingMessage);
                     break;
@@ -197,11 +217,26 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case CheckUserInGroupWithAckMessage checkUserInGroupWithAckMessage:
                     WriteCheckUserInGroupWithAckMessage(ref writer, checkUserInGroupWithAckMessage);
                     break;
+                case CheckGroupExistenceWithAckMessage checkAnyConnectionInGroupWithAckMessage:
+                    WriteCheckGroupExistenceWithAckMessage(ref writer, checkAnyConnectionInGroupWithAckMessage);
+                    break;
+                case CheckConnectionExistenceWithAckMessage checkConnectionExistenceWithAckMessage:
+                    WriteCheckConnectionExistenceWithAckMessage(ref writer, checkConnectionExistenceWithAckMessage);
+                    break;
+                case CheckUserExistenceWithAckMessage checkConnectionExistenceAsUserWithAckMessage:
+                    WriteCheckUserExistenceWithAckMessage(ref writer, checkConnectionExistenceAsUserWithAckMessage);
+                    break;
                 case UserJoinGroupMessage userJoinGroupMessage:
                     WriteUserJoinGroupMessage(ref writer, userJoinGroupMessage);
                     break;
                 case UserLeaveGroupMessage userLeaveGroupMessage:
                     WriteUserLeaveGroupMessage(ref writer, userLeaveGroupMessage);
+                    break;
+                case UserJoinGroupWithAckMessage userJoinGroupWithAckMessage:
+                    WriteUserJoinGroupWithAckMessage(ref writer, userJoinGroupWithAckMessage);
+                    break;
+                case UserLeaveGroupWithAckMessage userLeaveGroupWithAckMessage:
+                    WriteUserLeaveGroupWithAckMessage(ref writer, userLeaveGroupWithAckMessage);
                     break;
                 case GroupBroadcastDataMessage groupBroadcastDataMessage:
                     WriteGroupBroadcastDataMessage(ref writer, groupBroadcastDataMessage);
@@ -240,6 +275,26 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             writer.WriteArrayHeader(3);
             writer.Write(ServiceProtocolConstants.HandshakeResponseType);
+            writer.Write(message.ErrorMessage);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteAccessKeyRequestMessage(ref MessagePackWriter writer, AccessKeyRequestMessage message)
+        {
+            writer.WriteArrayHeader(4);
+            writer.Write(ServiceProtocolConstants.AccessKeyRequestType);
+            writer.Write(message.Token);
+            writer.Write(message.Kid);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteAccessKeyResponseMessage(ref MessagePackWriter writer, AccessKeyResponseMessage message)
+        {
+            writer.WriteArrayHeader(6);
+            writer.Write(ServiceProtocolConstants.AccessKeyResponseType);
+            writer.Write(message.Kid);
+            writer.Write(message.AccessKey);
+            writer.Write(message.ErrorType);
             writer.Write(message.ErrorMessage);
             message.WriteExtensionMembers(ref writer);
         }
@@ -373,6 +428,26 @@ namespace Microsoft.Azure.SignalR.Protocol
             message.WriteExtensionMembers(ref writer);
         }
 
+        private static void WriteUserJoinGroupWithAckMessage(ref MessagePackWriter writer, UserJoinGroupWithAckMessage message)
+        {
+            writer.WriteArrayHeader(5);
+            writer.Write(ServiceProtocolConstants.UserJoinGroupWithAckMessageType);
+            writer.Write(message.UserId);
+            writer.Write(message.GroupName);
+            writer.Write(message.AckId);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteUserLeaveGroupWithAckMessage(ref MessagePackWriter writer, UserLeaveGroupWithAckMessage message)
+        {
+            writer.WriteArrayHeader(5);
+            writer.Write(ServiceProtocolConstants.UserLeaveGroupWithAckMessageType);
+            writer.Write(message.UserId);
+            writer.Write(message.GroupName);
+            writer.Write(message.AckId);
+            message.WriteExtensionMembers(ref writer);
+        }
+
         private static void WriteGroupBroadcastDataMessage(ref MessagePackWriter writer, GroupBroadcastDataMessage message)
         {
             writer.WriteArrayHeader(5);
@@ -401,7 +476,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteServiceEventMessage(ref MessagePackWriter writer, ServiceEventMessage message)
         {
-            writer.WriteArrayHeader(5);
+            writer.WriteArrayHeader(6);
             writer.Write(ServiceProtocolConstants.ServiceEventMessageType);
             writer.Write((int)message.Type);
             writer.Write(message.Id);
@@ -436,6 +511,33 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.Write(ServiceProtocolConstants.CheckUserInGroupWithAckMessageType);
             writer.Write(message.UserId);
             writer.Write(message.GroupName);
+            writer.Write(message.AckId);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteCheckGroupExistenceWithAckMessage(ref MessagePackWriter writer, CheckGroupExistenceWithAckMessage message)
+        {
+            writer.WriteArrayHeader(4);
+            writer.Write(ServiceProtocolConstants.CheckGroupExistenceWithAckMessageType);
+            writer.Write(message.GroupName);
+            writer.Write(message.AckId);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteCheckConnectionExistenceWithAckMessage(ref MessagePackWriter writer, CheckConnectionExistenceWithAckMessage message)
+        {
+            writer.WriteArrayHeader(4);
+            writer.Write(ServiceProtocolConstants.CheckConnectionExistenceWithAckMessageType);
+            writer.Write(message.ConnectionId);
+            writer.Write(message.AckId);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteCheckUserExistenceWithAckMessage(ref MessagePackWriter writer, CheckUserExistenceWithAckMessage message)
+        {
+            writer.WriteArrayHeader(4);
+            writer.Write(ServiceProtocolConstants.CheckUserExistenceWithAckMessageType);
+            writer.Write(message.UserId);
             writer.Write(message.AckId);
             message.WriteExtensionMembers(ref writer);
         }
@@ -511,6 +613,30 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 writer.WriteMapHeader(0);
             }
+        }
+
+        private static AccessKeyRequestMessage CreateAccessKeyRequestMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var message = new AccessKeyRequestMessage()
+            {
+                Token = ReadString(ref reader, "token"),
+                Kid = ReadString(ref reader, "kid"),
+            };
+            message.ReadExtensionMembers(ref reader);
+            return message;
+        }
+
+        private static AccessKeyResponseMessage CreateAccessKeyResponseMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var message = new AccessKeyResponseMessage()
+            {
+                Kid = ReadString(ref reader, "kid"),
+                AccessKey = ReadString(ref reader, "accessKey"),
+                ErrorType = ReadString(ref reader, "errorType"),
+                ErrorMessage = ReadString(ref reader, "errorMessage"),
+            };
+            message.ReadExtensionMembers(ref reader);
+            return message;
         }
 
         private static HandshakeRequestMessage CreateHandshakeRequestMessage(ref MessagePackReader reader, int arrayLength)
@@ -710,6 +836,28 @@ namespace Microsoft.Azure.SignalR.Protocol
             return result;
         }
 
+        private static UserJoinGroupWithAckMessage CreateUserJoinGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var userId = ReadString(ref reader, "userId");
+            var groupName = ReadString(ref reader, "groupName");
+            var ackId = ReadInt32(ref reader, "ackId");
+
+            var result = new UserJoinGroupWithAckMessage(userId, groupName, ackId);
+            result.ReadExtensionMembers(ref reader);
+            return result;
+        }
+
+        private static UserLeaveGroupWithAckMessage CreateUserLeaveGroupWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var userId = ReadString(ref reader, "userId");
+            var groupName = ReadString(ref reader, "groupName");
+            var ackId = ReadInt32(ref reader, "ackId");
+
+            var result = new UserLeaveGroupWithAckMessage(userId, groupName, ackId);
+            result.ReadExtensionMembers(ref reader);
+            return result;
+        }
+
         private static GroupBroadcastDataMessage CreateGroupBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var groupName = ReadString(ref reader, "groupName");
@@ -794,6 +942,36 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 result.ReadExtensionMembers(ref reader);
             }
+            return result;
+        }
+
+        private static CheckGroupExistenceWithAckMessage CreateGroupExistenceWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var groupName = ReadString(ref reader, "groupName");
+            var ackId = ReadInt32(ref reader, "ackId");
+            
+            var result = new CheckGroupExistenceWithAckMessage(groupName, ackId);
+            result.ReadExtensionMembers(ref reader);
+            return result;
+        }
+
+        private static CheckConnectionExistenceWithAckMessage CreateCheckConnectionExistenceWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var connectionId = ReadString(ref reader, "connectionId");
+            var ackId = ReadInt32(ref reader, "ackId");
+
+            var result = new CheckConnectionExistenceWithAckMessage(connectionId, ackId);
+            result.ReadExtensionMembers(ref reader);
+            return result;
+        }
+
+        private static CheckUserExistenceWithAckMessage CreateCheckUserExistenceWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var userId = ReadString(ref reader, "userId");
+            var ackId = ReadInt32(ref reader, "ackId");
+
+            var result = new CheckUserExistenceWithAckMessage(userId, ackId);
+            result.ReadExtensionMembers(ref reader);
             return result;
         }
 

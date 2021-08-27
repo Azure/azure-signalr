@@ -50,7 +50,8 @@ namespace Microsoft.Azure.SignalR
                                               IConnectionIdFeature,
                                               IConnectionTransportFeature,
                                               IConnectionHeartbeatFeature,
-                                              IHttpContextFeature
+                                              IHttpContextFeature,
+                                              IConnectionStatFeature
     {
         private const int WritingState = 1;
         private const int CompletedState = 2;
@@ -63,7 +64,6 @@ namespace Microsoft.Azure.SignalR
 
         private readonly TaskCompletionSource<object> _connectionEndTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly CancellationTokenSource _abortOutgoingCts = new CancellationTokenSource();
-        private readonly CancellationTokenSource _abortApplicationCts = new CancellationTokenSource();
 
         private int _connectionState = IdleState;
 
@@ -72,6 +72,10 @@ namespace Microsoft.Azure.SignalR
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
 
         private volatile bool _abortOnClose = true;
+
+        private long _lastMessageReceivedAt;
+
+        private long _receivedBytes;
 
         public bool IsMigrated { get; }
 
@@ -104,7 +108,11 @@ namespace Microsoft.Azure.SignalR
 
         public CancellationToken OutgoingAborted => _abortOutgoingCts.Token;
 
-        public CancellationToken ApplicationAborted => _abortApplicationCts.Token;
+        public DateTime LastMessageReceivedAtUtc => new DateTime(Volatile.Read(ref _lastMessageReceivedAt), DateTimeKind.Utc);
+
+        public DateTime StartedAtUtc { get; } = DateTime.UtcNow;
+
+        public long ReceivedBytes => Volatile.Read(ref _receivedBytes);
 
         public ClientConnectionContext(OpenConnectionMessage serviceMessage, Action<HttpContext> configureContext = null, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
@@ -136,7 +144,7 @@ namespace Microsoft.Azure.SignalR
             // always set the connection state to completing when this method is called
             var previousState =
                 Interlocked.Exchange(ref _connectionState, CompletedState);
-            
+
             Application.Output.CancelPendingFlush();
 
             // If it is idle, complete directly
@@ -146,11 +154,11 @@ namespace Microsoft.Azure.SignalR
                 Application.Output.Complete();
             }
         }
-        
+
         public async Task WriteMessageAsync(ReadOnlySequence<byte> payload)
         {
             var previousState = Interlocked.CompareExchange(ref _connectionState, WritingState, IdleState);
-            
+
             // Write should not be called from multiple threads
             Debug.Assert(previousState != WritingState);
 
@@ -162,6 +170,8 @@ namespace Microsoft.Azure.SignalR
 
             try
             {
+                _lastMessageReceivedAt = DateTime.UtcNow.Ticks;
+                _receivedBytes += payload.Length;
                 // Start write
                 await WriteMessageAsyncCore(payload);
             }
@@ -224,21 +234,6 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        /// <summary>
-        /// Cancel the application task
-        /// </summary>
-        public void CancelApplication(int millisecondsDelay = 0)
-        {
-            if (millisecondsDelay <= 0)
-            {
-                _abortApplicationCts.Cancel();
-            }
-            else
-            {
-                _abortApplicationCts.CancelAfter(millisecondsDelay);
-            }
-        }
-
         private FeatureCollection BuildFeatures()
         {
             var features = new FeatureCollection();
@@ -248,6 +243,7 @@ namespace Microsoft.Azure.SignalR
             features.Set<IConnectionIdFeature>(this);
             features.Set<IConnectionTransportFeature>(this);
             features.Set<IHttpContextFeature>(this);
+            features.Set<IConnectionStatFeature>(this);
             return features;
         }
 

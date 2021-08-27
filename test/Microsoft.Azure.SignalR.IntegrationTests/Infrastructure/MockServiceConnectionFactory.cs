@@ -2,15 +2,15 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.AspNetCore.Connections;
+using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
-using Microsoft.Azure.SignalR.IntegrationTests.MockService;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 {
     internal class MockServiceConnectionFactory : ServiceConnectionFactory
     {
-        IMockService _mockService;
+        private IMockService _mockService;
         public MockServiceConnectionFactory(
             IMockService mockService,
             IServiceProtocol serviceProtocol,

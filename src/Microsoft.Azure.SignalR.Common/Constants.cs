@@ -14,12 +14,17 @@ namespace Microsoft.Azure.SignalR
             public const string ConnectionStringDefaultKey = "Azure:SignalR:ConnectionString";
             public const string ApplicationNameDefaultKey = "Azure:SignalR:ApplicationName";
             public const string AzureSignalREnabledKey = "Azure:SignalR:Enabled";
+            public const string AzureSignalREndpointsKey = "Azure:SignalR:Endpoints";
 
             public static readonly string ConnectionStringSecondaryKey =
                 $"ConnectionStrings:{ConnectionStringDefaultKey}";
             public static readonly string ConnectionStringKeyPrefix = $"{ConnectionStringDefaultKey}:";
             public static readonly string ApplicationNameDefaultKeyPrefix = $"{ApplicationNameDefaultKey}:";
             public static readonly string ConnectionStringSecondaryKeyPrefix = $"{ConnectionStringSecondaryKey}:";
+
+            // The followings are keys for identity-based service endpoint configuration.
+            public const string ServiceUriKey = "ServiceUri";
+            public const string EndpointTypeKey = "Type";
         }
 
         public const string AsrsMigrateFrom = "Asrs-Migrate-From";
@@ -64,6 +69,7 @@ namespace Microsoft.Azure.SignalR
             public const string MaxPollInterval = AzureSignalRSysPrefix + "ttl";
             public const string DiagnosticClient = AzureSignalRSysPrefix + "dc";
             public const string CustomHandshakeTimeout = AzureSignalRSysPrefix + "cht";
+            public const string HttpTransportType = AzureSignalRSysPrefix + "htt";
 
             public const string AzureSignalRUserPrefix = "asrs.u.";
         }
@@ -89,6 +95,12 @@ namespace Microsoft.Azure.SignalR
         public static class Protocol
         {
             public const string BlazorPack = "blazorpack";
+        }
+
+        public static class Headers
+        {
+            public const string AsrsHeaderPrefix = "X-ASRS-";
+            public const string AsrsMessageTracingId = AsrsHeaderPrefix + "Message-Tracing-Id";
         }
     }
 }

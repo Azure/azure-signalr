@@ -2,79 +2,108 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.Management
 {
     internal class RestApiProvider
     {
         private const string Version = "v1";
+
         private readonly RestApiAccessTokenGenerator _restApiAccessTokenGenerator;
-        private readonly string _baseEndpoint;
-        private readonly int? _port;
+
+        private readonly string _audienceBaseUrl;
+        private readonly string _serverEndpoint;
 
         public RestApiProvider(ServiceEndpoint endpoint)
         {
-            _baseEndpoint = endpoint.Endpoint;
-            _port = endpoint.Port;
+            _audienceBaseUrl = endpoint.AudienceBaseUrl;
+            _serverEndpoint = endpoint.Endpoint;
             _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(endpoint.AccessKey);
         }
 
         private string GetPrefixedHubName(string applicationName, string hubName)
         {
-            return string.IsNullOrEmpty(applicationName) ? hubName.ToLower() : $"{applicationName.ToLower()}_{hubName.ToLower()}";
+            return string.IsNullOrEmpty(applicationName) ? hubName.ToLowerInvariant() : $"{applicationName.ToLowerInvariant()}_{hubName.ToLowerInvariant()}";
         }
 
         public async Task<RestApiEndpoint> GetServiceHealthEndpointAsync()
         {
-            var port = _port == null ? "" : $":{_port}";
-            var url = $"{_baseEndpoint}{port}/api/{Version}/health";
-            var audience = $"{_baseEndpoint}/api/{Version}/health";
+            var url = $"{_serverEndpoint}/api/{Version}/health";
+            var audience = $"{_audienceBaseUrl}/api/{Version}/health";
             var token = await _restApiAccessTokenGenerator.Generate(audience);
             return new RestApiEndpoint(url, token);
         }
 
-        public Task<RestApiEndpoint> GetBroadcastEndpointAsync(string appName, string hubName, TimeSpan? lifetime = null)
+        public Task<RestApiEndpoint> GetBroadcastEndpointAsync(string appName, string hubName, TimeSpan? lifetime = null, IReadOnlyList<string> excluded = null)
         {
-            return GenerateRestApiEndpointAsync(appName, hubName, "", lifetime);
+            var queries = excluded == null ? null : new Dictionary<string, StringValues>() { { "excluded", excluded.ToArray() } };
+            return GenerateRestApiEndpointAsync(appName, hubName, "", lifetime, queries);
         }
 
         public Task<RestApiEndpoint> GetUserGroupManagementEndpointAsync(string appName, string hubName, string userId, string groupName, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{groupName}/users/{userId}", lifetime);
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{Uri.EscapeDataString(groupName)}/users/{Uri.EscapeDataString(userId)}", lifetime);
         }
 
         public Task<RestApiEndpoint> GetSendToUserEndpointAsync(string appName, string hubName, string userId, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpointAsync(appName, hubName, $"/users/{userId}", lifetime);
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/users/{Uri.EscapeDataString(userId)}", lifetime);
         }
 
-        public Task<RestApiEndpoint> GetSendToGroupEndpointAsync(string appName, string hubName, string groupName, TimeSpan? lifetime = null)
+        public Task<RestApiEndpoint> GetSendToGroupEndpointAsync(string appName, string hubName, string groupName, TimeSpan? lifetime = null, IReadOnlyList<string> excluded = null)
         {
-            return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{groupName}", lifetime);
+            var queries = excluded == null ? null : new Dictionary<string, StringValues>() { { "excluded", excluded.ToArray() } };
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{Uri.EscapeDataString(groupName)}", lifetime, queries);
         }
 
         public Task<RestApiEndpoint> GetRemoveUserFromAllGroupsAsync(string appName, string hubName, string userId, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpointAsync(appName, hubName, $"/users/{userId}/groups", lifetime);
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/users/{Uri.EscapeDataString(userId)}/groups", lifetime);
         }
 
         public Task<RestApiEndpoint> GetSendToConnectionEndpointAsync(string appName, string hubName, string connectionId, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpointAsync(appName, hubName, $"/connections/{connectionId}", lifetime);
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}", lifetime);
         }
 
         public Task<RestApiEndpoint> GetConnectionGroupManagementEndpointAsync(string appName, string hubName, string connectionId, string groupName, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{groupName}/connections/{connectionId}", lifetime);
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{Uri.EscapeDataString(groupName)}/connections/{Uri.EscapeDataString(connectionId)}", lifetime);
         }
 
-        private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null)
+        public Task<RestApiEndpoint> GetCloseConnectionEndpointAsync(string appName, string hubName, string connectionId, string reason)
         {
-            var requestPrefixWithHub = _port == null ? $"{_baseEndpoint}/api/{Version}/hubs/{GetPrefixedHubName(appName, hubName)}" : $"{_baseEndpoint}:{_port}/api/v1/hubs/{GetPrefixedHubName(appName, hubName)}";
-            var audiencePrefixWithHub = $"{_baseEndpoint}/api/{Version}/hubs/{GetPrefixedHubName(appName, hubName)}";
+            var queries = reason == null ? null : new Dictionary<string, StringValues>() { { "reason", reason } };
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}", queries: queries);
+        }
+
+        public Task<RestApiEndpoint> GetCheckConnectionExistsEndpointAsync(string appName, string hubName, string connectionId)
+        {
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}");
+        }
+
+        public Task<RestApiEndpoint> GetCheckUserExistsEndpointAsync(string appName, string hubName, string user)
+        {
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/users/{Uri.EscapeDataString(user)}");
+        }
+
+        public Task<RestApiEndpoint> GetCheckGroupExistsEndpointAsync(string appName, string hubName, string group)
+        {
+            return GenerateRestApiEndpointAsync(appName, hubName, $"/groups/{Uri.EscapeDataString(group)}");
+        }
+
+        private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
+        {
+            var requestPrefixWithHub = $"{_serverEndpoint}/api/{Version}/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
+            // todo: should be same with `requestPrefixWithHub`, need to confirm with emulator.
+            var audiencePrefixWithHub = $"{_audienceBaseUrl}/api/{Version}/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
             var token = await _restApiAccessTokenGenerator.Generate($"{audiencePrefixWithHub}{pathAfterHub}", lifetime);
-            return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token);
+            return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token) { Query = queries };
         }
     }
 }

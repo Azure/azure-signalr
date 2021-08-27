@@ -211,9 +211,9 @@ namespace Microsoft.Azure.SignalR.Tests
         public async Task GenerateServerAccessTokenWithSpecifedAlgorithm(AccessTokenAlgorithm algorithm)
         {
             var provider = new ServiceEndpointProvider(new ServiceEndpoint(ConnectionStringWithV1Version), new ServiceOptions() { AccessTokenAlgorithm = algorithm });
-            var generatedToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
+            var serverToken = await provider.GenerateServerAccessTokenAsync("hub1", "user1");
 
-            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(generatedToken);
+            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(serverToken);
 
             Assert.Equal(algorithm.ToString(), token.SignatureAlgorithm);
         }

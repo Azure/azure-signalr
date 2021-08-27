@@ -14,15 +14,14 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -237,6 +236,58 @@ namespace Microsoft.Azure.SignalR.Tests
 
             Assert.NotNull(negotiateResponse);
             Assert.EndsWith(expectedResponse, negotiateResponse.Url);
+        }
+
+        [Fact]
+        public async Task GenerateNegotiateResponseWithNullTransportTypeProvider()
+        {
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR(o => o.ConnectionString = DefaultConnectionString)
+                .Services
+                .AddLogging()
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var httpContext = new DefaultHttpContext();
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler<Chat>>();
+            var negotiateResponse = await handler.Process(httpContext);
+
+            Assert.NotNull(negotiateResponse);
+            var token = JwtSecurityTokenHandler.ReadJwtToken(negotiateResponse.AccessToken);
+            Assert.DoesNotContain(token.Claims, c => c.Type == Constants.ClaimType.HttpTransportType);
+        }
+
+        [Fact]
+        public async Task GenerateNegotiateResponseWithTransportTypeProvider()
+        {
+            var authenticatedTransport = HttpTransports.All;
+            var nonAuthenticatedTransport = HttpTransportType.WebSockets;
+            var config = new ConfigurationBuilder().Build();
+            var serviceProvider = new ServiceCollection().AddSignalR()
+                .AddAzureSignalR(o =>
+                {
+                    o.ConnectionString = DefaultConnectionString;
+                    o.TransportTypeDetector = context => context.User.Identity.AuthenticationType == null ? nonAuthenticatedTransport : authenticatedTransport;
+                })
+                .Services
+                .AddLogging()
+                .AddSingleton<IConfiguration>(config)
+                .BuildServiceProvider();
+
+            var handler = serviceProvider.GetRequiredService<NegotiateHandler<Chat>>();
+
+            var httpContext = new DefaultHttpContext() { User = new ClaimsPrincipal(new ClaimsIdentity("email")) };
+            var negotiateResponse = await handler.Process(httpContext);
+            Assert.NotNull(negotiateResponse);
+            var token = JwtSecurityTokenHandler.ReadJwtToken(negotiateResponse.AccessToken);
+            Assert.Equal("7", token.Claims.First(c => c.Type == Constants.ClaimType.HttpTransportType).Value);
+
+            httpContext = new DefaultHttpContext() { User = new ClaimsPrincipal(new ClaimsIdentity(authenticationType: null)) };
+            negotiateResponse = await handler.Process(httpContext);
+            Assert.NotNull(negotiateResponse);
+            token = JwtSecurityTokenHandler.ReadJwtToken(negotiateResponse.AccessToken);
+            Assert.Equal("1", token.Claims.First(c => c.Type == Constants.ClaimType.HttpTransportType).Value);
         }
 
         [Theory]
@@ -529,12 +580,12 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.Equal("Preferred", mode);
             }
             Assert.Equal("True", token.Claims.FirstOrDefault(s => s.Type == Constants.ClaimType.EnableDetailedErrors)?.Value);
-
         }
 
         private sealed class TestServerNameProvider : IServerNameProvider
         {
             private readonly string _serverName;
+
             public TestServerNameProvider(string serverName)
             {
                 _serverName = serverName;
@@ -598,7 +649,7 @@ namespace Microsoft.Azure.SignalR.Tests
             public string GetUserId(HubConnectionContext connection) => connection.Protocol.Name;
         }
 
-        private sealed class Chat : Hub 
+        private sealed class Chat : Hub
         {
         }
     }

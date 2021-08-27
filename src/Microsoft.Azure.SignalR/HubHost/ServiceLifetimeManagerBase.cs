@@ -46,7 +46,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new BroadcastDataMessage(null, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToBroadcastMessage(Logger, message);
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new BroadcastDataMessage(excludedIds, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToBroadcastMessage(Logger, message);
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new MultiConnectionDataMessage(new[] { connectionId }, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToSendMessageToConnections(Logger, message);
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToSendMessageToConnections(Logger, message);
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new GroupBroadcastDataMessage(groupName, null, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToBroadcastMessageToGroup(Logger, message);
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToBroadcastMessageToGroups(Logger, message);
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new GroupBroadcastDataMessage(groupName, excludedIds, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToBroadcastMessageToGroup(Logger, message);
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new UserDataMessage(userId, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new UserDataMessage(userId, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToSendMessageToUser(Logger, message);
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
-            var message = new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)).WithTracingId();
+            var message = AppendMessageTracingId(new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
                 MessageLog.StartToSendMessageToUsers(Logger, message);
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new JoinGroupWithAckMessage(connectionId, groupName).WithTracingId();
+            var message = AppendMessageTracingId(new JoinGroupWithAckMessage(connectionId, groupName));
             if (message.TracingId != null)
             {
                 MessageLog.StartToAddConnectionToGroup(Logger, message);
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = new LeaveGroupWithAckMessage(connectionId, groupName).WithTracingId();
+            var message = AppendMessageTracingId(new LeaveGroupWithAckMessage(connectionId, groupName));
             if (message.TracingId != null)
             {
                 MessageLog.StartToRemoveConnectionFromGroup(Logger, message);
@@ -255,8 +255,8 @@ namespace Microsoft.Azure.SignalR
         protected Task WriteAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId =>
             WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAsync(message));
 
-        protected Task WriteAckableMessageAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId => 
-            WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAckableMessageAsync(m));
+        protected Task<bool> WriteAckableMessageAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId =>
+            WriteAckableCoreAsync(message, m => ServiceConnectionContainer.WriteAckableMessageAsync(m));
 
         protected static bool IsInvalidArgument(string value)
         {
@@ -283,6 +283,11 @@ namespace Microsoft.Azure.SignalR
         protected ReadOnlyMemory<byte> SerializeProtocol(string protocol, string method, object[] args) =>
             _messageSerializer.SerializeMessage(protocol, new InvocationMessage(method, args));
 
+        protected virtual T AppendMessageTracingId<T>(T message) where T : ServiceMessage, IMessageWithTracingId
+        {
+            return message.WithTracingId();
+        }
+
         private async Task WriteCoreAsync<T>(T message, Func<T, Task> task) where T : ServiceMessage, IMessageWithTracingId
         {
             try
@@ -294,10 +299,27 @@ namespace Microsoft.Azure.SignalR
                 MessageLog.FailedToSendMessage(Logger, message, ex);
                 throw;
             }
-            
             if (message.TracingId != null)
             {
                 MessageLog.SucceededToSendMessage(Logger, message);
+            }
+        }
+
+        private async Task<bool> WriteAckableCoreAsync<T>(T message, Func<T, Task<bool>> task) where T : ServiceMessage, IMessageWithTracingId
+        {
+            try
+            {
+                var result = await task(message);
+                if (message.TracingId != null)
+                {
+                    MessageLog.SucceededToSendMessage(Logger, message);
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                MessageLog.FailedToSendMessage(Logger, message, ex);
+                throw;
             }
         }
     }

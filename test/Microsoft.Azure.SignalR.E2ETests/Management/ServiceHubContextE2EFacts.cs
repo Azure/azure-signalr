@@ -17,6 +17,8 @@ using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 
+#pragma warning disable CS0618 // Type or member is obsolete
+
 namespace Microsoft.Azure.SignalR.Management.Tests
 {
     public class ServiceHubContextE2EFacts : VerifiableLoggedTest
@@ -55,6 +57,49 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             finally
             {
                 await serviceHubContext.DisposeAsync();
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [MemberData(nameof(TestData))]
+        internal async Task BroadcastExceptTest(ServiceTransportType serviceTransportType, string appName)
+        {
+            var method = nameof(BroadcastExceptTest);
+            var msg = Guid.NewGuid().ToString();
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var logger = loggerFactory.CreateLogger<ServiceHubContextE2EFacts>();
+                var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType, appName);
+                var hubContext = await serviceManager.CreateHubContextAsync(HubName) as ServiceHubContextImpl;
+                var connectionCount = 3;
+                var tcsDict = new ConcurrentDictionary<string, TaskCompletionSource>();
+                logger.LogInformation($"Message is {msg}");
+                var connections = await Task.WhenAll(Enumerable.Range(0, connectionCount).Select(async _ =>
+                 {
+                     var negotiationResponse = await hubContext.NegotiateAsync(null, default);
+                     var connection = CreateHubConnection(negotiationResponse.Url, negotiationResponse.AccessToken);
+                     await connection.StartAsync();
+                     var src = new TaskCompletionSource();
+                     tcsDict.TryAdd(connection.ConnectionId, src);
+                     connection.On(method, (string receivedMsg) =>
+                     {
+                         logger.LogInformation($"Connection {connection.ConnectionId} received msg : {receivedMsg}");
+                         if (receivedMsg == msg)
+                         {
+                             src.SetResult();
+                         }
+                     });
+                     return connection;
+                 }));
+                var excluded = connections.First().ConnectionId;
+                await hubContext.Clients.AllExcept(new string[] { excluded }).SendAsync(method, msg);
+                await Task.WhenAll(tcsDict.Where(item => item.Key != excluded).Select(i => i.Value.Task)).OrTimeout(); // await included connections to receive msg
+                Assert.False(tcsDict[excluded].Task.IsCompleted);
+
+                //clean
+                await Task.WhenAll(connections.Select(conn => conn.DisposeAsync()));
+                await hubContext.DisposeAsync();
             }
         }
 
@@ -114,6 +159,53 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             finally
             {
                 await serviceHubContext.DisposeAsync();
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [MemberData(nameof(TestData))]
+        internal async Task SendToGroupExceptTest(ServiceTransportType serviceTransportType, string appName)
+        {
+            var method = nameof(SendToGroupExceptTest);
+            var msg = Guid.NewGuid().ToString();
+            var group = nameof(SendToGroupExceptTest);
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var logger = loggerFactory.CreateLogger<ServiceHubContextE2EFacts>();
+                var serviceManager = GenerateServiceManager(TestConfiguration.Instance.ConnectionString, serviceTransportType, appName);
+                var hubContext = await serviceManager.CreateHubContextAsync(HubName) as ServiceHubContextImpl;
+                var connectionCount = 3;
+                var tcsDict = new ConcurrentDictionary<string, TaskCompletionSource>();
+                logger.LogInformation($"Message is {msg}");
+                var connections = await Task.WhenAll(Enumerable.Range(0, connectionCount).Select(async _ =>
+                {
+                    var negotiationResponse = await hubContext.NegotiateAsync(null, default);
+                    var connection = CreateHubConnection(negotiationResponse.Url, negotiationResponse.AccessToken);
+                    await connection.StartAsync();
+                    var src = new TaskCompletionSource();
+                    tcsDict.TryAdd(connection.ConnectionId, src);
+                    connection.On(method, (string receivedMsg) =>
+                    {
+                        logger.LogInformation($"Connection {connection.ConnectionId} received msg : {receivedMsg}");
+                        if (receivedMsg == msg)
+                        {
+                            src.SetResult();
+                        }
+                    });
+                    await hubContext.Groups.AddToGroupAsync(connection.ConnectionId, group);
+                    return connection;
+                }));
+                var excluded = connections.First().ConnectionId;
+                await hubContext.Clients.GroupExcept(group, excluded).SendAsync(method, msg);
+
+                // await included connections to receive msg
+                await Task.WhenAll(tcsDict.Where(item => item.Key != excluded).Select(i => i.Value.Task)).OrTimeout();
+                Assert.False(tcsDict[excluded].Task.IsCompleted);
+
+                //clean
+                await Task.WhenAll(connections.Select(conn => conn.DisposeAsync()));
+                await hubContext.DisposeAsync();
             }
         }
 
@@ -203,12 +295,18 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        [ConditionalFact]
+        [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
-        internal async Task CheckUserExistenceInGroupTest()
+        [InlineData(ServiceTransportType.Persistent)]
+        [InlineData(ServiceTransportType.Transient)]
+        internal async Task CheckUserExistenceInGroupTest(ServiceTransportType transportType)
         {
             var serviceManager = new ServiceManagerBuilder()
-                .WithOptions(o => o.ConnectionString = TestConfiguration.Instance.ConnectionString)
+                .WithOptions(o =>
+                {
+                    o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                    o.ServiceTransportType = transportType;
+                })
                 .Build();
             var hubName = nameof(CheckUserExistenceInGroupTest);
             var endpoint = serviceManager.GetClientEndpoint(hubName);
@@ -294,21 +392,212 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
         }
 
-        [ConditionalFact]
+        [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
+        [MemberData(nameof(TestData))]
+        public async Task CloseConnectionTest(ServiceTransportType serviceTransportType, string appName)
+        {
+            //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+            using (StartLog(out var loggerFactory))
+            {
+                ServiceHubContext serviceHubContext = null;
+                try
+                {
+                    const string reason = "This is a test reason.";
+                    var serviceManager = new ServiceManagerBuilder()
+                        .WithOptions(o =>
+                        {
+                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                            o.ServiceTransportType = serviceTransportType;
+                            o.ApplicationName = appName;
+                        })
+                        .WithLoggerFactory(loggerFactory)
+                        .Build();
+                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
+                    var negotiationRes = await serviceHubContext.NegotiateAsync(new NegotiationOptions { EnableDetailedErrors = true, IsDiagnosticClient = true });
+                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
+                    var tcs = new TaskCompletionSource<string>();
+                    conn.Closed += ex =>
+                    {
+                        if (ex is null)
+                        {
+                            tcs.SetException(new Exception("close exception is null"));
+                        }
+                        tcs.SetResult(ex.Message);
+                        return Task.CompletedTask;
+                    };
+                    await conn.StartAsync();
+                    await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId, reason);
+
+                    var actualReason = await tcs.Task.OrTimeout();
+                    Assert.Contains(reason, actualReason);
+                }
+                finally
+                {
+                    await serviceHubContext?.DisposeAsync();
+                }
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [InlineData(ServiceTransportType.Transient)]
+        [InlineData(ServiceTransportType.Persistent)]
+        public async Task CheckConnectionExistsTest(ServiceTransportType serviceTransportType)
+        {
+            //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+            ServiceHubContext serviceHubContext = null;
+            using (StartLog(out var loggerFactory))
+            {
+                try
+                {
+                    var serviceManager = new ServiceManagerBuilder()
+                        .WithOptions(o =>
+                        {
+                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                            o.ServiceTransportType = serviceTransportType;
+                        })
+                        .WithLoggerFactory(loggerFactory)
+                        .Build();
+                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
+                    var negotiationRes = await serviceHubContext.NegotiateAsync();
+                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
+                    var tcs = new TaskCompletionSource();
+                    conn.Closed += ex =>
+                    {
+                        tcs.SetResult();
+                        return Task.CompletedTask;
+                    };
+                    await conn.StartAsync();
+                    var connId = conn.ConnectionId;
+                    var exists = await serviceHubContext.ClientManager.ConnectionExistsAsync(connId);
+                    Assert.True(exists);
+
+                    await serviceHubContext.ClientManager.CloseConnectionAsync(connId);
+                    await tcs.Task;
+                    exists = await serviceHubContext.ClientManager.ConnectionExistsAsync(connId);
+                    Assert.False(exists);
+                }
+                finally
+                {
+                    await serviceHubContext?.DisposeAsync();
+                }
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [InlineData(ServiceTransportType.Transient)]
+        [InlineData(ServiceTransportType.Persistent)]
+        public async Task CheckUserExistsTest(ServiceTransportType serviceTransportType)
+        {
+            //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+            ServiceHubContext serviceHubContext = null;
+            using (StartLog(out var loggerFactory))
+            {
+                try
+                {
+                    var userId = "TestUser";
+                    var serviceManager = new ServiceManagerBuilder()
+                        .WithOptions(o =>
+                        {
+                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                            o.ServiceTransportType = serviceTransportType;
+                        })
+                        .WithLoggerFactory(loggerFactory)
+                        .Build();
+                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
+                    var negotiationRes = await serviceHubContext.NegotiateAsync(new() { UserId = userId });
+                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
+                    await conn.StartAsync();
+                    var tcs = new TaskCompletionSource();
+                    conn.Closed += ex =>
+                    {
+                        tcs.SetResult();
+                        return Task.CompletedTask;
+                    };
+                    var exists = await serviceHubContext.ClientManager.UserExistsAsync(userId);
+                    Assert.True(exists);
+
+                    await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId);
+                    await tcs.Task;
+                    exists = await serviceHubContext.ClientManager.UserExistsAsync(userId);
+                    Assert.False(exists);
+                }
+                finally
+                {
+                    await serviceHubContext?.DisposeAsync();
+                }
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [InlineData(ServiceTransportType.Transient)]
+        [InlineData(ServiceTransportType.Persistent)]
+        public async Task CheckGroupExistsTest(ServiceTransportType serviceTransportType)
+        {
+            //when ServiceHubContext.Dispose in persistent mode, there is always an error, so we can not use VerifiableLog
+            ServiceHubContext serviceHubContext = null;
+            using (StartLog(out var loggerFactory))
+            {
+                try
+                {
+                    var groupName = "TestGroup";
+                    var serviceManager = new ServiceManagerBuilder()
+                        .WithOptions(o =>
+                        {
+                            o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                            o.ServiceTransportType = serviceTransportType;
+                        })
+                        .WithLoggerFactory(loggerFactory)
+                        .Build();
+                    serviceHubContext = (await serviceManager.CreateHubContextAsync(HubName)) as ServiceHubContext;
+                    var negotiationRes = await serviceHubContext.NegotiateAsync();
+                    var conn = CreateHubConnection(negotiationRes.Url, negotiationRes.AccessToken);
+                    await conn.StartAsync();
+                    var tcs = new TaskCompletionSource();
+                    conn.Closed += ex =>
+                    {
+                        tcs.SetResult();
+                        return Task.CompletedTask;
+                    };
+
+                    var exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
+                    Assert.False(exists);
+
+                    await serviceHubContext.Groups.AddToGroupAsync(conn.ConnectionId, groupName);
+                    exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
+                    Assert.True(exists);
+
+                    await serviceHubContext.ClientManager.CloseConnectionAsync(conn.ConnectionId);
+                    await tcs.Task;
+                    exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
+                    Assert.False(exists);
+
+                    await serviceHubContext.DisposeAsync();
+                }
+                finally
+                {
+                    await serviceHubContext.DisposeAsync();
+                }
+            }
+        }
+
+        [SkipIfMultiEndpointsAbsentFact]
         internal async Task WithEndpointsTest()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
             {
-                var services = new ServiceCollection().AddSignalRServiceManager().AddSingleton(TestConfiguration.Instance.Configuration).AddSingleton(loggerFactory).Configure<ServiceManagerOptions>(o => o.ServiceTransportType = ServiceTransportType.Persistent);
+                var services = new ServiceCollection().AddSignalRServiceManager().AddSingleton(loggerFactory).Configure<ServiceManagerOptions>(o =>
+                {
+                    o.ServiceTransportType = ServiceTransportType.Persistent;
+                    o.ServiceEndpoints = TestConfiguration.Instance.Configuration.GetEndpoints(Constants.Keys.AzureSignalREndpointsKey).ToArray();
+                });
                 var serviceProvider = services.AddSingleton<IReadOnlyCollection<ServiceDescriptor>>(services.ToList()).BuildServiceProvider();
                 var hubContext = await serviceProvider.GetRequiredService<IServiceManager>().CreateHubContextAsync(HubName);
                 var endpointManager = serviceProvider.GetRequiredService<IServiceEndpointManager>();
                 var endpoints = endpointManager.GetEndpoints(HubName).ToArray<ServiceEndpoint>();
-                if (endpoints.Length < 2)
-                {
-                    throw new InvalidOperationException("This test need at lease two Azure SignalR instance endpoints.");
-                };
                 var connections = endpoints.Select(endpoint =>
                 {
                     var provider = endpointManager.GetEndpointProvider(endpoint);
@@ -383,6 +672,35 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 await hubContext_1.DisposeAsync();
                 await hubContext_2.Clients.All.SendAsync(MethodName, Message);
                 await hubContext_2.DisposeAsync();
+            }
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [InlineData(true)]
+        [InlineData(false)]
+        internal async Task EnableMessageTracingTest(bool enableMessageTracing)
+        {
+            var serviceManager = new ServiceManagerBuilder().WithOptions(o =>
+            {
+                o.ConnectionString = TestConfiguration.Instance.ConnectionString;
+                o.ServiceTransportType = ServiceTransportType.Persistent;
+                o.EnableMessageTracing = enableMessageTracing;
+            }).Build();
+            var loggerFactory = new TestLoggerFactory();
+            var context = await serviceManager.CreateHubContextAsync(HubName, loggerFactory: loggerFactory);
+            var user = GenerateRandomNames(1)[0];
+            var group = GenerateRandomNames(1)[0];
+
+            try
+            {
+                await context.UserGroups.AddToGroupAsync(user, group).OrTimeout();
+                await Task.Delay(200);
+                Assert.Equal(enableMessageTracing, loggerFactory.Logger.EventIds.Contains(new EventId(80, "StartToAddUserToGroup")));
+            }
+            finally
+            {
+                await context.DisposeAsync();
             }
         }
 
@@ -555,6 +873,43 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     cancellationTokenSource.Cancel();
                     return Task.CompletedTask;
                 };
+            }
+        }
+
+        private class TestLoggerFactory : ILoggerFactory
+        {
+            public TestLogger Logger { get; } = new TestLogger();
+            public void AddProvider(ILoggerProvider provider)
+            {
+            }
+
+            public ILogger CreateLogger(string categoryName)
+            {
+                return Logger;
+            }
+
+            public void Dispose()
+            {
+            }
+
+            public class TestLogger : ILogger
+            {
+                public List<EventId> EventIds = new List<EventId>();
+
+                public IDisposable BeginScope<TState>(TState state)
+                {
+                    return null;
+                }
+
+                public bool IsEnabled(LogLevel logLevel)
+                {
+                    return true;
+                }
+
+                public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+                {
+                    EventIds.Add(eventId);
+                }
             }
         }
     }

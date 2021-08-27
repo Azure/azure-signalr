@@ -1,9 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
-using System;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -24,6 +24,7 @@ namespace Microsoft.Azure.SignalR
         public const string StartToAddUserToGroupWithTtlTemplate = "Start to send message {0} to add user {1} to group {2} with TTL {3} seconds.";
         public const string StartToRemoveUserFromGroupTemplate = "Start to send message {0} to remove user {1} from group {2}.";
         public const string StartToRemoveUserFromAllGroupsTemplate = "Start to send message {0} to remove user {1} from all groups.";
+        public const string StartToCheckIfUserInGroupTemplate = "Start to send message {0} to check if user {1} in group {2}.";
         public const string FailedToSendMessageTemplate = "Failed to send message {0}.";
         public const string SucceededToSendMessageTemplate = "Succeeded to send message {0}.";
 
@@ -135,6 +136,35 @@ namespace Microsoft.Azure.SignalR
                     new EventId(120, "RecieveMessageFromService"),
                     "Received message {tracingId} from client connection {connectionId}.");
 
+        private static readonly Action<ILogger, ulong?, string, string, Exception> _startToCheckIfUserInGroup =
+                LoggerMessage.Define<ulong?, string, string>(
+                    LogLevel.Information,
+                new EventId(130, "StartToCheckIfUserInGroup"),
+                StartToCheckIfUserInGroupTemplate);
+
+        private static readonly Action<ILogger, ulong?, string, string, Exception> _startToCloseConnection =
+                LoggerMessage.Define<ulong?, string, string>(
+                    LogLevel.Information,
+                    new EventId(140, "StartToCloseConnection"),
+                    "Start to send message {tracingId} to close connection {connectionId} for reason: '{reason}'.");
+
+        private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfConnectionExists = LoggerMessage.Define<ulong?, string>(
+                    LogLevel.Information,
+                    new EventId(150, "StartToCheckIfConnectionExists"),
+                    "Start to send message {tracingId} to check if connection {connectionId} exists.");
+
+        private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfUserExists =
+                LoggerMessage.Define<ulong?, string>(
+                    LogLevel.Information,
+                    new EventId(160, "StartToCheckIfUserExists"),
+                    "Start to send message {tracingId} to check if user {userId} exists.");
+
+        private static readonly Action<ILogger, ulong?, string, Exception> _startToCheckIfGroupExists =
+                LoggerMessage.Define<ulong?, string>(
+                    LogLevel.Information,
+                    new EventId(170, "StartToCheckIfGroupExists"),
+                    "Start to send message {tracingId} to check if group {group} exists.");
+
         public static void ReceiveMessageFromService(ILogger logger, ConnectionDataMessage message)
         {
             _receivedMessageFromService(logger, message.TracingId, message.ConnectionId, null);
@@ -237,6 +267,31 @@ namespace Microsoft.Azure.SignalR
             {
                 _startToRemoveUserFromGroup(logger, message.TracingId, message.UserId, message.GroupName, null);
             }
+        }
+
+        public static void StartToCheckIfUserInGroup(ILogger logger, CheckUserInGroupWithAckMessage message)
+        {
+            _startToCheckIfUserInGroup(logger, message.TracingId, message.UserId, message.GroupName, null);
+        }
+
+        public static void StartToCloseConnection(ILogger logger, CloseConnectionMessage message)
+        {
+            _startToCloseConnection(logger, message.TracingId, message.ConnectionId, message.ErrorMessage, null);
+        }
+
+        public static void StartToCheckIfConnectionExists(ILogger logger, CheckConnectionExistenceWithAckMessage message)
+        {
+            _startToCheckIfConnectionExists(logger, message.TracingId, message.ConnectionId, null);
+        }
+
+        public static void StartToCheckIfUserExists(ILogger logger, CheckUserExistenceWithAckMessage message)
+        {
+            _startToCheckIfUserExists(logger, message.TracingId, message.UserId, null);
+        }
+
+        public static void StartToCheckIfGroupExists(ILogger logger, CheckGroupExistenceWithAckMessage message)
+        {
+            _startToCheckIfGroupExists(logger, message.TracingId, message.GroupName, null);
         }
     }
 }

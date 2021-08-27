@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Logging;
 using Xunit;
@@ -44,7 +43,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                     return true;
                 }))
             {
-                var endpoint1 = new HubServiceEndpoint();
+                var endpoint1 = new TestHubServiceEndpoint();
                 var conn1 = new TestServiceConnection();
                 var scf = new TestServiceConnectionFactory(endpoint1 => conn1);
                 var container = new WeakServiceConnectionContainer(scf, 5, endpoint1, loggerFactory.CreateLogger(nameof(TestWeakConnectionStatus)));
@@ -81,7 +80,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                     return true;
                 }))
             {
-                var endpoint1 = new HubServiceEndpoint();
+                var endpoint1 = new TestHubServiceEndpoint();
                 var conn1 = new TestServiceConnection();
                 var scf = new TestServiceConnectionFactory(endpoint1 => conn1);
                 var container = new StrongServiceConnectionContainer(scf, 5, endpoint1, loggerFactory.CreateLogger(nameof(TestStrongConnectionStatus)));

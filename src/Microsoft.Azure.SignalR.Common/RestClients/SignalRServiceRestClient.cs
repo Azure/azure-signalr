@@ -3,6 +3,10 @@
 
 using System;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Rest;
 
 namespace Microsoft.Azure.SignalR
@@ -24,6 +28,24 @@ namespace Microsoft.Azure.SignalR
         partial void CustomInitialize()
         {
             HttpClient.DefaultRequestHeaders.Add(Constants.AsrsUserAgent, _userAgent);
+        }
+
+        public async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
+        {
+            try
+            {
+                var healthApi = HealthApi;
+                using var response = await healthApi.GetHealthStatusWithHttpMessagesAsync(cancellationToken: cancellationToken);
+                return true;
+            }
+            catch (HttpOperationException e) when ((int)e.Response.StatusCode >= 500 && (int)e.Response.StatusCode < 600)
+            {
+                return false;
+            }
+            catch (Exception ex)
+            {
+                throw ex.WrapAsAzureSignalRException(BaseUri);
+            }
         }
     }
 }

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -19,7 +20,6 @@ namespace Microsoft.Azure.SignalR.Management
     {
         private readonly string _hubName;
         private readonly IHubContext<Hub> _hubContext;
-        private readonly IServiceHubLifetimeManager _lifetimeManager;
         private readonly NegotiateProcessor _negotiateProcessor;
         private readonly IServiceEndpointManager _endpointManager;
 
@@ -27,35 +27,38 @@ namespace Microsoft.Azure.SignalR.Management
 
         public override IHubClients Clients => _hubContext.Clients;
 
-        public override IGroupManager Groups => _hubContext.Groups;
+        public override GroupManager Groups { get; }
 
-        public override IUserGroupManager UserGroups { get; }
+        public override UserGroupManager UserGroups { get; }
+
+        public override ClientManager ClientManager { get; }
 
         public ServiceHubContextImpl(string hubName, IHubContext<Hub> hubContext, IServiceHubLifetimeManager lifetimeManager, IServiceProvider serviceProvider, NegotiateProcessor negotiateProcessor, IServiceEndpointManager endpointManager)
         {
             _hubName = hubName;
             _hubContext = hubContext;
-            _lifetimeManager = lifetimeManager;
-            UserGroups = new UserGroupsManager(lifetimeManager);
+            Groups = new GroupManagerAdapter(_hubContext.Groups);
+            UserGroups = new UserGroupsManagerAdapter(lifetimeManager);
+            ClientManager = new ClientManagerAdapter(lifetimeManager);
             ServiceProvider = serviceProvider;
             _negotiateProcessor = negotiateProcessor;
             _endpointManager = endpointManager;
         }
 
-        public override Task<NegotiationResponse> NegotiateAsync(NegotiationOptions options, CancellationToken cancellationToken)
+        public override ValueTask<NegotiationResponse> NegotiateAsync(NegotiationOptions options, CancellationToken cancellationToken)
         {
-            return _negotiateProcessor.NegotiateAsync(_hubName, options, cancellationToken);
+            return new ValueTask<NegotiationResponse>(_negotiateProcessor.NegotiateAsync(_hubName, options, cancellationToken));
         }
 
         IEnumerable<ServiceEndpoint> IInternalServiceHubContext.GetServiceEndpoints() => _endpointManager.GetEndpoints(_hubName);
 
         public override async Task DisposeAsync()
         {
-            await _lifetimeManager.DisposeAsync();
-            (ServiceProvider as IDisposable)?.Dispose();
+            using var host = ServiceProvider.GetRequiredService<IHost>();
+            await host.StopAsync();
         }
 
-        IInternalServiceHubContext IInternalServiceHubContext.WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
+        ServiceHubContext IInternalServiceHubContext.WithEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
             if (endpoints is null)
             {
@@ -73,8 +76,8 @@ namespace Microsoft.Azure.SignalR.Management
                 .AddSingleton<IServiceConnectionContainer>(container)
                 //add required service instances
                 .AddSingleton(ServiceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>())
-                .AddSingleton(_negotiateProcessor)
-                .AddSingleton(_endpointManager);
+                .AddSingleton(_endpointManager)
+                .AddSingleton<IEndpointRouter>(new FixedEndpointRouter(targetEndpoints));
 
             return services.BuildServiceProvider().GetRequiredService<ServiceHubContextImpl>();
         }

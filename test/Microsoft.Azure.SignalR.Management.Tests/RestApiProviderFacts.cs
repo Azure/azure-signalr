@@ -1,9 +1,14 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
+
 using Microsoft.Azure.SignalR.Tests;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
@@ -14,12 +19,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         private const string _accessKey = "nOu3jXsHnsO5urMumc87M9skQbUWuQ+PE5IvSUEic8w=";
 
         private static readonly string _connectionString = $"Endpoint={_endpoint};AccessKey={_accessKey};Version=1.0;";
-        private const string _hubName = "signalrbench";
-        private const string _appName = "appName";
-        private const string _userId = "UserA";
-        private const string _groupName = "GroupA";
-        private const string _connectionId = "ConnectionA";
-        private static readonly string _commonEndpoint = $"{_endpoint}/api/v1/hubs/{_appName.ToLower()}_{_hubName}";
 
         private static readonly RestApiProvider _restApiProvider = new RestApiProvider(new ServiceEndpoint(_connectionString));
 
@@ -35,14 +34,49 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.Equal(expectedTokenString, api.Token);
         }
 
-        public static IEnumerable<object[]> GetTestData()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        internal async Task EnableMessageTracingIdInRestApiTest(bool enable)
         {
-            yield return new object[] { _restApiProvider.GetBroadcastEndpointAsync(_appName, _hubName), _commonEndpoint };
-            yield return new object[] { _restApiProvider.GetSendToUserEndpointAsync(_appName, _hubName, _userId), $"{_commonEndpoint}/users/{_userId}" };
-            yield return new object[] { _restApiProvider.GetSendToGroupEndpointAsync(_appName, _hubName, _groupName), $"{_commonEndpoint}/groups/{_groupName}" };
-            yield return new object[] { _restApiProvider.GetUserGroupManagementEndpointAsync(_appName, _hubName, _userId, _groupName), $"{_commonEndpoint}/groups/{_groupName}/users/{_userId}" };
-            yield return new object[] { _restApiProvider.GetSendToConnectionEndpointAsync(_appName, _hubName, _connectionId), $"{_commonEndpoint}/connections/{_connectionId}" };
-            yield return new object[] { _restApiProvider.GetConnectionGroupManagementEndpointAsync(_appName, _hubName, _connectionId, _groupName), $"{_commonEndpoint}/groups/{_groupName}/connections/{_connectionId}" };
+            var api = await _restApiProvider.GetBroadcastEndpointAsync("app", "hub");
+            var client = new RestClient(HttpClientFactory.Instance, new JsonSerializerSettings(), enable);
+            try
+            {
+                await client.SendAsync(api, HttpMethod.Post, "", handleExpectedResponse: default).OrTimeout(200);
+            }
+            catch
+            {
+            }
+            Assert.Equal(enable, api.Query?.ContainsKey(Constants.Headers.AsrsMessageTracingId) ?? false);
+            if (enable)
+            {
+                var id = Convert.ToUInt64(api.Query[Constants.Headers.AsrsMessageTracingId]);
+                Assert.Equal(MessageWithTracingIdHelper.Prefix, id);
+            }
+        }
+
+        public static IEnumerable<object[]> GetTestData() =>
+            from context in GetContext()
+            from pair in GetTestDataByContext(context)
+            select pair;
+
+        private static IEnumerable<(string appName, string hubName, string userId, string groupName, string connectionId)> GetContext()
+        {
+            yield return ("app", "hub", "userA", "groupA", "connectionA");
+            yield return ("APP", "HUB", "USERA", "GROUPA", "CONNECTIONA");
+            yield return ("app/x", "hub/x", "user/a", "group/a", "connection/a");
+        }
+
+        private static IEnumerable<object[]> GetTestDataByContext((string appName, string hubName, string userId, string groupName, string connectionId) context)
+        {
+            string commonEndpoint = $"{_endpoint}/api/v1/hubs/{Uri.EscapeDataString(context.appName.ToLowerInvariant())}_{Uri.EscapeDataString(context.hubName.ToLowerInvariant())}";
+            yield return new object[] { _restApiProvider.GetBroadcastEndpointAsync(context.appName, context.hubName), commonEndpoint };
+            yield return new object[] { _restApiProvider.GetSendToUserEndpointAsync(context.appName, context.hubName, context.userId), $"{commonEndpoint}/users/{Uri.EscapeDataString(context.userId)}" };
+            yield return new object[] { _restApiProvider.GetSendToGroupEndpointAsync(context.appName, context.hubName, context.groupName), $"{commonEndpoint}/groups/{Uri.EscapeDataString(context.groupName)}" };
+            yield return new object[] { _restApiProvider.GetUserGroupManagementEndpointAsync(context.appName, context.hubName, context.userId, context.groupName), $"{commonEndpoint}/groups/{Uri.EscapeDataString(context.groupName)}/users/{Uri.EscapeDataString(context.userId)}" };
+            yield return new object[] { _restApiProvider.GetSendToConnectionEndpointAsync(context.appName, context.hubName, context.connectionId), $"{commonEndpoint}/connections/{Uri.EscapeDataString(context.connectionId)}" };
+            yield return new object[] { _restApiProvider.GetConnectionGroupManagementEndpointAsync(context.appName, context.hubName, context.connectionId, context.groupName), $"{commonEndpoint}/groups/{Uri.EscapeDataString(context.groupName)}/connections/{Uri.EscapeDataString(context.connectionId)}" };
         }
     }
 }

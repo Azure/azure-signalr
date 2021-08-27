@@ -41,6 +41,14 @@ namespace Microsoft.Azure.SignalR.AspNet
             private static readonly Action<ILogger, Exception> _applicationTaskTimedOut =
                 LoggerMessage.Define(LogLevel.Error, new EventId(10, "ApplicationTaskTimedOut"), "Timed out waiting for the application task to complete.");
 
+            private static readonly Action<ILogger, int, string, Exception> _closingClientConnections =
+                LoggerMessage.Define<int, string>(LogLevel.Information, new EventId(11, "ClosingClientConnections"), "Closing {ClientCount} client connection(s) for server connection {ServerConnectionId}.");
+
+            public static void ClosingClientConnections(ILogger logger, int clientCount, string serverConnectionId)
+            {
+                _closingClientConnections(logger, clientCount, serverConnectionId, null);
+            }
+
             public static void FailedToCleanupConnections(ILogger logger, Exception exception)
             {
                 _failedToCleanupConnections(logger, exception);

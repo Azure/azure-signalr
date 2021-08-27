@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
 {
@@ -10,8 +11,8 @@ namespace Microsoft.Azure.SignalR.Tests.Common
     {
         private readonly Func<ServiceEndpoint, IServiceConnection> _generator;
 
-        public ConcurrentQueue<IServiceConnection> CreatedConnections { get; } = new ConcurrentQueue<IServiceConnection>();
-        
+        public ConcurrentDictionary<HubServiceEndpoint, List<IServiceConnection>> CreatedConnections { get; } = new();
+
         public TestServiceConnectionFactory(Func<ServiceEndpoint, IServiceConnection> generator = null)
         {
             _generator = generator;
@@ -20,7 +21,8 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
         {
             var conn = _generator?.Invoke(endpoint) ?? new TestServiceConnection(serviceMessageHandler: serviceMessageHandler);
-            CreatedConnections.Enqueue(conn);
+            var receiver = CreatedConnections.GetOrAdd(endpoint, e => new());
+            receiver.Add(conn);
             return conn;
         }
     }

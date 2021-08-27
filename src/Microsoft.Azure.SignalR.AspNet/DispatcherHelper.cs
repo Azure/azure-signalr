@@ -64,7 +64,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             var synchronizer = configuration.Resolver.Resolve<IAccessKeySynchronizer>();
             if (synchronizer == null)
             {
-                synchronizer = new AccessKeySynchronizer(serverNameProvider, loggerFactory);
+                synchronizer = new AccessKeySynchronizer(loggerFactory);
                 configuration.Resolver.Register(typeof(IAccessKeySynchronizer), () => synchronizer);
             }
 

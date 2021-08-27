@@ -17,7 +17,23 @@ namespace Microsoft.Azure.SignalR
 {
     internal class RestClient
     {
-        public JsonSerializerSettings JsonSerializerSettings { get; set; } = new JsonSerializerSettings();
+        private readonly JsonSerializerSettings _jsonSerializerSettings;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly bool _enableMessageTracing;
+
+        public RestClient(IHttpClientFactory httpClientFactory, JsonSerializerSettings jsonSerializerSettings, bool enableMessageTracing)
+        {
+            _httpClientFactory = httpClientFactory;
+            _jsonSerializerSettings = jsonSerializerSettings;
+            _enableMessageTracing = enableMessageTracing;
+        }
+
+        public RestClient()
+        {
+            _httpClientFactory = HttpClientFactory.Instance;
+            _jsonSerializerSettings = new JsonSerializerSettings();
+            _enableMessageTracing = false;
+        }
 
         public Task SendAsync(
             RestApiEndpoint api,
@@ -45,32 +61,33 @@ namespace Microsoft.Azure.SignalR
             Func<HttpResponseMessage, Task<bool>> handleExpectedResponseAsync = null,
             CancellationToken cancellationToken = default)
         {
-            var httpClient = HttpClientFactory.CreateClient();
-            var request = BuildRequest(api, httpMethod, productInfo, methodName, args);
-            HttpResponseMessage response;
+            using var httpClient = _httpClientFactory.CreateClient();
+            using var request = BuildRequest(api, httpMethod, productInfo, methodName, args);
+            HttpResponseMessage response = null;
 
             try
             {
                 response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                if (handleExpectedResponseAsync == null)
+                {
+                    await ThrowExceptionOnResponseFailureAsync(response);
+                }
+                else
+                {
+                    if (!await handleExpectedResponseAsync(response))
+                    {
+                        await ThrowExceptionOnResponseFailureAsync(response);
+                    }
+                }
             }
             catch (HttpRequestException ex)
             {
                 throw new AzureSignalRInaccessibleEndpointException(request.RequestUri.ToString(), ex);
             }
-
-            if (handleExpectedResponseAsync == null)
+            finally
             {
-                await ThrowExceptionOnResponseFailureAsync(response);
+                response?.Dispose();
             }
-            else
-            {
-                if (!await handleExpectedResponseAsync(response))
-                {
-                    await ThrowExceptionOnResponseFailureAsync(response);
-                }
-            }
-
-            response.Dispose();
         }
 
         public async Task ThrowExceptionOnResponseFailureAsync(HttpResponseMessage response)
@@ -127,6 +144,10 @@ namespace Microsoft.Azure.SignalR
         private HttpRequestMessage BuildRequest(RestApiEndpoint api, HttpMethod httpMethod, string productInfo, string methodName = null, object[] args = null)
         {
             var payload = httpMethod == HttpMethod.Post ? new PayloadMessage { Target = methodName, Arguments = args } : null;
+            if (_enableMessageTracing)
+            {
+                AddTracingId(api);
+            }
             return GenerateHttpRequest(api.Audience, api.Query, httpMethod, payload, api.Token, productInfo);
         }
 
@@ -134,10 +155,19 @@ namespace Microsoft.Azure.SignalR
         {
             var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Headers.Add(Constants.AsrsUserAgent, productInfo);
-            request.Content = new StringContent(JsonConvert.SerializeObject(payload, JsonSerializerSettings), Encoding.UTF8, "application/json");
+            request.Content = new StringContent(JsonConvert.SerializeObject(payload, _jsonSerializerSettings), Encoding.UTF8, "application/json");
             return request;
+        }
+
+        private void AddTracingId(RestApiEndpoint api)
+        {
+            var id = MessageWithTracingIdHelper.Generate();
+            if (api.Query == null)
+            {
+                api.Query = new Dictionary<string, StringValues>();
+            }
+            api.Query.Add(Constants.Headers.AsrsMessageTracingId, id.ToString());
         }
     }
 }

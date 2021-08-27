@@ -11,13 +11,12 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Primitives;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -194,13 +193,15 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public async Task TestServiceConnectionWithEndlessApplicationTask()
+        public async Task TestServiceConnectionWithEndlessApplicationTaskNeverEnds()
         {
+            var clientConnectionId = Guid.NewGuid().ToString();
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
                 logChecker: logs =>
                 {
                     Assert.Single(logs);
-                    Assert.Equal("ApplicationTaskFailed", logs[0].Write.EventId.Name);
+                    Assert.Equal("DetectedLongRunningApplicationTask", logs[0].Write.EventId.Name);
+                    Assert.Equal($"The connection {clientConnectionId} has a long running application logic that prevents the connection from complete.", logs[0].Write.Message);
                     return true;
                 }))
             {
@@ -221,14 +222,13 @@ namespace Microsoft.Azure.SignalR.Tests
                 ConnectionDelegate handler = builder.Build();
                 var connection = new ServiceConnection(protocol, ccm, connectionFactory, loggerFactory, handler, ccf,
                     "serverId", Guid.NewGuid().ToString("N"),
-                    null, null, null, closeTimeOutMilliseconds: 1000);
+                    null, null, null, closeTimeOutMilliseconds: 1);
 
                 var connectionTask = connection.StartAsync();
 
                 // completed handshake
                 await connection.ConnectionInitializedTask.OrTimeout();
                 Assert.Equal(ServiceConnectionStatus.Connected, connection.Status);
-                var clientConnectionId = Guid.NewGuid().ToString();
 
                 await transportConnection.Application.Output.WriteAsync(
                     protocol.GetMessageBytes(new OpenConnectionMessage(clientConnectionId, new Claim[] { })));
@@ -238,14 +238,15 @@ namespace Microsoft.Azure.SignalR.Tests
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
 
-                await clientConnection.LifetimeTask.OrTimeout();
+                // Assert timeout
+                var lifetime = clientConnection.LifetimeTask;
+                var task = await Task.WhenAny(lifetime, Task.Delay(1000));
+                Assert.NotEqual(lifetime, task);
 
-                // 500ms for application task to timeout
-                await connectionTask.OrTimeout(1000);
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
-                Assert.Empty(ccm.ClientConnections);
 
-                connectionHandler.CancellationToken.Cancel();
+                // since the service connection ends, the client connection is cleaned up from the collection...
+                Assert.Empty(ccm.ClientConnections);
             }
         }
 
@@ -255,9 +256,8 @@ namespace Microsoft.Azure.SignalR.Tests
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
                 logChecker: logs =>
                 {
-                    Assert.Equal(2, logs.Count);
+                    Assert.Single(logs);
                     Assert.Equal("SendLoopStopped", logs[0].Write.EventId.Name);
-                    Assert.Equal("ApplicationTaskFailed", logs[1].Write.EventId.Name);
                     return true;
                 }))
             {
@@ -294,6 +294,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 clientConnection.CancelOutgoing();
 
+                connectionHandler.CancellationToken.Cancel();
                 await clientConnection.LifetimeTask.OrTimeout();
 
                 // complete reading to end the connection
@@ -303,8 +304,6 @@ namespace Microsoft.Azure.SignalR.Tests
                 await connectionTask.OrTimeout(1000);
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
                 Assert.Empty(ccm.ClientConnections);
-
-                connectionHandler.CancellationToken.Cancel();
             }
         }
 
@@ -436,8 +435,7 @@ namespace Microsoft.Azure.SignalR.Tests
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, expectedErrors: c => true,
                 logChecker: logs =>
                 {
-                    Assert.Single(logs);
-                    Assert.Equal("ApplicationTaskFailed", logs[0].Write.EventId.Name);
+                    Assert.Empty(logs);
                     return true;
                 }))
             {
@@ -451,6 +449,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     return Task.CompletedTask;
                 });
                 var services = new ServiceCollection();
+
                 var connectionHandler = new EndlessConnectionHandler();
                 services.AddSingleton(connectionHandler);
                 var builder = new ConnectionBuilder(services.BuildServiceProvider());
@@ -471,10 +470,10 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 var clientConnection = await ccm.WaitForClientConnectionAsync(clientConnectionId).OrTimeout();
 
-                clientConnection.CancelApplication();
-
                 // complete reading to end the connection
                 transportConnection.Application.Output.Complete();
+
+                connectionHandler.CancellationToken.Cancel();
 
                 await clientConnection.LifetimeTask.OrTimeout();
 
@@ -482,65 +481,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 await connectionTask.OrTimeout(1000);
                 Assert.Equal(ServiceConnectionStatus.Disconnected, connection.Status);
                 Assert.Empty(ccm.ClientConnections);
-
-                connectionHandler.CancellationToken.Cancel();
             }
-        }
-
-        [Fact]
-        public async Task TestServiceConnectionForMigratedIn()
-        {
-            var factory = new TestClientConnectionFactory();
-            var connection = MockServiceConnection(null, factory);
-
-            // create a connection with migration header.
-            await connection.OnClientConnectedAsyncForTest(new OpenConnectionMessage("foo", new Claim[0])
-            {
-                Headers = new Dictionary<string, StringValues>{
-                    { Constants.AsrsMigrateFrom, "another-server" }
-                }
-            });
-
-            Assert.Equal(1, factory.Connections.Count);
-            var context = factory.Connections[0];
-            Assert.True(context.IsMigrated);
-
-            var message = new AspNetCore.SignalR.Protocol.HandshakeResponseMessage("");
-            HandshakeProtocol.WriteResponseMessage(message, context.Transport.Output);
-            await context.Transport.Output.FlushAsync();
-
-            var task = context.Transport.Input.ReadAsync();
-            await Task.Delay(100);
-
-            // nothing should be written into the transport
-            Assert.False(task.IsCompleted);
-            Assert.True(context.IsMigrated);
-
-            var feature = context.Features.Get<IConnectionMigrationFeature>();
-            Assert.NotNull(feature);
-            Assert.Equal("another-server", feature.MigrateFrom);
-        }
-
-        [Fact]
-        public async Task TestServiceConnectionForMigratedOut()
-        {
-            var factory = new TestClientConnectionFactory();
-
-            var connection = MockServiceConnection(null, factory, mode: GracefulShutdownMode.MigrateClients);
-
-            // create a connection with migration header.
-            await connection.OnClientConnectedAsyncForTest(new OpenConnectionMessage("foo", new Claim[0]));
-
-            var context = factory.Connections[0];
-
-            var closeMessage = new CloseConnectionMessage(context.ConnectionId);
-            closeMessage.Headers.Add(Constants.AsrsMigrateTo, "another-server");
-
-            await connection.OnClientDisconnectedAsyncForTest(closeMessage);
-
-            var feature = context.Features.Get<IConnectionMigrationFeature>();
-            Assert.NotNull(feature);
-            Assert.Equal("another-server", feature.MigrateTo);
         }
 
         private sealed class TestConnectionHandler : ConnectionHandler
@@ -572,65 +513,6 @@ namespace Microsoft.Azure.SignalR.Tests
             }
         }
 
-        private sealed class TestServiceConnection : ServiceConnection
-        {
-            public TestServiceConnection(IConnectionFactory serviceConnectionFactory,
-                                         IClientConnectionFactory clientConnectionFactory,
-                                         ILoggerFactory loggerFactory,
-                                         ConnectionDelegate handler,
-                                         GracefulShutdownMode mode = GracefulShutdownMode.Off) : base(
-                new ServiceProtocol(),
-                new TestClientConnectionManager(),
-                serviceConnectionFactory,
-                loggerFactory,
-                handler,
-                clientConnectionFactory,
-                "serverId",
-                Guid.NewGuid().ToString("N"),
-                null,
-                null,
-                null,
-                mode: mode
-            )
-            {
-            }
-
-            public Task OnClientConnectedAsyncForTest(OpenConnectionMessage message)
-            {
-                return base.OnClientConnectedAsync(message);
-            }
-
-            public Task OnClientDisconnectedAsyncForTest(CloseConnectionMessage message)
-            {
-                return base.OnClientDisconnectedAsync(message);
-            }
-        }
-
-        private TestServiceConnection MockServiceConnection(IConnectionFactory serviceConnectionFactory = null,
-                                                            IClientConnectionFactory clientConnectionFactory = null,
-                                                            ILoggerFactory loggerFactory = null,
-                                                            GracefulShutdownMode mode = GracefulShutdownMode.Off)
-        {
-            clientConnectionFactory ??= new ClientConnectionFactory();
-            serviceConnectionFactory ??= new TestConnectionFactory(conn => Task.CompletedTask);
-            loggerFactory ??= NullLoggerFactory.Instance;
-
-            var services = new ServiceCollection();
-            var connectionHandler = new EndlessConnectionHandler();
-            services.AddSingleton(connectionHandler);
-            var builder = new ConnectionBuilder(services.BuildServiceProvider());
-            builder.UseConnectionHandler<EndlessConnectionHandler>();
-            ConnectionDelegate handler = builder.Build();
-
-            return new TestServiceConnection(
-                serviceConnectionFactory,
-                clientConnectionFactory,
-                loggerFactory,
-                handler,
-                mode: mode
-            );
-        }
-
         private sealed class LastWillConnectionHandler : ConnectionHandler
         {
             private readonly string _lastWill;
@@ -648,13 +530,22 @@ namespace Microsoft.Azure.SignalR.Tests
 
         private sealed class EndlessConnectionHandler : ConnectionHandler
         {
-            public CancellationTokenSource CancellationToken { get; } = new CancellationTokenSource();
+            public CancellationTokenSource CancellationToken { get; }
 
+            public EndlessConnectionHandler()
+            {
+                CancellationToken = new CancellationTokenSource();
+            }
+
+            public EndlessConnectionHandler(CancellationTokenSource token)
+            {
+                CancellationToken = token;
+            }
             public override async Task OnConnectedAsync(ConnectionContext connection)
             {
                 while (!CancellationToken.IsCancellationRequested)
                 {
-                    await Task.Delay(1000);
+                    await Task.Delay(100);
                 }
             }
         }

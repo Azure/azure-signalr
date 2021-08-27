@@ -1,15 +1,15 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.IO.Pipelines;
-using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
-using System.Collections.Generic;
-using System.Collections.Concurrent;
-using System.Linq;
 using System;
-using Microsoft.AspNetCore.SignalR;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Pipelines;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.IntegrationTests.Infrastructure;
 
 namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
 {
@@ -25,8 +25,8 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.MockService
     internal class ConnectionTrackingMockService : IMockService
     {
         private object _addRemoveLock = new object();
-        ConcurrentBag<MockServiceSideConnection> _serviceSideConnections = new ConcurrentBag<MockServiceSideConnection>();
-        ConcurrentBag<MockServiceConnection> _sdkSideConnections = new ConcurrentBag<MockServiceConnection>();
+        private ConcurrentBag<MockServiceSideConnection> _serviceSideConnections = new ConcurrentBag<MockServiceSideConnection>();
+        private ConcurrentBag<MockServiceConnection> _sdkSideConnections = new ConcurrentBag<MockServiceConnection>();
 
         public List<MockServiceSideConnection> ServiceSideConnections => _serviceSideConnections.ToList();
 

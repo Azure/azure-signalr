@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
@@ -15,25 +16,29 @@ namespace Microsoft.Azure.SignalR
 
         protected Tuple<string, string> Key { get; set; }
 
-        public string Endpoint { get; }
-        public int? Port { get; }
+        public Uri Endpoint { get; }
 
-        public AccessKey(string key, string endpoint, int? port) : this(endpoint, port)
+        public AccessKey(string uri, string key) : this(new Uri(uri))
         {
             Key = new Tuple<string, string>(key.GetHashCode().ToString(), key);
         }
 
-        protected AccessKey(string endpoint, int? port)
+        public AccessKey(Uri uri, string key) : this(uri)
         {
-            Endpoint = endpoint;
-            Port = port;
+            Key = new Tuple<string, string>(key.GetHashCode().ToString(), key);
         }
 
-        public virtual Task<string> GenerateAccessToken(
+        protected AccessKey(Uri uri)
+        {
+            Endpoint = uri;
+        }
+
+        public virtual Task<string> GenerateAccessTokenAsync(
             string audience,
             IEnumerable<Claim> claims,
             TimeSpan lifetime,
-            AccessTokenAlgorithm algorithm)
+            AccessTokenAlgorithm algorithm,
+            CancellationToken ctoken = default)
         {
             var token = AuthUtility.GenerateAccessToken(this, audience, claims, lifetime, algorithm);
             return Task.FromResult(token);

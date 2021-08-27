@@ -1,10 +1,15 @@
 ﻿using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Threading.Tasks;
+
+using Azure.Core;
+using Azure.Identity;
+
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth
@@ -17,42 +22,24 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         private const string TestClientSecret = "";
         private const string TestTenantId = "";
 
-        [Fact]
-        public void TestBuildAuthority()
-        {
-            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", ""));
-            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", "An invalid tenant id"));
-            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", ".00000000-0000-0000-0000-000000000000"));
-            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", "00000000-0000-0000-0000-000000000000."));
-            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", "00000000-0000-0000-θθθθ-000000000000"));
-            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", "0000-0000-0000-θθθθθθθθ-000000000000"));
-            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", "00000000-abcd-efgh-0000-000000000000"));
-            Assert.Throws<FormatException>(() => new AadApplicationOptions("foo", "00000000-ABCD-EFGH-0000-000000000000"));
-
-            AadApplicationOptions options;
-
-            options = new AadApplicationOptions("foo", "00000000-0000-0000-0000-000000000000");
-            Assert.Equal("https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000", options.BuildAuthority().ToString());
-
-            options = new AadApplicationOptions("foo", "00000000-abcd-efab-cdef-000000000000");
-            options.WithDogfood();
-            Assert.Equal("https://login.windows-ppe.net/00000000-abcd-efab-cdef-000000000000", options.BuildAuthority().ToString());
-        }
+        private static readonly string[] DefaultScopes = new string[] { "https://signalr.azure.com/.default" };
 
         [Fact(Skip = "Provide valid aad options")]
         public async Task TestAcquireAccessToken()
         {
-            var options = new AadApplicationOptions(TestClientId, TestTenantId).WithClientSecret(TestClientSecret);
-            var token = await options.AcquireAccessToken();
+            var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
+            var key = new AadAccessKey(new Uri("https://localhost:8080"), options);
+            var token = await key.GenerateAadTokenAsync();
+            Assert.NotNull(token);
         }
 
-        [Fact(Skip = "Managed Identity required")]
+        [Fact(Skip = "Provide valid aad options")]
         public async Task TestGetAzureAdTokenAndAuthenticate()
         {
-            var options = new AadManagedIdentityOptions();
+            var credential = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
 
             ConfigurationManager<OpenIdConnectConfiguration> configManager = new ConfigurationManager<OpenIdConnectConfiguration>(
-                options.BuildMetadataAddress().ToString(),
+                "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration",
                 new OpenIdConnectConfigurationRetriever()
             );
             var keys = configManager.GetConfigurationAsync().Result.SigningKeys;
@@ -78,10 +65,22 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             var handler = new JwtSecurityTokenHandler();
             IdentityModelEventSource.ShowPII = true;
 
-            var accessToken = await options.AcquireAccessToken();
-            var claims = handler.ValidateToken(accessToken, p, out var validToken);
+            var accessToken = await credential.GetTokenAsync(new TokenRequestContext(DefaultScopes));
+            var claims = handler.ValidateToken(accessToken.Token, p, out var validToken);
 
             Assert.NotNull(validToken);
+        }
+
+        [Fact(Skip = "Provide valid aad options")]
+        internal async Task TestAuthenticateAsync()
+        {
+            var options = new ClientSecretCredential(TestTenantId, TestClientId, TestClientSecret);
+            var key = new AadAccessKey(new Uri("https://localhost:8080"), options);
+            await key.UpdateAccessKeyAsync();
+
+            Assert.True(key.Authorized);
+            Assert.NotNull(key.Id);
+            Assert.NotNull(key.Value);
         }
     }
 }

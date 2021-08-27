@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Azure.Core;
+
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
+
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.SignalR
@@ -19,6 +20,9 @@ namespace Microsoft.Azure.SignalR
         internal const int AuthorizeMaxRetryTimes = 3;
         internal const int AuthorizeRetryIntervalInSec = 3;
 
+        private const string DefaultScope = "https://signalr.azure.com/.default";
+
+        private static readonly TokenRequestContext _defaultRequestContext = new TokenRequestContext(new string[] { DefaultScope });
         private static readonly TimeSpan AuthorizeInterval = TimeSpan.FromMinutes(AuthorizeIntervalInMinute);
         private static readonly TimeSpan AuthorizeRetryInterval = TimeSpan.FromSeconds(AuthorizeRetryIntervalInSec);
         private static readonly TimeSpan AuthorizeTimeout = TimeSpan.FromSeconds(10);
@@ -31,54 +35,101 @@ namespace Microsoft.Azure.SignalR
 
         public bool Authorized => InitializedTask.IsCompleted && _isAuthorized;
 
-        public AuthOptions Options { get; }
+        public TokenCredential TokenCredential { get; }
+
+        internal string AuthorizeUrl { get; }
 
         private Task<object> InitializedTask => _initializedTcs.Task;
 
-        public AadAccessKey(AuthOptions options, string endpoint, int? port) : base(endpoint, port)
+        public AadAccessKey(Uri uri, TokenCredential credential): base(uri)
         {
-            Options = options;
-        }
-
-        public Task<string> GenerateAadToken()
-        {
-            if (Options is IAadTokenGenerator options)
+            var builder = new UriBuilder(Endpoint)
             {
-                return options.AcquireAccessToken();
-            }
-            throw new InvalidOperationException("This accesskey is not able to generate AccessToken, a TokenBasedAuthOptions is required.");
+                Path = "/api/v1/auth/accessKey",
+                Port = uri.Port
+            };
+            AuthorizeUrl = builder.Uri.AbsoluteUri;
+            TokenCredential = credential;
         }
 
-        public override async Task<string> GenerateAccessToken(
+        public virtual async Task<string> GenerateAadTokenAsync(CancellationToken ctoken = default)
+        {
+            var token = await TokenCredential.GetTokenAsync(_defaultRequestContext, ctoken);
+            return token.Token;
+        }
+
+        public override async Task<string> GenerateAccessTokenAsync(
             string audience,
             IEnumerable<Claim> claims,
             TimeSpan lifetime,
-            AccessTokenAlgorithm algorithm)
+            AccessTokenAlgorithm algorithm,
+            CancellationToken ctoken = default)
         {
-            await InitializedTask;
-            if (!Authorized)
+            var task = await Task.WhenAny(InitializedTask, ctoken.AsTask());
+
+            if (task == InitializedTask || InitializedTask.IsCompleted)
             {
-                throw new AzureSignalRAccessTokenNotAuthorizedException();
+                await task;
+                if (Authorized)
+                {
+                    return await base.GenerateAccessTokenAsync(audience, claims, lifetime, algorithm);
+                }
+                else
+                {
+                    throw new AzureSignalRAccessTokenNotAuthorizedException("The given AzureAD identity don't have the permission to generate access token.");
+                }
             }
-            return await base.GenerateAccessToken(audience, claims, lifetime, algorithm);
+            else
+            {
+                throw new TaskCanceledException("Timeout reached when authorizing AzureAD identity.");
+            }
         }
 
-        private async Task AuthorizeAsync(string serverId, CancellationToken token = default)
+        internal void UpdateAccessKey(string kid, string accessKey)
         {
-            var aadToken = await GenerateAadToken();
-            await AuthorizeWithTokenAsync(Endpoint, Port, serverId, aadToken, token);
+            Key = new Tuple<string, string>(kid, accessKey);
+            _lastUpdatedTime = DateTime.UtcNow;
+            _isAuthorized = true;
+            _initializedTcs.TrySetResult(null);
         }
 
-        private async Task AuthorizeWithTokenAsync(string endpoint, int? port, string serverId, string accessToken, CancellationToken token = default)
+        internal async Task UpdateAccessKeyAsync()
         {
-            if (port != null && port != 443)
+            if (DateTime.UtcNow - _lastUpdatedTime < AuthorizeInterval)
             {
-                endpoint += $":{port}";
+                return;
             }
-            var api = new RestApiEndpoint(endpoint + "/api/v1/auth/accessKey", accessToken)
+
+            Exception latest = null;
+            for (int i = 0; i < AuthorizeMaxRetryTimes; i++)
             {
-                Query = new Dictionary<string, StringValues> { { "serverId", serverId } }
-            };
+                var source = new CancellationTokenSource(AuthorizeTimeout);
+                try
+                {
+                    await AuthorizeAsync(source.Token);
+                    return;
+                }
+                catch (Exception e)
+                {
+                    latest = e;
+                    await Task.Delay(AuthorizeRetryInterval);
+                }
+            }
+
+            _isAuthorized = false;
+            _initializedTcs.TrySetResult(null);
+            throw latest;
+        }
+
+        private async Task AuthorizeAsync(CancellationToken ctoken = default)
+        {
+            var aadToken = await GenerateAadTokenAsync(ctoken);
+            await AuthorizeWithTokenAsync(aadToken, ctoken);
+        }
+
+        private async Task AuthorizeWithTokenAsync(string accessToken, CancellationToken token = default)
+        {
+            var api = new RestApiEndpoint(AuthorizeUrl, accessToken);
 
             await new RestClient().SendAsync(
                 api,
@@ -115,40 +166,9 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new AzureSignalRException("Missing required <AccessKey> field.");
             }
-            Key = new Tuple<string, string>(keyId.ToString(), key.ToString());
 
+            UpdateAccessKey(keyId.ToString(), key.ToString());
             return true;
-        }
-
-        internal async Task UpdateAccessKeyAsync(string serverName)
-        {
-            if (DateTime.UtcNow - _lastUpdatedTime < AuthorizeInterval)
-            {
-                return;
-            }
-
-            Exception latest = null;
-            for (int i = 0; i < AuthorizeMaxRetryTimes; i++)
-            {
-                var source = new CancellationTokenSource(AuthorizeTimeout);
-                try
-                {
-                    await AuthorizeAsync(serverName, source.Token);
-                    _lastUpdatedTime = DateTime.UtcNow;
-                    _isAuthorized = true;
-                    _initializedTcs.TrySetResult(null);
-                    return;
-                }
-                catch (Exception e)
-                {
-                    latest = e;
-                    await Task.Delay(AuthorizeRetryInterval);
-                }
-            }
-
-            _isAuthorized = false;
-            _initializedTcs.TrySetResult(null);
-            throw latest;
         }
     }
 }

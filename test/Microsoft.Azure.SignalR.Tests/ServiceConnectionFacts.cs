@@ -4,19 +4,20 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Primitives;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -517,7 +518,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var initTask = conn.StartAsync();
                 await conn.ConnectionInitializedTask;
                 conn.Stop();
-                var completedTask = Task.WhenAny(initTask, Task.Delay(TimeSpan.FromSeconds(1))).Result;
+                var completedTask = Task.WhenAny(initTask, Task.Delay(3000)).Result;
                 Assert.Equal(initTask, completedTask);
             }
             finally

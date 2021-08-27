@@ -3,9 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using Azure.Identity;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -18,7 +17,6 @@ namespace Microsoft.Azure.SignalR
         private const string ClientIdProperty = "clientId";
         private const string ClientSecretProperty = "clientSecret";
         private const string EndpointProperty = "endpoint";
-        private const string FileNotExists = "Client cert file not exists.";
         private const string InvalidVersionValueFormat = "Version {0} is not supported.";
         private const string PortProperty = "port";
         // For SDK 1.x, only support Azure SignalR Service 1.x
@@ -78,6 +76,7 @@ namespace Microsoft.Azure.SignalR
             {
                 throw new ArgumentException($"Endpoint property in connection string is not a valid URI: {dict[EndpointProperty]}.");
             }
+            var builder = new UriBuilder(endpoint);
 
             // parse and validate version.
             string version = null;
@@ -91,12 +90,11 @@ namespace Microsoft.Azure.SignalR
             }
 
             // parse and validate port.
-            int? port = null;
             if (dict.TryGetValue(PortProperty, out var s))
             {
                 if (int.TryParse(s, out var p) && p > 0 && p <= 0xFFFF)
                 {
-                    port = p;
+                    builder.Port = p;
                 }
                 else
                 {
@@ -116,8 +114,8 @@ namespace Microsoft.Azure.SignalR
             dict.TryGetValue(AuthTypeProperty, out string type);
             AccessKey accessKey = type?.ToLower() switch
             {
-                "aad" => BuildAadAccessKey(dict, endpoint, port),
-                _ => BuildAccessKey(dict, endpoint, port),
+                "aad" => BuildAadAccessKey(builder.Uri, dict),
+                _ => BuildAccessKey(builder.Uri, dict),
             };
             return (accessKey, version, clientEndpoint);
         }
@@ -128,46 +126,41 @@ namespace Microsoft.Azure.SignalR
                    (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         }
 
-        private static AccessKey BuildAadAccessKey(Dictionary<string, string> dict, string endpoint, int? port)
+        private static AccessKey BuildAadAccessKey(Uri uri, Dictionary<string, string> dict)
         {
-            if (dict.ContainsKey(ClientIdProperty))
+            if (dict.TryGetValue(ClientIdProperty, out var clientId))
             {
-                if (!dict.ContainsKey(TenantIdProperty))
+                if (dict.TryGetValue(TenantIdProperty, out var tenantId))
                 {
-                    throw new ArgumentException(MissingTenantIdProperty, TenantIdProperty);
-                }
-
-                var options = new AadApplicationOptions(dict[ClientIdProperty], dict[TenantIdProperty]);
-
-                if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
-                {
-                    return new AadAccessKey(options.WithClientSecret(clientSecret), endpoint, port);
-                }
-                else if (dict.TryGetValue(ClientCertProperty, out var clientCert))
-                {
-                    if (!File.Exists(clientCert))
+                    if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
                     {
-                        throw new FileNotFoundException(FileNotExists, clientCert);
+                        return new AadAccessKey(uri, new ClientSecretCredential(tenantId, clientId, clientSecret));
                     }
-                    var cert = new X509Certificate2(clientCert);
-                    return new AadAccessKey(options.WithClientCert(cert), endpoint, port);
+                    else if (dict.TryGetValue(ClientCertProperty, out var clientCertPath))
+                    {
+                        return new AadAccessKey(uri, new ClientCertificateCredential(tenantId, clientId, clientCertPath));
+                    }
+                    else
+                    {
+                        throw new ArgumentException(MissingClientSecretProperty, ClientSecretProperty);
+                    }
                 }
                 else
                 {
-                    throw new ArgumentException(MissingClientSecretProperty, ClientSecretProperty);
+                    return new AadAccessKey(uri, new ManagedIdentityCredential(clientId));
                 }
             }
             else
             {
-                return new AadAccessKey(new AadManagedIdentityOptions(), endpoint, port);
+                return new AadAccessKey(uri, new ManagedIdentityCredential());
             }
         }
 
-        private static AccessKey BuildAccessKey(Dictionary<string, string> dict, string endpoint, int? port)
+        private static AccessKey BuildAccessKey(Uri uri, Dictionary<string, string> dict)
         {
             if (dict.TryGetValue(AccessKeyProperty, out var key))
             {
-                return new AccessKey(key, endpoint, port);
+                return new AccessKey(uri, key);
             }
             throw new ArgumentException(MissingAccessKeyProperty, AccessKeyProperty);
         }

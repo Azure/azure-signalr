@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
@@ -24,6 +25,8 @@ namespace Microsoft.Azure.SignalR
         // Service will abort both server and client connections link to this server when server is down.
         // App server ping is triggered by incoming requests and send by checking last send timestamp.
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
+        // App server update its azure identity by sending a AccessKeyRequestMessage with Azure AD Token every 10 minutes.
+        private static readonly TimeSpan DefaultSyncAzureIdentityInterval = TimeSpan.FromMinutes(10);
         private static readonly long DefaultKeepAliveTicks = (long)DefaultKeepAliveInterval.TotalSeconds * Stopwatch.Frequency;
 
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
@@ -145,12 +148,19 @@ namespace Microsoft.Azure.SignalR
                 _serviceConnectionStartTcs.TrySetResult(true);
                 try
                 {
+                    TimerAwaitable syncTimer = null;
                     try
                     {
+                        if (HubEndpoint != null && HubEndpoint.AccessKey is AadAccessKey aadKey)
+                        {
+                            syncTimer = new TimerAwaitable(TimeSpan.Zero, DefaultSyncAzureIdentityInterval);
+                            _ = UpdateAzureIdentityAsync(aadKey, syncTimer);
+                        }
                         await ProcessIncomingAsync(connection);
                     }
                     finally
                     {
+                        syncTimer?.Stop();
                         // when ProcessIncoming completes, clean up the connection
 
                         // TODO: Never cleanup connections unless Service asks us to do that
@@ -302,6 +312,24 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
+        private Task OnAccessKeyMessageAsync(AccessKeyResponseMessage keyMessage)
+        {
+            if (string.IsNullOrEmpty(keyMessage.ErrorType))
+            {
+                if (HubEndpoint.AccessKey is AadAccessKey key)
+                {
+                    key.UpdateAccessKey(keyMessage.Kid, keyMessage.AccessKey);
+                }
+            }
+            else
+            {
+                var exception = new AzureSignalRUnauthorizedException(new AzureSignalRException(keyMessage.ErrorMessage));
+                Log.AuthorizeFailed(Logger, exception);
+                return Task.CompletedTask;
+            }
+            return Task.CompletedTask;
+        }
+
         private async Task<ConnectionContext> EstablishConnectionAsync(string target)
         {
             try
@@ -345,21 +373,18 @@ namespace Microsoft.Azure.SignalR
 
             try
             {
-                using (var cts = new CancellationTokenSource())
+                using var cts = new CancellationTokenSource();
+                if (!Debugger.IsAttached)
                 {
-                    if (!Debugger.IsAttached)
-                    {
-                        cts.CancelAfter(DefaultHandshakeTimeout);
-                    }
-
-                    if (await ReceiveHandshakeResponseAsync(context.Transport.Input, cts.Token))
-                    {
-                        Log.HandshakeComplete(Logger);
-                        return true;
-                    }
-
-                    return false;
+                    cts.CancelAfter(DefaultHandshakeTimeout);
                 }
+
+                if (await ReceiveHandshakeResponseAsync(context.Transport.Input, cts.Token))
+                {
+                    Log.HandshakeComplete(Logger);
+                    return true;
+                }
+                return false;
             }
             catch (Exception ex)
             {
@@ -442,6 +467,20 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        private async Task UpdateAzureIdentityAsync(AadAccessKey key, TimerAwaitable timer)
+        {
+            using (timer)
+            {
+                timer.Start();
+                while (await timer)
+                {
+                    var token = await key.GenerateAadTokenAsync();
+                    var message = new AccessKeyRequestMessage(token);
+                    await SafeWriteAsync(message);
+                }
+            }
+        }
+
         private async Task ProcessIncomingAsync(ConnectionContext connection)
         {
             var keepAliveTimer = StartKeepAliveTimer();
@@ -513,6 +552,7 @@ namespace Microsoft.Azure.SignalR
                 PingMessage pingMessage => OnPingMessageAsync(pingMessage),
                 AckMessage ackMessage => OnAckMessageAsync(ackMessage),
                 ServiceEventMessage eventMessage => OnEventMessageAsync(eventMessage),
+                AccessKeyResponseMessage keyMessage => OnAccessKeyMessageAsync(keyMessage),
                 _ => Task.CompletedTask,
             };
         }
@@ -553,7 +593,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private async ValueTask TrySendPingAsync()
+        protected virtual async ValueTask TrySendPingAsync()
         {
             if (!_writeLock.Wait(0))
             {
@@ -596,7 +636,7 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "ErrorProcessingMessages"), "Error when processing messages. Id: {ServiceConnectionId}");
 
             private static readonly Action<ILogger, string, string, string, Exception> _connectionDropped =
-                LoggerMessage.Define<string, string, string>(LogLevel.Error, new EventId(4, "ConnectionDropped"), "Connection to '{endpoint}' was dropped, probably caused by network instability or service restart. Will try to reconnect after the back off period. Error detail: {message}. Id: {ServiceConnectionId}.");
+                LoggerMessage.Define<string, string, string>(LogLevel.Information, new EventId(4, "ConnectionDropped"), "Connection to '{endpoint}' was dropped, probably caused by network instability or service restart. Will try to reconnect after the back off period. Error detail: {message}. Id: {ServiceConnectionId}.");
 
             private static readonly Action<ILogger, string, Exception> _serviceConnectionClosed =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(14, "serviceConnectionClose"), "Service connection {ServiceConnectionId} closed.");
@@ -652,9 +692,17 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _receivedInstanceOfflinePing =
                 LoggerMessage.Define<string>(LogLevel.Information, new EventId(31, "ReceivedInstanceOfflinePing"), "Received instance offline service ping: {InstanceId}");
 
+            private static readonly Action<ILogger, Exception> _authorizeFailed =
+                LoggerMessage.Define(LogLevel.Error, new EventId(32, "AuthorizeFailed"), "Service returned 401 unauthorized.");
+
             public static void FailedToWrite(ILogger logger, ulong? tracingId, string serviceConnectionId, Exception exception)
             {
                 _failedToWrite(logger, tracingId, exception.Message, serviceConnectionId, null);
+            }
+
+            public static void AuthorizeFailed(ILogger logger, Exception exception)
+            {
+                _authorizeFailed(logger, exception);
             }
 
             public static void FailedToConnect(ILogger logger, string endpoint, string serviceConnectionId, Exception exception)

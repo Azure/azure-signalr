@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -19,7 +18,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal partial class ServiceConnection : ServiceConnectionBase
     {
-        private const int DefaultCloseTimeoutMilliseconds = 5000;
+        private const int DefaultCloseTimeoutMilliseconds = 30000;
 
         // Fix issue: https://github.com/Azure/azure-signalr/issues/198
         // .NET Framework has restriction about reserved string as the header name like "User-Agent"
@@ -32,8 +31,10 @@ namespace Microsoft.Azure.SignalR
         private readonly IClientConnectionFactory _clientConnectionFactory;
         private readonly int _closeTimeOutMilliseconds;
         private readonly IClientConnectionManager _clientConnectionManager;
+
         private readonly ConcurrentDictionary<string, string> _connectionIds =
             new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+
         private readonly string[] _pingMessages =
             new string[4] { ClientConnectionCountInHub, null, ClientConnectionCountInServiceConnection, null };
 
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.SignalR
                                  ServiceConnectionType connectionType = ServiceConnectionType.Default,
                                  GracefulShutdownMode mode = GracefulShutdownMode.Off,
                                  int closeTimeOutMilliseconds = DefaultCloseTimeoutMilliseconds
-            ): base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, serviceEventHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode)
+            ) : base(serviceProtocol, serverId, connectionId, endpoint, serviceMessageHandler, serviceEventHandler, connectionType, loggerFactory?.CreateLogger<ServiceConnection>(), mode)
         {
             _clientConnectionManager = clientConnectionManager;
             _connectionFactory = connectionFactory;
@@ -74,27 +75,22 @@ namespace Microsoft.Azure.SignalR
             return _connectionFactory.DisposeAsync(connection);
         }
 
-        protected override async Task CleanupClientConnections(string fromInstanceId = null)
+        protected override Task CleanupClientConnections(string fromInstanceId = null)
         {
-            // To gracefully complete client connections, let the client itself owns the connection lifetime 
-            try
+            // To gracefully complete client connections, let the client itself owns the connection lifetime
+
+            foreach (var connection in _connectionIds)
             {
-                if (_connectionIds.Count == 0)
+                if (!string.IsNullOrEmpty(fromInstanceId) && connection.Value != fromInstanceId)
                 {
-                    return;
-                }
-                var connectionIds = _connectionIds.Select(s => s.Key);
-                if (!string.IsNullOrEmpty(fromInstanceId))
-                {
-                    connectionIds = _connectionIds.Where(s => s.Value == fromInstanceId).Select(s => s.Key);
+                    continue;
                 }
 
-                await Task.WhenAll(connectionIds.Select(PerformDisconnectAsyncCore));
+                // We should not wait until all the clients' lifetime ends to restart another service connection
+                _ = PerformDisconnectAsyncCore(connection.Key);
             }
-            catch (Exception ex)
-            {
-                Log.FailedToCleanupConnections(Logger, ex);
-            }
+
+            return Task.CompletedTask;
         }
 
         protected override ReadOnlyMemory<byte> GetPingMessage()
@@ -152,13 +148,16 @@ namespace Microsoft.Azure.SignalR
             {
                 if (closeConnectionMessage.Headers.TryGetValue(Constants.AsrsMigrateTo, out var to))
                 {
+                    context.AbortOnClose = false;
                     context.Features.Set<IConnectionMigrationFeature>(new ConnectionMigrationFeature(ServerId, to));
                     // We have to prevent SignalR `{type: 7}` (close message) from reaching our client while doing migration.
-                    // Since all user-created messages will be sent to `ServiceConnection` directly.
-                    // We can simply ignore all messages came from the application pipe.
+                    // Since all data messages will be sent to `ServiceConnection` directly.
+                    // We can simply ignore all messages came from the application.
+                    context.CancelOutgoing();
+                    // The close connection message must be the last message, so we could complete the pipe.
+                    context.CompleteIncoming();
                 }
             }
-
             return PerformDisconnectAsyncCore(connectionId);
         }
 
@@ -196,7 +195,7 @@ namespace Microsoft.Azure.SignalR
                 var transport = ProcessOutgoingMessagesAsync(connection, connection.OutgoingAborted);
 
                 // Waiting for the application to shutdown so we can clean up the connection
-                var app = ProcessIncomingMessageAsync(connection);
+                var app = ProcessApplicationTaskAsyncCore(connection);
 
                 var task = await Task.WhenAny(app, transport);
 
@@ -212,7 +211,7 @@ namespace Microsoft.Azure.SignalR
                     // there is no need to write to the transport as application is no longer running
                     Log.WaitingForTransport(Logger);
 
-                    // app task completes connection.Transport.Output, which will completes connection.Application.Input and ends the transport 
+                    // app task completes connection.Transport.Output, which will completes connection.Application.Input and ends the transport
                     // Transports are written by us and are well behaved, wait for them to drain
                     connection.CancelOutgoing(_closeTimeOutMilliseconds);
 
@@ -224,10 +223,9 @@ namespace Microsoft.Azure.SignalR
                     // transport task ends first, no data will be dispatched out
                     Log.WaitingForApplication(Logger);
 
-                    // Wait on the application task to complete
-                    connection.CancelApplication(_closeTimeOutMilliseconds);
                     try
                     {
+                        // always wait for the application to complete
                         await app;
                     }
                     catch (Exception e)
@@ -313,7 +311,7 @@ namespace Microsoft.Azure.SignalR
                     using var source = CancellationTokenSource.CreateLinkedTokenSource(token, timeoutToken.Token);
 
                     // A handshake response is not expected to be given
-                    // if the connection was migrated from another server, 
+                    // if the connection was migrated from another server,
                     // since the connection hasn't been `dropped` from the client point of view.
                     if (!await SkipHandshakeResponse(connection, source.Token))
                     {
@@ -332,7 +330,7 @@ namespace Microsoft.Azure.SignalR
 
                     var buffer = result.Buffer;
 
-                    if (!buffer.IsEmpty) 
+                    if (!buffer.IsEmpty)
                     {
                         try
                         {
@@ -375,27 +373,6 @@ namespace Microsoft.Azure.SignalR
             _connectionIds.TryAdd(connection.ConnectionId, instanceId);
         }
 
-        private async Task ProcessIncomingMessageAsync(ClientConnectionContext connection)
-        {
-            // Wait for the application task to complete
-            // application task can end when exception, or Context.Abort() from hub
-            var app = ProcessApplicationTaskAsyncCore(connection);
-
-            var cancelTask = connection.ApplicationAborted.AsTask();
-            var task = await Task.WhenAny(app, cancelTask);
-
-            if (task == app)
-            {
-                await task;
-            }
-            else
-            {
-                // cancel the application task, to end the outgoing task
-                connection.Application.Input.CancelPendingRead();
-                throw new AzureSignalRException("Cancelled running application task, probably caused by time out.");
-            }
-        }
-
         private async Task ProcessApplicationTaskAsyncCore(ClientConnectionContext connection)
         {
             Exception exception = null;
@@ -432,12 +409,19 @@ namespace Microsoft.Azure.SignalR
                 // Let the connection complete incoming
                 connection.CompleteIncoming();
 
-                // lock and wait 
-                // Register the cancellation after timeout
-                connection.CancelApplication(_closeTimeOutMilliseconds);
-
                 // wait for the connection's lifetime task to end
-                await connection.LifetimeTask;
+                var lifetime = connection.LifetimeTask;
+
+                // Wait on the application task to complete
+                // We wait gracefully here to be consistent with self-host SignalR
+                await Task.WhenAny(lifetime, Task.Delay(_closeTimeOutMilliseconds));
+
+                if (!lifetime.IsCompleted)
+                {
+                    Log.DetectedLongRunningApplicationTask(Logger, connectionId);
+                }
+
+                await lifetime;
             }
         }
 
