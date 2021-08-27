@@ -3,9 +3,7 @@
 
 using System.Linq;
 using Microsoft.Azure.SignalR.Tests.Common;
-using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Management.Tests
@@ -13,7 +11,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
     public class ServiceManagerOptionsSetupFactF
     {
         [Fact]
-        public void ConfigureServiceEndpoint_WithoutConnectionString()
+        public void ConfigureConnectionStringBasedServiceEndpoint_WithoutSingleConnectionString()
         {
             var connectionStrings = FakeEndpointUtils.GetFakeConnectionString(2);
             var names = new string[] { "First", "Second" };
@@ -22,7 +20,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 configuration[$"{Constants.Keys.AzureSignalREndpointsKey}:{name}"] = connectionString;
             }
-            var optionsSetup = new ServiceManagerOptionsSetup(GetAzureComponentFactory(), configuration);
+            var optionsSetup = new ServiceManagerOptionsSetup(SingletonAzureComponentFactory.Instance, configuration);
             var options = new ServiceManagerOptions();
 
             optionsSetup.Configure(options);
@@ -36,7 +34,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public void ConfigureServiceEndpoint_WithConnectionString()
+        public void ConfigureConnectioStringBasedServiceEndpoint_WithSingleConnectionString()
         {
             var connectionStrings = FakeEndpointUtils.GetFakeConnectionString(2);
             var names = new string[] { "First", "Second" };
@@ -47,7 +45,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             }
             var connectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
             configuration[Constants.Keys.ConnectionStringDefaultKey] = connectionString;
-            var optionsSetup = new ServiceManagerOptionsSetup(GetAzureComponentFactory(), configuration);
+            var optionsSetup = new ServiceManagerOptionsSetup(SingletonAzureComponentFactory.Instance, configuration);
             var options = new ServiceManagerOptions();
 
             optionsSetup.Configure(options);
@@ -73,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 ServiceEndpoints = endpoints
             };
             var configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
-            var setup = new ServiceManagerOptionsSetup(GetAzureComponentFactory(), configuration);
+            var setup = new ServiceManagerOptionsSetup(SingletonAzureComponentFactory.Instance, configuration);
             setup.Configure(options);
             Assert.Equal(app, options.ApplicationName);
             Assert.Equal(connStr, options.ConnectionString);
@@ -81,10 +79,10 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         }
 
         [Fact]
-        public void TestIdentityBasedConfiguration()
+        public void TestIdentityBasedServiceEndpoints()
         {
             var config = new ConfigurationBuilder().AddInMemoryCollection().Build();
-            var setup = new ServiceManagerOptionsSetup(GetAzureComponentFactory(), config);
+            var setup = new ServiceManagerOptionsSetup(SingletonAzureComponentFactory.Instance, config);
             var uri1 = "http://localhost:88";
             var uri2 = "http://localhost:99";
             config["Azure:SignalR:Connection:ServiceUri"] = uri1;
@@ -95,14 +93,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             Assert.Equal(2, options.ServiceEndpoints.Length);
             Assert.Contains(options.ServiceEndpoints, e => e.Endpoint == uri1);
             Assert.Contains(options.ServiceEndpoints, e => e.Endpoint == uri2);
-        }
-
-
-        private AzureComponentFactory GetAzureComponentFactory()
-        {
-            var services = new ServiceCollection();
-            services.AddAzureClientsCore();
-            return services.BuildServiceProvider().GetRequiredService<AzureComponentFactory>();
         }
     }
 }

@@ -3,9 +3,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.Azure;
+using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -30,11 +29,11 @@ namespace Microsoft.Azure.SignalR.Tests
 
         [Theory]
         [MemberData(nameof(ParseServiceEndpointData))]
-        public void ParseServiceEndpointTest(string key, string endpointName, EndpointType type)
+        public void TestSetupConnectionStringBasedEndpoints(string key, string endpointName, EndpointType type)
         {
             IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
             configuration[key] = FakeConnectionString;
-            var setup = new ServiceOptionsSetup(configuration,GetAzureComponentFactory());
+            var setup = new ServiceOptionsSetup(configuration, SingletonAzureComponentFactory.Instance);
             var options = new ServiceOptions();
             setup.Configure(options);
 
@@ -44,7 +43,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void ParseMultipleEndpointsTest()
+        public void TestSetupConnectionStringBasedEndpointsWithSingleConnectionString()
         {
             IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
             var defaultConnectionString = "Endpoint=http://default;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;Port=8080;Version=1.0";
@@ -54,7 +53,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 configuration[ConfigurationPath.Combine(Constants.Keys.ConnectionStringDefaultKey, key)] = FakeConnectionString;
             }
 
-            var setup = new ServiceOptionsSetup(configuration, GetAzureComponentFactory());
+            var setup = new ServiceOptionsSetup(configuration, SingletonAzureComponentFactory.Instance);
             var options = new ServiceOptions();
             setup.Configure(options);
 
@@ -63,10 +62,10 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
-        public void TestIdentityBasedConfiguration()
+        public void TestSetupIdentityBasedEndpoints()
         {
             var config = new ConfigurationBuilder().AddInMemoryCollection().Build();
-            var setup = new ServiceOptionsSetup(config, GetAzureComponentFactory());
+            var setup = new ServiceOptionsSetup(config, SingletonAzureComponentFactory.Instance);
             var uri1 = "http://localhost:88";
             var uri2 = "http://localhost:99";
             config["Azure:SignalR:Connection:ServiceUri"] = uri1;
@@ -77,13 +76,6 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(2, options.Endpoints.Length);
             Assert.Contains(options.Endpoints, e => e.Endpoint == uri1);
             Assert.Contains(options.Endpoints, e => e.Endpoint == uri2);
-        }
-
-        private AzureComponentFactory GetAzureComponentFactory()
-        {
-            var services = new ServiceCollection();
-            services.AddAzureClientsCore();
-            return services.BuildServiceProvider().GetRequiredService<AzureComponentFactory>();
         }
     }
 }
