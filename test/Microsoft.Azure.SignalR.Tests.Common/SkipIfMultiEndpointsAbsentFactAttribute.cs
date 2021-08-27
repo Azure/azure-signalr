@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         private static bool MultiEndpointsExist()
         {
             var config = TestConfiguration.Instance.Configuration;
-            return config.GetEndpoints(Constants.Keys.AzureSignalREndpointsKey).Any();
+            return config.GetEndpoints(Constants.Keys.AzureSignalREndpointsKey).Count() > 1;
         }
     }
 }
