@@ -79,7 +79,7 @@ namespace Microsoft.Azure.SignalR.Management
                 .AddSingleton(_endpointManager)
                 .AddSingleton<IEndpointRouter>(new FixedEndpointRouter(targetEndpoints));
 
-            return services.BuildServiceProvider().GetRequiredService<ServiceHubContextImpl>();
+            return services.BuildServiceProvider().GetRequiredService<ServiceHubContext>();
         }
     }
 }
