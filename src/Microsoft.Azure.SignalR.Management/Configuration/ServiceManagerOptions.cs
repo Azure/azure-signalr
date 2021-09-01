@@ -3,7 +3,6 @@
 
 using System;
 using System.Net;
-using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -63,15 +62,17 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 throw new InvalidOperationException($"{nameof(ServiceEndpoints)} is empty. {nameof(ConnectionString)} is  null, empty, or consists only of white-space.");
             }
+            // forbid multiple endpoints in transient mode.
             if (ServiceTransportType == ServiceTransportType.Transient)
             {
-                if (string.IsNullOrWhiteSpace(ConnectionString))
+                var count = ConnectionString == null ? 0 : 1;
+                if (ServiceEndpoints != null)
                 {
-                    throw new InvalidOperationException($"{nameof(ConnectionString)} must be set for transient mode.");
+                    count += ServiceEndpoints.Length;
                 }
-                if (ServiceEndpoints?.Length > 0)
+                if (count > 1)
                 {
-                    throw new NotSupportedException($"Multiple endpoints are not supported for transient mode. Please unset {nameof(ServiceEndpoints)}");
+                    throw new NotImplementedException($"Multiple service endpoints are set via {ConnectionString} or {ServiceEndpoints}, but multiple service endpoints in transient mode are not implemented yet.");
                 }
             }
         }
