@@ -574,8 +574,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     await tcs.Task;
                     exists = await serviceHubContext.ClientManager.GroupExistsAsync(groupName);
                     Assert.False(exists);
-
-                    await serviceHubContext.DisposeAsync();
                 }
                 finally
                 {
