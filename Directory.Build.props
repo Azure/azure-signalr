@@ -56,6 +56,7 @@
     <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
     <SignedPackageFile Include="$(PublishDir)Microsoft.Bcl.AsyncInterfaces.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
     <SignedPackageFile Include="$(PublishDir)Microsoft.DotNet.SignTool.SignedFileContentKey.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.Extensions.Azure.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.Extensions.CommandLineUtils.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.Extensions.DependencyInjection.Abstractions.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.Extensions.DependencyInjection.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
