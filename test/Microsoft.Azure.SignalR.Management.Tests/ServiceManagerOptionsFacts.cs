@@ -13,13 +13,13 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [Fact]
         public void ForbidMultipleEndpointsInTransientModeFact()
         {
-            Assert.Throws<InvalidOperationException>(() => new ServiceManagerOptions
+            Assert.Throws<NotImplementedException>(() => new ServiceManagerOptions
             {
                 ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single(),
                 ServiceEndpoints = FakeEndpointUtils.GetFakeEndpoint(1).ToArray()
             }.ValidateOptions());
 
-            Assert.Throws<InvalidOperationException>(() => new ServiceManagerOptions
+            Assert.Throws<NotImplementedException>(() => new ServiceManagerOptions
             {
                 ServiceEndpoints = FakeEndpointUtils.GetFakeEndpoint(2).ToArray()
             }.ValidateOptions());
