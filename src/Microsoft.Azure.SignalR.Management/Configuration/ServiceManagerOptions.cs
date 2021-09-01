@@ -3,7 +3,6 @@
 
 using System;
 using System.Net;
-using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -64,7 +63,7 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new InvalidOperationException($"{nameof(ServiceEndpoints)} is empty. {nameof(ConnectionString)} is  null, empty, or consists only of white-space.");
             }
             // forbid multiple endpoints in transient mode.
-            if (ServiceTransportType == ServiceTransportType.Transient )
+            if (ServiceTransportType == ServiceTransportType.Transient)
             {
                 var count = ConnectionString == null ? 0 : 1;
                 if (ServiceEndpoints != null)
