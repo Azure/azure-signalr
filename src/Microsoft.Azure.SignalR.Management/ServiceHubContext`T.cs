@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR.Management
 {
+    //todo: make public strong-typed-hub
     internal abstract class ServiceHubContext<T> : IHubContext<Hub<T>, T> where T : class
     {
         public abstract IHubClients<T> Clients { get; }
