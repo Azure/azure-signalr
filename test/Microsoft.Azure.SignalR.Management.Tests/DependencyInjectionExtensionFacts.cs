@@ -161,7 +161,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             Assert.Throws<InvalidOperationException>(
                 () => new ServiceCollection().AddSignalRServiceManager()
-                                   .Configure<ServiceManagerOptions>(o => o.ServiceEndpoints = FakeEndpointUtils.GetFakeEndpoint(2).ToArray())
                                    .BuildServiceProvider()
                                    .GetRequiredService<IOptions<ServiceManagerOptions>>()
                                    .Value);
