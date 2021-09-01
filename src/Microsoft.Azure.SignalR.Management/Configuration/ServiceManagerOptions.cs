@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR.Management
                 }
                 if (count > 1)
                 {
-                    throw new InvalidOperationException($"Multiple service endpoints are set via {ConnectionString} or {ServiceEndpoints}, but transient transport type does not support multiple service endpoints yet.");
+                    throw new NotImplementedException($"Multiple service endpoints are set via {ConnectionString} or {ServiceEndpoints}, but multiple service endpoints in transient mode are not implemented now.");
                 }
             }
         }
