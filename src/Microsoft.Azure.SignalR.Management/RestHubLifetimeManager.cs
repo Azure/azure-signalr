@@ -13,7 +13,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class RestHubLifetimeManager<THub> : HubLifetimeManager<Hub>, IServiceHubLifetimeManager<THub> where THub : Hub
+    internal class RestHubLifetimeManager<THub> : HubLifetimeManager<THub>, IServiceHubLifetimeManager<THub> where THub : Hub
     {
         private const string NullOrEmptyStringErrorMessage = "Argument cannot be null or empty.";
         private const string TtlOutOfRangeErrorMessage = "Ttl cannot be less than 0.";
