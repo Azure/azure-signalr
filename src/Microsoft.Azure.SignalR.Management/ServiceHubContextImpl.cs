@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly NegotiateProcessor _negotiateProcessor;
         private readonly IServiceEndpointManager _endpointManager;
         
-        private bool _disposed;
+        private bool _disposing;
         internal IServiceProvider ServiceProvider { get; }
 
         public override IHubClients Clients => _hubContext.Clients;
@@ -57,9 +57,9 @@ namespace Microsoft.Azure.SignalR.Management
         {
             // Check _disposed to avoid disposing twice.
             // When host is diposed, it will dispose all the disposable services including this class.
-            if (!_disposed)
+            if (!_disposing)
             {
-                _disposed = true;
+                _disposing = true;
                 using var host = ServiceProvider.GetRequiredService<IHost>();
                 await host.StopAsync();
             }
