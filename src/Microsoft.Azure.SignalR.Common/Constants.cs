@@ -21,10 +21,6 @@ namespace Microsoft.Azure.SignalR
             public static readonly string ConnectionStringKeyPrefix = $"{ConnectionStringDefaultKey}:";
             public static readonly string ApplicationNameDefaultKeyPrefix = $"{ApplicationNameDefaultKey}:";
             public static readonly string ConnectionStringSecondaryKeyPrefix = $"{ConnectionStringSecondaryKey}:";
-
-            // The followings are keys for identity-based service endpoint configuration.
-            public const string ServiceUriKey = "ServiceUri";
-            public const string EndpointTypeKey = "Type";
         }
 
         public const string AsrsMigrateFrom = "Asrs-Migrate-From";
