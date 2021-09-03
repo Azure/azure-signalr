@@ -16,7 +16,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    internal class ServiceHubContextImpl : ServiceHubContext, IInternalServiceHubContext
+    internal sealed class ServiceHubContextImpl : ServiceHubContext, IInternalServiceHubContext
     {
         private readonly string _hubName;
         private readonly IHubContext<Hub> _hubContext;
