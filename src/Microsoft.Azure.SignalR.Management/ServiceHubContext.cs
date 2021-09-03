@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public virtual Task DisposeAsync() => Task.CompletedTask;
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             DisposeAsync().GetAwaiter().GetResult();
         }
