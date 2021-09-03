@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         internal async Task TestRestHealthCheckServiceWithUnhealthyEndpoint(RestClientFactory implementationInstance)
         {
             using var _ = StartLog(out var loggerFactory);
-            var serviceHubContext = await new ServiceManagerBuilder()
+            using var serviceHubContext = await new ServiceManagerBuilder()
                 .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
                 .WithLoggerFactory(loggerFactory)
                 .ConfigureServices(services =>
@@ -52,7 +52,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .CreateHubContextAsync(HubName, default);
             var endpoint = (serviceHubContext as ServiceHubContextImpl).ServiceProvider.GetRequiredService<IServiceEndpointManager>().GetEndpoints(HubName).First();
             Assert.False(endpoint.Online);
-            await serviceHubContext.DisposeAsync();
         }
 
         [Fact]
@@ -78,7 +77,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     o.RetryInterval = retryInterval;
                     o.EnabledForSingleEndpoint = true;
                 });
-            var serviceHubContext = await new ServiceManagerBuilder(services)
+            using var serviceHubContext = await new ServiceManagerBuilder(services)
                 .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
                 .WithLoggerFactory(loggerFactory)
                 .BuildServiceManager()
@@ -93,8 +92,6 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             //Wait until the next health check finish
             await Task.Delay(checkInterval + retryTime + TimeSpan.FromSeconds(1));
             Assert.False(endpoint.Online);
-
-            await serviceHubContext.DisposeAsync();
         }
     }
 }
