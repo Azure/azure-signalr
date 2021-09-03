@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    public abstract class ServiceHubContext : IServiceHubContext
+    public abstract class ServiceHubContext : IServiceHubContext, IDisposable
     {
         /// <summary>
         /// Gets a user group manager instance which implements <see cref="IUserGroupManager"/> that can be used to add and remove users to named groups.
@@ -31,5 +31,10 @@ namespace Microsoft.Azure.SignalR.Management
         public virtual ValueTask<NegotiationResponse> NegotiateAsync(NegotiationOptions negotiationOptions = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         public virtual Task DisposeAsync() => Task.CompletedTask;
+
+        public virtual void Dispose()
+        {
+            DisposeAsync().GetAwaiter().GetResult();
+        }
     }
 }
