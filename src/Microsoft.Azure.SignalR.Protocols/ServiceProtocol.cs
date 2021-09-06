@@ -457,7 +457,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             WritePayloads(ref writer, message.Payloads);
             message.WriteExtensionMembers(ref writer);
             WriteStringArray(ref writer, message.ExcludedUserList);
-            writer.Write(message.SenderId);
+            writer.Write(message.CallerUserId);
         }
 
         private static void WriteMultiGroupBroadcastDataMessage(ref MessagePackWriter writer, MultiGroupBroadcastDataMessage message)
@@ -875,7 +875,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             if (arrayLength >= 7)
             {
                 result.ExcludedUserList = ReadStringArray(ref reader, "excludedUserList");
-                result.SenderId = ReadString(ref reader, "senderId");
+                result.CallerUserId = ReadString(ref reader, "callerUserId");
             }
 
             return result;

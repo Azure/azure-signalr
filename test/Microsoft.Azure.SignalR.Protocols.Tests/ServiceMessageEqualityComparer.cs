@@ -216,7 +216,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         private bool GroupBroadcastDataMessagesEqual(GroupBroadcastDataMessage x, GroupBroadcastDataMessage y)
         {
             return StringEqual(x.GroupName, y.GroupName) &&
-                   StringEqual(x.SenderId, y.SenderId) &&
+                   StringEqual(x.CallerUserId, y.CallerUserId) &&
                    SequenceEqual(x.ExcludedList, y.ExcludedList) &&
                    SequenceEqual(x.ExcludedUserList, y.ExcludedUserList) &&
                    PayloadsEqual(x.Payloads, y.Payloads) &&

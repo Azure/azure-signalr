@@ -450,7 +450,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     })
                 {
                     ExcludedUserList = new [] {"user1", "user2"},
-                    SenderId = "user3"
+                    CallerUserId = "user3"
                 },
                 binary: "lw2mZ3JvdXAzkqZjb25uMTKmY29ubjEzgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgJKldXNlcjGldXNlcjKldXNlcjM="),
             new ProtocolTestData(
