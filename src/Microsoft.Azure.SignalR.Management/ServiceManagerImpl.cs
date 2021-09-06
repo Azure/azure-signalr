@@ -78,10 +78,10 @@ namespace Microsoft.Azure.SignalR.Management
             return _endpointProvider.GetClientEndpoint(hubName, null, null);
         }
 
-        public override Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
+        public override async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
             using var restClient = _restClientFactory.Create(_endpoint);
-            return restClient.IsServiceHealthy(cancellationToken);
+            return await restClient.IsServiceHealthy(cancellationToken);
         }
     }
 }
