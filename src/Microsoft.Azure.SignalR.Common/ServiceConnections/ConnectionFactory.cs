@@ -35,7 +35,7 @@ namespace Microsoft.Azure.SignalR
             var url = GetServiceUrl(provider, hubName, connectionId, target);
 
             headers ??= new Dictionary<string, string>();
-            if (!headers.ContainsKey(Constants.Headers.AsrsServerId))
+            if (!string.IsNullOrEmpty(_serverId) && !headers.ContainsKey(Constants.Headers.AsrsServerId))
             {
                 headers.Add(Constants.Headers.AsrsServerId, _serverId);
             }
