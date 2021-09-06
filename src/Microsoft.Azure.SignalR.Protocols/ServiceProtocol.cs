@@ -871,8 +871,13 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 result.ReadExtensionMembers(ref reader);
             }
-            result.ExcludedUserList = ReadStringArray(ref reader, "excludedUserList");
-            result.SenderId = ReadString(ref reader, "senderId");
+
+            if (arrayLength >= 7)
+            {
+                result.ExcludedUserList = ReadStringArray(ref reader, "excludedUserList");
+                result.SenderId = ReadString(ref reader, "senderId");
+            }
+
             return result;
         }
 
