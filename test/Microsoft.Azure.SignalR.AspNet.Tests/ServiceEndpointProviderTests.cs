@@ -155,7 +155,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Fact(Skip = "Access token does not need to be unique")]
-        public async Task GenerateMutlipleAccessTokenShouldBeUnique()
+        public async Task GenerateMultipleAccessTokenShouldBeUnique()
         {
             var sep = new ServiceEndpointProvider(new ServiceEndpoint(DefaultConnectionString), new ServiceOptions() { });
             var userId = Guid.NewGuid().ToString();

@@ -14,12 +14,12 @@ namespace Microsoft.Azure.SignalR
     internal class ConnectionFactory : IConnectionFactory
     {
         private readonly ILoggerFactory _loggerFactory;
-        private readonly string _userId;
+        private readonly string _serverId;
 
         public ConnectionFactory(IServerNameProvider nameProvider, ILoggerFactory loggerFactory)
         {
             _loggerFactory = loggerFactory != null ? new GracefulLoggerFactory(loggerFactory) : throw new ArgumentNullException(nameof(loggerFactory));
-            _userId = nameProvider?.GetName();
+            _serverId = nameProvider?.GetName();
         }
 
         public async Task<ConnectionContext> ConnectAsync(HubServiceEndpoint hubServiceEndpoint,
@@ -31,8 +31,15 @@ namespace Microsoft.Azure.SignalR
         {
             var provider = hubServiceEndpoint.Provider;
             var hubName = hubServiceEndpoint.Hub;
-            Task<string> accessTokenGenerater() => provider.GenerateServerAccessTokenAsync(hubName, _userId);
+            Task<string> accessTokenGenerater() => provider.GenerateServerAccessTokenAsync(hubName, _serverId);
             var url = GetServiceUrl(provider, hubName, connectionId, target);
+
+            headers ??= new Dictionary<string, string>();
+            if (!string.IsNullOrEmpty(_serverId) && !headers.ContainsKey(Constants.Headers.AsrsServerId))
+            {
+                headers.Add(Constants.Headers.AsrsServerId, _serverId);
+            }
+
             var connectionOptions = new WebSocketConnectionOptions
             {
                 Headers = headers,

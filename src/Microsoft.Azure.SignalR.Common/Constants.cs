@@ -96,6 +96,7 @@ namespace Microsoft.Azure.SignalR
         public static class Headers
         {
             public const string AsrsHeaderPrefix = "X-ASRS-";
+            public const string AsrsServerId = AsrsHeaderPrefix + "Server-Id";
             public const string AsrsMessageTracingId = AsrsHeaderPrefix + "Message-Tracing-Id";
         }
     }
