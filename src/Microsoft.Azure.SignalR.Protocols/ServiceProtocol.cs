@@ -450,12 +450,14 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteGroupBroadcastDataMessage(ref MessagePackWriter writer, GroupBroadcastDataMessage message)
         {
-            writer.WriteArrayHeader(5);
+            writer.WriteArrayHeader(7);
             writer.Write(ServiceProtocolConstants.GroupBroadcastDataMessageType);
             writer.Write(message.GroupName);
             WriteStringArray(ref writer, message.ExcludedList);
             WritePayloads(ref writer, message.Payloads);
             message.WriteExtensionMembers(ref writer);
+            WriteStringArray(ref writer, message.ExcludedUserList);
+            writer.Write(message.SenderId);
         }
 
         private static void WriteMultiGroupBroadcastDataMessage(ref MessagePackWriter writer, MultiGroupBroadcastDataMessage message)
@@ -869,6 +871,8 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 result.ReadExtensionMembers(ref reader);
             }
+            result.ExcludedUserList = ReadStringArray(ref reader, "excludedUserList");
+            result.SenderId = ReadString(ref reader, "senderId");
             return result;
         }
 

@@ -9,6 +9,7 @@ using System.Security.Claims;
 using System.Text;
 
 using Microsoft.Extensions.Primitives;
+
 using Xunit;
 
 namespace Microsoft.Azure.SignalR.Protocol.Tests
@@ -232,6 +233,33 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "AckWithMessage_NoOptionalField",
                 message: new AckMessage(2, 101, "Joined group successfully"),
                 binary: "lBQCZblKb2luZWQgZ3JvdXAgc3VjY2Vzc2Z1bGx5"),
+            new ProtocolTestData(
+                name: "GroupBroadcastExcept",
+                message: new GroupBroadcastDataMessage("group3", new [] {"conn12", "conn13"},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    }),
+                binary: "lQ2mZ3JvdXAzkqZjb25uMTKmY29ubjEzgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgA=="),
+            new ProtocolTestData(
+                name: "GroupBroadcast",
+                message: new GroupBroadcastDataMessage("group3",
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    }),
+                binary: "lQ2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoA="),
+            new ProtocolTestData(
+                name: "GroupBroadcastWithTracingId",
+                message: new GroupBroadcastDataMessage("group3",
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    }, tracingId: 1234L),
+                binary: "lQ2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoEBzQTS"),
         }.ToDictionary(t => t.Name);
 
         public static IDictionary<string, ProtocolTestData> TestData => new[]
@@ -402,7 +430,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }),
-                binary: "lQ2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoA="),
+                binary: "lw2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoCQwA=="),
             new ProtocolTestData(
                 name: "GroupBroadcastExcept",
                 message: new GroupBroadcastDataMessage("group3", new [] {"conn12", "conn13"},
@@ -411,7 +439,29 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }),
-                binary: "lQ2mZ3JvdXAzkqZjb25uMTKmY29ubjEzgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgA=="),
+                binary: "lw2mZ3JvdXAzkqZjb25uMTKmY29ubjEzgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgJDA"),
+            new ProtocolTestData(
+                name: "GroupBroadcastExceptUser",
+                message: new GroupBroadcastDataMessage("group3", new [] {"conn12", "conn13"},
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    })
+                {
+                    ExcludedUserList = new [] {"user1", "user2"},
+                    SenderId = "user3"
+                },
+                binary: "lw2mZ3JvdXAzkqZjb25uMTKmY29ubjEzgqRqc29uxAcGBwECAwQFq21lc3NhZ2VwYWNrxAcHAQIDBAUGgJKldXNlcjGldXNlcjKldXNlcjM="),
+            new ProtocolTestData(
+                name: "GroupBroadcastWithTracingId",
+                message: new GroupBroadcastDataMessage("group3",
+                    new Dictionary<string, ReadOnlyMemory<byte>>
+                    {
+                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
+                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
+                    }, tracingId: 1234L),
+                binary: "lw2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoEBzQTSkMA="),
             new ProtocolTestData(
                 name: "MultiGroupBroadcast",
                 message: new MultiGroupBroadcastDataMessage(new [] {"group4", "group5"},
@@ -497,15 +547,6 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "UserLeaveGroupWithTracingId",
                 message: new UserLeaveGroupMessage("conn11", "group2", tracingId: 1234L),
                 binary: "lBGmY29ubjExpmdyb3VwMoEBzQTS"),
-            new ProtocolTestData(
-                name: "GroupBroadcastWithTracingId",
-                message: new GroupBroadcastDataMessage("group3",
-                    new Dictionary<string, ReadOnlyMemory<byte>>
-                    {
-                        ["json"] = new byte[] {6, 7, 1, 2, 3, 4, 5},
-                        ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
-                    }, tracingId: 1234L),
-                binary: "lQ2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoEBzQTS"),
             new ProtocolTestData(
                 name: "MultiGroupBroadcastWithTracingId",
                 message: new MultiGroupBroadcastDataMessage(new [] {"group4", "group5"},
