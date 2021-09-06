@@ -212,6 +212,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         public int ConnectionType { get; set; }
 
         /// <summary>
+        /// Gets or sets the target of service connection, only work for OnDemand connections.
+        /// </summary>
+        public string Target { get; set; }
+
+        /// <summary>
         /// Gets or sets the migratable flag.
         /// <value>
         /// <list type="bullet">
@@ -222,11 +227,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </value>
         /// </summary>
         public int MigrationLevel { get; set; }
-
-        /// <summary>
-        /// Gets or sets the target of service connection, only work for OnDemand connections.
-        /// </summary>
-        public string Target { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HandshakeRequestMessage"/> class.
