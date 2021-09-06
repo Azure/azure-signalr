@@ -211,6 +211,20 @@ namespace Microsoft.Azure.SignalR
                 case UserLeaveGroupMessage ulgm:
                     return _router.GetEndpointsForGroup(ulgm.GroupName, endpoints).Intersect(_router.GetEndpointsForUser(ulgm.UserId, endpoints));
 
+                case CheckConnectionExistenceWithAckMessage checkConnectionMessage:
+                    return _router.GetEndpointsForConnection(checkConnectionMessage.ConnectionId, endpoints);
+
+                case CheckUserExistenceWithAckMessage checkUserMessage:
+                    return _router.GetEndpointsForUser(checkUserMessage.UserId, endpoints);
+
+                case CheckGroupExistenceWithAckMessage checkGroupMessage:
+                    return _router.GetEndpointsForGroup(checkGroupMessage.GroupName, endpoints);
+
+                case CheckUserInGroupWithAckMessage checkUserInGroupMessage:
+                    return _router.GetEndpointsForGroup(checkUserInGroupMessage.GroupName, endpoints).Intersect(_router.GetEndpointsForUser(checkUserInGroupMessage.UserId, endpoints));
+
+                case CloseConnectionMessage closeConnectionMessage:
+                    return _router.GetEndpointsForConnection(closeConnectionMessage.ConnectionId, endpoints);
                 default:
                     throw new NotSupportedException(message.GetType().Name);
             }
