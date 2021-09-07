@@ -8,7 +8,6 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Testing;
@@ -41,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         internal async Task TestRestHealthCheckServiceWithUnhealthyEndpoint(RestClientFactory implementationInstance)
         {
             using var _ = StartLog(out var loggerFactory);
-            var serviceHubContext = await new ServiceManagerBuilder()
+            using var serviceHubContext = await new ServiceManagerBuilder()
                 .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
                 .WithLoggerFactory(loggerFactory)
                 .ConfigureServices(services =>
@@ -51,8 +50,8 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 })
                 .BuildServiceManager()
                 .CreateHubContextAsync(HubName, default);
-            await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync().AsTask());
-            await serviceHubContext.DisposeAsync();
+            var endpoint = (serviceHubContext as ServiceHubContextImpl).ServiceProvider.GetRequiredService<IServiceEndpointManager>().GetEndpoints(HubName).First();
+            Assert.False(endpoint.Online);
         }
 
         [Fact]
@@ -78,35 +77,21 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     o.RetryInterval = retryInterval;
                     o.EnabledForSingleEndpoint = true;
                 });
-            var serviceHubContext = await new ServiceManagerBuilder(services)
+            using var serviceHubContext = await new ServiceManagerBuilder(services)
                 .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
                 .WithLoggerFactory(loggerFactory)
                 .BuildServiceManager()
                 .CreateHubContextAsync(HubName, default);
 
-            //The first negotiation is OK
-            var negotiateResult = await serviceHubContext.NegotiateAsync();
-            Assert.NotNull(negotiateResult);
+            var endpoint = (serviceHubContext as ServiceHubContextImpl).ServiceProvider.GetRequiredService<IServiceEndpointManager>().GetEndpoints(HubName).First();
+            
+            //The first health check is OK
+            Assert.True(endpoint.Online);
 
             var retryTime = RestHealthCheckService.MaxRetries * retryInterval;
             //Wait until the next health check finish
             await Task.Delay(checkInterval + retryTime + TimeSpan.FromSeconds(1));
-            await Assert.ThrowsAsync<AzureSignalRNotConnectedException>(() => serviceHubContext.NegotiateAsync().AsTask());
-
-            await serviceHubContext.DisposeAsync();
-        }
-
-        [Fact]
-        public async Task TestRestHealthCheckServiceDisabledWithSingleEndpoint()
-        {
-            using var _ = StartLog(out var loggerFactory);
-            var serviceHubContext = await new ServiceManagerBuilder()
-                .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
-                .WithLoggerFactory(loggerFactory)
-                .BuildServiceManager()
-                .CreateHubContextAsync(HubName, default);
-            var negotiateResult = await serviceHubContext.NegotiateAsync();
-            Assert.NotNull(negotiateResult);
+            Assert.False(endpoint.Online);
         }
     }
 }

@@ -47,6 +47,13 @@ namespace Microsoft.Azure.SignalR.Management
             return builder.CreateAsync(hubName, cancellationToken);
         }
 
+        internal override Task<ServiceHubContext<T>> CreateHubContextAsync<T>(string hubName, CancellationToken cancellation)
+        {
+            var builder = new ServiceHubContextBuilder(_services);
+            builder.ConfigureServices(services => services.Configure<ServiceManagerOptions>(o => o.ConnectionCount = 3));
+            return builder.CreateAsync<T>(hubName, cancellation);
+        }
+
         public override void Dispose()
         {
             (_serviceProvider as IDisposable)?.Dispose();
@@ -71,10 +78,10 @@ namespace Microsoft.Azure.SignalR.Management
             return _endpointProvider.GetClientEndpoint(hubName, null, null);
         }
 
-        public override Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
+        public override async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
             using var restClient = _restClientFactory.Create(_endpoint);
-            return restClient.IsServiceHealthy(cancellationToken);
+            return await restClient.IsServiceHealthy(cancellationToken);
         }
     }
 }

@@ -51,10 +51,7 @@ namespace Microsoft.Azure.SignalR
 
             // provides a copy to the endpoint per container
             var endpoints = endpointManager.GetEndpoints(hub);
-            // router will be used when there's customized MessageRouter or multiple endpoints
-            var needRouter = endpoints.Count > 1 || !(_router is DefaultMessageRouter);
-
-            _routerEndpoints = (needRouter, endpoints);
+            UpdateRoutedEndpoints(endpoints);
 
             foreach (var endpoint in endpoints)
             {
@@ -211,6 +208,21 @@ namespace Microsoft.Azure.SignalR
                 case UserLeaveGroupMessage ulgm:
                     return _router.GetEndpointsForGroup(ulgm.GroupName, endpoints).Intersect(_router.GetEndpointsForUser(ulgm.UserId, endpoints));
 
+                case CheckConnectionExistenceWithAckMessage checkConnectionMessage:
+                    return _router.GetEndpointsForConnection(checkConnectionMessage.ConnectionId, endpoints);
+
+                case CheckUserExistenceWithAckMessage checkUserMessage:
+                    return _router.GetEndpointsForUser(checkUserMessage.UserId, endpoints);
+
+                case CheckGroupExistenceWithAckMessage checkGroupMessage:
+                    return _router.GetEndpointsForGroup(checkGroupMessage.GroupName, endpoints);
+
+                case CheckUserInGroupWithAckMessage checkUserInGroupMessage:
+                    return _router.GetEndpointsForGroup(checkUserInGroupMessage.GroupName, endpoints).Intersect(_router.GetEndpointsForUser(checkUserInGroupMessage.UserId, endpoints));
+
+                case CloseConnectionMessage closeConnectionMessage:
+                    return endpoints;
+
                 default:
                     throw new NotSupportedException(message.GetType().Name);
             }
@@ -311,21 +323,26 @@ namespace Microsoft.Azure.SignalR
                         {
                             var newEndpoints = _routerEndpoints.endpoints.ToList();
                             newEndpoints.Add(endpoint);
-                            var needRouter = newEndpoints.Count > 1;
-                            _routerEndpoints = (needRouter, newEndpoints);
+                            UpdateRoutedEndpoints(newEndpoints);
                             break;
                         }
                     case ScaleOperation.Remove:
                         {
                             var newEndpoints = _routerEndpoints.endpoints.Where(e => e.Endpoint != endpoint.Endpoint || e.EndpointType != endpoint.EndpointType).ToList();
-                            var needRouter = newEndpoints.Count > 1;
-                            _routerEndpoints = (needRouter, newEndpoints);
+                            UpdateRoutedEndpoints(newEndpoints);
                             break;
                         }
                     default:
                         break;
                 }
             }
+        }
+
+        private void UpdateRoutedEndpoints(IReadOnlyList<HubServiceEndpoint> currentEndpoints)
+        {
+            // router will be used when there's customized MessageRouter or multiple endpoints
+            var needRouter = currentEndpoints.Count > 1 || !(_router is DefaultMessageRouter);
+            _routerEndpoints = (needRouter, currentEndpoints);
         }
 
         private async Task WaitForServerStable(IServiceConnectionContainer container, HubServiceEndpoint endpoint)

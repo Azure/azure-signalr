@@ -142,6 +142,16 @@ namespace Microsoft.Azure.SignalR.Protocol
         public IReadOnlyList<string> ExcludedList { get; set; }
 
         /// <summary>
+        /// Gets or sets the list of excluded user Ids.
+        /// </summary>
+        public IReadOnlyList<string> ExcludedUserList { get; set; }
+
+        /// <summary>
+        /// Gets or sets the user ID of the message caller
+        /// </summary>
+        public string CallerUserId { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="GroupBroadcastDataMessage"/> class.
         /// </summary>
         /// <param name="groupName">The group name.</param>

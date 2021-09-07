@@ -11,6 +11,9 @@ namespace Microsoft.Azure.SignalR.Management
     {
         public abstract Task<ServiceHubContext> CreateHubContextAsync(string hubName, CancellationToken cancellationToken);
 
+        //todo: make public strong-typed-hub
+        internal virtual Task<ServiceHubContext<T>> CreateHubContextAsync<T>(string hubName, CancellationToken cancellationToken) where T : class => throw new NotImplementedException();
+
         public abstract Task<bool> IsServiceHealthy(CancellationToken cancellationToken);
 
         public abstract void Dispose();

@@ -161,17 +161,16 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             Assert.Throws<InvalidOperationException>(
                 () => new ServiceCollection().AddSignalRServiceManager()
-                                   .Configure<ServiceManagerOptions>(o => o.ServiceEndpoints = FakeEndpointUtils.GetFakeEndpoint(2).ToArray())
                                    .BuildServiceProvider()
                                    .GetRequiredService<IOptions<ServiceManagerOptions>>()
                                    .Value);
         }
 
         [Fact]
-        public async Task ServiceEndpoints_NotAppliedToTransientModeAsync()
+        public async Task MultiServiceEndpoints_NotAppliedToTransientModeAsync()
         {
             // to avoid possible file name conflict with another FileConfigHotReloadTest
-            string configPath = nameof(ServiceEndpoints_NotAppliedToTransientModeAsync);
+            string configPath = nameof(MultiServiceEndpoints_NotAppliedToTransientModeAsync);
             var connStr = FakeEndpointUtils.GetFakeConnectionString(1).Single();
             var configObj = new
             {
@@ -190,7 +189,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var optionsMonitor = provider.GetRequiredService<IOptionsMonitor<ServiceOptions>>();
             Assert.Equal(connStr, optionsMonitor.CurrentValue.ConnectionString);
 
-            //update json config file
+            //update json config file which won't pass validation
             var newConfigObj = new
             {
                 Azure = new
@@ -207,7 +206,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             };
             File.WriteAllText(configPath, JsonConvert.SerializeObject(newConfigObj));
             await Task.Delay(5000);
-            Assert.Equal(connStr, optionsMonitor.CurrentValue.ConnectionString);// new config not reloaded
+            Assert.Equal(connStr, optionsMonitor.CurrentValue.ConnectionString);// as new config don't pass validation, it is not reloaded
         }
     }
 }
