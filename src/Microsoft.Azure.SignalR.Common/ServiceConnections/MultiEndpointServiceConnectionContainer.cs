@@ -51,10 +51,7 @@ namespace Microsoft.Azure.SignalR
 
             // provides a copy to the endpoint per container
             var endpoints = endpointManager.GetEndpoints(hub);
-            // router will be used when there's customized MessageRouter or multiple endpoints
-            var needRouter = endpoints.Count > 1 || !(_router is DefaultMessageRouter);
-
-            _routerEndpoints = (needRouter, endpoints);
+            UpdateRoutedEndpoints(endpoints);
 
             foreach (var endpoint in endpoints)
             {
@@ -326,21 +323,26 @@ namespace Microsoft.Azure.SignalR
                         {
                             var newEndpoints = _routerEndpoints.endpoints.ToList();
                             newEndpoints.Add(endpoint);
-                            var needRouter = newEndpoints.Count > 1;
-                            _routerEndpoints = (needRouter, newEndpoints);
+                            UpdateRoutedEndpoints(newEndpoints);
                             break;
                         }
                     case ScaleOperation.Remove:
                         {
                             var newEndpoints = _routerEndpoints.endpoints.Where(e => e.Endpoint != endpoint.Endpoint || e.EndpointType != endpoint.EndpointType).ToList();
-                            var needRouter = newEndpoints.Count > 1;
-                            _routerEndpoints = (needRouter, newEndpoints);
+                            UpdateRoutedEndpoints(newEndpoints);
                             break;
                         }
                     default:
                         break;
                 }
             }
+        }
+
+        private void UpdateRoutedEndpoints(IReadOnlyList<HubServiceEndpoint> currentEndpoints)
+        {
+            // router will be used when there's customized MessageRouter or multiple endpoints
+            var needRouter = currentEndpoints.Count > 1 || !(_router is DefaultMessageRouter);
+            _routerEndpoints = (needRouter, currentEndpoints);
         }
 
         private async Task WaitForServerStable(IServiceConnectionContainer container, HubServiceEndpoint endpoint)
