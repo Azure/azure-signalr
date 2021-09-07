@@ -20,6 +20,5 @@ namespace Microsoft.Azure.SignalR
         string GetServerEndpoint(string hubName);
 
         IWebProxy Proxy { get; }
-
     }
 }
