@@ -66,6 +66,7 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 
 > More details about different modes can be found [here](#Transport-Type).
 
+> [For a full sample on management SDK, please go here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
 ## Create Service Manager
 
 Build your instance of `ServiceManager` from a `ServiceManagerBuilder`
