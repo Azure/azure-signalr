@@ -58,10 +58,10 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 **Features only come with new API**
 |                                     | Transient          | Persistent         |
 |-------------------------------------|--------------------|--------------------|
-| Check if a connection exists        | :heavy_check_mark: | Since :1.11:       |
-| Check if a group exists             | :heavy_check_mark: | Since :1.11:       |
-| Check if a user exists              | :heavy_check_mark: | Since :1.11:       |
-| Close a client connection           | :heavy_check_mark: | Since :1.11:       |
+| Check if a connection exists        | :heavy_check_mark: | Since v1.11        |
+| Check if a group exists             | :heavy_check_mark: | Since v1.11        |
+| Check if a user exists              | :heavy_check_mark: | Since v1.11        |
+| Close a client connection           | :heavy_check_mark: | Since v1.11        |
 
 
 > More details about different modes can be found [here](#Transport-Type).
