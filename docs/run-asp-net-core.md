@@ -127,7 +127,7 @@ You can increase this value to avoid client disconnect.
 - When set to `MigrateClients`, in addition, we will try migrating client connections to another valid server. The migration will be triggered only after a message has been completely delivered.
   - `OnConnected` and `OnDisconnected` will be triggered when connections be migrated in/out.
   - `IConnectionMigrationFeature` can help you identify if the connection has been migrated in/out.
-  - See our [sample codes](https://github.com/Azure/azure-signalr/blob/dev/samples/ChatSample/ChatSample/Hub/Chat.cs) for detail usage.
+  - See our [sample codes](https://github.com/Azure/azure-signalr/blob/dev/samples/ChatSample/ChatSample.NetCore31/Hub/Chat.cs) for detail usage.
 
 #### `GracefulShutdown.Timeout`
 
