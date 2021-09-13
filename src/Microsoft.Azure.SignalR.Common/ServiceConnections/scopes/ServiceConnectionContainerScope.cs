@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly AsyncLocal<ServiceDiagnosticLogsContext> _asyncLocal = new AsyncLocal<ServiceDiagnosticLogsContext>();
 
-        private bool _needCleanup;
+        private readonly bool _needCleanup;
 
         public ServiceConnectionContainerScope(ServiceDiagnosticLogsContext props)
         {

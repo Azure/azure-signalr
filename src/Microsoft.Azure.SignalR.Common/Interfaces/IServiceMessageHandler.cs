@@ -6,7 +6,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    interface IServiceMessageHandler
+    internal interface IServiceMessageHandler
     {
         Task HandlePingAsync(PingMessage pingMessage);
 
