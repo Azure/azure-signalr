@@ -13,6 +13,7 @@ using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 {
+    [Collection("Auth")]
     public class AuthUtilityTests
     {
         private const string Audience = "https://localhost/aspnetclient?hub=testhub";

@@ -9,6 +9,7 @@ using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 {
+    [Collection("Auth")]
     public class AadAccessKeyTests
     {
         private const string SigningKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
