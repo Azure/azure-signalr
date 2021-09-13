@@ -31,7 +31,9 @@ namespace Microsoft.Azure.SignalR
 
         public override IDuplexPipe Transport { get; set; }
 
-        public WebSocketConnectionContext(WebSocketConnectionOptions httpConnectionOptions, ILoggerFactory loggerFactory, Func<Task<string>> accessTokenProvider)
+        public WebSocketConnectionContext(WebSocketConnectionOptions httpConnectionOptions,
+                                          ILoggerFactory loggerFactory,
+                                          Func<Task<string>> accessTokenProvider)
         {
             Transport = _websocketTransport = new WebSocketsTransport(httpConnectionOptions, loggerFactory, accessTokenProvider);
             ConnectionId = "sc_" + Guid.NewGuid();
