@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using Azure;
 
 namespace Microsoft.Azure.SignalR.Tests
 {
@@ -43,9 +44,10 @@ namespace Microsoft.Azure.SignalR.Tests
             return tokenString;
         }
 
-        public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string key, IEnumerable<Claim> customClaims = null)
+        public static string GenerateExpectedAccessToken(JwtSecurityToken token, string audience, string signingKey, IEnumerable<Claim> customClaims = null)
         {
-            return GenerateExpectedAccessToken(token, audience, new AccessKey(TestEndpoint, key), customClaims: customClaims);
+            var credential = new AzureKeyCredential(signingKey);
+            return GenerateExpectedAccessToken(token, audience, new AccessKey(TestEndpoint, credential), customClaims: customClaims);
         }
 
         public static string GenerateJwtBearer(
@@ -77,7 +79,8 @@ namespace Microsoft.Azure.SignalR.Tests
             string signingKey
         )
         {
-            return GenerateJwtBearer(audience, subject, expires, notBefore, issueAt, new AccessKey(TestEndpoint, signingKey));
+            var credential = new AzureKeyCredential(signingKey);
+            return GenerateJwtBearer(audience, subject, expires, notBefore, issueAt, new AccessKey(TestEndpoint, credential));
         }
     }
 }

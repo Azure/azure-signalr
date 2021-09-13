@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -18,14 +19,13 @@ namespace Microsoft.Azure.SignalR
 
         public Uri Endpoint { get; }
 
-        public AccessKey(string uri, string key) : this(new Uri(uri))
+        public AccessKey(string uri, AzureKeyCredential credential) : this(new Uri(uri), credential)
         {
-            Key = new Tuple<string, string>(key.GetHashCode().ToString(), key);
         }
 
-        public AccessKey(Uri uri, string key) : this(uri)
+        public AccessKey(Uri uri, AzureKeyCredential credential) : this(uri)
         {
-            Key = new Tuple<string, string>(key.GetHashCode().ToString(), key);
+            Key = new Tuple<string, string>(credential.Key.GetHashCode().ToString(), credential.Key);
         }
 
         protected AccessKey(Uri uri)

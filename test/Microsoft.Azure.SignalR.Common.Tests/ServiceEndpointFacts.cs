@@ -4,7 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-
+using Azure;
 using Azure.Identity;
 
 using Xunit;
@@ -58,11 +58,34 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [InlineData("http://localhost/", "http://localhost", 80)]
         [InlineData("http://localhost/foo", "http://localhost", 80)]
         [InlineData("https://localhost/foo/", "https://localhost", 443)]
-        public void TestAadConstructor(string url, string expectedEndpoint, int port)
+        public void TestTokenCredentialConstructor(string url, string expectedEndpoint, int port)
         {
             var uri = new Uri(url);
             var serviceEndpoint = new ServiceEndpoint(uri, new DefaultAzureCredential());
-            Assert.IsType<AadAccessKey>(serviceEndpoint.AccessKey);
+            var accessKey = Assert.IsType<AadAccessKey>(serviceEndpoint.AccessKey);
+            Assert.False(accessKey.Authorized);
+            Assert.Equal(expectedEndpoint, serviceEndpoint.Endpoint);
+            Assert.Equal("", serviceEndpoint.Name);
+            Assert.Equal(port, serviceEndpoint.AccessKey.Endpoint.Port);
+            Assert.Equal(EndpointType.Primary, serviceEndpoint.EndpointType);
+            TestCopyConstructor(serviceEndpoint);
+        }
+
+        [Theory]
+        [InlineData("http://localhost", "http://localhost", 80)]
+        [InlineData("https://localhost", "https://localhost", 443)]
+        [InlineData("http://localhost:5050", "http://localhost:5050", 5050)]
+        [InlineData("https://localhost:5050", "https://localhost:5050", 5050)]
+        [InlineData("http://localhost/", "http://localhost", 80)]
+        [InlineData("http://localhost/foo", "http://localhost", 80)]
+        [InlineData("https://localhost/foo/", "https://localhost", 443)]
+        public void TestAzureKeyCredentialConstructor(string url, string expectedEndpoint, int port)
+        {
+            var uri = new Uri(url);
+            var serviceEndpoint = new ServiceEndpoint(uri, new AzureKeyCredential(DefaultKey));
+            var accessKey = Assert.IsType<AccessKey>(serviceEndpoint.AccessKey);
+            Assert.Equal(DefaultKey.GetHashCode().ToString(), accessKey.Id);
+            Assert.Equal(DefaultKey, accessKey.Value);
             Assert.Equal(expectedEndpoint, serviceEndpoint.Endpoint);
             Assert.Equal("", serviceEndpoint.Name);
             Assert.Equal(port, serviceEndpoint.AccessKey.Endpoint.Port);
@@ -74,10 +97,11 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [InlineData("ftp://localhost")]
         [InlineData("ws://localhost")]
         [InlineData("localhost:5050")]
-        public void TestAadConstructorThrowsError(string url)
+        public void TestInvalidEndpoint(string url)
         {
             var uri = new Uri(url);
             Assert.Throws<ArgumentException>(() => new ServiceEndpoint(uri, new DefaultAzureCredential()));
+            Assert.Throws<ArgumentException>(() => new ServiceEndpoint(uri, new AzureKeyCredential("foo")));
         }
 
         [Theory]
@@ -91,11 +115,35 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [InlineData(":bar", ":bar", EndpointType.Primary)]
         [InlineData(":primary", "", EndpointType.Primary)]
         [InlineData(":secondary", "", EndpointType.Secondary)]
-        public void TestAadConstructorWithKey(string key, string name, EndpointType type)
+        public void TestTokenCredentialConstructorWithKey(string key, string name, EndpointType type)
         {
             var uri = new Uri("http://localhost");
             var serviceEndpoint = new ServiceEndpoint(key, uri, new DefaultAzureCredential());
-            Assert.IsType<AadAccessKey>(serviceEndpoint.AccessKey);
+            var accessKey = Assert.IsType<AadAccessKey>(serviceEndpoint.AccessKey);
+            Assert.False(accessKey.Authorized);
+            Assert.Equal(name, serviceEndpoint.Name);
+            Assert.Equal(type, serviceEndpoint.EndpointType);
+            TestCopyConstructor(serviceEndpoint);
+        }
+
+        [Theory]
+        [InlineData("", "", EndpointType.Primary)]
+        [InlineData("foo", "foo", EndpointType.Primary)]
+        [InlineData("foo:primary", "foo", EndpointType.Primary)]
+        [InlineData("foo:secondary", "foo", EndpointType.Secondary)]
+        [InlineData("foo:SECONDARY", "foo", EndpointType.Secondary)]
+        [InlineData("foo:bar", "foo:bar", EndpointType.Primary)]
+        [InlineData(":", ":", EndpointType.Primary)]
+        [InlineData(":bar", ":bar", EndpointType.Primary)]
+        [InlineData(":primary", "", EndpointType.Primary)]
+        [InlineData(":secondary", "", EndpointType.Secondary)]
+        public void TestAzureKeyCredentialConstructorWithKey(string key, string name, EndpointType type)
+        {
+            var uri = new Uri("http://localhost");
+            var serviceEndpoint = new ServiceEndpoint(key, uri, new AzureKeyCredential(DefaultKey));
+            var accessKey = Assert.IsType<AccessKey>(serviceEndpoint.AccessKey);
+            Assert.Equal(DefaultKey.GetHashCode().ToString(), accessKey.Id);
+            Assert.Equal(DefaultKey, accessKey.Value);
             Assert.Equal(name, serviceEndpoint.Name);
             Assert.Equal(type, serviceEndpoint.EndpointType);
             TestCopyConstructor(serviceEndpoint);

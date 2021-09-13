@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-
+using Azure;
 using Azure.Core;
 
 namespace Microsoft.Azure.SignalR
@@ -97,21 +97,20 @@ namespace Microsoft.Azure.SignalR
         /// <param name="credential"></param>
         /// <param name="endpointType"></param>
         /// <param name="name"></param>
-        public ServiceEndpoint(Uri endpoint, TokenCredential credential, EndpointType endpointType = EndpointType.Primary, string name = "")
+        public ServiceEndpoint(Uri endpoint, TokenCredential credential, EndpointType endpointType = EndpointType.Primary, string name = "") : this(endpoint)
         {
-            if (endpoint == null)
-            {
-                throw new ArgumentNullException(nameof(endpoint));
-            }
-            else if (endpoint.Scheme != Uri.UriSchemeHttp && endpoint.Scheme != Uri.UriSchemeHttps)
-            {
-                throw new ArgumentException("Endpoint scheme must be 'http://' or 'https://'");
-            }
             AccessKey = new AadAccessKey(endpoint, credential);
-            AudienceBaseUrl = BuildAudienceBaseUrl(endpoint);
-            Endpoint = BuildServerEndpoint(endpoint);
-            ClientEndpoint ??= Endpoint;
+            (Name, EndpointType) = (name, endpointType);
+        }
 
+        public ServiceEndpoint(string nameWithEndpointType, Uri endpoint, AzureKeyCredential credential) : this(endpoint, credential)
+        {
+            (Name, EndpointType) = Parse(nameWithEndpointType);
+        }
+
+        public ServiceEndpoint(Uri endpoint, AzureKeyCredential credential, EndpointType endpointType = EndpointType.Primary, string name = "") : this(endpoint)
+        {
+            AccessKey = new AccessKey(endpoint, credential);
             (Name, EndpointType) = (name, endpointType);
         }
 
@@ -174,6 +173,21 @@ namespace Microsoft.Azure.SignalR
         private static string BuildServerEndpoint(Uri uri)
         {
             return new Uri($"{uri.Scheme}://{uri.Host}:{uri.Port}").AbsoluteUri.TrimEnd('/');
+        }
+
+        private ServiceEndpoint(Uri endpoint)
+        {
+            if (endpoint == null)
+            {
+                throw new ArgumentNullException(nameof(endpoint));
+            }
+            else if (!ConnectionStringParser.ValidateEndpoint(endpoint))
+            {
+                throw new ArgumentException("Endpoint scheme must be 'http://' or 'https://'");
+            }
+            AudienceBaseUrl = BuildAudienceBaseUrl(endpoint);
+            Endpoint = BuildServerEndpoint(endpoint);
+            ClientEndpoint ??= Endpoint;
         }
 
         private static (string, EndpointType) Parse(string nameWithEndpointType)

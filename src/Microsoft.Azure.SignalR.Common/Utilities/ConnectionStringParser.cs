@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Azure;
 using Azure.Identity;
 
 namespace Microsoft.Azure.SignalR
@@ -13,7 +14,7 @@ namespace Microsoft.Azure.SignalR
         private const string AccessKeyProperty = "accesskey";
         private const string AuthTypeProperty = "authtype";
         private const string ClientCertProperty = "clientCert";
-        private const string ClientEndpointProperty = "ClientEndpoint";
+        private const string ClientEndpointProperty = "clientEndpoint";
         private const string ClientIdProperty = "clientId";
         private const string ClientSecretProperty = "clientSecret";
         private const string EndpointProperty = "endpoint";
@@ -74,7 +75,7 @@ namespace Microsoft.Azure.SignalR
 
             if (!ValidateEndpoint(endpoint))
             {
-                throw new ArgumentException($"Endpoint property in connection string is not a valid URI: {dict[EndpointProperty]}.");
+                throw new ArgumentException($"{EndpointProperty} property in connection string is not a valid URI: {dict[EndpointProperty]}.");
             }
             var builder = new UriBuilder(endpoint);
 
@@ -122,8 +123,12 @@ namespace Microsoft.Azure.SignalR
 
         internal static bool ValidateEndpoint(string endpoint)
         {
-            return Uri.TryCreate(endpoint, UriKind.Absolute, out var uriResult) &&
-                   (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+            return Uri.TryCreate(endpoint, UriKind.Absolute, out var uriResult) && ValidateEndpoint(uriResult);
+        }
+
+        internal static bool ValidateEndpoint(Uri endpoint)
+        {
+            return endpoint.Scheme == Uri.UriSchemeHttp || endpoint.Scheme == Uri.UriSchemeHttps;
         }
 
         private static AccessKey BuildAadAccessKey(Uri uri, Dictionary<string, string> dict)
@@ -160,7 +165,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (dict.TryGetValue(AccessKeyProperty, out var key))
             {
-                return new AccessKey(uri, key);
+                return new AccessKey(uri, new AzureKeyCredential(key));
             }
             throw new ArgumentException(MissingAccessKeyProperty, AccessKeyProperty);
         }

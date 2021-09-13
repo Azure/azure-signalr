@@ -63,7 +63,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         {
             var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
 
-            Assert.Contains("Endpoint property in connection string is not a valid URI", exception.Message);
+            Assert.Contains("endpoint property in connection string is not a valid URI", exception.Message);
         }
 
         [Theory]
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         {
             var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
 
-            Assert.Contains("ClientEndpoint property in connection string is not a valid URI", exception.Message);
+            Assert.Contains("clientEndpoint property in connection string is not a valid URI", exception.Message);
         }
 
         [Theory]
