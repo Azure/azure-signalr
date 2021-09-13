@@ -2,7 +2,7 @@
 
 namespace Microsoft.Azure.SignalR
 {
-    interface IClientConnectionLifetimeManager
+    internal interface IClientConnectionLifetimeManager
     {
         Task WhenAllCompleted();
     }

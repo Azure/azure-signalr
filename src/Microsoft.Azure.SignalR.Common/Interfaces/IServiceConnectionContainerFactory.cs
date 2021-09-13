@@ -3,7 +3,7 @@
 
 namespace Microsoft.Azure.SignalR
 {
-    interface IServiceConnectionContainerFactory
+    internal interface IServiceConnectionContainerFactory
     {
         IMultiEndpointServiceConnectionContainer Create(string hub);
     }
