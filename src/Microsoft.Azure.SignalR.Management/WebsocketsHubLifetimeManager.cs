@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IServiceHubLifetimeManager<THub> where THub : Hub
     {
-        private IOptions<ServiceManagerOptions> _serviceManagerOptions;
+        private readonly IOptions<ServiceManagerOptions> _serviceManagerOptions;
 
         public WebSocketsHubLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver,
             IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILoggerFactory loggerFactory, IOptions<ServiceManagerOptions> serviceManagerOptions) :
