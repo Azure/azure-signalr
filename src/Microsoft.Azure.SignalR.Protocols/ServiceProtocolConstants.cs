@@ -34,5 +34,9 @@ namespace Microsoft.Azure.SignalR.Protocol
         public const int UserLeaveGroupWithAckMessageType = 27;
         public const int AccessKeyRequestType = 28;
         public const int AccessKeyResponseType = 29;
+        public const int CloseConnectionWithAckMessageType = 30;
+        public const int CloseConnectionsWithAckMessageType = 31;
+        public const int CloseUserConnectionsWithAckMessageType = 32;
+        public const int CloseGroupConnectionsWithAckMessageType = 33;
     }
 }
