@@ -8,17 +8,17 @@ namespace Microsoft.Azure.SignalR.Protocol
     public abstract class CloseWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
     {
         /// <summary>
-        /// Gets or sets the ack id.
+        /// Gets or sets the ack Id.
         /// </summary>
         public int AckId { get; set; }
 
         /// <summary>
-        /// Gets or sets the tracing Id
+        /// Gets or sets the tracing Id.
         /// </summary>
         public ulong? TracingId { get; set; }
 
         /// <summary>
-        /// Gets or sets the reason closing the connection
+        /// Gets or sets the reason for the close.
         /// </summary>
         public string Reason { get; set; }
 
@@ -38,18 +38,19 @@ namespace Microsoft.Azure.SignalR.Protocol
         public CloseMultiConnectionsWithAckMessage(int ackId) : base(ackId) { }
     }
 
+
     /// <summary>
     /// A close-connection message.
     /// </summary>
     public class CloseConnectionWithAckMessage : CloseWithAckMessage
     {
         /// <summary>
-        /// Gets or sets the connection Id for the connection
+        /// Gets or sets the connection Id for the connection.
         /// </summary>
         public string ConnectionId { get; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CloseConnectionMessage"/> class.
+        /// Initializes a new instance of the <see cref="CloseConnectionWithAckMessage"/> class.
         /// </summary>
         /// <param name="connectionId">The connection Id.</param>
         /// <param name="ackId">The ack Id for the message.</param>
@@ -60,10 +61,15 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
-    /// Close connections in a hub.
+    /// Close all the connections in the hub.
     /// </summary>
     public class CloseConnectionsWithAckMessage : CloseMultiConnectionsWithAckMessage
     {
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CloseConnectionsWithAckMessage"/> class.
+        /// </summary>
+        /// <param name="ackId">The ack Id for the message.</param>
         public CloseConnectionsWithAckMessage(int ackId) : base(ackId) { }
     }
 
@@ -73,10 +79,15 @@ namespace Microsoft.Azure.SignalR.Protocol
     public class CloseUserConnectionsWithAckMessage : CloseMultiConnectionsWithAckMessage
     {
         /// <summary>
-        /// Gets or sets the user ID.
+        /// Gets or sets the user Id.
         /// </summary>
         public string UserId { get; set; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CloseUserConnectionsWithAckMessage"/> class.
+        /// </summary>
+        /// <param name="userId">The user Id for the message.</param>
+        /// <param name="ackId">The ack Id for the message.</param>
         public CloseUserConnectionsWithAckMessage(string userId, int ackId) : base(ackId)
         {
             UserId = userId;
@@ -93,6 +104,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public string GroupName { get; set; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CloseGroupConnectionsWithAckMessage"/> class.
+        /// </summary>
+        /// <param name="groupName">The group name for the message.</param>
+        /// <param name="ackId">The ack Id for the message.</param>
         public CloseGroupConnectionsWithAckMessage(string groupName, int ackId) : base(ackId)
         {
             GroupName = groupName;
