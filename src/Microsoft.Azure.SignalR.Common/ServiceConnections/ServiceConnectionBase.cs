@@ -18,15 +18,20 @@ namespace Microsoft.Azure.SignalR
     internal abstract class ServiceConnectionBase : IServiceConnection
     {
         protected static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
+
         // Service ping rate is 5 sec to let server know service status. Set timeout for 30 sec for some space.
         private static readonly TimeSpan DefaultServiceTimeout = TimeSpan.FromSeconds(30);
+
         private static readonly long DefaultServiceTimeoutTicks = (long)(DefaultServiceTimeout.TotalSeconds * Stopwatch.Frequency);
+
         // App server ping rate is 5 sec to let service know if app server is still alive
         // Service will abort both server and client connections link to this server when server is down.
         // App server ping is triggered by incoming requests and send by checking last send timestamp.
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
+
         // App server update its azure identity by sending a AccessKeyRequestMessage with Azure AD Token every 10 minutes.
         private static readonly TimeSpan DefaultSyncAzureIdentityInterval = TimeSpan.FromMinutes(10);
+
         private static readonly long DefaultKeepAliveTicks = (long)DefaultKeepAliveInterval.TotalSeconds * Stopwatch.Frequency;
 
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
@@ -56,19 +61,7 @@ namespace Microsoft.Azure.SignalR
 
         private int _started;
 
-        protected HubServiceEndpoint HubEndpoint { get; }
-
-        protected string ServerId { get; }
-
-        protected string ConnectionId { get; }
-
-        protected ILogger Logger { get; }
-
-        protected IServiceProtocol ServiceProtocol { get; }
-
         private ConnectionContext _connectionContext;
-
-        public event Action<StatusChange> ConnectionStatusChanged;
 
         public ServiceConnectionStatus Status
         {
@@ -91,8 +84,16 @@ namespace Microsoft.Azure.SignalR
         }
 
         public Task ConnectionInitializedTask => _serviceConnectionStartTcs.Task;
-
         public Task ConnectionOfflineTask => _serviceConnectionOfflineTcs.Task;
+        protected HubServiceEndpoint HubEndpoint { get; }
+
+        protected string ServerId { get; }
+
+        protected string ConnectionId { get; }
+
+        protected ILogger Logger { get; }
+
+        protected IServiceProtocol ServiceProtocol { get; }
 
         protected ServiceConnectionBase(
             IServiceProtocol serviceProtocol,
@@ -124,6 +125,8 @@ namespace Microsoft.Azure.SignalR
             _serviceMessageHandler = serviceMessageHandler;
             _serviceEventHandler = serviceEventHandler;
         }
+
+        public event Action<StatusChange> ConnectionStatusChanged;
 
         /// <summary>
         /// Start a service connection without the lifetime management.
@@ -306,6 +309,62 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
+        protected virtual async Task<bool> HandshakeAsync(ConnectionContext context)
+        {
+            await SendHandshakeRequestAsync(context.Transport.Output);
+
+            try
+            {
+                using var cts = new CancellationTokenSource();
+                if (!Debugger.IsAttached)
+                {
+                    cts.CancelAfter(DefaultHandshakeTimeout);
+                }
+
+                if (await ReceiveHandshakeResponseAsync(context.Transport.Input, cts.Token))
+                {
+                    Log.HandshakeComplete(Logger);
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Log.ErrorReceivingHandshakeResponse(Logger, ConnectionId, ex);
+                throw;
+            }
+        }
+
+        protected virtual async ValueTask TrySendPingAsync()
+        {
+            if (!_writeLock.Wait(0))
+            {
+                // Skip sending PingMessage when failed getting lock
+                return;
+            }
+
+            try
+            {
+                // Check if last send time is longer than default keep-alive ticks and then send ping
+                if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendTimestamp) > DefaultKeepAliveTicks)
+                {
+                    await _connectionContext.Transport.Output.WriteAsync(GetPingMessage());
+                    Interlocked.Exchange(ref _lastSendTimestamp, Stopwatch.GetTimestamp());
+                    Log.SentPing(Logger);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.FailedSendingPing(Logger, ConnectionId, ex);
+            }
+            finally
+            {
+                _writeLock.Release();
+            }
+        }
+
+        protected virtual ReadOnlyMemory<byte> GetPingMessage() => _cachedPingBytes;
+
         private Task OnEventMessageAsync(ServiceEventMessage message)
         {
             _ = _serviceEventHandler?.HandleAsync(ConnectionId, message);
@@ -364,32 +423,6 @@ namespace Microsoft.Azure.SignalR
                     Log.FailedToConnect(Logger, HubEndpoint.ToString(), ConnectionId, ex);
                 }
                 return null;
-            }
-        }
-
-        protected virtual async Task<bool> HandshakeAsync(ConnectionContext context)
-        {
-            await SendHandshakeRequestAsync(context.Transport.Output);
-
-            try
-            {
-                using var cts = new CancellationTokenSource();
-                if (!Debugger.IsAttached)
-                {
-                    cts.CancelAfter(DefaultHandshakeTimeout);
-                }
-
-                if (await ReceiveHandshakeResponseAsync(context.Transport.Input, cts.Token))
-                {
-                    Log.HandshakeComplete(Logger);
-                    return true;
-                }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Log.ErrorReceivingHandshakeResponse(Logger, ConnectionId, ex);
-                throw;
             }
         }
 
@@ -592,36 +625,6 @@ namespace Microsoft.Azure.SignalR
                 }
             }
         }
-
-        protected virtual async ValueTask TrySendPingAsync()
-        {
-            if (!_writeLock.Wait(0))
-            {
-                // Skip sending PingMessage when failed getting lock
-                return;
-            }
-
-            try
-            {
-                // Check if last send time is longer than default keep-alive ticks and then send ping
-                if (Stopwatch.GetTimestamp() - Interlocked.Read(ref _lastSendTimestamp) > DefaultKeepAliveTicks)
-                {
-                    await _connectionContext.Transport.Output.WriteAsync(GetPingMessage());
-                    Interlocked.Exchange(ref _lastSendTimestamp, Stopwatch.GetTimestamp());
-                    Log.SentPing(Logger);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.FailedSendingPing(Logger, ConnectionId, ex);
-            }
-            finally
-            {
-                _writeLock.Release();
-            }
-        }
-
-        protected virtual ReadOnlyMemory<byte> GetPingMessage() => _cachedPingBytes;
 
         private static class Log
         {

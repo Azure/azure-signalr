@@ -10,12 +10,12 @@ namespace Microsoft.Azure.SignalR.Common.Utilities
         // Use async local with indirect reference to TProps to allow for deep cleanup
         private static readonly AsyncLocal<ScopePropertiesAccessor<TProps>> s_currentAccessor = new AsyncLocal<ScopePropertiesAccessor<TProps>>();
 
+        internal TProps Properties { get; set; }
+
         protected internal static ScopePropertiesAccessor<TProps> Current
         {
             get => s_currentAccessor.Value;
             set => s_currentAccessor.Value = value;
         }
-
-        internal TProps Properties { get; set; }
     }
 }

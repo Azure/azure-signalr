@@ -11,6 +11,22 @@ namespace Microsoft.Azure.SignalR
 {
     internal class WebSocketConnectionOptions
     {
+        public IDictionary<string, string> Headers { get; set; }
+
+        public X509CertificateCollection ClientCertificates { get; set; }
+
+        public CookieContainer Cookies { get; set; }
+
+        public TimeSpan CloseTimeout { get; set; }
+
+        public ICredentials Credentials { get; set; }
+
+        public IWebProxy Proxy { get; set; }
+
+        public bool? UseDefaultCredentials { get; set; }
+
+        public Action<ClientWebSocketOptions> WebSocketConfiguration { get; set; }
+
         public WebSocketConnectionOptions()
         {
             Headers = new Dictionary<string, string>();
@@ -18,21 +34,5 @@ namespace Microsoft.Azure.SignalR
             Cookies = new CookieContainer();
             CloseTimeout = TimeSpan.FromSeconds(5);
         }
-
-        public IDictionary<string, string> Headers { get; set; }
-
-        public X509CertificateCollection ClientCertificates { get; set; }
-       
-        public CookieContainer Cookies { get; set; }
-       
-        public TimeSpan CloseTimeout { get; set; }
-        
-        public ICredentials Credentials { get; set; }
-        
-        public IWebProxy Proxy { get; set; }
-      
-        public bool? UseDefaultCredentials { get; set; }
-      
-        public Action<ClientWebSocketOptions> WebSocketConfiguration { get; set; }
     }
 }

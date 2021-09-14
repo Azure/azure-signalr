@@ -9,14 +9,14 @@ namespace Microsoft.Azure.SignalR
 
     internal interface IServiceEndpointManager
     {
-        IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
-
         IReadOnlyDictionary<ServiceEndpoint, ServiceEndpoint> Endpoints { get; }
-
-        IReadOnlyList<HubServiceEndpoint> GetEndpoints(string hub);
 
         event EndpointEventHandler OnAdd;
 
         event EndpointEventHandler OnRemove;
+
+        IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
+
+        IReadOnlyList<HubServiceEndpoint> GetEndpoints(string hub);
     }
 }

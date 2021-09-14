@@ -5,7 +5,7 @@ using System.Collections.Concurrent;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class DefaultBlazorDetector: IBlazorDetector
+    internal class DefaultBlazorDetector : IBlazorDetector
     {
         private readonly ConcurrentDictionary<string, bool> _blazor = new ConcurrentDictionary<string, bool>();
 

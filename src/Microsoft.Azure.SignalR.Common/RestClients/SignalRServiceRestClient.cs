@@ -25,11 +25,6 @@ namespace Microsoft.Azure.SignalR
             _userAgent = userAgent;
         }
 
-        partial void CustomInitialize()
-        {
-            HttpClient.DefaultRequestHeaders.Add(Constants.AsrsUserAgent, _userAgent);
-        }
-
         public async Task<bool> IsServiceHealthy(CancellationToken cancellationToken)
         {
             try
@@ -46,6 +41,11 @@ namespace Microsoft.Azure.SignalR
             {
                 throw ex.WrapAsAzureSignalRException(BaseUri);
             }
+        }
+
+        partial void CustomInitialize()
+        {
+            HttpClient.DefaultRequestHeaders.Add(Constants.AsrsUserAgent, _userAgent);
         }
     }
 }

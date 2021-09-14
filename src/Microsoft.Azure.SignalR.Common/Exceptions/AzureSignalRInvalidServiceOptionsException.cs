@@ -9,7 +9,7 @@ namespace Microsoft.Azure.SignalR.Common
     [Serializable]
     public class AzureSignalRInvalidServiceOptionsException : AzureSignalRException
     {
-        public AzureSignalRInvalidServiceOptionsException(string propertyName, string validScope) 
+        public AzureSignalRInvalidServiceOptionsException(string propertyName, string validScope)
             : base($"Property '{propertyName}' value should be {validScope}.")
         {
         }

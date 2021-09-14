@@ -27,6 +27,14 @@ namespace Microsoft.Azure.SignalR
         {
             private readonly CancellationToken _cancellationToken;
 
+            public bool IsCompleted
+            {
+                get
+                {
+                    return _cancellationToken.IsCancellationRequested;
+                }
+            }
+
             public CancellationTokenAwaiter(CancellationToken cancellationToken)
             {
                 _cancellationToken = cancellationToken;
@@ -34,14 +42,6 @@ namespace Microsoft.Azure.SignalR
 
             public void GetResult()
             {
-            }
-
-            public bool IsCompleted
-            {
-                get
-                {
-                    return _cancellationToken.IsCancellationRequested;
-                }
             }
 
             public void OnCompleted(Action action)

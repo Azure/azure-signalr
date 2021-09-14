@@ -13,6 +13,7 @@ namespace Microsoft.Azure.SignalR
     internal static class ClaimsUtility
     {
         private const string DefaultAuthenticationType = "Bearer";
+
         private static readonly string[] SystemClaims =
         {
             "aud", // Audience claim, used by service to make sure token is matched with target resource.
@@ -27,12 +28,12 @@ namespace Microsoft.Azure.SignalR
         private static readonly string DefaultRoleClaimType = DefaultClaimsIdentity.RoleClaimType;
 
         public static IEnumerable<Claim> BuildJwtClaims(
-            ClaimsPrincipal user, 
-            string userId, 
-            Func<IEnumerable<Claim>> claimsProvider, 
-            string serverName = null, 
-            ServerStickyMode mode = ServerStickyMode.Disabled, 
-            bool enableDetailedErrors = false, 
+            ClaimsPrincipal user,
+            string userId,
+            Func<IEnumerable<Claim>> claimsProvider,
+            string serverName = null,
+            ServerStickyMode mode = ServerStickyMode.Disabled,
+            bool enableDetailedErrors = false,
             int endpointsCount = 1,
             int? maxPollInterval = null,
             bool isDiagnosticClient = false, int handshakeTimeout = Constants.Periods.DefaultHandshakeTimeout,
@@ -79,7 +80,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             // Return custom NameClaimType and RoleClaimType
-            // We can have multiple Identities, for now, choose the default one 
+            // We can have multiple Identities, for now, choose the default one
             if (user?.Identity is ClaimsIdentity identity)
             {
                 var nameType = identity.NameClaimType;
@@ -95,7 +96,7 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
-            // add claim if exists, validation is in DI  
+            // add claim if exists, validation is in DI
             if (maxPollInterval.HasValue)
             {
                 yield return new Claim(Constants.ClaimType.MaxPollInterval, maxPollInterval.Value.ToString());

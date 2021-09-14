@@ -53,9 +53,9 @@ namespace Microsoft.Azure.SignalR
         }
 
         public static string GenerateAccessToken(
-            AccessKey signingKey, 
-            string audience, 
-            IEnumerable<Claim> claims, 
+            AccessKey signingKey,
+            string audience,
+            IEnumerable<Claim> claims,
             TimeSpan lifetime,
             AccessTokenAlgorithm algorithm)
         {

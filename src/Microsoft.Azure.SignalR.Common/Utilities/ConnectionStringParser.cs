@@ -19,6 +19,7 @@ namespace Microsoft.Azure.SignalR
         private const string EndpointProperty = "endpoint";
         private const string InvalidVersionValueFormat = "Version {0} is not supported.";
         private const string PortProperty = "port";
+
         // For SDK 1.x, only support Azure SignalR Service 1.x
         private const string SupportedVersion = "1";
 
@@ -40,6 +41,7 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly string MissingTenantIdProperty =
             $"Connection string missing required properties {TenantIdProperty}.";
+
         private static readonly char[] PropertySeparator = { ';' };
 
         internal static (AccessKey accessKey, string version, string clientEndpoint) Parse(string connectionString)

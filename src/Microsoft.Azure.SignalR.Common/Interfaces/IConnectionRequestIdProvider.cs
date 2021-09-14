@@ -8,7 +8,6 @@ namespace Microsoft.Azure.SignalR
         string GetRequestId();
     }
 
-
     internal class DefaultConnectionRequestIdProvider : IConnectionRequestIdProvider
     {
         public string GetRequestId()

@@ -7,6 +7,16 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class Constants
     {
+        public const string AsrsMigrateFrom = "Asrs-Migrate-From";
+
+        public const string AsrsMigrateTo = "Asrs-Migrate-To";
+
+        public const string AsrsUserAgent = "Asrs-User-Agent";
+
+        public const string AsrsInstanceId = "Asrs-Instance-Id";
+
+        public const string AsrsIsDiagnosticClient = "Asrs-Is-Diagnostic-Client";
+
         public static class Keys
         {
             public const string AzureSignalRSectionKey = "Azure:SignalR";
@@ -18,21 +28,18 @@ namespace Microsoft.Azure.SignalR
 
             public static readonly string ConnectionStringSecondaryKey =
                 $"ConnectionStrings:{ConnectionStringDefaultKey}";
+
             public static readonly string ConnectionStringKeyPrefix = $"{ConnectionStringDefaultKey}:";
             public static readonly string ApplicationNameDefaultKeyPrefix = $"{ApplicationNameDefaultKey}:";
             public static readonly string ConnectionStringSecondaryKeyPrefix = $"{ConnectionStringSecondaryKey}:";
         }
 
-        public const string AsrsMigrateFrom = "Asrs-Migrate-From";
-        public const string AsrsMigrateTo = "Asrs-Migrate-To";
-
-        public const string AsrsUserAgent = "Asrs-User-Agent";
-        public const string AsrsInstanceId = "Asrs-Instance-Id";
-
-        public const string AsrsIsDiagnosticClient = "Asrs-Is-Diagnostic-Client";
-
         public static class Periods
         {
+            // Custom handshake timeout of SignalR Service
+            public const int DefaultHandshakeTimeout = 15;
+
+            public const int MaxCustomHandshakeTimeout = 30;
             public static readonly TimeSpan DefaultAccessTokenLifetime = TimeSpan.FromHours(1);
             public static readonly TimeSpan DefaultScaleTimeout = TimeSpan.FromMinutes(5);
             public static readonly TimeSpan DefaultShutdownTimeout = TimeSpan.FromSeconds(30);
@@ -40,12 +47,9 @@ namespace Microsoft.Azure.SignalR
 
             public static readonly TimeSpan DefaultStatusPingInterval = TimeSpan.FromSeconds(10);
             public static readonly TimeSpan DefaultServersPingInterval = TimeSpan.FromSeconds(5);
+
             // Depends on DefaultStatusPingInterval, make 1/2 to fast check.
             public static readonly TimeSpan DefaultCloseDelayInterval = TimeSpan.FromSeconds(5);
-            
-            // Custom handshake timeout of SignalR Service
-            public const int DefaultHandshakeTimeout = 15;
-            public const int MaxCustomHandshakeTimeout = 30;
         }
 
         public static class ClaimType

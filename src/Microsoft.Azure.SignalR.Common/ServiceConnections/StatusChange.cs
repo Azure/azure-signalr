@@ -5,13 +5,14 @@ namespace Microsoft.Azure.SignalR
 {
     internal class StatusChange
     {
+        public ServiceConnectionStatus OldStatus { get; }
+
+        public ServiceConnectionStatus NewStatus { get; }
+
         public StatusChange(ServiceConnectionStatus oldStatus, ServiceConnectionStatus newStatus)
         {
             OldStatus = oldStatus;
             NewStatus = newStatus;
         }
-
-        public ServiceConnectionStatus OldStatus { get; }
-        public ServiceConnectionStatus NewStatus { get; }
     }
 }

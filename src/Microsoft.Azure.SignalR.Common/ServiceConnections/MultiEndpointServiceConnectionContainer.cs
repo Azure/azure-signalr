@@ -26,8 +26,41 @@ namespace Microsoft.Azure.SignalR
         private (bool needRouter, IReadOnlyList<HubServiceEndpoint> endpoints) _routerEndpoints;
         private int _started = 0;
 
-        internal MultiEndpointServiceConnectionContainer(
+        public ServiceConnectionStatus Status => throw new NotSupportedException();
+
+        public Task ConnectionInitializedTask
+        {
+            get
+            {
+                return Task.WhenAll(from connection in _routerEndpoints.endpoints
+                                    select connection.ConnectionContainer.ConnectionInitializedTask);
+            }
+        }
+
+        public string ServersTag => throw new NotSupportedException();
+
+        public bool HasClients => throw new NotSupportedException();
+
+        public MultiEndpointServiceConnectionContainer(
+            IServiceConnectionFactory serviceConnectionFactory,
             string hub,
+            int count,
+            IServiceEndpointManager endpointManager,
+            IMessageRouter router,
+            ILoggerFactory loggerFactory,
+            TimeSpan? scaleTimeout = null
+            ) : this(
+                hub,
+                endpoint => CreateContainer(serviceConnectionFactory, endpoint, count, loggerFactory),
+                endpointManager,
+                router,
+                loggerFactory,
+                scaleTimeout)
+        {
+        }
+
+        internal MultiEndpointServiceConnectionContainer(
+                                                    string hub,
             Func<HubServiceEndpoint, IServiceConnectionContainer> generator,
             IServiceEndpointManager endpointManager,
             IMessageRouter router,
@@ -62,56 +95,11 @@ namespace Microsoft.Azure.SignalR
             _serviceEndpointManager.OnRemove += OnRemove;
         }
 
-        public MultiEndpointServiceConnectionContainer(
-            IServiceConnectionFactory serviceConnectionFactory,
-            string hub,
-            int count,
-            IServiceEndpointManager endpointManager,
-            IMessageRouter router,
-            ILoggerFactory loggerFactory,
-            TimeSpan? scaleTimeout = null
-            ) : this(
-                hub,
-                endpoint => CreateContainer(serviceConnectionFactory, endpoint, count, loggerFactory),
-                endpointManager,
-                router,
-                loggerFactory,
-                scaleTimeout)
-        {
-        }
-
         // for tests
         public IEnumerable<HubServiceEndpoint> GetOnlineEndpoints()
         {
             return _routerEndpoints.endpoints.Where(s => s.Online);
         }
-
-        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, HubServiceEndpoint endpoint, int count, ILoggerFactory loggerFactory)
-        {
-            if (endpoint.EndpointType == EndpointType.Primary)
-            {
-                return new StrongServiceConnectionContainer(serviceConnectionFactory, count, endpoint, loggerFactory.CreateLogger<StrongServiceConnectionContainer>());
-            }
-            else
-            {
-                return new WeakServiceConnectionContainer(serviceConnectionFactory, count, endpoint, loggerFactory.CreateLogger<WeakServiceConnectionContainer>());
-            }
-        }
-
-        public ServiceConnectionStatus Status => throw new NotSupportedException();
-
-        public Task ConnectionInitializedTask
-        {
-            get
-            {
-                return Task.WhenAll(from connection in _routerEndpoints.endpoints
-                                    select connection.ConnectionContainer.ConnectionInitializedTask);
-            }
-        }
-
-        public string ServersTag => throw new NotSupportedException();
-
-        public bool HasClients => throw new NotSupportedException();
 
         public Task StartAsync()
         {
@@ -148,6 +136,7 @@ namespace Microsoft.Azure.SignalR
         {
             return CreateMessageWriter(serviceMessage).WriteAckableMessageAsync(serviceMessage, cancellationToken);
         }
+
         public Task StartGetServersPing()
         {
             return Task.WhenAll(_routerEndpoints.endpoints.Select(c => c.ConnectionContainer.StartGetServersPing()));
@@ -160,7 +149,7 @@ namespace Microsoft.Azure.SignalR
 
         public void Dispose()
         {
-            foreach(var container in _routerEndpoints.endpoints)
+            foreach (var container in _routerEndpoints.endpoints)
             {
                 container.ConnectionContainer.Dispose();
             }
@@ -228,12 +217,23 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        private MultiEndpointMessageWriter CreateMessageWriter(ServiceMessage serviceMessage)
+        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, HubServiceEndpoint endpoint, int count, ILoggerFactory loggerFactory)
+        {
+            if (endpoint.EndpointType == EndpointType.Primary)
             {
-                var targetEndpoints = GetRoutedEndpoints(serviceMessage)?.Select(e => e as HubServiceEndpoint).ToList();
-                return new MultiEndpointMessageWriter(targetEndpoints, _loggerFactory);
+                return new StrongServiceConnectionContainer(serviceConnectionFactory, count, endpoint, loggerFactory.CreateLogger<StrongServiceConnectionContainer>());
             }
+            else
+            {
+                return new WeakServiceConnectionContainer(serviceConnectionFactory, count, endpoint, loggerFactory.CreateLogger<WeakServiceConnectionContainer>());
+            }
+        }
 
+        private MultiEndpointMessageWriter CreateMessageWriter(ServiceMessage serviceMessage)
+        {
+            var targetEndpoints = GetRoutedEndpoints(serviceMessage)?.Select(e => e as HubServiceEndpoint).ToList();
+            return new MultiEndpointMessageWriter(targetEndpoints, _loggerFactory);
+        }
 
         private void OnAdd(HubServiceEndpoint endpoint)
         {
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.SignalR
 
                 await container.ConnectionInitializedTask;
 
-                // Update local store directly after start connection 
+                // Update local store directly after start connection
                 // to get a uniformed action on trigger servers ping
                 UpdateEndpointsStore(endpoint, ScaleOperation.Add);
 
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.SignalR
 
         private void UpdateEndpointsStore(HubServiceEndpoint endpoint, ScaleOperation operation)
         {
-            // Use lock to ensure store update safety as parallel changes triggered in container side. 
+            // Use lock to ensure store update safety as parallel changes triggered in container side.
             lock (_lock)
             {
                 switch (operation)
@@ -372,8 +372,8 @@ namespace Microsoft.Azure.SignalR
             // ensure strong consistency of server Ids for new endpoint towards exists
             foreach (var endpoint in _routerEndpoints.endpoints)
             {
-                allMatch = !string.IsNullOrEmpty(endpoint.ConnectionContainer.ServersTag) 
-                    && serversOnNew.Equals(endpoint.ConnectionContainer.ServersTag, StringComparison.OrdinalIgnoreCase) 
+                allMatch = !string.IsNullOrEmpty(endpoint.ConnectionContainer.ServersTag)
+                    && serversOnNew.Equals(endpoint.ConnectionContainer.ServersTag, StringComparison.OrdinalIgnoreCase)
                     && allMatch;
                 if (!allMatch)
                 {
@@ -408,6 +408,7 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, Exception> _endpointNotExists =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(3, "EndpointNotExists"), "Endpoint {endpoint} from the router does not exists.");
+
             private static readonly Action<ILogger, string, Exception> _failedStartingConnectionForNewEndpoint =
                 LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, "FailedStartingConnectionForNewEndpoint"), "Fail to create and start server connection for new endpoint {endpoint}.");
 

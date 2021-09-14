@@ -8,25 +8,10 @@ namespace Microsoft.Azure.SignalR
 {
     internal class HubServiceEndpoint : ServiceEndpoint
     {
+        private static long s_currentIndex;
         private readonly TaskCompletionSource<bool> _scaleTcs;
         private readonly ServiceEndpoint _endpoint;
         private readonly long _uniqueIndex;
-        private static long s_currentIndex;
-
-        public HubServiceEndpoint(
-            string hub, 
-            IServiceEndpointProvider provider, 
-            ServiceEndpoint endpoint, 
-            bool needScaleTcs = false
-            ) : base(endpoint)
-        {
-            Hub = hub;
-            Provider = provider;
-            _endpoint = endpoint;
-            _scaleTcs = needScaleTcs ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : null;
-            _uniqueIndex = Interlocked.Increment(ref s_currentIndex);
-        }
-
         public string Hub { get; }
 
         public override string Name => _endpoint.Name;
@@ -40,11 +25,25 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         public Task ScaleTask => _scaleTcs?.Task ?? Task.CompletedTask;
 
+        public long UniqueIndex => _uniqueIndex;
+
+        public HubServiceEndpoint(
+                                                            string hub,
+            IServiceEndpointProvider provider,
+            ServiceEndpoint endpoint,
+            bool needScaleTcs = false
+            ) : base(endpoint)
+        {
+            Hub = hub;
+            Provider = provider;
+            _endpoint = endpoint;
+            _scaleTcs = needScaleTcs ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : null;
+            _uniqueIndex = Interlocked.Increment(ref s_currentIndex);
+        }
+
         public void CompleteScale()
         {
             _scaleTcs?.TrySetResult(true);
         }
-
-        public long UniqueIndex => _uniqueIndex;
     }
 }

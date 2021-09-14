@@ -19,8 +19,6 @@ namespace Microsoft.Azure.SignalR
             _serverName = RestApiAccessTokenGenerator.GenerateServerName();
         }
 
-        protected virtual HttpClient CreateHttpClient() => _httpClientFactory.CreateClient();
-
         internal SignalRServiceRestClient Create(ServiceEndpoint endpoint)
         {
             var httpClient = CreateHttpClient();
@@ -31,5 +29,7 @@ namespace Microsoft.Azure.SignalR
             };
             return restClient;
         }
+
+        protected virtual HttpClient CreateHttpClient() => _httpClientFactory.CreateClient();
     }
 }

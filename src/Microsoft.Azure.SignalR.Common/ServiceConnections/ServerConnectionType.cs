@@ -9,10 +9,12 @@ namespace Microsoft.Azure.SignalR
         /// 0, Default, it can carry clients, service runtime should always accept this kind of connection
         /// </summary>
         Default = 0,
+
         /// <summary>
         /// 1, OnDemand, creating when service requested more connections, it can carry clients, but it may be rejected by service runtime.
         /// </summary>
         OnDemand = 1,
+
         /// <summary>
         /// 2, Weak, it can not carry clients, but it can send message
         /// </summary>

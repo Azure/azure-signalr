@@ -8,8 +8,8 @@ namespace Microsoft.Azure.SignalR
 {
     internal static class MessageWithTracingIdHelper
     {
-        internal static ulong Prefix { get; set; } = (ulong)(Guid.NewGuid().GetHashCode() & 0x0FFF_FFFF) << 32;
         private static int _index = -1;
+        internal static ulong Prefix { get; set; } = (ulong)(Guid.NewGuid().GetHashCode() & 0x0FFF_FFFF) << 32;
 
         // message tracing id is constructed in the format:
         // from most significant digit to least significant digit:

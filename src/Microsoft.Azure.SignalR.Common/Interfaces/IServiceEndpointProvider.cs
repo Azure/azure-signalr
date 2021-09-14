@@ -11,6 +11,8 @@ namespace Microsoft.Azure.SignalR
 {
     internal interface IServiceEndpointProvider
     {
+        IWebProxy Proxy { get; }
+
         Task<string> GenerateClientAccessTokenAsync(string hubName, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null);
 
         string GetClientEndpoint(string hubName, string originalPath, string queryString);
@@ -18,7 +20,5 @@ namespace Microsoft.Azure.SignalR
         Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null);
 
         string GetServerEndpoint(string hubName);
-
-        IWebProxy Proxy { get; }
     }
 }

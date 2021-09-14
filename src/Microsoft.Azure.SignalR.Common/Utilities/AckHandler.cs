@@ -55,6 +55,19 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        public void Dispose()
+        {
+            _timer?.Dispose();
+
+            foreach (var pair in _acks)
+            {
+                if (_acks.TryRemove(pair.Key, out var ack))
+                {
+                    ack.Tcs.TrySetCanceled();
+                }
+            }
+        }
+
         private void CheckAcks()
         {
             var utcNow = DateTime.UtcNow;
@@ -67,19 +80,6 @@ namespace Microsoft.Azure.SignalR
                     {
                         ack.Tcs.TrySetResult(AckStatus.Timeout);
                     }
-                }
-            }
-        }
-
-        public void Dispose()
-        {
-            _timer?.Dispose();
-
-            foreach (var pair in _acks)
-            {
-                if (_acks.TryRemove(pair.Key, out var ack))
-                {
-                    ack.Tcs.TrySetCanceled();
                 }
             }
         }

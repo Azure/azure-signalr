@@ -18,6 +18,7 @@ namespace Microsoft.Azure.SignalR
     internal class MultiEndpointMessageWriter : IMultiEndpointServiceConnectionContainer
     {
         private readonly ILogger _logger;
+        public Task ConnectionInitializedTask => TargetEndpoints == null ? Task.CompletedTask : Task.WhenAll(TargetEndpoints.Select(e => e.ConnectionContainer.ConnectionInitializedTask));
         internal IReadOnlyCollection<HubServiceEndpoint> TargetEndpoints { get; }
 
         public MultiEndpointMessageWriter(IReadOnlyCollection<HubServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
@@ -25,8 +26,6 @@ namespace Microsoft.Azure.SignalR
             TargetEndpoints = targetEndpoints;
             _logger = loggerFactory.CreateLogger<MultiEndpointMessageWriter>();
         }
-
-        public Task ConnectionInitializedTask => TargetEndpoints == null ? Task.CompletedTask : Task.WhenAll(TargetEndpoints.Select(e => e.ConnectionContainer.ConnectionInitializedTask));
 
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
@@ -56,6 +55,14 @@ namespace Microsoft.Azure.SignalR
             await task;
 
             return tcs.Task.IsCompleted;
+        }
+
+        public Task StartAsync() => Task.CompletedTask;
+
+        public Task StopAsync() => Task.CompletedTask;
+
+        public void Dispose()
+        {
         }
 
         private Task WriteMultiEndpointMessageAsync(ServiceMessage serviceMessage, Func<IServiceConnectionContainer, Task> inner)
@@ -98,14 +105,6 @@ namespace Microsoft.Azure.SignalR
             }
 
             return Task.WhenAll(routed);
-        }
-
-        public Task StartAsync() => Task.CompletedTask;
-
-        public Task StopAsync() => Task.CompletedTask;
-
-        public void Dispose()
-        {
         }
 
         internal static class Log

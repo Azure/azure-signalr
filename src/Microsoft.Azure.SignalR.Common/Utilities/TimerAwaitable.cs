@@ -10,16 +10,15 @@ namespace Microsoft.Azure.SignalR
 {
     internal class TimerAwaitable : IDisposable, ICriticalNotifyCompletion
     {
+        private static readonly Action _callbackCompleted = () => { };
+        private readonly TimeSpan _period;
+        private readonly TimeSpan _dueTime;
+        private readonly object _lockObj = new object();
         private Timer _timer;
         private Action _callback;
-        private static readonly Action _callbackCompleted = () => { };
-
-        private readonly TimeSpan _period;
-
-        private readonly TimeSpan _dueTime;
         private bool _disposed;
         private bool _running = true;
-        private readonly object _lockObj = new object();
+        public bool IsCompleted => ReferenceEquals(_callback, _callbackCompleted);
 
         public TimerAwaitable(TimeSpan dueTime, TimeSpan period)
         {
@@ -47,19 +46,12 @@ namespace Microsoft.Azure.SignalR
         }
 
         public TimerAwaitable GetAwaiter() => this;
-        public bool IsCompleted => ReferenceEquals(_callback, _callbackCompleted);
 
         public bool GetResult()
         {
             _callback = null;
 
             return _running;
-        }
-
-        private void Tick()
-        {
-            var continuation = Interlocked.Exchange(ref _callback, _callbackCompleted);
-            continuation?.Invoke();
         }
 
         public void OnCompleted(Action continuation)
@@ -104,6 +96,12 @@ namespace Microsoft.Azure.SignalR
 
                 _timer = null;
             }
+        }
+
+        private void Tick()
+        {
+            var continuation = Interlocked.Exchange(ref _callback, _callbackCompleted);
+            continuation?.Invoke();
         }
     }
 }

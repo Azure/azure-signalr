@@ -95,24 +95,6 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-
-        private sealed class ReferenceEqualityComparer : IEqualityComparer<ServiceEndpoint>
-        {
-            internal static readonly ReferenceEqualityComparer Instance = new ReferenceEqualityComparer();
-
-            private ReferenceEqualityComparer() { }
-
-            public bool Equals(ServiceEndpoint x, ServiceEndpoint y)
-            {
-                return ReferenceEquals(x, y);
-            }
-
-            public int GetHashCode(ServiceEndpoint obj)
-            {
-                return RuntimeHelpers.GetHashCode(obj);
-            }
-        }
-
         private static class Log
         {
             private static readonly Action<ILogger, string, Exception> _failedAuthorize =
@@ -129,6 +111,25 @@ namespace Microsoft.Azure.SignalR
             public static void SucceedToAuthorizeAccessKey(ILogger logger, string endpoint)
             {
                 _succeedAuthorize(logger, endpoint, null);
+            }
+        }
+
+        private sealed class ReferenceEqualityComparer : IEqualityComparer<ServiceEndpoint>
+        {
+            internal static readonly ReferenceEqualityComparer Instance = new ReferenceEqualityComparer();
+
+            private ReferenceEqualityComparer()
+            {
+            }
+
+            public bool Equals(ServiceEndpoint x, ServiceEndpoint y)
+            {
+                return ReferenceEquals(x, y);
+            }
+
+            public int GetHashCode(ServiceEndpoint obj)
+            {
+                return RuntimeHelpers.GetHashCode(obj);
             }
         }
     }

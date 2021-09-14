@@ -15,6 +15,34 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly bool _needCleanup;
 
+        internal static bool IsScopeEstablished => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current != null;
+
+        internal static ConcurrentDictionary<long, WeakReference<IServiceConnection>> OutboundServiceConnections
+        {
+            get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties?.OutboundServiceConnections;
+            set
+            {
+                var currentProps = ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties;
+                if (currentProps != null)
+                {
+                    currentProps.OutboundServiceConnections = value;
+                }
+            }
+        }
+
+        internal static bool IsDiagnosticClient
+        {
+            get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties?.IsDiagnosticClient ?? false;
+            set
+            {
+                var currentProps = ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties;
+                if (currentProps != null)
+                {
+                    currentProps.IsDiagnosticClient = value;
+                }
+            }
+        }
+
         internal ClientConnectionScope() : this(default, default, default)
         {
         }
@@ -59,34 +87,6 @@ namespace Microsoft.Azure.SignalR
                 // (whose execution contexts can still carry a copy of async local)
                 // to suddenly change behavior once we're done with disposing
                 ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current = null;
-            }
-        }
-
-        internal static bool IsScopeEstablished => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current != null;
-
-        internal static ConcurrentDictionary<long, WeakReference<IServiceConnection>> OutboundServiceConnections
-        {
-            get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties?.OutboundServiceConnections;
-            set 
-            {
-                var currentProps = ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties;
-                if (currentProps != null)
-                {
-                    currentProps.OutboundServiceConnections = value;
-                }
-            }
-        }
-
-        internal static bool IsDiagnosticClient
-        {
-            get => ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties?.IsDiagnosticClient ?? false;
-            set
-            {
-                var currentProps = ScopePropertiesAccessor<ClientConnectionScopeProperties>.Current?.Properties;
-                if (currentProps != null)
-                {
-                    currentProps.IsDiagnosticClient = value;
-                }
             }
         }
 

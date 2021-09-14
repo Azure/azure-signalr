@@ -9,11 +9,14 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ServiceConnectionContainerScope : IDisposable
     {
+        private static readonly AsyncLocal<ServiceDiagnosticLogsContext> _asyncLocal = new AsyncLocal<ServiceDiagnosticLogsContext>();
+        private readonly bool _needCleanup;
         public static bool IsScopeEstablished => _asyncLocal.Value != null;
 
-        private static readonly AsyncLocal<ServiceDiagnosticLogsContext> _asyncLocal = new AsyncLocal<ServiceDiagnosticLogsContext>();
-
-        private readonly bool _needCleanup;
+        public static bool EnableMessageLog
+        {
+            get => _asyncLocal.Value?.EnableMessageLog ?? default;
+        }
 
         public ServiceConnectionContainerScope(ServiceDiagnosticLogsContext props)
         {
@@ -28,16 +31,11 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public static bool EnableMessageLog
-        {
-            get => _asyncLocal.Value?.EnableMessageLog ?? default;
-        }
-
         public void Dispose()
         {
             if (_needCleanup)
             {
-                // shallow cleanup since we don't want any execution contexts in unawaited tasks 
+                // shallow cleanup since we don't want any execution contexts in unawaited tasks
                 // to suddenly change behavior once we're done with disposing
                 _asyncLocal.Value = null;
             }

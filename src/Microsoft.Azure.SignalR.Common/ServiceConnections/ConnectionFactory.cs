@@ -91,6 +91,7 @@ namespace Microsoft.Azure.SignalR
         private sealed class GracefulLoggerFactory : ILoggerFactory
         {
             private readonly ILoggerFactory _inner;
+
             public GracefulLoggerFactory(ILoggerFactory inner)
             {
                 _inner = inner;
@@ -115,6 +116,7 @@ namespace Microsoft.Azure.SignalR
             private sealed class GracefulLogger : ILogger
             {
                 private readonly ILogger _inner;
+
                 public GracefulLogger(ILogger inner)
                 {
                     _inner = inner;

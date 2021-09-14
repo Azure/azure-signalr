@@ -21,7 +21,7 @@ namespace Microsoft.Azure.SignalR.Common
         /// </summary>
         /// <param name="probe"> this func returns a task with boolean result indicating if the probe was successful</param>
         /// <param name="getRetryDelay"> this func returns a TimeSpan delay for a given iteration number</param>
-        /// <returns> 
+        /// <returns>
         /// A task with its final state and result matching the state and result of the task returned by the probe func.
         /// This task will completes after either of the following happens:
         /// - probe's task changes state to task.IsCompletedSuccessfully == true and task.Result == true
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.SignalR.Common
                             else
                             {
                                 // probe failed
-                                // make sure we still await for the probe task 
+                                // make sure we still await for the probe task
                                 awaitProbeTask = true;
                                 // after waiting for the current backoff time and indicating failure to others
                                 await delayTask;

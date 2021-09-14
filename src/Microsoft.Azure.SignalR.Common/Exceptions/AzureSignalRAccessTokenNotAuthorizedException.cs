@@ -8,7 +8,7 @@ namespace Microsoft.Azure.SignalR.Common
     /// </summary>
     public class AzureSignalRAccessTokenNotAuthorizedException : AzureSignalRException
     {
-         /// <summary>
+        /// <summary>
         /// Initializes a new instance of the <see cref="AzureSignalRAccessTokenNotAuthorizedException"/> class.
         /// </summary>
         public AzureSignalRAccessTokenNotAuthorizedException(string message) : base(message)
