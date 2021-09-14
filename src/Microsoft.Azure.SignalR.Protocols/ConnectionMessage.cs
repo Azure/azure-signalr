@@ -83,6 +83,74 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
+    /// Close connections in a hub
+    /// </summary>
+    public class CloseConnectionsWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
+    {
+        /// <summary>
+        /// Gets or sets the ack id.
+        /// </summary>
+        public int AckId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the tracing Id
+        /// </summary>
+        public ulong? TracingId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the list of excluded connection Ids.
+        /// </summary>
+        public IReadOnlyList<string> ExcludedList { get; set; }
+
+        /// <summary>
+        /// Gets or sets the reason closing the connection
+        /// </summary>
+        public string Reason { get; set; }
+
+        public CloseConnectionsWithAckMessage(int ackId)
+        {
+            AckId = ackId;
+        }
+    }
+
+    /// <summary>
+    /// A close-connection message.
+    /// </summary>
+    public class CloseConnectionWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
+    {
+        /// <summary>
+        /// Gets or sets the tracing Id
+        /// </summary>
+        public ulong? TracingId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the reason closing the connection
+        /// </summary>
+        public string Reason { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ack id.
+        /// </summary>
+        public int AckId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the connection Id for the connection
+        /// </summary>
+        public string ConnectionId { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CloseConnectionMessage"/> class.
+        /// </summary>
+        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="ackId">The ack Id for the message.</param>
+        public CloseConnectionWithAckMessage(string connectionId, int ackId)
+        {
+            ConnectionId = connectionId;
+            AckId = ackId;
+        }
+    }
+
+    /// <summary>
     /// A close-connection message.
     /// </summary>
     public class CloseConnectionMessage : ConnectionMessage, IMessageWithTracingId

@@ -101,6 +101,14 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateCheckConnectionExistenceWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.CheckUserExistenceWithAckMessageType:
                     return CreateCheckUserExistenceWithAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.CloseConnectionsWithAckMessageType:
+                    return CreateCloseConnectionsWithAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.CloseConnectionWithAckMessageType:
+                    return CreateCloseConnectionWithAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.CloseUserConnectionsWithAckMessageType:
+                    return CreateCloseUserConnectionsWithAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.CloseGroupConnectionsWithAckMessageType:
+                    return CreateCloseGroupConnectionsWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.AckMessageType:
                     return CreateAckMessage(ref reader, arrayLength);
                 default:
@@ -250,6 +258,18 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ServiceEventMessage serviceWarningMessage:
                     WriteServiceEventMessage(ref writer, serviceWarningMessage);
                     break;
+                case CloseConnectionWithAckMessage closeConnectionWithAckMessage:
+                    WriteCloseConnectionWithAckMessage(ref writer, closeConnectionWithAckMessage);
+                    break;
+                case CloseConnectionsWithAckMessage closeConnectionsWithAckMessage:
+                    WriteCloseConnectionsWithAckMessage(ref writer, closeConnectionsWithAckMessage);
+                    break;
+                case CloseUserConnectionsWithAckMessage closeUserConnectionsWithAckMessage:
+                    WriteCloseUserConnectionsWithAckMessage(ref writer, closeUserConnectionsWithAckMessage);
+                    break;
+                case CloseGroupConnectionsWithAckMessage closeGroupConnectionsWithAckMessage:
+                    WriteCloseGroupConnectionsWithAckMessage(ref writer, closeGroupConnectionsWithAckMessage);
+                    break;
                 case AckMessage ackMessage:
                     WriteAckMessage(ref writer, ackMessage);
                     break;
@@ -341,6 +361,48 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.Write(message.ConnectionId);
             writer.Write(message.ErrorMessage);
             WriteHeaders(ref writer, message.Headers);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteCloseConnectionWithAckMessage(ref MessagePackWriter writer, CloseConnectionWithAckMessage message)
+        {
+            writer.WriteArrayHeader(5);
+            writer.Write(ServiceProtocolConstants.CloseConnectionWithAckMessageType);
+            writer.Write(message.ConnectionId);
+            writer.Write(message.Reason);
+            writer.Write(message.AckId);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteCloseConnectionsWithAckMessage(ref MessagePackWriter writer, CloseConnectionsWithAckMessage message)
+        {
+            writer.WriteArrayHeader(5);
+            writer.Write(ServiceProtocolConstants.CloseConnectionsWithAckMessageType);
+            writer.Write(message.Reason);
+            writer.Write(message.AckId);
+            WriteStringArray(ref writer, message.ExcludedList);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteCloseUserConnectionsWithAckMessage(ref MessagePackWriter writer, CloseUserConnectionsWithAckMessage message)
+        {
+            writer.WriteArrayHeader(6);
+            writer.Write(ServiceProtocolConstants.CloseUserConnectionsWithAckMessageType);
+            writer.Write(message.UserId);
+            writer.Write(message.Reason);
+            writer.Write(message.AckId);
+            WriteStringArray(ref writer, message.ExcludedList);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteCloseGroupConnectionsWithAckMessage(ref MessagePackWriter writer, CloseGroupConnectionsWithAckMessage message)
+        {
+            writer.WriteArrayHeader(6);
+            writer.Write(ServiceProtocolConstants.CloseGroupConnectionsWithAckMessageType);
+            writer.Write(message.GroupName);
+            writer.Write(message.Reason);
+            writer.Write(message.AckId);
+            WriteStringArray(ref writer, message.ExcludedList);
             message.WriteExtensionMembers(ref writer);
         }
 
@@ -721,6 +783,74 @@ namespace Microsoft.Azure.SignalR.Protocol
             return result;
         }
 
+        private static CloseConnectionWithAckMessage CreateCloseConnectionWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var connectionId = ReadString(ref reader, "connectionId");
+            var reason = ReadString(ref reader, "reason");
+            var ackId = ReadInt32(ref reader, "ackId");
+            var result = new CloseConnectionWithAckMessage(connectionId, ackId)
+            {
+                Reason = reason
+            };
+            if (arrayLength >= 5)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
+        }
+        private static CloseConnectionsWithAckMessage CreateCloseConnectionsWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var reason = ReadString(ref reader, "reason");
+            var ackId = ReadInt32(ref reader, "ackId");
+            var excluded = ReadStringArray(ref reader, "excluded");
+
+            var result = new CloseConnectionsWithAckMessage(ackId)
+            {
+                Reason = reason,
+                ExcludedList = excluded
+            };
+            if (arrayLength >= 5)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
+        }
+        private static CloseUserConnectionsWithAckMessage CreateCloseUserConnectionsWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var userId = ReadString(ref reader, "userId");
+            var reason = ReadString(ref reader, "reason");
+            var ackId = ReadInt32(ref reader, "ackId");
+            var excluded = ReadStringArray(ref reader, "excluded");
+
+            var result = new CloseUserConnectionsWithAckMessage(userId, ackId)
+            {
+                Reason = reason,
+                ExcludedList = excluded
+            };
+            if (arrayLength >= 6)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
+        }
+        private static CloseGroupConnectionsWithAckMessage CreateCloseGroupConnectionsWithAckMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var group = ReadString(ref reader, "group");
+            var reason = ReadString(ref reader, "reason");
+            var ackId = ReadInt32(ref reader, "ackId");
+            var excluded = ReadStringArray(ref reader, "excluded");
+
+            var result = new CloseGroupConnectionsWithAckMessage(group, ackId)
+            {
+                Reason = reason,
+                ExcludedList = excluded
+            };
+            if (arrayLength >= 6)
+            {
+                result.ReadExtensionMembers(ref reader);
+            }
+            return result;
+        }
         private static ConnectionDataMessage CreateConnectionDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var connectionId = ReadString(ref reader, "connectionId");

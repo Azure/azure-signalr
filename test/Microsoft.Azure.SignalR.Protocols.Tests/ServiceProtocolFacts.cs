@@ -592,6 +592,50 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 name: "CheckUserExistenceWithAckMessage",
                 message: new CheckUserExistenceWithAckMessage("uid", 4, 23),
                 binary: "lBmjdWlkBIEBFw=="),
+            new ProtocolTestData(
+                name: "CloseConnectionWithAckMessage",
+                message: new CloseConnectionWithAckMessage("conn1", 1),
+                binary: "lR6lY29ubjHAAYA="),
+            new ProtocolTestData(
+                name: "CloseConnectionWithAckMessage_WithOptional",
+                message: new CloseConnectionWithAckMessage("conn1", 1){
+                    TracingId = 1,
+                    Reason = "detail",
+                },
+                binary: "lR6lY29ubjGmZGV0YWlsAYEBAQ=="),
+            new ProtocolTestData(
+                name: "CloseConnectionsWithAckMessage",
+                message: new CloseConnectionsWithAckMessage(1),
+                binary: "lR/AAZCA"),
+            new ProtocolTestData(
+                name: "CloseConnectionsWithAckMessage_WithOptional",
+                message: new CloseConnectionsWithAckMessage(1){
+                    ExcludedList = new string[] {"connId"},
+                    TracingId = 1
+                },
+                binary: "lR/AAZGmY29ubklkgQEB"),
+            new ProtocolTestData(
+                name: "CloseUserConnectionsWithAckMessage",
+                message: new CloseUserConnectionsWithAckMessage("user1", 1),
+                binary: "liCldXNlcjHAAZCA"),
+            new ProtocolTestData(
+                name: "CloseUserConnectionsWithAckMessage_WithOptional",
+                message: new CloseUserConnectionsWithAckMessage("conn1", 1){
+                    TracingId = 1,
+                    Reason = "detail",
+                },
+                binary: "liClY29ubjGmZGV0YWlsAZCBAQE="),
+            new ProtocolTestData(
+                name: "CloseGroupConnectionsWithAckMessage",
+                message: new CloseGroupConnectionsWithAckMessage("group1", 1),
+                binary: "liGmZ3JvdXAxwAGQgA=="),
+            new ProtocolTestData(
+                name: "CloseGroupConnectionsWithAckMessage_WithOptional",
+                message: new CloseGroupConnectionsWithAckMessage("group1", 1){
+                    TracingId = 1,
+                    Reason = "detail",
+                },
+                binary: "liGmZ3JvdXAxpmRldGFpbAGQgQEB"),
         }.ToDictionary(t => t.Name);
 
         [Theory]
