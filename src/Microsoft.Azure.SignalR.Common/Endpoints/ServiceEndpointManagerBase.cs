@@ -23,14 +23,6 @@ namespace Microsoft.Azure.SignalR
         // Filtered valuable endpoints from ServiceOptions, use dict for fast search
         public IReadOnlyDictionary<ServiceEndpoint, ServiceEndpoint> Endpoints { get; private set; }
 
-        public event EndpointEventHandler OnAdd;
-        public event EndpointEventHandler OnRemove;
-        
-        protected ServiceEndpointManagerBase(IServiceEndpointOptions options, ILogger logger)
-            : this(ServiceEndpointUtility.Merge(options.ConnectionString, options.Endpoints), logger)
-        {
-        }
-
         // for test purpose
         internal ServiceEndpointManagerBase(IEnumerable<ServiceEndpoint> endpoints, ILogger logger)
         {
@@ -38,6 +30,15 @@ namespace Microsoft.Azure.SignalR
 
             Endpoints = GetValuableEndpoints(endpoints);
         }
+
+        protected ServiceEndpointManagerBase(IServiceEndpointOptions options, ILogger logger)
+            : this(ServiceEndpointUtility.Merge(options.ConnectionString, options.Endpoints), logger)
+        {
+        }
+
+        public event EndpointEventHandler OnAdd;
+
+        public event EndpointEventHandler OnRemove;
 
         public abstract IServiceEndpointProvider GetEndpointProvider(ServiceEndpoint endpoint);
 
@@ -106,6 +107,19 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        private static async Task<bool> WaitTaskOrTimeout(Task task, CancellationTokenSource cts)
+        {
+            var completed = await Task.WhenAny(task, Task.Delay(Timeout.InfiniteTimeSpan, cts.Token));
+
+            if (completed == task)
+            {
+                return true;
+            }
+
+            cts.Cancel();
+            return false;
+        }
+
         private async Task AddServiceEndpointsAsync(IReadOnlyList<ServiceEndpoint> endpoints, CancellationToken cancellationToken)
         {
             if (endpoints.Count > 0)
@@ -146,7 +160,7 @@ namespace Microsoft.Azure.SignalR
         {
             foreach (var hub in _endpointsPerHub.Keys)
             {
-                if (!endpoints.TryGetValue(hub, out var updatedEndpoints) 
+                if (!endpoints.TryGetValue(hub, out var updatedEndpoints)
                     || updatedEndpoints.Count == 0)
                 {
                     continue;
@@ -262,45 +276,6 @@ namespace Microsoft.Azure.SignalR
             Endpoints = endpoints;
         }
 
-        private static async Task<bool> WaitTaskOrTimeout(Task task, CancellationTokenSource cts)
-        {
-            var completed = await Task.WhenAny(task, Task.Delay(Timeout.InfiniteTimeSpan, cts.Token));
-
-            if (completed == task)
-            {
-                return true;
-            }
-
-            cts.Cancel();
-            return false;
-        }
-
-        private sealed class ServiceEndpointWeakComparer : IEqualityComparer<ServiceEndpoint>
-        {
-            public bool Equals(ServiceEndpoint x, ServiceEndpoint y)
-            {
-                return x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType;
-            }
-
-            public int GetHashCode(ServiceEndpoint obj)
-            {
-                return obj.Endpoint.GetHashCode() ^ obj.EndpointType.GetHashCode();
-            }
-        }
-
-        private sealed class HubServiceEndpointWeakComparer : IEqualityComparer<HubServiceEndpoint>
-        {
-            public bool Equals(HubServiceEndpoint x, HubServiceEndpoint y)
-            {
-                return x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType;
-            }
-
-            public int GetHashCode(HubServiceEndpoint obj)
-            {
-                return obj.Endpoint.GetHashCode() ^ obj.EndpointType.GetHashCode();
-            }
-        }
-
         private static class Log
         {
             private static readonly Action<ILogger, int, string, string, Exception> _duplicateEndpointFound =
@@ -308,7 +283,7 @@ namespace Microsoft.Azure.SignalR
 
             private static readonly Action<ILogger, string, string, Exception> _startAddingEndpoint =
                 LoggerMessage.Define<string, string>(LogLevel.Debug, new EventId(2, "StartAddingEndpoint"), "Start adding endpoint: '{endpoint}', name: '{name}'.");
-            
+
             private static readonly Action<ILogger, string, string, Exception> _startRemovingEndpoint =
                 LoggerMessage.Define<string, string>(LogLevel.Debug, new EventId(3, "StartRemovingEndpoint"), "Start removing endpoint: '{endpoint}', name: '{name}'");
 
@@ -389,6 +364,32 @@ namespace Microsoft.Azure.SignalR
             public static void SucceedRemovingEndpoint(ILogger logger, string endpoint)
             {
                 _succeedRemovingEndpoints(logger, endpoint, null);
+            }
+        }
+
+        private sealed class ServiceEndpointWeakComparer : IEqualityComparer<ServiceEndpoint>
+        {
+            public bool Equals(ServiceEndpoint x, ServiceEndpoint y)
+            {
+                return x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType;
+            }
+
+            public int GetHashCode(ServiceEndpoint obj)
+            {
+                return obj.Endpoint.GetHashCode() ^ obj.EndpointType.GetHashCode();
+            }
+        }
+
+        private sealed class HubServiceEndpointWeakComparer : IEqualityComparer<HubServiceEndpoint>
+        {
+            public bool Equals(HubServiceEndpoint x, HubServiceEndpoint y)
+            {
+                return x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType;
+            }
+
+            public int GetHashCode(HubServiceEndpoint obj)
+            {
+                return obj.Endpoint.GetHashCode() ^ obj.EndpointType.GetHashCode();
             }
         }
     }

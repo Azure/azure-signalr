@@ -41,7 +41,7 @@ namespace Microsoft.Azure.SignalR
 
         private Task<object> InitializedTask => _initializedTcs.Task;
 
-        public AadAccessKey(Uri uri, TokenCredential credential): base(uri)
+        public AadAccessKey(Uri uri, TokenCredential credential) : base(uri)
         {
             var builder = new UriBuilder(Endpoint)
             {
