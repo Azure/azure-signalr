@@ -14,6 +14,7 @@ using Xunit;
 
 namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 {
+    [Collection("Auth")]
     public class AzureActiveDirectoryTests
     {
         private const string IssuerEndpoint = "https://sts.windows.net/";
