@@ -236,43 +236,6 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
-    /// Close connections in a group
-    /// </summary>
-    public class CloseGroupConnectionsWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
-    {
-        /// <summary>
-        /// Gets or sets the group name.
-        /// </summary>
-        public string GroupName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the ack id.
-        /// </summary>
-        public int AckId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the tracing Id
-        /// </summary>
-        public ulong? TracingId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the list of excluded connection Ids.
-        /// </summary>
-        public IReadOnlyList<string> ExcludedList { get; set; }
-
-        /// <summary>
-        /// Gets or sets the reason closing the connections
-        /// </summary>
-        public string Reason { get; set; }
-
-        public CloseGroupConnectionsWithAckMessage(string groupName, int ackId)
-        {
-            GroupName = groupName;
-            AckId = ackId;
-        }
-    }
-
-    /// <summary>
     /// A waiting for ack join-group message.
     /// </summary>
     public class JoinGroupWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
