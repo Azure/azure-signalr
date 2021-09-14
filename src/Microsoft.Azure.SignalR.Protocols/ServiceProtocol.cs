@@ -798,6 +798,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
             return result;
         }
+
         private static CloseConnectionsWithAckMessage CreateCloseConnectionsWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
             var reason = ReadString(ref reader, "reason");
@@ -815,6 +816,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
             return result;
         }
+
         private static CloseUserConnectionsWithAckMessage CreateCloseUserConnectionsWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
             var userId = ReadString(ref reader, "userId");
@@ -833,6 +835,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
             return result;
         }
+
         private static CloseGroupConnectionsWithAckMessage CreateCloseGroupConnectionsWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
             var group = ReadString(ref reader, "group");
@@ -851,6 +854,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             }
             return result;
         }
+
         private static ConnectionDataMessage CreateConnectionDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var connectionId = ReadString(ref reader, "connectionId");
