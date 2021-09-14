@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR.Protocol
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="ackId">The ack Id for the message.</param>
         public CloseConnectionWithAckMessage(string connectionId, int ackId) : base(ackId)
         {
-            ConnectionId = connectionId;
+            ConnectionId = connectionId ?? throw new ArgumentNullException(nameof(connectionId));
         }
     }
 
@@ -65,7 +66,6 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// </summary>
     public class CloseConnectionsWithAckMessage : CloseMultiConnectionsWithAckMessage
     {
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CloseConnectionsWithAckMessage"/> class.
         /// </summary>
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="ackId">The ack Id for the message.</param>
         public CloseUserConnectionsWithAckMessage(string userId, int ackId) : base(ackId)
         {
-            UserId = userId;
+            UserId = userId ?? throw new ArgumentNullException(nameof(userId));
         }
     }
 
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="ackId">The ack Id for the message.</param>
         public CloseGroupConnectionsWithAckMessage(string groupName, int ackId) : base(ackId)
         {
-            GroupName = groupName;
+            GroupName = groupName ?? throw new ArgumentNullException(nameof(groupName));
         }
     }
 }
