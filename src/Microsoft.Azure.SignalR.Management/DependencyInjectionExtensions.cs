@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             return services.AddSignalRServiceManager<ServiceManagerOptionsSetup>();
         }
-
+                                                   
         /// <summary>
         /// Adds SignalR Service Manager to the specified services collection.
         /// </summary>
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.SignalR.Management
 
             return services.AddSignalRServiceCore();
         }
-
+                                          
         public static IServiceCollection AddHub<THub>(this IServiceCollection services, string hubName)
             where THub : Hub
         {
@@ -68,9 +68,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             return services
                 .AddHub<THub>(hubName)
-                .AddSingleton<ServiceHubContext<T>, ServiceHubContextImpl<T>>()
-                .AddSingleton(sp => sp.GetRequiredService<ServiceHubLifetimeManagerFactory>().Create<Hub<T>>(hubName))
-                .AddSingleton(sp => (HubLifetimeManager<Hub<T>>)sp.GetRequiredService<IServiceHubLifetimeManager<Hub<T>>>());
+                .AddSingleton<ServiceHubContext<T>>(sp => ActivatorUtilities.CreateInstance<ServiceHubContextImpl<T>>(sp, hubName));
         }
 
         private static IServiceCollection AddSignalRServiceCore(this IServiceCollection services)
