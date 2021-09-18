@@ -9,11 +9,10 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR.Management
 {
-    //todo: make public strong-typed-hub
 #if NETCOREAPP2_1_OR_GREATER
-    internal abstract class ServiceHubContext<T> : IHubContext<Hub<T>, T>, IDisposable, IAsyncDisposable where T : class
+    public abstract class ServiceHubContext<T> : IHubContext<Hub<T>, T>, IDisposable, IAsyncDisposable where T : class
 #else
-    internal abstract class ServiceHubContext<T> : IHubContext<Hub<T>, T>, IDisposable where T : class
+    public abstract class ServiceHubContext<T> : IHubContext<Hub<T>, T>, IDisposable where T : class
 #endif
     {
         public abstract IHubClients<T> Clients { get; }
