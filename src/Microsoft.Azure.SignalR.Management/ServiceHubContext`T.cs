@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR.Management
 {
+    /// <summary>
+    /// A context abstraction for a hub.
+    /// </summary>
 #if NETCOREAPP2_1_OR_GREATER
     public abstract class ServiceHubContext<T> : IHubContext<Hub<T>, T>, IDisposable, IAsyncDisposable where T : class
 #else
@@ -17,10 +20,19 @@ namespace Microsoft.Azure.SignalR.Management
     {
         public abstract IHubClients<T> Clients { get; }
 
+        /// <summary>
+        /// Gets a <see cref="GroupManager"/> that can be used to add remove connections to named groups.
+        /// </summary>
         public abstract GroupManager Groups { get; }
 
+        /// <summary>
+        /// Gets a <see cref="UserGroupManager"/> that can be used to add and remove users to named groups.
+        /// </summary>
         public abstract UserGroupManager UserGroups { get; }
 
+        /// <summary>
+        /// Gets a <see cref="ClientManager"/> that can be used to manange client connections.
+        /// </summary>
         public abstract ClientManager ClientManager { get; }
 
         IGroupManager IHubContext<Hub<T>, T>.Groups => Groups;
