@@ -16,42 +16,26 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 {
     public class ServiceProtocolFacts
     {
-        private static readonly IServiceProtocol Protocol = new ServiceProtocol();
+        private static readonly IServiceProtocol DefaultProtocol = new ServiceProtocol();
 
-        public static IEnumerable<object[]> TestWriteData
-        {
-            get
+        public static IEnumerable<object[]> TestWriteData =>
+            from k in TestData.Keys select new object[] { k };
+
+        public static IEnumerable<object[]> TestParseData =>
+            from p in Protocols.Keys from k in TestData.Keys select new object[] { p, k };
+
+        public static IEnumerable<object[]> TestParseOldData =>
+            from p in Protocols.Keys from k in TestCompatibilityData.Keys select new object[] { p, k };
+
+        public static Dictionary<string, IServiceProtocol> Protocols { get; } =
+            new()
             {
-                foreach (var k in TestData.Keys)
-                {
-                    yield return new object[] { k };
-                }
-            }
-        }
+                ["default"] = DefaultProtocol,
+                ["UseSharedMemoryPool"] = new ServiceProtocol(MemoryPool<byte>.Shared),
+            };
 
-        public static IEnumerable<object[]> TestParseData
+        public static IDictionary<string, ProtocolTestData> TestCompatibilityData { get; } = new[]
         {
-            get
-            {
-                foreach (var k in TestData.Keys)
-                {
-                    yield return new object[] { k };
-                }
-            }
-        }
-
-        public static IEnumerable<object[]> TestParseOldData
-        {
-            get
-            {
-                foreach (var k in TestCompatibilityData.Keys)
-                {
-                    yield return new object[] { k };
-                }
-            }
-        }
-
-        public static IDictionary<string, ProtocolTestData> TestCompatibilityData => new[] {
             new ProtocolTestData(
                 name: "CloseConnection",
                 message: new CloseConnectionMessage("conn3"),
@@ -262,7 +246,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "lQ2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoEBzQTS"),
         }.ToDictionary(t => t.Name);
 
-        public static IDictionary<string, ProtocolTestData> TestData => new[]
+        public static IDictionary<string, ProtocolTestData> TestData { get; } = new[]
         {
             new ProtocolTestData(
                 name: "HandshakeRequest",
@@ -640,8 +624,9 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
         [Theory]
         [MemberData(nameof(TestParseOldData))]
-        public void ParseOldMessages(string testDataName)
+        public void ParseOldMessages(string protocolName, string testDataName)
         {
+            var protocol = Protocols[protocolName];
             var testData = TestCompatibilityData[testDataName];
 
             // Verify that the input binary string decodes to the expected MsgPack primitives
@@ -649,14 +634,40 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
             // Parse the input fully now.
             bytes = Frame(bytes);
-            var message = ParseServiceMessage(bytes);
-            Assert.Equal(testData.Message, message, ServiceMessageEqualityComparer.Instance);
+            var message = ParseServiceMessage(protocol, bytes);
+            try
+            {
+                Assert.Equal(testData.Message, message, ServiceMessageEqualityComparer.Instance);
+            }
+            finally
+            {
+                TryReleaseLease(message);
+            }
+        }
+
+        private static void TryReleaseLease(ServiceMessage message)
+        {
+            if (message is MulticastDataMessage multicastDataMessage)
+            {
+                if (multicastDataMessage.Leases != null)
+                {
+                    foreach (var lease in multicastDataMessage.Leases)
+                    {
+                        lease?.Dispose();
+                    }
+                }
+            }
+            else if (message is ConnectionDataMessage connectionDataMessage)
+            {
+                connectionDataMessage.Lease?.Dispose();
+            }
         }
 
         [Theory]
         [MemberData(nameof(TestParseData))]
-        public void ParseMessages(string testDataName)
+        public void ParseMessages(string protocolName, string testDataName)
         {
+            var protocol = Protocols[protocolName];
             var testData = TestData[testDataName];
 
             // Verify that the input binary string decodes to the expected MsgPack primitives
@@ -664,8 +675,15 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
 
             // Parse the input fully now.
             bytes = Frame(bytes);
-            var message = ParseServiceMessage(bytes);
-            Assert.Equal(testData.Message, message, ServiceMessageEqualityComparer.Instance);
+            var message = ParseServiceMessage(protocol, bytes);
+            try
+            {
+                Assert.Equal(testData.Message, message, ServiceMessageEqualityComparer.Instance);
+            }
+            finally
+            {
+                TryReleaseLease(message);
+            }
         }
 
         [Theory]
@@ -674,7 +692,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             var testData = TestData[testDataName];
 
-            var bytes = Protocol.GetMessageBytes(testData.Message);
+            var bytes = DefaultProtocol.GetMessageBytes(testData.Message);
 
             // Unframe the message to check the binary encoding
             var byteSpan = new ReadOnlySequence<byte>(bytes);
@@ -719,7 +737,7 @@ Please verify the MsgPack output and update the baseline");
             };
 
             bytes = Frame(bytes);
-            var message = ParseServiceMessage(bytes);
+            var message = ParseServiceMessage(DefaultProtocol, bytes);
             var openConnectionMessage = Assert.IsType<OpenConnectionMessage>(message);
             Assert.Equal(expectedMessage, openConnectionMessage, ServiceMessageEqualityComparer.Instance);
 
@@ -737,7 +755,7 @@ Please verify the MsgPack output and update the baseline");
             };
 
             bytes = Frame(bytes);
-            message = ParseServiceMessage(bytes);
+            message = ParseServiceMessage(DefaultProtocol, bytes);
             openConnectionMessage = Assert.IsType<OpenConnectionMessage>(message);
             Assert.Equal(expectedMessage, openConnectionMessage, ServiceMessageEqualityComparer.Instance);
         }
@@ -772,10 +790,10 @@ Please verify the MsgPack output and update the baseline");
             }
         }
 
-        private static ServiceMessage ParseServiceMessage(byte[] bytes)
+        private static ServiceMessage ParseServiceMessage(IServiceProtocol protocol, byte[] bytes)
         {
             var data = new ReadOnlySequence<byte>(bytes);
-            Assert.True(Protocol.TryParseMessage(ref data, out var message));
+            Assert.True(protocol.TryParseMessage(ref data, out var message));
             return message;
         }
 

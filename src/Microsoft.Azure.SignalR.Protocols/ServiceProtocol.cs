@@ -19,6 +19,17 @@ namespace Microsoft.Azure.SignalR.Protocol
     {
         private static readonly int ProtocolVersion = 1;
 
+        private readonly MemoryPool<byte> _pool;
+
+        public ServiceProtocol() : this(null)
+        {
+        }
+
+        public ServiceProtocol(MemoryPool<byte> pool)
+        {
+            _pool = pool;
+        }
+
         /// <inheritdoc />
         public int Version => ProtocolVersion;
 
@@ -37,7 +48,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             return true;
         }
 
-        private static ServiceMessage ParseMessage(ref MessagePackReader reader)
+        private ServiceMessage ParseMessage(ref MessagePackReader reader)
         {
             var arrayLength = reader.ReadArrayHeader();
 
@@ -855,12 +866,16 @@ namespace Microsoft.Azure.SignalR.Protocol
             return result;
         }
 
-        private static ConnectionDataMessage CreateConnectionDataMessage(ref MessagePackReader reader, int arrayLength)
+        private ConnectionDataMessage CreateConnectionDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var connectionId = ReadString(ref reader, "connectionId");
-            var payload = ReadBytes(ref reader, "payload");
+            ConnectionDataMessage result;
+            var (payload, lease) = ReadBytes(ref reader, _pool, "payload");
+            result = new ConnectionDataMessage(connectionId, payload)
+            {
+                Lease = lease
+            };
 
-            var result = new ConnectionDataMessage(connectionId, payload);
             if (arrayLength >= 4)
             {
                 result.ReadExtensionMembers(ref reader);
@@ -868,12 +883,15 @@ namespace Microsoft.Azure.SignalR.Protocol
             return result;
         }
 
-        private static MultiConnectionDataMessage CreateMultiConnectionDataMessage(ref MessagePackReader reader, int arrayLength)
+        private MultiConnectionDataMessage CreateMultiConnectionDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var connectionList = ReadStringArray(ref reader, "connectionList");
-            var payloads = ReadPayloads(ref reader);
+            var (payloads, leases) = ReadPayloads(ref reader, _pool);
 
-            var result = new MultiConnectionDataMessage(connectionList, payloads);
+            var result = new MultiConnectionDataMessage(connectionList, payloads)
+            {
+                Leases = leases
+            };
             if (arrayLength >= 4)
             {
                 result.ReadExtensionMembers(ref reader);
@@ -881,12 +899,15 @@ namespace Microsoft.Azure.SignalR.Protocol
             return result;
         }
 
-        private static ServiceMessage CreateUserDataMessage(ref MessagePackReader reader, int arrayLength)
+        private ServiceMessage CreateUserDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var userId = ReadString(ref reader, "userId");
-            var payloads = ReadPayloads(ref reader);
+            var (payloads, leases) = ReadPayloads(ref reader, _pool);
 
-            var result = new UserDataMessage(userId, payloads);
+            var result = new UserDataMessage(userId, payloads)
+            {
+                Leases = leases
+            };
             if (arrayLength >= 4)
             {
                 result.ReadExtensionMembers(ref reader);
@@ -894,12 +915,15 @@ namespace Microsoft.Azure.SignalR.Protocol
             return result;
         }
 
-        private static MultiUserDataMessage CreateMultiUserDataMessage(ref MessagePackReader reader, int arrayLength)
+        private MultiUserDataMessage CreateMultiUserDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var userList = ReadStringArray(ref reader, "userList");
-            var payloads = ReadPayloads(ref reader);
+            var (payloads, leases) = ReadPayloads(ref reader, _pool);
 
-            var result = new MultiUserDataMessage(userList, payloads);
+            var result = new MultiUserDataMessage(userList, payloads)
+            {
+                Leases = leases
+            };
             if (arrayLength >= 4)
             {
                 result.ReadExtensionMembers(ref reader);
@@ -907,12 +931,15 @@ namespace Microsoft.Azure.SignalR.Protocol
             return result;
         }
 
-        private static BroadcastDataMessage CreateBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
+        private BroadcastDataMessage CreateBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var excludedList = ReadStringArray(ref reader, "excludedList");
-            var payloads = ReadPayloads(ref reader);
+            var (payloads, leases) = ReadPayloads(ref reader, _pool);
 
-            var result = new BroadcastDataMessage(excludedList, payloads);
+            var result = new BroadcastDataMessage(excludedList, payloads)
+            {
+                Leases = leases
+            };
             if (arrayLength >= 4)
             {
                 result.ReadExtensionMembers(ref reader);
@@ -994,13 +1021,16 @@ namespace Microsoft.Azure.SignalR.Protocol
             return result;
         }
 
-        private static GroupBroadcastDataMessage CreateGroupBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
+        private GroupBroadcastDataMessage CreateGroupBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var groupName = ReadString(ref reader, "groupName");
             var excludedList = ReadStringArray(ref reader, "excludedList");
-            var payloads = ReadPayloads(ref reader);
+            var (payloads, lease) = ReadPayloads(ref reader, _pool);
 
-            var result = new GroupBroadcastDataMessage(groupName, excludedList, payloads);
+            var result = new GroupBroadcastDataMessage(groupName, excludedList, payloads)
+            {
+                Leases = lease
+            };
             if (arrayLength >= 5)
             {
                 result.ReadExtensionMembers(ref reader);
@@ -1015,12 +1045,15 @@ namespace Microsoft.Azure.SignalR.Protocol
             return result;
         }
 
-        private static MultiGroupBroadcastDataMessage CreateMultiGroupBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
+        private MultiGroupBroadcastDataMessage CreateMultiGroupBroadcastDataMessage(ref MessagePackReader reader, int arrayLength)
         {
             var groupList = ReadStringArray(ref reader, "groupList");
-            var payloads = ReadPayloads(ref reader);
+            var (payloads, leases) = ReadPayloads(ref reader, _pool);
 
-            var result = new MultiGroupBroadcastDataMessage(groupList, payloads);
+            var result = new MultiGroupBroadcastDataMessage(groupList, payloads)
+            {
+                Leases = leases
+            };
             if (arrayLength >= 4)
             {
                 result.ReadExtensionMembers(ref reader);
@@ -1092,7 +1125,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             var groupName = ReadString(ref reader, "groupName");
             var ackId = ReadInt32(ref reader, "ackId");
-            
+
             var result = new CheckGroupExistenceWithAckMessage(groupName, ackId);
             result.ReadExtensionMembers(ref reader);
             return result;
@@ -1152,23 +1185,25 @@ namespace Microsoft.Azure.SignalR.Protocol
             return null;
         }
 
-        private static IDictionary<string, ReadOnlyMemory<byte>> ReadPayloads(ref MessagePackReader reader)
+        private static (IDictionary<string, ReadOnlyMemory<byte>> payloads, IDisposable[] leases) ReadPayloads(ref MessagePackReader reader, MemoryPool<byte> pool)
         {
             var payloadCount = ReadMapLength(ref reader, "payloads");
             if (payloadCount > 0)
             {
                 var payloads = new Dictionary<string, ReadOnlyMemory<byte>>((int)payloadCount);
+                var leases = new IDisposable[payloadCount];
                 for (var i = 0; i < payloadCount; i++)
                 {
                     var key = ReadString(ref reader, $"payloads[{i}].key");
-                    var value = ReadBytes(ref reader, $"payloads[{i}].value");
+                    var (value, lease) = ReadBytes(ref reader, pool, $"payloads[{i}].value");
                     payloads.Add(key, value);
+                    leases[i] = lease;
                 }
 
-                return payloads;
+                return (payloads, leases);
             }
 
-            return null;
+            return (null, null);
         }
 
         private static Dictionary<string, StringValues> ReadHeaders(ref MessagePackReader reader)
@@ -1237,17 +1272,28 @@ namespace Microsoft.Azure.SignalR.Protocol
             return null;
         }
 
-        private static byte[] ReadBytes(ref MessagePackReader reader, string field)
+        private static (ReadOnlyMemory<byte> payload, IDisposable lease) ReadBytes(ref MessagePackReader reader, MemoryPool<byte> pool, string field)
         {
             try
             {
-                return reader.ReadBytes()?.ToArray() ?? Array.Empty<byte>();
+                var sequence = reader.ReadBytes();
+                if (sequence == null || sequence.Value.IsEmpty)
+                {
+                    return (Array.Empty<byte>(), null);
+                }
+                var length = (int)sequence.Value.Length;
+                if (pool == null)
+                {
+                    return (sequence.Value.ToArray(), null);
+                }
+                var owner = pool.Rent(length);
+                sequence.Value.CopyTo(owner.Memory.Span);
+                return (owner.Memory.Slice(0, length), owner);
             }
             catch (Exception ex)
             {
                 throw new InvalidDataException($"Reading '{field}' as Byte[] failed.", ex);
             }
-
         }
 
         private static long ReadMapLength(ref MessagePackReader reader, string field)

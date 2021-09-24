@@ -26,6 +26,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the tracing Id
         /// </summary>
         public ulong? TracingId { get; set; }
+
+        public IDisposable[] Leases { get; set; }
     }
 
     /// <summary>
