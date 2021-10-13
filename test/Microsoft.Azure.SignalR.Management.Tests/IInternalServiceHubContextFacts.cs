@@ -88,16 +88,11 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         [Theory]
         public async Task UserJoinGroup_Test(ServiceTransportType serviceTransportType)
         {
-            async Task testAction(ServiceHubContext hubContext)
+            Task testAction(ServiceHubContext hubContext)
             {
-                try
-                {
-                    // no need to wait for ack
-                    await hubContext.UserGroups.AddToGroupAsync(UserId, GroupName).OrTimeout(300);
-                }
-                catch
-                {
-                }
+                // no need to wait for ack
+                _ = hubContext.UserGroups.AddToGroupAsync(UserId, GroupName).OrTimeout(300);
+                return Task.CompletedTask;
             }
             void assertAction(Dictionary<HubServiceEndpoint, List<TestServiceConnection>> createdConnections)
             {
