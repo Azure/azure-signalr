@@ -184,7 +184,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             _ = hubContext.UserGroups.AddToGroupAsync(userId, groupName);
 
             var messages = connectFactory.CreatedConnections.First().Value.SelectMany(c => (c as TestServiceConnection).ReceivedMessages);
-            Assert.Contains(messages, m => m is UserJoinGroupMessage ackMessage && ackMessage.UserId == userId && ackMessage.GroupName == groupName);
+            Assert.Contains(messages, m => m is UserJoinGroupWithAckMessage ackMessage && ackMessage.UserId == userId && ackMessage.GroupName == groupName);
         }
         #endregion
 
