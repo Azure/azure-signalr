@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -247,14 +247,12 @@ namespace Microsoft.Azure.SignalR
 
         public static void StartToAddUserToGroup(ILogger logger, UserJoinGroupMessage message)
         {
-            if (message.Ttl == null)
-            {
-                _startToAddUserToGroup(logger, message.TracingId, message.UserId, message.GroupName, null);
-            }
-            else
-            {
-                _startToAddUserToGroupWithTtl(logger, message.TracingId, message.UserId, message.GroupName, message.Ttl, null);
-            }
+            StartToAddUserToGroupCore(logger, message.TracingId, message.GroupName, message.UserId, message.Ttl);
+        }
+
+        public static void StartToAddUserToGroupWithAck(ILogger logger, UserJoinGroupWithAckMessage message)
+        {
+            StartToAddUserToGroupCore(logger, message.TracingId, message.GroupName, message.UserId, message.Ttl);
         }
 
         public static void StartToRemoveUserFromGroup(ILogger logger, UserLeaveGroupMessage message)
@@ -292,6 +290,18 @@ namespace Microsoft.Azure.SignalR
         public static void StartToCheckIfGroupExists(ILogger logger, CheckGroupExistenceWithAckMessage message)
         {
             _startToCheckIfGroupExists(logger, message.TracingId, message.GroupName, null);
+        }
+
+        private static void StartToAddUserToGroupCore(ILogger logger, ulong? tracingId, string groupName, string userId, int? ttl)
+        {
+            if (ttl == null)
+            {
+                _startToAddUserToGroup(logger, tracingId, userId, groupName, null);
+            }
+            else
+            {
+                _startToAddUserToGroupWithTtl(logger, tracingId, userId, groupName, ttl, null);
+            }
         }
     }
 }
