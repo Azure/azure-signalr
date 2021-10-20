@@ -14,6 +14,7 @@
   - [Create Service Hub Context](#create-service-hub-context)
   - [Negotiation](#negotiation)
   - [Send Messages and Manage Groups](#send-messages-and-manage-groups)
+  - [Strongly typed hub](#strongly-typed-hub)
   - [Transport Type](#transport-type)
 
 <!-- /TOC -->
@@ -98,6 +99,7 @@ Create your instance of `ServiceHubContext` from a `ServiceManager`:
 ``` C#
 var serviceHubContext = await serviceManager.CreateHubContextAsync("<Your Hub Name>",cancellationToken);
 ```
+
 ## Negotiation
 
 > In server mode, an endpoint `/<Your Hub Name>/negotiate` is exposed for negotiation by Azure SignalR Service SDK. SignalR clients will reach this endpoint and then redirect to Azure SignalR Service later.
@@ -155,6 +157,32 @@ finally
     await hubContext.DisposeAsync();
 }
 ```
+
+## Strongly typed hub
+
+Strongly typed hub is a programming model that you can extract your client methods into an interface, so that avoid errors like misspelling the method name or passing the wrong parameter types.
+
+Let's say we have a client method called `ReceivedMessage` with two string parameters. Without strongly typed hubs, you broadcast to clients through `hubContext.Clients.All.SendAsync("ReceivedMessage", user, message)`. With strongly typed hubs, you first define an interface like this:
+```cs
+public interface IChatClient
+{
+    Task ReceiveMessage(string user, string message);
+}
+```
+
+And then you create a strongly typed hub context which implements `IHubContext<Hub<T>, T>`, `T` is your client method interface:
+```cs
+ServiceHubContext<IChatClient> serviceHubContext = await serviceManager.CreateHubContextAsync<IChatClient>(hubName, cancellationToken);
+```
+
+Finally you could replace `hubContext.Clients.All.SendAsync("ReceivedMessage", "userName", "message")` with the following method.
+```cs
+await Clients.All.ReceiveMessage(user, message);
+```
+
+Except the difference of sending message, you can negotiate or manage groups with `ServiceHubContext<T>` just like `ServiceHubContext`.
+
+[To read more on strongly typed hubs in the ASP.NET Core docs, go here.](https://docs.microsoft.com/aspnet/core/signalr/hubs?#strongly-typed-hubs)
 
 <!--Add sample link here-->
 
