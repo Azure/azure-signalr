@@ -56,7 +56,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             if (!_disposing)
             {
-                DisposeAsync().GetAwaiter().GetResult();
+                DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
             }
         }
     }
