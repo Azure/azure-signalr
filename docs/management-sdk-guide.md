@@ -175,7 +175,7 @@ And then you create a strongly typed hub context which implements `IHubContext<H
 ServiceHubContext<IChatClient> serviceHubContext = await serviceManager.CreateHubContextAsync<IChatClient>(hubName, cancellationToken);
 ```
 
-Finally you could replace `hubContext.Clients.All.SendAsync("ReceivedMessage", "userName", "message")` with the following method.
+Finally, you could directly invoke the method:
 ```cs
 await Clients.All.ReceiveMessage(user, message);
 ```
