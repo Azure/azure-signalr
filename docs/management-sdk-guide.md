@@ -180,7 +180,7 @@ Finally, you could directly invoke the method:
 await Clients.All.ReceiveMessage(user, message);
 ```
 
-Except the difference of sending message, you can negotiate or manage groups with `ServiceHubContext<T>` just like `ServiceHubContext`.
+Except for the difference of sending messages, you could negotiate or manage groups with `ServiceHubContext<T>` just like `ServiceHubContext`.
 
 [To read more on strongly typed hubs in the ASP.NET Core docs, go here.](https://docs.microsoft.com/aspnet/core/signalr/hubs?#strongly-typed-hubs)
 
