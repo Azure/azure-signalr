@@ -582,7 +582,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        internal protected sealed class CustomizedPingTimer : IDisposable
+        protected internal sealed class CustomizedPingTimer : IDisposable
         {
             private readonly object _lock = new object();
             private readonly long _defaultPingTicks;

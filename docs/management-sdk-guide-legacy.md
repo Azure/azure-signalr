@@ -16,7 +16,7 @@
 
 Package Name | Target Framework | NuGet | MyGet
 ---|---|---|---
-Microsoft.Azure.SignalR.Management | .NET Standard 2.0 <br/> .NET Core App 3.0 <br/> .NET 5.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Management.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Management.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Management)
+Microsoft.Azure.SignalR.Management | .NET Standard 2.0 <br/> .NET Core App 3.0 <br/> .NET 5.0 | [![NuGet](https://img.shields.io/badge/nuget-v1.9.2-blue)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management/1.9.2) | [![MyGet](https://img.shields.io/badge/myget-v1.9.2-blue)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Management/1.9.2)
 
 
 ## Getting Started
@@ -50,12 +50,12 @@ Build your instance of `IServiceManager` from a `ServiceManagerBuilder`
 ``` C#
 
 var serviceManager = new ServiceManagerBuilder()
-                    .WithOptions(option => 
+                    .WithOptions(option =>
                     {
                         option.ConnectionString = "<Your Azure SignalR Service Connection String>";
                     })
                     .Build();
-    
+
 ```
 
 > In server mode, an endpoint `/<Your Hub Name>/negotiate` is exposed for negotiation by Azure SignalR Service SDK. SignalR clients will reach this endpoint and then redirect to Azure SignalR Service later.
@@ -66,7 +66,7 @@ var serviceManager = new ServiceManagerBuilder()
 >
 > Read more details about the redirection at SignalR's [Negotiation Protocol](https://github.com/aspnet/SignalR/blob/master/specs/TransportProtocols.md#post-endpoint-basenegotiate-request).
 
-Both of endpoint and access token are useful when you want to redirect SignalR clients to your Azure SignalR Service. 
+Both of endpoint and access token are useful when you want to redirect SignalR clients to your Azure SignalR Service.
 
 You can use the instance of `IServiceManager` generate the endpoint and corresponding access token for SignalR clients to connect to your Azure SignalR Service.
 
@@ -82,11 +82,11 @@ var connection = new HubConnectionBuilder().WithUrl("http://<Your Host Name>/<Yo
 await connection.StartAsync();
 ```
 
-The sample on how to use Management SDK to redirect SignalR clients to Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
+The sample on how to use Management SDK to redirect SignalR clients to Azure SignalR Service can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/1ccde134924b6ff11b292a84f1f95491d8ad2b2f/samples/Management).
 
 ### Create and Use ServiceHubContext
 
-You can create an instance of `IServiceHubContext` to publish messages or manage group membership. The sample on how to use Management SDK to publish messages to SignalR clients can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
+You can create an instance of `IServiceHubContext` to publish messages or manage group membership. The sample on how to use Management SDK to publish messages to SignalR clients can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/1ccde134924b6ff11b292a84f1f95491d8ad2b2f/samples/Management).
 
 ``` C#
 try
@@ -114,7 +114,7 @@ finally
 }
 ```
 
-For full sample on how to use Management SDK can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
+For full sample on how to use Management SDK can be found [here](https://github.com/aspnet/AzureSignalR-samples/tree/1ccde134924b6ff11b292a84f1f95491d8ad2b2f/samples/Management).
 
 ## Transport Type
 
@@ -174,7 +174,7 @@ Generate client endpoint for SignalR clients to connect to service directly.
 
 ### `IServiceHubContext`
 
-This interface manages SignalR clients connected to a specific hub in your Azure SignalR service and the interfaces follow the interface of `IHubContext` with extented interfaces. For example, it can broadcast messages to all connections, send messages to a specific user, send messages to a specific group, add or remove a specific user from a specific group.    
+This interface manages SignalR clients connected to a specific hub in your Azure SignalR service and the interfaces follow the interface of `IHubContext` with extended interfaces. For example, it can broadcast messages to all connections, send messages to a specific user, send messages to a specific group, add or remove a specific user from a specific group.
 
 #### Properties
 
@@ -194,15 +194,15 @@ In this SDK, `IUserGroupManager UserGroups` is newly added. It manages groups me
 * `IGroupManager Groups`
   Get manager for groups, manage groups with connection ID
   * `Task AddToGroupAsync (string connectionId, string groupName, CancellationToken cancellationToken = null)`
-    Add client with connection ID to some group with group Name 
+    Add client with connection ID to some group with group Name
   * `Task RemoveFromGroupAsync (string connectionId, string groupName, CancellationToken cancellationToken = null)`
     Remove client with connection ID to some group with group Name
 * `IUserGroupManager UserGroups`
   Get manager for groups, manage groups with user ID
   * `Task AddToGroupAsync (string userId, string groupName, CancellationToken cancellationToken = null)`
-    Add user with user ID to some group with group Name 
+    Add user with user ID to some group with group Name
   * `Task RemoveFromGroupAsync (string userId, string groupName, CancellationToken cancellationToken = null)`
-    Remove user with user ID to some group with group Name 
+    Remove user with user ID to some group with group Name
 
 #### Method
 * `Task DisposeAsync()`

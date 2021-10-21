@@ -38,6 +38,14 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return OpenConnectionMessagesEqual(openConnectionMessage, (OpenConnectionMessage)y);
                 case CloseConnectionMessage closeConnectionMessage:
                     return CloseConnectionMessagesEqual(closeConnectionMessage, (CloseConnectionMessage)y);
+                case CloseConnectionWithAckMessage closeConnectionWithAckMessage:
+                    return CloseConnectionWithAckMessagesEqual(closeConnectionWithAckMessage, (CloseConnectionWithAckMessage)y);
+                case CloseConnectionsWithAckMessage closeConnectionsWithAckMessage:
+                    return CloseConnectionsWithAckMessagesEqual(closeConnectionsWithAckMessage, (CloseConnectionsWithAckMessage)y);
+                case CloseUserConnectionsWithAckMessage closeUserConnectionsWithAckMessage:
+                    return CloseUserConnectionsWithAckMessagesEqual(closeUserConnectionsWithAckMessage, (CloseUserConnectionsWithAckMessage)y);
+                case CloseGroupConnectionsWithAckMessage closeGroupConnectionsWithAckMessage:
+                    return CloseGroupConnectionsWithAckMessagesEqual(closeGroupConnectionsWithAckMessage, (CloseGroupConnectionsWithAckMessage)y);
                 case ConnectionDataMessage connectionDataMessage:
                     return ConnectionDataMessagesEqual(connectionDataMessage, (ConnectionDataMessage)y);
                 case MultiConnectionDataMessage multiConnectionDataMessage:
@@ -130,6 +138,30 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         private bool CloseConnectionMessagesEqual(CloseConnectionMessage x, CloseConnectionMessage y)
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.ErrorMessage, y.ErrorMessage) && x.TracingId == y.TracingId;
+        }
+
+        private bool CloseConnectionWithAckMessagesEqual(CloseConnectionWithAckMessage x, CloseConnectionWithAckMessage y)
+        {
+            return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.Reason, y.Reason) 
+                && x.TracingId == y.TracingId && x.AckId == y.AckId;
+        }
+
+        private bool CloseConnectionsWithAckMessagesEqual(CloseConnectionsWithAckMessage x, CloseConnectionsWithAckMessage y)
+        {
+            return SequenceEqual(x.ExcludedList, y.ExcludedList) && StringEqual(x.Reason, y.Reason)
+                && x.TracingId == y.TracingId && x.AckId == y.AckId;
+        }
+
+        private bool CloseUserConnectionsWithAckMessagesEqual(CloseUserConnectionsWithAckMessage x, CloseUserConnectionsWithAckMessage y)
+        {
+            return SequenceEqual(x.ExcludedList, y.ExcludedList) && StringEqual(x.Reason, y.Reason) && StringEqual(x.UserId, y.UserId)
+                && x.TracingId == y.TracingId && x.AckId == y.AckId;
+        }
+
+        private bool CloseGroupConnectionsWithAckMessagesEqual(CloseGroupConnectionsWithAckMessage x, CloseGroupConnectionsWithAckMessage y)
+        {
+            return SequenceEqual(x.ExcludedList, y.ExcludedList) && StringEqual(x.Reason, y.Reason) && StringEqual(x.GroupName, y.GroupName)
+                && x.TracingId == y.TracingId && x.AckId == y.AckId;
         }
 
         private bool ConnectionDataMessagesEqual(ConnectionDataMessage x, ConnectionDataMessage y)

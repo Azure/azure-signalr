@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Azure.SignalR.Common.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using Microsoft.Azure.SignalR.Common.Utilities;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR
     /// </summary>
     internal class ClientConnectionScope : IDisposable
     {
-        private bool _needCleanup;
+        private readonly bool _needCleanup;
 
         internal ClientConnectionScope() : this(default, default, default)
         {

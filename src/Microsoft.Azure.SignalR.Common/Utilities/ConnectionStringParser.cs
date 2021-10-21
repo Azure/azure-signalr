@@ -38,11 +38,9 @@ namespace Microsoft.Azure.SignalR
         private static readonly string MissingEndpointProperty =
                                             $"Connection string missing required properties {EndpointProperty}.";
 
-        private static readonly string MissingTenantIdProperty =
-            $"Connection string missing required properties {TenantIdProperty}.";
         private static readonly char[] PropertySeparator = { ';' };
 
-        internal static (AccessKey accessKey, string version, string clientEndpoint) Parse(string connectionString)
+        internal static ParsedConnectionString Parse(string connectionString)
         {
             var properties = connectionString.Split(PropertySeparator, StringSplitOptions.RemoveEmptyEntries);
             if (properties.Length < 2)
@@ -111,13 +109,19 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
-            dict.TryGetValue(AuthTypeProperty, out string type);
-            AccessKey accessKey = type?.ToLower() switch
+            dict.TryGetValue(AuthTypeProperty, out var type);
+            var accessKey = type?.ToLower() switch
             {
                 "aad" => BuildAadAccessKey(builder.Uri, dict),
                 _ => BuildAccessKey(builder.Uri, dict),
             };
-            return (accessKey, version, clientEndpoint);
+            return new ParsedConnectionString()
+            {
+                Endpoint = builder.Uri,
+                ClientEndpoint = clientEndpoint,
+                AccessKey = accessKey,
+                Version = version,
+            };
         }
 
         internal static bool ValidateEndpoint(string endpoint)

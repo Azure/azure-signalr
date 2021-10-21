@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -13,7 +13,7 @@ namespace Microsoft.Azure.SignalR.Management
 {
     internal class WebSocketsHubLifetimeManager<THub> : ServiceLifetimeManagerBase<THub>, IServiceHubLifetimeManager<THub> where THub : Hub
     {
-        private IOptions<ServiceManagerOptions> _serviceManagerOptions;
+        private readonly IOptions<ServiceManagerOptions> _serviceManagerOptions;
 
         public WebSocketsHubLifetimeManager(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver,
             IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILoggerFactory loggerFactory, IOptions<ServiceManagerOptions> serviceManagerOptions) :
@@ -36,12 +36,13 @@ namespace Microsoft.Azure.SignalR.Management
 
             // todo: apply to other methods
             // todo: apply to transient mode
-            var message = AppendMessageTracingId(new UserJoinGroupMessage(userId, groupName));
+            var message = AppendMessageTracingId(new UserJoinGroupWithAckMessage(userId, groupName, 0));
             if (message.TracingId != null)
             {
-                MessageLog.StartToAddUserToGroup(Logger, message);
+                // generate ack id on ctor, so that we can log ack id
+                MessageLog.StartToAddUserToGroupWithAck(Logger, message);
             }
-            return WriteAsync(message);
+            return WriteAckableMessageAsync(message);
         }
 
         public Task UserAddToGroupAsync(string userId, string groupName, TimeSpan ttl, CancellationToken cancellationToken = default)

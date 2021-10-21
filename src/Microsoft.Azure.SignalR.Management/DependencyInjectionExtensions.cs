@@ -68,9 +68,7 @@ namespace Microsoft.Azure.SignalR.Management
         {
             return services
                 .AddHub<THub>(hubName)
-                .AddSingleton<ServiceHubContext<T>, ServiceHubContextImpl<T>>()
-                .AddSingleton(sp => sp.GetRequiredService<ServiceHubLifetimeManagerFactory>().Create<Hub<T>>(hubName))
-                .AddSingleton(sp => (HubLifetimeManager<Hub<T>>)sp.GetRequiredService<IServiceHubLifetimeManager<Hub<T>>>());
+                .AddSingleton<ServiceHubContext<T>>(sp => ActivatorUtilities.CreateInstance<ServiceHubContextImpl<T>>(sp, hubName));
         }
 
         private static IServiceCollection AddSignalRServiceCore(this IServiceCollection services)

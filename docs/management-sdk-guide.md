@@ -1,4 +1,4 @@
-# Azure SignalR Service Management SDK 
+# Azure SignalR Service Management SDK
 
 > **NOTE**
 >
@@ -58,14 +58,15 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 **Features only come with new API**
 |                                     | Transient          | Persistent         |
 |-------------------------------------|--------------------|--------------------|
-| Check if a connection exists        | :heavy_check_mark: | :heavy_check_mark: |
-| Check if a group exists             | :heavy_check_mark: | :heavy_check_mark: |
-| Check if a user exists              | :heavy_check_mark: | :heavy_check_mark: |
-| Close a client connection           | :heavy_check_mark: | :heavy_check_mark: |
+| Check if a connection exists        | :heavy_check_mark: | Since v1.11        |
+| Check if a group exists             | :heavy_check_mark: | Since v1.11        |
+| Check if a user exists              | :heavy_check_mark: | Since v1.11        |
+| Close a client connection           | :heavy_check_mark: | Since v1.11        |
 
 
 > More details about different modes can be found [here](#Transport-Type).
 
+> [For a full sample on management SDK, please go here](https://github.com/aspnet/AzureSignalR-samples/tree/master/samples/Management).
 ## Create Service Manager
 
 Build your instance of `ServiceManager` from a `ServiceManagerBuilder`
@@ -73,16 +74,16 @@ Build your instance of `ServiceManager` from a `ServiceManagerBuilder`
 ``` C#
 
 var serviceManager = new ServiceManagerBuilder()
-                    .WithOptions(option => 
+                    .WithOptions(option =>
                     {
                         option.ConnectionString = "<Your Azure SignalR Service Connection String>";
                     })
                     .WithLoggerFactory(loggerFactory)
                     .BuildServiceManager();
-    
+
 ```
 
-You can use `ServiceManager` to check the Azure SignalR endpoint health and create service hub context. The following [section](#create-service-hub-context) provides details about creating service hub context. 
+You can use `ServiceManager` to check the Azure SignalR endpoint health and create service hub context. The following [section](#create-service-hub-context) provides details about creating service hub context.
 
 To check the Azure SignalR endpoint health, you can use `ServiceManager.IsServiceHealthy` method. Note that if you have multiple Azure SignalR endpoints, only the first endpoint will be checked.
 
@@ -107,7 +108,7 @@ var serviceHubContext = await serviceManager.CreateHubContextAsync("<Your Hub Na
 >
 > Read more details about the redirection at SignalR's [Negotiation Protocol](https://github.com/aspnet/SignalR/blob/master/specs/TransportProtocols.md#post-endpoint-basenegotiate-request).
 
-Both of endpoint and access token are useful when you want to redirect SignalR clients to your Azure SignalR Service. 
+Both of endpoint and access token are useful when you want to redirect SignalR clients to your Azure SignalR Service.
 
 You can use the instance of `ServiceHubContext` to generate the endpoint url and corresponding access token for SignalR clients to connect to your Azure SignalR Service.
 

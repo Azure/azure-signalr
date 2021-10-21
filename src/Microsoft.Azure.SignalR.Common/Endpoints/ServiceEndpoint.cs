@@ -64,18 +64,19 @@ namespace Microsoft.Azure.SignalR
         /// <param name="name"></param>
         public ServiceEndpoint(string connectionString, EndpointType type = EndpointType.Primary, string name = "")
         {
+            ConnectionString = connectionString;
+
             if (string.IsNullOrWhiteSpace(connectionString))
             {
                 throw new ArgumentException($"'{nameof(connectionString)}' cannot be null or whitespace", nameof(connectionString));
             }
 
-            (AccessKey, Version, ClientEndpoint) = ConnectionStringParser.Parse(connectionString);
-            AudienceBaseUrl = BuildAudienceBaseUrl(AccessKey.Endpoint);
-            Endpoint = BuildServerEndpoint(AccessKey.Endpoint);
-            ClientEndpoint ??= Endpoint;
-
+            var result = ConnectionStringParser.Parse(connectionString);
+            AccessKey = result.AccessKey;
+            AudienceBaseUrl = BuildAudienceBaseUrl(result.Endpoint);
+            Endpoint = BuildServerEndpoint(result.Endpoint);
+            ClientEndpoint = result.ClientEndpoint ?? Endpoint;
             EndpointType = type;
-            ConnectionString = connectionString;
             Name = name;
         }
 

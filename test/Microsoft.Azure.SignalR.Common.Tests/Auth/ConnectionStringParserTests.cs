@@ -9,9 +9,10 @@ using Azure.Identity;
 
 using Xunit;
 
-namespace Microsoft.Azure.SignalR.Common.Tests
+namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 {
-    public class ConnectionStringParserFacts
+    [Collection("Auth")]
+    public class ConnectionStringParserTests
     {
         private const string HttpEndpoint = "http://aaa";
 
@@ -25,23 +26,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [InlineData("endpoint=https://aaa;AuthType=aad;clientId=123;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
         public void InvalidAzureApplication(string connectionString)
         {
-            Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-        }
-
-        [Theory]
-        [ClassData(typeof(VersionTestData))]
-        public void TestVersion(string connectionString, string expectedVersion)
-        {
-            var (_, version, _) = ConnectionStringParser.Parse(connectionString);
-            Assert.Equal(expectedVersion, version);
-        }
-
-        [Theory]
-        [ClassData(typeof(ClientEndpointTestData))]
-        public void TestClientEndpoint(string connectionString, string expectedClientEndpoint)
-        {
-            var (_, _, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
-            Assert.Equal(expectedClientEndpoint, clientEndpoint);
+            var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
+            Assert.Contains("Connection string missing required properties clientSecret or clientCert", exception.Message);
         }
 
         [Theory]
@@ -52,7 +38,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         public void InvalidConnectionStrings(string connectionString)
         {
             var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-
             Assert.Contains("Connection string missing required properties", exception.Message);
         }
 
@@ -62,7 +47,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         public void InvalidEndpoint(string connectionString)
         {
             var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-
             Assert.Contains("Endpoint property in connection string is not a valid URI", exception.Message);
         }
 
@@ -72,7 +56,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         public void InvalidClientEndpoint(string connectionString)
         {
             var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-
             Assert.Contains("ClientEndpoint property in connection string is not a valid URI", exception.Message);
         }
 
@@ -83,8 +66,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         public void InvalidVersion(string connectionString, string version)
         {
             var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-
-            Assert.Contains(string.Format("Version {0} is not supported.", version), exception.Message);
+            Assert.Contains($"Version {version} is not supported.", exception.Message);
         }
 
         [Theory]
@@ -94,23 +76,38 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         public void InvalidPort(string connectionString)
         {
             var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
+            Assert.Contains("Invalid value for port property.", exception.Message);
+        }
 
-            Assert.Contains(@"Invalid value for port property.", exception.Message);
+        [Theory]
+        [ClassData(typeof(VersionTestData))]
+        public void TestVersion(string connectionString, string expectedVersion)
+        {
+            var r = ConnectionStringParser.Parse(connectionString);
+            Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
+            Assert.Equal(expectedVersion, r.Version);
+        }
+
+        [Theory]
+        [ClassData(typeof(ClientEndpointTestData))]
+        public void TestClientEndpoint(string connectionString, string expectedClientEndpoint)
+        {
+            var r = ConnectionStringParser.Parse(connectionString);
+            Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
+            Assert.Equal(expectedClientEndpoint, r.ClientEndpoint);
         }
 
         [Theory]
         [InlineData("endpoint=https://aaa;AuthType=aad;clientId=foo;clientSecret=bar;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
         public void TestAzureApplication(string connectionString)
         {
-            var (accessKey, version, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
+            var r = ConnectionStringParser.Parse(connectionString);
 
-            Assert.IsType<AadAccessKey>(accessKey);
-            if (accessKey is AadAccessKey aadAccessKey)
-            {
-                Assert.IsType<ClientSecretCredential>(aadAccessKey.TokenCredential);
-            }
-            Assert.Null(version);
-            Assert.Null(clientEndpoint);
+            var aadAccessKey = Assert.IsType<AadAccessKey>(r.AccessKey);
+            Assert.IsType<ClientSecretCredential>(aadAccessKey.TokenCredential);
+            Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
+            Assert.Null(r.Version);
+            Assert.Null(r.ClientEndpoint);
         }
 
         [Theory]
@@ -122,16 +119,13 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientId=123;")]
         internal void TestManagedIdentity(string expectedEndpoint, string connectionString)
         {
-            var (accessKey, version, clientEndpoint) = ConnectionStringParser.Parse(connectionString);
+            var r = ConnectionStringParser.Parse(connectionString);
 
-            Assert.Equal(expectedEndpoint, accessKey.Endpoint.AbsoluteUri.TrimEnd('/'));
-            Assert.IsType<AadAccessKey>(accessKey);
-            if (accessKey is AadAccessKey aadAccessKey)
-            {
-                Assert.IsType<ManagedIdentityCredential>(aadAccessKey.TokenCredential);
-            }
-            Assert.Null(version);
-            Assert.Null(clientEndpoint);
+            Assert.Equal(expectedEndpoint, r.Endpoint.AbsoluteUri.TrimEnd('/'));
+            var aadAccessKey = Assert.IsType<AadAccessKey>(r.AccessKey);
+            Assert.IsType<ManagedIdentityCredential>(aadAccessKey.TokenCredential);
+            Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
+            Assert.Null(r.ClientEndpoint);
         }
 
         public class EndpointEndWithSlash: IEnumerable<object[]>
