@@ -47,7 +47,8 @@ namespace Microsoft.Azure.SignalR.Management
             if (!_disposing)
             {
                 _disposing = true;
-                await ServiceProvider.GetRequiredService<IHost>().StopAsync();
+                using var host = ServiceProvider.GetRequiredService<IHost>();
+                await host.StopAsync();
             }
         }
 
