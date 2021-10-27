@@ -170,6 +170,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             if (endpoint.AccessKey is TestAadAccessKey aadKey)
             {
+                Assert.True(true);
                 var message = await connection.ExpectServiceMessage<AccessKeyRequestMessage>().OrTimeout(3000);
                 Assert.Equal(aadKey.Token, message.Token);
             }
