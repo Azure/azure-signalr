@@ -4,25 +4,21 @@
 using System;
 using System.Buffers;
 using System.IO.Pipelines;
+using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Azure.Identity;
-
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-
 using Xunit;
 using Xunit.Abstractions;
-
 using static Microsoft.Azure.SignalR.Tests.ServiceConnectionTests;
-
 using SignalRProtocol = Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests
@@ -151,17 +147,29 @@ namespace Microsoft.Azure.SignalR.Tests
             await connection.StopAsync();
         }
 
-        [Theory]
-        [InlineData(nameof(AccessKey))]
-        [InlineData(nameof(AadAccessKey))]
-        public async Task TestAccessKeyRequestMessage(string keyType)
+        private ServiceEndpoint MockServiceEndpoint(string keyTypeName)
         {
-            var endpoint = keyType switch
+            switch (keyTypeName)
             {
-                nameof(AccessKey) => new ServiceEndpoint(_keyConnectionString),
-                nameof(AadAccessKey) => new ServiceEndpoint(_aadConnectionString),
-                _ => throw new NotImplementedException()
-            };
+                case nameof(AccessKey):
+                    return new ServiceEndpoint(_keyConnectionString);
+                case nameof(AadAccessKey):
+                    var endpoint = new ServiceEndpoint(_aadConnectionString);
+                    var p = typeof(ServiceEndpoint).GetProperty("AccessKey", BindingFlags.NonPublic | BindingFlags.Instance);
+                    p.SetValue(endpoint, new TestAadAccessKey());
+                    return endpoint;
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(AccessKey))]
+        [InlineData(typeof(AadAccessKey))]
+        public async Task TestAccessKeyRequestMessage(Type keyType)
+        {
+            var endpoint = MockServiceEndpoint(keyType.Name);
+            Assert.IsAssignableFrom(keyType, endpoint.AccessKey);
             var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
 
             var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint);
@@ -180,12 +188,12 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [InlineData(typeof(AccessKey), _keyConnectionString)]
-        [InlineData(typeof(AadAccessKey), _aadConnectionString)]
-        public async Task TestAccessKeyResponseMessage(Type type, string connectionString)
+        [InlineData(typeof(AccessKey))]
+        [InlineData(typeof(AadAccessKey))]
+        public async Task TestAccessKeyResponseMessage(Type keyType)
         {
-            var endpoint = new ServiceEndpoint(connectionString);
-            Assert.Equal(type.Name, endpoint.AccessKey.GetType().Name);
+            var endpoint = MockServiceEndpoint(keyType.Name);
+            Assert.IsAssignableFrom(keyType, endpoint.AccessKey);
             var hubServiceEndpoint = new HubServiceEndpoint("foo", null, endpoint);
 
             var connection = CreateServiceConnection(hubServiceEndpoint: hubServiceEndpoint);
