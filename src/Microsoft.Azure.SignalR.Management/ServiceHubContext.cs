@@ -34,7 +34,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public virtual void Dispose()
         {
-            DisposeAsync().GetAwaiter().GetResult();
+            DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         }
     }
 }
