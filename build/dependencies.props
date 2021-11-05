@@ -55,7 +55,7 @@
     <MicrosoftExtensionsHostingVersion>2.1.0</MicrosoftExtensionsHostingVersion>
 
     <!-- Signing -->
-    <MicroBuildCorePackageVersion>0.3.0</MicroBuildCorePackageVersion>
+    <MicrosoftVisualStudioEngMicroBuildCoreVersion>1.0.0</MicrosoftVisualStudioEngMicroBuildCoreVersion>
 
     <!-- Samples -->
     <MicrosoftAspNetCorePackageVersion>2.1.0</MicrosoftAspNetCorePackageVersion>
@@ -64,7 +64,7 @@
     <NewtonsoftJsonPackageVersion>11.0.2</NewtonsoftJsonPackageVersion>
     <MicrosoftOwinPackageVersion>2.1.0</MicrosoftOwinPackageVersion>
     <OwinPackageVersion>1.0.0</OwinPackageVersion>
-    
+
     <!--Emulator -->
     <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>3.1.5</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
     <MicrosoftAspNetCoreMvcNewtonsoftJsonPackageVersion>3.1.5</MicrosoftAspNetCoreMvcNewtonsoftJsonPackageVersion>
