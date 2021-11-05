@@ -250,21 +250,19 @@ namespace Microsoft.Azure.SignalR
             StartToAddUserToGroupCore(logger, message.TracingId, message.GroupName, message.UserId, message.Ttl);
         }
 
-        public static void StartToAddUserToGroupWithAck(ILogger logger, UserJoinGroupWithAckMessage message)
+        public static void StartToAddUserToGroup(ILogger logger, UserJoinGroupWithAckMessage message)
         {
             StartToAddUserToGroupCore(logger, message.TracingId, message.GroupName, message.UserId, message.Ttl);
         }
 
         public static void StartToRemoveUserFromGroup(ILogger logger, UserLeaveGroupMessage message)
         {
-            if (message.GroupName == null)
-            {
-                _startToRemoveUserFromAllGroups(logger, message.TracingId, message.UserId, null);
-            }
-            else
-            {
-                _startToRemoveUserFromGroup(logger, message.TracingId, message.UserId, message.GroupName, null);
-            }
+            StartToRemoveUserFromGroupCore(logger, message.UserId, message.GroupName, message.TracingId);
+        }
+
+        public static void StartToRemoveUserFromGroup(ILogger logger, UserLeaveGroupWithAckMessage message)
+        {
+            StartToRemoveUserFromGroupCore(logger, message.UserId, message.GroupName, message.TracingId);
         }
 
         public static void StartToCheckIfUserInGroup(ILogger logger, CheckUserInGroupWithAckMessage message)
@@ -301,6 +299,18 @@ namespace Microsoft.Azure.SignalR
             else
             {
                 _startToAddUserToGroupWithTtl(logger, tracingId, userId, groupName, ttl, null);
+            }
+        }
+
+        private static void StartToRemoveUserFromGroupCore(ILogger logger, string userId, string groupName, ulong? tracingId)
+        {
+            if (groupName == null)
+            {
+                _startToRemoveUserFromAllGroups(logger, tracingId, userId, null);
+            }
+            else
+            {
+                _startToRemoveUserFromGroup(logger, tracingId, userId, groupName, null);
             }
         }
     }

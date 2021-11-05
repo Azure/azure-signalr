@@ -39,8 +39,8 @@ namespace Microsoft.Azure.SignalR.Management
             var message = AppendMessageTracingId(new UserJoinGroupWithAckMessage(userId, groupName, 0));
             if (message.TracingId != null)
             {
-                // generate ack id on ctor, so that we can log ack id
-                MessageLog.StartToAddUserToGroupWithAck(Logger, message);
+                // todo: generate ack id on ctor, so that we can log ack id
+                MessageLog.StartToAddUserToGroup(Logger, message);
             }
             return WriteAckableMessageAsync(message);
         }
@@ -61,9 +61,10 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 throw new ArgumentOutOfRangeException(nameof(ttl), TtlOutOfRangeErrorMessage);
             }
-            var message = AppendMessageTracingId(new UserJoinGroupMessage(userId, groupName) { Ttl = (int)ttl.TotalSeconds });
+            var message = AppendMessageTracingId(new UserJoinGroupWithAckMessage(userId, groupName, 0) { Ttl = (int)ttl.TotalSeconds });
             if (message.TracingId != null)
             {
+                // todo: generate ack id on ctor, so that we can log ack id
                 MessageLog.StartToAddUserToGroup(Logger, message);
             }
             return WriteAsync(message);
@@ -81,9 +82,10 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
             }
 
-            var message = AppendMessageTracingId(new UserLeaveGroupMessage(userId, groupName));
+            var message = AppendMessageTracingId(new UserLeaveGroupWithAckMessage(userId, groupName, 0));
             if (message.TracingId != null)
             {
+                // todo: generate ack id on ctor, so that we can log ack id
                 MessageLog.StartToRemoveUserFromGroup(Logger, message);
             }
             return WriteAsync(message);
@@ -96,9 +98,10 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(userId));
             }
 
-            var message = AppendMessageTracingId(new UserLeaveGroupMessage(userId, null));
+            var message = AppendMessageTracingId(new UserLeaveGroupWithAckMessage(userId, null, 0));
             if (message.TracingId != null)
             {
+                // todo: generate ack id on ctor, so that we can log ack id
                 MessageLog.StartToRemoveUserFromGroup(Logger, message);
             }
             return WriteAsync(message);

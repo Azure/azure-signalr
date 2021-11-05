@@ -211,6 +211,9 @@ namespace Microsoft.Azure.SignalR
                 case UserLeaveGroupMessage ulgm:
                     return _router.GetEndpointsForGroup(ulgm.GroupName, endpoints).Intersect(_router.GetEndpointsForUser(ulgm.UserId, endpoints));
 
+                case UserLeaveGroupWithAckMessage ulgm:
+                    return _router.GetEndpointsForGroup(ulgm.GroupName, endpoints).Intersect(_router.GetEndpointsForUser(ulgm.UserId, endpoints));
+
                 case CheckConnectionExistenceWithAckMessage checkConnectionMessage:
                     return _router.GetEndpointsForConnection(checkConnectionMessage.ConnectionId, endpoints);
 
