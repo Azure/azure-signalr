@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR.Management
             return builder.CreateAsync(hubName, cancellationToken);
         }
 
-        internal override Task<ServiceHubContext<T>> CreateHubContextAsync<T>(string hubName, CancellationToken cancellation)
+        public override Task<ServiceHubContext<T>> CreateHubContextAsync<T>(string hubName, CancellationToken cancellation)
         {
             var builder = new ServiceHubContextBuilder(_services);
             builder.ConfigureServices(services => services.Configure<ServiceManagerOptions>(o => o.ConnectionCount = 3));
