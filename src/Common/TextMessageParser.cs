@@ -3,12 +3,12 @@
 
 using System.Buffers;
 
-namespace Microsoft.Azure.WebJobs.Extensions.SignalRService.Tests.Common
+namespace Microsoft.Azure.SignalR.Protocol
 {
     /// <summary>
     /// The same as https://github.com/aspnet/SignalR/blob/release/2.2/src/Common/TextMessageParser.cs
     /// </summary>
-    public static class TextMessageParser
+    internal static class TextMessageParser
     {
         public static readonly byte RecordSeparator = 0x1e;
 

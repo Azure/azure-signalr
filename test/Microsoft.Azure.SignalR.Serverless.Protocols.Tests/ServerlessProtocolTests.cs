@@ -6,7 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.AspNetCore.SignalR.Protocol;
-using Microsoft.Azure.WebJobs.Extensions.SignalRService.Tests.Common;
+using Microsoft.Azure.SignalR.Protocol;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -47,6 +47,12 @@ namespace Microsoft.Azure.SignalR.Serverless.Protocols.Tests
                     protocol,
                     Guid.NewGuid().ToString(), Guid.NewGuid().ToString(),
                     new object[] {new object[] { null, Guid.NewGuid().ToString() }}
+                };
+                yield return new object[]
+                {
+                    protocol,
+                    Guid.NewGuid().ToString(), Guid.NewGuid().ToString(),
+                    new object[] {new byte[] {}, new byte[] { 1, 2, 3 } }
                 };
             }
         }

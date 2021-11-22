@@ -49,10 +49,12 @@
     <MicrosoftConfigurationFileExtensionVersion>2.2.0</MicrosoftConfigurationFileExtensionVersion>
     <MicrosoftConfigurationUserSecretVersion>2.2.0</MicrosoftConfigurationUserSecretVersion>
     <MicrosoftConfigurationEnvironmentVariablesVersion>2.2.0</MicrosoftConfigurationEnvironmentVariablesVersion>
-    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>1.0.11</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
     <MicrosoftAspNetCoreSignalRProtocolsNewtonsoftJson3_0Version>3.0.0</MicrosoftAspNetCoreSignalRProtocolsNewtonsoftJson3_0Version>
     <MicrosoftAspNetCoreSignalRProtocolsNewtonsoftJson5_0Version>5.0.1</MicrosoftAspNetCoreSignalRProtocolsNewtonsoftJson5_0Version>
     <MicrosoftExtensionsHostingVersion>2.1.0</MicrosoftExtensionsHostingVersion>
+
+    <!-- SignalR Serverless Protocols-->
+    <NewtonsoftJsonPackageVersion>12.0.2</NewtonsoftJsonPackageVersion>
 
     <!-- Signing -->
     <MicrosoftVisualStudioEngMicroBuildCoreVersion>1.0.0</MicrosoftVisualStudioEngMicroBuildCoreVersion>
@@ -61,7 +63,6 @@
     <MicrosoftAspNetCorePackageVersion>2.1.0</MicrosoftAspNetCorePackageVersion>
     <MicrosoftAspNetCoreSignalRClientPackageVersion>3.1.2</MicrosoftAspNetCoreSignalRClientPackageVersion>
     <MicrosoftAspNetCoreSignalRProtocolsMessagePackVersion>3.1.2</MicrosoftAspNetCoreSignalRProtocolsMessagePackVersion>
-    <NewtonsoftJsonPackageVersion>11.0.2</NewtonsoftJsonPackageVersion>
     <MicrosoftOwinPackageVersion>2.1.0</MicrosoftOwinPackageVersion>
     <OwinPackageVersion>1.0.0</OwinPackageVersion>
 
@@ -83,6 +84,7 @@
     <SystemThreadingTasksExtensionsVersion>4.5.3</SystemThreadingTasksExtensionsVersion>
     <MicrosoftAspNetCoreTestHostPackageVersion>3.0.3</MicrosoftAspNetCoreTestHostPackageVersion>
     <E2eTestUserSecretId>E2eTestUserSecret</E2eTestUserSecretId>
+    <MicrosoftAspNetCoreSignalRProtocolsJsonPackageVersion>5.0.0</MicrosoftAspNetCoreSignalRProtocolsJsonPackageVersion>
   </PropertyGroup>
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition=" '$(DotNetPackageVersionPropsPath)' != '' " />
 </Project>

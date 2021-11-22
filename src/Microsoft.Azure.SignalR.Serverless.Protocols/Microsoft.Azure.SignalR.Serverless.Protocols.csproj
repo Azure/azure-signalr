@@ -1,14 +1,46 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Description>.NET Standard SDK for Azure SignalR Service serverless protocol.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Microsoft.Azure.SignalR.Serverless.Protocols</RootNamespace>
+    <!--Override the global version prefix-->
+    <VersionPrefix>1.7.0</VersionPrefix>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Compile Include="..\Common\MemoryBufferWriter.cs" Link="Internal\MemoryBufferWriter.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryPackageVersion)" />
+  </ItemGroup>
+  
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);ENABLE_UNSAFE_MSGPACK;SPAN_BUILTIN;MESSAGEPACK_INTERNAL</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <MessagePackRoot>$(RepositoryRoot)src\submodules\MessagePack-CSharp\src\MessagePack.UnityClient\Assets\Scripts\MessagePack\</MessagePackRoot>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="$(MessagePackPackageVersion)" />
-    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryPackageVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="$(MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion)" />
+    <!-- MessagePack -->
+    <Compile Include="$(MessagePackRoot)MessagePackReader.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)SequenceReader.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)MessagePackSerializationException.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)MessagePackCode.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)T4\MessagePackReader.Integers.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)MessagePackWriter.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)ExtensionHeader.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)Nil.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)ExtensionResult.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)SequenceReaderExtensions.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)Internal\DateTimeConstants.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)StringEncoding.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)BufferWriter.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)SequencePool.cs" LinkBase="MessagePack" />
+    <Compile Include="$(MessagePackRoot)Utilities.cs" LinkBase="MessagePack" />
+    <Compile Include="..\Microsoft.Azure.SignalR.Common\Utilities\SequenceOfT.cs" LinkBase="MessagePack" />
   </ItemGroup>
-
+  
 </Project>
