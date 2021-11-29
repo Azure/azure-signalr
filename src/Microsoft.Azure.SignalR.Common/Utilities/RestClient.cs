@@ -9,30 +9,27 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Core.Serialization;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Primitives;
-using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR
 {
     internal class RestClient
     {
-        private readonly JsonSerializerSettings _jsonSerializerSettings;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ObjectSerializer _objectSerializer;
         private readonly bool _enableMessageTracing;
 
-        public RestClient(IHttpClientFactory httpClientFactory, JsonSerializerSettings jsonSerializerSettings, bool enableMessageTracing)
+        public RestClient(IHttpClientFactory httpClientFactory, ObjectSerializer objectSerializer, bool enableMessageTracing)
         {
             _httpClientFactory = httpClientFactory;
-            _jsonSerializerSettings = jsonSerializerSettings;
+            _objectSerializer = objectSerializer;
             _enableMessageTracing = enableMessageTracing;
         }
 
-        public RestClient()
-        {
-            _httpClientFactory = HttpClientFactory.Instance;
-            _jsonSerializerSettings = new JsonSerializerSettings();
-            _enableMessageTracing = false;
+        public RestClient() : this(HttpClientFactory.Instance, new JsonObjectSerializer(), true)
+        { 
         }
 
         public Task SendAsync(
@@ -156,7 +153,7 @@ namespace Microsoft.Azure.SignalR
             var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
             request.Headers.Add(Constants.AsrsUserAgent, productInfo);
-            request.Content = new StringContent(JsonConvert.SerializeObject(payload, _jsonSerializerSettings), Encoding.UTF8, "application/json");
+            request.Content = new PayloadMessageContent(payload, _objectSerializer);
             return request;
         }
 
