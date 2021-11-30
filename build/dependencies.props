@@ -46,6 +46,8 @@
     <SystemIOPipelinesPackage3_1Version>4.7.3</SystemIOPipelinesPackage3_1Version>
 
     <!-- SignalR Management -->
+    <AzureCorePackageVersion>1.21.0</AzureCorePackageVersion>
+    <MicrosoftAzureCoreNewtonsoftJsonPackageVersion>1.0.0</MicrosoftAzureCoreNewtonsoftJsonPackageVersion>
     <MicrosoftConfigurationFileExtensionVersion>2.2.0</MicrosoftConfigurationFileExtensionVersion>
     <MicrosoftConfigurationUserSecretVersion>2.2.0</MicrosoftConfigurationUserSecretVersion>
     <MicrosoftConfigurationEnvironmentVariablesVersion>2.2.0</MicrosoftConfigurationEnvironmentVariablesVersion>
