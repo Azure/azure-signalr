@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.IO;
+using System.Buffers;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR
         private bool _inUse;
 #endif
 
-        public ReusableUtf8JsonWriter(Stream stream)
+        public ReusableUtf8JsonWriter(IBufferWriter<byte> stream)
         {
             _writer = new Utf8JsonWriter(stream, new JsonWriterOptions()
             {
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR
             });
         }
 
-        public static ReusableUtf8JsonWriter Get(Stream stream)
+        public static ReusableUtf8JsonWriter Get(IBufferWriter<byte> stream)
         {
             var writer = _cachedInstance;
             if (writer == null)

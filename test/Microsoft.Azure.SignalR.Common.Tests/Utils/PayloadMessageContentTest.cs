@@ -8,7 +8,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Azure.Core.Serialization;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Microsoft.Azure.SignalR.Common.Tests
 {
