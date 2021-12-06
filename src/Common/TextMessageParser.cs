@@ -3,7 +3,7 @@
 
 using System.Buffers;
 
-namespace Microsoft.Azure.SignalR.Protocol
+namespace Microsoft.Azure.SignalR
 {
     /// <summary>
     /// The same as https://github.com/aspnet/SignalR/blob/release/2.2/src/Common/TextMessageParser.cs
