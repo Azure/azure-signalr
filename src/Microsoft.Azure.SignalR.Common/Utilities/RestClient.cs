@@ -28,8 +28,8 @@ namespace Microsoft.Azure.SignalR
             _enableMessageTracing = enableMessageTracing;
         }
 
-        public RestClient() : this(HttpClientFactory.Instance, new JsonObjectSerializer(), true)
-        { 
+        public RestClient() : this(HttpClientFactory.Instance, new JsonObjectSerializer(), false)
+        {
         }
 
         public Task SendAsync(
