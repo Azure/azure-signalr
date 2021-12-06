@@ -5,7 +5,10 @@ using System.Buffers;
 using System.IO;
 
 namespace Microsoft.Azure.SignalR
-{
+{    
+     /// <summary>
+     /// Copied from https://github.com/dotnet/aspnetcore/blob/d9660d157627af710b71c636fa8cb139616cadba/src/SignalR/common/Shared/TextMessageFormatter.cs
+     /// </summary>
     internal static class TextMessageFormatter
     {
         // This record separator is supposed to be used only for JSON payloads where 0x1e character

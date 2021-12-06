@@ -6,6 +6,9 @@ using System.Text.Json;
 
 namespace Microsoft.Azure.SignalR
 {
+    /// <summary>
+    /// Copied from https://github.com/dotnet/aspnetcore/blob/d9660d157627af710b71c636fa8cb139616cadba/src/SignalR/common/Shared/SystemTextJsonExtensions.cs
+    /// </summary>
     internal static class SystemTextJsonExtensions
     {
         public static bool CheckRead(this ref Utf8JsonReader reader)
