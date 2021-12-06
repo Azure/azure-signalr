@@ -12,6 +12,8 @@
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="$(AzureCorePackageVersion)" />
     <PackageReference Include="Microsoft.Azure.Core.NewtonsoftJson" Version="$(MicrosoftAzureCoreNewtonsoftJsonPackageVersion)" />
+    <!--Reference Newtonsoft.Json 12.0.2 here to keep backward compatibility. The original used Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson package uses this version.-->
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
   </ItemGroup>
   
   <ItemGroup>
@@ -30,21 +32,13 @@
     <TargetsForTfmSpecificBuildOutput>
       $(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage
     </TargetsForTfmSpecificBuildOutput>
-  </PropertyGroup>
+  </PropertyGroup> 
   <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="BuildOnlySettings;ResolveReferences">
     <ItemGroup>
       <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')-&gt;WithMetadataValue('PrivateAssets', 'All'))" />
     </ItemGroup>
   </Target>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net5.0'">
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="$(MicrosoftAspNetCoreSignalRProtocolsNewtonsoftJson5_0Version)" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0'">
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="$(MicrosoftAspNetCoreSignalRProtocolsNewtonsoftJson3_0Version)" />
-  </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsDependencyInjectionPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionHttpVersion)" />

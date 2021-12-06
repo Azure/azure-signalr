@@ -77,6 +77,7 @@ namespace Microsoft.Azure.SignalR.Management
             services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
             var tempServices = new ServiceCollection()
                 .AddSingleton<IEndpointRouter, AutoHealthCheckRouter>()
+                .AddSingleton<IHubProtocolResolver, JsonHubProtocolResolver>()
                 .AddSignalR()
                 .AddAzureSignalR<CascadeServiceOptionsSetup>().Services
                 .Where(service => service.ServiceType != typeof(IHostedService));
