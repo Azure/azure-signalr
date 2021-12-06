@@ -5,6 +5,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Azure.Core.Serialization;
 
@@ -12,6 +13,15 @@ namespace Microsoft.Azure.SignalR
 {
     internal class PayloadMessageContent : HttpContent
     {
+        private static readonly MediaTypeHeaderValue ContentType = new("application/json")
+        {
+            CharSet = "utf-8"
+        };
+        private static readonly JsonWriterOptions JsonWriterOptions = new()
+        {
+            // We must skip validation because what we break the writing midway and write JSON in other ways.
+            SkipValidation = true
+        };
         private readonly PayloadMessage _payloadMessage;
         private readonly ObjectSerializer _jsonObjectSerializer;
 
@@ -19,16 +29,12 @@ namespace Microsoft.Azure.SignalR
         {
             _payloadMessage = payloadMessage;
             _jsonObjectSerializer = jsonObjectSerializer;
-            Headers.ContentType = new MediaTypeHeaderValue("application/json")
-            {
-                CharSet = "utf-8"
-            };
+            Headers.ContentType = ContentType;
         }
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
-            var reusableUtf8JsonWriter = ReusableUtf8JsonWriter.Get(stream);
-            var jsonWriter = reusableUtf8JsonWriter.GetJsonWriter();
+            using var jsonWriter = new Utf8JsonWriter(stream, JsonWriterOptions);
             jsonWriter.WriteStartObject();
             jsonWriter.WriteString(nameof(PayloadMessage.Target), _payloadMessage.Target);
             jsonWriter.WritePropertyName(nameof(PayloadMessage.Arguments));
@@ -36,7 +42,6 @@ namespace Microsoft.Azure.SignalR
             await _jsonObjectSerializer.SerializeAsync(stream, _payloadMessage.Arguments, typeof(object[]), default);
             jsonWriter.WriteEndObject();
             await jsonWriter.FlushAsync();
-            ReusableUtf8JsonWriter.Return(reusableUtf8JsonWriter);
         }
 
         protected override bool TryComputeLength(out long length)
