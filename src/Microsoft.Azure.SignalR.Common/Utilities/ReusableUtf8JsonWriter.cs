@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR
         {
             _writer = new Utf8JsonWriter(stream, new JsonWriterOptions()
             {
-                // We must skip validation because what we break the writing midway and write JSON in other ways.
+                // We must skip validation because we break the writing midway and write JSON in other ways.
                 SkipValidation = true,
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             });

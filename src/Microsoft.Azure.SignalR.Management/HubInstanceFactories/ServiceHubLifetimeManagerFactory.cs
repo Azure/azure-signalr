@@ -5,10 +5,10 @@ using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
+using Azure.Core.Serialization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Azure.Core.Serialization;
 
 namespace Microsoft.Azure.SignalR.Management
 {
@@ -36,19 +36,19 @@ namespace Microsoft.Azure.SignalR.Management
                     }
                 case ServiceTransportType.Transient:
                     {
-                        var restHubProtocol = _serviceProvider.GetService<IRestHubProtocol>();
 #pragma warning disable CS0618 // Type or member is obsolete
                         var payloadSerializerSettings = _options.JsonSerializerSettings;
 #pragma warning restore CS0618 // Type or member is obsolete
                         //Currently RestHubProtocol only has Newtonsoft
-                        if (restHubProtocol != null)
+                        var objectSerializer = _options.ObjectSerializer;
+                        if (objectSerializer == null)
                         {
-                            var newtonsoftServiceHubProtocolOptions = _serviceProvider.GetService<IOptions<NewtonsoftServiceHubProtocolOptions>>();
-                            payloadSerializerSettings = newtonsoftServiceHubProtocolOptions.Value.PayloadSerializerSettings;
+                            // keep backward compatibility
+                            objectSerializer = new NewtonsoftJsonObjectSerializer(payloadSerializerSettings);
                         }
                         var httpClientFactory = _serviceProvider.GetRequiredService<IHttpClientFactory>();
                         var serviceEndpoint = _serviceProvider.GetRequiredService<IServiceEndpointManager>().Endpoints.First().Key;
-                        var restClient = new RestClient(httpClientFactory, new NewtonsoftJsonObjectSerializer(payloadSerializerSettings), _options.EnableMessageTracing);
+                        var restClient = new RestClient(httpClientFactory, objectSerializer, _options.EnableMessageTracing);
                         return new RestHubLifetimeManager<THub>(hubName, serviceEndpoint, _options.ProductInfo, _options.ApplicationName, restClient);
                     }
                 default: throw new InvalidEnumArgumentException(nameof(ServiceManagerOptions.ServiceTransportType), (int)_options.ServiceTransportType, typeof(ServiceTransportType));
