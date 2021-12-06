@@ -3,6 +3,7 @@
 
 using System;
 using System.Net;
+using Azure.Core.Serialization;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR.Management
@@ -47,6 +48,9 @@ namespace Microsoft.Azure.SignalR.Management
         /// </summary>
         [Obsolete("Use ServiceManagerBuilder.WithNewtonsoftJson instead.")]
         public JsonSerializerSettings JsonSerializerSettings { get; } = new JsonSerializerSettings();
+
+        // todo: public later
+        internal ObjectSerializer ObjectSerializer { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether message tracing ID is append to messages.

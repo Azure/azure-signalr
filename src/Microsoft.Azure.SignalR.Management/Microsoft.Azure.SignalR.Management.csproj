@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <RootNamespace>Microsoft.Azure.SignalR.Management</RootNamespace>
     <Description>Provides communication capabilities with ASP.NET Core SignalR clients through Azure SignalR Service directly. The capabilities include sending messages to all/clients/users/groups and managing group membership. For more information, see https://github.com/Azure/azure-signalr/blob/dev/docs/management-sdk-guide.md</Description>
@@ -10,6 +9,11 @@
     <TargetFrameworks>netstandard2.0;netcoreapp3.0;net5.0</TargetFrameworks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Azure.Core" Version="$(AzureCorePackageVersion)" />
+    <PackageReference Include="Microsoft.Azure.Core.NewtonsoftJson" Version="$(MicrosoftAzureCoreNewtonsoftJsonPackageVersion)" />
+  </ItemGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Microsoft.Azure.SignalR\Microsoft.Azure.SignalR.csproj" />
