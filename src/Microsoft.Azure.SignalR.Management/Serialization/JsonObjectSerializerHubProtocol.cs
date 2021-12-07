@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Management
     /// Changes compared to original version:
     ///  <list>
     ///     <item> Change <see cref="TryParseMessage(ref ReadOnlySequence{byte}, IInvocationBinder, out HubMessage)"/> to unsupported as we don't need it. Related codes removed.</item>
-    ///     <item> Use <see cref="ObjectSerializer"/> instread of <see cref="JsonSerializer"/> in the serialization. </item>
+    ///     <item> Use <see cref="ObjectSerializer"/> instead of <see cref="JsonSerializer"/> in the serialization. </item>
     /// </list>
     /// </remarks>
     internal sealed class JsonObjectSerializerHubProtocol : IHubProtocol
