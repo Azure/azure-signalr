@@ -19,6 +19,12 @@
     <ProjectReference Include="..\Microsoft.Azure.SignalR\Microsoft.Azure.SignalR.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\Common\TextMessageParser.cs" LinkBase="Shared" />
+    <Compile Include="..\Common\TextMessageFormatter.cs" LinkBase="Shared" />
+    <Compile Include="..\Common\SystemTextJsonExtensions.cs" LinkBase="Shared" />
+  </ItemGroup>
+
   <!-- Copy the referenced Microsoft.Azure.SignalR.Common.dll into the package https://github.com/nuget/home/issues/3891#issuecomment-397481361 -->
   <PropertyGroup>
     <TargetsForTfmSpecificBuildOutput>
