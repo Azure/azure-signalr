@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Tests.Common;
@@ -249,7 +250,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private static ReadOnlyMemory<byte> Serialize(ServiceHubContext<IChat> hubContext, string methodName, object[] args, out string protocolName)
         {
-            var hubProtocol = (hubContext as ServiceHubContextImpl<IChat>).ServiceProvider.GetRequiredService<IHubProtocol>();
+            var hubProtocol = (hubContext as ServiceHubContextImpl<IChat>).ServiceProvider.GetRequiredService<IHubProtocolResolver>().GetProtocol("json", null);
             protocolName = hubProtocol.Name;
             var message = new InvocationMessage(methodName, args);
             return hubProtocol.GetMessageBytes(message);
