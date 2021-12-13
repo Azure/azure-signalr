@@ -250,7 +250,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         private static ReadOnlyMemory<byte> Serialize(ServiceHubContext<IChat> hubContext, string methodName, object[] args, out string protocolName)
         {
-            var hubProtocol = (hubContext as ServiceHubContextImpl<IChat>).ServiceProvider.GetRequiredService<IHubProtocolResolver>().GetProtocol("json", null);
+            var hubProtocol = (hubContext as ServiceHubContextImpl<IChat>).ServiceProvider.GetRequiredService<IHubProtocol>();
             protocolName = hubProtocol.Name;
             var message = new InvocationMessage(methodName, args);
             return hubProtocol.GetMessageBytes(message);

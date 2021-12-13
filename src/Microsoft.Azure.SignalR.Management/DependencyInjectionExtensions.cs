@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -79,13 +78,14 @@ namespace Microsoft.Azure.SignalR.Management
             services.PostConfigure<ServiceManagerOptions>(o => o.ValidateOptions());
             var tempServices = new ServiceCollection()
                 .AddSingleton<IEndpointRouter, AutoHealthCheckRouter>()
-                .AddSingleton<IHubProtocolResolver, JsonHubProtocolResolver>()
                 .AddSignalR()
                 .AddAzureSignalR<CascadeServiceOptionsSetup>().Services
                 .Where(service => service.ServiceType != typeof(IServiceConnectionContainer))
                 .Where(service => service.ServiceType != typeof(IHostedService));
             services.Add(tempServices);
-            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHubProtocol, JsonObjectSerializerHubProtocol>());
+            //add json hub protocol
+            services.AddSingleton<JsonHubProtocolFactory>();
+            services.AddSingleton(sp => sp.GetRequiredService<JsonHubProtocolFactory>().GetJsonHubProtocol());
             //add dependencies for persistent mode only
             services
                 .AddSingleton<ConnectionFactory>()

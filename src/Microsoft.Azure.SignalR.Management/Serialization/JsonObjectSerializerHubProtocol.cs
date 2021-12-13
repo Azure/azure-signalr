@@ -60,10 +60,6 @@ namespace Microsoft.Azure.SignalR.Management
 
         private readonly ObjectSerializer _objectSerializer;
 
-        public JsonObjectSerializerHubProtocol(IOptions<ServiceManagerOptions> options) : this(options.Value.ObjectSerializer)
-        {
-        }
-
         public JsonObjectSerializerHubProtocol() : this(new JsonObjectSerializer())
         {
         }
@@ -72,11 +68,6 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _objectSerializer = objectSerializer;
         }
-
-        /// <summary>
-        /// Indicates whether this protocol should replace the default JSON hub protocol.
-        /// </summary>
-        public bool Usable => _objectSerializer != null;
 
         /// <inheritdoc />
         public string Name => ProtocolName;
