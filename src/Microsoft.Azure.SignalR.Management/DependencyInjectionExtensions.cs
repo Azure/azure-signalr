@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -83,9 +84,11 @@ namespace Microsoft.Azure.SignalR.Management
                 .Where(service => service.ServiceType != typeof(IServiceConnectionContainer))
                 .Where(service => service.ServiceType != typeof(IHostedService));
             services.Add(tempServices);
-            //add json hub protocol
-            services.AddSingleton<JsonHubProtocolFactory>();
-            services.AddSingleton(sp => sp.GetRequiredService<JsonHubProtocolFactory>().GetJsonHubProtocol());
+            services.AddSingleton<IHubProtocol>(sp =>
+            {
+                var objectSerializer = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ObjectSerializer;
+                return objectSerializer != null ? new JsonObjectSerializerHubProtocol(objectSerializer) : new JsonHubProtocol();
+            });
             //add dependencies for persistent mode only
             services
                 .AddSingleton<ConnectionFactory>()
