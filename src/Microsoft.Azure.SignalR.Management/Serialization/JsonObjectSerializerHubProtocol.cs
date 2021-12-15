@@ -16,7 +16,6 @@ using Azure.Core.Serialization;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.SignalR.Management
 {
