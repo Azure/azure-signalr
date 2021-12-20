@@ -49,8 +49,16 @@ namespace Microsoft.Azure.SignalR.Management
         [Obsolete("Use ServiceManagerBuilder.WithNewtonsoftJson instead.")]
         public JsonSerializerSettings JsonSerializerSettings { get; } = new JsonSerializerSettings();
 
-        // todo: public later
+        // Don't expose this property directly, as we might want to allow users to use different protocols other than JSON.
         internal ObjectSerializer ObjectSerializer { get; set; }
+
+        /// <summary>
+        /// Set a JSON object serializer used to serialize the data sent to clients.
+        /// </summary>
+        public void UseJsonObjectSerializer(ObjectSerializer objectSerializer)
+        {
+            ObjectSerializer = objectSerializer;
+        }
 
         /// <summary>
         /// Gets or sets a value indicating whether message tracing ID is append to messages.
