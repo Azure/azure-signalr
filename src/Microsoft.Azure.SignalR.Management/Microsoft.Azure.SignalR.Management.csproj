@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <RootNamespace>Microsoft.Azure.SignalR.Management</RootNamespace>
     <Description>Provides communication capabilities with ASP.NET Core SignalR clients through Azure SignalR Service directly. The capabilities include sending messages to all/clients/users/groups and managing group membership. For more information, see https://github.com/Azure/azure-signalr/blob/dev/docs/management-sdk-guide.md</Description>
@@ -11,8 +10,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Core" Version="$(AzureCorePackageVersion)" />
+    <PackageReference Include="Microsoft.Azure.Core.NewtonsoftJson" Version="$(MicrosoftAzureCoreNewtonsoftJsonPackageVersion)" />
+  </ItemGroup>
+  
+  <ItemGroup>
     <ProjectReference Include="..\Microsoft.Azure.SignalR.Common\Microsoft.Azure.SignalR.Common.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Microsoft.Azure.SignalR\Microsoft.Azure.SignalR.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Common\TextMessageParser.cs" LinkBase="Shared" />
+    <Compile Include="..\Common\TextMessageFormatter.cs" LinkBase="Shared" />
+    <Compile Include="..\Common\SystemTextJsonExtensions.cs" LinkBase="Shared" />
   </ItemGroup>
 
   <!-- Copy the referenced Microsoft.Azure.SignalR.Common.dll into the package https://github.com/nuget/home/issues/3891#issuecomment-397481361 -->
@@ -27,14 +37,6 @@
     </ItemGroup>
   </Target>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net5.0'">
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="$(MicrosoftAspNetCoreSignalRProtocolsNewtonsoftJson5_0Version)" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0'">
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="$(MicrosoftAspNetCoreSignalRProtocolsNewtonsoftJson3_0Version)" />
-  </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsDependencyInjectionPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionHttpVersion)" />

@@ -1,24 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Description>.NET Standard SDK for Azure SignalR Service protocol.</Description>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <RootNamespace>Microsoft.Azure.SignalR.Protocol</RootNamespace>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-  </PropertyGroup>
 
+  <PropertyGroup>
+    <Description>.NET Standard SDK for Azure SignalR Service serverless protocol.</Description>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Microsoft.Azure.SignalR.Serverless.Protocols</RootNamespace>
+    <!--Override the global version prefix-->
+    <VersionPrefix>1.7.0</VersionPrefix>
+  </PropertyGroup>
+  
   <ItemGroup>
-    <Compile Include="..\Common\BinaryMessageFormatter.cs" Link="Internal\BinaryMessageFormatter.cs" />
-    <Compile Include="..\Common\BinaryMessageParser.cs" Link="Internal\BinaryMessageParser.cs" />
     <Compile Include="..\Common\MemoryBufferWriter.cs" Link="Internal\MemoryBufferWriter.cs" />
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Primitives" Version="$(MicrosoftExtensionsPrimitivesPackageVersion)" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafePackageVersion)" />
-    <PackageReference Include="System.Buffers" Version="$(SystemBuffersPackageVersion)" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryPackageVersion)" />
   </ItemGroup>
-
+  
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);ENABLE_UNSAFE_MSGPACK;SPAN_BUILTIN;MESSAGEPACK_INTERNAL</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
