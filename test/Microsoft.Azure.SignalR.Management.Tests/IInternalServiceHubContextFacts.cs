@@ -113,13 +113,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var ttl = TimeSpan.FromSeconds(1);
 
-            Task testAction(ServiceHubContext hubContext) => hubContext.UserGroups.AddToGroupAsync(UserId, GroupName, ttl);
-
+            Task testAction(ServiceHubContext hubContext)
+            {
+                // no need to wait for ack
+                _ = hubContext.UserGroups.AddToGroupAsync(UserId, GroupName, ttl);
+                return Task.CompletedTask;
+            }
             void assertAction(Dictionary<HubServiceEndpoint, List<TestServiceConnection>> createdConnections)
             {
                 foreach (var list in createdConnections.Values)
                 {
-                    var msg = (UserJoinGroupMessage)list.SelectMany(l => l.ReceivedMessages).Single();
+                    var msg = (UserJoinGroupWithAckMessage)list.SelectMany(l => l.ReceivedMessages).Single();
                     Assert.Equal(UserId, msg.UserId);
                     Assert.Equal(GroupName, msg.GroupName);
                     Assert.Equal((int)ttl.TotalSeconds, msg.Ttl);
@@ -136,13 +140,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var userId = "User";
             var group = "Group";
 
-            Task testAction(ServiceHubContext hubContext) => hubContext.UserGroups.RemoveFromGroupAsync(userId, group);
-
+            Task testAction(ServiceHubContext hubContext)
+            {
+                // no need to wait for ack
+                _ = hubContext.UserGroups.RemoveFromGroupAsync(userId, group);
+                return Task.CompletedTask;
+            }
             void assertAction(Dictionary<HubServiceEndpoint, List<TestServiceConnection>> createdConnections)
             {
                 foreach (var list in createdConnections.Values)
                 {
-                    var msg = (UserLeaveGroupMessage)list.SelectMany(l => l.ReceivedMessages).Single();
+                    var msg = (UserLeaveGroupWithAckMessage)list.SelectMany(l => l.ReceivedMessages).Single();
                     Assert.Equal(userId, msg.UserId);
                     Assert.Equal(group, msg.GroupName);
                 }
@@ -157,13 +165,17 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             var userId = "User";
 
-            Task testAction(ServiceHubContext hubContext) => hubContext.UserGroups.RemoveFromAllGroupsAsync(userId);
-
+            Task testAction(ServiceHubContext hubContext)
+            {
+                // no need to wait for ack
+                _ = hubContext.UserGroups.RemoveFromAllGroupsAsync(userId);
+                return Task.CompletedTask;
+            }
             void assertAction(Dictionary<HubServiceEndpoint, List<TestServiceConnection>> createdConnections)
             {
                 foreach (var list in createdConnections.Values)
                 {
-                    var msg = (UserLeaveGroupMessage)list.SelectMany(l => l.ReceivedMessages).Single();
+                    var msg = (UserLeaveGroupWithAckMessage)list.SelectMany(l => l.ReceivedMessages).Single();
                     Assert.Equal(userId, msg.UserId);
                     Assert.Null(msg.GroupName);
                 }
