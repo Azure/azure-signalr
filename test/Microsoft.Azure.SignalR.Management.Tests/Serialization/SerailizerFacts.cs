@@ -43,6 +43,90 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             _logger = _loggerFactory.CreateLogger<SerailizerFacts>();
         }
 
+        #region transient mode
+        [Fact]
+        public async Task TestTransient_DefaultSerialization_Behaviour()
+        {
+            // the arguments is PascalCase.
+            var expectedHttpBody = "{\"Target\":\"target\",\"Arguments\":[{\"Content\":null}]}";
+            using var serviceHubContext = await CreateTransientBuilder(expectedHttpBody)
+                .BuildServiceManager()
+                .CreateHubContextAsync("hubName", default);
+
+            await serviceHubContext.Clients.All.SendAsync(TargetName, Argument);
+        }
+
+        /// <summary>
+        /// Make sure the default settings of <see cref="ServiceManagerBuilder.WithNewtonsoftJson"/> is camelCase
+        /// </summary>
+        [Fact]
+        public async Task TestTransient_Default_WithNewtonsoftJson()
+        {
+            // the arguments is camelCase.
+            var expectedHttpBody = "{\"Target\":\"target\",\"Arguments\":[{\"content\":null}]}";
+            using var serviceHubContext = await CreateTransientBuilder(expectedHttpBody)
+                .WithNewtonsoftJson()
+                .BuildServiceManager()
+                .CreateHubContextAsync("hubName", default);
+
+            await serviceHubContext.Clients.All.SendAsync(TargetName, Argument);
+        }
+
+        [Fact]
+        public async Task TestTransient_Custom_WithNewtonsoftJson()
+        {
+            var serializerSettings = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            };
+            // the arguments ignores null.
+            var expectedHttpBody = "{\"Target\":\"target\",\"Arguments\":[{}]}";
+            using var serviceHubContext = await CreateTransientBuilder(expectedHttpBody)
+                .WithNewtonsoftJson(o => o.PayloadSerializerSettings = serializerSettings)
+                .BuildServiceManager()
+                .CreateHubContextAsync("hubName", default);
+
+            await serviceHubContext.Clients.All.SendAsync(TargetName, Argument);
+        }
+
+        [Theory]
+        [MemberData(nameof(IgnoreNullObjectSerializers))]
+        public async Task TestTransient_Custom_ObjectSerializer(ObjectSerializer objectSerializer)
+        {
+            // the arguments ignores null, PascalCase. 
+            var expectedHttpBody = "{\"Target\":\"target\",\"Arguments\":[{}]}";
+            using var serviceHubContext = await CreateTransientBuilder(expectedHttpBody)
+                .WithOptions(o => o.ObjectSerializer = objectSerializer)
+                .BuildServiceManager()
+                .CreateHubContextAsync("hubName", default);
+
+            await serviceHubContext.Clients.All.SendAsync(TargetName, Argument);
+        }
+
+        private ServiceManagerBuilder CreateTransientBuilder(string expectedHttpBody)
+        {
+            return new ServiceManagerBuilder()
+                .WithOptions(o =>
+                {
+                    o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single();
+                    o.ServiceTransportType = ServiceTransportType.Transient;
+                })
+                .WithLoggerFactory(_loggerFactory)
+                .ConfigureServices(services =>
+                {
+                    services.AddHttpClient(string.Empty).AddHttpMessageHandler(() => new TestRootHandler((message, cancellationToken) =>
+                    {
+                        var actualBody = message.Content.ReadAsStringAsync().Result;
+
+                        _logger.LogDebug($"Expected: {expectedHttpBody}");
+                        _logger.LogDebug($"Actual: {actualBody}");
+
+                        Assert.Equal(expectedHttpBody, actualBody);
+                    }));
+                });
+        }
+        #endregion
+
         #region persistent mode
         [Fact]
         public async Task TestPersistent_DefaultSerialization_Behaviour()
