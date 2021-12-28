@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -44,9 +45,10 @@ namespace Microsoft.Azure.SignalR.Management
         public static IServiceCollection AddHub<THub>(this IServiceCollection services, string hubName)
             where THub : Hub
         {
-            //for persistent
-            services.AddSingleton<IServiceConnectionContainer>(sp => sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().Create(hubName))
-                .AddSingleton<ConnectionService>();
+            //for persistent 
+            //use TryAdd to avoid overriding the test implementation added before.
+            services.TryAddSingleton<IServiceConnectionContainer>(sp => sp.GetRequiredService<MultiEndpointConnectionContainerFactory>().Create(hubName));
+            services.TryAddSingleton<ConnectionService>();
             //for transient
             services.AddSingleton(sp => ActivatorUtilities.CreateInstance<RestHealthCheckService>(sp, hubName));
 
@@ -79,9 +81,14 @@ namespace Microsoft.Azure.SignalR.Management
                 .AddSingleton<IEndpointRouter, AutoHealthCheckRouter>()
                 .AddSignalR()
                 .AddAzureSignalR<CascadeServiceOptionsSetup>().Services
+                .Where(service => service.ServiceType != typeof(IServiceConnectionContainer))
                 .Where(service => service.ServiceType != typeof(IHostedService));
             services.Add(tempServices);
-
+            services.AddSingleton<IHubProtocol>(sp =>
+            {
+                var objectSerializer = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ObjectSerializer;
+                return objectSerializer != null ? new JsonObjectSerializerHubProtocol(objectSerializer) : new JsonHubProtocol();
+            });
             //add dependencies for persistent mode only
             services
                 .AddSingleton<ConnectionFactory>()
