@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR
 
         public PayloadMessageContent(PayloadMessage payloadMessage, ObjectSerializer jsonObjectSerializer)
         {
-            _payloadMessage = payloadMessage;
+            _payloadMessage = payloadMessage ?? throw new System.ArgumentNullException(nameof(payloadMessage));
             _jsonObjectSerializer = jsonObjectSerializer;
             Headers.ContentType = ContentType;
         }
