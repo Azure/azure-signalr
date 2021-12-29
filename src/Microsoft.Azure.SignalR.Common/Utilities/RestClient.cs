@@ -153,7 +153,7 @@ namespace Microsoft.Azure.SignalR
             var request = new HttpRequestMessage(httpMethod, GetUri(url, query));
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
             request.Headers.Add(Constants.AsrsUserAgent, productInfo);
-            request.Content = new PayloadMessageContent(payload, _objectSerializer);
+            request.Content = payload != null ? new PayloadMessageContent(payload, _objectSerializer) : null;
             return request;
         }
 
