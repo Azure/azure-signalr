@@ -6,6 +6,7 @@
     <RootNamespace>Microsoft.Azure.SignalR.Serverless.Protocols</RootNamespace>
     <!--Override the global version prefix-->
     <VersionPrefix>1.7.0</VersionPrefix>
+    <PackageVersion Condition="'$(IsFinalBuild)' == 'true' AND '$(VersionSuffix)' == 'rtm' ">$(VersionPrefix)</PackageVersion>
   </PropertyGroup>
   
   <ItemGroup>
