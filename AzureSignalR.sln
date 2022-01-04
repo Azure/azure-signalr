@@ -64,8 +64,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ChatSample", "ChatSample", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChatSample.NetCore31", "samples\ChatSample\ChatSample.NetCore31\ChatSample.NetCore31.csproj", "{63BB9836-126B-4E65-92B9-019438185E41}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChatSample.NetCore21", "samples\ChatSample\ChatSample.NetCore21\ChatSample.NetCore21.csproj", "{1D06C79C-4E97-40F6-A860-092941922EFA}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.IntegrationTests", "test\Microsoft.Azure.SignalR.IntegrationTests\Microsoft.Azure.SignalR.IntegrationTests.csproj", "{3E11208B-B038-4840-8180-69DC6B5EAD22}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "emulator", "emulator", "{ADD61A03-340D-426C-BA51-DBBC096434ED}"
@@ -76,9 +74,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChatSample.Net50", "samples
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.Emulator.Tests", "test\Microsoft.Azure.SignalR.Emulator.Tests\Microsoft.Azure.SignalR.Emulator.Tests.csproj", "{870A10E3-D17A-4239-9715-5610FFE1FC76}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.SignalR.Serverless.Protocols", "src\Microsoft.Azure.SignalR.Serverless.Protocols\Microsoft.Azure.SignalR.Serverless.Protocols.csproj", "{52944A80-44A9-48D4-919D-11AAAD55193E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.Serverless.Protocols", "src\Microsoft.Azure.SignalR.Serverless.Protocols\Microsoft.Azure.SignalR.Serverless.Protocols.csproj", "{52944A80-44A9-48D4-919D-11AAAD55193E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.SignalR.Serverless.Protocols.Tests", "test\Microsoft.Azure.SignalR.Serverless.Protocols.Tests\Microsoft.Azure.SignalR.Serverless.Protocols.Tests.csproj", "{82C1FF3D-EC6C-4B21-B6A4-E69E8D75D0D0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.SignalR.Serverless.Protocols.Tests", "test\Microsoft.Azure.SignalR.Serverless.Protocols.Tests\Microsoft.Azure.SignalR.Serverless.Protocols.Tests.csproj", "{82C1FF3D-EC6C-4B21-B6A4-E69E8D75D0D0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -162,10 +160,6 @@ Global
 		{63BB9836-126B-4E65-92B9-019438185E41}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{63BB9836-126B-4E65-92B9-019438185E41}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{63BB9836-126B-4E65-92B9-019438185E41}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1D06C79C-4E97-40F6-A860-092941922EFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1D06C79C-4E97-40F6-A860-092941922EFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1D06C79C-4E97-40F6-A860-092941922EFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1D06C79C-4E97-40F6-A860-092941922EFA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3E11208B-B038-4840-8180-69DC6B5EAD22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3E11208B-B038-4840-8180-69DC6B5EAD22}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3E11208B-B038-4840-8180-69DC6B5EAD22}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -216,7 +210,6 @@ Global
 		{CDE3C0B5-CD0B-42DE-9CE1-638266A2A1AE} = {C4BC9889-B49F-41B6-806B-F84941B2549B}
 		{C965ED06-6A17-4329-B3C6-811830F4F4ED} = {C4BC9889-B49F-41B6-806B-F84941B2549B}
 		{63BB9836-126B-4E65-92B9-019438185E41} = {C965ED06-6A17-4329-B3C6-811830F4F4ED}
-		{1D06C79C-4E97-40F6-A860-092941922EFA} = {C965ED06-6A17-4329-B3C6-811830F4F4ED}
 		{3E11208B-B038-4840-8180-69DC6B5EAD22} = {2429FBD8-1FCE-4C42-AA28-DF32F7249E77}
 		{ABAAAEA8-40B3-4178-A7FD-09779A5DC757} = {ADD61A03-340D-426C-BA51-DBBC096434ED}
 		{29EF376E-DF94-419F-9DF2-50756B60DF38} = {C965ED06-6A17-4329-B3C6-811830F4F4ED}
