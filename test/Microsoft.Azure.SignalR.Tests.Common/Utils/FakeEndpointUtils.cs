@@ -1,8 +1,10 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using Azure.Identity;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
 {
@@ -18,6 +20,12 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         public static IEnumerable<ServiceEndpoint> GetFakeEndpoint(int count)
         {
             return GetFakeConnectionString(count).Select(connectionString => new ServiceEndpoint(connectionString));
+        }
+
+        public static IEnumerable<ServiceEndpoint> GetFakeAzureAdEndpoint(int count)
+        {
+            return Enumerable.Range(StaticRandom.Next(9999), count).
+                Select(i => new ServiceEndpoint(new Uri($"http://localhost{i}"), new DefaultAzureCredential()));
         }
     }
 }

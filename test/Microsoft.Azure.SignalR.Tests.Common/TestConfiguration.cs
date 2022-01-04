@@ -14,6 +14,8 @@ namespace Microsoft.Azure.SignalR.Tests.Common
 
         public string ConnectionString { get; private set; }
 
+        public string TestEndpoint { get; private set; }
+
         protected TestConfiguration()
         {
             Configuration = new ConfigurationBuilder()
@@ -29,6 +31,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         private void Init()
         {
             ConnectionString = Configuration["Azure:SignalR:ConnectionString"];
+            TestEndpoint = Configuration["Azure:SignalR:TestEndpoint"];
         }
     }
 }
