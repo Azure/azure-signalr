@@ -41,12 +41,15 @@
     <SignedPackageFile Include="$(PublishDir)MessagePack.dll" Certificate="$(ThirdPartyAssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Authentication.JwtBearer.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Connections.Abstractions.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Http.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Http.Connections.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Http.Connections.Common.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Http.Features.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.JsonPatch.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.SignalR.Common.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.SignalR.Protocols.MessagePack.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
+    <SignedPackageFile Include="$(PublishDir)Microsoft.AspNetCore.WebSockets.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.Services.AppAuthentication.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
     <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.AspNet.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
     <SignedPackageFile Include="$(PublishDir)Microsoft.Azure.SignalR.Common.dll" Certificate="$(AssemblySigningCertName)" Visible="false"  />
@@ -78,6 +81,7 @@
     <SignedPackageFile Include="$(PublishDir)System.IdentityModel.Tokens.Jwt.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)System.Text.Encodings.Web.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)System.Memory.Data.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
+    <SignedPackageFile Include="$(PublishDir)System.Net.WebSockets.WebSocketProtocol.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
     <SignedPackageFile Include="$(PublishDir)System.Security.Cryptography.ProtectedData.dll" Certificate="$(AssemblySigningCertName)" Visible="false" />
   </ItemGroup>
 </Project>
