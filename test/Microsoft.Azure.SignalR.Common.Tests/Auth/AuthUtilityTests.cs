@@ -2,11 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
-
+using Azure.Identity;
 using Microsoft.IdentityModel.Tokens;
 
 using Xunit;
@@ -30,14 +32,16 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             Assert.Equal("AccessToken must not be longer than 4K.", exception.Message);
         }
 
-        [Fact]
-        public void TestGenerateJwtBearerCaching()
+        [Theory]
+        [ClassData(typeof(CachingTestData))]
+        internal void TestGenerateJwtBearerCaching(AccessKey accessKey, bool shouldCache)
         {
             var count = 0;
             while (count < 1000)
             {
-                var accessKey = new AccessKey("http://localhost:443", SigningKey);
-                AuthUtility.GenerateJwtBearer(audience: Audience, expires: DateTime.UtcNow.Add(DefaultLifetime), signingKey: accessKey);
+                AuthUtility.GenerateJwtBearer(audience: Audience,
+                                              expires: DateTime.UtcNow.Add(DefaultLifetime),
+                                              signingKey: accessKey);
                 count++;
             };
 
@@ -48,14 +52,35 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             var value = cache.GetType().GetField("_signingSignatureProviders", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(cache);
 
             var signingProviders = value as ConcurrentDictionary<string, SignatureProvider>;
-            
+
             // Validate same signing key cache once. 
-            Assert.Single(signingProviders);
+            if (shouldCache)
+            {
+                Assert.Single(signingProviders);
+            }
+            else
+            {
+                Assert.Empty(signingProviders);
+            }
+            signingProviders.Clear();
         }
 
-        private Claim[] GenerateClaims(int count)
+        private static Claim[] GenerateClaims(int count)
         {
             return Enumerable.Range(0, count).Select(s => new Claim($"ClaimSubject{s}", $"ClaimValue{s}")).ToArray();
+        }
+
+        public class CachingTestData : IEnumerable<object[]>
+        {
+            public IEnumerator<object[]> GetEnumerator()
+            {
+                yield return new object[] { new AccessKey("http://localhost:443", SigningKey), true };
+                var key = new AadAccessKey(new Uri("http://localhost"), new DefaultAzureCredential());
+                key.UpdateAccessKey("foo", SigningKey);
+                yield return new object[] { key, false };
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
     }
 }
