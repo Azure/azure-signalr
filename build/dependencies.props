@@ -8,18 +8,18 @@
     <MicrosoftAspNetCoreHttpConnectionsClientPackage3_0Version>3.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackage3_0Version>
     <MicrosoftAspNetCoreHttpConnectionsClientPackage3_1Version>3.1.9</MicrosoftAspNetCoreHttpConnectionsClientPackage3_1Version>
     <MicrosoftAspNetCoreHttpConnectionsClientPackage5_0Version>5.0.1</MicrosoftAspNetCoreHttpConnectionsClientPackage5_0Version>
-    <MicrosoftAspNetCoreHttpConnectionsCommonPackageVersion>1.0.0</MicrosoftAspNetCoreHttpConnectionsCommonPackageVersion>
+    <MicrosoftAspNetCoreHttpConnectionsCommonPackageVersion>1.0.4</MicrosoftAspNetCoreHttpConnectionsCommonPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsCommonPackage3_0Version>3.0.0</MicrosoftAspNetCoreHttpConnectionsCommonPackage3_0Version>
     <MicrosoftAspNetCoreHttpConnectionsCommonPackage3_1Version>3.1.9</MicrosoftAspNetCoreHttpConnectionsCommonPackage3_1Version>
     <MicrosoftAspNetCoreHttpConnectionsCommonPackage5_0Version>5.0.1</MicrosoftAspNetCoreHttpConnectionsCommonPackage5_0Version>
-    <MicrosoftExtensionsLoggingAbstractionsPackageVersion>2.1.0</MicrosoftExtensionsLoggingAbstractionsPackageVersion>
+    <MicrosoftExtensionsLoggingAbstractionsPackageVersion>2.1.1</MicrosoftExtensionsLoggingAbstractionsPackageVersion>
     <MicrosoftExtensionsLoggingAbstractionsPackage3_0Version>3.0.0</MicrosoftExtensionsLoggingAbstractionsPackage3_0Version>
     <MicrosoftExtensionsLoggingAbstractionsPackage3_1Version>3.1.9</MicrosoftExtensionsLoggingAbstractionsPackage3_1Version>
     <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0</MicrosoftExtensionsDependencyInjectionPackageVersion>
     <MicrosoftExtensionsDependencyInjectionPackage3_0Version>3.0.0</MicrosoftExtensionsDependencyInjectionPackage3_0Version>
     <MicrosoftExtensionsDependencyInjectionPackage3_1Version>3.1.9</MicrosoftExtensionsDependencyInjectionPackage3_1Version>
     <MicrosoftExtensionHttpVersion>2.1.0</MicrosoftExtensionHttpVersion>
-    <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.0</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
+    <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.2</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackage3_0Version>3.0.0</MicrosoftAspNetCoreConnectionsAbstractionsPackage3_0Version>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackage3_1Version>3.1.9</MicrosoftAspNetCoreConnectionsAbstractionsPackage3_1Version>
     <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0</MicrosoftAspNetCoreSignalRPackageVersion>
@@ -32,14 +32,21 @@
     <SystemIdentityModelTokensJwtPackageVersion>5.5.0</SystemIdentityModelTokensJwtPackageVersion>
     <AzureIdentityPackageVersion>1.4.0</AzureIdentityPackageVersion>
     <MicrosoftExtensionsLoggingPackageVersion>2.1.0</MicrosoftExtensionsLoggingPackageVersion>
-    <MicrosoftExtensionsPrimitivesPackageVersion>2.1.0</MicrosoftExtensionsPrimitivesPackageVersion>
+    <MicrosoftExtensionsPrimitivesPackageVersion>2.1.1</MicrosoftExtensionsPrimitivesPackageVersion>
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>
     <MicrosoftRestClientRuntimePackageVersion>2.3.21</MicrosoftRestClientRuntimePackageVersion>
+    
+    <!--Security Patch-->
+    <!-- Fix risks from Microsoft.AspNetCore.SignalR 1.0.0-->
+    <MicrosoftAspNetCoreHttpPackageVersion>2.1.22</MicrosoftAspNetCoreHttpPackageVersion>
+    <MicrosoftAspNetCoreHttpConnectionsPackageVersion>1.0.15</MicrosoftAspNetCoreHttpConnectionsPackageVersion>
+    <MicrosoftAspNetCoreWebSocketsPackageVersion>2.1.7</MicrosoftAspNetCoreWebSocketsPackageVersion>
+    <SystemNetWebSocketsWebSocketProtocolPackageVersion>4.5.3</SystemNetWebSocketsWebSocketProtocolPackageVersion>
 
     <!-- Azure ASP.NET SignalR -->
     <MicrosoftAspNetSignalRPackageVersion>2.4.1</MicrosoftAspNetSignalRPackageVersion>
     <MicrosoftAspNetSignalRClientVersion>2.4.1</MicrosoftAspNetSignalRClientVersion>
-    <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.0</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
+    <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.2</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
     <MicrosoftExtensionsLoggingEventSourcePackageVersion>2.1.0</MicrosoftExtensionsLoggingEventSourcePackageVersion>
     <SystemThreadingChannelsPackageVersion>4.6.0</SystemThreadingChannelsPackageVersion>
     <SystemIOPipelinesPackageVersion>4.6.0</SystemIOPipelinesPackageVersion>
