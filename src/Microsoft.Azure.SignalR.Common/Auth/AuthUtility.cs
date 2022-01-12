@@ -38,6 +38,12 @@ namespace Microsoft.Azure.SignalR
                 {
                     KeyId = signingKey.Id
                 };
+
+                if (signingKey is AadAccessKey)
+                {
+                    // disable cache when using AadAccessKey
+                    securityKey.CryptoProviderFactory.CacheSignatureProviders = false;
+                }
                 credentials = new SigningCredentials(securityKey, GetSecurityAlgorithm(algorithm));
             }
 
