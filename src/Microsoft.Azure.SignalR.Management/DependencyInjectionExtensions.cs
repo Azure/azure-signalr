@@ -84,11 +84,13 @@ namespace Microsoft.Azure.SignalR.Management
                 .Where(service => service.ServiceType != typeof(IServiceConnectionContainer))
                 .Where(service => service.ServiceType != typeof(IHostedService));
             services.Add(tempServices);
-            services.AddSingleton<IHubProtocol>(sp =>
+            // Remove the JsonHubProtocol and add new one.
+            // On .NET Standard 2.0, registering multiple hub protocols with the same name is forbidden.
+            services.Replace(ServiceDescriptor.Singleton<IHubProtocol>(sp =>
             {
                 var objectSerializer = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ObjectSerializer;
                 return objectSerializer != null ? new JsonObjectSerializerHubProtocol(objectSerializer) : new JsonHubProtocol();
-            });
+            }));
             //add dependencies for persistent mode only
             services
                 .AddSingleton<ConnectionFactory>()
