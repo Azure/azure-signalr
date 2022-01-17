@@ -3,21 +3,7 @@
 > **NOTE**
 >
 > Azure SignalR Service only supports this SDK for ASP.NET CORE SignalR clients.
-<!-- TOC -->
 
-- [Azure SignalR Service Management SDK](#azure-signalr-service-management-sdk)
-  - [Build Status](#build-status)
-  - [Nuget Packages](#nuget-packages)
-  - [Getting Started](#getting-started)
-    - [Features](#features)
-  - [Create Service Manager](#create-service-manager)
-  - [Create Service Hub Context](#create-service-hub-context)
-  - [Negotiation](#negotiation)
-  - [Send Messages and Manage Groups](#send-messages-and-manage-groups)
-  - [Strongly typed hub](#strongly-typed-hub)
-  - [Transport Type](#transport-type)
-
-<!-- /TOC -->
 ## Build Status
 
 [![Windows](https://img.shields.io/github/workflow/status/Azure/azure-signalr/Gated-Windows/dev?label=Windows)](https://github.com/Azure/azure-signalr/actions?query=workflow%3AGated-Windowns)
@@ -26,9 +12,9 @@
 
 ## Nuget Packages
 
-Package Name | Target Framework | NuGet | MyGet
----|---|---|---
-Microsoft.Azure.SignalR.Management | .NET Standard 2.0 <br/> .NET Core App 3.0 <br/> .NET 5.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Management.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Management.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Management)
+|Package Name | Target Framework | NuGet | MyGet|
+|---|---|---|---|
+| Microsoft.Azure.SignalR.Management | .NET Standard 2.0 <br/> .NET Core App 3.0 <br/> .NET 5.0 | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.SignalR.Management.svg)](https://www.nuget.org/packages/Microsoft.Azure.SignalR.Management) | [![MyGet](https://img.shields.io/myget/azure-signalr-dev/vpre/Microsoft.Azure.SignalR.Management.svg)](https://www.myget.org/feed/azure-signalr-dev/package/nuget/Microsoft.Azure.SignalR.Management) |
 
 
 ## Getting Started
@@ -41,28 +27,31 @@ Azure SignalR Service Management SDK helps you to manage SignalR clients through
 
 ### Features
 
-|                                     | Transient          | Persistent         |
-|-------------------------------------|--------------------|--------------------|
-| Broadcast                           | :heavy_check_mark: | :heavy_check_mark: |
-| Broadcast except some clients       | :heavy_check_mark: | :heavy_check_mark: |
-| Send to a client                    | :heavy_check_mark: | :heavy_check_mark: |
-| Send to clients                     | :heavy_check_mark: | :heavy_check_mark: |
-| Send to a user                      | :heavy_check_mark: | :heavy_check_mark: |
-| Send to users                       | :heavy_check_mark: | :heavy_check_mark: |
-| Send to a group                     | :heavy_check_mark: | :heavy_check_mark: |
-| Send to groups                      | :heavy_check_mark: | :heavy_check_mark: |
-| Send to a group except some clients | :heavy_check_mark: | :heavy_check_mark: |
-| Add a user to a group               | :heavy_check_mark: | :heavy_check_mark: |
-| Remove a user from a group          | :heavy_check_mark: | :heavy_check_mark: |
-| Check if a user in a group          | :heavy_check_mark: | :heavy_check_mark: |
+|                                            | Transient          | Persistent         |
+| ------------------------------------------ | ------------------ | ------------------ |
+| Broadcast                                  | :heavy_check_mark: | :heavy_check_mark: |
+| Broadcast except some clients              | :heavy_check_mark: | :heavy_check_mark: |
+| Send to a client                           | :heavy_check_mark: | :heavy_check_mark: |
+| Send to clients                            | :heavy_check_mark: | :heavy_check_mark: |
+| Send to a user                             | :heavy_check_mark: | :heavy_check_mark: |
+| Send to users                              | :heavy_check_mark: | :heavy_check_mark: |
+| Send to a group                            | :heavy_check_mark: | :heavy_check_mark: |
+| Send to groups                             | :heavy_check_mark: | :heavy_check_mark: |
+| Send to a group except some clients        | :heavy_check_mark: | :heavy_check_mark: |
+| Add a user to a group                      | :heavy_check_mark: | :heavy_check_mark: |
+| Remove a user from a group                 | :heavy_check_mark: | :heavy_check_mark: |
+| Check if a user in a group                 | :heavy_check_mark: | :heavy_check_mark: |
+|                                            |                    |                    |
+| Multiple SignalR service instances support | :x:                | :heavy_check_mark: |
+| MessaegPack clients support                | :heavy_check_mark: | :x:                |
 
 **Features only come with new API**
-|                                     | Transient          | Persistent         |
-|-------------------------------------|--------------------|--------------------|
-| Check if a connection exists        | :heavy_check_mark: | Since v1.11        |
-| Check if a group exists             | :heavy_check_mark: | Since v1.11        |
-| Check if a user exists              | :heavy_check_mark: | Since v1.11        |
-| Close a client connection           | :heavy_check_mark: | Since v1.11        |
+|                              | Transient          | Persistent  |
+| ---------------------------- | ------------------ | ----------- |
+| Check if a connection exists | :heavy_check_mark: | Since v1.11 |
+| Check if a group exists      | :heavy_check_mark: | Since v1.11 |
+| Check if a user exists       | :heavy_check_mark: | Since v1.11 |
+| Close a client connection    | :heavy_check_mark: | Since v1.11 |
 
 
 > More details about different modes can be found [here](#Transport-Type).
@@ -190,8 +179,15 @@ Except for the difference of sending messages, you could negotiate or manage gro
 
 This SDK can communicates to Azure SignalR Service with two transport types:
 * Transient: Create a Http request Azure SignalR Service for each message sent. The SDK simply wrap up [Azure SignalR Service REST API](./rest-api.md) in Transient mode. It is useful when you are unable to establish a WebSockets connection.
-* Persistent: Create a WebSockets connection first and then sent all messages in this connection. It is useful when you send large amount of messages.
+* Persistent: Create a WebSockets connection first and then send all messages in this connection. It is useful when you send large amount of messages.
+
+### Summary of Serialization behaviors of the Arguments in Messages
+
+|                                | Transient          | Persistent                        |
+| ------------------------------ | ------------------ | --------------------------------- |
+| Default JSON library           | `Newtonsoft.Json`  | The same as Asp.Net Core SignalR: <br>`Newtonsoft.Json` for .NET Standard 2.0; <br>`System.Text.Json` for .NET Core App 3.1 and above  |
+| Support for MessagePack client | :heavy_check_mark: | :x:                               |
 
 
-<!--Add API reference link here-->
-<!--Intend to generate API reference by docfx-->
+### Next steps
+* [Customizing Json Serialization in Management SDK](./advanced-topics/json-object-serializer.md)
