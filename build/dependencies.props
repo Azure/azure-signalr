@@ -35,7 +35,7 @@
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.1</MicrosoftExtensionsPrimitivesPackageVersion>
     <MicrosoftAspNetCoreSignalRClient>1.1.0</MicrosoftAspNetCoreSignalRClient>
     <MicrosoftRestClientRuntimePackageVersion>2.3.21</MicrosoftRestClientRuntimePackageVersion>
-    
+
     <!--Security Patch-->
     <!-- Fix risks from Microsoft.AspNetCore.SignalR 1.0.0-->
     <MicrosoftAspNetCoreHttpPackageVersion>2.1.22</MicrosoftAspNetCoreHttpPackageVersion>
@@ -65,6 +65,8 @@
 
     <!-- Signing -->
     <MicrosoftVisualStudioEngMicroBuildCoreVersion>1.0.0</MicrosoftVisualStudioEngMicroBuildCoreVersion>
+    <!-- Source link -->
+    <MicrosoftSourceLinkGitHubPackageVersion>1.1.1</MicrosoftSourceLinkGitHubPackageVersion>
 
     <!-- Samples -->
     <MicrosoftAspNetCorePackageVersion>2.1.0</MicrosoftAspNetCorePackageVersion>
