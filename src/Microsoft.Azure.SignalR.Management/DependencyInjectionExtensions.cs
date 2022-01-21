@@ -52,6 +52,12 @@ namespace Microsoft.Azure.SignalR.Management
             //for transient
             services.AddSingleton(sp => ActivatorUtilities.CreateInstance<RestHealthCheckService>(sp, hubName));
 
+            if (typeof(THub) != typeof(Hub))
+            {
+                // Dependencies for SerivceHubContext, so that ServiceHubContext<T> can be casted to ServiceHubContext
+                services.AddSingleton(sp => sp.GetRequiredService<ServiceHubLifetimeManagerFactory>().Create<Hub>(hubName))
+                        .AddSingleton(sp => (HubLifetimeManager<Hub>)sp.GetRequiredService<IServiceHubLifetimeManager<Hub>>());
+            }
             return services
                 .AddLogging()
                 .AddSingleton<ServiceHubLifetimeManagerFactory>()
@@ -59,18 +65,7 @@ namespace Microsoft.Azure.SignalR.Management
                 //The following three lines register three reference types for the same instance.
                 .AddSingleton(sp => sp.GetRequiredService<ServiceHubLifetimeManagerFactory>().Create<THub>(hubName))
                 .AddSingleton(sp => (HubLifetimeManager<THub>)sp.GetRequiredService<IServiceHubLifetimeManager<THub>>())
-                .AddSingleton<IServiceHubLifetimeManager>(sp => sp.GetRequiredService<IServiceHubLifetimeManager<THub>>())
-                //used only when THub is Hub
-                .AddSingleton<ServiceHubContext>(sp => ActivatorUtilities.CreateInstance<ServiceHubContextImpl>(sp, hubName));
-        }
-
-        public static IServiceCollection AddHub<THub, T>(this IServiceCollection services, string hubName)
-            where THub : Hub
-            where T : class
-        {
-            return services
-                .AddHub<THub>(hubName)
-                .AddSingleton<ServiceHubContext<T>>(sp => ActivatorUtilities.CreateInstance<ServiceHubContextImpl<T>>(sp, hubName));
+                .AddSingleton<IServiceHubLifetimeManager>(sp => sp.GetRequiredService<IServiceHubLifetimeManager<THub>>());
         }
 
         private static IServiceCollection AddSignalRServiceCore(this IServiceCollection services)

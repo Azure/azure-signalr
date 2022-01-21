@@ -234,6 +234,16 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             public Task NewMessage(string message);
         }
 
+        [Fact]
+        public async Task TestTypedHubContextImplictConversionToUntypedHubContext()
+        {
+            using var serviceManager = new ServiceManagerBuilder()
+                .WithOptions(o => o.ConnectionString = FakeEndpointUtils.GetFakeConnectionString(1).Single())
+                .BuildServiceManager();
+            using var typedHubContext = await serviceManager.CreateHubContextAsync<IChat>("hub", default);
+            using ServiceHubContext hubContext = typedHubContext as ServiceHubContextImpl<IChat>;
+        }
+
         private Task<ServiceHubContext<IChat>> Create(ServiceTransportType transportType, IServiceCollection services = null)
         {
             var builder = services == null ? new ServiceManagerBuilder() : new ServiceManagerBuilder(services);

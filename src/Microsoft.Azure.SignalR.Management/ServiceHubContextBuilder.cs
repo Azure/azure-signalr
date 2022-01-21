@@ -37,14 +37,14 @@ namespace Microsoft.Azure.SignalR.Management
         {
             _hostBuilder.ConfigureServices(services => services.AddHub<Hub>(hubName));
             var host = await CreateAndStartHost(cancellationToken);
-            return host.Services.GetRequiredService<ServiceHubContext>();
+            return ActivatorUtilities.CreateInstance<ServiceHubContextImpl>(host.Services, hubName);
         }
 
         public async Task<ServiceHubContext<T>> CreateAsync<T>(string hubName, CancellationToken cancellationToken) where T : class
         {
-            _hostBuilder.ConfigureServices(services => services.AddHub<Hub<T>, T>(hubName));
+            _hostBuilder.ConfigureServices(services => services.AddHub<Hub<T>>(hubName));
             var host = await CreateAndStartHost(cancellationToken);
-            return host.Services.GetRequiredService<ServiceHubContext<T>>();
+            return ActivatorUtilities.CreateInstance<ServiceHubContextImpl<T>>(host.Services, hubName);
         }
 
         private async Task<IHost> CreateAndStartHost(CancellationToken cancellationToken)

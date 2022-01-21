@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Management
         private readonly IHubContext<Hub> _hubContext;
         private readonly NegotiateProcessor _negotiateProcessor;
         private readonly IServiceEndpointManager _endpointManager;
-        
+
         private bool _disposing;
         internal IServiceProvider ServiceProvider { get; }
 
@@ -56,7 +56,6 @@ namespace Microsoft.Azure.SignalR.Management
         public override async Task DisposeAsync()
         {
             // Check _disposed to avoid disposing twice.
-            // When host is diposed, it will dispose all the disposable services including this class.
             if (!_disposing)
             {
                 _disposing = true;
@@ -75,7 +74,7 @@ namespace Microsoft.Azure.SignalR.Management
             var targetEndpoints = _endpointManager.GetEndpoints(_hubName).Intersect(endpoints, EqualityComparer<ServiceEndpoint>.Default).Select(e => e as HubServiceEndpoint).ToList();
             var container = new MultiEndpointMessageWriter(targetEndpoints, ServiceProvider.GetRequiredService<ILoggerFactory>());
             var servicesFromServiceManager = ServiceProvider.GetRequiredService<IReadOnlyCollection<ServiceDescriptor>>();
-            var services = new ServiceCollection()
+            var serviceProvider = new ServiceCollection()
                 .Add(servicesFromServiceManager)
                 //Allow chained call serviceHubContext.WithEndpoints(...).WithEndpoints(...)
                 .AddSingleton(servicesFromServiceManager)
@@ -84,9 +83,10 @@ namespace Microsoft.Azure.SignalR.Management
                 //add required service instances
                 .AddSingleton(ServiceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>())
                 .AddSingleton(_endpointManager)
-                .AddSingleton<IEndpointRouter>(new FixedEndpointRouter(targetEndpoints));
+                .AddSingleton<IEndpointRouter>(new FixedEndpointRouter(targetEndpoints))
+                .BuildServiceProvider();
 
-            return services.BuildServiceProvider().GetRequiredService<ServiceHubContext>();
+            return ActivatorUtilities.CreateInstance<ServiceHubContextImpl>(serviceProvider, _hubName);
         }
     }
 }
