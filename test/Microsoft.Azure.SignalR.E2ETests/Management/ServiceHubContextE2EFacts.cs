@@ -148,16 +148,22 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             var userNames = GenerateRandomNames(ClientConnectionCount);
             var receivedMessageDict = new ConcurrentDictionary<int, int>();
             var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName, userNames);
-            // expect no exceptions
             var emptyTargets = new List<string>();
-            var exception = await Record.ExceptionAsync(async () =>
+            try
             {
-                await serviceHubContext.Clients.Users(emptyTargets).SendAsync(MethodName, Message);
-                await serviceHubContext.Clients.Clients(emptyTargets).SendAsync(MethodName, Message);
-                await serviceHubContext.Clients.Groups(emptyTargets).SendAsync(MethodName, Message);
-            });
-            Assert.Null(exception);
-            await serviceHubContext.DisposeAsync();
+                // expect no exceptions
+                var exception = await Record.ExceptionAsync(async () =>
+                {
+                    await serviceHubContext.Clients.Users(emptyTargets).SendAsync(MethodName, Message);
+                    await serviceHubContext.Clients.Clients(emptyTargets).SendAsync(MethodName, Message);
+                    await serviceHubContext.Clients.Groups(emptyTargets).SendAsync(MethodName, Message);
+                });
+                Assert.Null(exception);
+            }
+            finally
+            {
+                await serviceHubContext.DisposeAsync();
+            }
         }
 
         [ConditionalTheory]
