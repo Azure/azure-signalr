@@ -101,6 +101,11 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
+            if (connectionIds.Count == 0)
+            {
+                return Task.CompletedTask;
+            }
+
             var message = AppendMessageTracingId(new MultiConnectionDataMessage(connectionIds, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
@@ -139,6 +144,11 @@ namespace Microsoft.Azure.SignalR
             if (IsInvalidArgument(methodName))
             {
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
+            }
+
+            if (groupNames.Count == 0)
+            {
+                return Task.CompletedTask;
             }
 
             var message = AppendMessageTracingId(new MultiGroupBroadcastDataMessage(groupNames, SerializeAllProtocols(methodName, args)));
@@ -204,6 +214,11 @@ namespace Microsoft.Azure.SignalR
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
             }
 
+            if (userIds.Count == 0)
+            {
+                return Task.CompletedTask;
+            }
+
             var message = AppendMessageTracingId(new MultiUserDataMessage(userIds, SerializeAllProtocols(methodName, args)));
             if (message.TracingId != null)
             {
@@ -265,7 +280,7 @@ namespace Microsoft.Azure.SignalR
 
         protected static bool IsInvalidArgument(IReadOnlyList<object> list)
         {
-            return list == null || list.Count == 0;
+            return list == null;
         }
 
         protected IDictionary<string, ReadOnlyMemory<byte>> SerializeAllProtocols(string method, object[] args)
