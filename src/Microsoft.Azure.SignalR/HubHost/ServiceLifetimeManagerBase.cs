@@ -265,7 +265,7 @@ namespace Microsoft.Azure.SignalR
 
         protected static bool IsInvalidArgument(IReadOnlyList<object> list)
         {
-            return list == null || list.Count == 0;
+            return list == null;
         }
 
         protected IDictionary<string, ReadOnlyMemory<byte>> SerializeAllProtocols(string method, object[] args)
