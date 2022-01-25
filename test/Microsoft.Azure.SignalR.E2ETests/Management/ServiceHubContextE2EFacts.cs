@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -137,6 +137,27 @@ namespace Microsoft.Azure.SignalR.Management.Tests
             {
                 await serviceHubContext.DisposeAsync();
             }
+        }
+
+        // keep the same behavior with https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/server/Core/src/DefaultHubLifetimeManager.cs
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
+        [MemberData(nameof(TestData))]
+        internal async Task SendToEmptyReceiversTest(ServiceTransportType serviceTransportType, string appName)
+        {
+            var userNames = GenerateRandomNames(ClientConnectionCount);
+            var receivedMessageDict = new ConcurrentDictionary<int, int>();
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName, userNames);
+            // expect no exceptions
+            var emptyTargets = new List<string>();
+            var exception = await Record.ExceptionAsync(async () =>
+            {
+                await serviceHubContext.Clients.Users(emptyTargets).SendAsync(MethodName, Message);
+                await serviceHubContext.Clients.Clients(emptyTargets).SendAsync(MethodName, Message);
+                await serviceHubContext.Clients.Groups(emptyTargets).SendAsync(MethodName, Message);
+            });
+            Assert.Null(exception);
+            await serviceHubContext.DisposeAsync();
         }
 
         [ConditionalTheory]
