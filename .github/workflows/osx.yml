@@ -28,9 +28,11 @@ jobs:
           - '*.sln'
 
     - name: Update SubModules
+      continue-on-error: true
       if: steps.filter.outputs.src == 'true'
       run: git submodule update --init --recursive
     
     - name: Build with dotnet
+      continue-on-error: true
       if: steps.filter.outputs.src == 'true'
       run:  "./build.sh --ci /p:DisableNet461Tests=true"
