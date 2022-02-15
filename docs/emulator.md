@@ -70,3 +70,6 @@ The emulator also provides advanced options when start, for example, you can use
 7. In the browser, navigate to `http://localhost:7071/api/index` to play with the demo.
 
 ![image](https://user-images.githubusercontent.com/668244/93066361-78d11e80-f6ac-11ea-8b2e-bff28196850c.png)
+
+## Supporting persistent transport types
+This emualtor is unable to support persistent transport types i.e. `"AzureSignalRServiceTransportType": "Persistent"`. Therefore, tools like Azure Relay or ngrok are required to divert the webhook traffic from Azure SignalR Services to the local development machines.
