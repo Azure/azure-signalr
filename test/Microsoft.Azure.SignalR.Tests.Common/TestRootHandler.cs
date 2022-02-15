@@ -40,7 +40,10 @@ namespace Microsoft.Azure.SignalR.Tests.Common
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             //to avoid possible retry policy which dispose content, create new content each time
-            var response = new HttpResponseMessage(_code);
+            var response = new HttpResponseMessage(_code)
+            {
+                RequestMessage = request
+            };
             if (_content != null)
             {
                 response.Content = new ByteArrayContent(Encoding.UTF8.GetBytes(_content));
