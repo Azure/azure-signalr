@@ -1,6 +1,6 @@
 # Azure SignalR Local Emulator
 
-When developing serverless applications, we provide an Azure SignalR Local Emulator to make the local development and integration easier. Please note that the emulator works only for serverless scenarios, for *Default* mode that the Azure SignalR Service acts as a proxy, you can directly use self-host SignalR to do local development.
+When developing serverless applications, we provide an Azure SignalR Local Emulator to make the local development and integration easier. Please note that the emulator works only for serverless scenarios, for *Default* mode that the Azure SignalR Service acts as a proxy, you can directly use self-host SignalR to do local development. Please also note that emulator only works for *Transient* transport type (the default one) and doesn't work for *Persistent* transport type.
 
 Features available
 ------------------
