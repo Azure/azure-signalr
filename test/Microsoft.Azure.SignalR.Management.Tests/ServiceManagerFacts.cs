@@ -192,7 +192,23 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                 .ConfigureServices(services => services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, HttpStatusCode.OK)))
                 .BuildServiceManager()
                 .CreateHubContextAsync(HubName, default);
-            Assert.Equal(3, (serviceHubContext as ServiceHubContextImpl).ServiceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ConnectionCount);
+            Assert.Equal(1, (serviceHubContext as ServiceHubContextImpl).ServiceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ConnectionCount);
+        }
+
+        [Fact]
+        public async Task TestConnectionCountCustomizable()
+        {
+            using var serviceHubContext = await new ServiceManagerBuilder()
+                .WithOptions(o =>
+                {
+                    o.ConnectionString = _testConnectionString;
+                    o.ConnectionCount = 5;
+                })
+                // avoid waiting for health check result for long time
+                .ConfigureServices(services => services.AddSingleton<RestClientFactory>(new TestRestClientFactory(UserAgent, HttpStatusCode.OK)))
+                .BuildServiceManager()
+                .CreateHubContextAsync(HubName, default);
+            Assert.Equal(5, (serviceHubContext as ServiceHubContextImpl).ServiceProvider.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ConnectionCount);
         }
     }
 }
