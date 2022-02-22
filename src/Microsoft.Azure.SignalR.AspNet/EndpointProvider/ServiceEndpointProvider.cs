@@ -39,8 +39,8 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             // Version is ignored for aspnet signalr case
             _audienceBaseUrl = endpoint.AudienceBaseUrl;
-            _clientEndpoint = endpoint.ClientEndpoint;
-            _serverEndpoint = endpoint.Endpoint;
+            _clientEndpoint = endpoint.ClientEndpoint.AbsoluteUri;
+            _serverEndpoint = endpoint.ServerEndpoint.AbsoluteUri;
             _accessKey = endpoint.AccessKey;
             _appName = options.ApplicationName;
             _algorithm = options.AccessTokenAlgorithm;
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public Task<string> GenerateClientAccessTokenAsync(string hubName = null, IEnumerable<Claim> claims = null, TimeSpan? lifetime = null)
         {
-            var audience = $"{_audienceBaseUrl}/{ClientPath}";
+            var audience = $"{_audienceBaseUrl}{ClientPath}";
 
             return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.SignalR.AspNet
                 };
             }
 
-            var audience = $"{_audienceBaseUrl}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
+            var audience = $"{_audienceBaseUrl}{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
 
             return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
@@ -107,12 +107,12 @@ namespace Microsoft.Azure.SignalR.AspNet
                     .Append(WebUtility.UrlEncode(originalPath));
             }
 
-            return $"{_clientEndpoint}/{ClientPath}{queryBuilder}";
+            return $"{_clientEndpoint}{ClientPath}{queryBuilder}";
         }
 
         public string GetServerEndpoint(string hubName)
         {
-            return $"{_serverEndpoint}/{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
+            return $"{_serverEndpoint}{ServerPath}/?hub={GetPrefixedHubName(_appName, hubName)}";
         }
     }
 }

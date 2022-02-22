@@ -17,6 +17,7 @@ namespace Microsoft.Azure.SignalR
         private const string ClientIdProperty = "clientId";
         private const string ClientSecretProperty = "clientSecret";
         private const string EndpointProperty = "endpoint";
+        private const string ServerEndpoint = "ServerEndpoint";
         private const string InvalidVersionValueFormat = "Version {0} is not supported.";
         private const string PortProperty = "port";
         // For SDK 1.x, only support Azure SignalR Service 1.x
@@ -115,12 +116,21 @@ namespace Microsoft.Azure.SignalR
                 "aad" => BuildAadAccessKey(builder.Uri, dict),
                 _ => BuildAccessKey(builder.Uri, dict),
             };
+
+            if (dict.TryGetValue(ServerEndpoint, out var serverEndpoint))
+            {
+                if (!ValidateEndpoint(serverEndpoint))
+                {
+                    throw new ArgumentException($"{ServerEndpoint} property in connection string is not a valid URI: {serverEndpoint}.");
+                }
+            }
             return new ParsedConnectionString()
             {
                 Endpoint = builder.Uri,
-                ClientEndpoint = clientEndpoint,
+                ClientEndpoint = clientEndpoint == null ? null : new Uri(clientEndpoint),
                 AccessKey = accessKey,
                 Version = version,
+                ServerEndpoint = serverEndpoint == null ? null : new Uri(serverEndpoint)
             };
         }
 
