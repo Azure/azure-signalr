@@ -96,9 +96,13 @@ namespace Microsoft.Azure.SignalR
 
             var detail = await response.Content.ReadAsStringAsync();
 
+#if NET5_0_OR_GREATER
             var innerException = new HttpRequestException(
-                $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})"); ;
-
+    $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})", null, response.StatusCode);
+#else
+            var innerException = new HttpRequestException(
+                $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase})");
+#endif
             throw response.StatusCode switch
             {
                 HttpStatusCode.BadRequest => new AzureSignalRInvalidArgumentException(response.RequestMessage.RequestUri.ToString(), innerException, detail),
