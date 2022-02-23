@@ -15,6 +15,8 @@ namespace Microsoft.Azure.SignalR
         private const string ShutdownKey = "shutdown";
         private const string ServersKey = "servers";
         private const string ClientCountKey = "clientcount";
+        private const string ServerCountKey = "servercount";
+        private const string CapacityKey = "capacity";
         private const string DiagnosticLogsMessagingTypeKey = "d-m";
 
         private const string MessagingLogEnableValue = "1";
@@ -96,6 +98,28 @@ namespace Microsoft.Azure.SignalR
                 return false;
             }
             clientCount = count;
+            return true;
+        }   
+        
+        public static bool TryGetServerCount(this ServicePingMessage ping, out int serverCount)
+        {
+            if (!TryGetValue(ping, ServerCountKey, out var value) || !int.TryParse(value, out var count))
+            {
+                serverCount = 0;
+                return false;
+            }
+            serverCount = count;
+            return true;
+        }    
+        
+        public static bool TryGetConnectionCapacity(this ServicePingMessage ping, out int connectionCapacity)
+        {
+            if (!TryGetValue(ping, CapacityKey, out var value) || !int.TryParse(value, out var count))
+            {
+                connectionCapacity = 0;
+                return false;
+            }
+            connectionCapacity = count;
             return true;
         }
 
