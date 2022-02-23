@@ -192,7 +192,14 @@ namespace Microsoft.Azure.SignalR
             {
                 Endpoint.EndpointMetrics.ClientConnectionCount = clientCount;
             }
-
+            if (RuntimeServicePingMessage.TryGetServerCount(pingMessage, out var serverCount))
+            {
+                Endpoint.EndpointMetrics.ServerConnectionCount = serverCount;
+            }
+            if (RuntimeServicePingMessage.TryGetConnectionCapacity(pingMessage, out var connectionCapacity))
+            {
+                Endpoint.EndpointMetrics.ConnectionCapacity = connectionCapacity;
+            }
             if (RuntimeServicePingMessage.TryGetStatus(pingMessage, out var status))
             {
                 Log.ReceivedServiceStatusPing(Logger, status, Endpoint);
