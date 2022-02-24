@@ -17,32 +17,7 @@ namespace Microsoft.Azure.SignalR
 
         public EndpointType EndpointType { get; } = EndpointType.Primary;
 
-        public virtual string Name { get; internal set; } = "";
-
-        /// <summary>
-        /// When current app server instance has server connections connected to the target endpoint for current hub, it can deliver messages to that endpoint.
-        /// The endpoint is then considered as *Online*; otherwise, *Offline*.
-        /// Messages are not able to be delivered to an *Offline* endpoint.
-        /// </summary>
-        public bool Online { get; internal set; } = true;
-
-        /// <summary>
-        /// When the target endpoint has hub clients connected, the endpoint is considered as an *Active* endpoint.
-        /// When the target endpoint has no hub clients connected for 10 minutes, the endpoint is considered as an *Inactive* one.
-        /// User can choose to not send messages to an *Inactive* endpoint to save network traffic.
-        /// But please note that as the *Active* status is reported to the server from remote service, there can be some delay when status changes.
-        /// Don't rely on this status if you don't expect any message lose once a client is connected.
-        /// </summary>
-        public bool IsActive { get; internal set; } = true;
-
-        /// <summary>
-        /// Enriched endpoint metrics for customized routing.
-        /// </summary>
-        public EndpointMetrics EndpointMetrics { get; internal set; } = new EndpointMetrics();
-
-        public string Endpoint { get; }
-
-        internal string AudienceBaseUrl { get; }
+        public virtual string Name { get; } = "";
 
         /// <summary>
         /// Gets or initializes the custom endpoint for SignalR server to connect to SignalR service.
@@ -67,10 +42,34 @@ namespace Microsoft.Azure.SignalR
                 _clientEndpoint = value;
             }
         }
+        /// <summary>
+        /// When current app server instance has server connections connected to the target endpoint for current hub, it can deliver messages to that endpoint.
+        /// The endpoint is then considered as *Online*; otherwise, *Offline*.
+        /// Messages are not able to be delivered to an *Offline* endpoint.
+        /// </summary>
+        public bool Online { get; internal set; } = true;
+
+        /// <summary>
+        /// When the target endpoint has hub clients connected, the endpoint is considered as an *Active* endpoint.
+        /// When the target endpoint has no hub clients connected for 10 minutes, the endpoint is considered as an *Inactive* one.
+        /// User can choose to not send messages to an *Inactive* endpoint to save network traffic.
+        /// But please note that as the *Active* status is reported to the server from remote service, there can be some delay when status changes.
+        /// Don't rely on this status if you don't expect any message lose once a client is connected.
+        /// </summary>
+        public bool IsActive { get; internal set; } = true;
+
+        /// <summary>
+        /// Enriched endpoint metrics for customized routing.
+        /// </summary>
+        public EndpointMetrics EndpointMetrics { get; } = new EndpointMetrics();
+
+        public string Endpoint { get; }
+
+        internal string AudienceBaseUrl { get; }
 
         internal string Version { get; }
 
-        internal AccessKey AccessKey { get; private set; }
+        internal AccessKey AccessKey { get; }
 
         /// <summary>
         /// Connection string constructor with nameWithEndpointType
@@ -90,23 +89,22 @@ namespace Microsoft.Azure.SignalR
         /// <param name="name"></param>
         public ServiceEndpoint(string connectionString, EndpointType type = EndpointType.Primary, string name = "")
         {
-            ConnectionString = connectionString;
-
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new ArgumentException($"'{nameof(connectionString)}' cannot be null or whitespace", nameof(connectionString));
+                throw new ArgumentException($"'{nameof(connectionString)}' cannot be null or whitespace.", nameof(connectionString));
             }
+            ConnectionString = connectionString;
 
             var result = ConnectionStringParser.Parse(connectionString);
             AccessKey = result.AccessKey;
-            AudienceBaseUrl = BuildAudienceBaseUrlEndWithSlash(result.Endpoint);
-            Endpoint = BuildEndpointEndWithSlash(result.Endpoint);
+            _serviceEndpoint = result.Endpoint;
             ClientEndpoint = result.ClientEndpoint;
             ServerEndpoint = result.ServerEndpoint;
             EndpointType = type;
             Name = name;
 
-            _serviceEndpoint = result.Endpoint;
+            Endpoint = BuildEndpointString(_serviceEndpoint);
+            AudienceBaseUrl = BuildAudienceBaseUrlEndWithSlash(_serviceEndpoint);
         }
 
         /// <summary>
@@ -129,17 +127,18 @@ namespace Microsoft.Azure.SignalR
         /// <param name="name"></param>
         public ServiceEndpoint(Uri endpoint, TokenCredential credential, EndpointType endpointType = EndpointType.Primary, string name = "")
         {
-            if (endpoint == null)
-            {
-                throw new ArgumentNullException(nameof(endpoint));
-            }
+            _serviceEndpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
             CheckScheme(endpoint);
+            if (credential is null)
+            {
+                throw new ArgumentNullException(nameof(credential));
+            }
             AccessKey = new AadAccessKey(endpoint, credential);
-            AudienceBaseUrl = BuildAudienceBaseUrlEndWithSlash(endpoint);
-            Endpoint = BuildEndpointEndWithSlash(endpoint);
-            _serviceEndpoint = endpoint;
+            EndpointType = endpointType;
+            Name = name;
 
-            (Name, EndpointType) = (name, endpointType);
+            AudienceBaseUrl = BuildAudienceBaseUrlEndWithSlash(_serviceEndpoint);
+            Endpoint = BuildEndpointString(_serviceEndpoint);
         }
 
         /// <summary>
@@ -200,7 +199,7 @@ namespace Microsoft.Azure.SignalR
             return $"{uri.Scheme}://{uri.Host}/";
         }
 
-        private static string BuildEndpointEndWithSlash(Uri uri)
+        private static string BuildEndpointString(Uri uri)
         {
             return new Uri($"{uri.Scheme}://{uri.Host}:{uri.Port}").AbsoluteUri.TrimEnd('/');
         }
