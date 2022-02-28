@@ -47,6 +47,11 @@ namespace Microsoft.Azure.SignalR
             return secondary;
         }
 
+        /// <summary>
+        ///  Choose endpoint randomly by weight. 
+        ///  The weight is defined as the remaining connection quota.
+        ///  The least weight is set to 1. So instance with no connection quota still has chance.
+        /// </summary>
         private ServiceEndpoint GetEndpointAccordingToWeight(ServiceEndpoint[] availableEndpoints)
         {
             //first check if weight is available or necessary
@@ -70,12 +75,18 @@ namespace Microsoft.Azure.SignalR
             }
 
             var index = StaticRandom.Next(totalCapacity);
-            var key = Array.BinarySearch(we, index);
-            key = key < 0 ? ~key : key + 1;
-            return availableEndpoints[key];
+            for (var i = 0; i < we.Length; i++)
+            {
+                if (we[i] > index)
+                {
+                    return availableEndpoints[i];
+                }
+            }
+
+            return GetEndpointRandomly(availableEndpoints);
         }
 
-        private ServiceEndpoint GetEndpointRandomly(ServiceEndpoint[] availableEndpoints)
+        private static ServiceEndpoint GetEndpointRandomly(ServiceEndpoint[] availableEndpoints)
         {
             return availableEndpoints[StaticRandom.Next(availableEndpoints.Length)];
         }
