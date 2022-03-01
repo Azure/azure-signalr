@@ -76,7 +76,6 @@ namespace Microsoft.Azure.SignalR
                     {
                         MessageLog.SucceededToSendMessage(Logger, messageWithTracingId);
                     }
-                    return;
                 }
                 catch (ServiceConnectionNotActiveException)
                 {
