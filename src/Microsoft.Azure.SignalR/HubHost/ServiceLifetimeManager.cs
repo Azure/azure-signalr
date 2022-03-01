@@ -84,13 +84,16 @@ namespace Microsoft.Azure.SignalR
                     // Although in current design the server connection drop leads to routed client connection drops
                     // The message thrown here is misleading to the customer
                     // Also sending the message back provides the support when later we support client connection migration
-                    await base.SendConnectionAsync(connectionId, methodName, args, cancellationToken);
+                    await WriteAsync(message);
                 }
             }
-
+            else
+            {
+                await base.SendConnectionAsync(connectionId, methodName, args, cancellationToken);
+            }
         }
 
-        private ServiceMessage CreateMessage(string connectionId, string methodName, object[] args, ClientConnectionContext serviceConnectionContext)
+        private MultiConnectionDataMessage CreateMessage(string connectionId, string methodName, object[] args, ClientConnectionContext serviceConnectionContext)
         {
             IDictionary<string, ReadOnlyMemory<byte>> payloads;
             if (serviceConnectionContext.Protocol != null)
