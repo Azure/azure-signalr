@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -77,14 +78,16 @@ namespace Microsoft.Azure.SignalR
                     }
                     return;
                 }
-                catch (Exception ex)
+                catch (ServiceConnectionNotActiveException)
                 {
-                    MessageLog.FailedToSendMessage(Logger, messageWithTracingId, ex);
-                    throw;
+                    // Fallback to send message through other server connections
+                    // Although in current design the server connection drop leads to routed client connection drops
+                    // The message thrown here is misleading to the customer
+                    // Also sending the message back provides the support when later we support client connection migration
+                    await base.SendConnectionAsync(connectionId, methodName, args, cancellationToken);
                 }
             }
 
-            await base.SendConnectionAsync(connectionId, methodName, args, cancellationToken);
         }
 
         private ServiceMessage CreateMessage(string connectionId, string methodName, object[] args, ClientConnectionContext serviceConnectionContext)
