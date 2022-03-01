@@ -75,15 +75,8 @@ namespace Microsoft.Azure.SignalR
             }
 
             var index = StaticRandom.Next(totalCapacity);
-            for (var i = 0; i < we.Length; i++)
-            {
-                if (we[i] > index)
-                {
-                    return availableEndpoints[i];
-                }
-            }
-
-            return GetEndpointRandomly(availableEndpoints);
+            
+            return availableEndpoints[Array.FindLastIndex(we, x => x <= index) + 1];
         }
 
         private static ServiceEndpoint GetEndpointRandomly(ServiceEndpoint[] availableEndpoints)
