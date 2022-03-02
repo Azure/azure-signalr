@@ -58,10 +58,7 @@ There are a few [options](https://github.com/Azure/azure-signalr/blob/dev/src/Mi
 ### `ConnectionCount`
 
 - Default value is `5`.
-- This option controls the count of connections per hub between application server and Azure SignalR Service.
-It is not recommended to change the default value since it should be enough in most of the time.
-You can increase it for better performance if the total client count is too big.
-For example, if you have 100,000 clients in total, the connection count can be increased to `10` or `15` for better throughput.
+- This option controls the initial count of connections per hub between application server and Azure SignalR Service. Usually keep it as the default value is enough. During runtime, the SDK might start new server connections for performance tuning or load balancing. When you have big number of clients, you can give it a larger number for better throughput. For example, if you have 100,000 clients in total, the connection count can be increased to `10` or `15`.
 
 ### `ApplicationName`
 
