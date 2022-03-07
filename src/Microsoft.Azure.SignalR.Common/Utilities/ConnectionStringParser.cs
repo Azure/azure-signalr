@@ -101,10 +101,11 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
+            Uri clientEndpointUri = null;
             // parse and validate clientEndpoint.
             if (dict.TryGetValue(ClientEndpointProperty, out var clientEndpoint))
             {
-                if (!TryGetEndpointUri(clientEndpoint, out _))
+                if (!TryGetEndpointUri(clientEndpoint, out clientEndpointUri))
                 {
                     throw new ArgumentException($"{ClientEndpointProperty} property in connection string is not a valid URI: {clientEndpoint}.");
                 }
@@ -117,9 +118,10 @@ namespace Microsoft.Azure.SignalR
                 _ => BuildAccessKey(builder.Uri, dict),
             };
 
+            Uri serverEndpointUri = null;
             if (dict.TryGetValue(ServerEndpoint, out var serverEndpoint))
             {
-                if (!TryGetEndpointUri(serverEndpoint, out _))
+                if (!TryGetEndpointUri(serverEndpoint, out serverEndpointUri))
                 {
                     throw new ArgumentException($"{ServerEndpoint} property in connection string is not a valid URI: {serverEndpoint}.");
                 }
@@ -127,10 +129,10 @@ namespace Microsoft.Azure.SignalR
             return new ParsedConnectionString()
             {
                 Endpoint = builder.Uri,
-                ClientEndpoint = clientEndpoint == null ? null : new Uri(clientEndpoint),
+                ClientEndpoint = clientEndpointUri,
                 AccessKey = accessKey,
                 Version = version,
-                ServerEndpoint = serverEndpoint == null ? null : new Uri(serverEndpoint)
+                ServerEndpoint = serverEndpointUri
             };
         }
 

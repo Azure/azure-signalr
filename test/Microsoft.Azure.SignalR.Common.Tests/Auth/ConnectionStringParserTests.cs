@@ -92,22 +92,24 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 
         [Theory]
         [ClassData(typeof(ClientEndpointTestData))]
-        public void TestClientEndpoint(string connectionString, string expectedClientEndpoint)
+        public void TestClientEndpoint(string connectionString, string expectedClientEndpoint, int? expectedPort)
         {
             var r = ConnectionStringParser.Parse(connectionString);
             Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
             var expectedUri = expectedClientEndpoint == null ? null : new Uri(expectedClientEndpoint);
             Assert.Equal(expectedUri, r.ClientEndpoint);
+            Assert.Equal(expectedPort, r.ClientEndpoint?.Port);
         }
 
         [Theory]
         [MemberData(nameof(ServerEndpointTestData))]
-        public void TestServerEndpoint(string connectionString, string expectedServerEndpoint)
+        public void TestServerEndpoint(string connectionString, string expectedServerEndpoint, int? expectedPort)
         {
             var r = ConnectionStringParser.Parse(connectionString);
             Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
             var expectedUri = expectedServerEndpoint == null ? null : new Uri(expectedServerEndpoint);
             Assert.Equal(expectedUri, r.ServerEndpoint);
+            Assert.Equal(expectedPort, r.ServerEndpoint?.Port);
         }
 
         [Theory]
@@ -170,11 +172,11 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         {
             public IEnumerator<object[]> GetEnumerator()
             {
-                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400", null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;clientEndpoint={ClientEndpoint}", ClientEndpoint };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;clientEndpoint={ClientEndpoint}:500", $"{ClientEndpoint}:500" };
+                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;clientEndpoint={ClientEndpoint}", ClientEndpoint, 80 };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;clientEndpoint={ClientEndpoint}:500", $"{ClientEndpoint}:500", 500 };
             }
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -184,11 +186,11 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         {
             get
             {
-                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400", null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;serverEndpoint={ServerEndpoint}", ServerEndpoint };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;serverEndpoint={ServerEndpoint}:500", $"{ServerEndpoint}:500" };
+                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;serverEndpoint={ServerEndpoint}", ServerEndpoint, 80 };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;serverEndpoint={ServerEndpoint}:500", $"{ServerEndpoint}:500", 500 };
             }
         }
     }
