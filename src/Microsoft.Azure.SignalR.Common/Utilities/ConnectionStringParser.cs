@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR
             }
             endpoint = endpoint.TrimEnd('/');
 
-            if (!ValidateEndpoint(endpoint, out var endpointUri))
+            if (!TryGetEndpointUri(endpoint, out var endpointUri))
             {
                 throw new ArgumentException($"Endpoint property in connection string is not a valid URI: {dict[EndpointProperty]}.");
             }
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.SignalR
             // parse and validate clientEndpoint.
             if (dict.TryGetValue(ClientEndpointProperty, out var clientEndpoint))
             {
-                if (!ValidateEndpoint(clientEndpoint, out _))
+                if (!TryGetEndpointUri(clientEndpoint, out _))
                 {
                     throw new ArgumentException($"{ClientEndpointProperty} property in connection string is not a valid URI: {clientEndpoint}.");
                 }
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.SignalR
 
             if (dict.TryGetValue(ServerEndpoint, out var serverEndpoint))
             {
-                if (!ValidateEndpoint(serverEndpoint, out _))
+                if (!TryGetEndpointUri(serverEndpoint, out _))
                 {
                     throw new ArgumentException($"{ServerEndpoint} property in connection string is not a valid URI: {serverEndpoint}.");
                 }
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.SignalR
             };
         }
 
-        internal static bool ValidateEndpoint(string endpoint, out Uri uriResult)
+        internal static bool TryGetEndpointUri(string endpoint, out Uri uriResult)
         {
             return Uri.TryCreate(endpoint, UriKind.Absolute, out uriResult) &&
                    (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);

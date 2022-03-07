@@ -17,7 +17,7 @@ namespace Microsoft.Azure.SignalR
 
         public EndpointType EndpointType { get; } = EndpointType.Primary;
 
-        public virtual string Name { get; } = "";
+        public virtual string Name { get; internal set; } = "";
 
         /// <summary>
         /// Gets or initializes the custom endpoint for SignalR server to connect to SignalR service.
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR
 
         internal string Version { get; }
 
-        internal AccessKey AccessKey { get; }
+        internal AccessKey AccessKey { get; set; }
 
         /// <summary>
         /// Connection string constructor with nameWithEndpointType
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.SignalR
                 ClientEndpoint = other.ClientEndpoint;
                 ServerEndpoint = other.ServerEndpoint;
                 AudienceBaseUrl = other.AudienceBaseUrl;
-                _serviceEndpoint = new Uri(other.Endpoint);
+                _serviceEndpoint = other._serviceEndpoint;
             }
         }
 
