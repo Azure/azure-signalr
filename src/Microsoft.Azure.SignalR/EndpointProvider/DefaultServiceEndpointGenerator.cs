@@ -21,8 +21,8 @@ namespace Microsoft.Azure.SignalR
         {
             Version = endpoint.Version;
             AudienceBaseUrl = endpoint.AudienceBaseUrl;
-            ClientEndpoint = endpoint.ClientEndpoint;
-            ServerEndpoint = endpoint.Endpoint;
+            ClientEndpoint = endpoint.ClientEndpoint.AbsoluteUri;
+            ServerEndpoint = endpoint.ServerEndpoint.AbsoluteUri;
         }
 
         public string GetClientAudience(string hubName, string applicationName) =>
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.SignalR
 
         private string InternalGetUri(string path, string hubName, string applicationName, string target)
         {
-            return $"{target}/{path}/?hub={GetPrefixedHubName(applicationName, hubName)}";
+            return $"{target}{path}/?hub={GetPrefixedHubName(applicationName, hubName)}";
         }
     }
 }

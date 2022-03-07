@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR
             var credentials = new JwtTokenCredentials(endpoint.AccessKey, _serverName);
             var restClient = new SignalRServiceRestClient(_userAgent, credentials, httpClient, true)
             {
-                BaseUri = new Uri(endpoint.Endpoint)
+                BaseUri = endpoint.ServerEndpoint
             };
             return restClient;
         }

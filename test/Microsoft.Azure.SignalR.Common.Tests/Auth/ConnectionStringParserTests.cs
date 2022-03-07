@@ -20,6 +20,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 
         private const string ClientEndpoint = "http://bbb";
 
+        private const string ServerEndpoint = "http://ccc";
+
         private const string DefaultKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
         [Theory]
@@ -90,11 +92,24 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 
         [Theory]
         [ClassData(typeof(ClientEndpointTestData))]
-        public void TestClientEndpoint(string connectionString, string expectedClientEndpoint)
+        public void TestClientEndpoint(string connectionString, string expectedClientEndpoint, int? expectedPort)
         {
             var r = ConnectionStringParser.Parse(connectionString);
             Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
-            Assert.Equal(expectedClientEndpoint, r.ClientEndpoint);
+            var expectedUri = expectedClientEndpoint == null ? null : new Uri(expectedClientEndpoint);
+            Assert.Equal(expectedUri, r.ClientEndpoint);
+            Assert.Equal(expectedPort, r.ClientEndpoint?.Port);
+        }
+
+        [Theory]
+        [MemberData(nameof(ServerEndpointTestData))]
+        public void TestServerEndpoint(string connectionString, string expectedServerEndpoint, int? expectedPort)
+        {
+            var r = ConnectionStringParser.Parse(connectionString);
+            Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
+            var expectedUri = expectedServerEndpoint == null ? null : new Uri(expectedServerEndpoint);
+            Assert.Equal(expectedUri, r.ServerEndpoint);
+            Assert.Equal(expectedPort, r.ServerEndpoint?.Port);
         }
 
         [Theory]
@@ -128,43 +143,55 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             Assert.Null(r.ClientEndpoint);
         }
 
-        public class EndpointEndWithSlash: IEnumerable<object[]>
+        public class EndpointEndWithSlash : IEnumerable<object[]>
         {
             public IEnumerator<object[]> GetEnumerator()
             {
-                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", HttpEndpoint};
-                yield return new object[] { $"endpoint={HttpEndpoint}/;accesskey={DefaultKey}", HttpEndpoint};
-                yield return new object[] { $"endpoint={HttpsEndpoint};accesskey={DefaultKey}", HttpsEndpoint};
-                yield return new object[] { $"endpoint={HttpsEndpoint}/;accesskey={DefaultKey}", HttpsEndpoint};
+                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", HttpEndpoint };
+                yield return new object[] { $"endpoint={HttpEndpoint}/;accesskey={DefaultKey}", HttpEndpoint };
+                yield return new object[] { $"endpoint={HttpsEndpoint};accesskey={DefaultKey}", HttpsEndpoint };
+                yield return new object[] { $"endpoint={HttpsEndpoint}/;accesskey={DefaultKey}", HttpsEndpoint };
             }
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        public class VersionTestData: IEnumerable<object[]>
-        {
-            public IEnumerator<object[]> GetEnumerator()
-            {
-                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", null};
-                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey};version=1.0", "1.0"};
-                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey};version=1.1-preview", "1.1-preview"};
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        }
-
-        public class ClientEndpointTestData: IEnumerable<object[]>
+        public class VersionTestData : IEnumerable<object[]>
         {
             public IEnumerator<object[]> GetEnumerator()
             {
                 yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400", null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;clientEndpoint={ClientEndpoint}", ClientEndpoint };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;clientEndpoint={ClientEndpoint}:500", $"{ClientEndpoint}:500" };
+                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey};version=1.0", "1.0" };
+                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey};version=1.1-preview", "1.1-preview" };
             }
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        public class ClientEndpointTestData : IEnumerable<object[]>
+        {
+            public IEnumerator<object[]> GetEnumerator()
+            {
+                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;clientEndpoint={ClientEndpoint}", ClientEndpoint, 80 };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;clientEndpoint={ClientEndpoint}:500", $"{ClientEndpoint}:500", 500 };
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        public static IEnumerable<object[]> ServerEndpointTestData
+        {
+            get
+            {
+                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;serverEndpoint={ServerEndpoint}", ServerEndpoint, 80 };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;serverEndpoint={ServerEndpoint}:500", $"{ServerEndpoint}:500", 500 };
+            }
         }
     }
 }
