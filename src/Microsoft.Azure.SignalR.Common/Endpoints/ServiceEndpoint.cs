@@ -61,7 +61,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Enriched endpoint metrics for customized routing.
         /// </summary>
-        public EndpointMetrics EndpointMetrics { get; } = new EndpointMetrics();
+        public EndpointMetrics EndpointMetrics { get; internal set; } = new EndpointMetrics();
 
         public string Endpoint { get; }
 
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR
 
         internal string Version { get; }
 
-        internal AccessKey AccessKey { get; set; }
+        internal AccessKey AccessKey { get; private set; }
 
         /// <summary>
         /// Connection string constructor with nameWithEndpointType
