@@ -30,8 +30,8 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var endpoint = new ServiceEndpoint(connectionString);
             Assert.Equal(expectedAudience, endpoint.AudienceBaseUrl);
             Assert.Equal(expectedEndpoint, endpoint.Endpoint);
-            Assert.Equal(expectedEndpoint, endpoint.Endpoint);
-            Assert.Equal(expectedEndpoint, endpoint.ClientEndpoint);
+            Assert.Equal(new Uri(expectedEndpoint), endpoint.ClientEndpoint);
+            Assert.Equal(new Uri(expectedEndpoint), endpoint.ServerEndpoint);
         }
 
         [Theory]
@@ -39,7 +39,15 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         public void TestClientEndpoint(string connectionString, string expectedClientEndpoint)
         {
             var endpoint = new ServiceEndpoint(connectionString);
-            Assert.Equal(expectedClientEndpoint, endpoint.ClientEndpoint);
+            Assert.Equal(new Uri(expectedClientEndpoint), endpoint.ClientEndpoint);
+        }
+
+        [Theory]
+        [MemberData(nameof(ServerEndpointTestData))]
+        public void TestServerEndpoint(string connectionString, string expectedServerEndpoint)
+        {
+            var endpoint = new ServiceEndpoint(connectionString);
+            Assert.Equal(new Uri(expectedServerEndpoint), endpoint.ServerEndpoint);
         }
 
         [Theory]
@@ -47,8 +55,55 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         public void TestEndpointEndWithSlash(string connectionString, string expectedEndpoint)
         {
             var endpoint = new ServiceEndpoint(connectionString);
-            Assert.Equal(expectedEndpoint, endpoint.Endpoint);
+            Assert.Equal(new Uri(expectedEndpoint), new Uri(endpoint.Endpoint));
         }
+
+        [Fact]
+        public void TestCustomizeEndpointInConstructor()
+        {
+            var clientEndpoint = new Uri("https://clientEndpoint/path");
+            var serverEndpoint = new Uri("http://serverEndpoint:123/path");
+            var endpoint = "https://test.service.signalr.net";
+            var serviceEndpoints = new ServiceEndpoint[]{
+    new ServiceEndpoint(new Uri(endpoint), new DefaultAzureCredential())
+    {
+        ClientEndpoint = clientEndpoint,
+        ServerEndpoint = serverEndpoint
+    },
+                new ServiceEndpoint($"Endpoint={endpoint};AccessKey={DefaultKey}")
+                {
+                    ClientEndpoint = clientEndpoint,
+                    ServerEndpoint = serverEndpoint
+                }
+            };
+            foreach (var serviceEndpoint in serviceEndpoints)
+            {
+                Assert.Equal(endpoint, serviceEndpoint.Endpoint);
+                Assert.Equal(clientEndpoint, serviceEndpoint.ClientEndpoint);
+                Assert.Equal(serverEndpoint, serviceEndpoint.ServerEndpoint);
+            }
+        }
+
+        [Fact]
+        public void TestCreateServiceEndpointFromAnother()
+        {
+            var serviceEndpoint = new ServiceEndpoint($"Endpoint=http://abc.service.signalr.net;AccessKey={DefaultKey}", EndpointType.Secondary, "name1")
+            {
+                ClientEndpoint = new Uri("https://clientEndpoint/path"),
+                ServerEndpoint = new Uri("http://serverEndpoint:123/path")
+            };
+            var cloned = new ServiceEndpoint(serviceEndpoint);
+            Assert.Equal(serviceEndpoint.Endpoint, cloned.Endpoint);
+            Assert.Equal(serviceEndpoint.ServerEndpoint, cloned.ServerEndpoint);
+            Assert.Equal(serviceEndpoint.ClientEndpoint, cloned.ClientEndpoint);
+            Assert.Equal(serviceEndpoint.EndpointType, cloned.EndpointType);
+            Assert.Equal(serviceEndpoint.Name, cloned.Name);
+            Assert.Equal(serviceEndpoint.ConnectionString, cloned.ConnectionString);
+            Assert.Equal(serviceEndpoint.AudienceBaseUrl, cloned.AudienceBaseUrl);
+            Assert.Equal(serviceEndpoint.Version, cloned.Version);
+            Assert.Equal(serviceEndpoint.AccessKey, cloned.AccessKey);
+        }
+
 
         [Theory]
         [InlineData("http://localhost", "http://localhost", 80)]
@@ -219,14 +274,14 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        public class EndpointEndWithSlash: IEnumerable<object[]>
+        public class EndpointEndWithSlash : IEnumerable<object[]>
         {
             public IEnumerator<object[]> GetEnumerator()
             {
-                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", HttpEndpoint};
-                yield return new object[] { $"endpoint={HttpEndpoint}/;accesskey={DefaultKey}", HttpEndpoint};
-                yield return new object[] { $"endpoint={HttpsEndpoint};accesskey={DefaultKey}", HttpsEndpoint};
-                yield return new object[] { $"endpoint={HttpsEndpoint}/;accesskey={DefaultKey}", HttpsEndpoint};
+                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", HttpEndpoint };
+                yield return new object[] { $"endpoint={HttpEndpoint}/;accesskey={DefaultKey}", HttpEndpoint };
+                yield return new object[] { $"endpoint={HttpsEndpoint};accesskey={DefaultKey}", HttpsEndpoint };
+                yield return new object[] { $"endpoint={HttpsEndpoint}/;accesskey={DefaultKey}", HttpsEndpoint };
             }
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -237,22 +292,22 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             public IEnumerator<object[]> GetEnumerator()
             {
                 // http
-                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", HttpEndpoint, HttpEndpoint};
-                yield return new object[] { $"endpoint={HttpEndpoint}:80;accesskey={DefaultKey}", HttpEndpoint, HttpEndpoint};
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", HttpEndpoint, HttpEndpoint + ":500"};
+                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", HttpEndpoint + "/", HttpEndpoint };
+                yield return new object[] { $"endpoint={HttpEndpoint}:80;accesskey={DefaultKey}", HttpEndpoint + "/", HttpEndpoint };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", HttpEndpoint + "/", HttpEndpoint + ":500" };
                 // https
-                yield return new object[] { $"endpoint={HttpsEndpoint};accesskey={DefaultKey}", HttpsEndpoint, HttpsEndpoint};
-                yield return new object[] { $"endpoint={HttpsEndpoint}:443;accesskey={DefaultKey}", HttpsEndpoint, HttpsEndpoint};
-                yield return new object[] { $"endpoint={HttpsEndpoint}:500;accesskey={DefaultKey}", HttpsEndpoint, HttpsEndpoint + ":500"};
+                yield return new object[] { $"endpoint={HttpsEndpoint};accesskey={DefaultKey}", HttpsEndpoint + "/", HttpsEndpoint };
+                yield return new object[] { $"endpoint={HttpsEndpoint}:443;accesskey={DefaultKey}", HttpsEndpoint + "/", HttpsEndpoint };
+                yield return new object[] { $"endpoint={HttpsEndpoint}:500;accesskey={DefaultKey}", HttpsEndpoint + "/", HttpsEndpoint + ":500" };
                 // uppercase endpoint
-                yield return new object[] { $"endpoint={HttpEndpoint.ToUpper()};accesskey={DefaultKey}", HttpEndpoint, HttpEndpoint};
-                yield return new object[] { $"endpoint={HttpsEndpoint.ToUpper()};accesskey={DefaultKey}", HttpsEndpoint, HttpsEndpoint};
+                yield return new object[] { $"endpoint={HttpEndpoint.ToUpper()};accesskey={DefaultKey}", HttpEndpoint + "/", HttpEndpoint };
+                yield return new object[] { $"endpoint={HttpsEndpoint.ToUpper()};accesskey={DefaultKey}", HttpsEndpoint + "/", HttpsEndpoint };
                 // port override
-                yield return new object[] { $"endpoint={HttpsEndpoint};accesskey={DefaultKey};port=500", HttpsEndpoint, HttpsEndpoint + ":500"};
-                yield return new object[] { $"endpoint={HttpsEndpoint}:500;accesskey={DefaultKey};port=443", HttpsEndpoint, HttpsEndpoint};
+                yield return new object[] { $"endpoint={HttpsEndpoint};accesskey={DefaultKey};port=500", HttpsEndpoint + "/", HttpsEndpoint + ":500" };
+                yield return new object[] { $"endpoint={HttpsEndpoint}:500;accesskey={DefaultKey};port=443", HttpsEndpoint + "/", HttpsEndpoint };
                 // uppercase property name
-                yield return new object[] { $"ENDPOINT={HttpEndpoint};ACCESSKEY={DefaultKey}", HttpEndpoint, HttpEndpoint};
-                yield return new object[] { $"ENDPOINT={HttpsEndpoint}:500;ACCESSKEY={DefaultKey};PORT=443", HttpsEndpoint, HttpsEndpoint};
+                yield return new object[] { $"ENDPOINT={HttpEndpoint};ACCESSKEY={DefaultKey}", HttpEndpoint + "/", HttpEndpoint };
+                yield return new object[] { $"ENDPOINT={HttpsEndpoint}:500;ACCESSKEY={DefaultKey};PORT=443", HttpsEndpoint + "/", HttpsEndpoint };
             }
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -264,11 +319,23 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             {
                 yield return new object[] { $"endpoint={HttpEndpoint};authType=aad;clientEndpoint={HttpClientEndpoint}", HttpClientEndpoint };
                 yield return new object[] { $"endpoint={HttpEndpoint};authType=aad;clientEndpoint={HttpClientEndpoint}:80", HttpClientEndpoint + ":80" };
-                yield return new object[] { $"endpoint={HttpEndpoint};authType=aad;clientEndpoint={HttpsClientEndpoint}", HttpsClientEndpoint };
-                yield return new object[] { $"endpoint={HttpEndpoint};authType=aad;clientEndpoint={HttpsClientEndpoint}:443", HttpsClientEndpoint + ":443" };
+                yield return new object[] { $"endpoint={HttpsEndpoint};authType=aad;clientEndpoint={HttpsClientEndpoint}", HttpsClientEndpoint };
+                yield return new object[] { $"endpoint={HttpsEndpoint};authType=aad;clientEndpoint={HttpsClientEndpoint}:443", HttpsClientEndpoint + ":443" };
             }
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        public static IEnumerable<object[]> ServerEndpointTestData
+        {
+            get
+            {
+                yield return new object[] { $"endpoint={HttpEndpoint};authType=aad;serverEndpoint={HttpClientEndpoint}", HttpClientEndpoint };
+                yield return new object[] { $"endpoint={HttpEndpoint};authType=aad;serverEndpoint={HttpClientEndpoint}:80", HttpClientEndpoint + ":80" };
+                yield return new object[] { $"endpoint={HttpEndpoint};authType=aad;serverEndpoint={HttpClientEndpoint}:80/abc", HttpClientEndpoint + ":80/abc" };
+                yield return new object[] { $"endpoint={HttpsEndpoint};authType=aad;serverEndpoint={HttpsClientEndpoint}", HttpsClientEndpoint };
+                yield return new object[] { $"endpoint={HttpsEndpoint};authType=aad;serverEndpoint={HttpsClientEndpoint}:443", HttpsClientEndpoint + ":443" };
+            }
         }
     }
 }

@@ -17,6 +17,7 @@ namespace Microsoft.Azure.SignalR
         private const string ClientIdProperty = "clientId";
         private const string ClientSecretProperty = "clientSecret";
         private const string EndpointProperty = "endpoint";
+        private const string ServerEndpoint = "ServerEndpoint";
         private const string InvalidVersionValueFormat = "Version {0} is not supported.";
         private const string PortProperty = "port";
         // For SDK 1.x, only support Azure SignalR Service 1.x
@@ -70,11 +71,11 @@ namespace Microsoft.Azure.SignalR
             }
             endpoint = endpoint.TrimEnd('/');
 
-            if (!ValidateEndpoint(endpoint))
+            if (!TryGetEndpointUri(endpoint, out var endpointUri))
             {
                 throw new ArgumentException($"Endpoint property in connection string is not a valid URI: {dict[EndpointProperty]}.");
             }
-            var builder = new UriBuilder(endpoint);
+            var builder = new UriBuilder(endpointUri);
 
             // parse and validate version.
             string version = null;
@@ -100,10 +101,11 @@ namespace Microsoft.Azure.SignalR
                 }
             }
 
+            Uri clientEndpointUri = null;
             // parse and validate clientEndpoint.
             if (dict.TryGetValue(ClientEndpointProperty, out var clientEndpoint))
             {
-                if (!ValidateEndpoint(clientEndpoint))
+                if (!TryGetEndpointUri(clientEndpoint, out clientEndpointUri))
                 {
                     throw new ArgumentException($"{ClientEndpointProperty} property in connection string is not a valid URI: {clientEndpoint}.");
                 }
@@ -115,18 +117,28 @@ namespace Microsoft.Azure.SignalR
                 "aad" => BuildAadAccessKey(builder.Uri, dict),
                 _ => BuildAccessKey(builder.Uri, dict),
             };
+
+            Uri serverEndpointUri = null;
+            if (dict.TryGetValue(ServerEndpoint, out var serverEndpoint))
+            {
+                if (!TryGetEndpointUri(serverEndpoint, out serverEndpointUri))
+                {
+                    throw new ArgumentException($"{ServerEndpoint} property in connection string is not a valid URI: {serverEndpoint}.");
+                }
+            }
             return new ParsedConnectionString()
             {
                 Endpoint = builder.Uri,
-                ClientEndpoint = clientEndpoint,
+                ClientEndpoint = clientEndpointUri,
                 AccessKey = accessKey,
                 Version = version,
+                ServerEndpoint = serverEndpointUri
             };
         }
 
-        internal static bool ValidateEndpoint(string endpoint)
+        internal static bool TryGetEndpointUri(string endpoint, out Uri uriResult)
         {
-            return Uri.TryCreate(endpoint, UriKind.Absolute, out var uriResult) &&
+            return Uri.TryCreate(endpoint, UriKind.Absolute, out uriResult) &&
                    (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         }
 
