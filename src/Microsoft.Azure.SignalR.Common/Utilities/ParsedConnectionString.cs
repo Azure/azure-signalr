@@ -11,8 +11,11 @@ namespace Microsoft.Azure.SignalR
 
         internal Uri Endpoint { get; set; }
 
-        internal string ClientEndpoint { get; set; }
+        internal Uri ClientEndpoint { get; set; }
+
+        internal Uri ServerEndpoint { get; set; }
 
         internal string Version { get; set; }
+
     }
 }

@@ -9,12 +9,39 @@ namespace Microsoft.Azure.SignalR
 {
     public class ServiceEndpoint
     {
+        private readonly Uri _serviceEndpoint;
+        private readonly Uri _serverEndpoint;
+        private readonly Uri _clientEndpoint;
+
         public string ConnectionString { get; }
 
         public EndpointType EndpointType { get; } = EndpointType.Primary;
 
         public virtual string Name { get; internal set; } = "";
 
+        /// <summary>
+        /// Gets or initializes the custom endpoint for SignalR server to connect to SignalR service.
+        /// </summary>
+        public Uri ServerEndpoint
+        {
+            get => _serverEndpoint ?? _serviceEndpoint; init
+            {
+                CheckScheme(value);
+                _serverEndpoint = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or initializes the custom endpoint for SignalR clients to connect to SignalR service.
+        /// </summary>
+        public Uri ClientEndpoint
+        {
+            get => _clientEndpoint ?? _serviceEndpoint; init
+            {
+                CheckScheme(value);
+                _clientEndpoint = value;
+            }
+        }
         /// <summary>
         /// When current app server instance has server connections connected to the target endpoint for current hub, it can deliver messages to that endpoint.
         /// The endpoint is then considered as *Online*; otherwise, *Offline*.
@@ -40,8 +67,6 @@ namespace Microsoft.Azure.SignalR
 
         internal string AudienceBaseUrl { get; }
 
-        internal string ClientEndpoint { get; }
-
         internal string Version { get; }
 
         internal AccessKey AccessKey { get; private set; }
@@ -64,20 +89,22 @@ namespace Microsoft.Azure.SignalR
         /// <param name="name"></param>
         public ServiceEndpoint(string connectionString, EndpointType type = EndpointType.Primary, string name = "")
         {
-            ConnectionString = connectionString;
-
             if (string.IsNullOrWhiteSpace(connectionString))
             {
-                throw new ArgumentException($"'{nameof(connectionString)}' cannot be null or whitespace", nameof(connectionString));
+                throw new ArgumentException($"'{nameof(connectionString)}' cannot be null or whitespace.", nameof(connectionString));
             }
+            ConnectionString = connectionString;
 
             var result = ConnectionStringParser.Parse(connectionString);
             AccessKey = result.AccessKey;
-            AudienceBaseUrl = BuildAudienceBaseUrl(result.Endpoint);
-            Endpoint = BuildServerEndpoint(result.Endpoint);
-            ClientEndpoint = result.ClientEndpoint ?? Endpoint;
+            _serviceEndpoint = result.Endpoint;
+            ClientEndpoint = result.ClientEndpoint;
+            ServerEndpoint = result.ServerEndpoint;
             EndpointType = type;
             Name = name;
+
+            Endpoint = BuildEndpointString(_serviceEndpoint);
+            AudienceBaseUrl = BuildAudienceBaseUrlEndWithSlash(_serviceEndpoint);
         }
 
         /// <summary>
@@ -100,20 +127,18 @@ namespace Microsoft.Azure.SignalR
         /// <param name="name"></param>
         public ServiceEndpoint(Uri endpoint, TokenCredential credential, EndpointType endpointType = EndpointType.Primary, string name = "")
         {
-            if (endpoint == null)
+            _serviceEndpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
+            CheckScheme(endpoint);
+            if (credential is null)
             {
-                throw new ArgumentNullException(nameof(endpoint));
-            }
-            else if (endpoint.Scheme != Uri.UriSchemeHttp && endpoint.Scheme != Uri.UriSchemeHttps)
-            {
-                throw new ArgumentException("Endpoint scheme must be 'http://' or 'https://'");
+                throw new ArgumentNullException(nameof(credential));
             }
             AccessKey = new AadAccessKey(endpoint, credential);
-            AudienceBaseUrl = BuildAudienceBaseUrl(endpoint);
-            Endpoint = BuildServerEndpoint(endpoint);
-            ClientEndpoint ??= Endpoint;
+            EndpointType = endpointType;
+            Name = name;
 
-            (Name, EndpointType) = (name, endpointType);
+            AudienceBaseUrl = BuildAudienceBaseUrlEndWithSlash(_serviceEndpoint);
+            Endpoint = BuildEndpointString(_serviceEndpoint);
         }
 
         /// <summary>
@@ -131,7 +156,9 @@ namespace Microsoft.Azure.SignalR
                 AccessKey = other.AccessKey;
                 Endpoint = other.Endpoint;
                 ClientEndpoint = other.ClientEndpoint;
+                ServerEndpoint = other.ServerEndpoint;
                 AudienceBaseUrl = other.AudienceBaseUrl;
+                _serviceEndpoint = other._serviceEndpoint;
             }
         }
 
@@ -167,12 +194,12 @@ namespace Microsoft.Azure.SignalR
             return Endpoint == that.Endpoint && EndpointType == that.EndpointType && Name == that.Name;
         }
 
-        private static string BuildAudienceBaseUrl(Uri uri)
+        private static string BuildAudienceBaseUrlEndWithSlash(Uri uri)
         {
-            return $"{uri.Scheme}://{uri.Host}";
+            return $"{uri.Scheme}://{uri.Host}/";
         }
 
-        private static string BuildServerEndpoint(Uri uri)
+        private static string BuildEndpointString(Uri uri)
         {
             return new Uri($"{uri.Scheme}://{uri.Host}:{uri.Port}").AbsoluteUri.TrimEnd('/');
         }
@@ -196,6 +223,14 @@ namespace Microsoft.Azure.SignalR
             else
             {
                 return (nameWithEndpointType, EndpointType.Primary);
+            }
+        }
+
+        private static void CheckScheme(Uri uri)
+        {
+            if (uri != null && uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            {
+                throw new ArgumentException("Endpoint scheme must be 'http://' or 'https://'");
             }
         }
     }

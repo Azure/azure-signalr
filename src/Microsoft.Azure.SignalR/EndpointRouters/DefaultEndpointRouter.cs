@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Http;
@@ -19,8 +20,8 @@ namespace Microsoft.Azure.SignalR
         public ServiceEndpoint GetNegotiateEndpoint(HttpContext context, IEnumerable<ServiceEndpoint> endpoints)
         {
             // get primary endpoints snapshot
-            var availbaleEndpoints = GetNegotiateEndpoints(endpoints);
-            return availbaleEndpoints[StaticRandom.Next(availbaleEndpoints.Length)];
+            var availableEndpoints = GetNegotiateEndpoints(endpoints);
+            return GetEndpointAccordingToWeight(availableEndpoints);
         }
 
         /// <summary>
@@ -44,6 +45,43 @@ namespace Microsoft.Azure.SignalR
             }
 
             return secondary;
+        }
+
+        /// <summary>
+        ///  Choose endpoint randomly by weight. 
+        ///  The weight is defined as the remaining connection quota.
+        ///  The least weight is set to 1. So instance with no connection quota still has chance.
+        /// </summary>
+        private ServiceEndpoint GetEndpointAccordingToWeight(ServiceEndpoint[] availableEndpoints)
+        {
+            //first check if weight is available or necessary
+            if (availableEndpoints.Any(endpoint => endpoint.EndpointMetrics.ConnectionCapacity == 0) ||
+                availableEndpoints.Length == 1)
+            {
+                return GetEndpointRandomly(availableEndpoints);
+            }
+
+            var we = new int[availableEndpoints.Length];
+            var totalCapacity = 0;
+            for (var i = 0; i < availableEndpoints.Length; i++)
+            {
+                var endpointMetrics = availableEndpoints[i].EndpointMetrics;
+                var remain = endpointMetrics.ConnectionCapacity -
+                             (endpointMetrics.ClientConnectionCount +
+                              endpointMetrics.ServerConnectionCount);
+                var weight = remain > 0 ? remain : 1;
+                totalCapacity += weight;
+                we[i] = totalCapacity;
+            }
+
+            var index = StaticRandom.Next(totalCapacity);
+            
+            return availableEndpoints[Array.FindLastIndex(we, x => x <= index) + 1];
+        }
+
+        private static ServiceEndpoint GetEndpointRandomly(ServiceEndpoint[] availableEndpoints)
+        {
+            return availableEndpoints[StaticRandom.Next(availableEndpoints.Length)];
         }
     }
 }

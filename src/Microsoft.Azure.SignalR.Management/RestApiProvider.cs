@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Management
         public RestApiProvider(ServiceEndpoint endpoint)
         {
             _audienceBaseUrl = endpoint.AudienceBaseUrl;
-            _serverEndpoint = endpoint.Endpoint;
+            _serverEndpoint = endpoint.ServerEndpoint.AbsoluteUri;
             _restApiAccessTokenGenerator = new RestApiAccessTokenGenerator(endpoint.AccessKey);
         }
 
@@ -33,8 +33,8 @@ namespace Microsoft.Azure.SignalR.Management
 
         public async Task<RestApiEndpoint> GetServiceHealthEndpointAsync()
         {
-            var url = $"{_serverEndpoint}/api/{Version}/health";
-            var audience = $"{_audienceBaseUrl}/api/{Version}/health";
+            var url = $"{_serverEndpoint}api/{Version}/health";
+            var audience = $"{_audienceBaseUrl}api/{Version}/health";
             var token = await _restApiAccessTokenGenerator.Generate(audience);
             return new RestApiEndpoint(url, token);
         }
@@ -99,9 +99,9 @@ namespace Microsoft.Azure.SignalR.Management
 
         private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
         {
-            var requestPrefixWithHub = $"{_serverEndpoint}/api/{Version}/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
+            var requestPrefixWithHub = $"{_serverEndpoint}api/{Version}/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
             // todo: should be same with `requestPrefixWithHub`, need to confirm with emulator.
-            var audiencePrefixWithHub = $"{_audienceBaseUrl}/api/{Version}/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
+            var audiencePrefixWithHub = $"{_audienceBaseUrl}api/{Version}/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
             var token = await _restApiAccessTokenGenerator.Generate($"{audiencePrefixWithHub}{pathAfterHub}", lifetime);
             return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token) { Query = queries };
         }

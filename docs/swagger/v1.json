@@ -811,7 +811,7 @@
           {
             "name": "ttl",
             "in": "query",
-            "description": "Specifies the seconds that the user exists in the group. If not set, the user lives in the group forever.",
+            "description": "Specifies the seconds that the user exists in the group. If not set, the user lives in the group for at most 1 year.",
             "schema": {
               "type": "integer",
               "format": "int32"
