@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public string GroupName { get; set; }
 
-        public override ServiceMessage Clone => throw new System.NotImplementedException();
+        public override ServiceMessage Clone => new CheckGroupExistenceWithAckMessage(GroupName, AckId, TracingId);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CheckGroupExistenceWithAckMessage"/> class.
