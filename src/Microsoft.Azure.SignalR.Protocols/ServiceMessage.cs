@@ -100,7 +100,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     public interface IClonableServiceMessage
     {
         /// <summary>
-        /// Clone should make a shallow copy of everything that may get modified throughout the lifetime of the message
+        /// The purpose of Clone is to make a copy of everything that may get modified throughout the lifetime of the message
         /// </summary>
         ServiceMessage Clone { get; }
     }
