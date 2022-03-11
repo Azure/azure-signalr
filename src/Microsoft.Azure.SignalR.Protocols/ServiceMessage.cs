@@ -95,19 +95,19 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
-    /// Interface of ack-able message 
-    /// </summary>
-    public interface IAckableMessage
-    {
-        int AckId { get; set; }
-    }
-
-    /// <summary>
     /// Interface for subclasses of ServiceMessage that are able to create a clone of themselves
     /// </summary>
     public interface IClonableServiceMessage
     {
         ServiceMessage Clone { get; }
+    }
+
+    /// <summary>
+    /// Interface of ack-able message 
+    /// </summary>
+    public interface IAckableMessage : IClonableServiceMessage
+    {
+        int AckId { get; set; }
     }
 
     /// <summary>

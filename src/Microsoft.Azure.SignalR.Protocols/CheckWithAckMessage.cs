@@ -6,7 +6,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// Base class of check-with-ack messages between Azure SignalR Service and SDK.
     /// </summary>
-    public abstract class CheckWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IClonableServiceMessage, IMessageWithTracingId
+    public abstract class CheckWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
     {
         /// <summary>
         /// Gets or sets the ack id.

@@ -23,6 +23,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public string Reason { get; set; }
 
+        /// <summary>
+        /// Creates a copy of the message
+        /// </summary>
+        public abstract ServiceMessage Clone { get; }
+
         public CloseWithAckMessage(int ackId)
         {
             AckId = ackId;
@@ -50,6 +55,12 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public string ConnectionId { get; }
 
+        public override ServiceMessage Clone => new CloseConnectionWithAckMessage(ConnectionId, AckId) 
+        { 
+            TracingId = TracingId,
+            Reason = Reason
+        };
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CloseConnectionWithAckMessage"/> class.
         /// </summary>
@@ -66,6 +77,13 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// </summary>
     public class CloseConnectionsWithAckMessage : CloseMultiConnectionsWithAckMessage
     {
+        public override ServiceMessage Clone => new CloseConnectionsWithAckMessage(AckId)
+        {
+            TracingId = TracingId,
+            Reason = Reason,
+            ExcludedList = ExcludedList
+        };
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CloseConnectionsWithAckMessage"/> class.
         /// </summary>
@@ -82,6 +100,13 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the user Id.
         /// </summary>
         public string UserId { get; set; }
+
+        public override ServiceMessage Clone => new CloseUserConnectionsWithAckMessage(UserId, AckId)
+        {
+            TracingId = TracingId,
+            Reason = Reason,
+            ExcludedList = ExcludedList
+        };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CloseUserConnectionsWithAckMessage"/> class.
@@ -103,6 +128,13 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the group name.
         /// </summary>
         public string GroupName { get; set; }
+
+        public override ServiceMessage Clone => new CloseGroupConnectionsWithAckMessage(GroupName, AckId)
+        {
+            TracingId = TracingId,
+            Reason = Reason,
+            ExcludedList = ExcludedList
+        };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CloseGroupConnectionsWithAckMessage"/> class.
