@@ -103,6 +103,14 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
+    /// Interface for subclasses of ServiceMessage that are able to create a clone of themselves
+    /// </summary>
+    public interface IClonableServiceMessage
+    {
+        ServiceMessage Clone { get; }
+    }
+
+    /// <summary>
     /// An access key request message.
     /// </summary>
     public class AccessKeyRequestMessage : ExtensibleServiceMessage

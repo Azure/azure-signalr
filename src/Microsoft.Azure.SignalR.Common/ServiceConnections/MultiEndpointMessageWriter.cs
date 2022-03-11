@@ -35,6 +35,11 @@ namespace Microsoft.Azure.SignalR
 
         public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
+            if (serviceMessage is not IClonableServiceMessage clonableMessage)
+            {
+                throw new ArgumentException($"{nameof(serviceMessage)} is not {nameof(IClonableServiceMessage)}");
+            }
+
             // If we have multiple endpoints, we should wait to one of the following conditions hit
             // 1. One endpoint responses "OK" state
             // 2. All the endpoints response failed state including "NotFound", "Timeout" and waiting response to timeout
@@ -42,7 +47,7 @@ namespace Microsoft.Azure.SignalR
 
             var writeMessageTask = WriteMultiEndpointMessageAsync(serviceMessage, async connection =>
             {
-                var succeeded = await connection.WriteAckableMessageAsync(serviceMessage, cancellationToken);
+                var succeeded = await connection.WriteAckableMessageAsync(clonableMessage.Clone, cancellationToken);
                 if (succeeded)
                 {
                     tcs.TrySetResult(true);

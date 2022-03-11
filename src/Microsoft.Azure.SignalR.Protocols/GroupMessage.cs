@@ -147,7 +147,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A waiting for ack user-join-group message.
     /// </summary>
-    public class UserJoinGroupWithAckMessage : ExtensibleServiceMessage, IMessageWithTracingId, IHasTtl, IAckableMessage
+    public class UserJoinGroupWithAckMessage : ExtensibleServiceMessage, IMessageWithTracingId, IHasTtl, IAckableMessage, IClonableServiceMessage
     {
         /// <summary>
         /// Gets or sets the user Id.
@@ -174,6 +174,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public int AckId { get; set; }
 
+        public ServiceMessage Clone => new UserJoinGroupWithAckMessage(UserId, GroupName, AckId, Ttl, TracingId);
+
         /// <summary>
         /// Initializes a new instance of the <see cref="UserJoinGroupMessage"/> class.
         /// </summary>
@@ -195,7 +197,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A waiting for ack  user-leave-group message.
     /// </summary>
-    public class UserLeaveGroupWithAckMessage : ExtensibleServiceMessage, IMessageWithTracingId, IAckableMessage
+    public class UserLeaveGroupWithAckMessage : ExtensibleServiceMessage, IMessageWithTracingId, IAckableMessage, IClonableServiceMessage
     {
         /// <summary>
         /// Gets or sets the user Id.
@@ -217,6 +219,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public int AckId { get; set; }
 
+        public ServiceMessage Clone => new UserLeaveGroupWithAckMessage(UserId, GroupName, AckId, TracingId);
+
         /// <summary>
         /// Initializes a new instance of the <see cref="UserLeaveGroupMessage"/> class.
         /// </summary>
@@ -236,7 +240,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A waiting for ack join-group message.
     /// </summary>
-    public class JoinGroupWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
+    public class JoinGroupWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId, IClonableServiceMessage
     {
         /// <summary>
         /// Gets or sets the connection Id.
@@ -257,6 +261,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the tracing Id
         /// </summary>
         public ulong? TracingId { get; set; }
+
+        public ServiceMessage Clone => new JoinGroupWithAckMessage(ConnectionId, GroupName, AckId, TracingId);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinGroupWithAckMessage"/> class.
@@ -288,7 +294,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A waiting for ack leave-group message.
     /// </summary>
-    public class LeaveGroupWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId
+    public class LeaveGroupWithAckMessage : ExtensibleServiceMessage, IAckableMessage, IMessageWithTracingId, IClonableServiceMessage
     {
         /// <summary>
         /// Gets or sets the connection Id.
@@ -309,6 +315,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the tracing Id
         /// </summary>
         public ulong? TracingId { get; set; }
+
+        public ServiceMessage Clone => new LeaveGroupWithAckMessage(ConnectionId, GroupName, TracingId);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LeaveGroupWithAckMessage"/> class.
