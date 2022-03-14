@@ -40,8 +40,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public string GroupName { get; set; }
 
-        public override ServiceMessage Clone => new CheckUserInGroupWithAckMessage(UserId, GroupName, AckId, TracingId);
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CheckUserInGroupWithAckMessage"/> class.
         /// </summary>
@@ -66,8 +64,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public string GroupName { get; set; }
 
-        public override ServiceMessage Clone => new CheckGroupExistenceWithAckMessage(GroupName, AckId, TracingId);
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CheckGroupExistenceWithAckMessage"/> class.
         /// </summary>
@@ -90,8 +86,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public string ConnectionId { get; set; }
 
-        public override ServiceMessage Clone => new CheckConnectionExistenceWithAckMessage(ConnectionId, AckId, TracingId);
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CheckConnectionExistenceWithAckMessage"/> class.
         /// </summary>
@@ -113,8 +107,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the user Id.
         /// </summary>
         public string UserId { get; set; }
-
-        public override ServiceMessage Clone => new CheckUserExistenceWithAckMessage(UserId, AckId, TracingId);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CheckUserExistenceWithAckMessage"/> class.
