@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Clone should make a copy of everything that may get modified throughout the lifetime of the message
         /// The default implementation is a shallow copy as it fits the current needs.
         /// </summary>
-        public virtual ServiceMessage Clone { get => MemberwiseClone() as ServiceMessage; }
+        public virtual ServiceMessage Clone () => MemberwiseClone() as ServiceMessage;
     }
 
     /// <summary>
