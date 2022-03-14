@@ -18,11 +18,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public ulong? TracingId { get; set; }
 
-        /// <summary>
-        /// Makes a copy of the message
-        /// </summary>
-        public abstract ServiceMessage Clone { get; }
-
         protected CheckWithAckMessage(int ackId, ulong? tracingId)
         {
             AckId = ackId;

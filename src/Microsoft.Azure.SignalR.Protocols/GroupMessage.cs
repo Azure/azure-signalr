@@ -174,8 +174,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public int AckId { get; set; }
 
-        public ServiceMessage Clone => new UserJoinGroupWithAckMessage(UserId, GroupName, AckId, Ttl, TracingId);
-
         /// <summary>
         /// Initializes a new instance of the <see cref="UserJoinGroupMessage"/> class.
         /// </summary>
@@ -219,8 +217,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public int AckId { get; set; }
 
-        public ServiceMessage Clone => new UserLeaveGroupWithAckMessage(UserId, GroupName, AckId, TracingId);
-
         /// <summary>
         /// Initializes a new instance of the <see cref="UserLeaveGroupMessage"/> class.
         /// </summary>
@@ -261,8 +257,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the tracing Id
         /// </summary>
         public ulong? TracingId { get; set; }
-
-        public ServiceMessage Clone => new JoinGroupWithAckMessage(ConnectionId, GroupName, AckId, TracingId);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinGroupWithAckMessage"/> class.
@@ -315,8 +309,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the tracing Id
         /// </summary>
         public ulong? TracingId { get; set; }
-
-        public ServiceMessage Clone => new LeaveGroupWithAckMessage(ConnectionId, GroupName, TracingId);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LeaveGroupWithAckMessage"/> class.

@@ -23,11 +23,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public string Reason { get; set; }
 
-        /// <summary>
-        /// Creates a copy of the message
-        /// </summary>
-        public abstract ServiceMessage Clone { get; }
-
         public CloseWithAckMessage(int ackId)
         {
             AckId = ackId;

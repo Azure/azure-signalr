@@ -12,6 +12,11 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// </summary>
     public abstract class ServiceMessage
     {
+        /// <summary>
+        /// Clone should make a copy of everything that may get modified throughout the lifetime of the message
+        /// The default implementation is a shallow copy as it fits the current needs.
+        /// </summary>
+        public virtual ServiceMessage Clone { get => MemberwiseClone() as ServiceMessage; }
     }
 
     /// <summary>
@@ -99,10 +104,6 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// </summary>
     public interface IClonableServiceMessage
     {
-        /// <summary>
-        /// The purpose of Clone is to make a copy of everything that may get modified throughout the lifetime of the message
-        /// </summary>
-        ServiceMessage Clone { get; }
     }
 
     /// <summary>
