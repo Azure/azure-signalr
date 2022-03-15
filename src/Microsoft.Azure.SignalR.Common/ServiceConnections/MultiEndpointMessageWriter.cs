@@ -42,7 +42,7 @@ namespace Microsoft.Azure.SignalR
 
             var writeMessageTask = WriteMultiEndpointMessageAsync(serviceMessage, async connection =>
             {
-                var succeeded = await connection.WriteAckableMessageAsync(serviceMessage, cancellationToken);
+                var succeeded = await connection.WriteAckableMessageAsync(serviceMessage.Clone(), cancellationToken);
                 if (succeeded)
                 {
                     tcs.TrySetResult(true);
