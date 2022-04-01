@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Common
 {
@@ -20,5 +21,18 @@ namespace Microsoft.Azure.SignalR.Common
         {
 
         }
+    }
+
+    public class FailedWritingMessageToServiceException : ServiceConnectionNotActiveException
+    {
+        public FailedWritingMessageToServiceException(ServiceEndpoint endpoint, ServiceMessage message) : base($"Unable to reach endpoint: {endpoint}")
+        {
+            ServiceEndpoint = endpoint;
+            ServiceMessage = message;
+        }
+
+        public ServiceEndpoint ServiceEndpoint { get; }
+
+        public ServiceMessage ServiceMessage { get; }
     }
 }

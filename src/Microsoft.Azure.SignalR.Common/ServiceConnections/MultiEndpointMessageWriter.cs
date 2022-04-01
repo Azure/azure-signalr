@@ -54,9 +54,10 @@ namespace Microsoft.Azure.SignalR
 
         public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            // If we have multiple endpoints, we should wait to one of the following conditions hit
-            // 1. One endpoint responses "OK" state
-            // 2. All the endpoints response failed state including "NotFound", "Timeout" and waiting response to timeout
+            // If we have multiple endpoints, we should wait until all the endpoints returns
+            // connection join/leave/close/exists ackmessage
+            // userJoinGroup ackmessage
+            // user/group exists
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             var writeMessageTask = WriteMultiEndpointMessageAsync(serviceMessage, async connection =>
@@ -68,44 +69,61 @@ namespace Microsoft.Azure.SignalR
                 }
             });
 
-            // If tcs.Task completes, one Endpoint responses "OK" state.
+            // we always wait until all the endpoints respond or throw
             var task = await Task.WhenAny(tcs.Task, writeMessageTask);
 
-            // This will throw exceptions in tasks if exceptions exist
-            await task;
+            tcs.TrySetResult(false);
 
-            return tcs.Task.IsCompleted;
+            // This will throw exceptions in tasks if exceptions exist
+            await writeMessageTask;
+
+            return tcs.Task.Result;
         }
 
-        private Task WriteMultiEndpointMessageAsync(ServiceMessage serviceMessage, Func<IServiceConnectionContainer, Task> inner)
+        private async Task WriteMultiEndpointMessageAsync(ServiceMessage serviceMessage, Func<IServiceConnectionContainer, Task> inner)
         {
             if (TargetEndpoints.Length == 0)
             {
                 Log.NoEndpointRouted(_logger, serviceMessage.GetType().Name);
-                return Task.CompletedTask;
+                return;
             }
 
-            var routed = TargetEndpoints.Select(
-                async s =>
-                {
-                    try
-                    {
-                        Log.RouteMessageToServiceEndpoint(_logger, serviceMessage, s.ToString());
-                        await inner(s.ConnectionContainer);
-                    }
-                    catch (ServiceConnectionNotActiveException)
-                    {
-                        // log and don't stop other endpoints
-                        Log.FailedWritingMessageToEndpoint(_logger, serviceMessage.GetType().Name, (serviceMessage as IMessageWithTracingId)?.TracingId, s.ToString());
-                    }
-                }).ToArray();
-
-            if (routed.Length == 1)
+            if (TargetEndpoints.Length == 1)
             {
-                return routed[0];
+                await WriteSingleEndpointMessageAsync(TargetEndpoints[0], serviceMessage, inner);
+                return;
             }
 
-            return Task.WhenAll(routed);
+            var task = Task.WhenAll(TargetEndpoints.Select((endpoint) => WriteSingleEndpointMessageAsync(endpoint, serviceMessage, inner)));
+            try
+            {
+                await task;
+            }
+            catch
+            {
+                var exceptions = task.Exception.InnerExceptions;
+
+                // Default strategy: throw when all errors
+                if (exceptions.Count == TargetEndpoints.Length)
+                {
+                    throw task.Exception;
+                }
+            }
+        }
+
+        private async Task WriteSingleEndpointMessageAsync(HubServiceEndpoint endpoint, ServiceMessage serviceMessage, Func<IServiceConnectionContainer, Task> inner)
+        {
+            try
+            {
+                Log.RouteMessageToServiceEndpoint(_logger, serviceMessage, endpoint.ToString());
+                await inner(endpoint.ConnectionContainer);
+            }
+            catch (ServiceConnectionNotActiveException)
+            {
+                // log and don't stop other endpoints
+                Log.FailedWritingMessageToEndpoint(_logger, serviceMessage.GetType().Name, (serviceMessage as IMessageWithTracingId)?.TracingId, endpoint.ToString());
+                throw new FailedWritingMessageToServiceException(endpoint, serviceMessage);
+            }
         }
 
         public Task StartAsync() => Task.CompletedTask;
