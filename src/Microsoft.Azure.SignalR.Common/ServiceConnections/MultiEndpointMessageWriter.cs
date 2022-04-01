@@ -21,22 +21,23 @@ namespace Microsoft.Azure.SignalR
 
         internal HubServiceEndpoint[] TargetEndpoints { get; }
 
-        public MultiEndpointMessageWriter(IReadOnlyCollection<HubServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
+        public MultiEndpointMessageWriter(IReadOnlyCollection<ServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
         {
             _logger = loggerFactory.CreateLogger<MultiEndpointMessageWriter>();
             var normalized = new List<HubServiceEndpoint>();
             if (targetEndpoints != null)
             {
-                foreach (var endpoint in targetEndpoints)
+                foreach (var endpoint in targetEndpoints.Where(s => s != null))
                 {
+                    var hubEndpoint = endpoint as HubServiceEndpoint;
                     // it is possible that the endpoint is not a valid HubServiceEndpoint since it can be changed by the router
-                    if (endpoint == null || endpoint.ConnectionContainer == null)
+                    if (hubEndpoint == null || hubEndpoint.ConnectionContainer == null)
                     {
                         Log.EndpointNotExists(_logger, endpoint.ToString());
                     }
                     else
                     {
-                        normalized.Add(endpoint);
+                        normalized.Add(hubEndpoint);
                     }
                 }
             }
