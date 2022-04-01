@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR
         public void Start(ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
         {
             // Create connections to Azure SignalR
-            var serviceConnection = GetMultiEndpointServiceConnectionContainer(_hubName, connectionDelegate, contextConfig);
+            var serviceConnection = GetServiceConnectionContainer(_hubName, connectionDelegate, contextConfig);
 
             _serviceConnectionManager.SetServiceConnection(serviceConnection);
 
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.SignalR
             await _serviceConnectionManager.StopAsync();
         }
 
-        private IMultiEndpointServiceConnectionContainer GetMultiEndpointServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
+        private IServiceConnectionContainer GetServiceConnectionContainer(string hub, ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig = null)
         {
             var connectionFactory = new ConnectionFactory(_nameProvider, _loggerFactory);
 
