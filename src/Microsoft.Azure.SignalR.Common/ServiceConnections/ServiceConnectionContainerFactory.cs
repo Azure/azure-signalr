@@ -31,7 +31,7 @@ namespace Microsoft.Azure.SignalR
             _serviceScaleTimeout = serviceScaleTimeout;
         }
 
-        public IMultiEndpointServiceConnectionContainer Create(string hub)
+        public IServiceConnectionContainer Create(string hub)
         {
             return new MultiEndpointServiceConnectionContainer(_serviceConnectionFactory, hub, _options.ConnectionCount, _serviceEndpointManager, _router, _loggerFactory, _serviceScaleTimeout);
         }

@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class MultiEndpointServiceConnectionContainer : IMultiEndpointServiceConnectionContainer
+    internal class MultiEndpointServiceConnectionContainer : IServiceConnectionContainer
     {
         private readonly string _hubName;
         private readonly IMessageRouter _router;

@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR
     /// <summary>
     /// A service connection container which sends message to multiple service endpoints.
     /// </summary>
-    internal class MultiEndpointMessageWriter : IMultiEndpointServiceConnectionContainer
+    internal class MultiEndpointMessageWriter : IServiceConnectionContainer
     {
         private readonly ILogger _logger;
         internal IReadOnlyCollection<HubServiceEndpoint> TargetEndpoints { get; }

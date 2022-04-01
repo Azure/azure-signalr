@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR.Tests.Common
             _messages = output;
         }
 
-        public IMultiEndpointServiceConnectionContainer Create(string hub)
+        public IServiceConnectionContainer Create(string hub)
         {
             return new TestServiceConnectionContainer(hub,
                 m =>
