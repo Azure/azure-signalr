@@ -121,11 +121,14 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Azure active directory constructor
         /// </summary>
-        /// <param name="endpoint"></param>
-        /// <param name="credential"></param>
-        /// <param name="endpointType"></param>
-        /// <param name="name"></param>
-        public ServiceEndpoint(Uri endpoint, TokenCredential credential, EndpointType endpointType = EndpointType.Primary, string name = "")
+        /// <param name="endpoint">SignalR Service endpoint.</param>
+        /// <param name="credential">The Azure Active Directory credential.</param>
+        /// <param name="endpointType">The endpoint type.</param>
+        /// <param name="name">The endpoint name.</param>
+        /// <param name="serverEndpoint">The endpoint for servers to connect to Azure SignalR.</param>
+        /// <param name="clientEndpoint">The endpoint for clients to connect to Azure SignalR.</param>
+        public ServiceEndpoint(Uri endpoint, TokenCredential credential, EndpointType endpointType = EndpointType.Primary, string name = "",
+            Uri serverEndpoint = null, Uri clientEndpoint = null)
         {
             _serviceEndpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
             CheckScheme(endpoint);
@@ -139,6 +142,8 @@ namespace Microsoft.Azure.SignalR
 
             AudienceBaseUrl = BuildAudienceBaseUrlEndWithSlash(_serviceEndpoint);
             Endpoint = BuildEndpointString(_serviceEndpoint);
+            ServerEndpoint = serverEndpoint;
+            ClientEndpoint = clientEndpoint;
         }
 
         /// <summary>
