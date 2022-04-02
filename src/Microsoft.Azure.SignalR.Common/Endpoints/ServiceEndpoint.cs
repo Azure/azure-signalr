@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-
+using System.ComponentModel;
 using Azure.Core;
 
 namespace Microsoft.Azure.SignalR
@@ -76,6 +76,7 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         /// <param name="nameWithEndpointType"></param>
         /// <param name="connectionString"></param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public ServiceEndpoint(string nameWithEndpointType, string connectionString) : this(connectionString)
         {
             (Name, EndpointType) = Parse(nameWithEndpointType);
@@ -113,6 +114,7 @@ namespace Microsoft.Azure.SignalR
         /// <param name="nameWithEndpointType"></param>
         /// <param name="endpoint"></param>
         /// <param name="credential"></param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public ServiceEndpoint(string nameWithEndpointType, Uri endpoint, TokenCredential credential) : this(endpoint, credential)
         {
             (Name, EndpointType) = Parse(nameWithEndpointType);
