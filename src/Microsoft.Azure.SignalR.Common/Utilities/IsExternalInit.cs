@@ -1,8 +1,5 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
-#if NETSTANDARD2_0 || NETCOREAPP3_0
-
 using System.ComponentModel;
 
 namespace System.Runtime.CompilerServices
@@ -17,5 +14,3 @@ namespace System.Runtime.CompilerServices
     {
     }
 }
-
-#endif
