@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class MultiEndpointServiceConnectionContainer : IMultiEndpointServiceConnectionContainer
+    internal class MultiEndpointServiceConnectionContainer : IServiceConnectionContainer
     {
         private readonly string _hubName;
         private readonly IMessageRouter _router;
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.SignalR
 
         private MultiEndpointMessageWriter CreateMessageWriter(ServiceMessage serviceMessage)
             {
-                var targetEndpoints = GetRoutedEndpoints(serviceMessage)?.Select(e => e as HubServiceEndpoint).ToList();
+                var targetEndpoints = GetRoutedEndpoints(serviceMessage)?.ToList();
                 return new MultiEndpointMessageWriter(targetEndpoints, _loggerFactory);
             }
 

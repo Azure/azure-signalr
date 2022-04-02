@@ -15,18 +15,37 @@ namespace Microsoft.Azure.SignalR
     /// <summary>
     /// A service connection container which sends message to multiple service endpoints.
     /// </summary>
-    internal class MultiEndpointMessageWriter : IMultiEndpointServiceConnectionContainer
+    internal class MultiEndpointMessageWriter : IServiceConnectionContainer
     {
         private readonly ILogger _logger;
-        internal IReadOnlyCollection<HubServiceEndpoint> TargetEndpoints { get; }
 
-        public MultiEndpointMessageWriter(IReadOnlyCollection<HubServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
+        internal HubServiceEndpoint[] TargetEndpoints { get; }
+
+        public MultiEndpointMessageWriter(IReadOnlyCollection<ServiceEndpoint> targetEndpoints, ILoggerFactory loggerFactory)
         {
-            TargetEndpoints = targetEndpoints;
             _logger = loggerFactory.CreateLogger<MultiEndpointMessageWriter>();
+            var normalized = new List<HubServiceEndpoint>();
+            if (targetEndpoints != null)
+            {
+                foreach (var endpoint in targetEndpoints.Where(s => s != null))
+                {
+                    var hubEndpoint = endpoint as HubServiceEndpoint;
+                    // it is possible that the endpoint is not a valid HubServiceEndpoint since it can be changed by the router
+                    if (hubEndpoint == null || hubEndpoint.ConnectionContainer == null)
+                    {
+                        Log.EndpointNotExists(_logger, endpoint.ToString());
+                    }
+                    else
+                    {
+                        normalized.Add(hubEndpoint);
+                    }
+                }
+            }
+
+            TargetEndpoints = normalized.ToArray();
         }
 
-        public Task ConnectionInitializedTask => TargetEndpoints == null ? Task.CompletedTask : Task.WhenAll(TargetEndpoints.Select(e => e.ConnectionContainer.ConnectionInitializedTask));
+        public Task ConnectionInitializedTask => Task.WhenAll(TargetEndpoints.Select(e => e.ConnectionContainer.ConnectionInitializedTask));
 
         public Task WriteAsync(ServiceMessage serviceMessage)
         {
@@ -42,7 +61,7 @@ namespace Microsoft.Azure.SignalR
 
             var writeMessageTask = WriteMultiEndpointMessageAsync(serviceMessage, async connection =>
             {
-                var succeeded = await connection.WriteAckableMessageAsync(serviceMessage, cancellationToken);
+                var succeeded = await connection.WriteAckableMessageAsync(serviceMessage.Clone(), cancellationToken);
                 if (succeeded)
                 {
                     tcs.TrySetResult(true);
@@ -60,37 +79,26 @@ namespace Microsoft.Azure.SignalR
 
         private Task WriteMultiEndpointMessageAsync(ServiceMessage serviceMessage, Func<IServiceConnectionContainer, Task> inner)
         {
-            var routed = TargetEndpoints?
-                .Select(endpoint =>
-                {
-                    var connection = endpoint?.ConnectionContainer;
-                    if (connection == null)
-                    {
-                        Log.EndpointNotExists(_logger, endpoint.ToString());
-                    }
-                    return (e: endpoint, c: connection);
-                })
-                .Where(c => c.c != null)
-                .Select(async s =>
+            if (TargetEndpoints.Length == 0)
+            {
+                Log.NoEndpointRouted(_logger, serviceMessage.GetType().Name);
+                return Task.CompletedTask;
+            }
+
+            var routed = TargetEndpoints.Select(
+                async s =>
                 {
                     try
                     {
-                        Log.RouteMessageToServiceEndpoint(_logger, serviceMessage, s.e.ToString());
-                        await inner(s.c);
+                        Log.RouteMessageToServiceEndpoint(_logger, serviceMessage, s.ToString());
+                        await inner(s.ConnectionContainer);
                     }
                     catch (ServiceConnectionNotActiveException)
                     {
                         // log and don't stop other endpoints
-                        Log.FailedWritingMessageToEndpoint(_logger, serviceMessage.GetType().Name, (serviceMessage as IMessageWithTracingId)?.TracingId, s.e.ToString());
+                        Log.FailedWritingMessageToEndpoint(_logger, serviceMessage.GetType().Name, (serviceMessage as IMessageWithTracingId)?.TracingId, s.ToString());
                     }
                 }).ToArray();
-
-            if (routed == null || routed.Length == 0)
-            {
-                // check if the router returns any endpoint
-                Log.NoEndpointRouted(_logger, serviceMessage.GetType().Name);
-                return Task.CompletedTask;
-            }
 
             if (routed.Length == 1)
             {

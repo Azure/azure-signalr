@@ -9,7 +9,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR.Tests.Common
 {
-    internal sealed class TestServiceConnectionContainer : IServiceConnectionContainer, IServiceConnection, IMultiEndpointServiceConnectionContainer
+    internal sealed class TestServiceConnectionContainer : IServiceConnectionContainer, IServiceConnection
     {
         private readonly Action<(ServiceMessage, IServiceConnectionContainer)> _validator;
 
