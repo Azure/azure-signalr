@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -52,12 +53,55 @@ namespace Microsoft.Azure.SignalR
             return WriteMultiEndpointMessageAsync(serviceMessage, connection => connection.WriteAsync(serviceMessage));
         }
 
-        public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
+        public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            // If we have multiple endpoints, we should wait until all the endpoints returns
-            // connection join/leave/close/exists ackmessage
-            // userJoinGroup ackmessage
-            // user/group exists
+            if (serviceMessage is CheckConnectionExistenceWithAckMessage)
+            {
+                return WriteSingleResultAckableMessage(serviceMessage, cancellationToken);
+            }
+            else
+            {
+                return WriteMultiResultAckableMessage(serviceMessage, cancellationToken);
+            }
+        }
+
+        /// <summary>
+        /// For user or group related operations, different endpoints might return different results
+        /// Strategy:
+        /// Always wait until all endpoints return or throw
+        /// 1. When any endpoint returns true, return true
+        /// 2. When all endpoints return false, return false
+        /// 3. When any endpoint throws, throw
+        /// </summary>
+        /// <param name="serviceMessage"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        private async Task<bool> WriteMultiResultAckableMessage(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
+        {
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var dict = new ConcurrentBag<bool>();
+            await WriteMultiEndpointMessageAsync(serviceMessage, async connection =>
+            {
+                dict.Add(await connection.WriteAckableMessageAsync(serviceMessage.Clone(), cancellationToken));
+            });
+
+            return dict.All(i => i);
+        }
+
+        /// <summary>
+        /// For connection related operations, since connectionId is globally unique, only one endpoint can have the connection
+        /// Strategy:
+        /// Don't need to wait until all endpoints return or throw
+        /// 1. Whenever any endpoint returns true: return true
+        /// 2. When all endpoints return false, return false
+        /// 3. When any endpoint throws throw
+        /// </summary>
+        /// <param name="serviceMessage"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        private async Task<bool> WriteSingleResultAckableMessage(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
+        {
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             var writeMessageTask = WriteMultiEndpointMessageAsync(serviceMessage, async connection =>
@@ -69,9 +113,10 @@ namespace Microsoft.Azure.SignalR
                 }
             });
 
-            // we always wait until all the endpoints respond or throw
+            // we wait when tcs is set to true or all the tasks return
             var task = await Task.WhenAny(tcs.Task, writeMessageTask);
 
+            // tcs is either already set as true or should be false now
             tcs.TrySetResult(false);
 
             // This will throw exceptions in tasks if exceptions exist
@@ -101,13 +146,8 @@ namespace Microsoft.Azure.SignalR
             }
             catch
             {
-                var exceptions = task.Exception.InnerExceptions;
-
-                // Default strategy: throw when all errors
-                if (exceptions.Count == TargetEndpoints.Length)
-                {
-                    throw task.Exception;
-                }
+                // throw the aggregated exception instead
+                throw task.Exception;
             }
         }
 
