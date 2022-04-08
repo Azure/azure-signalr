@@ -119,10 +119,14 @@ namespace Microsoft.Azure.SignalR
             // tcs is either already set as true or should be false now
             tcs.TrySetResult(false);
 
+            if (tcs.Task.Result)
+            {
+                return true;
+            }
+
             // This will throw exceptions in tasks if exceptions exist
             await writeMessageTask;
-
-            return tcs.Task.Result;
+            return false;
         }
 
         private async Task WriteMultiEndpointMessageAsync(ServiceMessage serviceMessage, Func<IServiceConnectionContainer, Task> inner)
