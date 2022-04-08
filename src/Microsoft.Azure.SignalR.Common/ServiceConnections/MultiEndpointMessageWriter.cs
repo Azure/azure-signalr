@@ -162,7 +162,7 @@ namespace Microsoft.Azure.SignalR
             {
                 // log and don't stop other endpoints
                 Log.FailedWritingMessageToEndpoint(_logger, serviceMessage.GetType().Name, (serviceMessage as IMessageWithTracingId)?.TracingId, endpoint.ToString());
-                throw new FailedWritingMessageToServiceException(endpoint, serviceMessage);
+                throw new FailedWritingMessageToServiceException(endpoint.ServerEndpoint.AbsoluteUri);
             }
         }
 
