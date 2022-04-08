@@ -244,7 +244,7 @@ namespace Microsoft.Azure.SignalR
             {
                 MessageLog.StartToAddConnectionToGroup(Logger, message);
             }
-            return WriteAckableMessageAsync(message);
+            return WriteAckableMessageAsync(message, cancellationToken);
         }
 
         public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
@@ -264,14 +264,14 @@ namespace Microsoft.Azure.SignalR
             {
                 MessageLog.StartToRemoveConnectionFromGroup(Logger, message);
             }
-            return WriteAckableMessageAsync(message);
+            return WriteAckableMessageAsync(message, cancellationToken);
         }
 
         protected Task WriteAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId =>
             WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAsync(message));
 
-        protected Task<bool> WriteAckableMessageAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId =>
-            WriteAckableCoreAsync(message, m => ServiceConnectionContainer.WriteAckableMessageAsync(m));
+        protected Task<bool> WriteAckableMessageAsync<T>(T message, CancellationToken cancellation) where T : ServiceMessage, IMessageWithTracingId =>
+            WriteAckableCoreAsync(message, m => ServiceConnectionContainer.WriteAckableMessageAsync(m, cancellation));
 
         protected static bool IsInvalidArgument(string value)
         {

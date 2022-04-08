@@ -42,7 +42,7 @@ namespace Microsoft.Azure.SignalR.Management
                 // todo: generate ack id on ctor, so that we can log ack id
                 MessageLog.StartToAddUserToGroup(Logger, message);
             }
-            return WriteAckableMessageAsync(message);
+            return WriteAckableMessageAsync(message, cancellationToken);
         }
 
         public Task UserAddToGroupAsync(string userId, string groupName, TimeSpan ttl, CancellationToken cancellationToken = default)
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.SignalR.Management
                 // todo: generate ack id on ctor, so that we can log ack id
                 MessageLog.StartToAddUserToGroup(Logger, message);
             }
-            return WriteAsync(message);
+            return WriteAckableMessageAsync(message, cancellationToken);
         }
 
         public Task UserRemoveFromGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.SignalR.Management
                 // todo: generate ack id on ctor, so that we can log ack id
                 MessageLog.StartToRemoveUserFromGroup(Logger, message);
             }
-            return WriteAsync(message);
+            return WriteAckableMessageAsync(message, cancellationToken);
         }
 
         public Task UserRemoveFromAllGroupsAsync(string userId, CancellationToken cancellationToken = default)
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.SignalR.Management
                 // todo: generate ack id on ctor, so that we can log ack id
                 MessageLog.StartToRemoveUserFromGroup(Logger, message);
             }
-            return WriteAsync(message);
+            return WriteAckableMessageAsync(message, cancellationToken);
         }
 
         public Task<bool> IsUserInGroup(string userId, string groupName, CancellationToken cancellationToken = default)
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 MessageLog.StartToCheckIfUserInGroup(Logger, message);
             }
-            return WriteAckableMessageAsync(message);
+            return WriteAckableMessageAsync(message, cancellationToken);
         }
 
         public Task CloseConnectionAsync(string connectionId, string reason, CancellationToken cancellationToken)
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 MessageLog.StartToCheckIfConnectionExists(Logger, message);
             }
-            return WriteAckableMessageAsync(message);
+            return WriteAckableMessageAsync(message, cancellationToken);
         }
 
         public Task<bool> UserExistsAsync(string userId, CancellationToken cancellationToken = default)
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 MessageLog.StartToCheckIfUserExists(Logger, message);
             }
-            return WriteAckableMessageAsync(message);
+            return WriteAckableMessageAsync(message, cancellationToken);
         }
 
         public Task<bool> GroupExistsAsync(string groupName, CancellationToken cancellationToken = default)
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.SignalR.Management
             {
                 MessageLog.StartToCheckIfGroupExists(Logger, message);
             }
-            return WriteAckableMessageAsync(message);
+            return WriteAckableMessageAsync(message, cancellationToken);
         }
 
         protected override T AppendMessageTracingId<T>(T message)
