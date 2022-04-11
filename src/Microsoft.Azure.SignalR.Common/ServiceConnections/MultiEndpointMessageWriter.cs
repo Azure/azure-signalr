@@ -55,7 +55,9 @@ namespace Microsoft.Azure.SignalR
 
         public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            if (serviceMessage is CheckConnectionExistenceWithAckMessage)
+            if (serviceMessage is CheckConnectionExistenceWithAckMessage 
+                || serviceMessage is JoinGroupWithAckMessage 
+                || serviceMessage is LeaveGroupWithAckMessage)
             {
                 return WriteSingleResultAckableMessage(serviceMessage, cancellationToken);
             }
