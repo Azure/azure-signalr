@@ -26,9 +26,9 @@ namespace Microsoft.Azure.SignalR.Tests
     public class TestEndpointServiceConnectionContainerTests : VerifiableLoggedTest
     {
         private const string ConnectionStringFormatter = "Endpoint={0};AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
-        private const string Url1 = "http://url1/";
-        private const string Url2 = "https://url2/";
-        private const string Url3 = "http://url3/";
+        private const string Url1 = "http://url1.com/";
+        private const string Url2 = "https://url2.com/";
+        private const string Url3 = "http://url3.com/";
         private readonly string ConnectionString1 = string.Format(ConnectionStringFormatter, Url1);
         private readonly string ConnectionString2 = string.Format(ConnectionStringFormatter, Url2);
         private readonly string ConnectionString3 = string.Format(ConnectionStringFormatter, Url3);

@@ -173,7 +173,9 @@ namespace Microsoft.Azure.SignalR
         public override string ToString()
         {
             var prefix = string.IsNullOrEmpty(Name) ? "" : $"[{Name}]";
-            return $"{prefix}({EndpointType}){Endpoint}";
+            var suffix = ClientEndpoint != _serviceEndpoint ? $";ClientEndpoint={ClientEndpoint}" : "";
+            suffix = ServerEndpoint != _serviceEndpoint ? $"{suffix};ServerEndpoint={ServerEndpoint}" : suffix;
+            return $"{prefix}({EndpointType}){Endpoint}{suffix}";
         }
 
         public override int GetHashCode()
