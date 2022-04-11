@@ -150,10 +150,10 @@ namespace Microsoft.Azure.SignalR
             {
                 await task;
             }
-            catch
+            catch (Exception ex)
             {
                 // throw the aggregated exception instead
-                throw task.Exception;
+                throw task.Exception ?? ex;
             }
         }
 

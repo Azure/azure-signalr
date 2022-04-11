@@ -33,6 +33,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private readonly string ConnectionString2 = string.Format(ConnectionStringFormatter, Url2);
         private readonly string ConnectionString3 = string.Format(ConnectionStringFormatter, Url3);
         private static readonly JoinGroupWithAckMessage DefaultGroupMessage = new JoinGroupWithAckMessage("a", "a", -1);
+        private static readonly UserJoinGroupWithAckMessage DefaultUserGroupMessage = new UserJoinGroupWithAckMessage("a", "a", -1);
 
         public TestEndpointServiceConnectionContainerTests(ITestOutputHelper output) : base(output)
         {
@@ -240,15 +241,10 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestContainerWithOneEndpointWithAllDisconnectedConnectionThrows()
         {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
             {
-                var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
-                Assert.Single(warns);
-                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointMessageWriter.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
-                return true;
-            }))
-            {
-                var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
+                var endpoint = new ServiceEndpoint(ConnectionString1);
+                var sem = new TestServiceEndpointManager(endpoint);
                 var router = new DefaultEndpointRouter();
 
                 var container = new TestMultiEndpointServiceConnectionContainer("hub",
@@ -266,7 +262,9 @@ namespace Microsoft.Azure.SignalR.Tests
                 _ = container.StartAsync();
                 await container.ConnectionInitializedTask.OrTimeout();
 
-                await container.WriteAsync(DefaultGroupMessage);
+                var exception = await Assert.ThrowsAsync<FailedWritingMessageToServiceException>(() => container.WriteAsync(DefaultGroupMessage));
+                Assert.Equal(endpoint.ServerEndpoint.AbsoluteUri, exception.EndpointUri);
+                Assert.Equal($"Unable to write message to endpoint: {endpoint.ServerEndpoint.AbsoluteUri}", exception.Message);
             }
         }
 
@@ -361,8 +359,9 @@ namespace Microsoft.Azure.SignalR.Tests
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
             {
                 var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
-                Assert.Equal(2, warns.Count);
-                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointMessageWriter.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
+
+                Assert.Single(warns);
+                Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
                 return true;
             }))
             {
@@ -395,8 +394,8 @@ namespace Microsoft.Azure.SignalR.Tests
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
             {
                 var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
-                Assert.Equal(2, warns.Count);
-                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointMessageWriter.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
+                Assert.Single(warns);
+                Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
                 return true;
             }))
             {
@@ -562,47 +561,15 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestTwoEndpointsWithAllNotFoundAck()
         {
-            var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1),
-                new ServiceEndpoint(ConnectionString2, name: "online"));
-
-            var router = new TestEndpointRouter();
             var writeTcs = new TaskCompletionSource<object>();
-            var containers = new Dictionary<ServiceEndpoint, TestServiceConnectionContainer>();
-            var container = new TestMultiEndpointServiceConnectionContainer("hub", e =>
-            {
-                if (string.IsNullOrEmpty(e.Name))
-                {
-                    return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    }, e);
-                }
-                return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                }, e);
-            }, sem, router, NullLoggerFactory.Instance);
-
-            // All the connections started
-            _ = container.StartAsync();
-            await container.ConnectionInitializedTask;
+            var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
+            await container.StartedAsync();
 
             var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
             await writeTcs.Task.OrTimeout();
-            foreach (var c in containers)
+            foreach (var c in container.GetTestOnlineContainers())
             {
-                c.Value.HandleAck(new AckMessage(1, (int)AckStatus.NotFound));
+                c.HandleAck(new AckMessage(1, (int)AckStatus.NotFound));
             }
             var result = await task.OrTimeout();
             Assert.False(result);
@@ -611,190 +578,211 @@ namespace Microsoft.Azure.SignalR.Tests
         [Fact]
         public async Task TestTwoEndpointsWithAllTimeoutAck()
         {
-            var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1),
-                new ServiceEndpoint(ConnectionString2, name: "online"));
-
-            var router = new TestEndpointRouter();
             var writeTcs = new TaskCompletionSource<object>();
-            var containers = new Dictionary<ServiceEndpoint, TestServiceConnectionContainer>();
-            var container = new TestMultiEndpointServiceConnectionContainer("hub", e =>
-            {
-                if (string.IsNullOrEmpty(e.Name))
-                {
-                    return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    }, e);
-                }
-                return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                }, e);
-            }, sem, router, NullLoggerFactory.Instance);
-
-            // All the connections started
-            _ = container.StartAsync();
-            await container.ConnectionInitializedTask;
+            var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
+            await container.StartedAsync();
 
             var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
             await writeTcs.Task.OrTimeout();
-            foreach (var c in containers)
+            foreach (var c in container.GetTestOnlineContainers())
             {
-                c.Value.HandleAck(new AckMessage(1, (int)AckStatus.Timeout));
+                c.HandleAck(new AckMessage(1, (int)AckStatus.Timeout));
             }
-            await Assert.ThrowsAnyAsync<TimeoutException>(async () => await task.OrTimeout());
+            var exception = await Assert.ThrowsAnyAsync<AggregateException>(async () => await task.OrTimeout());
+            Assert.Equal(2, exception.InnerExceptions.Count);
+            Assert.All(exception.InnerExceptions, s => Assert.IsType<TimeoutException>(s));
         }
 
         [Fact]
         public async Task TestTwoEndpointsWithoutAck()
         {
-            var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1),
-                new ServiceEndpoint(ConnectionString2, name: "online"));
-
-            var router = new TestEndpointRouter();
             var writeTcs = new TaskCompletionSource<object>();
-            var containers = new Dictionary<ServiceEndpoint, TestServiceConnectionContainer>();
-            var container = new TestMultiEndpointServiceConnectionContainer("hub", e =>
-            {
-                if (string.IsNullOrEmpty(e.Name))
-                {
-                    return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    }, e, new AckHandler(100, 200));
-                }
-                return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                }, e, new AckHandler(100, 200));
-            }, sem, router, NullLoggerFactory.Instance);
-
-            // All the connections started
-            _ = container.StartAsync();
-            await container.ConnectionInitializedTask;
+            var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
+            await container.StartedAsync();
 
             var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
             await writeTcs.Task.OrTimeout();
-            foreach (var c in containers)
-            {
-                c.Value.HandleAck(new AckMessage(1, (int)AckStatus.Timeout));
-            }
-            await Assert.ThrowsAnyAsync<TimeoutException>(async () => await task).OrTimeout();
+           
+            var exception = await Assert.ThrowsAnyAsync<AggregateException>(async () => await task.OrTimeout());
+            Assert.Equal(2, exception.InnerExceptions.Count);
+            Assert.All(exception.InnerExceptions, s => Assert.IsType<TimeoutException>(s));
         }
 
-        [Fact]
-        public async Task TestTwoEndpointsWithOneSucceededAndOtherNotAcked()
+        [Theory]
+        [InlineData(typeof(JoinGroupWithAckMessage), "conn1", "group1", null)]
+        [InlineData(typeof(LeaveGroupWithAckMessage), "conn1", "group1", null)]
+        [InlineData(typeof(CheckConnectionExistenceWithAckMessage), "conn1", 0, null)]
+        public async Task TestEndpointsWithOneSucceededAndOtherNotAcked(Type messageType, params object[] arguments)
         {
-            var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1),
-                new ServiceEndpoint(ConnectionString2, name: "online"));
-
-            var router = new TestEndpointRouter();
             var writeTcs = new TaskCompletionSource<object>();
-            var containers = new Dictionary<ServiceEndpoint, TestServiceConnectionContainer>();
-            var container = new TestMultiEndpointServiceConnectionContainer("hub", e =>
-            {
-                if (string.IsNullOrEmpty(e.Name))
-                {
-                    return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    }, e, new AckHandler(100, 1000));
-                }
-                return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                }, e, new AckHandler(100, 1000));
-            }, sem, router, NullLoggerFactory.Instance);
+            var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
+            await container.StartedAsync();
 
-            // All the connections started
-            _ = container.StartAsync();
-            await container.ConnectionInitializedTask;
-
-            var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
+            // connection add should success
+            var message = Activator.CreateInstance(messageType, arguments) as ServiceMessage;
+            var task = container.WriteAckableMessageAsync(message);
             await writeTcs.Task.OrTimeout();
-            containers.First().Value.HandleAck(new AckMessage(1, (int)AckStatus.Ok));
+            container.GetTestOnlineContainers()[0].HandleAck(new AckMessage(1, (int)AckStatus.Ok));
             var result = await task.OrTimeout();
             Assert.True(result);
+        }
+
+        [Theory]
+        [InlineData(typeof(JoinGroupWithAckMessage), "conn1", "group1", null)]
+        [InlineData(typeof(LeaveGroupWithAckMessage), "conn1", "group1", null)]
+        [InlineData(typeof(CheckConnectionExistenceWithAckMessage), "conn1", 0, null)]
+        public async Task TestEndpointsWithOneSucceededAndOthersThrow(Type messageType, params object[] arguments)
+        {
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
+            await container.StartedAsync();
+
+            // connection add should success
+            var message = Activator.CreateInstance(messageType, arguments) as ServiceMessage;
+            var task = container.WriteAckableMessageAsync(message);
+            await writeTcs.Task.OrTimeout();
+            container.GetTestOnlineContainers()[0].HandleAck(new AckMessage(1, (int)AckStatus.Ok));
+            container.GetTestOnlineContainers()[1].HandleAck(new AckMessage(1, (int)AckStatus.Timeout));
+            container.GetTestOnlineContainers()[2].HandleAck(new AckMessage(1, (int)AckStatus.Timeout));
+            var result = await task.OrTimeout();
+            Assert.True(result);
+        }
+
+        [Theory]
+        [InlineData(typeof(JoinGroupWithAckMessage), "conn1", "group1", null)]
+        [InlineData(typeof(LeaveGroupWithAckMessage), "conn1", "group1", null)]
+        [InlineData(typeof(CheckConnectionExistenceWithAckMessage), "conn1", 0, null)]
+        public async Task TestEndpointsWithOneSucceededAndOthersNot(Type messageType, params object[] arguments)
+        {
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
+            await container.StartedAsync();
+
+            // connection add should success
+            var message = Activator.CreateInstance(messageType, arguments) as ServiceMessage;
+            var task = container.WriteAckableMessageAsync(message);
+            await writeTcs.Task.OrTimeout();
+            container.GetTestOnlineContainers()[0].HandleAck(new AckMessage(1, (int)AckStatus.Ok));
+            container.GetTestOnlineContainers()[1].HandleAck(new AckMessage(1, (int)AckStatus.NotFound));
+            container.GetTestOnlineContainers()[2].HandleAck(new AckMessage(1, (int)AckStatus.Timeout));
+            var result = await task.OrTimeout();
+            Assert.True(result);
+        }
+
+        [Theory]
+        [InlineData(typeof(UserJoinGroupWithAckMessage), "user1", "group1", 0, null, null)]
+        [InlineData(typeof(UserLeaveGroupWithAckMessage), "user1", "group1", 0, null)]
+        [InlineData(typeof(CheckUserExistenceWithAckMessage), "user1", 0, null)]
+        [InlineData(typeof(CheckGroupExistenceWithAckMessage), "group1", 0, null)]
+        [InlineData(typeof(CheckUserInGroupWithAckMessage), "user1", "group1", 0, null)]
+        public async Task TestEndpointsWithUserGroupOneSucceededAndOtherNot(Type messageType, params object[] arguments)
+        {
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
+
+            // All the connections started
+            await container.StartedAsync();
+
+            // user add should fail
+            var message = Activator.CreateInstance(messageType, arguments) as ServiceMessage;
+            var task = container.WriteAckableMessageAsync(message);
+            await writeTcs.Task.OrTimeout();
+            container.GetTestOnlineContainers()[0].HandleAck(new AckMessage(1, (int)AckStatus.Ok));
+            container.GetTestOnlineContainers()[1].HandleAck(new AckMessage(1, (int)AckStatus.Timeout));
+            container.GetTestOnlineContainers()[2].HandleAck(new AckMessage(1, (int)AckStatus.Ok));
+            var exception = await Assert.ThrowsAsync<AggregateException>(() => task.OrTimeout());
+            Assert.Single(exception.InnerExceptions);
+        }
+
+        [Theory]
+        [InlineData(typeof(UserJoinGroupWithAckMessage), "user1", "group1", 0, null, null)]
+        [InlineData(typeof(UserLeaveGroupWithAckMessage), "user1", "group1", 0, null)]
+        [InlineData(typeof(CheckUserExistenceWithAckMessage), "user1", 0, null)]
+        [InlineData(typeof(CheckGroupExistenceWithAckMessage), "group1", 0, null)]
+        [InlineData(typeof(CheckUserInGroupWithAckMessage), "user1", "group1", 0, null)]
+        public async Task TestEndpointsWithUserGroupOneSucceededOtherNotFound(Type messageType, params object[] arguments)
+        {
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
+
+            // All the connections started
+            await container.StartedAsync();
+
+            // user add should fail
+            var message = Activator.CreateInstance(messageType, arguments) as ServiceMessage;
+            var task = container.WriteAckableMessageAsync(message);
+            await writeTcs.Task.OrTimeout();
+            container.GetTestOnlineContainers()[0].HandleAck(new AckMessage(1, (int)AckStatus.Ok));
+            container.GetTestOnlineContainers()[1].HandleAck(new AckMessage(1, (int)AckStatus.NotFound));
+            container.GetTestOnlineContainers()[2].HandleAck(new AckMessage(1, (int)AckStatus.NotFound));
+            var result = await task.OrTimeout();
+            Assert.True(result);
+        }
+
+        [Theory]
+        [InlineData(typeof(UserJoinGroupWithAckMessage), "user1", "group1", 0, null, null)]
+        [InlineData(typeof(UserLeaveGroupWithAckMessage), "user1", "group1", 0, null)]
+        [InlineData(typeof(CheckUserExistenceWithAckMessage), "user1", 0, null)]
+        [InlineData(typeof(CheckGroupExistenceWithAckMessage), "group1", 0, null)]
+        [InlineData(typeof(CheckUserInGroupWithAckMessage), "user1", "group1", 0, null)]
+        public async Task TestEndpointsWithUserGroupAllSucceeded(Type messageType, params object[] arguments)
+        {
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
+
+            // All the connections started
+            await container.StartedAsync();
+
+            // user add should fail
+            var message = Activator.CreateInstance(messageType, arguments) as ServiceMessage;
+            var task = container.WriteAckableMessageAsync(message);
+            await writeTcs.Task.OrTimeout();
+            container.GetTestOnlineContainers()[0].HandleAck(new AckMessage(1, (int)AckStatus.Ok));
+            container.GetTestOnlineContainers()[1].HandleAck(new AckMessage(1, (int)AckStatus.Ok));
+            container.GetTestOnlineContainers()[2].HandleAck(new AckMessage(1, (int)AckStatus.Ok));
+            var result = await task.OrTimeout();
+            Assert.True(result);
+        }
+
+        [Theory]
+        [InlineData(typeof(UserJoinGroupWithAckMessage), "user1", "group1", 0, null, null)]
+        [InlineData(typeof(UserLeaveGroupWithAckMessage), "user1", "group1", 0, null)]
+        [InlineData(typeof(CheckUserExistenceWithAckMessage), "user1", 0, null)]
+        [InlineData(typeof(CheckGroupExistenceWithAckMessage), "group1", 0, null)]
+        [InlineData(typeof(CheckUserInGroupWithAckMessage), "user1", "group1", 0, null)]
+        public async Task TestEndpointsWithUserGroupAllNotFound(Type messageType, params object[] arguments)
+        {
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
+
+            // All the connections started
+            await container.StartedAsync();
+
+            // user add should fail
+            var message = Activator.CreateInstance(messageType, arguments) as ServiceMessage;
+            var task = container.WriteAckableMessageAsync(message);
+            await writeTcs.Task.OrTimeout();
+            container.GetTestOnlineContainers()[0].HandleAck(new AckMessage(1, (int)AckStatus.NotFound));
+            container.GetTestOnlineContainers()[1].HandleAck(new AckMessage(1, (int)AckStatus.NotFound));
+            container.GetTestOnlineContainers()[2].HandleAck(new AckMessage(1, (int)AckStatus.NotFound));
+            var result = await task.OrTimeout();
+            Assert.False(result);
         }
 
         [Fact]
         public async Task TestTwoEndpointsWithCancellationToken()
         {
-            var sem = new TestServiceEndpointManager(
-                new ServiceEndpoint(ConnectionString1),
-                new ServiceEndpoint(ConnectionString2, name: "online"));
-
-            var router = new TestEndpointRouter();
             var writeTcs = new TaskCompletionSource<object>();
-            var containers = new Dictionary<ServiceEndpoint, TestServiceConnectionContainer>();
-            var container = new TestMultiEndpointServiceConnectionContainer("hub", e =>
-            {
-                if (string.IsNullOrEmpty(e.Name))
-                {
-                    return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                        new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    }, e, new AckHandler(100, 200));
-                }
-                return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
-                }, e, new AckHandler(100, 200));
-            }, sem, router, NullLoggerFactory.Instance);
-
-            // All the connections started
-            _ = container.StartAsync();
-            await container.ConnectionInitializedTask;
-
+            var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
+            await container.StartedAsync();
+            
             var task = container.WriteAckableMessageAsync(DefaultGroupMessage, new CancellationToken(true));
             await writeTcs.Task.OrTimeout();
-            foreach (var c in containers)
+            foreach (var c in container.GetTestOnlineContainers())
             {
-                c.Value.HandleAck(new AckMessage(1, (int)AckStatus.Timeout));
+                c.HandleAck(new AckMessage(1, (int)AckStatus.Timeout));
             }
+
             await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task).OrTimeout();
         }
 
@@ -1546,6 +1534,38 @@ namespace Microsoft.Azure.SignalR.Tests
 
         }
 
+        private TestMultiEndpointServiceConnectionContainer CreateMultiEndpointConnection(EndpointStatus[] status, TaskCompletionSource<object> writeTcs, ILoggerFactory loggerFactory)
+        {
+            var i = 0;
+            var endpoints = status.Select(s => new ServiceEndpoint(string.Format(ConnectionStringFormatter, $"https://{s}{++i}")) { Name = status.ToString() }).ToArray();
+            var sem = new TestServiceEndpointManager(endpoints);
+            var router = new TestEndpointRouter();
+
+            var containers = new Dictionary<ServiceEndpoint, TestServiceConnectionContainer>();
+            return new TestMultiEndpointServiceConnectionContainer("hub", e =>
+            {
+                if (e.Name == EndpointStatus.Offline.ToString())
+                {
+                    return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
+                        new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+                        new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+                        new TestSimpleServiceConnection(ServiceConnectionStatus.Disconnected),
+                    }, e, new AckHandler(100, 1000));
+                }
+                return containers[e] = new TestServiceConnectionContainer(new List<IServiceConnection> {
+                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                    new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                }, e, new AckHandler(100, 1000));
+            }, sem, router, loggerFactory);
+        }
+
+        private enum EndpointStatus
+        {
+            Online,
+            Offline,
+        }
+
         private sealed class PingConnectionHandler : ConnectionHandler
         {
             public ConcurrentDictionary<string, IList<bool>> Result = new ConcurrentDictionary<string, IList<bool>>();
@@ -1611,6 +1631,12 @@ namespace Microsoft.Azure.SignalR.Tests
             {
             }
 
+            public Task StartedAsync()
+            {
+                // All the connections started
+                _ = StartAsync();
+                return ConnectionInitializedTask;
+            }
 
             public List<TestServiceConnectionContainer> GetTestOnlineContainers()
             {
