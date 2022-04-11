@@ -69,9 +69,9 @@ namespace Microsoft.Azure.SignalR
         /// For user or group related operations, different endpoints might return different results
         /// Strategy:
         /// Always wait until all endpoints return or throw
-        /// 1. When any endpoint returns true, return true
-        /// 2. When all endpoints return false, return false
-        /// 3. When any endpoint throws, throw
+        /// * When any endpoint throws, throw
+        /// * When all endpoints return false, return false
+        /// * When any endpoint returns true, return true
         /// </summary>
         /// <param name="serviceMessage"></param>
         /// <param name="cancellationToken"></param>
@@ -80,22 +80,22 @@ namespace Microsoft.Azure.SignalR
         {
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            var dict = new ConcurrentBag<bool>();
+            var bag = new ConcurrentBag<bool>();
             await WriteMultiEndpointMessageAsync(serviceMessage, async connection =>
             {
-                dict.Add(await connection.WriteAckableMessageAsync(serviceMessage.Clone(), cancellationToken));
+                bag.Add(await connection.WriteAckableMessageAsync(serviceMessage.Clone(), cancellationToken));
             });
 
-            return dict.All(i => i);
+            return bag.Any(i => i);
         }
 
         /// <summary>
         /// For connection related operations, since connectionId is globally unique, only one endpoint can have the connection
         /// Strategy:
         /// Don't need to wait until all endpoints return or throw
-        /// 1. Whenever any endpoint returns true: return true
-        /// 2. When all endpoints return false, return false
-        /// 3. When any endpoint throws throw
+        /// * Whenever any endpoint returns true: return true
+        /// * When any endpoint throws throw
+        /// * When all endpoints return false, return false
         /// </summary>
         /// <param name="serviceMessage"></param>
         /// <param name="cancellationToken"></param>
