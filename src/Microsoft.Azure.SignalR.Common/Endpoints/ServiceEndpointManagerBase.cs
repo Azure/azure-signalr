@@ -241,14 +241,19 @@ namespace Microsoft.Azure.SignalR
             foreach (var endpoint in updatedEndpoints)
             {
                 // search exist from old
-                if (Endpoints.TryGetValue(endpoint.Key, out var existing))
+                if (Endpoints.TryGetValue(endpoint.Key, out var value))
                 {
-                    // Rename or clientEndpoint update
-                    if (existing.Name != endpoint.Key.Name || existing.ClientEndpoint != endpoint.Key.ClientEndpoint)
+                    // Rename
+                    if (value.Name != endpoint.Key.Name)
                     {
-                        existing = new ServiceEndpoint(existing, endpoint.Key.Name, endpoint.Key.ClientEndpoint);
+                        value.Name = endpoint.Key.Name;
                     }
-                    endpoints.Add(existing, existing);
+                    // clientEndpoint update
+                    if (value.ClientEndpoint != endpoint.Key.ClientEndpoint)
+                    {
+                        value.ClientEndpoint = endpoint.Key.ClientEndpoint;
+                    }
+                    endpoints.Add(value, value);
                 }
                 else
                 {

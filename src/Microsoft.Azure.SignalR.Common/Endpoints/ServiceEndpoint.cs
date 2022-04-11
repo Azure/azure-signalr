@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR
     {
         private readonly Uri _serviceEndpoint;
         private readonly Uri _serverEndpoint;
-        private readonly Uri _clientEndpoint;
+        private Uri _clientEndpoint;
 
         public string ConnectionString { get; }
 
@@ -34,9 +34,10 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Gets or initializes the custom endpoint for SignalR clients to connect to SignalR service.
         /// </summary>
-        public Uri ClientEndpoint
+        public virtual Uri ClientEndpoint
         {
-            get => _clientEndpoint ?? _serviceEndpoint; init
+            get =>_clientEndpoint ?? _serviceEndpoint;
+            internal set
             {
                 CheckScheme(value);
                 _clientEndpoint = value;
@@ -166,29 +167,6 @@ namespace Microsoft.Azure.SignalR
                 ServerEndpoint = other.ServerEndpoint;
                 AudienceBaseUrl = other.AudienceBaseUrl;
                 _serviceEndpoint = other._serviceEndpoint;
-            }
-        }
-
-        /// <summary>
-        /// Reload endpoint with changable properties.
-        /// </summary>
-        /// <param name="original"></param>
-        /// <param name="name"></param>
-        /// <param name="clientEndpoint"></param>
-        internal ServiceEndpoint(ServiceEndpoint original, string name, Uri clientEndpoint)
-        {
-            if (original != null)
-            {
-                ConnectionString = original.ConnectionString;
-                EndpointType = original.EndpointType;
-                Name = name ?? original.Name;
-                Version = original.Version;
-                AccessKey = original.AccessKey;
-                Endpoint = original.Endpoint;
-                ClientEndpoint = clientEndpoint ?? original.ClientEndpoint;
-                ServerEndpoint = original.ServerEndpoint;
-                AudienceBaseUrl = original.AudienceBaseUrl;
-                _serviceEndpoint = original._serviceEndpoint;
             }
         }
 
