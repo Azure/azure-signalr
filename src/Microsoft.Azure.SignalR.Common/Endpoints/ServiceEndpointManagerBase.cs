@@ -241,14 +241,19 @@ namespace Microsoft.Azure.SignalR
             foreach (var endpoint in updatedEndpoints)
             {
                 // search exist from old
-                if (Endpoints.TryGetValue(endpoint.Key, out var value))
+                if (Endpoints.TryGetValue(endpoint.Key, out var existing))
                 {
-                    // remained or renamed
-                    if (value.Name != endpoint.Key.Name)
+                    // Renamed
+                    if (existing.Name != endpoint.Key.Name)
                     {
-                        value.Name = endpoint.Key.Name;
+                        existing = new ServiceEndpoint(existing, endpoint.Key.Name, null);
                     }
-                    endpoints.Add(value, value);
+                    // ClientEndpoint updated
+                    if (existing.ClientEndpoint != endpoint.Key.ClientEndpoint)
+                    {
+                        existing = new ServiceEndpoint(existing, null, endpoint.Key.ClientEndpoint);
+                    }
+                    endpoints.Add(existing, existing);
                 }
                 else
                 {
@@ -279,12 +284,12 @@ namespace Microsoft.Azure.SignalR
         {
             public bool Equals(ServiceEndpoint x, ServiceEndpoint y)
             {
-                return x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType;
+                return x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType && x.ServerEndpoint == y.ServerEndpoint;
             }
 
             public int GetHashCode(ServiceEndpoint obj)
             {
-                return obj.Endpoint.GetHashCode() ^ obj.EndpointType.GetHashCode();
+                return obj.Endpoint.GetHashCode() ^ obj.EndpointType.GetHashCode() ^ obj.ServerEndpoint.GetHashCode();
             }
         }
 

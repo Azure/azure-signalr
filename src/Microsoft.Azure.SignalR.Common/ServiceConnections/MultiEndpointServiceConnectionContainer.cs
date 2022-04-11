@@ -292,7 +292,7 @@ namespace Microsoft.Azure.SignalR
         {
             try
             {
-                var container = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == endpoint.Endpoint && e.EndpointType == endpoint.EndpointType);
+                var container = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == endpoint.Endpoint && e.EndpointType == endpoint.EndpointType && e.ServerEndpoint == endpoint.ServerEndpoint);
                 if (container == null)
                 {
                     Log.EndpointNotExists(_logger, endpoint.ToString());
@@ -334,7 +334,7 @@ namespace Microsoft.Azure.SignalR
                         }
                     case ScaleOperation.Remove:
                         {
-                            var newEndpoints = _routerEndpoints.endpoints.Where(e => e.Endpoint != endpoint.Endpoint || e.EndpointType != endpoint.EndpointType).ToList();
+                            var newEndpoints = _routerEndpoints.endpoints.Where(e => e.Endpoint != endpoint.Endpoint || e.EndpointType != endpoint.EndpointType || e.ServerEndpoint != endpoint.ServerEndpoint).ToList();
                             UpdateRoutedEndpoints(newEndpoints);
                             break;
                         }

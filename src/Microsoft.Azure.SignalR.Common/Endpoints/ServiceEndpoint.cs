@@ -169,6 +169,29 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        /// <summary>
+        /// Reload endpoint with changable properties.
+        /// </summary>
+        /// <param name="original"></param>
+        /// <param name="name"></param>
+        /// <param name="clientEndpoint"></param>
+        internal ServiceEndpoint(ServiceEndpoint original, string name, Uri clientEndpoint)
+        {
+            if (original != null)
+            {
+                ConnectionString = original.ConnectionString;
+                EndpointType = original.EndpointType;
+                Name = name ?? original.Name;
+                Version = original.Version;
+                AccessKey = original.AccessKey;
+                Endpoint = original.Endpoint;
+                ClientEndpoint = clientEndpoint ?? original.ClientEndpoint;
+                ServerEndpoint = original.ServerEndpoint;
+                AudienceBaseUrl = original.AudienceBaseUrl;
+                _serviceEndpoint = original._serviceEndpoint;
+            }
+        }
+
         public override string ToString()
         {
             var prefix = string.IsNullOrEmpty(Name) ? "" : $"[{Name}]";
@@ -178,7 +201,7 @@ namespace Microsoft.Azure.SignalR
         public override int GetHashCode()
         {
             // We consider ServiceEndpoint with the same Endpoint (https://{signalr.endpoint}) as the unique identity
-            return (Endpoint, EndpointType, Name).GetHashCode();
+            return (Endpoint, EndpointType, Name, ClientEndpoint, ServerEndpoint).GetHashCode();
         }
 
         public override bool Equals(object obj)
@@ -198,7 +221,7 @@ namespace Microsoft.Azure.SignalR
                 return false;
             }
 
-            return Endpoint == that.Endpoint && EndpointType == that.EndpointType && Name == that.Name;
+            return Endpoint == that.Endpoint && EndpointType == that.EndpointType && Name == that.Name && ClientEndpoint == that.ClientEndpoint && ServerEndpoint == that.ServerEndpoint;
         }
 
         private static string BuildAudienceBaseUrlEndWithSlash(Uri uri)
