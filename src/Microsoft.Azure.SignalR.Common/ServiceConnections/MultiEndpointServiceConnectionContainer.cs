@@ -227,7 +227,7 @@ namespace Microsoft.Azure.SignalR
                     return _router.GetEndpointsForGroup(checkUserInGroupMessage.GroupName, endpoints).Intersect(_router.GetEndpointsForUser(checkUserInGroupMessage.UserId, endpoints));
 
                 case CloseConnectionMessage closeConnectionMessage:
-                    return endpoints;
+                    return _router.GetEndpointsForConnection(closeConnectionMessage.ConnectionId, endpoints);
 
                 default:
                     throw new NotSupportedException(message.GetType().Name);
