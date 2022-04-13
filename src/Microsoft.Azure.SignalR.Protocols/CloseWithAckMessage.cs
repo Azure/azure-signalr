@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace Microsoft.Azure.SignalR.Protocol
 {
@@ -43,6 +44,9 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// A close-connection message.
     /// </summary>
+    [Obsolete("Please use CloseConnectionMessage")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    [Browsable(false)]
     public class CloseConnectionWithAckMessage : CloseWithAckMessage
     {
         /// <summary>
@@ -64,6 +68,9 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// Close all the connections in the hub.
     /// </summary>
+    [Obsolete("Please use CloseConnectionMessage")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    [Browsable(false)]
     public class CloseConnectionsWithAckMessage : CloseMultiConnectionsWithAckMessage
     {
         /// <summary>

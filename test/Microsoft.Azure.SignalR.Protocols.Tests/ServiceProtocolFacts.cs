@@ -262,6 +262,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "lQ2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoEBzQTS"),
         }.ToDictionary(t => t.Name);
 
+#pragma warning disable CS0618 // Type or member is obsolete
         public static IDictionary<string, ProtocolTestData> TestData => new[]
         {
             new ProtocolTestData(
@@ -637,6 +638,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 },
                 binary: "liGmZ3JvdXAxpmRldGFpbAGQgQEB"),
         }.ToDictionary(t => t.Name);
+#pragma warning restore CS0618 // Type or member is obsolete
 
         [Theory]
         [MemberData(nameof(TestParseOldData))]
