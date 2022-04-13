@@ -289,17 +289,12 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Fact]
-        public async Task TestContainerWithOneEndpointWithAllDisconnectedAndWriteMessageSucceedWithWarning()
+        public async Task TestContainerWithOneEndpointWithAllDisconnectedAndWriteMessageThrows()
         {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
             {
-                var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
-                Assert.Single(warns);
-                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointMessageWriter.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
-                return true;
-            }))
-            {
-                var sem = new TestServiceEndpointManager(new ServiceEndpoint(ConnectionString1));
+                var endpoint = new ServiceEndpoint(ConnectionString1);
+                var sem = new TestServiceEndpointManager(endpoint);
                 var router = new DefaultEndpointRouter();
                 var container = new TestMultiEndpointServiceConnectionContainer("hub",
                     e => new TestBaseServiceConnectionContainer(new List<IServiceConnection> {
@@ -314,8 +309,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
 
                 _ = container.StartAsync();
                 await container.ConnectionInitializedTask.OrTimeout();
-
-                await container.WriteAsync(DefaultGroupMessage);
+                var exception = await Assert.ThrowsAsync<FailedWritingMessageToServiceException>(() => container.WriteAsync(DefaultGroupMessage));
+                Assert.Equal(endpoint.ServerEndpoint.AbsoluteUri, exception.EndpointUri);
+                Assert.Equal($"Unable to write message to endpoint: {endpoint.ServerEndpoint.AbsoluteUri}", exception.Message);
             }
         }
 
@@ -382,8 +378,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
             {
                 var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
-                Assert.Equal(2, warns.Count);
-                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointMessageWriter.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
+
+                Assert.Single(warns);
+                Assert.Equal("Message JoinGroupWithAckMessage is not sent because no endpoint is returned from the endpoint router.", warns[0].Write.Message);
                 return true;
             }))
             {
@@ -410,15 +407,9 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         }
 
         [Fact]
-        public async Task TestContainerWithTwoEndpointWithOneOfflineSucceedsWithWarning()
+        public async Task TestContainerWithTwoEndpointWithOneOfflineSucceeds()
         {
-            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning, logChecker: logs =>
-            {
-                var warns = logs.Where(s => s.Write.LogLevel == LogLevel.Warning).ToList();
-                Assert.Single(warns);
-                Assert.Contains(warns, s => s.Write.Message.Contains(string.Format(MultiEndpointMessageWriter.Log.FailedWritingMessageToEndpointTemplate, "JoinGroupWithAckMessage", "(null)", "(Primary)http://url1")));
-                return true;
-            }))
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Warning))
             {
                 var sem = new TestServiceEndpointManager(
                 new ServiceEndpoint(ConnectionString1),

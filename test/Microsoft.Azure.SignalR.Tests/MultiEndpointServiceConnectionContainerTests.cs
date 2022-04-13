@@ -33,7 +33,6 @@ namespace Microsoft.Azure.SignalR.Tests
         private readonly string ConnectionString2 = string.Format(ConnectionStringFormatter, Url2);
         private readonly string ConnectionString3 = string.Format(ConnectionStringFormatter, Url3);
         private static readonly JoinGroupWithAckMessage DefaultGroupMessage = new JoinGroupWithAckMessage("a", "a", -1);
-        private static readonly UserJoinGroupWithAckMessage DefaultUserGroupMessage = new UserJoinGroupWithAckMessage("a", "a", -1);
 
         public TestEndpointServiceConnectionContainerTests(ITestOutputHelper output) : base(output)
         {
