@@ -16,14 +16,13 @@ namespace Microsoft.Azure.SignalR
         public HubServiceEndpoint(
             string hub, 
             IServiceEndpointProvider provider, 
-            ServiceEndpoint endpoint, 
-            bool needScaleTcs = false
+            ServiceEndpoint endpoint
             ) : base(endpoint)
         {
             Hub = hub;
             Provider = provider;
             _endpoint = endpoint;
-            _scaleTcs = needScaleTcs ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : null;
+            _scaleTcs = endpoint.IsStagingScale ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : null;
             _uniqueIndex = Interlocked.Increment(ref s_currentIndex);
         }
 

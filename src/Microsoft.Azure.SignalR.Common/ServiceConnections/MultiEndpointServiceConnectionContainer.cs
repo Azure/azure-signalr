@@ -247,7 +247,15 @@ namespace Microsoft.Azure.SignalR
             {
                 return;
             }
-            _ = AddHubServiceEndpointAsync(endpoint);
+            if (endpoint.ScaleTask.IsCompleted)
+            {
+
+                UpdateEndpointsStore(endpoint, ScaleOperation.Add);
+            }
+            else
+            {
+                _ = AddHubServiceEndpointAsync(endpoint);
+            }
         }
 
         private async Task AddHubServiceEndpointAsync(HubServiceEndpoint endpoint)
@@ -285,7 +293,14 @@ namespace Microsoft.Azure.SignalR
             {
                 return;
             }
-            _ = RemoveHubServiceEndpointAsync(endpoint);
+            if (endpoint.ScaleTask.IsCompleted)
+            {
+                UpdateEndpointsStore(endpoint, ScaleOperation.Remove);
+            }
+            else
+            {
+                _ = RemoveHubServiceEndpointAsync(endpoint);
+            }
         }
 
         private async Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint)
@@ -334,7 +349,7 @@ namespace Microsoft.Azure.SignalR
                         }
                     case ScaleOperation.Remove:
                         {
-                            var newEndpoints = _routerEndpoints.endpoints.Where(e => e.Endpoint != endpoint.Endpoint || e.EndpointType != endpoint.EndpointType).ToList();
+                            var newEndpoints = _routerEndpoints.endpoints.Where(e => !e.Equals(endpoint)).ToList();
                             UpdateRoutedEndpoints(newEndpoints);
                             break;
                         }
