@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -144,30 +145,45 @@ namespace Microsoft.Azure.SignalR
 
         private void AddEndpointsToNegotiationStore(Dictionary<string, IReadOnlyList<HubServiceEndpoint>> endpoints)
         {
-            foreach (var hub in _endpointsPerHub.Keys)
+            foreach (var hubEndpoints in _endpointsPerHub)
             {
-                if (!endpoints.TryGetValue(hub, out var updatedEndpoints) 
+                if (!endpoints.TryGetValue(hubEndpoints.Key, out var updatedEndpoints) 
                     || updatedEndpoints.Count == 0)
                 {
                     continue;
                 }
-                var oldEndpoints = _endpointsPerHub[hub];
+                var oldEndpoints = _endpointsPerHub[hubEndpoints.Key];
                 var newEndpoints = oldEndpoints.ToList();
                 newEndpoints.AddRange(updatedEndpoints);
-                _endpointsPerHub.TryUpdate(hub, newEndpoints, oldEndpoints);
+                _endpointsPerHub.TryUpdate(hubEndpoints.Key, newEndpoints, oldEndpoints);
             }
         }
 
         private IReadOnlyList<HubServiceEndpoint> UpdateAndGetRemovedHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
             var removedEndpoints = new List<HubServiceEndpoint>();
-            foreach (var hub in _endpointsPerHub.Keys)
+            foreach (var hubEndpoints in _endpointsPerHub)
             {
-                var oldEndpoints = _endpointsPerHub[hub];
-                var updatedEndpoints = CreateHubServiceEndpoints(hub, endpoints);
-                removedEndpoints.AddRange(updatedEndpoints);
-                var newEndpoints = oldEndpoints.Except(updatedEndpoints).ToList();
-                _endpointsPerHub.TryUpdate(hub, newEndpoints, oldEndpoints);
+                var remainedEndpoints = new List<HubServiceEndpoint>();
+                var oldEndpoints = _endpointsPerHub[hubEndpoints.Key];
+                foreach (var endpoint in oldEndpoints)
+                {
+                    var remove = endpoints.FirstOrDefault(e => e.Equals(endpoint));
+                    if (remove != null)
+                    {
+                        // Refer to reload detector to reset scale task.
+                        if (remove.PendingReload)
+                        {
+                            endpoint.ResetScale();
+                        }
+                        removedEndpoints.Add(endpoint);
+                    }
+                    else
+                    {
+                        remainedEndpoints.Add(endpoint);
+                    }
+                }
+                _endpointsPerHub.TryUpdate(hubEndpoints.Key, remainedEndpoints, oldEndpoints);
             }
             return removedEndpoints;
         }
@@ -196,9 +212,9 @@ namespace Microsoft.Azure.SignalR
         private Dictionary<string, IReadOnlyList<HubServiceEndpoint>> CreateHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
             var hubEndpoints = new Dictionary<string, IReadOnlyList<HubServiceEndpoint>>();
-            foreach (var hub in _endpointsPerHub.Keys)
+            foreach (var item in _endpointsPerHub)
             {
-                hubEndpoints.Add(hub, CreateHubServiceEndpoints(hub, endpoints));
+                hubEndpoints.Add(item.Key, CreateHubServiceEndpoints(item.Key, endpoints));
             }
             return hubEndpoints;
         }
@@ -249,10 +265,10 @@ namespace Microsoft.Azure.SignalR
             // Get staging required endpoints
             var removed = Endpoints.Keys.Except(updatedEndpoints.Keys, new ServiceEndpointWeakComparer()).ToList();
             var added = updatedEndpoints.Keys.Except(Endpoints.Keys, new ServiceEndpointWeakComparer()).ToList();
-            removed.ForEach(e => e.IsStagingScale = true);
+            removed.ForEach(e => e.PendingReload = true);
             foreach (var item in added)
             {
-                item.IsStagingScale = true;
+                item.PendingReload = true;
                 endpoints.Add(item, item);
             }
 
@@ -262,13 +278,12 @@ namespace Microsoft.Azure.SignalR
                 .Except(Endpoints.Keys);
             foreach (var endpoint in commonEndpoints)
             {
-                // search exist from old
+                // search exist from old to remove
                 var exist = Endpoints.First(x => x.Key.Endpoint == endpoint.Endpoint);
                 removed.Add(exist.Key);
 
-                var updated = new ServiceEndpoint(exist.Key, endpoint.Name, endpoint.ClientEndpoint);
-                added.Add(updated);
-                endpoints.Add(updated, updated);
+                added.Add(endpoint);
+                endpoints.Add(endpoint, endpoint);
             }
             removedEndpoints = removed;
             addedEndpoints = added;

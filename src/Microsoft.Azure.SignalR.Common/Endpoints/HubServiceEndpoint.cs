@@ -8,10 +8,11 @@ namespace Microsoft.Azure.SignalR
 {
     internal class HubServiceEndpoint : ServiceEndpoint
     {
-        private readonly TaskCompletionSource<bool> _scaleTcs;
         private readonly ServiceEndpoint _endpoint;
         private readonly long _uniqueIndex;
         private static long s_currentIndex;
+        private static bool _pendingReload;
+        private TaskCompletionSource<bool> _scaleTcs;
 
         public HubServiceEndpoint(
             string hub, 
@@ -22,7 +23,8 @@ namespace Microsoft.Azure.SignalR
             Hub = hub;
             Provider = provider;
             _endpoint = endpoint;
-            _scaleTcs = endpoint.IsStagingScale ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : null;
+            _pendingReload = endpoint.PendingReload;
+            _scaleTcs = endpoint.PendingReload ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : null;
             _uniqueIndex = Interlocked.Increment(ref s_currentIndex);
         }
 
@@ -41,7 +43,15 @@ namespace Microsoft.Azure.SignalR
 
         public void CompleteScale()
         {
+            _pendingReload = false;
             _scaleTcs?.TrySetResult(true);
+        }
+
+        // When remove an existing HubServiceEndpoint.
+        public void ResetScale()
+        {
+            _pendingReload = true;
+            _scaleTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
         public long UniqueIndex => _uniqueIndex;
@@ -50,5 +60,7 @@ namespace Microsoft.Azure.SignalR
         {
             return base.ToString() + $"(hub={Hub})";
         }
+
+        internal override bool PendingReload => _pendingReload;
     }
 }

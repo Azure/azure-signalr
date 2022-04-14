@@ -71,8 +71,8 @@ namespace Microsoft.Azure.SignalR
 
         internal AccessKey AccessKey { get; private set; }
 
-        // Flag to indicate a updaing endpoint need staging
-        internal bool IsStagingScale { get; set; } = false;
+        // Flag to indicate an updaing endpoint needs staging
+        internal virtual bool PendingReload { get; set; } = false;
 
         /// <summary>
         /// Connection string constructor with nameWithEndpointType
@@ -169,29 +169,6 @@ namespace Microsoft.Azure.SignalR
                 ServerEndpoint = other.ServerEndpoint;
                 AudienceBaseUrl = other.AudienceBaseUrl;
                 _serviceEndpoint = other._serviceEndpoint;
-            }
-        }
-
-        /// <summary>
-        /// Constructor to create endpoint instance with instant update properties.
-        /// </summary>
-        /// <param name="original"></param>
-        /// <param name="name"></param>
-        /// <param name="clientEndpoint"></param>
-        internal ServiceEndpoint(ServiceEndpoint original, string name, Uri clientEndpoint)
-        {
-            if (original != null)
-            {
-                ConnectionString = original.ConnectionString;
-                EndpointType = original.EndpointType;
-                Name = name ?? original.Name;
-                Version = original.Version;
-                AccessKey = original.AccessKey;
-                Endpoint = original.Endpoint;
-                ClientEndpoint = clientEndpoint ?? original.ClientEndpoint;
-                ServerEndpoint = original.ServerEndpoint;
-                AudienceBaseUrl = original.AudienceBaseUrl;
-                _serviceEndpoint = original._serviceEndpoint;
             }
         }
 

@@ -853,7 +853,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2"),
                 new ServiceEndpoint(ConnectionString3, EndpointType.Secondary, "33")
             };
-            await sem.TestReloadServiceEndpoints(renamedEndpoint);
+            await sem.TestReloadServiceEndpoints(renamedEndpoint, 10);
 
             // validate container level updates
             containerEps = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
@@ -924,7 +924,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2"),
                 new ServiceEndpoint(connstr3, EndpointType.Secondary, "3")
             };
-            await sem.TestReloadServiceEndpoints(updateEndpoints);
+            await sem.TestReloadServiceEndpoints(updateEndpoints, 10);
 
             // validate container level updates
             containerEps = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();

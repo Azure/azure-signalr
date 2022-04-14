@@ -247,18 +247,17 @@ namespace Microsoft.Azure.SignalR
             {
                 return;
             }
-            if (endpoint.ScaleTask.IsCompleted)
-            {
-                UpdateEndpointsStore(endpoint, ScaleOperation.Add);
-            }
-            else
-            {
-                _ = AddHubServiceEndpointAsync(endpoint);
-            }
+            _ = AddHubServiceEndpointAsync(endpoint);
         }
 
         private async Task AddHubServiceEndpointAsync(HubServiceEndpoint endpoint)
         {
+            if (!endpoint.PendingReload)
+            {
+                UpdateEndpointsStore(endpoint, ScaleOperation.Add);
+                return;
+            }
+
             var container = _generator(endpoint);
             endpoint.ConnectionContainer = container;
 
@@ -292,18 +291,16 @@ namespace Microsoft.Azure.SignalR
             {
                 return;
             }
-            if (endpoint.ScaleTask.IsCompleted)
-            {
-                UpdateEndpointsStore(endpoint, ScaleOperation.Remove);
-            }
-            else
-            {
-                _ = RemoveHubServiceEndpointAsync(endpoint);
-            }
+            _ = RemoveHubServiceEndpointAsync(endpoint);
         }
 
         private async Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint)
         {
+            if (!endpoint.PendingReload)
+            {
+                UpdateEndpointsStore(endpoint, ScaleOperation.Remove);
+                return;
+            }
             try
             {
                 var container = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == endpoint.Endpoint && e.EndpointType == endpoint.EndpointType);
