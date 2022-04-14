@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -112,7 +113,7 @@ namespace Microsoft.Azure.SignalR
             {
                 try
                 {
-                    var hubEndpoints = CreateHubServiceEndpoints(endpoints, true);
+                    var hubEndpoints = CreateHubServiceEndpoints(endpoints);
 
                     await Task.WhenAll(hubEndpoints.SelectMany(h => h.Value.Select(e => AddHubServiceEndpointAsync(e, cancellationToken))));
 
@@ -144,51 +145,76 @@ namespace Microsoft.Azure.SignalR
 
         private void AddEndpointsToNegotiationStore(Dictionary<string, IReadOnlyList<HubServiceEndpoint>> endpoints)
         {
-            foreach (var hub in _endpointsPerHub.Keys)
+            foreach (var hubEndpoints in _endpointsPerHub)
             {
-                if (!endpoints.TryGetValue(hub, out var updatedEndpoints) 
+                if (!endpoints.TryGetValue(hubEndpoints.Key, out var updatedEndpoints) 
                     || updatedEndpoints.Count == 0)
                 {
                     continue;
                 }
-                var oldEndpoints = _endpointsPerHub[hub];
+                var oldEndpoints = _endpointsPerHub[hubEndpoints.Key];
                 var newEndpoints = oldEndpoints.ToList();
                 newEndpoints.AddRange(updatedEndpoints);
-                _endpointsPerHub.TryUpdate(hub, newEndpoints, oldEndpoints);
+                _endpointsPerHub.TryUpdate(hubEndpoints.Key, newEndpoints, oldEndpoints);
             }
         }
 
         private IReadOnlyList<HubServiceEndpoint> UpdateAndGetRemovedHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
             var removedEndpoints = new List<HubServiceEndpoint>();
-            foreach (var hub in _endpointsPerHub.Keys)
+            foreach (var hubEndpoints in _endpointsPerHub)
             {
-                var oldEndpoints = _endpointsPerHub[hub];
-                var updatedEndpoints = CreateHubServiceEndpoints(hub, endpoints, true);
-                removedEndpoints.AddRange(updatedEndpoints);
-                var newEndpoints = oldEndpoints.Except(updatedEndpoints, new HubServiceEndpointWeakComparer()).ToList();
-                _endpointsPerHub.TryUpdate(hub, newEndpoints, oldEndpoints);
+                var remainedEndpoints = new List<HubServiceEndpoint>();
+                var oldEndpoints = _endpointsPerHub[hubEndpoints.Key];
+                foreach (var endpoint in oldEndpoints)
+                {
+                    var remove = endpoints.FirstOrDefault(e => e.Equals(endpoint));
+                    if (remove != null)
+                    {
+                        // Refer to reload detector to reset scale task.
+                        if (remove.PendingReload)
+                        {
+                            endpoint.ResetScale();
+                        }
+                        removedEndpoints.Add(endpoint);
+                    }
+                    else
+                    {
+                        remainedEndpoints.Add(endpoint);
+                    }
+                }
+                _endpointsPerHub.TryUpdate(hubEndpoints.Key, remainedEndpoints, oldEndpoints);
             }
             return removedEndpoints;
         }
 
-        private HubServiceEndpoint CreateHubServiceEndpoint(string hub, ServiceEndpoint endpoint, bool needScaleTcs = false)
+        private HubServiceEndpoint CreateHubServiceEndpoint(string hub, ServiceEndpoint endpoint)
         {
             var provider = GetEndpointProvider(endpoint);
-            return new HubServiceEndpoint(hub, provider, endpoint, needScaleTcs);
+            var hubEndpoint = new HubServiceEndpoint(hub, provider, endpoint);
+            // check if endpoint is an instant update and copy container directly.
+            if (_endpointsPerHub.TryGetValue(hub, out var hubEndpoints))
+            {
+                var exist = hubEndpoints.FirstOrDefault(e => (e.Endpoint, e.EndpointType, e.ServerEndpoint) == (endpoint.Endpoint, endpoint.EndpointType, endpoint.ServerEndpoint));
+                if (exist != null)
+                {
+                    hubEndpoint.ConnectionContainer = exist.ConnectionContainer;
+                }
+            }
+            return hubEndpoint;
         }
 
-        private IReadOnlyList<HubServiceEndpoint> CreateHubServiceEndpoints(string hub, IEnumerable<ServiceEndpoint> endpoints, bool needScaleTcs)
+        private IReadOnlyList<HubServiceEndpoint> CreateHubServiceEndpoints(string hub, IEnumerable<ServiceEndpoint> endpoints)
         {
-            return endpoints.Select(e => CreateHubServiceEndpoint(hub, e, needScaleTcs)).ToList();
+            return endpoints.Select(e => CreateHubServiceEndpoint(hub, e)).ToList();
         }
 
-        private Dictionary<string, IReadOnlyList<HubServiceEndpoint>> CreateHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints, bool needScaleTcs)
+        private Dictionary<string, IReadOnlyList<HubServiceEndpoint>> CreateHubServiceEndpoints(IEnumerable<ServiceEndpoint> endpoints)
         {
             var hubEndpoints = new Dictionary<string, IReadOnlyList<HubServiceEndpoint>>();
-            foreach (var hub in _endpointsPerHub.Keys)
+            foreach (var item in _endpointsPerHub)
             {
-                hubEndpoints.Add(hub, CreateHubServiceEndpoints(hub, endpoints, needScaleTcs));
+                hubEndpoints.Add(item.Key, CreateHubServiceEndpoints(item.Key, endpoints));
             }
             return hubEndpoints;
         }
@@ -233,30 +259,33 @@ namespace Microsoft.Azure.SignalR
             out IReadOnlyList<ServiceEndpoint> addedEndpoints,
             out IReadOnlyList<ServiceEndpoint> removedEndpoints)
         {
-            var endpoints = new Dictionary<ServiceEndpoint, ServiceEndpoint>();
-            var added = new List<ServiceEndpoint>();
+            // Get exactly same endpoints
+            var endpoints = Endpoints.Intersect(updatedEndpoints).ToDictionary(k => k.Key, v => v.Value);
 
-            removedEndpoints = Endpoints.Keys.Except(updatedEndpoints.Keys, new ServiceEndpointWeakComparer()).ToList();
-
-            foreach (var endpoint in updatedEndpoints)
+            // Get staging required endpoints
+            var removed = Endpoints.Keys.Except(updatedEndpoints.Keys, new ServiceEndpointWeakComparer()).ToList();
+            var added = updatedEndpoints.Keys.Except(Endpoints.Keys, new ServiceEndpointWeakComparer()).ToList();
+            removed.ForEach(e => e.PendingReload = true);
+            foreach (var item in added)
             {
-                // search exist from old
-                if (Endpoints.TryGetValue(endpoint.Key, out var value))
-                {
-                    // remained or renamed
-                    if (value.Name != endpoint.Key.Name)
-                    {
-                        value.Name = endpoint.Key.Name;
-                    }
-                    endpoints.Add(value, value);
-                }
-                else
-                {
-                    // added
-                    endpoints.Add(endpoint.Key, endpoint.Key);
-                    added.Add(endpoint.Key);
-                }
+                item.PendingReload = true;
+                endpoints.Add(item, item);
             }
+
+            // Get instant changable endpoints
+            var commonEndpoints = updatedEndpoints.Keys
+                .Intersect(Endpoints.Keys, new ServiceEndpointWeakComparer())
+                .Except(Endpoints.Keys);
+            foreach (var endpoint in commonEndpoints)
+            {
+                // search exist from old to remove
+                var exist = Endpoints.First(x => x.Key.Endpoint == endpoint.Endpoint);
+                removed.Add(exist.Key);
+
+                added.Add(endpoint);
+                endpoints.Add(endpoint, endpoint);
+            }
+            removedEndpoints = removed;
             addedEndpoints = added;
 
             Endpoints = endpoints;
@@ -279,25 +308,12 @@ namespace Microsoft.Azure.SignalR
         {
             public bool Equals(ServiceEndpoint x, ServiceEndpoint y)
             {
-                return x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType;
+                return (x.Endpoint, x.EndpointType, x.ServerEndpoint) == (y.Endpoint, y.EndpointType, y.ServerEndpoint);
             }
 
             public int GetHashCode(ServiceEndpoint obj)
             {
-                return obj.Endpoint.GetHashCode() ^ obj.EndpointType.GetHashCode();
-            }
-        }
-
-        private sealed class HubServiceEndpointWeakComparer : IEqualityComparer<HubServiceEndpoint>
-        {
-            public bool Equals(HubServiceEndpoint x, HubServiceEndpoint y)
-            {
-                return x.Endpoint == y.Endpoint && x.EndpointType == y.EndpointType;
-            }
-
-            public int GetHashCode(HubServiceEndpoint obj)
-            {
-                return obj.Endpoint.GetHashCode() ^ obj.EndpointType.GetHashCode();
+                return obj.Endpoint.GetHashCode() ^ obj.EndpointType.GetHashCode() ^ obj.ServerEndpoint.GetHashCode();
             }
         }
 

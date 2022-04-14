@@ -252,6 +252,12 @@ namespace Microsoft.Azure.SignalR
 
         private async Task AddHubServiceEndpointAsync(HubServiceEndpoint endpoint)
         {
+            if (!endpoint.PendingReload)
+            {
+                UpdateEndpointsStore(endpoint, ScaleOperation.Add);
+                return;
+            }
+
             var container = _generator(endpoint);
             endpoint.ConnectionContainer = container;
 
@@ -290,6 +296,11 @@ namespace Microsoft.Azure.SignalR
 
         private async Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint)
         {
+            if (!endpoint.PendingReload)
+            {
+                UpdateEndpointsStore(endpoint, ScaleOperation.Remove);
+                return;
+            }
             try
             {
                 var container = _routerEndpoints.endpoints.FirstOrDefault(e => e.Endpoint == endpoint.Endpoint && e.EndpointType == endpoint.EndpointType);
@@ -334,7 +345,7 @@ namespace Microsoft.Azure.SignalR
                         }
                     case ScaleOperation.Remove:
                         {
-                            var newEndpoints = _routerEndpoints.endpoints.Where(e => e.Endpoint != endpoint.Endpoint || e.EndpointType != endpoint.EndpointType).ToList();
+                            var newEndpoints = _routerEndpoints.endpoints.Where(e => !e.Equals(endpoint)).ToList();
                             UpdateRoutedEndpoints(newEndpoints);
                             break;
                         }

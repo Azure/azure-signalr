@@ -18,8 +18,8 @@ namespace Microsoft.Azure.SignalR.Common
         {
             var synchronizer = GetInstanceForTest();
 
-            var endpoint1 = new TestServiceEndpoint() { Name = "foo" };
-            var endpoint2 = new TestServiceEndpoint() { Name = "foo" };
+            var endpoint1 = new TestServiceEndpoint("foo");
+            var endpoint2 = new TestServiceEndpoint("foo");
 
             Assert.Equal(0, synchronizer.ServiceEndpointsCount());
             synchronizer.UpdateServiceEndpoints(new List<ServiceEndpoint>() { endpoint1 });

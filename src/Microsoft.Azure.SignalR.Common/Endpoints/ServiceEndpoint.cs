@@ -17,7 +17,7 @@ namespace Microsoft.Azure.SignalR
 
         public EndpointType EndpointType { get; } = EndpointType.Primary;
 
-        public virtual string Name { get; internal set; } = "";
+        public virtual string Name { get; } = "";
 
         /// <summary>
         /// Gets or initializes the custom endpoint for SignalR server to connect to SignalR service.
@@ -70,6 +70,9 @@ namespace Microsoft.Azure.SignalR
         internal string Version { get; }
 
         internal AccessKey AccessKey { get; private set; }
+
+        // Flag to indicate an updaing endpoint needs staging
+        internal virtual bool PendingReload { get; set; }
 
         /// <summary>
         /// Connection string constructor with nameWithEndpointType
@@ -171,14 +174,16 @@ namespace Microsoft.Azure.SignalR
 
         public override string ToString()
         {
-            var prefix = string.IsNullOrEmpty(Name) ? "" : $"[{Name}]";
-            return $"{prefix}({EndpointType}){Endpoint}";
+            var prefix = string.IsNullOrEmpty(Name) ? string.Empty : $"[{Name}]";
+            var suffix = ClientEndpoint == _serviceEndpoint ? string.Empty : $";ClientEndpoint={ClientEndpoint}";
+            suffix += ServerEndpoint == _serviceEndpoint ? string.Empty : $";ServerEndpoint={ServerEndpoint}";
+            return $"{prefix}({EndpointType}){Endpoint}{suffix}";
         }
 
         public override int GetHashCode()
         {
             // We consider ServiceEndpoint with the same Endpoint (https://{signalr.endpoint}) as the unique identity
-            return (Endpoint, EndpointType, Name).GetHashCode();
+            return (Endpoint, EndpointType, Name, ClientEndpoint, ServerEndpoint).GetHashCode();
         }
 
         public override bool Equals(object obj)
@@ -198,7 +203,7 @@ namespace Microsoft.Azure.SignalR
                 return false;
             }
 
-            return Endpoint == that.Endpoint && EndpointType == that.EndpointType && Name == that.Name;
+            return (Name, Endpoint, EndpointType, ClientEndpoint, ServerEndpoint) == (that.Name, that.Endpoint, that.EndpointType, that.ClientEndpoint, that.ServerEndpoint);
         }
 
         private static string BuildAudienceBaseUrlEndWithSlash(Uri uri)
