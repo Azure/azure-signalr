@@ -249,7 +249,6 @@ namespace Microsoft.Azure.SignalR
             }
             if (endpoint.ScaleTask.IsCompleted)
             {
-
                 UpdateEndpointsStore(endpoint, ScaleOperation.Add);
             }
             else
