@@ -72,7 +72,7 @@ namespace Microsoft.Azure.SignalR
         internal AccessKey AccessKey { get; private set; }
 
         // Flag to indicate an updaing endpoint needs staging
-        internal virtual bool PendingReload { get; set; } = false;
+        internal virtual bool PendingReload { get; set; }
 
         /// <summary>
         /// Connection string constructor with nameWithEndpointType
