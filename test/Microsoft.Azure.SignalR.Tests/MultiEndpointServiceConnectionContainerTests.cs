@@ -1740,7 +1740,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private TestMultiEndpointServiceConnectionContainer CreateMultiEndpointConnection(EndpointStatus[] status, TaskCompletionSource<object> writeTcs, ILoggerFactory loggerFactory)
         {
             var i = 0;
-            var endpoints = status.Select(s => new ServiceEndpoint(string.Format(ConnectionStringFormatter, $"https://{s}{++i}")) { Name = status.ToString() }).ToArray();
+            var endpoints = status.Select(s => new ServiceEndpoint(string.Format(ConnectionStringFormatter, $"https://{s}{++i}"), name: status.ToString())).ToArray();
             var sem = new TestServiceEndpointManager(endpoints);
             var router = new TestEndpointRouter();
 
