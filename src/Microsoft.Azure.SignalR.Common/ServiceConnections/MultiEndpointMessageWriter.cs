@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -52,11 +53,57 @@ namespace Microsoft.Azure.SignalR
             return WriteMultiEndpointMessageAsync(serviceMessage, connection => connection.WriteAsync(serviceMessage));
         }
 
-        public async Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
+        public Task<bool> WriteAckableMessageAsync(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
         {
-            // If we have multiple endpoints, we should wait to one of the following conditions hit
-            // 1. One endpoint responses "OK" state
-            // 2. All the endpoints response failed state including "NotFound", "Timeout" and waiting response to timeout
+            if (serviceMessage is CheckConnectionExistenceWithAckMessage 
+                || serviceMessage is JoinGroupWithAckMessage 
+                || serviceMessage is LeaveGroupWithAckMessage)
+            {
+                return WriteSingleResultAckableMessage(serviceMessage, cancellationToken);
+            }
+            else
+            {
+                return WriteMultiResultAckableMessage(serviceMessage, cancellationToken);
+            }
+        }
+
+        /// <summary>
+        /// For user or group related operations, different endpoints might return different results
+        /// Strategy:
+        /// Always wait until all endpoints return or throw
+        /// * When any endpoint throws, throw
+        /// * When all endpoints return false, return false
+        /// * When any endpoint returns true, return true
+        /// </summary>
+        /// <param name="serviceMessage"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        private async Task<bool> WriteMultiResultAckableMessage(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
+        {
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var bag = new ConcurrentBag<bool>();
+            await WriteMultiEndpointMessageAsync(serviceMessage, async connection =>
+            {
+                bag.Add(await connection.WriteAckableMessageAsync(serviceMessage.Clone(), cancellationToken));
+            });
+
+            return bag.Any(i => i);
+        }
+
+        /// <summary>
+        /// For connection related operations, since connectionId is globally unique, only one endpoint can have the connection
+        /// Strategy:
+        /// Don't need to wait until all endpoints return or throw
+        /// * Whenever any endpoint returns true: return true
+        /// * When any endpoint throws throw
+        /// * When all endpoints return false, return false
+        /// </summary>
+        /// <param name="serviceMessage"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        private async Task<bool> WriteSingleResultAckableMessage(ServiceMessage serviceMessage, CancellationToken cancellationToken = default)
+        {
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             var writeMessageTask = WriteMultiEndpointMessageAsync(serviceMessage, async connection =>
@@ -68,44 +115,61 @@ namespace Microsoft.Azure.SignalR
                 }
             });
 
-            // If tcs.Task completes, one Endpoint responses "OK" state.
+            // we wait when tcs is set to true or all the tasks return
             var task = await Task.WhenAny(tcs.Task, writeMessageTask);
 
-            // This will throw exceptions in tasks if exceptions exist
-            await task;
+            // tcs is either already set as true or should be false now
+            tcs.TrySetResult(false);
 
-            return tcs.Task.IsCompleted;
+            if (tcs.Task.Result)
+            {
+                return true;
+            }
+
+            // This will throw exceptions in tasks if exceptions exist
+            await writeMessageTask;
+            return false;
         }
 
-        private Task WriteMultiEndpointMessageAsync(ServiceMessage serviceMessage, Func<IServiceConnectionContainer, Task> inner)
+        private async Task WriteMultiEndpointMessageAsync(ServiceMessage serviceMessage, Func<IServiceConnectionContainer, Task> inner)
         {
             if (TargetEndpoints.Length == 0)
             {
                 Log.NoEndpointRouted(_logger, serviceMessage.GetType().Name);
-                return Task.CompletedTask;
+                return;
             }
 
-            var routed = TargetEndpoints.Select(
-                async s =>
-                {
-                    try
-                    {
-                        Log.RouteMessageToServiceEndpoint(_logger, serviceMessage, s.ToString());
-                        await inner(s.ConnectionContainer);
-                    }
-                    catch (ServiceConnectionNotActiveException)
-                    {
-                        // log and don't stop other endpoints
-                        Log.FailedWritingMessageToEndpoint(_logger, serviceMessage.GetType().Name, (serviceMessage as IMessageWithTracingId)?.TracingId, s.ToString());
-                    }
-                }).ToArray();
-
-            if (routed.Length == 1)
+            if (TargetEndpoints.Length == 1)
             {
-                return routed[0];
+                await WriteSingleEndpointMessageAsync(TargetEndpoints[0], serviceMessage, inner);
+                return;
             }
 
-            return Task.WhenAll(routed);
+            var task = Task.WhenAll(TargetEndpoints.Select((endpoint) => WriteSingleEndpointMessageAsync(endpoint, serviceMessage, inner)));
+            try
+            {
+                await task;
+            }
+            catch (Exception ex)
+            {
+                // throw the aggregated exception instead
+                throw task.Exception ?? ex;
+            }
+        }
+
+        private async Task WriteSingleEndpointMessageAsync(HubServiceEndpoint endpoint, ServiceMessage serviceMessage, Func<IServiceConnectionContainer, Task> inner)
+        {
+            try
+            {
+                Log.RouteMessageToServiceEndpoint(_logger, serviceMessage, endpoint.ToString());
+                await inner(endpoint.ConnectionContainer);
+            }
+            catch (ServiceConnectionNotActiveException)
+            {
+                // log and don't stop other endpoints
+                Log.FailedWritingMessageToEndpoint(_logger, serviceMessage.GetType().Name, (serviceMessage as IMessageWithTracingId)?.TracingId, endpoint.ToString());
+                throw new FailedWritingMessageToServiceException(endpoint.ServerEndpoint.AbsoluteUri);
+            }
         }
 
         public Task StartAsync() => Task.CompletedTask;

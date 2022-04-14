@@ -22,6 +22,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 return false;
             }
 
+#pragma warning disable CS0618 // Type or member is obsolete
             switch (x)
             {
                 case HandshakeRequestMessage handshakeRequestMessage:
@@ -94,6 +95,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 default:
                     throw new InvalidOperationException($"Unknown message type: {x.GetType().FullName}");
             }
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         public int GetHashCode(ServiceMessage obj)
@@ -140,6 +142,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.ErrorMessage, y.ErrorMessage) && x.TracingId == y.TracingId;
         }
 
+#pragma warning disable CS0618 // Type or member is obsolete
         private bool CloseConnectionWithAckMessagesEqual(CloseConnectionWithAckMessage x, CloseConnectionWithAckMessage y)
         {
             return StringEqual(x.ConnectionId, y.ConnectionId) && StringEqual(x.Reason, y.Reason) 
@@ -151,6 +154,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
             return SequenceEqual(x.ExcludedList, y.ExcludedList) && StringEqual(x.Reason, y.Reason)
                 && x.TracingId == y.TracingId && x.AckId == y.AckId;
         }
+#pragma warning restore CS0618 // Type or member is obsolete
 
         private bool CloseUserConnectionsWithAckMessagesEqual(CloseUserConnectionsWithAckMessage x, CloseUserConnectionsWithAckMessage y)
         {

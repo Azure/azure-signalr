@@ -45,5 +45,10 @@ namespace Microsoft.Azure.SignalR
         }
 
         public long UniqueIndex => _uniqueIndex;
+
+        public override string ToString()
+        {
+            return base.ToString() + $"(hub={Hub})";
+        }
     }
 }

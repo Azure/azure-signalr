@@ -102,9 +102,11 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ServiceProtocolConstants.CheckUserExistenceWithAckMessageType:
                     return CreateCheckUserExistenceWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.CloseConnectionsWithAckMessageType:
+#pragma warning disable CS0612 // Type or member is obsolete
                     return CreateCloseConnectionsWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.CloseConnectionWithAckMessageType:
                     return CreateCloseConnectionWithAckMessage(ref reader, arrayLength);
+#pragma warning restore CS0612 // Type or member is obsolete
                 case ServiceProtocolConstants.CloseUserConnectionsWithAckMessageType:
                     return CreateCloseUserConnectionsWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.CloseGroupConnectionsWithAckMessageType:
@@ -172,6 +174,7 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteMessageCore(ref MessagePackWriter writer, ServiceMessage message)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             switch (message)
             {
                 case HandshakeRequestMessage handshakeRequestMessage:
@@ -259,10 +262,12 @@ namespace Microsoft.Azure.SignalR.Protocol
                     WriteServiceEventMessage(ref writer, serviceWarningMessage);
                     break;
                 case CloseConnectionWithAckMessage closeConnectionWithAckMessage:
+#pragma warning disable CS0612 // Type or member is obsolete
                     WriteCloseConnectionWithAckMessage(ref writer, closeConnectionWithAckMessage);
                     break;
                 case CloseConnectionsWithAckMessage closeConnectionsWithAckMessage:
                     WriteCloseConnectionsWithAckMessage(ref writer, closeConnectionsWithAckMessage);
+#pragma warning restore CS0612 // Type or member is obsolete
                     break;
                 case CloseUserConnectionsWithAckMessage closeUserConnectionsWithAckMessage:
                     WriteCloseUserConnectionsWithAckMessage(ref writer, closeUserConnectionsWithAckMessage);
@@ -276,6 +281,7 @@ namespace Microsoft.Azure.SignalR.Protocol
                 default:
                     throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
             writer.Flush();
         }
@@ -364,6 +370,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             message.WriteExtensionMembers(ref writer);
         }
 
+        [Obsolete]
         private static void WriteCloseConnectionWithAckMessage(ref MessagePackWriter writer, CloseConnectionWithAckMessage message)
         {
             writer.WriteArrayHeader(5);
@@ -374,6 +381,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             message.WriteExtensionMembers(ref writer);
         }
 
+        [Obsolete]
         private static void WriteCloseConnectionsWithAckMessage(ref MessagePackWriter writer, CloseConnectionsWithAckMessage message)
         {
             writer.WriteArrayHeader(5);
@@ -783,6 +791,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             return result;
         }
 
+        [Obsolete]
         private static CloseConnectionWithAckMessage CreateCloseConnectionWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
             var connectionId = ReadString(ref reader, "connectionId");
@@ -799,6 +808,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             return result;
         }
 
+        [Obsolete]
         private static CloseConnectionsWithAckMessage CreateCloseConnectionsWithAckMessage(ref MessagePackReader reader, int arrayLength)
         {
             var reason = ReadString(ref reader, "reason");
