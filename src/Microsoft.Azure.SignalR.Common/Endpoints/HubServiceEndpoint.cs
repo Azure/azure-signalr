@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,7 +12,6 @@ namespace Microsoft.Azure.SignalR
         private readonly ServiceEndpoint _endpoint;
         private readonly long _uniqueIndex;
         private static long s_currentIndex;
-        private static bool _pendingReload;
         private TaskCompletionSource<bool> _scaleTcs;
 
         public HubServiceEndpoint(
@@ -23,7 +23,6 @@ namespace Microsoft.Azure.SignalR
             Hub = hub;
             Provider = provider;
             _endpoint = endpoint;
-            _pendingReload = endpoint.PendingReload;
             _scaleTcs = endpoint.PendingReload ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : null;
             _uniqueIndex = Interlocked.Increment(ref s_currentIndex);
         }
@@ -43,14 +42,12 @@ namespace Microsoft.Azure.SignalR
 
         public void CompleteScale()
         {
-            _pendingReload = false;
             _scaleTcs?.TrySetResult(true);
         }
 
         // When remove an existing HubServiceEndpoint.
         public void ResetScale()
         {
-            _pendingReload = true;
             _scaleTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
@@ -61,6 +58,7 @@ namespace Microsoft.Azure.SignalR
             return base.ToString() + $"(hub={Hub})";
         }
 
-        internal override bool PendingReload => _pendingReload;
+        // Value here is not accurate. 
+        internal override bool PendingReload => throw new NotSupportedException();
     }
 }
