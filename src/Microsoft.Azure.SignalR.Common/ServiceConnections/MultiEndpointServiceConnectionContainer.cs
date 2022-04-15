@@ -252,7 +252,7 @@ namespace Microsoft.Azure.SignalR
 
         private async Task AddHubServiceEndpointAsync(HubServiceEndpoint endpoint)
         {
-            if (!endpoint.PendingReload)
+            if (endpoint.ScaleTask.IsCompleted)
             {
                 UpdateEndpointsStore(endpoint, ScaleOperation.Add);
                 return;
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.SignalR
 
         private async Task RemoveHubServiceEndpointAsync(HubServiceEndpoint endpoint)
         {
-            if (!endpoint.PendingReload)
+            if (endpoint.ScaleTask.IsCompleted)
             {
                 UpdateEndpointsStore(endpoint, ScaleOperation.Remove);
                 return;
