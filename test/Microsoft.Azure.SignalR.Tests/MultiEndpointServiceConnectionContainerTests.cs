@@ -601,7 +601,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
             await writeTcs.Task.OrTimeout();
-           
+
             var exception = await Assert.ThrowsAnyAsync<AggregateException>(async () => await task.OrTimeout());
             Assert.Equal(2, exception.InnerExceptions.Count);
             Assert.All(exception.InnerExceptions, s => Assert.IsType<TimeoutException>(s));
@@ -774,7 +774,7 @@ namespace Microsoft.Azure.SignalR.Tests
             var writeTcs = new TaskCompletionSource<object>();
             var container = CreateMultiEndpointConnection(new EndpointStatus[] { EndpointStatus.Online, EndpointStatus.Online }, writeTcs, NullLoggerFactory.Instance);
             await container.StartedAsync();
-            
+
             var task = container.WriteAckableMessageAsync(DefaultGroupMessage, new CancellationToken(true));
             await writeTcs.Task.OrTimeout();
             foreach (var c in container.GetTestOnlineContainers())
@@ -1372,6 +1372,122 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal("1", hubEndpoints[0].Name);
             Assert.Equal("22", hubEndpoints[1].Name);
             Assert.Equal(testSe, hubEndpoints[0].ServerEndpoint.AbsoluteUri);
+        }
+
+        // EP1 => Add EP2 => Remove EP1 -> Rename EP2
+        [Fact]
+        public async Task TestEndpointManagerWithReloadMultipleTimes()
+        {
+            var sem = new TestServiceEndpointManager(
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1")
+                );
+
+            var router = new TestEndpointRouter();
+            var writeTcs = new TaskCompletionSource<object>();
+            var container = new TestMultiEndpointServiceConnectionContainer("hub",
+                e => new TestServiceConnectionContainer(new List<IServiceConnection> {
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs),
+                new TestSimpleServiceConnection(writeAsyncTcs: writeTcs)
+            }, e), sem, router, NullLoggerFactory.Instance, TimeSpan.FromSeconds(10));
+
+            var endpoints = sem.GetEndpoints("hub").ToArray();
+            Assert.Single(endpoints);
+            Assert.Equal("1", endpoints[0].Name);
+
+            var hubEndpoints = container.GetOnlineEndpoints().ToArray();
+            Assert.Single(hubEndpoints);
+            Assert.Equal("1", hubEndpoints.First().Name);
+
+            // Stage1: Add EP2
+            var newEndpoints = new ServiceEndpoint[]
+            {
+                new ServiceEndpoint(ConnectionString1, EndpointType.Primary, "1"),
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2")
+            };
+            _ = sem.TestReloadServiceEndpoints(newEndpoints, 10);
+
+            // Wait a few time to let message router updated.
+            await Task.Delay(100);
+
+            hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, hubEndpoints.Length);
+            Assert.Equal("1", hubEndpoints[0].Name);
+            Assert.Equal("2", hubEndpoints[1].Name);
+
+            // without Ready, still single endpoint available in negotiation
+            var ngoEps = sem.GetEndpoints("hub").ToArray();
+            Assert.Single(ngoEps);
+
+            // Mock there're 3 servers SA,SB connected to EP1 and EP2
+            var containers = container.GetTestOnlineContainers();
+            var serversTag = "Server1;Server2;Server3";
+            await Task.WhenAll(containers.Select(c => c.MockReceivedServersPing(serversTag)));
+
+            // wait one interval+ for Ready state and check negotiation is added.
+            await Task.Delay(6000);
+
+            ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
+            Assert.Equal(2, ngoEps.Length);
+            Assert.Equal("1", ngoEps[0].Name);
+            Assert.Equal("2", ngoEps[1].Name);
+
+            var task = container.WriteAckableMessageAsync(DefaultGroupMessage);
+            await writeTcs.Task.OrTimeout();
+            containers.First().HandleAck(new AckMessage(1, (int)AckStatus.Ok));
+            await task.OrTimeout();
+
+            // Stage2: Remove EP1
+            // mock all active to emulate has clients
+            containers = container.GetTestOnlineContainers();
+            await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(true)));
+
+            newEndpoints = new ServiceEndpoint[]
+            {
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "2")
+            };
+            _ = sem.TestReloadServiceEndpoints(newEndpoints, 10);
+
+            // validate container side not updated
+            hubEndpoints = container.GetOnlineEndpoints().ToArray();
+            Assert.Equal(2, hubEndpoints.Length);
+            Assert.Equal("1", hubEndpoints[0].Name);
+
+            // validate endpoint manager side update
+            ngoEps = sem.GetEndpoints("hub").ToArray();
+            Assert.Single(ngoEps);
+            Assert.Equal("2", ngoEps[0].Name);
+
+            // Mock client now drops and able to remove endpoints
+            await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(false)));
+            await Task.Delay(6000);
+
+            // validate container side updated
+            hubEndpoints = container.GetOnlineEndpoints().ToArray();
+            Assert.Single(hubEndpoints);
+            Assert.Equal("2", hubEndpoints[0].Name);
+
+            // Stage3: Rename EP2
+            // Trigger reload to test rename
+            var renamedEndpoint = new ServiceEndpoint[]
+            {
+                new ServiceEndpoint(ConnectionString2, EndpointType.Primary, "22"),
+            };
+            // mock all active to emulate has clients
+            containers = container.GetTestOnlineContainers();
+            await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(true)));
+
+            await sem.TestReloadServiceEndpoints(renamedEndpoint, 10);
+
+            // validate container level updates
+            hubEndpoints = container.GetOnlineEndpoints().ToArray();
+            Assert.Single(hubEndpoints);
+            Assert.Equal("22", hubEndpoints[0].Name);
+
+            // validate sem negotiation endpoints updated
+            ngoEps = sem.GetEndpoints("hub").ToArray();
+            Assert.Single(ngoEps);
+            Assert.Equal("22", ngoEps[0].Name);
         }
 
         [Theory]

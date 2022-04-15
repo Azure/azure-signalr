@@ -5,7 +5,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -278,9 +277,10 @@ namespace Microsoft.Azure.SignalR
                 .Except(Endpoints.Keys);
             foreach (var endpoint in commonEndpoints)
             {
-                // search exist from old to remove
-                var exist = Endpoints.First(x => x.Key.Endpoint == endpoint.Endpoint);
-                removed.Add(exist.Key);
+                // search exist from old to remove and reset PendingReload in case changed before.
+                var exist = Endpoints.First(x => x.Key.Endpoint == endpoint.Endpoint).Key;
+                exist.PendingReload = false;
+                removed.Add(exist);
 
                 added.Add(endpoint);
                 endpoints.Add(endpoint, endpoint);
