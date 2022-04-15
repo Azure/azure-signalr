@@ -255,9 +255,9 @@ namespace Microsoft.Azure.SignalR
                 case AckStatus.NotFound:
                     return false;
                 case AckStatus.Timeout:
-                    throw new TimeoutException($"Ack-able message {serviceMessage.GetType()} waiting for ack timed out.");
+                    throw new TimeoutException($"Ack-able message {serviceMessage.GetType()}(ackId: {ackableMessage.AckId}) timed out.");
                 default:
-                    throw new InvalidDataException($"Unexpected ack status is returned from ack-able message with ackid {ackableMessage.AckId}");
+                    throw new AzureSignalRException($"Ack-able message {serviceMessage.GetType()}(ackId: {ackableMessage.AckId}) gets error ack status {status}.");
             }
         }
 
