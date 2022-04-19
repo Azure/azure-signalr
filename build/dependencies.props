@@ -6,22 +6,22 @@
     <!-- Azure ASP.NET Core SignalR -->
     <MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>1.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsClientPackage3_0Version>3.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackage3_0Version>
-    <MicrosoftAspNetCoreHttpConnectionsClientPackage3_1Version>3.1.9</MicrosoftAspNetCoreHttpConnectionsClientPackage3_1Version>
+    <MicrosoftAspNetCoreHttpConnectionsClientPackage3_1Version>3.1.24</MicrosoftAspNetCoreHttpConnectionsClientPackage3_1Version>
     <MicrosoftAspNetCoreHttpConnectionsClientPackage5_0Version>5.0.1</MicrosoftAspNetCoreHttpConnectionsClientPackage5_0Version>
     <MicrosoftAspNetCoreHttpConnectionsCommonPackageVersion>1.0.4</MicrosoftAspNetCoreHttpConnectionsCommonPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsCommonPackage3_0Version>3.0.0</MicrosoftAspNetCoreHttpConnectionsCommonPackage3_0Version>
-    <MicrosoftAspNetCoreHttpConnectionsCommonPackage3_1Version>3.1.9</MicrosoftAspNetCoreHttpConnectionsCommonPackage3_1Version>
+    <MicrosoftAspNetCoreHttpConnectionsCommonPackage3_1Version>3.1.24</MicrosoftAspNetCoreHttpConnectionsCommonPackage3_1Version>
     <MicrosoftAspNetCoreHttpConnectionsCommonPackage5_0Version>5.0.1</MicrosoftAspNetCoreHttpConnectionsCommonPackage5_0Version>
     <MicrosoftExtensionsLoggingAbstractionsPackageVersion>2.1.1</MicrosoftExtensionsLoggingAbstractionsPackageVersion>
     <MicrosoftExtensionsLoggingAbstractionsPackage3_0Version>3.0.0</MicrosoftExtensionsLoggingAbstractionsPackage3_0Version>
-    <MicrosoftExtensionsLoggingAbstractionsPackage3_1Version>3.1.9</MicrosoftExtensionsLoggingAbstractionsPackage3_1Version>
+    <MicrosoftExtensionsLoggingAbstractionsPackage3_1Version>3.1.24</MicrosoftExtensionsLoggingAbstractionsPackage3_1Version>
     <MicrosoftExtensionsDependencyInjectionPackageVersion>2.1.0</MicrosoftExtensionsDependencyInjectionPackageVersion>
     <MicrosoftExtensionsDependencyInjectionPackage3_0Version>3.0.0</MicrosoftExtensionsDependencyInjectionPackage3_0Version>
-    <MicrosoftExtensionsDependencyInjectionPackage3_1Version>3.1.9</MicrosoftExtensionsDependencyInjectionPackage3_1Version>
+    <MicrosoftExtensionsDependencyInjectionPackage3_1Version>3.1.24</MicrosoftExtensionsDependencyInjectionPackage3_1Version>
     <MicrosoftExtensionHttpVersion>2.1.0</MicrosoftExtensionHttpVersion>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>2.1.2</MicrosoftAspNetCoreConnectionsAbstractionsPackageVersion>
     <MicrosoftAspNetCoreConnectionsAbstractionsPackage3_0Version>3.0.0</MicrosoftAspNetCoreConnectionsAbstractionsPackage3_0Version>
-    <MicrosoftAspNetCoreConnectionsAbstractionsPackage3_1Version>3.1.9</MicrosoftAspNetCoreConnectionsAbstractionsPackage3_1Version>
+    <MicrosoftAspNetCoreConnectionsAbstractionsPackage3_1Version>3.1.24</MicrosoftAspNetCoreConnectionsAbstractionsPackage3_1Version>
     <MicrosoftAspNetCoreSignalRPackageVersion>1.0.0</MicrosoftAspNetCoreSignalRPackageVersion>
     <MicrosoftAspNetCoreLocalizationPackageVersion>2.1.0</MicrosoftAspNetCoreLocalizationPackageVersion>
     <MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>3.19.1</MicrosoftIdentitiyModelClientsActiveDirectoryPackageVersion>
@@ -50,7 +50,7 @@
     <MicrosoftExtensionsLoggingEventSourcePackageVersion>2.1.0</MicrosoftExtensionsLoggingEventSourcePackageVersion>
     <SystemThreadingChannelsPackageVersion>4.6.0</SystemThreadingChannelsPackageVersion>
     <SystemIOPipelinesPackageVersion>4.6.0</SystemIOPipelinesPackageVersion>
-    <SystemIOPipelinesPackage3_1Version>4.7.3</SystemIOPipelinesPackage3_1Version>
+    <SystemIOPipelinesPackage3_1Version>4.7.5</SystemIOPipelinesPackage3_1Version>
 
     <!-- SignalR Management -->
     <AzureCorePackageVersion>1.21.0</AzureCorePackageVersion>
@@ -70,20 +70,17 @@
 
     <!-- Samples -->
     <MicrosoftAspNetCorePackageVersion>2.1.0</MicrosoftAspNetCorePackageVersion>
-    <MicrosoftAspNetCoreSignalRClientPackageVersion>3.1.2</MicrosoftAspNetCoreSignalRClientPackageVersion>
-    <MicrosoftAspNetCoreSignalRProtocolsMessagePackVersion>3.1.2</MicrosoftAspNetCoreSignalRProtocolsMessagePackVersion>
+    <MicrosoftAspNetCoreSignalRClientPackageVersion>3.1.24</MicrosoftAspNetCoreSignalRClientPackageVersion>
     <MicrosoftOwinPackageVersion>2.1.0</MicrosoftOwinPackageVersion>
     <OwinPackageVersion>1.0.0</OwinPackageVersion>
 
     <!--Emulator -->
-    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>3.1.5</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
-    <MicrosoftAspNetCoreMvcNewtonsoftJsonPackageVersion>3.1.5</MicrosoftAspNetCoreMvcNewtonsoftJsonPackageVersion>
-    <MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>3.1.5</MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>
+    <MicrosoftAspNetCoreMvcNewtonsoftJsonPackageVersion>3.1.24</MicrosoftAspNetCoreMvcNewtonsoftJsonPackageVersion>
+    <MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>3.1.24</MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>
     <MicrosoftExtensionsCommandLineUtilsPackageVersion>1.1.1</MicrosoftExtensionsCommandLineUtilsPackageVersion>
 
     <!--Testing -->
-    <MicrosoftAspNetCoreSignalRProtocolsMessagePackTestPackageVersion>3.0.0-preview6.19307.2</MicrosoftAspNetCoreSignalRProtocolsMessagePackTestPackageVersion>
-    <MicrosoftAspNetCoreSignalRClientTest>3.0.0-preview6.19307.2</MicrosoftAspNetCoreSignalRClientTest>
+    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>3.1.24</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
     <MicrosoftNETTestSdkPackageVersion>15.6.1</MicrosoftNETTestSdkPackageVersion>
     <MoqPackageVersion>4.14.5</MoqPackageVersion>
     <XunitPackageVersion>2.4.0</XunitPackageVersion>
