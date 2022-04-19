@@ -16,7 +16,5 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="$(EmulatorMicrosoftPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="$(EmulatorMicrosoftPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="$(MicrosoftExtensionsCommandLineUtilsPackageVersion)" />
-    <PackageReference Include="System.IO.Pipelines" Version="$(SystemIOPipelinesPackageForEmulatorVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.Connections.Abstractions" Version="$(EmulatorMicrosoftPackageVersion)" />
   </ItemGroup>
 </Project>
