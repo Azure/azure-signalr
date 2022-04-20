@@ -223,8 +223,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
             public ServiceConnectionStatus Status { get; set; } = ServiceConnectionStatus.Disconnected;
 
-            private readonly TaskCompletionSource<bool> _offline = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
-            private readonly TaskCompletionSource<bool> _serversPing = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+            private readonly TaskCompletionSource<bool> _offline = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            private readonly TaskCompletionSource<bool> _serversPing = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             public Task ConnectionOfflineTask => _offline.Task;
 

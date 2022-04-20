@@ -70,20 +70,17 @@
 
     <!-- Samples -->
     <MicrosoftAspNetCorePackageVersion>2.1.0</MicrosoftAspNetCorePackageVersion>
-    <MicrosoftAspNetCoreSignalRClientPackageVersion>3.1.2</MicrosoftAspNetCoreSignalRClientPackageVersion>
-    <MicrosoftAspNetCoreSignalRProtocolsMessagePackVersion>3.1.2</MicrosoftAspNetCoreSignalRProtocolsMessagePackVersion>
+    <MicrosoftAspNetCoreSignalRClientPackageVersion>3.1.24</MicrosoftAspNetCoreSignalRClientPackageVersion>
     <MicrosoftOwinPackageVersion>2.1.0</MicrosoftOwinPackageVersion>
     <OwinPackageVersion>1.0.0</OwinPackageVersion>
 
     <!--Emulator -->
-    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>3.1.5</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
-    <MicrosoftAspNetCoreMvcNewtonsoftJsonPackageVersion>3.1.5</MicrosoftAspNetCoreMvcNewtonsoftJsonPackageVersion>
-    <MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>3.1.5</MicrosoftAspNetCoreAuthenticationJwtBearerPackageVersion>
     <MicrosoftExtensionsCommandLineUtilsPackageVersion>1.1.1</MicrosoftExtensionsCommandLineUtilsPackageVersion>
+    <SystemIOPipelinesPackageForEmulatorVersion>4.7.5</SystemIOPipelinesPackageForEmulatorVersion>
+    <EmulatorMicrosoftPackageVersion>3.1.24</EmulatorMicrosoftPackageVersion>
 
     <!--Testing -->
-    <MicrosoftAspNetCoreSignalRProtocolsMessagePackTestPackageVersion>3.0.0-preview6.19307.2</MicrosoftAspNetCoreSignalRProtocolsMessagePackTestPackageVersion>
-    <MicrosoftAspNetCoreSignalRClientTest>3.0.0-preview6.19307.2</MicrosoftAspNetCoreSignalRClientTest>
+    <MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>3.1.24</MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion>
     <MicrosoftNETTestSdkPackageVersion>15.6.1</MicrosoftNETTestSdkPackageVersion>
     <MoqPackageVersion>4.14.5</MoqPackageVersion>
     <XunitPackageVersion>2.4.0</XunitPackageVersion>
