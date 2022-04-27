@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="$(EmulatorMicrosoftPackageVersion)" />
+    <PackageReference Include="MessagePack" Version="$(MessagePackPackage3_1Version)" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="$(EmulatorMicrosoftPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="$(EmulatorMicrosoftPackageVersion)" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="$(MicrosoftExtensionsCommandLineUtilsPackageVersion)" />
