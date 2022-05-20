@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
 
         private const string ClientCertProperty = "clientCert";
 
-        private const string ClientEndpointProperty = "ClientEndpoint";
+        private const string ClientEndpointProperty = "clientEndpoint";
 
         private const string ClientIdProperty = "clientId";
 
@@ -35,16 +35,31 @@ namespace Microsoft.Azure.SignalR
 
         private const string TenantIdProperty = "tenantId";
 
+        private const string TypeAzure = "azure";
+
+        private const string TypeAzureAD = "aad";
+
+        private const string TypeAzureApp = "azure.app";
+
+        private const string TypeAzureMsi = "azure.msi";
+
         private const string ValidVersionRegex = "^" + SupportedVersion + @"\.\d+(?:[\w-.]+)?$";
 
         private const string VersionProperty = "version";
 
-        private static readonly string InvalidPortValue = $"Invalid value for {PortProperty} property.";
+        private static readonly string InvalidClientEndpointProperty = $"Invalid value for {ClientEndpointProperty} property, it must be a valid URI.";
+
+        private static readonly string InvalidEndpointProperty = $"Invalid value for {EndpointProperty} property, it must be a valid URI.";
+
+        private static readonly string InvalidPortValue = $"Invalid value for {PortProperty} property, it must be an positive integer between (0, 65536)";
 
         private static readonly char[] KeyValueSeparator = { '=' };
 
         private static readonly string MissingAccessKeyProperty =
             $"{AccessKeyProperty} is required.";
+
+        private static readonly string MissingClientIdProperty =
+            $"Connection string missing required properties {ClientIdProperty}.";
 
         private static readonly string MissingClientSecretProperty =
             $"Connection string missing required properties {ClientSecretProperty} or {ClientCertProperty}.";
@@ -52,41 +67,25 @@ namespace Microsoft.Azure.SignalR
         private static readonly string MissingEndpointProperty =
                                             $"Connection string missing required properties {EndpointProperty}.";
 
+        private static readonly string MissingTenantIdProperty =
+                            $"Connection string missing required properties {TenantIdProperty}.";
+
         private static readonly char[] PropertySeparator = { ';' };
 
         internal static ParsedConnectionString Parse(string connectionString)
         {
-            var properties = connectionString.Split(PropertySeparator, StringSplitOptions.RemoveEmptyEntries);
-            if (properties.Length < 2)
-            {
-                throw new ArgumentException(MissingEndpointProperty, nameof(connectionString));
-            }
-
-            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var property in properties)
-            {
-                var kvp = property.Split(KeyValueSeparator, 2);
-                if (kvp.Length != 2) continue;
-
-                var key = kvp[0].Trim();
-                if (dict.ContainsKey(key))
-                {
-                    throw new ArgumentException($"Duplicate properties found in connection string: {key}.");
-                }
-
-                dict.Add(key, kvp[1].Trim());
-            }
+            var dict = ToDictionary(connectionString);
 
             // parse and validate endpoint.
             if (!dict.TryGetValue(EndpointProperty, out var endpoint))
             {
-                throw new ArgumentException(MissingEndpointProperty, nameof(connectionString));
+                throw new ArgumentException(MissingEndpointProperty, nameof(endpoint));
             }
             endpoint = endpoint.TrimEnd('/');
 
             if (!TryGetEndpointUri(endpoint, out var endpointUri))
             {
-                throw new ArgumentException($"Endpoint property in connection string is not a valid URI: {dict[EndpointProperty]}.");
+                throw new ArgumentException(InvalidEndpointProperty, nameof(endpoint));
             }
             var builder = new UriBuilder(endpointUri);
 
@@ -96,7 +95,7 @@ namespace Microsoft.Azure.SignalR
             {
                 if (!Regex.IsMatch(v, ValidVersionRegex))
                 {
-                    throw new ArgumentException(string.Format(InvalidVersionValueFormat, v), nameof(connectionString));
+                    throw new ArgumentException(string.Format(InvalidVersionValueFormat, v), nameof(version));
                 }
                 version = v;
             }
@@ -104,13 +103,13 @@ namespace Microsoft.Azure.SignalR
             // parse and validate port.
             if (dict.TryGetValue(PortProperty, out var s))
             {
-                if (int.TryParse(s, out var p) && p > 0 && p <= 0xFFFF)
+                if (int.TryParse(s, out var port) && port > 0 && port <= 0xFFFF)
                 {
-                    builder.Port = p;
+                    builder.Port = port;
                 }
                 else
                 {
-                    throw new ArgumentException(InvalidPortValue, nameof(connectionString));
+                    throw new ArgumentException(InvalidPortValue, nameof(port));
                 }
             }
 
@@ -121,14 +120,18 @@ namespace Microsoft.Azure.SignalR
             {
                 if (!TryGetEndpointUri(clientEndpoint, out clientEndpointUri))
                 {
-                    throw new ArgumentException($"{ClientEndpointProperty} property in connection string is not a valid URI: {clientEndpoint}.");
+                    throw new ArgumentException(InvalidClientEndpointProperty, nameof(clientEndpoint));
                 }
             }
 
+            // try building accesskey.
             dict.TryGetValue(AuthTypeProperty, out var type);
             var accessKey = type?.ToLower() switch
             {
-                "aad" => BuildAadAccessKey(builder.Uri, dict),
+                TypeAzureAD => BuildAadAccessKey(builder.Uri, dict),
+                TypeAzure => BuildAzureAccessKey(builder.Uri, dict),
+                TypeAzureApp => BuildAzureAppAccessKey(builder.Uri, dict),
+                TypeAzureMsi => BuildAzureMsiAccessKey(builder.Uri, dict),
                 _ => BuildAccessKey(builder.Uri, dict),
             };
 
@@ -193,6 +196,71 @@ namespace Microsoft.Azure.SignalR
                 return new AccessKey(uri, key);
             }
             throw new ArgumentException(MissingAccessKeyProperty, AccessKeyProperty);
+        }
+
+        private static AccessKey BuildAzureAccessKey(Uri uri, Dictionary<string, string> dict)
+        {
+            return new AadAccessKey(uri, new DefaultAzureCredential());
+        }
+
+        private static AccessKey BuildAzureAppAccessKey(Uri uri, Dictionary<string, string> dict)
+        {
+            if (!dict.TryGetValue(ClientIdProperty, out var clientId))
+            {
+                throw new ArgumentException(MissingClientIdProperty, ClientIdProperty);
+            }
+
+            if (!dict.TryGetValue(TenantIdProperty, out var tenantId))
+            {
+                throw new ArgumentException(MissingTenantIdProperty, TenantIdProperty);
+            }
+
+            if (dict.TryGetValue(ClientSecretProperty, out var clientSecret))
+            {
+                return new AadAccessKey(uri, new ClientSecretCredential(tenantId, clientId, clientSecret));
+            }
+            else if (dict.TryGetValue(ClientCertProperty, out var clientCertPath))
+            {
+                return new AadAccessKey(uri, new ClientCertificateCredential(tenantId, clientId, clientCertPath));
+            }
+            throw new ArgumentException(MissingClientSecretProperty, ClientSecretProperty);
+        }
+
+        private static AccessKey BuildAzureMsiAccessKey(Uri uri, Dictionary<string, string> dict)
+        {
+            if (dict.TryGetValue(ClientIdProperty, out var clientId))
+            {
+                return new AadAccessKey(uri, new ManagedIdentityCredential(clientId));
+            }
+            return new AadAccessKey(uri, new ManagedIdentityCredential());
+        }
+
+        private static Dictionary<string, string> ToDictionary(string connectionString)
+        {
+            var properties = connectionString.Split(PropertySeparator, StringSplitOptions.RemoveEmptyEntries);
+            if (properties.Length < 2)
+            {
+                throw new ArgumentException(MissingEndpointProperty, nameof(connectionString));
+            }
+
+            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var property in properties)
+            {
+                var kvp = property.Split(KeyValueSeparator, 2);
+                if (kvp.Length != 2)
+                {
+                    continue;
+                }
+
+                var key = kvp[0].Trim();
+                if (dict.ContainsKey(key))
+                {
+                    throw new ArgumentException($"Duplicate properties found in connection string: {key}.");
+                }
+
+                dict.Add(key, kvp[1].Trim());
+            }
+            return dict;
         }
     }
 }

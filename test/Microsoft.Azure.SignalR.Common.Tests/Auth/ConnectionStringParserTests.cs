@@ -38,6 +38,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 
         [Theory]
         [InlineData("endpoint=https://aaa;AuthType=aad;clientId=123;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
+        [InlineData("endpoint=https://aaa;AuthType=azure.app;clientId=123;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
         public void InvalidAzureApplication(string connectionString)
         {
             var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
@@ -50,7 +51,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         public void InvalidClientEndpoint(string connectionString)
         {
             var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-            Assert.Contains("ClientEndpoint property in connection string is not a valid URI", exception.Message);
+            Assert.Contains("Invalid value for clientEndpoint property, it must be a valid URI. (Parameter 'clientEndpoint')", exception.Message);
         }
 
         [Theory]
@@ -70,7 +71,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         public void InvalidEndpoint(string connectionString)
         {
             var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-            Assert.Contains("Endpoint property in connection string is not a valid URI", exception.Message);
+            Assert.Contains("Invalid value for endpoint property, it must be a valid URI. (Parameter 'endpoint')", exception.Message);
         }
 
         [Theory]
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         public void InvalidPort(string connectionString)
         {
             var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-            Assert.Contains("Invalid value for port property.", exception.Message);
+            Assert.Contains("Invalid value for port property, it must be an positive integer between (0, 65536) (Parameter 'port')", exception.Message);
         }
 
         [Theory]
@@ -95,6 +96,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
 
         [Theory]
         [InlineData("endpoint=https://aaa;AuthType=aad;clientId=foo;clientSecret=bar;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
+        [InlineData("endpoint=https://aaa;AuthType=azure.app;clientId=foo;clientSecret=bar;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
         public void TestAzureApplication(string connectionString)
         {
             var r = ConnectionStringParser.Parse(connectionString);
@@ -138,14 +140,26 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         }
 
         [Theory]
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=azure;clientId=xxxx;")] // should ignore the clientId
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=azure;tenantId=xxxx;")] // should ignore the tenantId
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=azure;clientSecret=xxxx;")] // should ignore the clientSecret
+        internal void TestDefaultAzureCredential(string expectedEndpoint, string connectionString)
+        {
+            var r = ConnectionStringParser.Parse(connectionString);
+
+            Assert.Equal(expectedEndpoint, r.Endpoint.AbsoluteUri.TrimEnd('/'));
+            var aadAccessKey = Assert.IsType<AadAccessKey>(r.AccessKey);
+            Assert.IsType<DefaultAzureCredential>(aadAccessKey.TokenCredential);
+            Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
+        }
+
+        [Theory]
         [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;")]
-
-        // simply ignore the clientSecret
-        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientSecret=xxxx;")]
-
-        // simply ignore the tenantId
-        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;tenantId=xxxx;")]
         [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientId=123;")]
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;tenantId=xxxx;")] // should ignore the tenantId
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientSecret=xxxx;")] // should ignore the clientSecret
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=azure.msi;")]
+        [InlineData("https://aaa", "endpoint=https://aaa;AuthType=azure.msi;clientId=123;")]
         internal void TestManagedIdentity(string expectedEndpoint, string connectionString)
         {
             var r = ConnectionStringParser.Parse(connectionString);
