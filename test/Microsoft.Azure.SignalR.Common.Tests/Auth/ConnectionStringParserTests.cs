@@ -14,15 +14,27 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
     [Collection("Auth")]
     public class ConnectionStringParserTests
     {
+        private const string ClientEndpoint = "http://bbb";
+
+        private const string DefaultKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
         private const string HttpEndpoint = "http://aaa";
 
         private const string HttpsEndpoint = "https://aaa";
 
-        private const string ClientEndpoint = "http://bbb";
-
         private const string ServerEndpoint = "http://ccc";
 
-        private const string DefaultKey = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        public static IEnumerable<object[]> ServerEndpointTestData
+        {
+            get
+            {
+                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;serverEndpoint={ServerEndpoint}", ServerEndpoint, 80 };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;serverEndpoint={ServerEndpoint}:500", $"{ServerEndpoint}:500", 500 };
+            }
+        }
 
         [Theory]
         [InlineData("endpoint=https://aaa;AuthType=aad;clientId=123;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
@@ -30,6 +42,15 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         {
             var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
             Assert.Contains("Connection string missing required properties clientSecret or clientCert", exception.Message);
+        }
+
+        [Theory]
+        [InlineData("endpoint=https://aaa;clientEndpoint=aaa;AccessKey=bbb;")]
+        [InlineData("endpoint=https://aaa;ClientEndpoint=endpoint=aaa;AccessKey=bbb;")]
+        public void InvalidClientEndpoint(string connectionString)
+        {
+            var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
+            Assert.Contains("ClientEndpoint property in connection string is not a valid URI", exception.Message);
         }
 
         [Theory]
@@ -53,12 +74,13 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         }
 
         [Theory]
-        [InlineData("endpoint=https://aaa;clientEndpoint=aaa;AccessKey=bbb;")]
-        [InlineData("endpoint=https://aaa;ClientEndpoint=endpoint=aaa;AccessKey=bbb;")]
-        public void InvalidClientEndpoint(string connectionString)
+        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=1.0;port=2.3")]
+        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=1.1;port=1000000")]
+        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=1.0-preview;port=0")]
+        public void InvalidPort(string connectionString)
         {
             var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-            Assert.Contains("ClientEndpoint property in connection string is not a valid URI", exception.Message);
+            Assert.Contains("Invalid value for port property.", exception.Message);
         }
 
         [Theory]
@@ -72,22 +94,16 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         }
 
         [Theory]
-        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=1.0;port=2.3")]
-        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=1.1;port=1000000")]
-        [InlineData("Endpoint=https://aaa;AccessKey=bbb;version=1.0-preview;port=0")]
-        public void InvalidPort(string connectionString)
-        {
-            var exception = Assert.Throws<ArgumentException>(() => ConnectionStringParser.Parse(connectionString));
-            Assert.Contains("Invalid value for port property.", exception.Message);
-        }
-
-        [Theory]
-        [ClassData(typeof(VersionTestData))]
-        public void TestVersion(string connectionString, string expectedVersion)
+        [InlineData("endpoint=https://aaa;AuthType=aad;clientId=foo;clientSecret=bar;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
+        public void TestAzureApplication(string connectionString)
         {
             var r = ConnectionStringParser.Parse(connectionString);
+
+            var aadAccessKey = Assert.IsType<AadAccessKey>(r.AccessKey);
+            Assert.IsType<ClientSecretCredential>(aadAccessKey.TokenCredential);
             Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
-            Assert.Equal(expectedVersion, r.Version);
+            Assert.Null(r.Version);
+            Assert.Null(r.ClientEndpoint);
         }
 
         [Theory]
@@ -113,22 +129,20 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
         }
 
         [Theory]
-        [InlineData("endpoint=https://aaa;AuthType=aad;clientId=foo;clientSecret=bar;tenantId=aaaaaaaa-bbbb-bbbb-bbbb-cccccccccccc")]
-        public void TestAzureApplication(string connectionString)
+        [ClassData(typeof(VersionTestData))]
+        public void TestVersion(string connectionString, string expectedVersion)
         {
             var r = ConnectionStringParser.Parse(connectionString);
-
-            var aadAccessKey = Assert.IsType<AadAccessKey>(r.AccessKey);
-            Assert.IsType<ClientSecretCredential>(aadAccessKey.TokenCredential);
             Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
-            Assert.Null(r.Version);
-            Assert.Null(r.ClientEndpoint);
+            Assert.Equal(expectedVersion, r.Version);
         }
 
         [Theory]
         [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;")]
+
         // simply ignore the clientSecret
         [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientSecret=xxxx;")]
+
         // simply ignore the tenantId
         [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;tenantId=xxxx;")]
         [InlineData("https://aaa", "endpoint=https://aaa;AuthType=aad;clientId=123;")]
@@ -141,6 +155,20 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             Assert.IsType<ManagedIdentityCredential>(aadAccessKey.TokenCredential);
             Assert.Same(r.Endpoint, r.AccessKey.Endpoint);
             Assert.Null(r.ClientEndpoint);
+        }
+
+        public class ClientEndpointTestData : IEnumerable<object[]>
+        {
+            public IEnumerator<object[]> GetEnumerator()
+            {
+                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400", null, null };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;clientEndpoint={ClientEndpoint}", ClientEndpoint, 80 };
+                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;clientEndpoint={ClientEndpoint}:500", $"{ClientEndpoint}:500", 500 };
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         public class EndpointEndWithSlash : IEnumerable<object[]>
@@ -166,32 +194,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             }
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        }
-
-        public class ClientEndpointTestData : IEnumerable<object[]>
-        {
-            public IEnumerator<object[]> GetEnumerator()
-            {
-                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", null, null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", null, null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400", null, null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;clientEndpoint={ClientEndpoint}", ClientEndpoint, 80 };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;clientEndpoint={ClientEndpoint}:500", $"{ClientEndpoint}:500", 500 };
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        }
-
-        public static IEnumerable<object[]> ServerEndpointTestData
-        {
-            get
-            {
-                yield return new object[] { $"endpoint={HttpEndpoint};accesskey={DefaultKey}", null, null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey}", null, null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400", null, null };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;serverEndpoint={ServerEndpoint}", ServerEndpoint, 80 };
-                yield return new object[] { $"endpoint={HttpEndpoint}:500;accesskey={DefaultKey};port=400;serverEndpoint={ServerEndpoint}:500", $"{ServerEndpoint}:500", 500 };
-            }
         }
     }
 }

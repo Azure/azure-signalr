@@ -11,21 +11,34 @@ namespace Microsoft.Azure.SignalR
     internal static class ConnectionStringParser
     {
         private const string AccessKeyProperty = "accesskey";
+
         private const string AuthTypeProperty = "authtype";
+
         private const string ClientCertProperty = "clientCert";
+
         private const string ClientEndpointProperty = "ClientEndpoint";
+
         private const string ClientIdProperty = "clientId";
+
         private const string ClientSecretProperty = "clientSecret";
+
         private const string EndpointProperty = "endpoint";
-        private const string ServerEndpoint = "ServerEndpoint";
+
         private const string InvalidVersionValueFormat = "Version {0} is not supported.";
+
         private const string PortProperty = "port";
+
+        private const string ServerEndpoint = "ServerEndpoint";
+
         // For SDK 1.x, only support Azure SignalR Service 1.x
         private const string SupportedVersion = "1";
 
         private const string TenantIdProperty = "tenantId";
+
         private const string ValidVersionRegex = "^" + SupportedVersion + @"\.\d+(?:[\w-.]+)?$";
+
         private const string VersionProperty = "version";
+
         private static readonly string InvalidPortValue = $"Invalid value for {PortProperty} property.";
 
         private static readonly char[] KeyValueSeparator = { '=' };
@@ -102,6 +115,7 @@ namespace Microsoft.Azure.SignalR
             }
 
             Uri clientEndpointUri = null;
+
             // parse and validate clientEndpoint.
             if (dict.TryGetValue(ClientEndpointProperty, out var clientEndpoint))
             {
