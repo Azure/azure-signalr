@@ -17,9 +17,11 @@ using System.Linq.Expressions;
 namespace Microsoft.Azure.SignalR
 {
     /* Modified from https://github.com/Azure/azure-sdk-for-net/blob/2999288f431649dcbf54450b7ab237e45c953978/sdk/webpubsub/Azure.Messaging.WebPubSub/src/JwtBuilder.cs
-     * Modifications are as follows:
-     *      1. This new implementation supports variable header {"alg":<alg>, "typ":"JWT", "kid":<kid>} while the original version uses a fixed header {"alg":"HS256","typ":"JWT"}
-     *      2. Create a new method `public void AddClaims(IEnumerable<Claim> claims`
+     * In order to get rid of package `System.IdentityModel.Tokens.Jwt` when generating the JWT token
+     * 
+     * Comparing with the original version, modifications are as follows:
+     *      1. This implementation supports a variable header {"alg":<alg>, "typ":"JWT", "kid":<kid>} while the original version uses a fixed header {"alg":"HS256","typ":"JWT"}
+     *      2. New method `public void AddClaims(IEnumerable<Claim> claims)`
      *          (a) Follows the logic of https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/b1814f6013262793512be596016d5c75bc5d4fea/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs#L513
      *          (b) ATTENTION: ONLY supports `Claim.Value` which is string. The original version can handle different                    `ClaimValueType`
      */
