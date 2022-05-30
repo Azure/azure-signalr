@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.IdentityModel.Logging;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.IdentityModel.Tokens;
 
@@ -29,39 +30,55 @@ namespace Microsoft.Azure.SignalR
             AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
         {
             var subject = claims == null ? null : new ClaimsIdentity(claims);
-            SigningCredentials credentials = null;
-            if (signingKey != null)
-            {
-                // Refer: https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/releases/tag/5.5.0
-                // From version 5.5.0, SignatureProvider caching is turned On by default, assign KeyId to enable correct cache for same SigningKey
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey.Value))
-                {
-                    KeyId = signingKey.Id
-                };
+            var writer = new JwtBuilder(Encoding.UTF8.GetBytes(signingKey.Value), 512, signingKey.Id, algorithm);
 
-                if (signingKey is AadAccessKey)
-                {
-                    // disable cache when using AadAccessKey
-                    securityKey.CryptoProviderFactory.CacheSignatureProviders = false;
-                }
-                credentials = new SigningCredentials(securityKey, GetSecurityAlgorithm(algorithm));
+            // add claims
+            writer.AddClaims(claims);
+
+            // issuer
+            if (!string.IsNullOrEmpty(issuer))
+            {
+                writer.AddClaim(JwtBuilder.Iss, issuer);
+            }
+            // audience
+            if (!string.IsNullOrEmpty(audience))
+            {
+                writer.AddClaim(JwtBuilder.Aud, audience);
+            }
+            
+
+            DateTime utcNow = DateTime.UtcNow;
+            if (!expires.HasValue)
+            {
+                expires = utcNow + TimeSpan.FromMinutes(9 * 60);
             }
 
-            var token = JwtTokenHandler.CreateJwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
-                subject: subject,
-                notBefore: notBefore,
-                expires: expires,
-                issuedAt: issuedAt,
-                signingCredentials: credentials);
-            return JwtTokenHandler.WriteToken(token);
+            if (!issuedAt.HasValue)
+            {
+                issuedAt = utcNow;
+            }
+
+            if (!notBefore.HasValue)
+            {
+                notBefore = utcNow;
+            }
+            if (notBefore.Value >= expires.Value)
+            {
+                throw LogHelper.LogExceptionMessage(new ArgumentException(LogHelper.FormatInvariant("IDX12401: Expires: '{0}' must be after NotBefore: '{1}'.", expires.Value, notBefore.Value)));
+            }
+            
+            writer.AddClaim(JwtBuilder.Nbf, EpochTime.GetIntDate(notBefore.Value.ToUniversalTime()));
+            writer.AddClaim(JwtBuilder.Exp, EpochTime.GetIntDate(expires.Value.ToUniversalTime()));
+            writer.AddClaim(JwtBuilder.Iat, EpochTime.GetIntDate(issuedAt.Value.ToUniversalTime()));
+
+            var token = writer.BuildString();
+            return token;
         }
 
         public static string GenerateAccessToken(
-            AccessKey signingKey, 
-            string audience, 
-            IEnumerable<Claim> claims, 
+            AccessKey signingKey,
+            string audience,
+            IEnumerable<Claim> claims,
             TimeSpan lifetime,
             AccessTokenAlgorithm algorithm)
         {
@@ -95,4 +112,5 @@ namespace Microsoft.Azure.SignalR
                 SecurityAlgorithms.HmacSha512;
         }
     }
+
 }
