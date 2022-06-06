@@ -46,10 +46,10 @@ namespace Microsoft.Azure.SignalR
                 LoggerMessage.Define<ulong?, string>(LogLevel.Warning, new EventId(10, "ReceivedMessageForNonExistentConnection"), "Received message {tracingId} for connection {TransportConnectionId} which does not exist.");
 
             private static readonly Action<ILogger, string, Exception> _connectedStarting =
-                LoggerMessage.Define<string>(LogLevel.Information, new EventId(11, "ConnectedStarting"), "Connection {TransportConnectionId} started.");
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(11, "ConnectedStarting"), "Connection {TransportConnectionId} started.");
 
             private static readonly Action<ILogger, string, Exception> _connectedEnding =
-                LoggerMessage.Define<string>(LogLevel.Information, new EventId(12, "ConnectedEnding"), "Connection {TransportConnectionId} ended.");
+                LoggerMessage.Define<string>(LogLevel.Debug, new EventId(12, "ConnectedEnding"), "Connection {TransportConnectionId} ended.");
 
             private static readonly Action<ILogger, string, Exception> _closeConnection =
                 LoggerMessage.Define<string>(LogLevel.Debug, new EventId(13, "CloseConnection"), "Sending close connection message to the service for {TransportConnectionId}.");
