@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.IdentityModel.Logging;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.IdentityModel.Tokens;
 
@@ -29,49 +28,17 @@ namespace Microsoft.Azure.SignalR
             DateTime? notBefore = null,
             AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
         {
-            var subject = claims == null ? null : new ClaimsIdentity(claims);
-            var writer = new JwtBuilder(Encoding.UTF8.GetBytes(signingKey.Value), 512, signingKey.Id, algorithm);
-
-            // add claims
-            writer.AddClaims(claims);
-
-            // issuer
-            if (!string.IsNullOrEmpty(issuer))
-            {
-                writer.AddClaim(JwtBuilder.Iss, issuer);
-            }
-            // audience
-            if (!string.IsNullOrEmpty(audience))
-            {
-                writer.AddClaim(JwtBuilder.Aud, audience);
-            }
-            
-
-            DateTime utcNow = DateTime.UtcNow;
-            if (!expires.HasValue)
-            {
-                expires = utcNow + TimeSpan.FromMinutes(9 * 60);
-            }
-
-            if (!issuedAt.HasValue)
-            {
-                issuedAt = utcNow;
-            }
-
-            if (!notBefore.HasValue)
-            {
-                notBefore = utcNow;
-            }
-            if (notBefore.Value >= expires.Value)
-            {
-                throw LogHelper.LogExceptionMessage(new ArgumentException(LogHelper.FormatInvariant("IDX12401: Expires: '{0}' must be after NotBefore: '{1}'.", expires.Value, notBefore.Value)));
-            }
-            
-            writer.AddClaim(JwtBuilder.Nbf, EpochTime.GetIntDate(notBefore.Value.ToUniversalTime()));
-            writer.AddClaim(JwtBuilder.Exp, EpochTime.GetIntDate(expires.Value.ToUniversalTime()));
-            writer.AddClaim(JwtBuilder.Iat, EpochTime.GetIntDate(issuedAt.Value.ToUniversalTime()));
-
-            var token = writer.BuildString();
+            JwtBuilder jwtBuilder = new JwtBuilder(
+                expires: expires,
+                issuedAt: issuedAt,
+                issuer: issuer,
+                audience: audience,
+                notBefore: notBefore,
+                claims: claims,
+                key: Encoding.UTF8.GetBytes(signingKey.Value),
+                kid: signingKey.Id,
+                algorithm: algorithm);
+            var token = jwtBuilder.generateToken();
             return token;
         }
 
