@@ -19,6 +19,9 @@ namespace Microsoft.AspNetCore.Builder
         /// <param name="app">The <see cref="IApplicationBuilder"/>.</param>
         /// <param name="configure">A callback to configure the <see cref="ServiceRouteBuilder"/>.</param>
         /// <returns>The same instance of the <see cref="IApplicationBuilder"/> for chaining.</returns>
+#if !NETSTANDARD2_0
+        [Obsolete("IApplicationBuilder.UseAzureSignalR is obsoleted, please use IApplicationBuilder.UseEndpoints() instead.")]
+#endif
         public static IApplicationBuilder UseAzureSignalR(this IApplicationBuilder app, Action<ServiceRouteBuilder> configure)
         {
             var marker = app.ApplicationServices.GetService<AzureSignalRMarkerService>();
