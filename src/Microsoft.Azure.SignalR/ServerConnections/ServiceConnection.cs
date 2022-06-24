@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -336,6 +337,11 @@ namespace Microsoft.Azure.SignalR
                         {
                             // Forward the message to the service
                             await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, buffer));
+                        }
+                        catch (ServiceConnectionNotActiveException)
+                        {
+                            // Service connection not active means the transport layer for this connection is closed, no need to continue processing
+                            break;
                         }
                         catch (Exception ex)
                         {
