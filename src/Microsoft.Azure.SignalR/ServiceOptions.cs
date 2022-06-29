@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Gets or sets the connection string of Azure SignalR Service instance.
         /// </summary>
-        public string ConnectionString { get; set; }
+        public string ConnectionString { get; set; } = ClaimsIdentity.DefaultNameClaimType;
 
         /// <summary>
         /// Gets or sets the initial number of connections per hub from SDK to Azure SignalR Service. Default value is 5. 

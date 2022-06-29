@@ -1,4 +1,5 @@
 using System;
+using Azure.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR;
@@ -21,10 +22,11 @@ namespace ChatSample.CoreApp3
                     option.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
                     option.GracefulShutdown.Timeout = TimeSpan.FromSeconds(30);
 
-                    option.GracefulShutdown.Add<Chat>(async (c) =>
-                    {
-                        await c.Clients.All.SendAsync("exit");
-                    });
+                    // option.ConnectionString = "Endpoint=http://localhost:8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH";
+
+                    option.ConnectionString = "Endpoint=http://localhost:8080;AuthType=azure";
+
+                    option.GracefulShutdown.Add<Chat>(async (c) => await c.Clients.All.SendAsync("exit"));
                 })
                 .AddMessagePackProtocol();
         }
