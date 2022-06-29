@@ -107,9 +107,9 @@ namespace Microsoft.Azure.SignalR.Tests
             const string key1 = "header-key-1";
             const string key2 = "header-key-2";
             const string value1 = "header-value-1";
-            var value2 = new[] {"header-value-2a", "header-value-2b"};
+            var value2 = new[] { "header-value-2a", "header-value-2b" };
             var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0],
-                new Dictionary<string, StringValues> (StringComparer.OrdinalIgnoreCase)
+                new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase)
                 {
                     {key1, value1},
                     {key2, value2}
@@ -199,18 +199,26 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Theory]
-        [InlineData("&asrs_lang=ar-SA", "ar-SA")]
-        [InlineData("", "en-US")]
-        [InlineData("&arsa_lang=", "en-US")]
-        [InlineData("&arsa_lang=123", "en-US")] // invalid culture won't change default en-US
-        public void ServiceConnectionContextCultureTest(string cultureQuery, string result)
+        [InlineData("&asrs_lang=ar-SA", true, "ar-SA")]
+        [InlineData("&asrs_lang=zh-CN", true, "zh-CN")]
+        [InlineData("", false, null)]
+        [InlineData("&arsa_lang=", false, null)]
+        [InlineData("&arsa_lang=123", false, null)] // invalid culture won't change default en-US
+        public void ServiceConnectionContextCultureTest(string cultureQuery, bool isValid, string result)
         {
             var queryString = $"?{cultureQuery}";
-            Assert.Equal("en-US", CultureInfo.CurrentCulture.Name);
-            
-            var serviceConnectionContext = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
+            var originalCulture = CultureInfo.CurrentCulture.Name;
 
-            Assert.Equal(result, CultureInfo.CurrentCulture.Name);
+            _ = new ClientConnectionContext(new OpenConnectionMessage("1", new Claim[0], EmptyHeaders, queryString));
+
+            if (isValid)
+            {
+                Assert.Equal(result, CultureInfo.CurrentCulture.Name);
+            }
+            else
+            {
+                Assert.Equal(originalCulture, CultureInfo.CurrentCulture.Name);
+            }
         }
     }
 }
