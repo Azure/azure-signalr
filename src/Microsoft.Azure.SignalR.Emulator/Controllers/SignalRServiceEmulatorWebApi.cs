@@ -161,6 +161,22 @@ namespace Microsoft.Azure.SignalR.Emulator.Controllers
             return Task.FromResult(NotFound() as IActionResult);
         }
 
+        public override Task<IActionResult> RemoveConnectionFromAllGroups([RegularExpression(HubPattern)] string hub, string connection)
+        {
+            if (!ModelState.IsValid)
+            {
+                return Task.FromResult(BadRequest() as IActionResult);
+            }
+
+            if (_store.TryGetLifetimeContext(hub, out var c))
+            { 
+                c.UserGroupManager.RemoveConnectionFromAllGroups(connection);
+                return Task.FromResult(Ok() as IActionResult);
+            }
+
+            return Task.FromResult(Accepted() as IActionResult);
+        }
+
         public override Task<IActionResult> AddConnectionToGroup([RegularExpression(HubPattern)] string hub, [RegularExpression(GroupPattern)] string group, string connectionId)
         {
             if (!ModelState.IsValid)

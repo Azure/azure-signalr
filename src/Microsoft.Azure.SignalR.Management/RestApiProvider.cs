@@ -66,6 +66,11 @@ namespace Microsoft.Azure.SignalR.Management
             return GenerateRestApiEndpointAsync(appName, hubName, $"/users/{Uri.EscapeDataString(userId)}/groups", lifetime);
         }
 
+        public Task<RestApiEndpoint> GetRemoveConnectionFromAllGroupsAsync(string appName, string hubName, string connectionId, TimeSpan? lifetime = null)
+        {
+            return GenerateRestApiEndpointAsyncTemp(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}", "2022-06-01", lifetime);
+        }
+
         public Task<RestApiEndpoint> GetSendToConnectionEndpointAsync(string appName, string hubName, string connectionId, TimeSpan? lifetime = null)
         {
             return GenerateRestApiEndpointAsync(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}", lifetime);
@@ -104,6 +109,15 @@ namespace Microsoft.Azure.SignalR.Management
             var audiencePrefixWithHub = $"{_audienceBaseUrl}api/{Version}/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
             var token = await _restApiAccessTokenGenerator.Generate($"{audiencePrefixWithHub}{pathAfterHub}", lifetime);
             return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token) { Query = queries };
+        }
+
+        private async Task<RestApiEndpoint> GenerateRestApiEndpointAsyncTemp(string appName, string hubName, string pathAfterHub, string apiVersion, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
+        {
+            var requestPrefixWithHub = $"{_serverEndpoint}api/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
+            // todo: should be same with `requestPrefixWithHub`, need to confirm with emulator.
+            var audiencePrefixWithHub = $"{_audienceBaseUrl}api/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
+            var token = await _restApiAccessTokenGenerator.Generate($"{audiencePrefixWithHub}{pathAfterHub}", lifetime);
+            return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}?api-version={apiVersion}", token) { Query = queries };
         }
     }
 }
