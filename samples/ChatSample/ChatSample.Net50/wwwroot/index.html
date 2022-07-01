@@ -43,18 +43,15 @@
             </div>
         </div>
     </div>
-    <!--Script references. -->
-    <script type="text/javascript" src="scripts/jquery-1.10.2.js"></script>
-    <script type="text/javascript" src="scripts/bootstrap.js"></script>
 
     <!--Reference the SignalR library. -->
-    <script type="text/javascript" src="scripts/msgpack5.js"></script>
-    <script type="text/javascript" src="scripts/signalr.js"></script>
-    <script type="text/javascript" src="scripts/signalr-protocol-msgpack.js"></script>
+    <script type="text/javascript" src="js/signalr/dist/browser/signalr.js"></script>
+    <script type="text/javascript" src="js/msgpack5/dist/msgpack5.js"></script>
+    <script type="text/javascript" src="js/signalr-protocol-msgpack/dist/browser/signalr-protocol-msgpack.js"></script>
 
     <!--Add script to update the page and send messages.-->
     <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', async function () {
 
             function generateRandomName() {
                 return Math.random().toString(36).substring(2, 10);
@@ -177,13 +174,31 @@
                 .build();
 
             bindConnectionMessage(connection);
-            connection.start()
-                .then(function () {
-                    onConnected(connection);
-                })
-                .catch(function (error) {
-                    console.warn(error);
+            function delay(time) {
+                return new Promise((resolve) => {
+                    setTimeout(() => resolve(), time);
                 });
+            }
+            
+            function retry(attempts) {
+                async function _retryInternal(attempts, index) {
+                    try {
+                        console.log(`Attempt ${index}`);
+                        await attempts();
+                    } catch {
+                        await delay(getRandom(2000, 5000));
+                        _retryInternal(attempts, index + 1);
+                    }
+                }
+
+                return _retryInternal(attempts, 1);
+            }
+
+            await retry(async () => {
+                await connection.start();
+            });
+
+            onConnected(connection);
         });
     </script>
 </body>
