@@ -159,15 +159,18 @@
                 modal.style = 'display: block;';
             }
 
-            function getRandom(min, max) {
-                return Math.floor(Math.random() * (max - min + 1) + min);
+            function getRandomDelay() {
+                function getRandom(min, max) {
+                    return Math.floor(Math.random() * (max - min + 1) + min);
+                }
+                return getRandom(1000, 2000);
             }
 
             var connection = new signalR.HubConnectionBuilder()
                 .withUrl('/chat')
                 .withAutomaticReconnect({
                     nextRetryDelayInMilliseconds: function (retryContext) {
-                        return getRandom(2000, 5000); // always retry
+                        return getRandomDelay();
                     }
                 })
                 .withHubProtocol(new signalR.protocols.msgpack.MessagePackHubProtocol())
@@ -189,7 +192,7 @@
                     await connection.start();
                     break;
                 } catch (err) {
-                    await delay(getRandom(2000, 5000))
+                    await delay(getRandomDelay());
                     console.warn("Error: " + err);
                 }
             } while (true);

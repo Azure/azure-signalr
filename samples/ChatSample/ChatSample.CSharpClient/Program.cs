@@ -84,7 +84,7 @@ namespace ChatSample.CSharpClient
 
         private static int GetRandomDelayMilliseconds()
         {
-            return StaticRandom.Next(500, 1500);
+            return StaticRandom.Next(1000, 2000);
         }
 
         private static void BroadcastMessage(string name, string message)
