@@ -122,7 +122,7 @@ namespace Microsoft.Azure.SignalR
         private static readonly Action<ILogger, ulong?, string, Exception> _startToRemoveConnectionFromAllGroups =
             LoggerMessage.Define<ulong?, string>(
                 LogLevel.Information,
-                new EventId(91, "StartToRemoveConnectionFromAllGroups"),
+                new EventId(92, "StartToRemoveConnectionFromAllGroups"),
                 StartToRemoveConnectionFromAllGroupsTemplate);
 
         private static readonly Action<ILogger, ulong?, Exception> _failedToSendMessage =
