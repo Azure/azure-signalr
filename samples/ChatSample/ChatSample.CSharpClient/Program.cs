@@ -41,22 +41,16 @@ namespace ChatSample.CSharpClient
                 input = Console.ReadLine();
             }
         }
-
         private static async Task<HubConnection> ConnectAsync(string url, TextWriter output, CancellationToken cancellationToken = default)
         {
             var connection = new HubConnectionBuilder()
                 .WithUrl(url)
-                .AddMessagePackProtocol().Build();
+                .AddMessagePackProtocol()
+                .WithAutomaticReconnect(new AlwaysRetryPolicy())
+                .Build();
 
             connection.On<string, string>("BroadcastMessage", BroadcastMessage);
             connection.On<string>("Echo", Echo);
-
-            connection.Closed += async (e) =>
-            {
-                output.WriteLine(e);
-                await DelayRandom(200, 1000);
-                await StartAsyncWithRetry(connection, output, cancellationToken);
-            };
 
             await StartAsyncWithRetry(connection, output, cancellationToken);
 
@@ -75,20 +69,22 @@ namespace ChatSample.CSharpClient
                 catch (Exception e)
                 {
                     output.WriteLine($"Error starting: {e.Message}, retry...");
-                    await DelayRandom(200, 1000);
+                    await Task.Delay(GetRandomDelayMilliseconds());
                 }
             }
         }
 
-        /// <summary>
-        /// Delay random milliseconds
-        /// </summary>
-        /// <param name="min"></param>
-        /// <param name="max"></param>
-        /// <returns></returns>
-        private static Task DelayRandom(int min, int max)
+        private sealed class AlwaysRetryPolicy : IRetryPolicy
         {
-            return Task.Delay(StaticRandom.Next(min, max));
+            public TimeSpan? NextRetryDelay(RetryContext retryContext)
+            {
+                return TimeSpan.FromMilliseconds(GetRandomDelayMilliseconds());
+            }
+        }
+
+        private static int GetRandomDelayMilliseconds()
+        {
+            return StaticRandom.Next(500, 1500);
         }
 
         private static void BroadcastMessage(string name, string message)
