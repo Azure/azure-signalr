@@ -174,29 +174,25 @@
                 .build();
 
             bindConnectionMessage(connection);
+
             function delay(time) {
                 return new Promise((resolve) => {
                     setTimeout(() => resolve(), time);
                 });
             }
-            
-            function retry(attempts) {
-                async function _retryInternal(attempts, index) {
-                    try {
-                        console.log(`Attempt ${index}`);
-                        await attempts();
-                    } catch {
-                        await delay(getRandom(2000, 5000));
-                        _retryInternal(attempts, index + 1);
-                    }
+
+            let count = 0;
+            do {
+                try {
+                    count++;
+                    console.log(`Attempt ${count}`);
+                    await connection.start();
+                    break;
+                } catch (err) {
+                    await delay(getRandom(2000, 5000))
+                    console.warn("Error: " + err);
                 }
-
-                return _retryInternal(attempts, 1);
-            }
-
-            await retry(async () => {
-                await connection.start();
-            });
+            } while (true);
 
             onConnected(connection);
         });
