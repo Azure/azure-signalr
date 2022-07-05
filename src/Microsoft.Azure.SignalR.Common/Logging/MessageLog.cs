@@ -252,8 +252,6 @@ namespace Microsoft.Azure.SignalR
             StartToRemoveConnectionFromGroupCore(logger, message.ConnectionId, message.GroupName, message.TracingId);
         }
 
-
-
         public static void StartToAddUserToGroup(ILogger logger, UserJoinGroupMessage message)
         {
             StartToAddUserToGroupCore(logger, message.TracingId, message.GroupName, message.UserId, message.Ttl);

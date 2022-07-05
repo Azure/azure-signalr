@@ -68,7 +68,7 @@ namespace Microsoft.Azure.SignalR.Management
 
         public Task<RestApiEndpoint> GetRemoveConnectionFromAllGroupsAsync(string appName, string hubName, string connectionId, TimeSpan? lifetime = null)
         {
-            return GenerateRestApiEndpointAsyncTemp(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}", "2022-06-01", lifetime);
+            return GenerateRestApiEndpointWithVersionAsync(appName, hubName, $"/connections/{Uri.EscapeDataString(connectionId)}/groups", "2022-06-01", lifetime);
         }
 
         public Task<RestApiEndpoint> GetSendToConnectionEndpointAsync(string appName, string hubName, string connectionId, TimeSpan? lifetime = null)
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.SignalR.Management
             return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token) { Query = queries };
         }
 
-        private async Task<RestApiEndpoint> GenerateRestApiEndpointAsyncTemp(string appName, string hubName, string pathAfterHub, string apiVersion, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
+        private async Task<RestApiEndpoint> GenerateRestApiEndpointWithVersionAsync(string appName, string hubName, string pathAfterHub, string apiVersion, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
         {
             var requestPrefixWithHub = $"{_serverEndpoint}api/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
             // todo: should be same with `requestPrefixWithHub`, need to confirm with emulator.
