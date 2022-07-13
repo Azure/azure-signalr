@@ -113,6 +113,10 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateCloseGroupConnectionsWithAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.AckMessageType:
                     return CreateAckMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.ClientInvocationMessageType:
+                    return CreateClientInvocationMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.ServiceCompletionMessageType:
+                    return CreateServiceCompletionMessage(ref reader, arrayLength);
                 default:
                     // Future protocol changes can add message types, old clients can ignore them
                     return null;
@@ -277,6 +281,12 @@ namespace Microsoft.Azure.SignalR.Protocol
                     break;
                 case AckMessage ackMessage:
                     WriteAckMessage(ref writer, ackMessage);
+                    break;
+                case ClientInvocationMessage clientInvocationMessage:
+                    WriteClientInvocationMessage(ref writer, clientInvocationMessage);
+                    break;
+                case ServiceCompletionMessage serviceCompletionMesssage:
+                    WriteServiceCompletionMessage(ref writer, serviceCompletionMesssage);
                     break;
                 default:
                     throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
@@ -621,6 +631,29 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.Write(message.AckId);
             writer.Write(message.Status);
             writer.Write(message.Message);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteClientInvocationMessage(ref MessagePackWriter writer, ClientInvocationMessage message)
+        {
+            writer.WriteArrayHeader(6);
+            writer.Write(ServiceProtocolConstants.ClientInvocationMessageType);
+            writer.Write(message.InvocationId);
+            writer.Write(message.ConnectionId);
+            writer.Write(message.CallerId);
+            WritePayloads(ref writer, message.Payloads);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteServiceCompletionMessage(ref MessagePackWriter writer, ServiceCompletionMessage message)
+        {
+            writer.WriteArrayHeader(7);
+            writer.Write(ServiceProtocolConstants.ServiceCompletionMessageType);
+            writer.Write(message.InvocationId);
+            writer.Write(message.ConnectionId);
+            writer.Write(message.CallerId);
+            writer.Write(message.Error);
+            WritePayloads(ref writer, message.Payloads);
             message.WriteExtensionMembers(ref writer);
         }
 
@@ -1102,7 +1135,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             var groupName = ReadString(ref reader, "groupName");
             var ackId = ReadInt32(ref reader, "ackId");
-            
+
             var result = new CheckGroupExistenceWithAckMessage(groupName, ackId);
             result.ReadExtensionMembers(ref reader);
             return result;
@@ -1139,6 +1172,40 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 result.ReadExtensionMembers(ref reader);
             }
+            return result;
+        }
+
+        private static ClientInvocationMessage CreateClientInvocationMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var invocationId = ReadString(ref reader, "invocationId");
+            var connectionId = ReadString(ref reader, "connectionId");
+            var callerId = ReadString(ref reader, "callerId");
+            var payloads = ReadPayloads(ref reader);
+
+            var result = new ClientInvocationMessage(invocationId, connectionId, callerId, payloads);
+            result.ReadExtensionMembers(ref reader);
+            return result;
+        }
+
+        private static ServiceCompletionMessage CreateServiceCompletionMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var invocationId = ReadString(ref reader, "invocationId");
+            var connectionId = ReadString(ref reader, "connectionId");
+            var callerId = ReadString(ref reader, "callerId");
+            var error = ReadString(ref reader, "error");
+            var payload = ReadPayloads(ref reader);
+
+            ServiceCompletionMessage result;
+            if (string.IsNullOrEmpty(error))
+            {
+                result = new ServiceCompletionMessage(invocationId, connectionId, callerId, payload);
+            }
+            else
+            {
+                result = new ServiceCompletionMessage(invocationId, connectionId, callerId, error);
+            }
+
+            result.ReadExtensionMembers(ref reader);
             return result;
         }
 
