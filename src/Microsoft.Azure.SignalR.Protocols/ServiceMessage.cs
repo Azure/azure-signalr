@@ -358,7 +358,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     }
 
     /// <summary>
-    /// A ack message to response ack-able message
+    /// An ack message to response ack-able message
     /// </summary>
     public class AckMessage : ExtensibleServiceMessage
     {
@@ -397,6 +397,40 @@ namespace Microsoft.Azure.SignalR.Protocol
             AckId = ackId;
             Status = status;
             Message = message;
+        }
+    }
+
+    /// <summary>
+    /// A message indicates the mapping of client invocation with service instance.
+    /// </summary>
+    public class ServiceMappingMessage : ExtensibleServiceMessage
+    {
+        /// <summary>
+        /// Gets or sets the invocation Id.
+        /// </summary>
+        public string InvocationId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the connection Id.
+        /// </summary>
+        public string ConnectionId { get; set; }
+
+        /// <summary>
+        /// Gets or set the service instance Id.
+        /// </summary>
+        public string InstanceId { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceMappingMessage"/> class.
+        /// </summary>
+        /// <param name="invocationId">The invocation Id.</param>
+        /// <param name="connectionId">The connection Id.</param>
+        /// <param name="instanceId">The service instance Id.</param>
+        public ServiceMappingMessage(string invocationId, string connectionId, string instanceId)
+        {
+            InvocationId = invocationId;
+            ConnectionId = connectionId;
+            InstanceId = instanceId;
         }
     }
 }

@@ -96,6 +96,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return ClientInvocationMessageEuqal(clientInvocationMessage, (ClientInvocationMessage)y);
                 case ServiceCompletionMessage serviceCompletionMessage:
                     return ServiceCompletionMessageEqual(serviceCompletionMessage, (ServiceCompletionMessage)y);
+                case ServiceMappingMessage serviceMappingMessage:
+                    return ServiceMappingMessageEqual(serviceMappingMessage, (ServiceMappingMessage)y);
                 default:
                     throw new InvalidOperationException($"Unknown message type: {x.GetType().FullName}");
             }
@@ -351,6 +353,13 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 StringEqual(x.CallerId, y.CallerId) &&
                 StringEqual(x.Error, y.Error) &&
                 PayloadsEqual(x.Payloads, y.Payloads);
+        }
+
+        private bool ServiceMappingMessageEqual(ServiceMappingMessage x, ServiceMappingMessage y)
+        {
+            return StringEqual(x.InvocationId, y.InvocationId) &&
+                StringEqual(x.ConnectionId, y.ConnectionId) &&
+                StringEqual(x.InstanceId, y.InstanceId);
         }
 
         private static bool StringEqual(string x, string y)

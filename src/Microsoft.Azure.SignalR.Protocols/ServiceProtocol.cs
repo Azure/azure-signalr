@@ -117,6 +117,8 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateClientInvocationMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.ServiceCompletionMessageType:
                     return CreateServiceCompletionMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.ServiceMappingMessageType:
+                    return CreateServiceMappingMessage(ref reader, arrayLength);
                 default:
                     // Future protocol changes can add message types, old clients can ignore them
                     return null;
@@ -287,6 +289,9 @@ namespace Microsoft.Azure.SignalR.Protocol
                     break;
                 case ServiceCompletionMessage serviceCompletionMesssage:
                     WriteServiceCompletionMessage(ref writer, serviceCompletionMesssage);
+                    break;
+                case ServiceMappingMessage serviceMappingMessage:
+                    WriteServiceMappingMessage(ref writer, serviceMappingMessage);
                     break;
                 default:
                     throw new InvalidDataException($"Unexpected message type: {message.GetType().Name}");
@@ -654,6 +659,16 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.Write(message.CallerId);
             writer.Write(message.Error);
             WritePayloads(ref writer, message.Payloads);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteServiceMappingMessage(ref MessagePackWriter writer, ServiceMappingMessage message)
+        {
+            writer.WriteArrayHeader(5);
+            writer.Write(ServiceProtocolConstants.ServiceMappingMessageType);
+            writer.Write(message.InvocationId);
+            writer.Write(message.ConnectionId);
+            writer.Write(message.InstanceId);
             message.WriteExtensionMembers(ref writer);
         }
 
@@ -1204,6 +1219,18 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 result = new ServiceCompletionMessage(invocationId, connectionId, callerId, error);
             }
+
+            result.ReadExtensionMembers(ref reader);
+            return result;
+        }
+
+        private static ServiceMappingMessage CreateServiceMappingMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var invocationId = ReadString(ref reader, "invocationId");
+            var connectionId = ReadString(ref reader, "connectionId");
+            var instanceId = ReadString(ref reader, "instanceId");
+
+            var result = new ServiceMappingMessage(invocationId, connectionId, instanceId);
 
             result.ReadExtensionMembers(ref reader);
             return result;

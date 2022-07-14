@@ -654,9 +654,9 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 }),
                 binary: "lyOsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjHAgqRqc29uxAcCAwQFBgcBq21lc3NhZ2VwYWNrxAcDBAUGBwECgA=="),
             new ProtocolTestData(
-                name: "ServiceCompletionMessageWithError",
-                message: new ServiceCompletionMessage("invocationId", "conn1", "server1", "error"),
-                binary: "lyOsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjGlZXJyb3KAgA=="),
+                name: "ServiceMappingMessage",
+                message: new ServiceMappingMessage("invocationId", "conn1", "instance1"),
+                binary: "lSSsaW52b2NhdGlvbklkpWNvbm4xqWluc3RhbmNlMYA="),
         }.ToDictionary(t => t.Name);
 #pragma warning restore CS0618 // Type or member is obsolete
 

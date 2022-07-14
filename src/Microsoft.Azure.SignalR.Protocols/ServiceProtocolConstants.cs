@@ -40,5 +40,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         public const int CloseGroupConnectionsWithAckMessageType = 33;
         public const int ClientInvocationMessageType = 34;
         public const int ServiceCompletionMessageType = 35;
+        public const int ServiceMappingMessageType = 36;
     }
 }
