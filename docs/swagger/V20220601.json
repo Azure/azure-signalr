@@ -1240,7 +1240,7 @@
           {
             "in": "query",
             "name": "ttl",
-            "description": "Specifies the seconds that the user exists in the group. If not set, the user lives in the group forever.",
+            "description": "Specifies the seconds that the user exists in the group. If not set, the user lives in the group forever. If a user is added to some groups without ttl limitation, only the latest updated 100 groups will be reserved in all groups he joined without TTL. If ttl = 0, only the existing clients of the target user will be added to the target group.",
             "type": "integer",
             "format": "int32"
           },
