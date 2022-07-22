@@ -98,11 +98,18 @@ namespace Microsoft.Azure.SignalR.Management
         }
 
         private async Task<RestApiEndpoint> GenerateRestApiEndpointAsync(string appName, string hubName, string pathAfterHub, TimeSpan? lifetime = null, IDictionary<string, StringValues> queries = null)
-        {
-            pathAfterHub = $"{pathAfterHub}?api-version={Version}";
-            var requestPrefixWithHub = $"{_serverEndpoint}api/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
+        { 
+            var requestPrefixWithHub = $"{_serverEndpoint}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
+            if (string.IsNullOrEmpty(appName))
+            {
+                pathAfterHub = $"{pathAfterHub}?api-version={Version}";
+            }
+            else
+            {
+                pathAfterHub = $"{pathAfterHub}?application={Uri.EscapeDataString(appName.ToLowerInvariant())}&api-version={Version}";
+            }
             // todo: should be same with `requestPrefixWithHub`, need to confirm with emulator.
-            var audiencePrefixWithHub = $"{_audienceBaseUrl}api/hubs/{Uri.EscapeDataString(GetPrefixedHubName(appName, hubName))}";
+            var audiencePrefixWithHub = $"{_audienceBaseUrl}api/hubs/{Uri.EscapeDataString(hubName.ToLowerInvariant())}";
             var token = await _restApiAccessTokenGenerator.Generate($"{audiencePrefixWithHub}{pathAfterHub}", lifetime);
             return new RestApiEndpoint($"{requestPrefixWithHub}{pathAfterHub}", token) { Query = queries };
         }
