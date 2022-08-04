@@ -24,9 +24,7 @@ namespace Microsoft.Azure.SignalR
 
         public IWebProxy Proxy { get; }
 
-        public ServiceEndpointProvider(
-            ServiceEndpoint endpoint,
-            ServiceOptions serviceOptions)
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions serviceOptions)
         {
             _accessTokenLifetime = serviceOptions.AccessTokenLifetime;
             _accessKey = endpoint.AccessKey;
@@ -51,7 +49,7 @@ namespace Microsoft.Azure.SignalR
             return token;
         }
 
-        public Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
+        public virtual Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
         {
             if (_accessKey is AadAccessKey key)
             {

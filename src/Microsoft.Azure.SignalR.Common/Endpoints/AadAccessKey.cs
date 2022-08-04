@@ -24,9 +24,9 @@ namespace Microsoft.Azure.SignalR
 
         private const string DefaultScope = "https://signalr.azure.com/.default";
 
-        private static readonly TimeSpan AuthorizeInterval = TimeSpan.FromMinutes(AuthorizeIntervalInMinute);
-
         private static readonly TokenRequestContext DefaultRequestContext = new TokenRequestContext(new string[] { DefaultScope });
+
+        private static readonly TimeSpan AuthorizeInterval = TimeSpan.FromMinutes(AuthorizeIntervalInMinute);
 
         private static readonly TimeSpan AuthorizeIntervalWhenFailed = TimeSpan.FromMinutes(5);
 

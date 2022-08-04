@@ -31,9 +31,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
         public IWebProxy Proxy { get; }
 
-        public ServiceEndpointProvider(
-            ServiceEndpoint endpoint,
-            ServiceOptions options)
+        public ServiceEndpointProvider(ServiceEndpoint endpoint, ServiceOptions options)
         {
             _accessTokenLifetime = options.AccessTokenLifetime;
 
@@ -60,13 +58,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             return _accessKey.GenerateAccessTokenAsync(audience, claims, lifetime ?? _accessTokenLifetime, _algorithm);
         }
 
-        public Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
+        public virtual Task<string> GenerateServerAccessTokenAsync(string hubName, string userId, TimeSpan? lifetime = null)
         {
-            if (_accessKey is AadAccessKey key)
-            {
-                return key.GenerateAadTokenAsync();
-            }
-
             IEnumerable<Claim> claims = null;
             if (userId != null)
             {

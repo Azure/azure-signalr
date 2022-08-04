@@ -31,7 +31,11 @@ namespace Microsoft.Azure.SignalR.AspNet
                 return null;
             }
 
-            _synchronizer.AddServiceEndpoint(endpoint);
+            if (endpoint.AccessKey is AadAccessKey)
+            {
+                _synchronizer.AddServiceEndpoint(endpoint);
+                return new ServiceEndpointProviderAzureAd(endpoint, _options);
+            }
             return new ServiceEndpointProvider(endpoint, _options);
         }
     }

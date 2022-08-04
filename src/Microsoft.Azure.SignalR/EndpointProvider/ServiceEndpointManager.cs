@@ -18,11 +18,12 @@ namespace Microsoft.Azure.SignalR
         private readonly ServiceOptions _options;
 
         private readonly TimeSpan _scaleTimeout;
+
         private readonly IAccessKeySynchronizer _synchronizer;
 
         public ServiceEndpointManager(
             IAccessKeySynchronizer synchronizer,
-            IOptionsMonitor<ServiceOptions> optionsMonitor, 
+            IOptionsMonitor<ServiceOptions> optionsMonitor,
             ILoggerFactory loggerFactory
         ) :
             base(optionsMonitor.CurrentValue, loggerFactory.CreateLogger<ServiceEndpointManager>())
@@ -42,7 +43,11 @@ namespace Microsoft.Azure.SignalR
                 return null;
             }
 
-            _synchronizer.AddServiceEndpoint(endpoint);
+            if (endpoint.AccessKey is AadAccessKey)
+            {
+                _synchronizer.AddServiceEndpoint(endpoint);
+                return new ServiceEndpointProviderAzureAd(endpoint, _options);
+            }
             return new ServiceEndpointProvider(endpoint, _options);
         }
 
