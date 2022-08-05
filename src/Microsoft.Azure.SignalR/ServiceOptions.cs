@@ -28,6 +28,7 @@ namespace Microsoft.Azure.SignalR
         /// When you have big number of clients, you can give it a larger number for better throughput.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("Please use InitialHubServerConnectionCount instead.")]
         public int ConnectionCount
         {
             get => InitialHubServerConnectionCount;
