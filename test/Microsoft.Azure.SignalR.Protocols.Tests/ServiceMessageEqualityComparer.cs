@@ -342,7 +342,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             return StringEqual(x.InvocationId, y.InvocationId) &&
                 StringEqual(x.ConnectionId, y.ConnectionId) &&
-                StringEqual(x.CallerId, y.CallerId) &&
+                StringEqual(x.CallerServerId, y.CallerServerId) &&
                 PayloadsEqual(x.Payloads, y.Payloads);
         }
 
@@ -350,9 +350,9 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             return StringEqual(x.InvocationId, y.InvocationId) &&
                 StringEqual(x.ConnectionId, y.ConnectionId) &&
-                StringEqual(x.CallerId, y.CallerId) &&
+                StringEqual(x.CallerServerId, y.CallerServerId) &&
                 StringEqual(x.Error, y.Error) &&
-                PayloadsEqual(x.Payloads, y.Payloads);
+                SequenceEqual(x.Payload.ToArray(), y.Payload.ToArray());
         }
 
         private bool ServiceMappingMessageEqual(ServiceMappingMessage x, ServiceMappingMessage y)

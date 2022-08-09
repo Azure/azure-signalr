@@ -645,7 +645,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.Write(ServiceProtocolConstants.ClientInvocationMessageType);
             writer.Write(message.InvocationId);
             writer.Write(message.ConnectionId);
-            writer.Write(message.CallerId);
+            writer.Write(message.CallerServerId);
             WritePayloads(ref writer, message.Payloads);
             message.WriteExtensionMembers(ref writer);
         }
@@ -656,9 +656,9 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.Write(ServiceProtocolConstants.ServiceCompletionMessageType);
             writer.Write(message.InvocationId);
             writer.Write(message.ConnectionId);
-            writer.Write(message.CallerId);
+            writer.Write(message.CallerServerId);
             writer.Write(message.Error);
-            WritePayloads(ref writer, message.Payloads);
+            writer.Write(message.Payload);
             message.WriteExtensionMembers(ref writer);
         }
 
@@ -1208,7 +1208,7 @@ namespace Microsoft.Azure.SignalR.Protocol
             var connectionId = ReadString(ref reader, "connectionId");
             var callerId = ReadString(ref reader, "callerId");
             var error = ReadString(ref reader, "error");
-            var payload = ReadPayloads(ref reader);
+            var payload = ReadBytes(ref reader, "payload");
 
             ServiceCompletionMessage result;
             if (string.IsNullOrEmpty(error))

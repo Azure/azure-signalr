@@ -647,12 +647,8 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "liKsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjGCpGpzb27EBwIDBAUGBwGrbWVzc2FnZXBhY2vEBwMEBQYHAQKA"),
             new ProtocolTestData(
                 name: "ServiceCompletionMessage",
-                message: new ServiceCompletionMessage("invocationId", "conn1", "server1", new Dictionary<string, ReadOnlyMemory<byte>>
-                {
-                    ["json"] = new byte[] {2, 3, 4, 5, 6, 7, 1},
-                    ["messagepack"] = new byte[] {3, 4, 5, 6, 7, 1, 2}
-                }),
-                binary: "lyOsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjHAgqRqc29uxAcCAwQFBgcBq21lc3NhZ2VwYWNrxAcDBAUGBwECgA=="),
+                message: new ServiceCompletionMessage("invocationId", "conn1", "server1", new byte[] {2, 3, 4, 5, 6, 7, 1}),
+                binary: "lyOsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjHAxAcCAwQFBgcBgA=="),
             new ProtocolTestData(
                 name: "ServiceMappingMessage",
                 message: new ServiceMappingMessage("invocationId", "conn1", "instance1"),

@@ -163,4 +163,69 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public ulong? TracingId { get; set; }
     }
+
+    /// <summary>
+    /// A data message of client invocation completion result.
+    /// </summary>
+    public class ServiceCompletionMessage : ConnectionMessage, IMessageWithTracingId
+    {
+        /// <summary>
+        /// Initialize a new instance of <see cref="ServiceCompletionMessage"/> class.
+        /// </summary>
+        /// <param name="invocationId">The Id of the invocation that has completed.</param>
+        /// <param name="connectionId">The client connection Id that complete the invocation.</param>
+        /// <param name="callerServerId">The serverId that wrap the completion result.</param>
+        /// <param name="payload">The payload of the completion result.</param>
+        /// <param name="tracingId">The tracing Id of the message.</param>
+        public ServiceCompletionMessage(string invocationId, string connectionId, string callerServerId, ReadOnlyMemory<byte> payload, ulong? tracingId = null)
+            : base(connectionId)
+        {
+            InvocationId = invocationId;
+            CallerServerId = callerServerId;
+            Payload = new ReadOnlySequence<byte>(payload);
+            TracingId = tracingId;
+        }
+
+        /// <summary>
+        /// Initialize a new instance of <see cref="ServiceCompletionMessage"/> class with error information.
+        /// </summary>
+        /// <param name="invocationId">The Id of the invocation that has completed.</param>
+        /// <param name="connectionId">The client connection Id that complete the invocation.</param>
+        /// <param name="callerServerId">The serverId that wrap the completion result.</param>
+        /// <param name="error">The error information about invacation failure.</param>
+        /// <param name="tracingId">The tracing Id of the message.</param>
+        public ServiceCompletionMessage(string invocationId, string connectionId, string callerServerId, string error, ulong? tracingId = null)
+            : base(connectionId)
+        {
+            InvocationId = invocationId;
+            CallerServerId = callerServerId;
+            Error = error;
+        }
+
+        /// <summary>
+        /// Gets or sets the client invocation Id of pending connection.
+        /// </summary>
+        public string InvocationId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the server Id which parse the completion message.
+        /// </summary>
+        public string CallerServerId { get; set; }
+
+        /// <summary>
+        /// Optional error message if the invocation wasn't completed successfully. This must be null if there is a result.
+        /// </summary>
+        public string Error { get; set; }
+
+        /// <summary>
+        /// Gets or sets the binary payload.
+        /// </summary>
+        public ReadOnlySequence<byte> Payload { get; set; }
+
+
+        /// <summary>
+        /// Gets or sets the message ID
+        /// </summary>
+        public ulong? TracingId { get; set; }
+    }
 }
