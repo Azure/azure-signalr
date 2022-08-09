@@ -1194,10 +1194,10 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             var invocationId = ReadString(ref reader, "invocationId");
             var connectionId = ReadString(ref reader, "connectionId");
-            var callerId = ReadString(ref reader, "callerId");
+            var callerServerId = ReadString(ref reader, "callerServerId");
             var payloads = ReadPayloads(ref reader);
 
-            var result = new ClientInvocationMessage(invocationId, connectionId, callerId, payloads);
+            var result = new ClientInvocationMessage(invocationId, connectionId, callerServerId, payloads);
             result.ReadExtensionMembers(ref reader);
             return result;
         }
@@ -1206,18 +1206,18 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             var invocationId = ReadString(ref reader, "invocationId");
             var connectionId = ReadString(ref reader, "connectionId");
-            var callerId = ReadString(ref reader, "callerId");
+            var callerServerId = ReadString(ref reader, "callerServerId");
             var error = ReadString(ref reader, "error");
             var payload = ReadBytes(ref reader, "payload");
 
             ServiceCompletionMessage result;
             if (string.IsNullOrEmpty(error))
             {
-                result = new ServiceCompletionMessage(invocationId, connectionId, callerId, payload);
+                result = new ServiceCompletionMessage(invocationId, connectionId, callerServerId, payload);
             }
             else
             {
-                result = new ServiceCompletionMessage(invocationId, connectionId, callerId, error);
+                result = new ServiceCompletionMessage(invocationId, connectionId, callerServerId, error);
             }
 
             result.ReadExtensionMembers(ref reader);
