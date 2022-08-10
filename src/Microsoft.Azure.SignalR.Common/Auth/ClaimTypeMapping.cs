@@ -114,7 +114,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Gets the InboundClaimTypeMap used by JwtSecurityTokenHandler when producing claims from jwt. 
         /// </summary>
-        public static IDictionary<string, string> InboundClaimTypeMap
+        internal static IDictionary<string, string> InboundClaimTypeMap
         {
             get
             {
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Gets the OutboundClaimTypeMap is used by JwtSecurityTokenHandler to shorten claim types when creating a jwt. 
         /// </summary>
-        public static IDictionary<string, string> OutboundClaimTypeMap
+        internal static IDictionary<string, string> OutboundClaimTypeMap
         {
             get
             {
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public static ISet<string> InboundClaimFilter
+        internal static ISet<string> InboundClaimFilter
         {
             get
             {

@@ -44,7 +44,7 @@ namespace Microsoft.Azure.SignalR
         // Simplified from following codes:
         //      method `CreateJwtSecurityToken` in [JwtSecruityTokenHandler.cs](https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtSecurityTokenHandler.cs#L487)
         //      method `CreateJwtSecurityTokenPrivate` in [JwtSecurityTokenHandler.cs](https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtSecurityTokenHandler.cs#L616)
-        public string CreateJwtSecurityToken(
+        internal string CreateJwtSecurityToken(
             DateTime? notBefore = null,
             DateTime? expires = null,
             DateTime? issuedAt = null,

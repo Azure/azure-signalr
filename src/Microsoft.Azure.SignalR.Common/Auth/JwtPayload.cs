@@ -15,7 +15,7 @@ using System.IdentityModel.Tokens.Jwt;
 
 namespace Microsoft.Azure.SignalR
 {
-    public class JwtPayload : Dictionary<string, object>
+    internal class JwtPayload : Dictionary<string, object>
     {
         /*
          * Modified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs#L87
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.SignalR
          *  4. Modify L107 in method `AddFirstPriorityClaims`. 
          *     Because we cannot access `LogMessages` and the old version of Package `Microsoft.IdentityModel.Logging` does not have method `MarkAsNonPII` for class `LogHelper`
          */
-        public JwtPayload(string issuer = null, string audience = null, IEnumerable<Claim> claims = null, DateTime? notBefore = null, DateTime? expires = null, DateTime? issuedAt = null)
+        internal JwtPayload(string issuer = null, string audience = null, IEnumerable<Claim> claims = null, DateTime? notBefore = null, DateTime? expires = null, DateTime? issuedAt = null)
         {
             if (claims != null)
                 AddClaims(claims);

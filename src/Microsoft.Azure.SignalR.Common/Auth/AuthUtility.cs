@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly JwtSecurityTokenHandlerSignalR JwtTokenHandler = new JwtSecurityTokenHandlerSignalR();
 
-        public static string GenerateJwtBearer(
+        internal  static string GenerateJwtBearer(
             string issuer = null,
             string audience = null,
             IEnumerable<Claim> claims = null,
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.SignalR
             return token;
         }
 
-        public static string GenerateAccessToken(
+        internal  static string GenerateAccessToken(
             AccessKey signingKey,
             string audience,
             IEnumerable<Claim> claims,
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR
             return jwtToken;
         }
 
-        public static string GenerateRequestId()
+        internal  static string GenerateRequestId()
         {
             return Convert.ToBase64String(BitConverter.GetBytes(Stopwatch.GetTimestamp()));
         }
