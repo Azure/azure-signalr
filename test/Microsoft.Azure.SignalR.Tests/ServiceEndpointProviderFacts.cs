@@ -124,27 +124,27 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.Equal(tokens.Count, distinct.Count());
         }
 
-        [Theory]
-        [MemberData(nameof(DefaultEndpointProviders))]
-        internal async Task GenerateServerAccessToken(IServiceEndpointProvider provider)
-        {
-            const string userId = "UserA";
-            var tokenString = await provider.GenerateServerAccessTokenAsync(nameof(TestHub), userId);
-            var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
+        //[Theory]
+        //[MemberData(nameof(DefaultEndpointProviders))]
+        //internal async Task GenerateServerAccessToken(IServiceEndpointProvider provider)
+        //{
+        //    const string userId = "UserA";
+        //    var tokenString = await provider.GenerateServerAccessTokenAsync(nameof(TestHub), userId);
+        //    var token = JwtTokenHelper.JwtHandler.ReadJwtToken(tokenString);
 
-            var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/server/?hub={HubName}",
-                new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, userId)
-                },
-                token.ValidTo,
-                token.ValidFrom,
-                token.ValidFrom,
-                AccessKey
-            );
+        //    var expectedTokenString = JwtTokenHelper.GenerateJwtBearer($"{Endpoint}/server/?hub={HubName}",
+        //        new[]
+        //        {
+        //            new Claim(ClaimTypes.NameIdentifier, userId)
+        //        },
+        //        token.ValidTo,
+        //        token.ValidFrom,
+        //        token.ValidFrom,
+        //        AccessKey
+        //    );
 
-            Assert.Equal(expectedTokenString, tokenString);
-        }
+        //    Assert.Equal(expectedTokenString, tokenString);
+        //}
 
         [Theory]
         [MemberData(nameof(DefaultEndpointProvidersPlusPrefix))]

@@ -938,7 +938,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
             }
         }
 
-        private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
+        private static readonly JwtSecurityTokenHandlerSignalR JwtSecurityTokenHandler = new JwtSecurityTokenHandlerSignalR();
 
         private sealed class ResponseMessage
         {

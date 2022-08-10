@@ -16,7 +16,7 @@ namespace Microsoft.Azure.SignalR
     {
         private const int MaxTokenLength = 4096;
 
-        private static readonly JwtSecurityTokenHandler JwtTokenHandler = new JwtSecurityTokenHandler();
+        private static readonly JwtSecurityTokenHandlerSignalR JwtTokenHandler = new JwtSecurityTokenHandlerSignalR();
 
         public static string GenerateJwtBearer(
             string issuer = null,
@@ -28,17 +28,19 @@ namespace Microsoft.Azure.SignalR
             DateTime? notBefore = null,
             AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
         {
-            JwtBuilder jwtBuilder = new JwtBuilder(
+            var subject = claims == null ? null : new ClaimsIdentity(claims);
+
+            string token = JwtTokenHandler.CreateJwtSecurityToken(
                 expires: expires,
                 issuedAt: issuedAt,
                 issuer: issuer,
                 audience: audience,
                 notBefore: notBefore,
-                claims: claims,
+                subject: subject,
                 key: Encoding.UTF8.GetBytes(signingKey.Value),
                 kid: signingKey.Id,
                 algorithm: algorithm);
-            var token = jwtBuilder.generateToken();
+
             return token;
         }
 
@@ -71,13 +73,5 @@ namespace Microsoft.Azure.SignalR
         {
             return Convert.ToBase64String(BitConverter.GetBytes(Stopwatch.GetTimestamp()));
         }
-
-        private static string GetSecurityAlgorithm(AccessTokenAlgorithm algorithm)
-        {
-            return algorithm == AccessTokenAlgorithm.HS256 ?
-                SecurityAlgorithms.HmacSha256 :
-                SecurityAlgorithms.HmacSha512;
-        }
     }
-
 }

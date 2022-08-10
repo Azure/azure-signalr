@@ -11,7 +11,7 @@ namespace Microsoft.Azure.SignalR.Tests
 {
     internal static class JwtTokenHelper
     {
-        public static readonly JwtSecurityTokenHandler JwtHandler = new JwtSecurityTokenHandler();
+        public static readonly JwtSecurityTokenHandlerSignalR JwtHandler = new JwtSecurityTokenHandlerSignalR();
 
         private const string TestEndpoint = "http://localhost:443";
 
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var requestId = token.Claims.FirstOrDefault(claim => claim.Type == Constants.ClaimType.Id)?.Value;
 
-            var userClaimType = JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap[ClaimTypes.NameIdentifier];
+            var userClaimType = JwtSecurityTokenHandlerSignalR.DefaultOutboundClaimTypeMap[ClaimTypes.NameIdentifier];
             var userId = token.Claims.FirstOrDefault(claim => claim.Type == userClaimType)?.Value;
 
             var claims = new List<Claim>();
