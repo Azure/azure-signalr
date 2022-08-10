@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR
 
             _serviceConnectionManager.SetServiceConnection(serviceConnection);
 
-            Log.StartingConnection(_logger, Name, _options.ConnectionCount);
+            Log.StartingConnection(_logger, Name, _options.InitialHubServerConnectionCount);
 
             _ = _serviceConnectionManager.StartAsync();
         }

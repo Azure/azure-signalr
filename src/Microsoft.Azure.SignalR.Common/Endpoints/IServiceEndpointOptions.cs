@@ -8,6 +8,7 @@ namespace Microsoft.Azure.SignalR
         ServiceEndpoint[] Endpoints { get; }
         string ApplicationName { get; }
         string ConnectionString { get; }
-        int ConnectionCount { get; }
+        int InitialHubServerConnectionCount { get; }
+        int? MaxHubServerConnectionCount { get; }
     }
 }

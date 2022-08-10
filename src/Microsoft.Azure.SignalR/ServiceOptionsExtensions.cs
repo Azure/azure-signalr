@@ -14,11 +14,23 @@ namespace Microsoft.Azure.SignalR
             if (options.MaxPollIntervalInSeconds.HasValue &&
                 (options.MaxPollIntervalInSeconds < 1 || options.MaxPollIntervalInSeconds > 300))
             {
-                throw new AzureSignalRInvalidServiceOptionsException("MaxPollIntervalInSeconds", "[1,300]");
+                throw new AzureSignalRInvalidServiceOptionsException(nameof(options.MaxPollIntervalInSeconds), "[1,300]");
             }
+
+            // == 0 can be valid for serverless workaround
+            if (options.InitialHubServerConnectionCount < 0)
+            {
+                throw new AzureSignalRInvalidServiceOptionsException(nameof(options.InitialHubServerConnectionCount), "> 0");
+            }
+
+            if (options.MaxHubServerConnectionCount.HasValue && options.MaxHubServerConnectionCount < options.InitialHubServerConnectionCount)
+            {
+                throw new AzureSignalRInvalidServiceOptionsException(nameof(options.MaxHubServerConnectionCount), $">= {options.InitialHubServerConnectionCount}");
+            }
+
             if (!string.IsNullOrEmpty(options.ApplicationName) && !AppNameRegex.IsMatch(options.ApplicationName))
             {
-                throw new AzureSignalRInvalidServiceOptionsException("ApplicationName", "prefixed with alphabetic characters and only contain alpha-numeric characters or underscore");
+                throw new AzureSignalRInvalidServiceOptionsException(nameof(options.ApplicationName), "prefixed with alphabetic characters and only contain alpha-numeric characters or underscore");
             }
         }
     }

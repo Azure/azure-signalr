@@ -44,7 +44,8 @@ namespace Microsoft.Azure.SignalR.Tests
                 var config = new ConfigurationBuilder()
                     .AddInMemoryCollection(new Dictionary<string, string>
                     {
-                    {"Azure:SignalR:ConnectionString", DefaultValue}
+                    {"Azure:SignalR:ConnectionString", DefaultValue},
+                    {"Azure:SignalR:ApplicationName", "Application1"}
                     })
                     .Build();
                 var serviceProvider = services.AddSignalR()
@@ -58,8 +59,34 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 Assert.Equal(DefaultValue, options.ConnectionString);
                 Assert.Equal(5, options.ConnectionCount);
+                Assert.Equal("Application1", options.ApplicationName);
+                Assert.Equal(5, options.InitialHubServerConnectionCount);
                 Assert.Equal(TimeSpan.FromHours(1), options.AccessTokenLifetime);
                 Assert.Null(options.ClaimsProvider);
+            }
+        }
+
+        [Fact]
+        public void AddAzureSignalRReadsInvalidCongifurationThrows()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var services = new ServiceCollection();
+                var config = new ConfigurationBuilder()
+                    .Build();
+                var serviceProvider = services.AddSignalR()
+                    .AddAzureSignalR( o =>
+                    {
+                        o.InitialHubServerConnectionCount = 15;
+                        o.MaxHubServerConnectionCount = 3;
+                    })
+                    .Services
+                    .AddSingleton<IConfiguration>(config)
+                    .AddSingleton(loggerFactory)
+                    .BuildServiceProvider();
+
+                var ex = Assert.Throws<AzureSignalRInvalidServiceOptionsException>(() => serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value);
+                Assert.Equal("Property 'MaxHubServerConnectionCount' value should be >= 15.", ex.Message);
             }
         }
 
