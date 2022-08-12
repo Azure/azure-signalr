@@ -227,6 +227,18 @@ namespace Microsoft.Azure.SignalR.Controllers.Common
         [ProducesResponseType(202)]
         public abstract Task<IActionResult> RemoveUserFromAllGroups(string hub, string user);
 
+        // DELETE .../chat/connections/a/groups
+        /// <summary>
+        /// Remove a connection from all groups.
+        /// </summary>
+        /// <param name="hub">Target hub name, which should start with alphabetic characters and only contain alpha-numeric characters or underscore.</param>
+        /// <param name="connection">Target connection Id</param>
+        /// <returns></returns>
+        [HttpDelete("hubs/{hub}/connections/{connection}/groups")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public abstract Task<IActionResult> RemoveConnectionFromAllGroups(string hub, string connection);
+
         #endregion
     }
 }
