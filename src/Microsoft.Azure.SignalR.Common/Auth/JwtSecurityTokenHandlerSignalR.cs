@@ -3,7 +3,7 @@
  * Compared with original code:
  *      1. Remove useless code
  *      2. New class `JwtSecurityTokenHandlerSignalR` inherited from `JwtSecurityTokenHandler`
- *        Reason: Many removeds code in `JwtSecurityTokenHandler` are used in unit tests, if we still overwrite the class with the name`JwtSecurityTokenHandler` rather than creating a new class inhertied from `JwtSecurityTokenHandler`, we had to preserve useless codes that have nothing to do with JWT token generation. To make these useless codes work, we had to introduce more and more source codes from the original package.
+ *        Reason: Many removed codes in `JwtSecurityTokenHandler` are used in unit tests, if we still overwrite the class with the name`JwtSecurityTokenHandler` rather than creating a new class inhertied from `JwtSecurityTokenHandler`, we had to preserve useless codes that have nothing to do with JWT token generation. To make these useless codes work, we had to introduce more and more source codes from the original package.
  *         this new file 
  *      2. Simplify method `CreateJwtSecurityToken`. Comments are shown above the method
  *      3. Use a simpler way for JWT token signature encryption in method `CreateJwtSecurityToken`

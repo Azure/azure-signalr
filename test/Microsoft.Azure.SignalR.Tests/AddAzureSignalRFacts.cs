@@ -556,7 +556,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var h = sp.GetRequiredService<NegotiateHandler<TestHub>>();
             var r = await h.Process(new DefaultHttpContext());
-            var jwtSecurityTokenHandler = new JwtSecurityTokenHandlerSignalR();
+            var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
             var t = jwtSecurityTokenHandler.ReadJwtToken(r.AccessToken);
             return t.Claims;
         }

@@ -36,7 +36,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string ConnectionString3 = "Endpoint=http://localhost3;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
         private const string ConnectionString4 = "Endpoint=http://localhost4;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;";
 
-        private static readonly JwtSecurityTokenHandlerSignalR JwtSecurityTokenHandler = new JwtSecurityTokenHandlerSignalR();
+        private static readonly JwtSecurityTokenHandler JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
 
         [Theory]
         [InlineData(typeof(CustomUserIdProvider), CustomUserId)]

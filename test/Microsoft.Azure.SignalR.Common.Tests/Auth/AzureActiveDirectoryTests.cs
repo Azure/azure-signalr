@@ -63,7 +63,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
                 IssuerSigningKeys = keys,
             };
 
-            var handler = new JwtSecurityTokenHandlerSignalR();
+            var handler = new JwtSecurityTokenHandler();
             IdentityModelEventSource.ShowPII = true;
 
             var accessToken = await credential.GetTokenAsync(new TokenRequestContext(DefaultScopes));

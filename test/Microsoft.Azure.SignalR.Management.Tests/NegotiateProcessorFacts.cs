@@ -90,7 +90,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
                     TokenLifetime = _tokenLifeTime
                 });
             var tokenString = negotiationResponse.AccessToken;
-            var handler = new JwtSecurityTokenHandlerSignalR();
+            var handler = new JwtSecurityTokenHandler();
             var token = handler.ReadJwtToken(tokenString);
 
             Assert.True(

@@ -60,7 +60,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         // Copied from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs#L474
-        public void AddClaim(Claim claim)
+        internal void AddClaim(Claim claim)
         {
             if (claim == null)
             {
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.SignalR
         // Modified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs#L489 <summary>
         // Modification:
         //     object jsonClaimValue = claim.ValueType.Equals(ClaimValueTypes.String, StringComparison.Ordinal) ? claim.Value : TokenUtilities.GetClaimValueUsingValueType(claim);
-        public void AddClaims(IEnumerable<Claim> claims)
+        internal void AddClaims(IEnumerable<Claim> claims)
         {
             if (claims == null)
             {
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         // Simplified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs#L761
-        public string Base64UrlEncode()
+        internal string Base64UrlEncode()
         {
             string json = JsonExtensions.SerializeToJson(this as IDictionary<string, object>);
             if (json == null)
