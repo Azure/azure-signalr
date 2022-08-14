@@ -37,7 +37,8 @@ namespace Microsoft.Azure.SignalR
 
         private (string AppName, string ConnectionString, ServerStickyMode StickyMode, ServiceEndpoint[] Endpoints) ParseConfiguration()
         {
-            var appName = _configuration[Constants.Keys.ApplicationNameDefaultKeyPrefix];
+            // For backward compatability, first read from prefix
+            var appName = _configuration[Constants.Keys.ApplicationNameDefaultKeyPrefix] ?? _configuration[Constants.Keys.ApplicationNameDefaultKey];
             var stickyMode = ServerStickyMode.Disabled;
             var mode = _configuration[Constants.Keys.ServerStickyModeDefaultKey];
             if (!string.IsNullOrEmpty(mode))

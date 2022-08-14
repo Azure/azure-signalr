@@ -38,7 +38,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         {
             _serviceConnectionManager.Initialize(_serviceConnectionContainerFactory);
 
-            Log.StartingConnection(_logger, _name, _options.ConnectionCount, _hubNames.Count);
+            Log.StartingConnection(_logger, _name, _options.InitialHubServerConnectionCount, _hubNames.Count);
 
             return _serviceConnectionManager.StartAsync();
         }

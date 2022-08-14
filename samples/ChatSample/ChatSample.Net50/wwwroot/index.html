@@ -43,18 +43,15 @@
             </div>
         </div>
     </div>
-    <!--Script references. -->
-    <script type="text/javascript" src="scripts/jquery-1.10.2.js"></script>
-    <script type="text/javascript" src="scripts/bootstrap.js"></script>
 
     <!--Reference the SignalR library. -->
-    <script type="text/javascript" src="scripts/msgpack5.js"></script>
-    <script type="text/javascript" src="scripts/signalr.js"></script>
-    <script type="text/javascript" src="scripts/signalr-protocol-msgpack.js"></script>
+    <script type="text/javascript" src="js/signalr/dist/browser/signalr.js"></script>
+    <script type="text/javascript" src="js/msgpack5/dist/msgpack5.js"></script>
+    <script type="text/javascript" src="js/signalr-protocol-msgpack/dist/browser/signalr-protocol-msgpack.js"></script>
 
     <!--Add script to update the page and send messages.-->
     <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', async function () {
 
             function generateRandomName() {
                 return Math.random().toString(36).substring(2, 10);
@@ -162,28 +159,45 @@
                 modal.style = 'display: block;';
             }
 
-            function getRandom(min, max) {
-                return Math.floor(Math.random() * (max - min + 1) + min);
+            function getRandomDelay() {
+                function getRandom(min, max) {
+                    return Math.floor(Math.random() * (max - min + 1) + min);
+                }
+                return getRandom(1000, 2000);
             }
 
             var connection = new signalR.HubConnectionBuilder()
                 .withUrl('/chat')
                 .withAutomaticReconnect({
                     nextRetryDelayInMilliseconds: function (retryContext) {
-                        return getRandom(2000, 5000); // always retry
+                        return getRandomDelay();
                     }
                 })
                 .withHubProtocol(new signalR.protocols.msgpack.MessagePackHubProtocol())
                 .build();
 
             bindConnectionMessage(connection);
-            connection.start()
-                .then(function () {
-                    onConnected(connection);
-                })
-                .catch(function (error) {
-                    console.warn(error);
+
+            function delay(time) {
+                return new Promise((resolve) => {
+                    setTimeout(() => resolve(), time);
                 });
+            }
+
+            let count = 0;
+            do {
+                try {
+                    count++;
+                    console.log(`Attempt ${count}`);
+                    await connection.start();
+                    break;
+                } catch (err) {
+                    await delay(getRandomDelay());
+                    console.warn("Error: " + err);
+                }
+            } while (true);
+
+            onConnected(connection);
         });
     </script>
 </body>
