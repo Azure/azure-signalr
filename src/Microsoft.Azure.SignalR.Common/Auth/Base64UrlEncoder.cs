@@ -1,9 +1,10 @@
 ﻿/*------------------------------------------------------------------------------
  * Modified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/Microsoft.IdentityModel.Tokens/Base64UrlEncoder.cs
  * Compared with original code
- *  1. Modify L68 ~ L75 in `internal static string Encode(byte[] inArray, int offset, int length)`
+ *  1. Change class `Base64UrlEncoder` from `public` to `internal`
+ *  2. Modify L68 ~ L75 in `internal static string Encode(byte[] inArray, int offset, int length)`
  *     Because we cannot access `LogMessages` and the old version of Package `Microsoft.IdentityModel.Logging` does not have method `MarkAsNonPII` for class `LogHelper`
- *  2. Modify L194 in `private unsafe static byte[] UnsafeDecode(string str)`
+ *  3. Modify L194 in `private unsafe static byte[] UnsafeDecode(string str)`
  *     The same reason as the first modification
 ------------------------------------------------------------------------------*/
 
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         /// <param name="arg">string to encode.</param>
         /// <returns>Base64Url encoding of the UTF8 bytes.</returns>
-        internal static string Encode(string arg)
+        public static string Encode(string arg)
         {
             _ = arg ?? throw LogHelper.LogArgumentNullException(nameof(arg));
 
@@ -64,7 +65,7 @@ namespace Microsoft.Azure.SignalR
         /// <returns>The string representation in base 64 url encoding of length elements of inArray, starting at position offset.</returns>
         /// <exception cref="ArgumentNullException">'inArray' is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">offset or length is negative OR offset plus length is greater than the length of inArray.</exception>
-        internal static string Encode(byte[] inArray, int offset, int length)
+        public static string Encode(byte[] inArray, int offset, int length)
         {
             _ = inArray ?? throw LogHelper.LogArgumentNullException(nameof(inArray));
 
@@ -142,14 +143,14 @@ namespace Microsoft.Azure.SignalR
         /// <returns>The string representation in base 64 url encoding of length elements of inArray, starting at position offset.</returns>
         /// <exception cref="ArgumentNullException">'inArray' is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">offset or length is negative OR offset plus length is greater than the length of inArray.</exception>
-        internal static string Encode(byte[] inArray)
+        public static string Encode(byte[] inArray)
         {
             _ = inArray ?? throw LogHelper.LogArgumentNullException(nameof(inArray));
 
             return Encode(inArray, 0, inArray.Length);
         }
 
-        internal static string EncodeString(string str)
+        public static string EncodeString(string str)
         {
             _ = str ?? throw LogHelper.LogArgumentNullException(nameof(str));
 
@@ -160,7 +161,7 @@ namespace Microsoft.Azure.SignalR
         ///  Converts the specified string, which encodes binary data as base-64-url digits, to an equivalent 8-bit unsigned integer array.</summary>
         /// <param name="str">base64Url encoded string.</param>
         /// <returns>UTF8 bytes.</returns>
-        internal static byte[] DecodeBytes(string str)
+        public static byte[] DecodeBytes(string str)
         {
             _ = str ?? throw LogHelper.LogExceptionMessage(new ArgumentNullException(nameof(str)));
 #if NET45
@@ -266,7 +267,7 @@ namespace Microsoft.Azure.SignalR
         /// </summary>
         /// <param name="arg">string to decode.</param>
         /// <returns>UTF8 string.</returns>
-        internal static string Decode(string arg)
+        public static string Decode(string arg)
         {
             return Encoding.UTF8.GetString(DecodeBytes(arg));
         }

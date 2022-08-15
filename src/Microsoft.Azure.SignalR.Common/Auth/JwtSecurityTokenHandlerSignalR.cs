@@ -5,8 +5,9 @@
  *      2. New class `JwtSecurityTokenHandlerSignalR` inherited from `JwtSecurityTokenHandler`
  *        Reason: Many removed codes in `JwtSecurityTokenHandler` are used in unit tests, if we still overwrite the class with the name`JwtSecurityTokenHandler` rather than creating a new class inhertied from `JwtSecurityTokenHandler`, we had to preserve useless codes that have nothing to do with JWT token generation. To make these useless codes work, we had to introduce more and more source codes from the original package.
  *         this new file 
- *      2. Simplify method `CreateJwtSecurityToken`. Comments are shown above the method
- *      3. Use a simpler way for JWT token signature encryption in method `CreateJwtSecurityToken`
+ *      3. Change class `JwtSecurityTokenHandlerSignalR` to `public` while class `JwtSecurityTokenHandler` is `internal`
+ *      4. Simplify method `CreateJwtSecurityToken`. Comments are shown above the method
+ *      5. Use a simpler way for JWT token signature encryption in method `CreateJwtSecurityToken`
 ------------------------------------------------------------------------------*/
 
 using System;
@@ -21,11 +22,11 @@ namespace Microsoft.Azure.SignalR
 {
     internal class JwtSecurityTokenHandlerSignalR : JwtSecurityTokenHandler
     {
-        internal static new IDictionary<string, string> DefaultOutboundClaimTypeMap = ClaimTypeMapping.OutboundClaimTypeMap;
+        public static new IDictionary<string, string> DefaultOutboundClaimTypeMap = ClaimTypeMapping.OutboundClaimTypeMap;
 
-        internal static IDictionary<string, string> _outboundClaimTypeMap = new Dictionary<string, string>(DefaultOutboundClaimTypeMap);
+        private static IDictionary<string, string> _outboundClaimTypeMap = new Dictionary<string, string>(DefaultOutboundClaimTypeMap);
 
-        internal static IEnumerable<Claim> OutboundClaimTypeTransform(IEnumerable<Claim> claims)
+        private static IEnumerable<Claim> OutboundClaimTypeTransform(IEnumerable<Claim> claims)
         {
             foreach (Claim claim in claims)
             {
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.SignalR
         // Simplified from following codes:
         //      method `CreateJwtSecurityToken` in [JwtSecruityTokenHandler.cs](https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtSecurityTokenHandler.cs#L487)
         //      method `CreateJwtSecurityTokenPrivate` in [JwtSecurityTokenHandler.cs](https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtSecurityTokenHandler.cs#L616)
-        internal string CreateJwtSecurityToken(
+        public string CreateJwtSecurityToken(
             DateTime? notBefore = null,
             DateTime? expires = null,
             DateTime? issuedAt = null,

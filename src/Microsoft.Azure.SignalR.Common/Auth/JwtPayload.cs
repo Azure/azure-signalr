@@ -1,8 +1,9 @@
 ﻿/*------------------------------------------------------------------------------
- * Modified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs#L489
+ * Modified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs
  * Compared with original code
-    *  1. Rewrite constructor for class `JwtPayload`. Details are commented above the constructor
-    *  2. Remove useless code
+    *  1. Change class `JwtPayload` from `public` to `internal`
+    *  2. Rewrite constructor for class `JwtPayload`. Details are commented above the constructor
+    *  3. Remove useless code
 ------------------------------------------------------------------------------*/
 
 using System;
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.SignalR
          *  4. Modify L107 in method `AddFirstPriorityClaims`. 
          *     Because we cannot access `LogMessages` and the old version of Package `Microsoft.IdentityModel.Logging` does not have method `MarkAsNonPII` for class `LogHelper`
          */
-        internal JwtPayload(string issuer = null, string audience = null, IEnumerable<Claim> claims = null, DateTime? notBefore = null, DateTime? expires = null, DateTime? issuedAt = null)
+        public JwtPayload(string issuer = null, string audience = null, IEnumerable<Claim> claims = null, DateTime? notBefore = null, DateTime? expires = null, DateTime? issuedAt = null)
         {
             if (claims != null)
                 AddClaims(claims);
@@ -60,7 +61,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         // Copied from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs#L474
-        internal void AddClaim(Claim claim)
+        public void AddClaim(Claim claim)
         {
             if (claim == null)
             {
@@ -73,7 +74,7 @@ namespace Microsoft.Azure.SignalR
         // Modified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs#L489 <summary>
         // Modification:
         //     object jsonClaimValue = claim.ValueType.Equals(ClaimValueTypes.String, StringComparison.Ordinal) ? claim.Value : TokenUtilities.GetClaimValueUsingValueType(claim);
-        internal void AddClaims(IEnumerable<Claim> claims)
+        public void AddClaims(IEnumerable<Claim> claims)
         {
             if (claims == null)
             {
@@ -113,7 +114,7 @@ namespace Microsoft.Azure.SignalR
         }
 
         // Simplified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs#L761
-        internal string Base64UrlEncode()
+        public string Base64UrlEncode()
         {
             string json = JsonExtensions.SerializeToJson(this as IDictionary<string, object>);
             if (json == null)

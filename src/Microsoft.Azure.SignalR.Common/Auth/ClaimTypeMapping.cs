@@ -1,6 +1,7 @@
-﻿//------------------------------------------------------------------------------
-// Copied From https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/v6.22.0/src/System.IdentityModel.Tokens.Jwt/ClaimTypeMapping.cs
-//------------------------------------------------------------------------------
+﻿/*------------------------------------------------------------------------------
+* Copied From https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/ClaimTypeMapping.cs
+* Nothing changed for class `ClaimTypeMapping`
+------------------------------------------------------------------------------*/
 
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -114,7 +115,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Gets the InboundClaimTypeMap used by JwtSecurityTokenHandler when producing claims from jwt. 
         /// </summary>
-        internal static IDictionary<string, string> InboundClaimTypeMap
+        public static IDictionary<string, string> InboundClaimTypeMap
         {
             get
             {
@@ -125,7 +126,7 @@ namespace Microsoft.Azure.SignalR
         /// <summary>
         /// Gets the OutboundClaimTypeMap is used by JwtSecurityTokenHandler to shorten claim types when creating a jwt. 
         /// </summary>
-        internal static IDictionary<string, string> OutboundClaimTypeMap
+        public static IDictionary<string, string> OutboundClaimTypeMap
         {
             get
             {
@@ -133,7 +134,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        internal static ISet<string> InboundClaimFilter
+        public static ISet<string> InboundClaimFilter
         {
             get
             {
