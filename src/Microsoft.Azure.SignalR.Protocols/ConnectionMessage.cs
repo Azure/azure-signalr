@@ -157,7 +157,6 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         public ReadOnlySequence<byte> Payload { get; set; }
 
-
         /// <summary>
         /// Gets or sets the message ID
         /// </summary>
