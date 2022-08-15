@@ -652,12 +652,13 @@ namespace Microsoft.Azure.SignalR.Protocol
 
         private static void WriteServiceCompletionMessage(ref MessagePackWriter writer, ServiceCompletionMessage message)
         {
-            writer.WriteArrayHeader(7);
+            writer.WriteArrayHeader(8);
             writer.Write(ServiceProtocolConstants.ServiceCompletionMessageType);
             writer.Write(message.InvocationId);
             writer.Write(message.ConnectionId);
             writer.Write(message.CallerServerId);
             writer.Write(message.Error);
+            writer.Write(message.Protocol);
             writer.Write(message.Payload);
             message.WriteExtensionMembers(ref writer);
         }
@@ -1208,12 +1209,13 @@ namespace Microsoft.Azure.SignalR.Protocol
             var connectionId = ReadString(ref reader, "connectionId");
             var callerServerId = ReadString(ref reader, "callerServerId");
             var error = ReadString(ref reader, "error");
+            var protocol = ReadString(ref reader, "protocol");
             var payload = ReadBytes(ref reader, "payload");
 
             ServiceCompletionMessage result;
             if (string.IsNullOrEmpty(error))
             {
-                result = new ServiceCompletionMessage(invocationId, connectionId, callerServerId, payload);
+                result = new ServiceCompletionMessage(invocationId, connectionId, callerServerId, protocol, payload);
             }
             else
             {

@@ -175,13 +175,15 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="invocationId">The Id of the invocation that has completed.</param>
         /// <param name="connectionId">The client connection Id that complete the invocation.</param>
         /// <param name="callerServerId">The serverId that wrap the completion result.</param>
+        /// <param name="protocol">The protocol of the connection.</param>
         /// <param name="payload">The payload of the completion result.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public ServiceCompletionMessage(string invocationId, string connectionId, string callerServerId, ReadOnlyMemory<byte> payload, ulong? tracingId = null)
+        public ServiceCompletionMessage(string invocationId, string connectionId, string callerServerId, string protocol, ReadOnlyMemory<byte> payload, ulong? tracingId = null)
             : base(connectionId)
         {
             InvocationId = invocationId;
             CallerServerId = callerServerId;
+            Protocol = protocol;
             Payload = new ReadOnlySequence<byte>(payload);
             TracingId = tracingId;
         }
@@ -216,6 +218,11 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Optional error message if the invocation wasn't completed successfully. This must be null if there is a result.
         /// </summary>
         public string Error { get; set; }
+
+        /// <summary>
+        /// Gets or sets the connection protocol.
+        /// </summary>
+        public string Protocol { get; set; }
 
         /// <summary>
         /// Gets or sets the binary payload.
