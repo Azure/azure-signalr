@@ -324,6 +324,80 @@ namespace Microsoft.Azure.SignalR.Management.Tests
 
         [ConditionalTheory]
         [SkipIfConnectionStringNotPresent]
+        [MemberData(nameof(TestData))]
+        internal async Task RemoveConnectionFromAllGroupsTest(ServiceTransportType serviceTransportType, string appName)
+        {
+            var userNames = GenerateRandomNames(ClientConnectionCount);
+            var groupNames = GenerateRandomNames(GroupCount);
+            var receivedMessageDict = new ConcurrentDictionary<int, int>();
+            var (clientEndpoint, clientAccessTokens, serviceHubContext) = await InitAsync(serviceTransportType, appName, userNames);
+            try
+            {
+                Func<Task> sendTaskFunc = () => serviceHubContext.Clients.Groups(groupNames).SendAsync(MethodName, Message);
+                
+                IList<HubConnection> connections = null;
+                CancellationTokenSource cancellationTokenSource = null;
+                
+                try
+                {
+                    connections = await CreateAndStartClientConnections(clientEndpoint, clientAccessTokens);
+                    cancellationTokenSource = new CancellationTokenSource();
+                    HandleHubConnection(connections, cancellationTokenSource);
+                    ListenOnMessage(connections, receivedMessageDict);
+
+                    var expectedReceivedMessageCount = groupNames.Length;
+                    var connectionGroupDict = new Dictionary<string, List<string>> { { connections[0].ConnectionId, groupNames.ToList() } };
+
+                    Assert.False(cancellationTokenSource.Token.IsCancellationRequested);
+
+                    await AddConnectionToGroupAsync(serviceHubContext, connectionGroupDict);
+                    await Task.Delay(_timeout);
+                    await sendTaskFunc();
+                    await Task.Delay(_timeout);
+                    await ConnectionRemoveFromAllGroupsAsync(serviceHubContext, connectionGroupDict);
+                    await Task.Delay(_timeout);
+                    await sendTaskFunc();
+                    await Task.Delay(_timeout);
+
+                    await Task.Delay(_timeout);
+
+                    Assert.False(cancellationTokenSource.Token.IsCancellationRequested);
+
+                    var receivedMessageCount = (from pair in receivedMessageDict
+                                                select pair.Value).Sum();
+                    Assert.Equal(expectedReceivedMessageCount, receivedMessageCount);
+                }
+                finally
+                {
+                    cancellationTokenSource?.Dispose();
+                    if (connections != null)
+                    {
+                        await Task.WhenAll(from connection in connections
+                                           select connection.StopAsync());
+                    }
+                }
+            }
+            finally
+            {
+                await serviceHubContext.DisposeAsync();
+            }
+        }
+
+        private static Task ConnectionRemoveFromAllGroupsAsync(IServiceHubContext serviceHubContext, IDictionary<string, List<string>> connectionGroupDict)
+        {
+            return Task.WhenAll(from connection in connectionGroupDict.Keys
+                                select serviceHubContext.Groups.RemoveFromGroupAsync(connection, null));
+        }
+
+        private static Task AddConnectionToGroupAsync(IServiceHubContext serviceHubContext, IDictionary<string, List<string>> connectionGroupDict)
+        {
+            return Task.WhenAll(from connectiongroup in connectionGroupDict
+                                select Task.WhenAll(from grp in connectiongroup.Value
+                                                    select serviceHubContext.Groups.AddToGroupAsync(connectiongroup.Key, grp)));
+        }
+
+        [ConditionalTheory]
+        [SkipIfConnectionStringNotPresent]
         [InlineData(ServiceTransportType.Persistent)]
         [InlineData(ServiceTransportType.Transient)]
         internal async Task CheckUserExistenceInGroupTest(ServiceTransportType transportType)
