@@ -195,6 +195,16 @@ namespace Microsoft.Azure.SignalR
 #endif
         }
 
+        /// <summary>
+        /// Decodes the string from Base64UrlEncoded to UTF8.
+        /// </summary>
+        /// <param name="arg">string to decode.</param>
+        /// <returns>UTF8 string.</returns>
+        public static string Decode(string arg)
+        {
+            return Encoding.UTF8.GetString(DecodeBytes(arg));
+        }
+
 #if !NET45
         private unsafe static byte[] UnsafeDecode(string str)
         {
@@ -261,15 +271,5 @@ namespace Microsoft.Azure.SignalR
             }
         }
 #endif
-
-        /// <summary>
-        /// Decodes the string from Base64UrlEncoded to UTF8.
-        /// </summary>
-        /// <param name="arg">string to decode.</param>
-        /// <returns>UTF8 string.</returns>
-        public static string Decode(string arg)
-        {
-            return Encoding.UTF8.GetString(DecodeBytes(arg));
-        }
     }
 }

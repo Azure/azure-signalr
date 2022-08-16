@@ -26,22 +26,6 @@ namespace Microsoft.Azure.SignalR
 
         private static IDictionary<string, string> _outboundClaimTypeMap = new Dictionary<string, string>(DefaultOutboundClaimTypeMap);
 
-        private static IEnumerable<Claim> OutboundClaimTypeTransform(IEnumerable<Claim> claims)
-        {
-            foreach (Claim claim in claims)
-            {
-                string type = null;
-                if (_outboundClaimTypeMap.TryGetValue(claim.Type, out type))
-                {
-                    yield return new Claim(type, claim.Value, claim.ValueType, claim.Issuer, claim.OriginalIssuer, claim.Subject);
-                }
-                else
-                {
-                    yield return claim;
-                }
-            }
-        }
-
         // Simplified from following codes:
         //      method `CreateJwtSecurityToken` in [JwtSecruityTokenHandler.cs](https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtSecurityTokenHandler.cs#L487)
         //      method `CreateJwtSecurityTokenPrivate` in [JwtSecurityTokenHandler.cs](https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtSecurityTokenHandler.cs#L616)
@@ -118,6 +102,22 @@ namespace Microsoft.Azure.SignalR
                 throw LogHelper.LogArgumentNullException(nameof(rawSignature));
 
             return string.Concat(message, ".", rawSignature);
+        }
+
+        private static IEnumerable<Claim> OutboundClaimTypeTransform(IEnumerable<Claim> claims)
+        {
+            foreach (Claim claim in claims)
+            {
+                string type = null;
+                if (_outboundClaimTypeMap.TryGetValue(claim.Type, out type))
+                {
+                    yield return new Claim(type, claim.Value, claim.ValueType, claim.Issuer, claim.OriginalIssuer, claim.Subject);
+                }
+                else
+                {
+                    yield return claim;
+                }
+            }
         }
     }
 }
