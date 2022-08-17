@@ -9,9 +9,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Microsoft.IdentityModel.Logging;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -44,14 +44,14 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        /// Simplified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtHeader.cs#L328
+        /// Simplified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtHeader.cs#L328 and https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JsonExtensions.cs
         /// <summary>
         /// Convert this <see cref="JwtHeader"/> to corresponding Base64Url encoding
         /// </summary>
         /// <returns>Base64Url encoding of a <see cref="JwtHeader"/></returns>
         public string Base64UrlEncode()
         {
-            string json = JsonExtensions.SerializeToJson(this as IDictionary<string, object>);
+            string json = JsonConvert.SerializeObject(this as IDictionary<string, object>);
             if (json == null)
             {
                 throw LogHelper.LogArgumentNullException("json");
