@@ -3,6 +3,8 @@
  * Compared with original code:
  *      1. Remove useless methods
  *      2. Remove code related with `subject.Actor` because this property is always null
+ *         if (subject?.Actor != null)
+               payload.AddClaim(new Claim(JwtRegisteredClaimNames.Actort, CreateActorValue(subject.Actor)));
  *      3. Change class `JwtSecurityTokenHandlerSignalR` to `public` while class `JwtSecurityTokenHandler` is `internal`
  *      4. Simplify method `CreateJwtSecurityToken`. Comments are shown above the method
  *      5. Use a simpler way for JWT token signature encryption in method `CreateJwtSecurityToken`
@@ -10,7 +12,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Security.Cryptography;
@@ -18,7 +19,7 @@ using Microsoft.IdentityModel.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class JwtSecurityTokenHandlerSignalR
+    internal class SignalRJwtSecurityTokenHandler
     {
         public static IDictionary<string, string> DefaultOutboundClaimTypeMap = ClaimTypeMapping.OutboundClaimTypeMap;
 
@@ -54,10 +55,6 @@ namespace Microsoft.Azure.SignalR
 
             JwtPayload payload = new JwtPayload(issuer, audience, (subject == null ? null : OutboundClaimTypeTransform(subject.Claims)), notBefore, expires, issuedAt);
             JwtHeader header = new JwtHeader(kid, algorithm);
-
-            // Because subject.Actor is always null, we skip this
-            //if (subject?.Actor != null)
-            //    payload.AddClaim(new Claim(JwtRegisteredClaimNames.Actort, CreateActorValue(subject.Actor)));
 
             string rawHeader = header.Base64UrlEncode();
             string rawPayload = payload.Base64UrlEncode();
