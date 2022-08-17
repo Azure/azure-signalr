@@ -32,39 +32,6 @@ namespace Microsoft.Azure.SignalR.Common.Tests.Auth
             Assert.Equal("AccessToken must not be longer than 4K.", exception.Message);
         }
 
-        [Theory]
-        [ClassData(typeof(CachingTestData))]
-        internal void TestGenerateJwtBearerCaching(AccessKey accessKey, bool shouldCache)
-        {
-            var count = 0;
-            while (count < 1000)
-            {
-                AuthUtility.GenerateJwtBearer(audience: Audience,
-                                              expires: DateTime.UtcNow.Add(DefaultLifetime),
-                                              signingKey: accessKey);
-                count++;
-            };
-
-            // New a key to fetch cached CryptoProviderCache, it won't add to cache until CreateJwtSecurityToken
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SigningKey));
-
-            var cache = securityKey.CryptoProviderFactory.CryptoProviderCache;
-            var value = cache.GetType().GetField("_signingSignatureProviders", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(cache);
-
-            var signingProviders = value as ConcurrentDictionary<string, SignatureProvider>;
-
-            // Validate same signing key cache once. 
-            if (shouldCache)
-            {
-                Assert.Single(signingProviders);
-            }
-            else
-            {
-                Assert.Empty(signingProviders);
-            }
-            signingProviders.Clear();
-        }
-
         private static Claim[] GenerateClaims(int count)
         {
             return Enumerable.Range(0, count).Select(s => new Claim($"ClaimSubject{s}", $"ClaimValue{s}")).ToArray();
