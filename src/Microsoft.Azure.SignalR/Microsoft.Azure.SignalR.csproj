@@ -46,6 +46,6 @@
   </ItemGroup>
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net7.0'">
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
-		<PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="$(MicrosoftAspNetCoreHttpConnectionsClientPackage5_0Version)" />
+		<PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="$(MicrosoftAspNetCoreHttpConnectionsClientPackage7_0Version)" />
 	</ItemGroup>
 </Project>
