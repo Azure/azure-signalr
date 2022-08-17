@@ -1,10 +1,8 @@
 ﻿/*------------------------------------------------------------------------------
  * Simplified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtSecurityTokenHandler.cs#L487
  * Compared with original code:
- *      1. Remove useless code
- *      2. New class `JwtSecurityTokenHandlerSignalR` inherited from `JwtSecurityTokenHandler`
- *        Reason: Many removed codes in `JwtSecurityTokenHandler` are used in unit tests, if we still overwrite the class with the name`JwtSecurityTokenHandler` rather than creating a new class inhertied from `JwtSecurityTokenHandler`, we had to preserve useless codes that have nothing to do with JWT token generation. To make these useless codes work, we had to introduce more and more source codes from the original package.
- *         this new file 
+ *      1. Remove useless methods
+ *      2. Remove code related with `subject.Actor` because this property is always null
  *      3. Change class `JwtSecurityTokenHandlerSignalR` to `public` while class `JwtSecurityTokenHandler` is `internal`
  *      4. Simplify method `CreateJwtSecurityToken`. Comments are shown above the method
  *      5. Use a simpler way for JWT token signature encryption in method `CreateJwtSecurityToken`
@@ -20,9 +18,9 @@ using Microsoft.IdentityModel.Logging;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class JwtSecurityTokenHandlerSignalR : JwtSecurityTokenHandler
+    internal class JwtSecurityTokenHandlerSignalR
     {
-        public static new IDictionary<string, string> DefaultOutboundClaimTypeMap = ClaimTypeMapping.OutboundClaimTypeMap;
+        public static IDictionary<string, string> DefaultOutboundClaimTypeMap = ClaimTypeMapping.OutboundClaimTypeMap;
 
         private static IDictionary<string, string> _outboundClaimTypeMap = new Dictionary<string, string>(DefaultOutboundClaimTypeMap);
 
@@ -57,8 +55,9 @@ namespace Microsoft.Azure.SignalR
             JwtPayload payload = new JwtPayload(issuer, audience, (subject == null ? null : OutboundClaimTypeTransform(subject.Claims)), notBefore, expires, issuedAt);
             JwtHeader header = new JwtHeader(kid, algorithm);
 
-            if (subject?.Actor != null)
-                payload.AddClaim(new Claim(JwtRegisteredClaimNames.Actort, CreateActorValue(subject.Actor)));
+            // Because subject.Actor is always null, we skip this
+            //if (subject?.Actor != null)
+            //    payload.AddClaim(new Claim(JwtRegisteredClaimNames.Actort, CreateActorValue(subject.Actor)));
 
             string rawHeader = header.Base64UrlEncode();
             string rawPayload = payload.Base64UrlEncode();

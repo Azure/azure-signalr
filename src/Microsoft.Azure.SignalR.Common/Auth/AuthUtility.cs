@@ -4,11 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Azure.SignalR
 {
