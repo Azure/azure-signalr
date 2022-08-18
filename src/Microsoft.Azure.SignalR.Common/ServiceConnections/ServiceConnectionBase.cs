@@ -18,15 +18,20 @@ namespace Microsoft.Azure.SignalR
     internal abstract class ServiceConnectionBase : IServiceConnection
     {
         protected static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(15);
+
         // Service ping rate is 5 sec to let server know service status. Set timeout for 30 sec for some space.
         private static readonly TimeSpan DefaultServiceTimeout = TimeSpan.FromSeconds(30);
+
         private static readonly long DefaultServiceTimeoutTicks = (long)(DefaultServiceTimeout.TotalSeconds * Stopwatch.Frequency);
+
         // App server ping rate is 5 sec to let service know if app server is still alive
         // Service will abort both server and client connections link to this server when server is down.
         // App server ping is triggered by incoming requests and send by checking last send timestamp.
         private static readonly TimeSpan DefaultKeepAliveInterval = TimeSpan.FromSeconds(5);
+
         // App server update its azure identity by sending a AccessKeyRequestMessage with Azure AD Token every 10 minutes.
         private static readonly TimeSpan DefaultSyncAzureIdentityInterval = TimeSpan.FromMinutes(10);
+
         private static readonly long DefaultKeepAliveTicks = (long)DefaultKeepAliveInterval.TotalSeconds * Stopwatch.Frequency;
 
         private readonly ReadOnlyMemory<byte> _cachedPingBytes;
@@ -36,12 +41,15 @@ namespace Microsoft.Azure.SignalR
         private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
 
         private readonly TaskCompletionSource<bool> _serviceConnectionStartTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
         private readonly TaskCompletionSource<object> _serviceConnectionOfflineTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private readonly ServiceConnectionType _connectionType;
 
         private readonly IServiceMessageHandler _serviceMessageHandler;
+
         private readonly IServiceEventHandler _serviceEventHandler;
+
         private readonly object _statusLock = new object();
 
         private volatile string _errorMessage;
@@ -73,6 +81,7 @@ namespace Microsoft.Azure.SignalR
         public ServiceConnectionStatus Status
         {
             get => _status;
+
             protected set
             {
                 if (_status != value)
@@ -161,6 +170,7 @@ namespace Microsoft.Azure.SignalR
                     finally
                     {
                         syncTimer?.Stop();
+
                         // when ProcessIncoming completes, clean up the connection
 
                         // TODO: Never cleanup connections unless Service asks us to do that
@@ -314,18 +324,18 @@ namespace Microsoft.Azure.SignalR
 
         private Task OnAccessKeyMessageAsync(AccessKeyResponseMessage keyMessage)
         {
-            if (string.IsNullOrEmpty(keyMessage.ErrorType))
+            if (HubEndpoint.AccessKey is AadAccessKey key)
             {
-                if (HubEndpoint.AccessKey is AadAccessKey key)
+                if (string.IsNullOrEmpty(keyMessage.ErrorType))
                 {
                     key.UpdateAccessKey(keyMessage.Kid, keyMessage.AccessKey);
                 }
-            }
-            else
-            {
-                var exception = new AzureSignalRUnauthorizedException(new AzureSignalRException(keyMessage.ErrorMessage));
-                Log.AuthorizeFailed(Logger, exception);
-                return Task.CompletedTask;
+                else if (key.HasExpired)
+                {
+                    var exception = new AzureSignalRUnauthorizedException(new AzureSignalRException(keyMessage.ErrorMessage));
+                    Log.AuthorizeFailed(Logger, exception);
+                    return Task.CompletedTask;
+                }
             }
             return Task.CompletedTask;
         }
@@ -586,6 +596,7 @@ namespace Microsoft.Azure.SignalR
                     {
                         Log.ServiceTimeout(Logger, DefaultServiceTimeout, ConnectionId);
                         await StopAsync();
+
                         // We shouldn't get here twice.
                         continue;
                     }
