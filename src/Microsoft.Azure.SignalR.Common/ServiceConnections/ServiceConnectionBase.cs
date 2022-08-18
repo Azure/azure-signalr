@@ -332,8 +332,7 @@ namespace Microsoft.Azure.SignalR
                 }
                 else if (key.HasExpired)
                 {
-                    var exception = new AzureSignalRUnauthorizedException(new AzureSignalRException(keyMessage.ErrorMessage));
-                    Log.AuthorizeFailed(Logger, exception);
+                    Log.AuthorizeFailed(Logger, keyMessage.ErrorMessage, null);
                     return Task.CompletedTask;
                 }
             }
@@ -703,17 +702,17 @@ namespace Microsoft.Azure.SignalR
             private static readonly Action<ILogger, string, Exception> _receivedInstanceOfflinePing =
                 LoggerMessage.Define<string>(LogLevel.Information, new EventId(31, "ReceivedInstanceOfflinePing"), "Received instance offline service ping: {InstanceId}");
 
-            private static readonly Action<ILogger, Exception> _authorizeFailed =
-                LoggerMessage.Define(LogLevel.Error, new EventId(32, "AuthorizeFailed"), "Service returned 401 unauthorized.");
+            private static readonly Action<ILogger, string, Exception> _authorizeFailed =
+                LoggerMessage.Define<string>(LogLevel.Error, new EventId(32, "AuthorizeFailed"), "Service returned 401 unauthorized: {Message}");
 
             public static void FailedToWrite(ILogger logger, ulong? tracingId, string serviceConnectionId, Exception exception)
             {
                 _failedToWrite(logger, tracingId, exception.Message, serviceConnectionId, null);
             }
 
-            public static void AuthorizeFailed(ILogger logger, Exception exception)
+            public static void AuthorizeFailed(ILogger logger, string message, Exception exception)
             {
-                _authorizeFailed(logger, exception);
+                _authorizeFailed(logger, message, exception);
             }
 
             public static void FailedToConnect(ILogger logger, string endpoint, string serviceConnectionId, Exception exception)

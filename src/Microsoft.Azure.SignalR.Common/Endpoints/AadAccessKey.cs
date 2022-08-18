@@ -98,15 +98,6 @@ namespace Microsoft.Azure.SignalR
             _initializedTcs.TrySetResult(null);
         }
 
-        /// <summary>
-        /// For unit test only
-        /// </summary>
-        /// <param name="datetime"></param>
-        internal void UpdateLastUpdatedTime(DateTime datetime)
-        {
-            _lastUpdatedTime = datetime;
-        }
-
         internal bool HasExpired => DateTime.UtcNow - _lastUpdatedTime > TimeSpan.FromMinutes(AuthorizeIntervalInMinute * 2);
 
         internal async Task UpdateAccessKeyAsync()

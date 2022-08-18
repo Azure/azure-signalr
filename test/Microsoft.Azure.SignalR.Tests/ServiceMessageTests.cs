@@ -239,7 +239,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 if (endpoint.AccessKey is AadAccessKey key)
                 {
-                    key.UpdateLastUpdatedTime(DateTime.UtcNow - TimeSpan.FromMinutes(minutesElapsed));
+                    var field = typeof(AadAccessKey).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+                    field.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(minutesElapsed));
                 }
 
                 var connection = CreateServiceConnection(loggerFactory: loggerFactory, hubServiceEndpoint: endpoint);
