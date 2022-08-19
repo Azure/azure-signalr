@@ -94,8 +94,10 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     return ServiceWarningMessageEqual(serviceWarningMessage, (ServiceEventMessage)y);
                 case ClientInvocationMessage clientInvocationMessage:
                     return ClientInvocationMessageEuqal(clientInvocationMessage, (ClientInvocationMessage)y);
-                case ServiceCompletionMessage serviceCompletionMessage:
-                    return ServiceCompletionMessageEqual(serviceCompletionMessage, (ServiceCompletionMessage)y);
+                case ClientCompletionMessage clientCompletionMessage:
+                    return ClientCompletionMessageEqual(clientCompletionMessage, (ClientCompletionMessage)y);
+                case ErrorCompletionMessage errorCompletionMessage:
+                    return ErrorCompletionMessageEqual(errorCompletionMessage, (ErrorCompletionMessage)y);
                 case ServiceMappingMessage serviceMappingMessage:
                     return ServiceMappingMessageEqual(serviceMappingMessage, (ServiceMappingMessage)y);
                 default:
@@ -346,13 +348,21 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 PayloadsEqual(x.Payloads, y.Payloads);
         }
 
-        private bool ServiceCompletionMessageEqual(ServiceCompletionMessage x, ServiceCompletionMessage y)
+        private bool ClientCompletionMessageEqual(ClientCompletionMessage x, ClientCompletionMessage y)
         {
             return StringEqual(x.InvocationId, y.InvocationId) &&
                 StringEqual(x.ConnectionId, y.ConnectionId) &&
                 StringEqual(x.CallerServerId, y.CallerServerId) &&
-                StringEqual(x.Error, y.Error) &&
+                StringEqual(x.Protocol, y.Protocol) &&
                 SequenceEqual(x.Payload.ToArray(), y.Payload.ToArray());
+        }
+
+        private bool ErrorCompletionMessageEqual(ErrorCompletionMessage x, ErrorCompletionMessage y)
+        {
+            return StringEqual(x.InvocationId, y.InvocationId) &&
+                StringEqual(x.ConnectionId, y.ConnectionId) &&
+                StringEqual(x.CallerServerId, y.CallerServerId) &&
+                StringEqual(x.Error, y.Error);
         }
 
         private bool ServiceMappingMessageEqual(ServiceMappingMessage x, ServiceMappingMessage y)

@@ -115,8 +115,10 @@ namespace Microsoft.Azure.SignalR.Protocol
                     return CreateAckMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.ClientInvocationMessageType:
                     return CreateClientInvocationMessage(ref reader, arrayLength);
-                case ServiceProtocolConstants.ServiceCompletionMessageType:
-                    return CreateServiceCompletionMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.ClientCompletionMessageType:
+                    return CreateClientCompletionMessage(ref reader, arrayLength);
+                case ServiceProtocolConstants.ErrorCompletionMessageType:
+                    return CreateErrorCompletionMessage(ref reader, arrayLength);
                 case ServiceProtocolConstants.ServiceMappingMessageType:
                     return CreateServiceMappingMessage(ref reader, arrayLength);
                 default:
@@ -287,8 +289,11 @@ namespace Microsoft.Azure.SignalR.Protocol
                 case ClientInvocationMessage clientInvocationMessage:
                     WriteClientInvocationMessage(ref writer, clientInvocationMessage);
                     break;
-                case ServiceCompletionMessage serviceCompletionMesssage:
-                    WriteServiceCompletionMessage(ref writer, serviceCompletionMesssage);
+                case ClientCompletionMessage clientCompletionMesssage:
+                    WriteClientCompletionMessage(ref writer, clientCompletionMesssage);
+                    break;
+                case ErrorCompletionMessage errorCompletionMesssage:
+                    WriteErrorCompletionMessage(ref writer, errorCompletionMesssage);
                     break;
                 case ServiceMappingMessage serviceMappingMessage:
                     WriteServiceMappingMessage(ref writer, serviceMappingMessage);
@@ -650,16 +655,26 @@ namespace Microsoft.Azure.SignalR.Protocol
             message.WriteExtensionMembers(ref writer);
         }
 
-        private static void WriteServiceCompletionMessage(ref MessagePackWriter writer, ServiceCompletionMessage message)
+        private static void WriteClientCompletionMessage(ref MessagePackWriter writer, ClientCompletionMessage message)
         {
-            writer.WriteArrayHeader(8);
-            writer.Write(ServiceProtocolConstants.ServiceCompletionMessageType);
+            writer.WriteArrayHeader(7);
+            writer.Write(ServiceProtocolConstants.ClientCompletionMessageType);
+            writer.Write(message.InvocationId);
+            writer.Write(message.ConnectionId);
+            writer.Write(message.CallerServerId);
+            writer.Write(message.Protocol);
+            writer.Write(message.Payload);
+            message.WriteExtensionMembers(ref writer);
+        }
+
+        private static void WriteErrorCompletionMessage(ref MessagePackWriter writer, ErrorCompletionMessage message)
+        {
+            writer.WriteArrayHeader(6);
+            writer.Write(ServiceProtocolConstants.ErrorCompletionMessageType);
             writer.Write(message.InvocationId);
             writer.Write(message.ConnectionId);
             writer.Write(message.CallerServerId);
             writer.Write(message.Error);
-            writer.Write(message.Protocol);
-            writer.Write(message.Payload);
             message.WriteExtensionMembers(ref writer);
         }
 
@@ -1203,24 +1218,28 @@ namespace Microsoft.Azure.SignalR.Protocol
             return result;
         }
 
-        private static ServiceCompletionMessage CreateServiceCompletionMessage(ref MessagePackReader reader, int arrayLength)
+        private static ClientCompletionMessage CreateClientCompletionMessage(ref MessagePackReader reader, int arrayLength)
+        {
+            var invocationId = ReadString(ref reader, "invocationId");
+            var connectionId = ReadString(ref reader, "connectionId");
+            var callerServerId = ReadString(ref reader, "callerServerId");
+            var protocol = ReadString(ref reader, "protocol");
+            var payload = ReadBytes(ref reader, "payload");
+
+            var result = new ClientCompletionMessage(invocationId, connectionId, callerServerId, protocol, payload);
+
+            result.ReadExtensionMembers(ref reader);
+            return result;
+        }
+
+        private static ErrorCompletionMessage CreateErrorCompletionMessage(ref MessagePackReader reader, int arrayLength)
         {
             var invocationId = ReadString(ref reader, "invocationId");
             var connectionId = ReadString(ref reader, "connectionId");
             var callerServerId = ReadString(ref reader, "callerServerId");
             var error = ReadString(ref reader, "error");
-            var protocol = ReadString(ref reader, "protocol");
-            var payload = ReadBytes(ref reader, "payload");
 
-            ServiceCompletionMessage result;
-            if (string.IsNullOrEmpty(error))
-            {
-                result = new ServiceCompletionMessage(invocationId, connectionId, callerServerId, protocol, payload);
-            }
-            else
-            {
-                result = new ServiceCompletionMessage(invocationId, connectionId, callerServerId, error);
-            }
+            var result = new ErrorCompletionMessage(invocationId, connectionId, callerServerId, error);
 
             result.ReadExtensionMembers(ref reader);
             return result;
