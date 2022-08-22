@@ -17,14 +17,19 @@ namespace Microsoft.Azure.SignalR
     internal class AadAccessKey : AccessKey
     {
         internal const int AuthorizeIntervalInMinute = 55;
+
         internal const int AuthorizeMaxRetryTimes = 3;
+
         internal const int AuthorizeRetryIntervalInSec = 3;
 
         private const string DefaultScope = "https://signalr.azure.com/.default";
 
         private static readonly TokenRequestContext _defaultRequestContext = new TokenRequestContext(new string[] { DefaultScope });
+
         private static readonly TimeSpan AuthorizeInterval = TimeSpan.FromMinutes(AuthorizeIntervalInMinute);
+
         private static readonly TimeSpan AuthorizeRetryInterval = TimeSpan.FromSeconds(AuthorizeRetryIntervalInSec);
+
         private static readonly TimeSpan AuthorizeTimeout = TimeSpan.FromSeconds(10);
 
         private readonly TaskCompletionSource<object> _initializedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -41,7 +46,7 @@ namespace Microsoft.Azure.SignalR
 
         private Task<object> InitializedTask => _initializedTcs.Task;
 
-        public AadAccessKey(Uri uri, TokenCredential credential): base(uri)
+        public AadAccessKey(Uri uri, TokenCredential credential) : base(uri)
         {
             var builder = new UriBuilder(Endpoint)
             {
@@ -93,6 +98,8 @@ namespace Microsoft.Azure.SignalR
             _initializedTcs.TrySetResult(null);
         }
 
+        internal bool HasExpired => DateTime.UtcNow - _lastUpdatedTime > TimeSpan.FromMinutes(AuthorizeIntervalInMinute * 2);
+
         internal async Task UpdateAccessKeyAsync()
         {
             if (DateTime.UtcNow - _lastUpdatedTime < AuthorizeInterval)
@@ -140,15 +147,6 @@ namespace Microsoft.Azure.SignalR
         }
 
         private async Task<bool> HandleHttpResponseAsync(HttpResponseMessage response)
-        {
-            if (await HandleHttpResponseAsyncCore(response))
-            {
-                return true;
-            }
-            return false;
-        }
-
-        private async Task<bool> HandleHttpResponseAsyncCore(HttpResponseMessage response)
         {
             if (response.StatusCode != HttpStatusCode.OK)
             {
