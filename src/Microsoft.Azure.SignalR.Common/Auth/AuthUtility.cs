@@ -4,11 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -16,7 +14,7 @@ namespace Microsoft.Azure.SignalR
     {
         private const int MaxTokenLength = 4096;
 
-        private static readonly JwtSecurityTokenHandlerSignalR JwtTokenHandler = new JwtSecurityTokenHandlerSignalR();
+        private static readonly SignalRJwtSecurityTokenHandler JwtTokenHandler = new SignalRJwtSecurityTokenHandler();
 
         public static string GenerateJwtBearer(
             string issuer = null,

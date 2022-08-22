@@ -12,7 +12,7 @@ using System.Text;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -113,10 +113,10 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        // Simplified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs#L761
+        // Simplified from https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JwtPayload.cs#L761 and https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6.22.0/src/System.IdentityModel.Tokens.Jwt/JsonExtensions.cs
         public string Base64UrlEncode()
         {
-            string json = JsonExtensions.SerializeToJson(this as IDictionary<string, object>);
+            string json = JsonConvert.SerializeObject(this as IDictionary<string, object>);
             if (json == null)
             {
                 throw LogHelper.LogArgumentNullException("json");

@@ -218,17 +218,32 @@ namespace Microsoft.Azure.SignalR.Tests
             await connection.StopAsync();
         }
 
-        [Fact]
-        public async Task TestAccessKeyResponseMessageWithError()
+        [Theory]
+        [InlineData(5, 0)]
+        [InlineData(60, 0)]
+        [InlineData(120, 1)]
+        public async Task TestAccessKeyResponseMessageWithError(int minutesElapsed, int expectedLogCount)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Error, expectedErrors: c => true,
                 logChecker: logs =>
                 {
-                    Assert.Equal(1, logs.Count);
+                    Assert.Equal(expectedLogCount, logs.Count);
+                    if (logs.Count > 0)
+                    {
+                        Assert.StartsWith("Service returned 401 unauthorized:", logs[0].Write.Message);
+                    }
                     return true;
                 }))
             {
-                var connection = CreateServiceConnection(loggerFactory: loggerFactory);
+                var endpoint = new TestHubServiceEndpoint(endpoint: new TestServiceEndpoint(new DefaultAzureCredential()));
+
+                if (endpoint.AccessKey is AadAccessKey key)
+                {
+                    var field = typeof(AadAccessKey).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+                    field.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(minutesElapsed));
+                }
+
+                var connection = CreateServiceConnection(loggerFactory: loggerFactory, hubServiceEndpoint: endpoint);
                 var connectionTask = connection.StartAsync();
                 await connection.ConnectionInitializedTask.OrTimeout(1000);
 
