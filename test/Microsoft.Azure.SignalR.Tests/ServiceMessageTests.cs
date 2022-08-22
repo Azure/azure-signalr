@@ -230,7 +230,7 @@ namespace Microsoft.Azure.SignalR.Tests
                     Assert.Equal(expectedLogCount, logs.Count);
                     if (logs.Count > 0)
                     {
-                        logs[0].ToString().StartsWith("Service returned 401 unauthorized.");
+                        Assert.StartsWith("Service returned 401 unauthorized:", logs[0].Write.Message);
                     }
                     return true;
                 }))

@@ -146,9 +146,7 @@ namespace Microsoft.Azure.SignalR
                 cancellationToken: token);
         }
 
-        private async Task<bool> HandleHttpResponseAsync(HttpResponseMessage response) => await HandleHttpResponseAsyncCore(response);
-
-        private async Task<bool> HandleHttpResponseAsyncCore(HttpResponseMessage response)
+        private async Task<bool> HandleHttpResponseAsync(HttpResponseMessage response)
         {
             if (response.StatusCode != HttpStatusCode.OK)
             {
