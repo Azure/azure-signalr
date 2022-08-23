@@ -138,6 +138,12 @@ function Get-KoreBuild {
         }
     }
 
+    # Hack $korebuildPath\modules\vstest\module.targets Line 147. This line executes `dotnet vstest ... --framework:...`. 
+    # When .NET SDK version >= 6.0, .NET CLI (`dotnet`) cannot handle parameter option `--framework` with `vstest` correctly.
+    # A easy solution is to replace `vstest` with `/test`. Another solution is to replace `--Framework` with `/Framework`
+    $HackTargetPath = "$korebuildPath\modules\vstest\module.targets"
+    (Get-Content $HackTargetPath -Raw) -Replace '<VSTestArgs Include="vstest" />', '<VSTestArgs Include="test" />' | Set-Content $HackTargetPath
+
     return $korebuildPath
 }
 

@@ -86,6 +86,13 @@ get_korebuild() {
         local filePath=`find $korebuild_path -name sdk.version`
         echo "7.0.100-preview.4.22252.9" > $filePath
 
+        # Hack $korebuildPath\modules\vstest\module.targets Line 147. This line executes `dotnet vstest ... --framework:...`. 
+        # When .NET SDK version >= 6.0, .NET CLI (`dotnet`) cannot handle parameter option `--framework` with `vstest` correctly.
+        # A easy solution is to replace `vstest` with `/test`. Another solution is to replace `--Framework` with `/Framework`
+        search_str='<VSTestArgs Include="vstest"'
+        replace_str='<VSTestArgs Include="test"'
+        sed -n "s/$search_str/$replace_str/g" "$korebuildPath\modules\vstest\module.targets"
+
         source "$korebuild_path/KoreBuild.sh"
     } || {
         if [ -d "$korebuild_path" ]; then
