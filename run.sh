@@ -91,7 +91,7 @@ get_korebuild() {
         # A easy solution is to replace `vstest` with `/test`. Another solution is to replace `--Framework` with `/Framework`
         search_str='<VSTestArgs Include="vstest"'
         replace_str='<VSTestArgs Include="test"'
-        sed -n "s/$search_str/$replace_str/g" $korebuildPath"\modules\vstest\module.targets"
+        sed -n "s/$search_str/$replace_str/g" "$korebuildPath/modules/vstest/module.targets"
 
         source "$korebuild_path/KoreBuild.sh"
     } || {
