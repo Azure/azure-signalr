@@ -99,8 +99,8 @@ namespace Microsoft.Azure.SignalR
             }
             clientCount = count;
             return true;
-        }   
-        
+        }
+
         public static bool TryGetServerCount(this ServicePingMessage ping, out int serverCount)
         {
             if (!TryGetValue(ping, ServerCountKey, out var value) || !int.TryParse(value, out var count))
@@ -110,8 +110,8 @@ namespace Microsoft.Azure.SignalR
             }
             serverCount = count;
             return true;
-        }    
-        
+        }
+
         public static bool TryGetConnectionCapacity(this ServicePingMessage ping, out int connectionCapacity)
         {
             if (!TryGetValue(ping, CapacityKey, out var value) || !int.TryParse(value, out var count))
