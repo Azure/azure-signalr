@@ -141,12 +141,33 @@ function Get-KoreBuild {
     # Hack $korebuildPath\modules\vstest\module.targets Line 147. This line executes `dotnet vstest ... --framework:...`. 
     # When .NET SDK version >= 6.0, .NET CLI (`dotnet`) cannot handle parameter option `--framework` with `vstest` correctly.
     # A easy solution is to replace `vstest` with `/test`. Another solution is to replace `--Framework` with `/Framework`
-    $HackTargetPath = "$korebuildPath\modules\vstest\module.targets"
-    (Get-Content $HackTargetPath -Raw) -Replace '<VSTestArgs Include="vstest" />', '<VSTestArgs Include="test" />' | Set-Content $HackTargetPath
+    $hackTargetPath = "$korebuildPath\modules\vstest\module.targets"
+    (Get-Content $hackTargetPath -Raw) -Replace '<VSTestArgs Include="vstest" />', '<VSTestArgs Include="test" />' | Set-Content $hackTargetPath
 
     # Forcibly Install .NET SDK 5.0.301
-    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-    & "$korebuildPath\scripts\dotnet-install.ps1" -Version "5.0.301"
+    $textToAdd = {
+        $forced_install_version = "5.0.301"
+        if (!(Test-Path (Join-Paths $installDir ('sdk', $forced_install_version, 'dotnet.dll')))) {
+            Write-Verbose "Installing dotnet $forced_install_version to $installDir"
+            & $scriptPath `
+                -Version $forced_install_version `
+                -Architecture $arch `
+                -InstallDir $installDir `
+                -AzureFeed $script:config.'dotnet.feed.cdn' `
+                -UncachedFeed $script:config.'dotnet.feed.uncached' `
+                -FeedCredential $script:config.'dotnet.feed.credential'
+        }
+        else {
+            Write-Host -ForegroundColor DarkGray ".NET Core SDK $forced_install_version is already installed. Skipping installation."
+        }
+    }
+    $textToAdd = $textToAdd.ToString()
+    $targetFilePath = "$korebuildPath\scripts\KoreBuild.psm1"
+    $lineNumber = 224
+    $fileContent = Get-Content $targetFilePath
+    $fileContent[$lineNumber-1] += $textToAdd
+    $fileContent | Set-Content $targetFilePath
+
     return $korebuildPath
 }
 
