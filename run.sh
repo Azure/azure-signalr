@@ -93,6 +93,11 @@ get_korebuild() {
         replace_str='<VSTestArgs Include="test"'
         sed -n "s/$search_str/$replace_str/g" "$korebuild_path/modules/vstest/module.targets"
 
+        # Forcibly Install .NET SDK 5.0.301
+        $dotnet_install_script="$korebuild_path\scripts\dotnet-install.sh"
+        chmod +x $dotnet_install_script
+        $dotnet_install_script -Version "5.0.301"
+
         source "$korebuild_path/KoreBuild.sh"
     } || {
         if [ -d "$korebuild_path" ]; then

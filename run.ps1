@@ -144,6 +144,9 @@ function Get-KoreBuild {
     $HackTargetPath = "$korebuildPath\modules\vstest\module.targets"
     (Get-Content $HackTargetPath -Raw) -Replace '<VSTestArgs Include="vstest" />', '<VSTestArgs Include="test" />' | Set-Content $HackTargetPath
 
+    # Forcibly Install .NET SDK 5.0.301
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+    & "$korebuildPath\scripts\dotnet-install.ps1" -Version "5.0.301"
     return $korebuildPath
 }
 
