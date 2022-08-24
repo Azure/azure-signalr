@@ -163,7 +163,7 @@ function Get-KoreBuild {
     }
     $textToAdd = $textToAdd.ToString()
     $targetFilePath = "$korebuildPath\scripts\KoreBuild.psm1"
-    $lineNumber = 224
+    $lineNumber = 223
     $fileContent = Get-Content $targetFilePath
     $fileContent[$lineNumber-1] += $textToAdd
     $fileContent | Set-Content $targetFilePath
