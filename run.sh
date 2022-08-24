@@ -91,7 +91,7 @@ get_korebuild() {
         # A easy solution is to replace `vstest` with `/test`. Another solution is to replace `--Framework` with `/Framework`
         search_str='<VSTestArgs Include="vstest"'
         replace_str='<VSTestArgs Include="test"'
-        sed -n "s/$search_str/$replace_str/g" "$korebuild_path/modules/vstest/module.targets"
+        sed -i "s/$search_str/$replace_str/g" "$korebuild_path/modules/vstest/module.targets"
 
         # Forcibly Install .NET SDK 5.0.301
         command_to_add=$(cat <<EOF
