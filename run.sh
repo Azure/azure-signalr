@@ -95,29 +95,29 @@ get_korebuild() {
 
         # Forcibly Install .NET SDK 5.0.301
         command_to_add=$(cat <<EOF
-            \$version="5.0.301"
-            if [ ! -f "\$install_dir/sdk/\$version/dotnet.dll" ]; then
-                install_retries=3
-                while [ \$install_retries -gt 0 ]; do
-                    failed=false
-                    "\$__script_dir/dotnet-install.sh" \
-                        --install-dir "\$install_dir" \
-                        --architecture x64 \
-                        --version "\$version" \
-                        \$verbose_flag \
-                        || failed=true
-                    if [ "\$failed" = true ]; then
-                        let install_retries=install_retries-1
-                        echo -e "\${YELLOW}Failed to install .NET Core $version. Retries left: \$install_retries.\${RESET}"
-                    else
-                        install_retries=0
-                    fi
-                done
-            else
-                echo -e "\${GRAY}.NET Core SDK $version is already installed. Skipping installation.\${RESET}"
-            fi
+version="5.0.301"
+if [ ! -f "\$install_dir/sdk/\$version/dotnet.dll" ]; then
+    install_retries=3
+    while [ \$install_retries -gt 0 ]; do
+        failed=false
+        "\$__script_dir/dotnet-install.sh" \
+            --install-dir "\$install_dir" \
+            --architecture x64 \
+            --version "\$version" \
+            \$verbose_flag \
+            || failed=true
+        if [ "\$failed" = true ]; then
+            let install_retries=install_retries-1
+            echo -e "\${YELLOW}Failed to install .NET Core $version. Retries left: \$install_retries.\${RESET}"
+        else
+            install_retries=0
+        fi
+    done
+else
+    echo -e "\${GRAY}.NET Core SDK $version is already installed. Skipping installation.\${RESET}"
+fi
 EOF
-        )
+)
         target_file_path="$korebuild_path/scripts/get-dotnet.sh"
         echo "$command_to_add" >> $target_file_path
 
