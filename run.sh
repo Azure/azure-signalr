@@ -82,9 +82,9 @@ get_korebuild() {
             rm "$tmpfile" || true
         fi
  
-        echo "!!! Hack to use .NET Core SDK 7.0.100-preview.4.22252.9"
+        echo "!!! Hack to use .NET Core SDK 7.0.100-preview.7.22377.5"
         local filePath=`find $korebuild_path -name sdk.version`
-        echo "7.0.100-preview.4.22252.9" > $filePath
+        echo "7.0.100-preview.7.22377.5" > $filePath
 
         # Hack $korebuild_path\modules\vstest\module.targets Line 147. This line executes `dotnet vstest ... --framework:...`. 
         # When .NET SDK version >= 6.0, .NET CLI (`dotnet`) cannot handle parameter option `--framework` with `vstest` correctly.
