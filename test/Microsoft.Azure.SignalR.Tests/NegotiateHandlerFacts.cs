@@ -400,9 +400,7 @@ namespace Microsoft.Azure.SignalR.Tests
             };
 
             var responseFeature = new HttpResponseFeature();
-            var responseBodyFeature = new StreamResponseBodyFeature(responseFeature.Body);
             features.Set<IHttpRequestFeature>(requestFeature);
-            features.Set<IHttpResponseBodyFeature>(responseBodyFeature);
             features.Set<IHttpResponseFeature>(responseFeature);
             httpContext = new DefaultHttpContext(features);
 
@@ -421,9 +419,7 @@ namespace Microsoft.Azure.SignalR.Tests
             };
 
             responseFeature = new HttpResponseFeature();
-            responseBodyFeature = new StreamResponseBodyFeature(responseFeature.Body);
             features.Set<IHttpRequestFeature>(requestFeature);
-            features.Set<IHttpResponseBodyFeature>(responseBodyFeature);
             features.Set<IHttpResponseFeature>(responseFeature);
             httpContext = new DefaultHttpContext(features);
 

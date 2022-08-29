@@ -27,7 +27,7 @@ namespace Microsoft.Azure.SignalR.Management.Tests
         {
             get
             {
-                yield return new object[] { new JsonObjectSerializer(new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull }) };
+                yield return new object[] { new JsonObjectSerializer(new() { IgnoreNullValues = true }) };
                 yield return new object[] { new NewtonsoftJsonObjectSerializer(new() { NullValueHandling = NullValueHandling.Ignore }) };
             }
         }
