@@ -4,6 +4,7 @@
     <TargetFramework>net5.0</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.Json" Version="$(MicrosoftAspNetCoreSignalRProtocolsJsonPackageVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="$(MicrosoftAspNetCoreSignalRProtocolsMessagePackPackageVersion)" />
@@ -14,9 +15,11 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualStudioPackageVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryPackageVersion)" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Azure.SignalR.Serverless.Protocols\Microsoft.Azure.SignalR.Serverless.Protocols.csproj" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="..\..\src\Common\BinaryMessageParser.cs" LinkBase="Utils" />
     <Compile Include="..\..\src\Common\TextMessageParser.cs" LinkBase="Utils"  />
