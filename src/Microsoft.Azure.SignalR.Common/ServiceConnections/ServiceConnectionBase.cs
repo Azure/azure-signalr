@@ -339,6 +339,12 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
+        private Task OnClientInvocationAsync(ClientInvocationMessage message)
+        {
+            // find client connection protocol and get deserilized payload.
+            return Task.CompletedTask;
+        }
+
         private async Task<ConnectionContext> EstablishConnectionAsync(string target)
         {
             try

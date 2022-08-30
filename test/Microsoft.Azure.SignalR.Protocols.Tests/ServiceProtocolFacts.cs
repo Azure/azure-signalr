@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             get
             {
-                foreach (var k in TestData.Keys)
+                foreach (var k in TestCIData.Keys)
                 {
                     yield return new object[] { k };
                 }
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         {
             get
             {
-                foreach (var k in TestData.Keys)
+                foreach (var k in TestCIData.Keys)
                 {
                     yield return new object[] { k };
                 }
@@ -260,6 +260,30 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                         ["messagepack"] = new byte[] {7, 1, 2, 3, 4, 5, 6}
                     }, tracingId: 1234L),
                 binary: "lQ2mZ3JvdXAzkIKkanNvbsQHBgcBAgMEBattZXNzYWdlcGFja8QHBwECAwQFBoEBzQTS"),
+        }.ToDictionary(t => t.Name);
+
+        public static IDictionary<string, ProtocolTestData> TestCIData => new[]
+        {
+            new ProtocolTestData(
+                name: "ClientInvocationMessage",
+                message: new ClientInvocationMessage("invocationId", "conn1", "server1", new Dictionary<string, ReadOnlyMemory<byte>>
+                {
+                    ["json"] = new byte[] {2, 3, 4, 5, 6, 7, 1},
+                    ["messagepack"] = new byte[] {3, 4, 5, 6, 7, 1, 2}
+                }),
+                binary: "liKsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjGCpGpzb27EBwIDBAUGBwGrbWVzc2FnZXBhY2vEBwMEBQYHAQKA"),
+            new ProtocolTestData(
+                name: "ServiceCompletionMessage",
+                message: new ClientCompletionMessage("invocationId", "conn1", "server1", "json", new Dictionary<string, ReadOnlyMemory<byte>>
+                {
+                    ["json"] = new byte[] {2, 3, 4, 5, 6, 7, 1},
+                    ["messagepack"] = new byte[] {3, 4, 5, 6, 7, 1, 2}
+                }["json"]),
+                binary: "lyOsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjHAgqRqc29uxAcCAwQFBgcBq21lc3NhZ2VwYWNrxAcDBAUGBwECgA=="),
+            new ProtocolTestData(
+                name: "ServiceCompletionMessageWithError",
+                message: new ErrorCompletionMessage("invocationId", "conn1", "server1", "error"),
+                binary: "lyOsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjGlZXJyb3KAgA=="),
         }.ToDictionary(t => t.Name);
 
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -679,7 +703,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         [MemberData(nameof(TestParseData))]
         public void ParseMessages(string testDataName)
         {
-            var testData = TestData[testDataName];
+            var testData = TestCIData[testDataName];
 
             // Verify that the input binary string decodes to the expected MsgPack primitives
             var bytes = Convert.FromBase64String(testData.Binary);
@@ -694,7 +718,7 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
         [MemberData(nameof(TestWriteData))]
         public void WriteMessages(string testDataName)
         {
-            var testData = TestData[testDataName];
+            var testData = TestCIData[testDataName];
 
             var bytes = Protocol.GetMessageBytes(testData.Message);
 

@@ -17,6 +17,7 @@ namespace Microsoft.Azure.SignalR
         private const string ClientCountKey = "clientcount";
         private const string ServerCountKey = "servercount";
         private const string CapacityKey = "capacity";
+        private const string ClientInvocationMapKey = "cim";
         private const string DiagnosticLogsMessagingTypeKey = "d-m";
 
         private const string MessagingLogEnableValue = "1";
@@ -29,6 +30,7 @@ namespace Microsoft.Azure.SignalR
         private const string ShutdownFinValue = "fin:0";
 
         private const string ShutdownFinAckValue = "finack";
+        private const string ClientInvocationMapAckValue = "cimack";
         private const char ServerListSeparator = ';';
 
         private static readonly ServicePingMessage StatusActive =
@@ -48,6 +50,9 @@ namespace Microsoft.Azure.SignalR
 
         private static readonly ServicePingMessage ShutdownFinAck =
             new ServicePingMessage { Messages = new[] { ShutdownKey, ShutdownFinAckValue } };
+
+        private static readonly ServicePingMessage ClientInvocationMapAck =
+            new ServicePingMessage { Messages = new[] { ClientInvocationMapKey, ClientInvocationMapAckValue } };
 
         private static readonly ServicePingMessage ServersTag =
             new ServicePingMessage { Messages = new[] { ServersKey, string.Empty } };
@@ -150,9 +155,29 @@ namespace Microsoft.Azure.SignalR
             };
         }
 
+        public static bool TryGetClientInvocationMap(this ServicePingMessage ping, out string instanceId, out string invocationId)
+        {
+            // ping format: { "cim", "instanceId:invocationId" }
+            if (TryGetValue(ping, ClientInvocationMapKey, out var value) && !string.IsNullOrEmpty(value))
+            {
+                if (value.Contains(":"))
+                {
+                    var values = value.Split(new char[] { ':' }, 2);
+                    instanceId = values[0];
+                    invocationId = values[1];
+                    return true;
+                }
+            }
+            instanceId = null;
+            invocationId = null;
+            return false;
+        }
+
         public static ServicePingMessage GetFinAckPingMessage() => ShutdownFinAck;
 
         public static ServicePingMessage GetServersPingMessage() => ServersTag;
+
+        public static ServicePingMessage GetClientInvocationAckMessage() => ClientInvocationMapAck;
 
         // for test
         public static bool IsFin(this ServiceMessage serviceMessage) =>

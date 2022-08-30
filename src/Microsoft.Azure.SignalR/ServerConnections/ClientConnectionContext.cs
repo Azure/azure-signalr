@@ -251,6 +251,17 @@ namespace Microsoft.Azure.SignalR
         {
             if (payload.IsSingleSegment)
             {
+                if (payload.Length > 20)
+                {
+                    if (Protocol.ToLower().Contains("json"))
+                    {
+#if NET7_0
+                        var message1 = System.Text.Encoding.UTF8.GetString(payload.FirstSpan);
+#endif
+                    }
+
+                }
+
                 // Write the raw connection payload to the pipe let the upstream handle it
                 await Application.Output.WriteAsync(payload.First);
             }
