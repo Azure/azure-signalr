@@ -186,7 +186,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the list of group names.
         /// </summary>
         public IReadOnlyList<string> GroupList { get; set; }
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiGroupBroadcastDataMessage"/> class.
         /// </summary>
@@ -197,5 +197,42 @@ namespace Microsoft.Azure.SignalR.Protocol
         {
             GroupList = groupList;
         }
+    }
+
+    /// <summary>
+    /// A data message to indicate a client invocation request.
+    /// </summary>
+    public class ClientInvocationMessage : MulticastDataMessage
+    {
+        /// <summary>
+        /// Initialize a new instance of <see cref="ClientInvocationMessage"/> class.
+        /// </summary>
+        /// <param name="invocationId">The Id of the client invocation request.</param>
+        /// <param name="connectionId">The client connection Id.</param>
+        /// <param name="callerServerId">The serverId that init the client invocation.</param>
+        /// <param name="payloads">The payload of the message.</param>
+        /// <param name="tracingId">The tracing Id of the message.</param>
+        public ClientInvocationMessage(string invocationId, string connectionId, string callerServerId, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null)
+            : base(payloads, tracingId)
+        {
+            InvocationId = invocationId;
+            ConnectionId = connectionId;
+            CallerServerId = callerServerId;
+        }
+
+        /// <summary>
+        /// Gets or sets the Id of the client invocation request.
+        /// </summary>
+        public string InvocationId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the client connection Id.
+        /// </summary>
+        public string ConnectionId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the caller server Id that init the client invocation.
+        /// </summary>
+        public string CallerServerId { get; set; }
     }
 }

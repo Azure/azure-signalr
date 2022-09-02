@@ -4,11 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -16,7 +14,7 @@ namespace Microsoft.Azure.SignalR
     {
         private const int MaxTokenLength = 4096;
 
-        private static readonly JwtSecurityTokenHandler JwtTokenHandler = new JwtSecurityTokenHandler();
+        private static readonly SignalRJwtSecurityTokenHandler JwtTokenHandler = new SignalRJwtSecurityTokenHandler();
 
         public static string GenerateJwtBearer(
             string issuer = null,
@@ -29,39 +27,25 @@ namespace Microsoft.Azure.SignalR
             AccessTokenAlgorithm algorithm = AccessTokenAlgorithm.HS256)
         {
             var subject = claims == null ? null : new ClaimsIdentity(claims);
-            SigningCredentials credentials = null;
-            if (signingKey != null)
-            {
-                // Refer: https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/releases/tag/5.5.0
-                // From version 5.5.0, SignatureProvider caching is turned On by default, assign KeyId to enable correct cache for same SigningKey
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey.Value))
-                {
-                    KeyId = signingKey.Id
-                };
 
-                if (signingKey is AadAccessKey)
-                {
-                    // disable cache when using AadAccessKey
-                    securityKey.CryptoProviderFactory.CacheSignatureProviders = false;
-                }
-                credentials = new SigningCredentials(securityKey, GetSecurityAlgorithm(algorithm));
-            }
-
-            var token = JwtTokenHandler.CreateJwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
-                subject: subject,
-                notBefore: notBefore,
+            string token = JwtTokenHandler.CreateJwtSecurityToken(
                 expires: expires,
                 issuedAt: issuedAt,
-                signingCredentials: credentials);
-            return JwtTokenHandler.WriteToken(token);
+                issuer: issuer,
+                audience: audience,
+                notBefore: notBefore,
+                subject: subject,
+                key: Encoding.UTF8.GetBytes(signingKey.Value),
+                kid: signingKey.Id,
+                algorithm: algorithm);
+
+            return token;
         }
 
         public static string GenerateAccessToken(
-            AccessKey signingKey, 
-            string audience, 
-            IEnumerable<Claim> claims, 
+            AccessKey signingKey,
+            string audience,
+            IEnumerable<Claim> claims,
             TimeSpan lifetime,
             AccessTokenAlgorithm algorithm)
         {
@@ -86,13 +70,6 @@ namespace Microsoft.Azure.SignalR
         public static string GenerateRequestId()
         {
             return Convert.ToBase64String(BitConverter.GetBytes(Stopwatch.GetTimestamp()));
-        }
-
-        private static string GetSecurityAlgorithm(AccessTokenAlgorithm algorithm)
-        {
-            return algorithm == AccessTokenAlgorithm.HS256 ?
-                SecurityAlgorithms.HmacSha256 :
-                SecurityAlgorithms.HmacSha512;
         }
     }
 }

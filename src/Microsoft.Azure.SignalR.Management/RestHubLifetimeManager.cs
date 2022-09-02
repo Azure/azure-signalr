@@ -66,12 +66,16 @@ namespace Microsoft.Azure.SignalR.Management
                 throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
             }
 
-            if (string.IsNullOrEmpty(groupName))
-            {
-                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(groupName));
-            }
+            var api = groupName == null 
+                ? await _restApiProvider.GetRemoveConnectionFromAllGroupsAsync(_appName, _hubName, connectionId)
+                : await _restApiProvider.GetConnectionGroupManagementEndpointAsync(_appName, _hubName, connectionId, groupName);
 
-            var api = await _restApiProvider.GetConnectionGroupManagementEndpointAsync(_appName, _hubName, connectionId, groupName);
+            await _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
+        }
+
+        public async Task ConnectionRemoveFromAllGroupsAsync(string connectionId, CancellationToken cancellationToken = default)
+        {
+            var api = await _restApiProvider.GetRemoveConnectionFromAllGroupsAsync(_appName, _hubName, connectionId);
             await _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 

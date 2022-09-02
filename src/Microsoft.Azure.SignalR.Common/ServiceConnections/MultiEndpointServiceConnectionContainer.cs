@@ -66,13 +66,14 @@ namespace Microsoft.Azure.SignalR
             IServiceConnectionFactory serviceConnectionFactory,
             string hub,
             int count,
+            int? maxCount,
             IServiceEndpointManager endpointManager,
             IMessageRouter router,
             ILoggerFactory loggerFactory,
             TimeSpan? scaleTimeout = null
             ) : this(
                 hub,
-                endpoint => CreateContainer(serviceConnectionFactory, endpoint, count, loggerFactory),
+                endpoint => CreateContainer(serviceConnectionFactory, endpoint, count, maxCount, loggerFactory),
                 endpointManager,
                 router,
                 loggerFactory,
@@ -86,11 +87,11 @@ namespace Microsoft.Azure.SignalR
             return _routerEndpoints.endpoints.Where(s => s.Online);
         }
 
-        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, HubServiceEndpoint endpoint, int count, ILoggerFactory loggerFactory)
+        private static IServiceConnectionContainer CreateContainer(IServiceConnectionFactory serviceConnectionFactory, HubServiceEndpoint endpoint, int count, int? maxCount, ILoggerFactory loggerFactory)
         {
             if (endpoint.EndpointType == EndpointType.Primary)
             {
-                return new StrongServiceConnectionContainer(serviceConnectionFactory, count, endpoint, loggerFactory.CreateLogger<StrongServiceConnectionContainer>());
+                return new StrongServiceConnectionContainer(serviceConnectionFactory, count, maxCount, endpoint, loggerFactory.CreateLogger<StrongServiceConnectionContainer>());
             }
             else
             {
