@@ -82,9 +82,44 @@ get_korebuild() {
             rm "$tmpfile" || true
         fi
  
-        echo "!!! Hack to use .NET Core SDK 5.0.301"
+        echo "!!! Hack to use .NET Core SDK 7.0.100-preview.7.22377.5"
         local filePath=`find $korebuild_path -name sdk.version`
-        echo "5.0.301" > $filePath
+        echo "7.0.100-preview.7.22377.5" > $filePath
+
+        # Hack $korebuild_path\modules\vstest\module.targets Line 147. This line executes `dotnet vstest ... --framework:...`. 
+        # When .NET SDK version >= 6.0, .NET CLI (`dotnet`) cannot handle parameter option `--framework` with `vstest` correctly.
+        # A easy solution is to replace `vstest` with `/test`. Another solution is to replace `--Framework` with `/Framework`
+        search_str='<VSTestArgs Include="vstest"'
+        replace_str='<VSTestArgs Include="test"'
+        sed -i "s/$search_str/$replace_str/g" "$korebuild_path/modules/vstest/module.targets"
+
+        # Forcibly install .NET SDK 5.0.301 (Used by Unit Test)
+        command_to_add=$(cat <<EOF
+version="5.0.301"
+if [ ! -f "\$install_dir/sdk/\$version/dotnet.dll" ]; then
+    install_retries=3
+    while [ \$install_retries -gt 0 ]; do
+        failed=false
+        "\$__script_dir/dotnet-install.sh" \
+            --install-dir "\$install_dir" \
+            --architecture x64 \
+            --version "\$version" \
+            \$verbose_flag \
+            || failed=true
+        if [ "\$failed" = true ]; then
+            let install_retries=install_retries-1
+            echo -e "\${YELLOW}Failed to install .NET Core $version. Retries left: \$install_retries.\${RESET}"
+        else
+            install_retries=0
+        fi
+    done
+else
+    echo -e "\${GRAY}.NET Core SDK $version is already installed. Skipping installation.\${RESET}"
+fi
+EOF
+)
+        target_file_path="$korebuild_path/scripts/get-dotnet.sh"
+        echo "$command_to_add" >> $target_file_path
 
         source "$korebuild_path/KoreBuild.sh"
     } || {

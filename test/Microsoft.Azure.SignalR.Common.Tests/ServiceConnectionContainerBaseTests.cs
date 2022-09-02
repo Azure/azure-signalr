@@ -83,7 +83,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                 var endpoint1 = new TestHubServiceEndpoint();
                 var conn1 = new TestServiceConnection();
                 var scf = new TestServiceConnectionFactory(endpoint1 => conn1);
-                var container = new StrongServiceConnectionContainer(scf, 5, endpoint1, loggerFactory.CreateLogger(nameof(TestStrongConnectionStatus)));
+                var container = new StrongServiceConnectionContainer(scf, 5, null, endpoint1, loggerFactory.CreateLogger(nameof(TestStrongConnectionStatus)));
 
                 // When init, consider the endpoint as online
                 // TODO: improve the logic
