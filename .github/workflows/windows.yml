@@ -36,5 +36,8 @@ jobs:
         dotnet-version: |
           6.0.x
           
-    - name: Build and Test
+    - name: Build
+      run: dotnet build -v d
+      
+    - name: Test
       run: dotnet test
