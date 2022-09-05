@@ -8,6 +8,7 @@ namespace Microsoft.Azure.SignalR
     {
         Ok = 1,
         NotFound = 2,
-        Timeout = 3
+        Timeout = 3,
+        InternalServerError = 4,
     }
 }
