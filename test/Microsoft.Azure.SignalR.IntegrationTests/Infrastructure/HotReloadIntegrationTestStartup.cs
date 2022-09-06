@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 
         public void Configure(IApplicationBuilder app)
         {
-            app.UseAzureSignalR(configure => { configure.MapHub<THub>($"/{nameof(THub)}"); });
+            app.UseEndpoints(configure => { configure.MapHub<THub>($"/{nameof(THub)}"); });
             app.UseMvc();
         }
 
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
             })
                 .AddAzureSignalR(o =>
                 {
-                    o.ConnectionCount = p.ConnectionCount;
+                    o.InitialHubServerConnectionCount = p.ConnectionCount;
                     o.GracefulShutdown.Mode = p.ShutdownMode;
                     //todo: move to params
                     o.ServiceScaleTimeout = TimeSpan.FromSeconds(3);

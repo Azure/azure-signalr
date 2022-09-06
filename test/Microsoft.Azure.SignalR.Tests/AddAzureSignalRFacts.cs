@@ -36,6 +36,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        [Obsolete]
         public void AddAzureSignalRReadsDefaultConfigurationKeyForConnectionString()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
@@ -91,6 +92,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        [Obsolete]
         public void AddAzureUsesDefaultConnectionStringIfSpecifiedAndOptionsOverridden()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
@@ -120,6 +122,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
                 Assert.Equal(CustomValue, options.ConnectionString);
                 Assert.Equal(1, options.ConnectionCount);
+                Assert.Equal(1, options.InitialHubServerConnectionCount);
                 Assert.Equal(TimeSpan.FromHours(1), options.AccessTokenLifetime);
                 Assert.Null(options.ClaimsProvider);
                 Assert.Null(options.DiagnosticClientFilter);

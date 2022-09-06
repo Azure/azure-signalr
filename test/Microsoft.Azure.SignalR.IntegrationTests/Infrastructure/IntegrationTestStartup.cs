@@ -25,7 +25,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 
         public void Configure(IApplicationBuilder app)
         {
-            app.UseAzureSignalR(configure =>
+            app.UseEndpoints(configure =>
             {
                 configure.MapHub<THub>($"/{nameof(THub)}");
             });
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
                 })
                 .AddAzureSignalR(o =>
                 {
-                    o.ConnectionCount = p.ConnectionCount;
+                    o.InitialHubServerConnectionCount = p.ConnectionCount;
                     o.GracefulShutdown.Mode = p.ShutdownMode;
                     o.Endpoints = p.ServiceEndpoints;
                     o.ClaimsProvider = context => new[] { new Claim(ClaimTypes.NameIdentifier, context.Request.Query["user"]) };  // todo: migrate to TParams

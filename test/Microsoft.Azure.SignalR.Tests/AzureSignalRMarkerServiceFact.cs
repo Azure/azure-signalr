@@ -20,6 +20,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private const string DefaultValue = "Endpoint=https://abc;AccessKey=abc123;";
 
         [Fact]
+        [Obsolete]
         public void UseAzureSignalRWithAddAzureSignalR()
         {
             var services = new ServiceCollection();
@@ -74,6 +75,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        [Obsolete]
         public void UseAzureSignalRWithAddSignalR()
         {
             var services = new ServiceCollection();
@@ -99,6 +101,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        [Obsolete]
         public void UseAzureSignalRWithInvalidConnectionString()
         {
             var services = new ServiceCollection();
@@ -126,6 +129,7 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        [Obsolete]
         public void UseAzureSignalRWithConnectionStringNotSpecified()
         {
             var services = new ServiceCollection();
