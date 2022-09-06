@@ -24,6 +24,7 @@ namespace Microsoft.Azure.SignalR
         public const string StartToAddUserToGroupWithTtlTemplate = "Start to send message {0} to add user {1} to group {2} with TTL {3} seconds.";
         public const string StartToRemoveUserFromGroupTemplate = "Start to send message {0} to remove user {1} from group {2}.";
         public const string StartToRemoveUserFromAllGroupsTemplate = "Start to send message {0} to remove user {1} from all groups.";
+        public const string StartToRemoveConnectionFromAllGroupsTemplate = "Start to send message {0} to remove connection {1} from all groups.";
         public const string StartToCheckIfUserInGroupTemplate = "Start to send message {0} to check if user {1} in group {2}.";
         public const string FailedToSendMessageTemplate = "Failed to send message {0}.";
         public const string SucceededToSendMessageTemplate = "Succeeded to send message {0}.";
@@ -117,6 +118,12 @@ namespace Microsoft.Azure.SignalR
                 LogLevel.Information,
                 new EventId(91, "StartToRemoveUserFromAllGroups"),
                 StartToRemoveUserFromAllGroupsTemplate);
+
+        private static readonly Action<ILogger, ulong?, string, Exception> _startToRemoveConnectionFromAllGroups =
+            LoggerMessage.Define<ulong?, string>(
+                LogLevel.Information,
+                new EventId(92, "StartToRemoveConnectionFromAllGroups"),
+                StartToRemoveConnectionFromAllGroupsTemplate);
 
         private static readonly Action<ILogger, ulong?, Exception> _failedToSendMessage =
             LoggerMessage.Define<ulong?>(
@@ -242,7 +249,7 @@ namespace Microsoft.Azure.SignalR
 
         public static void StartToRemoveConnectionFromGroup(ILogger logger, LeaveGroupWithAckMessage message)
         {
-            _startToRemoveConnectionFromGroup(logger, message.TracingId, message.ConnectionId, message.GroupName, null);
+            StartToRemoveConnectionFromGroupCore(logger, message.ConnectionId, message.GroupName, message.TracingId);
         }
 
         public static void StartToAddUserToGroup(ILogger logger, UserJoinGroupMessage message)
@@ -311,6 +318,18 @@ namespace Microsoft.Azure.SignalR
             else
             {
                 _startToRemoveUserFromGroup(logger, tracingId, userId, groupName, null);
+            }
+        }
+
+        private static void StartToRemoveConnectionFromGroupCore(ILogger logger, string connectionId, string groupName, ulong? tracingId)
+        {
+            if (groupName == null)
+            {
+                _startToRemoveConnectionFromAllGroups(logger, tracingId, connectionId, null);
+            }
+            else
+            {
+                _startToRemoveConnectionFromGroup(logger, tracingId, connectionId, groupName, null);
             }
         }
     }

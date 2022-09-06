@@ -1839,12 +1839,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 Assert.False(c.IsOffline);
             }
 
-            var expected = container.OfflineAsync(mode);
-            var actual = await Task.WhenAny(
-                expected,
-                Task.Delay(TimeSpan.FromSeconds(1))
-            );
-            Assert.Equal(expected, actual);
+            await container.OfflineAsync(mode).OrTimeout();
 
             foreach (var c in containers)
             {

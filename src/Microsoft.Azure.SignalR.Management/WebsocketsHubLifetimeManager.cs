@@ -22,6 +22,21 @@ namespace Microsoft.Azure.SignalR.Management
             _serviceManagerOptions = serviceManagerOptions ?? throw new ArgumentNullException(nameof(serviceManagerOptions));
         }
 
+        public override Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
+        {
+            if (IsInvalidArgument(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
+            var message = AppendMessageTracingId(new LeaveGroupWithAckMessage(connectionId, groupName));
+            if (message.TracingId != null)
+            {
+                MessageLog.StartToRemoveConnectionFromGroup(Logger, message);
+            }
+            return WriteAckableMessageAsync(message, cancellationToken);
+        }
+
         public Task UserAddToGroupAsync(string userId, string groupName, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(userId))
@@ -106,6 +121,8 @@ namespace Microsoft.Azure.SignalR.Management
             }
             return WriteAckableMessageAsync(message, cancellationToken);
         }
+
+
 
         public Task<bool> IsUserInGroup(string userId, string groupName, CancellationToken cancellationToken = default)
         {

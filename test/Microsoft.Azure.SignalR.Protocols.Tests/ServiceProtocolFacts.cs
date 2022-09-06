@@ -637,6 +637,26 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                     Reason = "detail",
                 },
                 binary: "liGmZ3JvdXAxpmRldGFpbAGQgQEB"),
+            new ProtocolTestData(
+                name: "ClientInvocationMessage",
+                message: new ClientInvocationMessage("invocationId", "conn1", "server1", new Dictionary<string, ReadOnlyMemory<byte>>
+                {
+                    ["json"] = new byte[] {2, 3, 4, 5, 6, 7, 1},
+                    ["messagepack"] = new byte[] {3, 4, 5, 6, 7, 1, 2}
+                }),
+                binary: "liKsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjGCpGpzb27EBwIDBAUGBwGrbWVzc2FnZXBhY2vEBwMEBQYHAQKA"),
+            new ProtocolTestData(
+                name: "ClientCompletionMessage",
+                message: new ClientCompletionMessage("invocationId", "conn1", "server1", "json", new byte[] {2, 3, 4, 5, 6, 7, 1}),
+                binary: "lyOsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjGkanNvbsQHAgMEBQYHAYEDpGpzb24="),
+            new ProtocolTestData(
+                name: "ErrorCompletionMessage",
+                message: new ErrorCompletionMessage("invocationId", "conn1", "server1", "invocation failed."),
+                binary: "liSsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjGyaW52b2NhdGlvbiBmYWlsZWQugA=="),
+            new ProtocolTestData(
+                name: "ServiceMappingMessage",
+                message: new ServiceMappingMessage("invocationId", "conn1", "instance1"),
+                binary: "lSWsaW52b2NhdGlvbklkpWNvbm4xqWluc3RhbmNlMYA="),
         }.ToDictionary(t => t.Name);
 #pragma warning restore CS0618 // Type or member is obsolete
 

@@ -91,20 +91,16 @@ namespace Microsoft.Azure.SignalR.Tests
             SignalRProtocol.HandshakeProtocol.WriteResponseMessage(message, clientConnection.Transport.Output);
             await clientConnection.Transport.Output.FlushAsync();
 
+            // expect a handshake response message.
+            await connection.ExpectSignalRMessage(SignalRProtocol.HandshakeResponseMessage.Empty).OrTimeout();
+
             // write a close connection message with migration header
             var closeMessage = new CloseConnectionMessage(clientConnection.ConnectionId);
             closeMessage.Headers.Add(Constants.AsrsMigrateTo, "another-server");
             await connection.WriteFromServiceAsync(closeMessage);
 
             // wait until app task completed.
-            await Assert.ThrowsAsync<TimeoutException>(async () => await clientConnection.LifetimeTask.OrTimeout(1000));
-            await clientConnection.LifetimeTask.OrTimeout(3000);
-
-            // expect a handshake response message.
-            await connection.ExpectSignalRMessage(SignalRProtocol.HandshakeResponseMessage.Empty).OrTimeout(3000);
-
-            // signalr close message should be skipped.
-            await Assert.ThrowsAsync<TimeoutException>(async () => await connection.ExpectSignalRMessage(SignalRProtocol.CloseMessage.Empty).OrTimeout(1000));
+            await clientConnection.LifetimeTask.OrTimeout();
 
             var feature = clientConnection.Features.Get<IConnectionMigrationFeature>();
             Assert.NotNull(feature);
@@ -218,17 +214,32 @@ namespace Microsoft.Azure.SignalR.Tests
             await connection.StopAsync();
         }
 
-        [Fact]
-        public async Task TestAccessKeyResponseMessageWithError()
+        [Theory]
+        [InlineData(5, 0)]
+        [InlineData(60, 0)]
+        [InlineData(120, 1)]
+        public async Task TestAccessKeyResponseMessageWithError(int minutesElapsed, int expectedLogCount)
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Error, expectedErrors: c => true,
                 logChecker: logs =>
                 {
-                    Assert.Equal(1, logs.Count);
+                    Assert.Equal(expectedLogCount, logs.Count);
+                    if (logs.Count > 0)
+                    {
+                        Assert.StartsWith("Service returned 401 unauthorized:", logs[0].Write.Message);
+                    }
                     return true;
                 }))
             {
-                var connection = CreateServiceConnection(loggerFactory: loggerFactory);
+                var endpoint = new TestHubServiceEndpoint(endpoint: new TestServiceEndpoint(new DefaultAzureCredential()));
+
+                if (endpoint.AccessKey is AadAccessKey key)
+                {
+                    var field = typeof(AadAccessKey).GetField("_lastUpdatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+                    field.SetValue(key, DateTime.UtcNow - TimeSpan.FromMinutes(minutesElapsed));
+                }
+
+                var connection = CreateServiceConnection(loggerFactory: loggerFactory, hubServiceEndpoint: endpoint);
                 var connectionTask = connection.StartAsync();
                 await connection.ConnectionInitializedTask.OrTimeout(1000);
 

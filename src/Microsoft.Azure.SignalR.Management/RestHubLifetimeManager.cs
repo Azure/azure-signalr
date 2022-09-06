@@ -75,6 +75,12 @@ namespace Microsoft.Azure.SignalR.Management
             await _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
         }
 
+        public async Task ConnectionRemoveFromAllGroupsAsync(string connectionId, CancellationToken cancellationToken = default)
+        {
+            var api = await _restApiProvider.GetRemoveConnectionFromAllGroupsAsync(_appName, _hubName, connectionId);
+            await _restClient.SendAsync(api, HttpMethod.Delete, _productInfo, handleExpectedResponseAsync: null, cancellationToken: cancellationToken);
+        }
+
         public override Task SendAllAsync(string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             return SendAllExceptAsync(methodName, args, null, cancellationToken);
