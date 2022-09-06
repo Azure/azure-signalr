@@ -76,7 +76,7 @@ namespace Microsoft.Azure.SignalR.Tests
 
             var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory, handler: new TestConnectionHandler(3000, "foobar"));
             _ = connection.StartAsync();
-            await connection.ConnectionInitializedTask.OrTimeout();
+            await connection.ConnectionInitializedTask.OrTimeout(1000);
 
             var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>());
             _ = connection.WriteFromServiceAsync(openConnectionMessage);
@@ -97,14 +97,10 @@ namespace Microsoft.Azure.SignalR.Tests
             await connection.WriteFromServiceAsync(closeMessage);
 
             // wait until app task completed.
-            await Assert.ThrowsAsync<TimeoutException>(async () => await clientConnection.LifetimeTask.OrTimeout());
             await clientConnection.LifetimeTask.OrTimeout();
 
             // expect a handshake response message.
             await connection.ExpectSignalRMessage(SignalRProtocol.HandshakeResponseMessage.Empty).OrTimeout();
-
-            // signalr close message should be skipped.
-            await Assert.ThrowsAsync<TimeoutException>(async () => await connection.ExpectSignalRMessage(SignalRProtocol.CloseMessage.Empty).OrTimeout());
 
             var feature = clientConnection.Features.Get<IConnectionMigrationFeature>();
             Assert.NotNull(feature);
