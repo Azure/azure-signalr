@@ -14,7 +14,6 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Update="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryPackageVersion)" />
   </ItemGroup>
   
