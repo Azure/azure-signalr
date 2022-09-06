@@ -91,6 +91,9 @@ namespace Microsoft.Azure.SignalR.Tests
             SignalRProtocol.HandshakeProtocol.WriteResponseMessage(message, clientConnection.Transport.Output);
             await clientConnection.Transport.Output.FlushAsync();
 
+            // expect a handshake response message.
+            await connection.ExpectSignalRMessage(SignalRProtocol.HandshakeResponseMessage.Empty).OrTimeout();
+
             // write a close connection message with migration header
             var closeMessage = new CloseConnectionMessage(clientConnection.ConnectionId);
             closeMessage.Headers.Add(Constants.AsrsMigrateTo, "another-server");
@@ -98,9 +101,6 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // wait until app task completed.
             await clientConnection.LifetimeTask.OrTimeout();
-
-            // expect a handshake response message.
-            await connection.ExpectSignalRMessage(SignalRProtocol.HandshakeResponseMessage.Empty).OrTimeout();
 
             var feature = clientConnection.Features.Get<IConnectionMigrationFeature>();
             Assert.NotNull(feature);
