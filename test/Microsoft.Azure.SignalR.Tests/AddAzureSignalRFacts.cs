@@ -151,6 +151,49 @@ namespace Microsoft.Azure.SignalR.Tests
         }
 
         [Fact]
+        public void AddAzureOptionsFromConfiguration()
+        {
+            using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
+            {
+                var services = new ServiceCollection();
+                var config = new ConfigurationBuilder()
+                    .AddInMemoryCollection(new Dictionary<string, string>
+                    {
+                        {"Azure:SignalR:ConnectionString", DefaultValue},
+                        {"Azure:SignalR:ServerStickyMode", "preferred" },
+                        {"Azure:SignalR:ApplicationName:", "ABC" },
+                        {"Azure:SignalR:InitialHubServerConnectionCount", "1" },
+                        {"Azure:SignalR:MaxHubServerConnectionCount", "2" },
+                        {"Azure:SignalR:AccessTokenLifetimeInSeconds", "1" },
+                        {"Azure:SignalR:ServiceScaleTimeoutInSeconds", "2" },
+                        {"Azure:SignalR:MaxPollIntervalInSeconds", "3" },
+                        {"Azure:SignalR:GracefulShutdown:Mode", "WaitForClientsClose" },
+                        {"Azure:SignalR:GracefulShutdown:TimeOutInSeconds", "4" },
+                    })
+                    .Build();
+                var serviceProvider = services.AddSignalR()
+                    .AddAzureSignalR()
+                    .Services
+                    .AddSingleton<IConfiguration>(config)
+                    .AddSingleton(loggerFactory)
+                    .BuildServiceProvider();
+
+                var options = serviceProvider.GetRequiredService<IOptions<ServiceOptions>>().Value;
+
+                Assert.Equal(DefaultValue, options.ConnectionString);
+                Assert.Equal(ServerStickyMode.Preferred, options.ServerStickyMode);
+                Assert.Equal("ABC", options.ApplicationName);
+                Assert.Equal(1, options.InitialHubServerConnectionCount);
+                Assert.Equal(2, options.MaxHubServerConnectionCount);
+                Assert.Equal(1, options.AccessTokenLifetime.Seconds);
+                Assert.Equal(2, options.ServiceScaleTimeout.Seconds);
+                Assert.Equal(3, options.MaxPollIntervalInSeconds);
+                Assert.Equal(GracefulShutdownMode.WaitForClientsClose, options.GracefulShutdown.Mode);
+                Assert.Equal(4, options.GracefulShutdown.Timeout.Seconds);
+            }
+        }
+
+        [Fact]
         public void AddAzureReadsConnectionStringFirst()
         {
             using (StartVerifiableLog(out var loggerFactory, LogLevel.Debug))
@@ -159,7 +202,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 var config = new ConfigurationBuilder()
                     .AddInMemoryCollection(new Dictionary<string, string>
                     {
-                    {"Azure:SignalR:ConnectionString", DefaultValue},
+                        {"Azure:SignalR:ConnectionString", DefaultValue},
                         {"Azure:SignalR:StickyServerMode", "invalid" }
                     })
                     .Build();
