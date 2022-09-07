@@ -4,9 +4,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
-builder.Services.AddSignalR().AddAzureSignalR(
-    "Endpoint=https://lianwei-preserve.service.signalr.net;AccessKey=Rx648uHnnAkg6nnEXrlnCHkTckrbaIScbNSvsnSAYUE=;Version=1.0;"
-    );
+builder.Services.AddSignalR().AddAzureSignalR();
 
 var app = builder.Build();
 
