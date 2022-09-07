@@ -22,8 +22,9 @@ jobs:
           - 'test/**'
           - '*.cmd'
           - '*.ps1'
-          - '*.props'
-          - '*.targets'
+          - '**.props'
+          - '**.csproj'
+          - '**.targets'
           - '*.sh'
           - '*.sln'
     - name: Update SubModules
