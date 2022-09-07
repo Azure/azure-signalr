@@ -25,6 +25,7 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
 
         public void Configure(IApplicationBuilder app)
         {
+            app.UseRouting();
             app.UseEndpoints(configure =>
             {
                 configure.MapHub<THub>($"/{nameof(THub)}");

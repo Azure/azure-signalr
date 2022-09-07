@@ -23,9 +23,10 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
             _configuration = configuration;
         }
 
+        [Obsolete]
         public void Configure(IApplicationBuilder app)
         {
-            app.UseEndpoints(configure => { configure.MapHub<THub>($"/{nameof(THub)}"); });
+            app.UseAzureSignalR(configure => { configure.MapHub<THub>($"/{nameof(THub)}"); });
             app.UseMvc();
         }
 
