@@ -33,6 +33,7 @@ namespace Microsoft.Azure.SignalR.Tests
         private readonly string ConnectionString2 = string.Format(ConnectionStringFormatter, Url2);
         private readonly string ConnectionString3 = string.Format(ConnectionStringFormatter, Url3);
         private static readonly JoinGroupWithAckMessage DefaultGroupMessage = new JoinGroupWithAckMessage("a", "a", -1);
+        private const int TimeoutSec = 10000;
 
         public TestEndpointServiceConnectionContainerTests(ITestOutputHelper output) : base(output)
         {
@@ -1050,8 +1051,8 @@ namespace Microsoft.Azure.SignalR.Tests
             var serversTag = "Server1;Server2;Server3";
             await Task.WhenAll(containers.Select(c => c.MockReceivedServersPing(serversTag)));
 
-            // wait one interval+ for Ready state and check negotiation is added.
-            await Task.Delay(6000);
+            await hubEndpoints[1].ScaleTask.OrTimeout(TimeoutSec);
+            await Task.Delay(100);
 
             ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, ngoEps.Length);
@@ -1162,7 +1163,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // Mock client now drops and able to remove endpoints
             await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(false)));
-            await Task.Delay(6000);
+            await hubEndpoints[1].ScaleTask.OrTimeout(TimeoutSec);
+            await Task.Delay(100);
 
             // validate container side updated
             hubEndpoints = container.GetOnlineEndpoints().ToArray();
@@ -1242,7 +1244,8 @@ namespace Microsoft.Azure.SignalR.Tests
             await Task.WhenAll(containers.Select(x => x.MockReceivedServersPing("aaa;bbb")));
             containers1 = container1.GetTestOnlineContainers();
             await Task.WhenAll(containers1.Select(x => x.MockReceivedServersPing("aaa;bbb")));
-            await Task.Delay(6000);
+            await hubEndpoints.Single(x => x.Name == "22" && x.EndpointType == EndpointType.Primary).ScaleTask.OrTimeout(TimeoutSec);
+            await Task.Delay(100);
 
             ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, ngoEps.Length);
@@ -1255,7 +1258,8 @@ namespace Microsoft.Azure.SignalR.Tests
             await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(false)));
             containers1 = container1.GetTestOnlineContainers();
             await Task.WhenAll(containers1.Select(x => x.MockReceivedStatusPing(false)));
-            await Task.Delay(6000);
+            await hubEndpoints.Single(x => x.Name == "22" && x.EndpointType == EndpointType.Secondary).ScaleTask.OrTimeout(TimeoutSec);
+            await Task.Delay(100);
 
             // validate container updated as well
             hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
@@ -1347,7 +1351,8 @@ namespace Microsoft.Azure.SignalR.Tests
             await Task.WhenAll(containers.Select(x => x.MockReceivedServersPing("aaa;bbb")));
             containers1 = container1.GetTestOnlineContainers();
             await Task.WhenAll(containers1.Select(x => x.MockReceivedServersPing("aaa;bbb")));
-            await Task.Delay(6000);
+            await hubEndpoints.Single(x => x.Name == "1" && x.ServerEndpoint.AbsoluteUri == testSe).ScaleTask.OrTimeout(TimeoutSec);
+            await Task.Delay(100);
 
             ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, ngoEps.Length);
@@ -1359,7 +1364,8 @@ namespace Microsoft.Azure.SignalR.Tests
             await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(false)));
             containers1 = container1.GetTestOnlineContainers();
             await Task.WhenAll(containers1.Select(x => x.MockReceivedStatusPing(false)));
-            await Task.Delay(6000);
+            await hubEndpoints.Single(x => x.Name == "1" && x.ServerEndpoint.AbsoluteUri == Url1).ScaleTask.OrTimeout(TimeoutSec);
+            await Task.Delay(100);
 
             // validate container updated as well
             hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
@@ -1424,8 +1430,8 @@ namespace Microsoft.Azure.SignalR.Tests
             var serversTag = "Server1;Server2;Server3";
             await Task.WhenAll(containers.Select(c => c.MockReceivedServersPing(serversTag)));
 
-            // wait one interval+ for Ready state and check negotiation is added.
-            await Task.Delay(6000);
+            await hubEndpoints[1].ScaleTask.OrTimeout(TimeoutSec);
+            await Task.Delay(100);
 
             ngoEps = sem.GetEndpoints("hub").OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, ngoEps.Length);
@@ -1449,7 +1455,7 @@ namespace Microsoft.Azure.SignalR.Tests
             _ = sem.TestReloadServiceEndpoints(newEndpoints, 10);
 
             // validate container side not updated
-            hubEndpoints = container.GetOnlineEndpoints().ToArray();
+            hubEndpoints = container.GetOnlineEndpoints().OrderBy(x => x.Name).ToArray();
             Assert.Equal(2, hubEndpoints.Length);
             Assert.Equal("1", hubEndpoints[0].Name);
 
@@ -1460,7 +1466,8 @@ namespace Microsoft.Azure.SignalR.Tests
 
             // Mock client now drops and able to remove endpoints
             await Task.WhenAll(containers.Select(x => x.MockReceivedStatusPing(false)));
-            await Task.Delay(6000);
+            await hubEndpoints[0].ScaleTask.OrTimeout(TimeoutSec);
+            await Task.Delay(100);
 
             // validate container side updated
             hubEndpoints = container.GetOnlineEndpoints().ToArray();

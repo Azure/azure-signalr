@@ -29,6 +29,14 @@ jobs:
     - name: Update SubModules
       run: git submodule update --init --recursive
       if: steps.filter.outputs.src == 'true'
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: |
+          7.0.x
+          6.0.x
+          5.0.x
+        include-prerelease: true
     - name: Build with dotnet
       run:  "dotnet build AzureSignalR.sln /p:DisableNet461Tests=true"
       if: steps.filter.outputs.src == 'true'
