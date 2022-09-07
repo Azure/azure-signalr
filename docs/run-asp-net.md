@@ -5,7 +5,7 @@
   - [2. Configure Connection String](#2-configure-connection-string)
   - [3. Configure Service Options](#3-configure-service-options)
     - [`ConnectionString`](#connectionstring)
-    - [`ConnectionCount`](#connectioncount)
+    - [`InitialHubServerConnectionCount`](#initialhubserverconnectioncount)
     - [`ApplicationName`](#applicationname)
     - [`ClaimProvider`](#claimprovider)
     - [`AccessTokenLifetime`](#accesstokenlifetime)
@@ -55,10 +55,15 @@ There are a few [options](https://github.com/Azure/azure-signalr/blob/dev/src/Mi
 - Default value is the `Azure:SignalR:ConnectionString` `connectionString` or `appSetting` in `web.config` file.
 - It can be reconfigured, but please make sure the value is **NOT** hard coded.
 
-### `ConnectionCount`
+### `InitialHubServerConnectionCount`
 
 - Default value is `5`.
 - This option controls the initial count of connections per hub between application server and Azure SignalR Service. Usually keep it as the default value is enough. During runtime, the SDK might start new server connections for performance tuning or load balancing. When you have big number of clients, you can give it a larger number for better throughput. For example, if you have 100,000 clients in total, the connection count can be increased to `10` or `15`.
+
+### `MaxHubServerConnectionCount`
+
+- Default value is `null`.
+- This option controls the max count of connections allowed per hub between application server and Azure SignalR Service. During runtime, the SDK might start new server connections for performance tuning or load balancing. By default a new server connection starts whenever needed. When the max allowed server connection count is configured, the SDK does not start new connections when server connection count reaches the limit.
 
 ### `ApplicationName`
 
@@ -104,7 +109,7 @@ You can configure above options like the following sample code.
 ```csharp
 app.Map("/signalr",subApp => subApp.RunAzureSignalR(this.GetType().FullName, new HubConfiguration(), options =>
 {
-    options.ConnectionCount = 1;
+    options.InitialHubServerConnectionCount = 1;
     options.AccessTokenLifetime = TimeSpan.FromDays(1);
     options.ClaimProvider = context => context.Authentication?.User.Claims;
 }));

@@ -41,12 +41,12 @@ namespace Microsoft.Azure.SignalR.Tests
             var clientConnectionFactory = new TestClientConnectionFactory();
             var connection = CreateServiceConnection(clientConnectionFactory: clientConnectionFactory);
             _ = connection.StartAsync();
-            await connection.ConnectionInitializedTask.OrTimeout(1000);
+            await connection.ConnectionInitializedTask.OrTimeout();
 
             var openConnectionMessage = new OpenConnectionMessage("foo", Array.Empty<Claim>());
             openConnectionMessage.Headers.Add(Constants.AsrsMigrateFrom, "another-server");
             _ = connection.WriteFromServiceAsync(openConnectionMessage);
-            await connection.ClientConnectedTask;
+            await connection.ClientConnectedTask.OrTimeout();
 
             Assert.Equal(1, clientConnectionFactory.Connections.Count);
             var clientConnection = clientConnectionFactory.Connections[0];
