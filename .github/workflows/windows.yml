@@ -20,6 +20,8 @@ jobs:
           src:
           - 'src/**'
           - 'test/**'
+          - 'build/**'
+          - 'samples/**'
           - '*.cmd'
           - '*.ps1'
           - '**.props'
