@@ -400,8 +400,10 @@ namespace Microsoft.Azure.SignalR.Tests
             };
 
             var responseFeature = new HttpResponseFeature();
+            var responseBodyFeature = new StreamResponseBodyFeature(responseFeature.Body);
             features.Set<IHttpRequestFeature>(requestFeature);
             features.Set<IHttpResponseFeature>(responseFeature);
+            features.Set<IHttpResponseBodyFeature>(responseBodyFeature);
             httpContext = new DefaultHttpContext(features);
 
             handler = serviceProvider.GetRequiredService<NegotiateHandler<Chat>>();
@@ -419,8 +421,10 @@ namespace Microsoft.Azure.SignalR.Tests
             };
 
             responseFeature = new HttpResponseFeature();
+            responseBodyFeature = new StreamResponseBodyFeature(responseFeature.Body);
             features.Set<IHttpRequestFeature>(requestFeature);
             features.Set<IHttpResponseFeature>(responseFeature);
+            features.Set<IHttpResponseBodyFeature>(responseBodyFeature);
             httpContext = new DefaultHttpContext(features);
 
             handler = serviceProvider.GetRequiredService<NegotiateHandler<Chat>>();
