@@ -61,7 +61,7 @@
     <MicrosoftExtensionsHostingVersion>2.1.0</MicrosoftExtensionsHostingVersion>
 
     <!-- SignalR Serverless Protocols-->
-    <NewtonsoftJsonPackageVersion>12.0.2</NewtonsoftJsonPackageVersion>
+    <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
 
     <!-- Signing -->
     <MicrosoftVisualStudioEngMicroBuildCoreVersion>1.0.0</MicrosoftVisualStudioEngMicroBuildCoreVersion>
