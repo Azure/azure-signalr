@@ -1,2 +1,0 @@
-version:3.0.0-build-20190610.2
-commithash:90dce5996d7683beae755205dd012b949b8a5e07

@@ -20,17 +20,28 @@ jobs:
           src:
           - 'src/**'
           - 'test/**'
+          - 'build/**'
+          - 'samples/**'
           - '*.cmd'
           - '*.ps1'
-          - '*.props'
-          - '*.targets'
+          - '**.props'
+          - '**.csproj'
+          - '**.targets'
           - '*.sh'
           - '*.sln'
     - name: Update SubModules
       run: git submodule update --init --recursive
       if: steps.filter.outputs.src == 'true'
     
-    - name: Build with dotnet
-      shell: powershell
-      run: .\run.ps1 default-build
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: |
+          7.0.x
+          6.0.x
+          5.0.x
+        include-prerelease: true
+          
+    - name: Test
+      run: dotnet test
       if: steps.filter.outputs.src == 'true'
