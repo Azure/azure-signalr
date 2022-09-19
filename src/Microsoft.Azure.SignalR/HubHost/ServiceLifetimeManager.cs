@@ -25,6 +25,7 @@ namespace Microsoft.Azure.SignalR
             IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
             IHubProtocolResolver protocolResolver,
+            IClientResultsManager clientResultsManager,
             ILogger<ServiceLifetimeManager<THub>> logger,
             AzureSignalRMarkerService marker,
             IOptions<HubOptions> globalHubOptions,
@@ -36,7 +37,10 @@ namespace Microsoft.Azure.SignalR
                   protocolResolver,
                   globalHubOptions,
                   hubOptions,
-                  nameProvider, logger)
+                  nameProvider,
+                  clientResultsManager,
+                  clientConnectionManager,
+                  logger)
         {
             // after core 3.0 UseAzureSignalR() is not required.
 #if NETSTANDARD2_0

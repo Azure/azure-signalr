@@ -11,7 +11,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Azure.SignalR.Protocols\Microsoft.Azure.SignalR.Protocols.csproj" />
+    <ProjectReference Include="..\Microsoft.Azure.SignalR.Serverless.Protocols\Microsoft.Azure.SignalR.Serverless.Protocols.csproj" />
   </ItemGroup>
 
-  <!-- New packages should be added to Directory.Build.props! -->
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net7.0'">
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+		<PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="$(MicrosoftAspNetCoreHttpConnectionsClientPackage7_0Version)" />
+	</ItemGroup>
+
+	<!-- New packages should be added to Directory.Build.props! -->
 </Project>

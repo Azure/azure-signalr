@@ -53,6 +53,7 @@ namespace Microsoft.Azure.SignalR.AspNet
 
             // Get the one from DI or new a default one
             var router = configuration.Resolver.Resolve<IEndpointRouter>() ?? new DefaultEndpointRouter();
+            var clientResultsManger = configuration.Resolver.Resolve<IClientResultsManager>();
 
             var serverNameProvider = configuration.Resolver.Resolve<IServerNameProvider>();
             if (serverNameProvider == null)
@@ -138,7 +139,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             if (scf == null)
             {
                 var connectionFactory = new ConnectionFactory(serverNameProvider, loggerFactory);
-                scf = new ServiceConnectionFactory(serviceProtocol, ccm, connectionFactory, loggerFactory, serverNameProvider, serviceEventHandler);
+                scf = new ServiceConnectionFactory(serviceProtocol, ccm, connectionFactory, loggerFactory, serverNameProvider, serviceEventHandler, clientResultsManger);
                 configuration.Resolver.Register(typeof(IServiceConnectionFactory), () => scf);
             }
 

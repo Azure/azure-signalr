@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,6 +13,9 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
+#if NET7_0_OR_GREATER
+using CompletionMessage = Microsoft.AspNetCore.SignalR.Protocol.CompletionMessage;
+#endif
 
 namespace Microsoft.Azure.SignalR
 {
@@ -51,6 +55,8 @@ namespace Microsoft.Azure.SignalR
         private readonly IServiceEventHandler _serviceEventHandler;
 
         private readonly object _statusLock = new object();
+
+        protected readonly IClientResultsManager _clientResults;
 
         private volatile string _errorMessage;
 
@@ -112,6 +118,7 @@ namespace Microsoft.Azure.SignalR
             IServiceEventHandler serviceEventHandler,
             ServiceConnectionType connectionType,
             ILogger logger,
+            IClientResultsManager clientResultsManager,
             GracefulShutdownMode mode = GracefulShutdownMode.Off)
         {
             ServiceProtocol = serviceProtocol;
@@ -132,6 +139,7 @@ namespace Microsoft.Azure.SignalR
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _serviceMessageHandler = serviceMessageHandler;
             _serviceEventHandler = serviceEventHandler;
+            _clientResults = clientResultsManager;
         }
 
         /// <summary>
@@ -297,9 +305,13 @@ namespace Microsoft.Azure.SignalR
 
         protected Task OnPingMessageAsync(PingMessage pingMessage)
         {
+            // handle client result manager cleanup
             if (RuntimeServicePingMessage.TryGetOffline(pingMessage, out var instanceId))
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
+#if NET7_0_OR_GREATER
+                _clientResults.RemoveServiceMappingMessageWithOfflinePing(instanceId);
+#endif
                 return CleanupClientConnections(instanceId);
             }
             if (RuntimeServicePingMessage.IsFinAck(pingMessage))
@@ -339,11 +351,30 @@ namespace Microsoft.Azure.SignalR
             return Task.CompletedTask;
         }
 
+#if NET7_0_OR_GREATER
         private Task OnClientInvocationAsync(ClientInvocationMessage message)
         {
-            // find client connection protocol and get deserilized payload.
+            _clientResults.AddRoutedInvocation<string>(message.ConnectionId, message.InvocationId, message.CallerServerId, new CancellationToken());
             return Task.CompletedTask;
         }
+
+        private Task OnServiceMappingAsync(ServiceMappingMessage message)
+        {
+            _clientResults.AddServiceMappingMessage(message.InstanceId, message);
+            return Task.CompletedTask;
+        }
+
+        private Task OnClientCompletionAsync(ClientCompletionMessage clientCompletionMessage)
+        {
+            _clientResults.TryCompleteResult(clientCompletionMessage.ConnectionId, clientCompletionMessage.Protocol, clientCompletionMessage.Payload);
+            return Task.CompletedTask;
+        }
+
+        private Task OnErrorCompletionAsync(ErrorCompletionMessage errorCompletionMessage)
+        {
+            return Task.CompletedTask;
+        }
+#endif
 
         private async Task<ConnectionContext> EstablishConnectionAsync(string target)
         {
@@ -568,6 +599,12 @@ namespace Microsoft.Azure.SignalR
                 AckMessage ackMessage => OnAckMessageAsync(ackMessage),
                 ServiceEventMessage eventMessage => OnEventMessageAsync(eventMessage),
                 AccessKeyResponseMessage keyMessage => OnAccessKeyMessageAsync(keyMessage),
+#if NET7_0_OR_GREATER
+                ClientInvocationMessage clientInvocationMessage => OnClientInvocationAsync(clientInvocationMessage),
+                ServiceMappingMessage serviceMappingMessage => OnServiceMappingAsync(serviceMappingMessage),
+                ClientCompletionMessage clientCompletionMessage => OnClientCompletionAsync(clientCompletionMessage),
+                ErrorCompletionMessage errorCompletionMessage => OnErrorCompletionAsync(errorCompletionMessage),
+#endif
                 _ => Task.CompletedTask,
             };
         }

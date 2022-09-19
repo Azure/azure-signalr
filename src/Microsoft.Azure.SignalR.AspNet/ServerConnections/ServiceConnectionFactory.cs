@@ -12,6 +12,7 @@ namespace Microsoft.Azure.SignalR.AspNet
         private readonly ILoggerFactory _logger;
         private readonly IServerNameProvider _nameProvider;
         private readonly IServiceEventHandler _serviceEventHandler;
+        private readonly IClientResultsManager _clientResultsManager;
 
         public ServiceConnectionFactory(
             IServiceProtocol serviceProtocol,
@@ -19,7 +20,8 @@ namespace Microsoft.Azure.SignalR.AspNet
             IConnectionFactory connectionFactory,
             ILoggerFactory logger,
             IServerNameProvider nameProvider,
-            IServiceEventHandler serviceEventHandler)
+            IServiceEventHandler serviceEventHandler,
+            IClientResultsManager clientResultsManager)
         {
             _serviceProtocol = serviceProtocol;
             _clientConnectionManager = clientConnectionManager;
@@ -27,6 +29,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             _logger = logger;
             _nameProvider = nameProvider;
             _serviceEventHandler = serviceEventHandler;
+            _clientResultsManager = clientResultsManager;
         }
 
         public IServiceConnection Create(HubServiceEndpoint endpoint, IServiceMessageHandler serviceMessageHandler, ServiceConnectionType type)
@@ -41,7 +44,9 @@ namespace Microsoft.Azure.SignalR.AspNet
                 _logger,
                 serviceMessageHandler,
                 _serviceEventHandler,
-                type);
+                _clientResultsManager,
+                type
+                );
         }
     }
 }
