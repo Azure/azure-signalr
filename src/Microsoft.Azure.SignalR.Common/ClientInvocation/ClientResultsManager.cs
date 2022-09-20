@@ -315,7 +315,7 @@ namespace Microsoft.Azure.SignalR
 #else
 namespace Microsoft.Azure.SignalR
 { 
-    internal class ClientResultsManager
+    internal class ClientResultsManager: IClientResultsManager
     {
 
     }

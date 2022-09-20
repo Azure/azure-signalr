@@ -274,16 +274,12 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "liKsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjGCpGpzb27EBwIDBAUGBwGrbWVzc2FnZXBhY2vEBwMEBQYHAQKA"),
             new ProtocolTestData(
                 name: "ServiceCompletionMessage",
-                message: new ClientCompletionMessage("invocationId", "conn1", "server1", "json", new Dictionary<string, ReadOnlyMemory<byte>>
-                {
-                    ["json"] = new byte[] {2, 3, 4, 5, 6, 7, 1},
-                    ["messagepack"] = new byte[] {3, 4, 5, 6, 7, 1, 2}
-                }["json"]),
-                binary: "lyOsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjHAgqRqc29uxAcCAwQFBgcBq21lc3NhZ2VwYWNrxAcDBAUGBwECgA=="),
+                message: new ClientCompletionMessage("invocationId", "conn1", "server1", "json", new byte[] {2, 3, 4, 5, 6, 7, 1}),
+                binary: "lyOsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjGkanNvbsQHAgMEBQYHAYEDpGpzb24="),
             new ProtocolTestData(
                 name: "ServiceCompletionMessageWithError",
                 message: new ErrorCompletionMessage("invocationId", "conn1", "server1", "error"),
-                binary: "lyOsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjGlZXJyb3KAgA=="),
+                binary: "liSsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjGlZXJyb3KA"),
         }.ToDictionary(t => t.Name);
 
 #pragma warning disable CS0618 // Type or member is obsolete

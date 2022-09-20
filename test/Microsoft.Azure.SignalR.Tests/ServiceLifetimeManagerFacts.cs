@@ -65,8 +65,9 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var blazorDetector = new DefaultBlazorDetector();
+            var clientResultsManager = new ClientResultsManager();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                new ClientConnectionManager(), HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions, blazorDetector, new DefaultServerNameProvider());
+                new ClientConnectionManager(), HubProtocolResolver, clientResultsManager, Logger, Marker, _globalHubOptions, _localHubOptions, blazorDetector, new DefaultServerNameProvider());
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
@@ -85,10 +86,12 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var blazorDetector = new DefaultBlazorDetector();
+            var clientResultsManager = new ClientResultsManager();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(
                 serviceConnectionManager,
                 new ClientConnectionManager(),
                 HubProtocolResolver,
+                clientResultsManager,
                 Logger,
                 Marker,
                 _globalHubOptions,
@@ -123,8 +126,9 @@ namespace Microsoft.Azure.SignalR.Tests
             var serviceConnectionManager = new ServiceConnectionManager<TestHub>();
             serviceConnectionManager.SetServiceConnection(proxy.ServiceConnectionContainer);
 
+            var clientResultsManager = new ClientResultsManager();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                proxy.ClientConnectionManager, HubProtocolResolver, Logger, Marker, _globalHubOptions, _localHubOptions, blazorDetector, new DefaultServerNameProvider());
+                proxy.ClientConnectionManager, HubProtocolResolver, clientResultsManager, Logger, Marker, _globalHubOptions, _localHubOptions, blazorDetector, new DefaultServerNameProvider());
 
             var serverTask = proxy.WaitForServerConnectionAsync(1);
             _ = proxy.StartAsync();
@@ -168,8 +172,9 @@ namespace Microsoft.Azure.SignalR.Tests
             IOptions<HubOptions> globalHubOptions = Options.Create(new HubOptions() { SupportedProtocols = new List<string>() { "json", "messagepack", MockProtocol, "json" } });
             IOptions<HubOptions<TestHub>> localHubOptions = Options.Create(new HubOptions<TestHub>() { SupportedProtocols = new List<string>() { "json", "messagepack", MockProtocol } });
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
+            var clientResultsManager = new ClientResultsManager();
             var serviceLifetimeManager = new ServiceLifetimeManager<TestHub>(serviceConnectionManager,
-                new ClientConnectionManager(), protocolResolver, Logger, Marker, globalHubOptions, localHubOptions, blazorDetector, new DefaultServerNameProvider());
+                new ClientConnectionManager(), protocolResolver, clientResultsManager, Logger, Marker, globalHubOptions, localHubOptions, blazorDetector, new DefaultServerNameProvider());
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
@@ -190,7 +195,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var serviceConnectionManager = new TestServiceConnectionManager<TestHub>();
             var blazorDetector = new DefaultBlazorDetector();
-            var serviceLifetimeManager = MockLifetimeManager(serviceConnectionManager, null, blazorDetector);
+            var serviceLifetimeManager = MockLifetimeManager(serviceConnectionManager, null, null, blazorDetector);
 
             await InvokeMethod(serviceLifetimeManager, functionName);
 
@@ -226,7 +231,7 @@ namespace Microsoft.Azure.SignalR.Tests
             Assert.True(false);
         }
 
-        private HubLifetimeManager<TestHub> MockLifetimeManager(IServiceConnectionManager<TestHub> serviceConnectionManager, IClientConnectionManager clientConnectionManager = null, IBlazorDetector blazorDetector = null)
+        private HubLifetimeManager<TestHub> MockLifetimeManager(IServiceConnectionManager<TestHub> serviceConnectionManager, IClientConnectionManager clientConnectionManager = null, IClientResultsManager clientResultsManager = null, IBlazorDetector blazorDetector = null)
         {
             clientConnectionManager ??= new ClientConnectionManager();
 
@@ -244,6 +249,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 serviceConnectionManager,
                 clientConnectionManager,
                 protocolResolver,
+                clientResultsManager,
                 Logger,
                 Marker,
                 globalHubOptions,

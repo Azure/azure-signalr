@@ -22,7 +22,7 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
         public TestConnectionContext TestConnectionContext { get; private set; }
         public Task WaitForConnectionClose => _connectionClosedTcs.Task;
 
-        public TestServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null, IServiceMessageHandler serviceMessageHandler = null) :
+        public TestServiceConnectionProxy(IClientConnectionManager clientConnectionManager, ILoggerFactory loggerFactory, ConnectionDelegate callback = null, PipeOptions clientPipeOptions = null, IServiceMessageHandler serviceMessageHandler = null, IClientResultsManager clientResultsManager = null) :
             base(
                 "serverId",
                 Guid.NewGuid().ToString("N"),
@@ -32,7 +32,8 @@ namespace Microsoft.Azure.SignalR.AspNet.Tests
                 clientConnectionManager,
                 loggerFactory,
                 serviceMessageHandler ?? new TestServiceMessageHandler(),
-                null)
+                null,
+                clientResultsManager)
         {
         }
 
