@@ -8,7 +8,6 @@
     <MicrosoftAspNetCoreHttpConnectionsClientPackage3_0Version>3.0.0</MicrosoftAspNetCoreHttpConnectionsClientPackage3_0Version>
     <MicrosoftAspNetCoreHttpConnectionsClientPackage3_1Version>3.1.9</MicrosoftAspNetCoreHttpConnectionsClientPackage3_1Version>
     <MicrosoftAspNetCoreHttpConnectionsClientPackage5_0Version>5.0.1</MicrosoftAspNetCoreHttpConnectionsClientPackage5_0Version>
-    <MicrosoftAspNetCoreHttpConnectionsClientPackage7_0Version>7.0.0-preview.7.22376.6</MicrosoftAspNetCoreHttpConnectionsClientPackage7_0Version>
     <MicrosoftAspNetCoreHttpConnectionsCommonPackageVersion>1.0.4</MicrosoftAspNetCoreHttpConnectionsCommonPackageVersion>
     <MicrosoftAspNetCoreHttpConnectionsCommonPackage3_0Version>3.0.0</MicrosoftAspNetCoreHttpConnectionsCommonPackage3_0Version>
     <MicrosoftAspNetCoreHttpConnectionsCommonPackage3_1Version>3.1.9</MicrosoftAspNetCoreHttpConnectionsCommonPackage3_1Version>
@@ -62,7 +61,7 @@
     <MicrosoftExtensionsHostingVersion>2.1.0</MicrosoftExtensionsHostingVersion>
 
     <!-- SignalR Serverless Protocols-->
-    <NewtonsoftJsonPackageVersion>12.0.2</NewtonsoftJsonPackageVersion>
+    <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
 
     <!-- Signing -->
     <MicrosoftVisualStudioEngMicroBuildCoreVersion>1.0.0</MicrosoftVisualStudioEngMicroBuildCoreVersion>
