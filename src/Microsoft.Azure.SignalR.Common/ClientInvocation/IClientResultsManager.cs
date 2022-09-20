@@ -15,15 +15,13 @@ namespace Microsoft.Azure.SignalR
     {
         public ulong GetNewInvocation();
 
-        public void AddServiceMappingMessage(string instanceId, ServiceMappingMessage serviceMappingMessage);
+        public void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage);
 
         public void RemoveServiceMappingMessageWithOfflinePing(string instanceId);
 
-        public Task<T> AddRoutedInvocation<T>(string connectionId, string invocationId, string callerServerId, CancellationToken cancellationToken);
+        public Task<object> AddRoutedInvocation(string connectionId, string invocationId, string callerServerId, CancellationToken cancellationToken);
 
         public Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken);
-
-        public void AddInvocation(string invocationId, (Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete) invocationInfo);
 
         public void TryCompleteResult(string connectionId, string protocol, ReadOnlySequence<byte> message);
 

@@ -2,14 +2,14 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if NET7_0_OR_GREATER
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using Microsoft.Azure.SignalR.Protocol;
 using System.Buffers;
+using System;
+using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR;
 
@@ -35,32 +35,35 @@ namespace Microsoft.Azure.SignalR
             return Interlocked.Increment(ref _lastInvocationId);
         }
 
-        public void AddServiceMappingMessage(string instanceId, ServiceMappingMessage serviceMappingMessage)
+        public void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage)
         {
-            _serviceMappingMessages.TryAdd(instanceId, serviceMappingMessage);
+            _serviceMappingMessages.TryAdd(invocationId, serviceMappingMessage);
         }
 
         public void RemoveServiceMappingMessageWithOfflinePing(string instanceId)
         {
-            if (_serviceMappingMessages.TryRemove(instanceId, out var serviceMappingMessage))
+            foreach (var (_, serviceMappingMessage) in _serviceMappingMessages)
             {
-                if (_pendingInvocations.TryRemove(serviceMappingMessage.InvocationId, out var item))
+                if (serviceMappingMessage.InstanceId == instanceId)
                 {
-                    var message = new CompletionMessage(serviceMappingMessage.InvocationId, "mapping service offline", null, true);
-                    item.Complete(item.Tcs, message);
+                    if (_pendingInvocations.TryRemove(serviceMappingMessage.InvocationId, out var item))
+                    {
+                        var message = new CompletionMessage(serviceMappingMessage.InvocationId, $"Connection '{serviceMappingMessage.ConnectionId}' disconnected.", null, true);
+                        item.Complete(item.Tcs, message);
+                    }
                 }
             }
         }
 
-        public Task<T> AddRoutedInvocation<T>(string connectionId, string invocationId, string callerServerId, CancellationToken cancellationToken)
+        public Task<object> AddRoutedInvocation(string connectionId, string invocationId, string callerServerId, CancellationToken cancellationToken)
         {
-            var tcs = new TaskCompletionSourceWithCancellation<T>(this, connectionId, invocationId, cancellationToken);
-            var result = _routedInvocations.TryAdd(invocationId, (typeof(T), connectionId, callerServerId, tcs, static (state, completionMessage) =>
+            var tcs = new TaskCompletionSourceWithCancellation<object>(this, connectionId, invocationId, cancellationToken);
+            var result = _routedInvocations.TryAdd(invocationId, (typeof(object), connectionId, callerServerId, tcs, static (state, completionMessage) =>
             {
-                var tcs = (TaskCompletionSourceWithCancellation<T>)state;
+                var tcs = (TaskCompletionSourceWithCancellation<object>)state;
                 if (completionMessage.HasResult)
                 {
-                    tcs.SetResult((T)completionMessage.Result);
+                    tcs.SetResult(completionMessage.Result);
                 }
                 else
                 {
@@ -98,18 +101,12 @@ namespace Microsoft.Azure.SignalR
             return tcs.Task;
         }
 
-        public void AddInvocation(string invocationId, (Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete) invocationInfo)
-        {
-            var result = _pendingInvocations.TryAdd(invocationId, invocationInfo);
-            Debug.Assert(result);
-        }
-
         public void TryCompleteResult(string connectionId, string protocol, ReadOnlySequence<byte> message)
         {
             var proto = _hubProtocolResolver.GetProtocol(protocol, new string[] { protocol });
             if (proto == null)
             {
-                throw new InvalidOperationException();
+                throw new InvalidOperationException($"Not supported protcol {protocol} by server");
             }
 
             if (proto.TryParseMessage(ref message, this, out var message1))
@@ -117,6 +114,7 @@ namespace Microsoft.Azure.SignalR
                 TryCompleteResult(connectionId, message1 as CompletionMessage);
             }
         }
+
         public void TryCompleteResult(string connectionId, CompletionMessage message)
         {
             if (_pendingInvocations.TryGetValue(message.InvocationId!, out var item))
@@ -189,15 +187,6 @@ namespace Microsoft.Azure.SignalR
             throw new InvalidOperationException($"Invocation ID '{invocationId}' is not associated with a pending client result.");
         }
 
-        /// <summary>
-        /// According to ASP.NET Core SignalR, `TryGetReturnType` will be called when the server receives a <see cref="CompletionMessage"/> corresponding to <paramref name="invocationId"/>. If `TryGetReturnType` returns true, `SetConnectionResultAsync` will be called later.
-        /// In `SetConnectionResultAsync`, the server should behave differently according to whether the server is the original caller or route server for <paramref name="invocationId"/>.
-        /// In class `ServiceLifeTimeManagerBase`, `TryGetReturnType` returns _clientResults.TryGetType(invocationId, out type).
-        /// Thus <see cref="TryGetType(string, out Type)"/> should return true no matter the server is the original caller or route server for the invocation.
-        /// </summary>
-        /// <param name="invocationId"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
         public bool TryGetType(string invocationId, out Type type)
         {
             if (_pendingInvocations.TryGetValue(invocationId, out var item1))
