@@ -69,7 +69,9 @@ The Azure SignalR Emulator was successfully started.
 
 Press Ctrl+C to stop the Emulator.
 
-Use the below value inside *********** block as its ConnectionString:
+  TIPS: Use the below value inside *********** block as its ConnectionString:
+
+
 ***********
 
 Endpoint={address.Scheme}://{address.Host};Port={address.Port};AccessKey={AppBuilderExtensions.AccessKey};Version=1.0;
