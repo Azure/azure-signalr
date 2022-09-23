@@ -13,18 +13,20 @@ namespace Microsoft.Azure.SignalR
         public IClientResultsManager Caller => _clientResultsManager;
         public IRoutedClientResultsManager Router => _routedClientResultsManager;
 
-        private readonly IClientResultsManager _clientResultsManager = null;
-        private readonly IRoutedClientResultsManager _routedClientResultsManager = null;
+        private readonly IClientResultsManager _clientResultsManager;
+        private readonly IRoutedClientResultsManager _routedClientResultsManager;
 
 #if NET7_0_OR_GREATER
         ClientInvocationManager(IHubProtocolResolver hubProtocolResolver)
         {
-            throw new NotImplementedException();
+            _clientResultsManager = new ClientResultsManager(hubProtocolResolver);
+            _routedClientResultsManager = new RoutedClientResultsManager();
         }
 #else
         ClientInvocationManager()
-        { 
-            throw new NotImplementedException();
+        {
+            _clientResultsManager = new ClientResultsManager();
+            _routedClientResultsManager = new RoutedClientResultsManager();
         }
 #endif
     }
