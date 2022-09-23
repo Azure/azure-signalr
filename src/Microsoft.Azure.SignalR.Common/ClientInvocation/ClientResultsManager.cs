@@ -35,12 +35,12 @@ namespace Microsoft.Azure.SignalR
             throw new NotImplementedException();
         }
 
-        public void TryCompleteResult(string connectionId, CompletionMessage message)
+        public bool TryCompleteResult(string connectionId, CompletionMessage message)
         {
             throw new NotImplementedException();
         }
 
-        public void TryCompleteResultFromSerializedMessage(string connectionId, string protocol, ReadOnlySequence<byte> message)
+        public bool TryCompleteResultFromSerializedMessage(string connectionId, string protocol, ReadOnlySequence<byte> message)
         {
             throw new NotImplementedException();
         }

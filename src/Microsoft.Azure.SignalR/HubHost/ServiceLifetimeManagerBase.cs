@@ -339,11 +339,10 @@ namespace Microsoft.Azure.SignalR
                 if (_clientInvocationManager.Router.TryGetRoutedInvocation(result.InvocationId, out var _))
                 {
                     var protocol = clientConnectionContext.Protocol;
-                    // if connectionId correct?
                     var message = AppendMessageTracingId(new ClientCompletionMessage(result.InvocationId, connectionId, _callerId, protocol, SerializeCompletionMessage(result)[protocol]));
                     await WriteAsync(message);
 
-                    _clientInvocationManager.Router.TryRemoveRoutedInvocation(result.InvocationId, out _);
+                    _clientInvocationManager.Router.TryCompleteResult(connectionId, result);
                 }
                 else
                 // Current server is the original Caller server. Complete the corresponding client invocation locally.

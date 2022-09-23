@@ -5,6 +5,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -15,17 +16,17 @@ namespace Microsoft.Azure.SignalR
             throw new NotImplementedException();
         }
 
+        public bool TryCompleteResult(string connectionId, CompletionMessage message)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool TryGetRoutedInvocation(string invocationId, out RoutedInvocation routedInvocation)
         {
             throw new NotImplementedException();
         }
 
         public bool TryGetInvocationReturnType(string invocationId, out Type type)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool TryRemoveRoutedInvocation(string invocationId, out RoutedInvocation routedInvocation)
         {
             throw new NotImplementedException();
         }
