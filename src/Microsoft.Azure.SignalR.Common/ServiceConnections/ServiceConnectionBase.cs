@@ -305,7 +305,7 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
 #if NET7_0_OR_GREATER
-                _clientInvocationManager.Caller.RemoveServiceMappingMessageWithOfflinePing(instanceId);
+                _clientInvocationManager.Caller.CleanupInvocations(instanceId);
 #endif
                 return CleanupClientConnections(instanceId);
             }

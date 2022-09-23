@@ -29,6 +29,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ClientInvocationManager _clientInvocationManager;
         private readonly IClientConnectionManager _clientConnectionManager;
 
+        // The order of constructor parameters will be reordered in further ClientInvocation implementation. This order is set for convinence.
         public ServiceLifetimeManagerBase(
             IServiceConnectionManager<THub> serviceConnectionManager,
             IHubProtocolResolver protocolResolver,
