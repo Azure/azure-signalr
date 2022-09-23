@@ -105,6 +105,7 @@ namespace Microsoft.Azure.SignalR
 
         public Task ConnectionOfflineTask => _serviceConnectionOfflineTcs.Task;
 
+        // TODO: use DependencyInjection for ClientInvocationManager and then sort parameter order 
         protected ServiceConnectionBase(
             IServiceProtocol serviceProtocol,
             string serverId,
@@ -305,7 +306,7 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
 #if NET7_0_OR_GREATER
-                _clientInvocationManager.Caller.CleanupInvocations(instanceId);
+                _clientInvocationManager?.Caller.CleanupInvocations(instanceId);
 #endif
                 return CleanupClientConnections(instanceId);
             }

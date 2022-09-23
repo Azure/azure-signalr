@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR
         private readonly ClientInvocationManager _clientInvocationManager;
         private readonly IClientConnectionManager _clientConnectionManager;
 
-        // The order of constructor parameters will be reordered in further ClientInvocation implementation. This order is set for convinence.
+        // TODO: use DependencyInjection for ClientInvocationManager and then sort parameter order 
         public ServiceLifetimeManagerBase(
             IServiceConnectionManager<THub> serviceConnectionManager,
             IHubProtocolResolver protocolResolver,
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.SignalR
             IOptions<HubOptions<THub>> hubOptions,
             ILogger logger,
             IServerNameProvider nameProvider = null,
-            ClientInvocationManager clientResultManager = null,
+            ClientInvocationManager clientInvocationManager = null,
             IClientConnectionManager clientConnectionManager = null)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.SignalR
             _nameProvider = nameProvider;
             _callerId = _nameProvider?.GetName();
 
-            _clientInvocationManager = clientResultManager;
+            _clientInvocationManager = clientInvocationManager;
             _clientConnectionManager = clientConnectionManager;
         }
 
