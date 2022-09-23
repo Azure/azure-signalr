@@ -2,40 +2,36 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if NET7_0_OR_GREATER
-using System;
-using Microsoft.Azure.SignalR.Protocol;
+using System
 using System.Threading.Tasks;
 using System.Threading;
 using System.Buffers;
+using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
     internal interface IClientResultsManager
     {
-        public ulong GetNewInvocation();
+         string GetNewInvocationId(string connectionId, string serverGUID);
 
-        public void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage);
+         void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage);
 
-        public void RemoveServiceMappingMessageWithOfflinePing(string instanceId);
+         void CleanupInvocations(string instanceId);
 
-        public Task<object> AddRoutedInvocation(string connectionId, string invocationId, string callerServerId, CancellationToken cancellationToken);
+         Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken);
 
-        public Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken);
+         void TryCompleteResultFromSerializedMessage(string connectionId, string protocol, ReadOnlySequence<byte> message);
 
-        public void TryCompleteResult(string connectionId, string protocol, ReadOnlySequence<byte> message);
+         void TryCompleteResult(string connectionId, CompletionMessage message);
 
-        public void TryCompleteResult(string connectionId, CompletionMessage message);
+         bool TryRemoveInvocation(string invocationId, out PendingInvocation invocation);
 
-        public bool CheckRoutedInvocation(string invocationId);
+         bool TryGetInvocationReturnType(string invocationId, out Type type);
+    }
 
-        public void TryCompleteRoutedResult(string connectionId, CompletionMessage message);
-
-        public (Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Completion)? RemoveInvocation(string invocationId);
-
-        public (Type Type, string ConnectionId, string callerServerId, object Tcs, Action<object, CompletionMessage> Completion)? RemoveRoutedInvocation(string invocationId);
-
-        public bool TryGetType(string invocationId, out Type type);
+    record PendingInvocation(Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete)
+    {
 
     }
 }

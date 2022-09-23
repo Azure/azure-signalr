@@ -17,12 +17,10 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ClientResultsManager : IClientResultsManager, IInvocationBinder
     {
-        private readonly ConcurrentDictionary<string, (Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete)> _pendingInvocations = new();
-        private ulong _lastInvocationId = new();
+        private readonly ConcurrentDictionary<string, PendingInvocation> _pendingInvocations = new();
+        private readonly ConcurrentDictionary<string, List<ServiceMappingMessage>> _serviceMappingMessages = new();
+        private ulong _lastInvocationId = 0;
 
-        private readonly ConcurrentDictionary<string, (Type Type, string ConnectionId, string CallerServerId, object Tcs, Action<object, CompletionMessage> Complete)> _routedInvocations = new();
-
-        private readonly ConcurrentDictionary<string, ServiceMappingMessage> _serviceMappingMessages = new();
         private readonly IHubProtocolResolver _hubProtocolResolver;
 
         public ClientResultsManager(IHubProtocolResolver hubProtocolResolver)
@@ -30,58 +28,32 @@ namespace Microsoft.Azure.SignalR
             _hubProtocolResolver = hubProtocolResolver;
         }
 
-        public ulong GetNewInvocation()
+        public string GetNewInvocationId(string connectionId, string serverGUID)
         {
-            return Interlocked.Increment(ref _lastInvocationId);
+            return $"{connectionId}-{serverGUID}-{Interlocked.Increment(ref _lastInvocationId)}";
         }
 
         public void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage)
         {
-            _serviceMappingMessages.TryAdd(invocationId, serviceMappingMessage);
+            _serviceMappingMessages[serviceMappingMessage.InstanceId].Add(serviceMappingMessage);
         }
 
-        public void RemoveServiceMappingMessageWithOfflinePing(string instanceId)
+        public void CleanupInvocations(string instanceId)
         {
-            foreach (var (_, serviceMappingMessage) in _serviceMappingMessages)
+            foreach (var serviceMappingMessage in _serviceMappingMessages[instanceId])
             {
-                if (serviceMappingMessage.InstanceId == instanceId)
+                if (_pendingInvocations.TryRemove(serviceMappingMessage.InvocationId, out var item))
                 {
-                    if (_pendingInvocations.TryRemove(serviceMappingMessage.InvocationId, out var item))
-                    {
-                        var message = new CompletionMessage(serviceMappingMessage.InvocationId, $"Connection '{serviceMappingMessage.ConnectionId}' disconnected.", null, true);
-                        item.Complete(item.Tcs, message);
-                    }
+                    var message = new CompletionMessage(serviceMappingMessage.InvocationId, $"Connection '{serviceMappingMessage.ConnectionId}' disconnected.", null, false);
+                    item.Complete(item.Tcs, message);
                 }
             }
-        }
-
-        public Task<object> AddRoutedInvocation(string connectionId, string invocationId, string callerServerId, CancellationToken cancellationToken)
-        {
-            var tcs = new TaskCompletionSourceWithCancellation<object>(this, connectionId, invocationId, cancellationToken);
-            var result = _routedInvocations.TryAdd(invocationId, (typeof(object), connectionId, callerServerId, tcs, static (state, completionMessage) =>
-            {
-                var tcs = (TaskCompletionSourceWithCancellation<object>)state;
-                if (completionMessage.HasResult)
-                {
-                    tcs.SetResult(completionMessage.Result);
-                }
-                else
-                {
-                    tcs.SetException(new Exception(completionMessage.Error));
-                }
-            }
-            ));
-            Debug.Assert(result);
-
-            tcs.RegisterCancellation();
-
-            return tcs.Task;
         }
 
         public Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken)
         {
             var tcs = new TaskCompletionSourceWithCancellation<T>(this, connectionId, invocationId, cancellationToken);
-            var result = _pendingInvocations.TryAdd(invocationId, (typeof(T), connectionId, tcs, static (state, completionMessage) =>
+            var result = _pendingInvocations.TryAdd(invocationId, new PendingInvocation(typeof(T), connectionId, tcs, static (state, completionMessage) =>
             {
                 var tcs = (TaskCompletionSourceWithCancellation<T>)state;
                 if (completionMessage.HasResult)
@@ -99,20 +71,6 @@ namespace Microsoft.Azure.SignalR
             tcs.RegisterCancellation();
 
             return tcs.Task;
-        }
-
-        public void TryCompleteResult(string connectionId, string protocol, ReadOnlySequence<byte> message)
-        {
-            var proto = _hubProtocolResolver.GetProtocol(protocol, new string[] { protocol });
-            if (proto == null)
-            {
-                throw new InvalidOperationException($"Not supported protcol {protocol} by server");
-            }
-
-            if (proto.TryParseMessage(ref message, this, out var message1))
-            {
-                TryCompleteResult(connectionId, message1 as CompletionMessage);
-            }
         }
 
         public void TryCompleteResult(string connectionId, CompletionMessage message)
@@ -138,71 +96,47 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public bool CheckRoutedInvocation(string invocationId)
+        public void TryCompleteResultFromSerializedMessage(string connectionId, string protocol, ReadOnlySequence<byte> message)
         {
-            return _routedInvocations.TryGetValue(invocationId, out var _);
-        }
-
-        public void TryCompleteRoutedResult(string connectionId, CompletionMessage message)
-        {
-            if (_routedInvocations.TryGetValue(message.InvocationId!, out var item))
+            var proto = _hubProtocolResolver.GetProtocol(protocol, new string[] { protocol });
+            if (proto == null)
             {
-                if (item.ConnectionId != connectionId)
-                {
-                    throw new InvalidOperationException($"Connection ID '{connectionId}' is not valid for invocation ID '{message.InvocationId}'.");
-                }
-
-                // if false the connection disconnected right after the above TryGetValue
-                // or someone else completed the invocation (likely a bad client)
-                // we'll ignore both cases
-                if (_routedInvocations.Remove(message.InvocationId!, out _))
-                {
-                    item.Complete(item.Tcs, message);
-                }
+                throw new InvalidOperationException($"Not supported protcol {protocol} by server");
             }
-            else
+
+            if (proto.TryParseMessage(ref message, this, out var message1))
             {
-                // connection was disconnected or someone else completed the invocation
+                TryCompleteResult(connectionId, message1 as CompletionMessage);
             }
         }
 
-        public (Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Completion)? RemoveInvocation(string invocationId)
+        public bool TryRemoveInvocation(string invocationId, out PendingInvocation invocation)
         {
-            _pendingInvocations.TryRemove(invocationId, out var item);
-            return item;
+            return _pendingInvocations.TryRemove(invocationId, out invocation);
         }
 
-        public (Type Type, string ConnectionId, string callerServerId, object Tcs, Action<object, CompletionMessage> Completion)? RemoveRoutedInvocation(string invocationId)
-        {
-            _routedInvocations.TryRemove(invocationId, out var item);
-            return item;
-        }
-
+        // Implemented for interface IInvocationBinder
         public Type GetReturnType(string invocationId)
         {
-            if (TryGetType(invocationId, out var type))
+            if (TryGetInvocationReturnType(invocationId, out var type))
             {
                 return type;
             }
             throw new InvalidOperationException($"Invocation ID '{invocationId}' is not associated with a pending client result.");
         }
 
-        public bool TryGetType(string invocationId, out Type type)
+        public bool TryGetInvocationReturnType(string invocationId, out Type type)
         {
-            if (_pendingInvocations.TryGetValue(invocationId, out var item1))
+            if (_pendingInvocations.TryGetValue(invocationId, out var item))
             {
-                type = item1.Type;
-                return true;
-            }
-            if (_routedInvocations.TryGetValue(invocationId, out var item2))
-            {
-                type = item2.Type;
+                type = item.Type;
                 return true;
             }
             type = null;
             return false;
         }
 
+        // Unused, here to honor the IInvocationBinder interface but should never be called
         public IReadOnlyList<Type> GetParameterTypes(string methodName)
         {
             throw new NotImplementedException();
