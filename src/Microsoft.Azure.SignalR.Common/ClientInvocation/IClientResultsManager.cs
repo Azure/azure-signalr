@@ -3,9 +3,9 @@
 
 #if NET7_0_OR_GREATER
 using System;
-using System.Threading.Tasks;
-using System.Threading;
 using System.Buffers;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR.Protocol;
 
@@ -13,26 +13,25 @@ namespace Microsoft.Azure.SignalR
 {
     internal interface IClientResultsManager
     {
-         string GetNewInvocationId(string connectionId, string serverGUID);
+        string GetNewInvocationId(string connectionId, string serverGUID);
 
-         void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage);
+        void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage);
 
-         void CleanupInvocations(string instanceId);
+        void CleanupInvocations(string instanceId);
 
-         Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken);
+        Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken);
 
-         void TryCompleteResultFromSerializedMessage(string connectionId, string protocol, ReadOnlySequence<byte> message);
+        void TryCompleteResultFromSerializedMessage(string connectionId, string protocol, ReadOnlySequence<byte> message);
 
-         void TryCompleteResult(string connectionId, CompletionMessage message);
+        void TryCompleteResult(string connectionId, CompletionMessage message);
 
-         bool TryRemoveInvocation(string invocationId, out PendingInvocation invocation);
+        bool TryRemoveInvocation(string invocationId, out PendingInvocation invocation);
 
-         bool TryGetInvocationReturnType(string invocationId, out Type type);
+        bool TryGetInvocationReturnType(string invocationId, out Type type);
     }
 
-    record PendingInvocation(Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete)
+    internal record PendingInvocation(Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete)
     {
-
     }
 }
 #else

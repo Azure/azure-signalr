@@ -7,7 +7,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading;
-using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -42,9 +41,14 @@ namespace Microsoft.Azure.SignalR
             return tcs.Task;
         }
 
-        public bool CheckRoutedInvocation(string invocationId)
+        public bool TryGetRoutedInvocation(string invocationId, out RoutedInvocation routedInvocation)
         {
-            return _routedInvocations.TryGetValue(invocationId, out var _);
+            return _routedInvocations.TryGetValue(invocationId, out routedInvocation);
+        }
+
+        public bool TryRemoveRoutedInvocation(string invocationId, out RoutedInvocation routedInvocation)
+        {
+            return _routedInvocations.TryRemove(invocationId, out routedInvocation);
         }
 
         public bool TryGetInvocationReturnType(string invocationId, out Type type)
@@ -57,12 +61,6 @@ namespace Microsoft.Azure.SignalR
             type = null;
             return false;
         }
-
-        private record RoutedInvocation(string ConnectionId, string CallerServerId, object Tcs, Action<object, CompletionMessage> Complete)
-        {
-
-        }
-
     }
 }
 #else

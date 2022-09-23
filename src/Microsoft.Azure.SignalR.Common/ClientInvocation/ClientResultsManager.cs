@@ -2,13 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if NET7_0_OR_GREATER
+using System;
+using System.Buffers;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
-using System.Buffers;
-using System;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR;
@@ -33,23 +33,6 @@ namespace Microsoft.Azure.SignalR
             return $"{connectionId}-{serverGUID}-{Interlocked.Increment(ref _lastInvocationId)}";
         }
 
-        public void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage)
-        {
-            _serviceMappingMessages[serviceMappingMessage.InstanceId].Add(serviceMappingMessage);
-        }
-
-        public void CleanupInvocations(string instanceId)
-        {
-            foreach (var serviceMappingMessage in _serviceMappingMessages[instanceId])
-            {
-                if (_pendingInvocations.TryRemove(serviceMappingMessage.InvocationId, out var item))
-                {
-                    var message = new CompletionMessage(serviceMappingMessage.InvocationId, $"Connection '{serviceMappingMessage.ConnectionId}' disconnected.", null, false);
-                    item.Complete(item.Tcs, message);
-                }
-            }
-        }
-
         public Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken)
         {
             var tcs = new TaskCompletionSourceWithCancellation<T>(this, connectionId, invocationId, cancellationToken);
@@ -71,6 +54,28 @@ namespace Microsoft.Azure.SignalR
             tcs.RegisterCancellation();
 
             return tcs.Task;
+        }
+
+        public bool TryRemoveInvocation(string invocationId, out PendingInvocation invocation)
+        {
+            return _pendingInvocations.TryRemove(invocationId, out invocation);
+        }
+
+        public void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage)
+        {
+            _serviceMappingMessages[serviceMappingMessage.InstanceId].Add(serviceMappingMessage);
+        }
+
+        public void CleanupInvocations(string instanceId)
+        {
+            foreach (var serviceMappingMessage in _serviceMappingMessages[instanceId])
+            {
+                if (_pendingInvocations.TryRemove(serviceMappingMessage.InvocationId, out var item))
+                {
+                    var message = new CompletionMessage(serviceMappingMessage.InvocationId, $"Connection '{serviceMappingMessage.ConnectionId}' disconnected.", null, false);
+                    item.Complete(item.Tcs, message);
+                }
+            }
         }
 
         public void TryCompleteResult(string connectionId, CompletionMessage message)
@@ -108,11 +113,6 @@ namespace Microsoft.Azure.SignalR
             {
                 TryCompleteResult(connectionId, message1 as CompletionMessage);
             }
-        }
-
-        public bool TryRemoveInvocation(string invocationId, out PendingInvocation invocation)
-        {
-            return _pendingInvocations.TryRemove(invocationId, out invocation);
         }
 
         // Implemented for interface IInvocationBinder
