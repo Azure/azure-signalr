@@ -68,7 +68,7 @@ namespace Microsoft.Azure.SignalR
 #else
 namespace Microsoft.Azure.SignalR
 { 
-    internal class RoutedClientResultsManager: IRoute
+    internal class RoutedClientResultsManager: IRoutedClientResultsManager
     {
 
     }

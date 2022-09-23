@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if NET7_0_OR_GREATER
-using System
+using System;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Buffers;
