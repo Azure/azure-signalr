@@ -6,6 +6,9 @@ using System.Collections.Generic;
 
 namespace Microsoft.Azure.SignalR.Protocol
 {
+    /// <summary>
+    /// Base class for multiple subprotocol data messages between Azure SignalR Service and SDK.
+    /// </summary>
     public abstract class MultiPayloadDataMessage : ExtensibleServiceMessage, IMessageWithTracingId
     {
         protected MultiPayloadDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null)
