@@ -9,7 +9,7 @@ namespace Microsoft.Azure.SignalR.Protocol
     /// <summary>
     /// Base class for multicast data messages between Azure SignalR Service and SDK.
     /// </summary>
-    public abstract class MulticastDataMessage : ExtensibleServiceMessage, IMessageWithTracingId
+    public abstract class MulticastDataMessage : ExtensibleServiceMessage, IMessageWithTracingId, IHasSubscriberFilter
     {
         protected MulticastDataMessage(IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null)
         {
@@ -26,6 +26,8 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the tracing Id
         /// </summary>
         public ulong? TracingId { get; set; }
+
+        public string Filter { get; set; }
     }
 
     /// <summary>
