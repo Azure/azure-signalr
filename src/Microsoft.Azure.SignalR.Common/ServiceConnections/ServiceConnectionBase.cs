@@ -50,6 +50,8 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IServiceEventHandler _serviceEventHandler;
 
+        private readonly ClientInvocationManager _clientInvocationManager;
+
         private readonly object _statusLock = new object();
 
         private volatile string _errorMessage;
@@ -112,7 +114,8 @@ namespace Microsoft.Azure.SignalR
             IServiceEventHandler serviceEventHandler,
             ServiceConnectionType connectionType,
             ILogger logger,
-            GracefulShutdownMode mode = GracefulShutdownMode.Off)
+            GracefulShutdownMode mode = GracefulShutdownMode.Off,
+            ClientInvocationManager clientInvocationManager = null)
         {
             ServiceProtocol = serviceProtocol;
             ServerId = serverId;
@@ -132,6 +135,7 @@ namespace Microsoft.Azure.SignalR
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _serviceMessageHandler = serviceMessageHandler;
             _serviceEventHandler = serviceEventHandler;
+            _clientInvocationManager = clientInvocationManager;
         }
 
         /// <summary>
@@ -300,6 +304,9 @@ namespace Microsoft.Azure.SignalR
             if (RuntimeServicePingMessage.TryGetOffline(pingMessage, out var instanceId))
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
+#if NET7_0_OR_GREATER
+                _clientInvocationManager.Caller.RemoveServiceMappingMessageWithOfflinePing(instanceId);
+#endif
                 return CleanupClientConnections(instanceId);
             }
             if (RuntimeServicePingMessage.IsFinAck(pingMessage))
@@ -309,6 +316,32 @@ namespace Microsoft.Azure.SignalR
             }
             return _serviceMessageHandler.HandlePingAsync(pingMessage);
         }
+
+#if NET7_0_OR_GREATER
+        private Task OnClientInvocationAsync(ClientInvocationMessage message)
+        {
+            _clientInvocationManager.Router.AddRoutedInvocation(message.ConnectionId, message.InvocationId, message.CallerServerId, new CancellationToken());
+            return Task.CompletedTask;
+        }
+
+        private Task OnServiceMappingAsync(ServiceMappingMessage message)
+        {
+            _clientInvocationManager.Caller.AddServiceMappingMessage(message.InstanceId, message);
+            return Task.CompletedTask;
+        }
+
+        private Task OnClientCompletionAsync(ClientCompletionMessage clientCompletionMessage)
+        {
+            _clientInvocationManager.Caller.TryCompleteResultFromSerializedMessage
+(clientCompletionMessage.ConnectionId, clientCompletionMessage.Protocol, clientCompletionMessage.Payload);
+            return Task.CompletedTask;
+        }
+
+        private Task OnErrorCompletionAsync(ErrorCompletionMessage errorCompletionMessage)
+        {
+            return Task.CompletedTask;
+        }
+#endif
 
         protected Task OnAckMessageAsync(AckMessage ackMessage)
         {
@@ -562,6 +595,12 @@ namespace Microsoft.Azure.SignalR
                 AckMessage ackMessage => OnAckMessageAsync(ackMessage),
                 ServiceEventMessage eventMessage => OnEventMessageAsync(eventMessage),
                 AccessKeyResponseMessage keyMessage => OnAccessKeyMessageAsync(keyMessage),
+#if NET7_0_OR_GREATER
+                ClientInvocationMessage clientInvocationMessage => OnClientInvocationAsync(clientInvocationMessage),
+                ServiceMappingMessage serviceMappingMessage => OnServiceMappingAsync(serviceMappingMessage),
+                ClientCompletionMessage clientCompletionMessage => OnClientCompletionAsync(clientCompletionMessage),
+                ErrorCompletionMessage errorCompletionMessage => OnErrorCompletionAsync(errorCompletionMessage),
+#endif
                 _ => Task.CompletedTask,
             };
         }

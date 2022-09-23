@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
@@ -21,12 +22,32 @@ namespace Microsoft.Azure.SignalR
         protected ILogger Logger { get; set; }
 
         private readonly DefaultHubMessageSerializer _messageSerializer;
+        private readonly IServerNameProvider _nameProvider;
+        private readonly string _callerId;
+        private readonly string _serverGUID = Guid.NewGuid().ToString();
 
-        public ServiceLifetimeManagerBase(IServiceConnectionManager<THub> serviceConnectionManager, IHubProtocolResolver protocolResolver, IOptions<HubOptions> globalHubOptions, IOptions<HubOptions<THub>> hubOptions, ILogger logger)
+        private readonly ClientInvocationManager _clientInvocationManager;
+        private readonly IClientConnectionManager _clientConnectionManager;
+
+        public ServiceLifetimeManagerBase(
+            IServiceConnectionManager<THub> serviceConnectionManager,
+            IHubProtocolResolver protocolResolver,
+            IOptions<HubOptions> globalHubOptions,
+            IOptions<HubOptions<THub>> hubOptions,
+            ILogger logger,
+            IServerNameProvider nameProvider = null,
+            ClientInvocationManager clientResultManager = null,
+            IClientConnectionManager clientConnectionManager = null)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             ServiceConnectionContainer = serviceConnectionManager;
             _messageSerializer = new DefaultHubMessageSerializer(protocolResolver, globalHubOptions.Value.SupportedProtocols, hubOptions.Value.SupportedProtocols);
+
+            _nameProvider = nameProvider ?? throw new ArgumentNullException(nameof(nameProvider));
+            _callerId = _nameProvider.GetName();
+
+            _clientInvocationManager = clientResultManager;
+            _clientConnectionManager = clientConnectionManager;
         }
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
@@ -267,6 +288,81 @@ namespace Microsoft.Azure.SignalR
             return WriteAckableMessageAsync(message, cancellationToken);
         }
 
+#if NET7_0_OR_GREATER
+        public override async Task<T> InvokeConnectionAsync<T>(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
+        {
+            if (IsInvalidArgument(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+
+            if (IsInvalidArgument(methodName))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(methodName));
+            }
+            // globally distinct invocationId
+            // $"{connectionId}{_callerId}{_clientResults.GetNewInvocation()}";
+            var invocationId = _clientInvocationManager.Caller.GetNewInvocationId(connectionId, _serverGUID);
+            var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, cancellationToken);
+            try
+            {
+                var message = AppendMessageTracingId(new ClientInvocationMessage(invocationId, connectionId, _callerId, SerializeAllProtocols(methodName, args, invocationId)));
+                await WriteAsync(message);
+            }
+            catch (Exception)
+            {
+                _clientInvocationManager.Caller.TryRemoveInvocation(invocationId, out var _);
+                throw;
+            }
+
+            try
+            {
+                return await task;
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        public override async Task SetConnectionResultAsync(string connectionId, CompletionMessage result)
+        {
+            if (IsInvalidArgument(connectionId))
+            {
+                throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
+            }
+            if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var clientConnectionContext))
+            {
+                // Current server is a route server.
+                // In order to inform original Caller server with the completion result, send a ClientCompletionMessage to service and the service will route ClientCompletionMessage to the original Caller server.
+                if (_clientInvocationManager.Router.CheckRoutedInvocation(result.InvocationId))
+                {
+                    var protocol = clientConnectionContext.Protocol;
+                    // if connectionId correct?
+                    var message = AppendMessageTracingId(new ClientCompletionMessage(result.InvocationId, connectionId, _callerId, protocol, SerializeCompletionMessage(result)[protocol]));
+                    await WriteAsync(message);
+                }
+                else
+                // Current server is the original Caller server. Complete the corresponding client invocation locally.
+                {
+                    _clientInvocationManager.Caller.TryCompleteResult(connectionId, result);
+                }
+            }
+        }
+
+        public override bool TryGetReturnType(string invocationId, [NotNullWhen(true)] out Type type)
+        {
+            if (_clientInvocationManager.Router.CheckRoutedInvocation(invocationId))
+            {
+                return _clientInvocationManager.Router.TryGetInvocationReturnType(invocationId, out type);
+            }
+            else
+            {
+                return _clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out type);
+            }
+        }
+#endif
+
         protected Task WriteAsync<T>(T message) where T : ServiceMessage, IMessageWithTracingId =>
             WriteCoreAsync(message, m => ServiceConnectionContainer.WriteAsync(message));
 
@@ -283,10 +379,18 @@ namespace Microsoft.Azure.SignalR
             return list == null;
         }
 
-        protected IDictionary<string, ReadOnlyMemory<byte>> SerializeAllProtocols(string method, object[] args)
+        protected IDictionary<string, ReadOnlyMemory<byte>> SerializeAllProtocols(string method, object[] args, string invocationId = null)
         {
             var payloads = new Dictionary<string, ReadOnlyMemory<byte>>();
-            var message = new InvocationMessage(method, args);
+            InvocationMessage message;
+            if (invocationId == null)
+            {
+                message = new InvocationMessage(method, args);
+            }
+            else
+            {
+                message = new InvocationMessage(invocationId, method, args);
+            }
             var serializedHubMessages = _messageSerializer.SerializeMessage(message);
             foreach (var serializedMessage in serializedHubMessages)
             {
@@ -297,6 +401,17 @@ namespace Microsoft.Azure.SignalR
 
         protected ReadOnlyMemory<byte> SerializeProtocol(string protocol, string method, object[] args) =>
             _messageSerializer.SerializeMessage(protocol, new InvocationMessage(method, args));
+
+        protected IDictionary<string, ReadOnlyMemory<byte>> SerializeCompletionMessage(CompletionMessage message)
+        {
+            var payloads = new Dictionary<string, ReadOnlyMemory<byte>>();
+            var serializedHubMessages = _messageSerializer.SerializeMessage(message);
+            foreach (var serializedMessage in serializedHubMessages)
+            {
+                payloads.Add(serializedMessage.ProtocolName, serializedMessage.Serialized);
+            }
+            return payloads;
+        }
 
         protected virtual T AppendMessageTracingId<T>(T message) where T : ServiceMessage, IMessageWithTracingId
         {
