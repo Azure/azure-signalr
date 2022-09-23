@@ -16,13 +16,15 @@ namespace Microsoft.Azure.SignalR
         private readonly IRoutedClientResultsManager _routedClientResultsManager;
 
 #if NET7_0_OR_GREATER
-        ClientInvocationManager(IHubProtocolResolver hubProtocolResolver)
+        public IHubProtocolResolver HubProtocolResolver { get; }
+
+        public ClientInvocationManager(IHubProtocolResolver hubProtocolResolver)
         {
             _clientResultsManager = new ClientResultsManager(hubProtocolResolver);
             _routedClientResultsManager = new RoutedClientResultsManager();
         }
 #else
-        ClientInvocationManager()
+        public ClientInvocationManager()
         {
             _clientResultsManager = new ClientResultsManager();
             _routedClientResultsManager = new RoutedClientResultsManager();

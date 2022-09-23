@@ -63,7 +63,14 @@ namespace Microsoft.Azure.SignalR
 
         public void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage)
         {
-            _serviceMappingMessages[serviceMappingMessage.InstanceId].Add(serviceMappingMessage);
+            if (_serviceMappingMessages.ContainsKey(serviceMappingMessage.InstanceId))
+            {
+                _serviceMappingMessages[serviceMappingMessage.InstanceId].Add(serviceMappingMessage);
+            }
+            else
+            {
+                _serviceMappingMessages[serviceMappingMessage.InstanceId] = new List<ServiceMappingMessage> { serviceMappingMessage };
+            }
         }
 
         public void CleanupInvocations(string instanceId)
@@ -78,7 +85,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public void TryCompleteResult(string connectionId, CompletionMessage message)
+        public bool TryCompleteResult(string connectionId, CompletionMessage message)
         {
             if (_pendingInvocations.TryGetValue(message.InvocationId!, out var item))
             {
@@ -93,15 +100,18 @@ namespace Microsoft.Azure.SignalR
                 if (_pendingInvocations.Remove(message.InvocationId!, out _))
                 {
                     item.Complete(item.Tcs, message);
+                    return true;
                 }
+                return false;
             }
             else
             {
                 // connection was disconnected or someone else completed the invocation
+                return false;
             }
         }
 
-        public void TryCompleteResultFromSerializedMessage(string connectionId, string protocol, ReadOnlySequence<byte> message)
+        public bool TryCompleteResultFromSerializedMessage(string connectionId, string protocol, ReadOnlySequence<byte> message)
         {
             var proto = _hubProtocolResolver.GetProtocol(protocol, new string[] { protocol });
             if (proto == null)
@@ -111,8 +121,9 @@ namespace Microsoft.Azure.SignalR
 
             if (proto.TryParseMessage(ref message, this, out var message1))
             {
-                TryCompleteResult(connectionId, message1 as CompletionMessage);
+                return TryCompleteResult(connectionId, message1 as CompletionMessage);
             }
+            return false;
         }
 
         // Implemented for interface IInvocationBinder

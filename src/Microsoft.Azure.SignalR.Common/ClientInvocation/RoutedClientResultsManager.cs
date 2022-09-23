@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading;
+using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -41,14 +42,31 @@ namespace Microsoft.Azure.SignalR
             return tcs.Task;
         }
 
+        public bool TryCompleteResult(string connectionId, CompletionMessage message)
+        {
+            if (_routedInvocations.TryGetValue(message.InvocationId, out var item))
+            {
+                if (item.ConnectionId != connectionId)
+                {
+                    throw new InvalidOperationException($"Connection ID '{connectionId}' is not valid for invocation ID '{message.InvocationId}'.");
+                }
+                if (_routedInvocations.TryRemove(message.InvocationId!, out _))
+                {
+                    item.Complete(item.Tcs, message);
+                    return true;
+                }
+                return false;
+            }
+            else
+            {
+                // connection was disconnected or someone else completed the invocation
+                return false;
+            }
+        }
+
         public bool TryGetRoutedInvocation(string invocationId, out RoutedInvocation routedInvocation)
         {
             return _routedInvocations.TryGetValue(invocationId, out routedInvocation);
-        }
-
-        public bool TryRemoveRoutedInvocation(string invocationId, out RoutedInvocation routedInvocation)
-        {
-            return _routedInvocations.TryRemove(invocationId, out routedInvocation);
         }
 
         public bool TryGetInvocationReturnType(string invocationId, out Type type)

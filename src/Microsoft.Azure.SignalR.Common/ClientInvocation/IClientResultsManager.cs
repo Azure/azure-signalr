@@ -21,9 +21,9 @@ namespace Microsoft.Azure.SignalR
 
         Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken);
 
-        void TryCompleteResultFromSerializedMessage(string connectionId, string protocol, ReadOnlySequence<byte> message);
+        bool TryCompleteResultFromSerializedMessage(string connectionId, string protocol, ReadOnlySequence<byte> message);
 
-        void TryCompleteResult(string connectionId, CompletionMessage message);
+        bool TryCompleteResult(string connectionId, CompletionMessage message);
 
         bool TryRemoveInvocation(string invocationId, out PendingInvocation invocation);
 
