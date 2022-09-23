@@ -3,11 +3,8 @@
 
 #if NET7_0_OR_GREATER
 using System;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Threading.Tasks;
 using System.Threading;
-using Microsoft.AspNetCore.SignalR.Protocol;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -18,7 +15,7 @@ namespace Microsoft.Azure.SignalR
             throw new NotImplementedException();
         }
 
-        public bool CheckRoutedInvocation(string invocationId)
+        public bool TryGetRoutedInvocation(string invocationId, out RoutedInvocation routedInvocation)
         {
             throw new NotImplementedException();
         }
@@ -28,11 +25,10 @@ namespace Microsoft.Azure.SignalR
             throw new NotImplementedException();
         }
 
-        private record RoutedInvocation(string ConnectionId, string CallerServerId, object Tcs, Action<object, CompletionMessage> Complete)
+        public bool TryRemoveRoutedInvocation(string invocationId, out RoutedInvocation routedInvocation)
         {
-
+            throw new NotImplementedException();
         }
-
     }
 }
 #else

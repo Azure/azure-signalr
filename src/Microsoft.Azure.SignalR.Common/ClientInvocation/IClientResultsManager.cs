@@ -3,9 +3,9 @@
 
 #if NET7_0_OR_GREATER
 using System;
-using System.Threading.Tasks;
-using System.Threading;
 using System.Buffers;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR.Protocol;
 
@@ -30,9 +30,8 @@ namespace Microsoft.Azure.SignalR
         bool TryGetInvocationReturnType(string invocationId, out Type type);
     }
 
-    record PendingInvocation(Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete)
+    internal record PendingInvocation(Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete)
     {
-
     }
 }
 #else

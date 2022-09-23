@@ -2,16 +2,14 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if NET7_0_OR_GREATER
-using System.Threading;
-using System.Diagnostics;
-using System.Collections.Generic;
-using System.Collections.Concurrent;
-using System.Threading.Tasks;
-using System.Buffers;
 using System;
+using System.Buffers;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -27,17 +25,12 @@ namespace Microsoft.Azure.SignalR
             throw new NotImplementedException();
         }
 
-        public void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void CleanupInvocations(string instanceId)
-        {
-            throw new NotImplementedException();
-        }
-
         public Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage)
         {
             throw new NotImplementedException();
         }
@@ -64,6 +57,11 @@ namespace Microsoft.Azure.SignalR
         }
 
         public bool TryGetInvocationReturnType(string invocationId, out Type type)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void CleanupInvocations(string instanceId)
         {
             throw new NotImplementedException();
         }

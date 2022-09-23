@@ -3,20 +3,26 @@
 
 #if NET7_0_OR_GREATER
 using System;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
     internal interface IRoutedClientResultsManager
     {
-        public Task<object> AddRoutedInvocation(string connectionId, string invocationId, string callerServerId, CancellationToken cancellationToken);
+        Task<object> AddRoutedInvocation(string connectionId, string invocationId, string callerServerId, CancellationToken cancellationToken);
 
-        public bool CheckRoutedInvocation(string invocationId);
+        bool TryRemoveRoutedInvocation(string invocationId, out RoutedInvocation routedInvocation);
 
-        public bool TryGetInvocationReturnType(string invocationId, out Type type);
+        bool TryGetRoutedInvocation(string invocationId, out RoutedInvocation routedInvocation);
 
-        private record RoutedInvocation;
+        bool TryGetInvocationReturnType(string invocationId, out Type type);
+
+    }
+
+    internal record RoutedInvocation(string ConnectionId, string CallerServerId, object Tcs, Action<object, CompletionMessage> Complete)
+    {
     }
 }
 #else

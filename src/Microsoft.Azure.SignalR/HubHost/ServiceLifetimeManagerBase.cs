@@ -336,12 +336,14 @@ namespace Microsoft.Azure.SignalR
             {
                 // Current server is a route server.
                 // In order to inform original Caller server with the completion result, send a ClientCompletionMessage to service and the service will route ClientCompletionMessage to the original Caller server.
-                if (_clientInvocationManager.Router.CheckRoutedInvocation(result.InvocationId))
+                if (_clientInvocationManager.Router.TryGetRoutedInvocation(result.InvocationId, out var _))
                 {
                     var protocol = clientConnectionContext.Protocol;
                     // if connectionId correct?
                     var message = AppendMessageTracingId(new ClientCompletionMessage(result.InvocationId, connectionId, _callerId, protocol, SerializeCompletionMessage(result)[protocol]));
                     await WriteAsync(message);
+
+                    _clientInvocationManager.Router.TryRemoveRoutedInvocation(result.InvocationId, out _);
                 }
                 else
                 // Current server is the original Caller server. Complete the corresponding client invocation locally.
@@ -353,7 +355,7 @@ namespace Microsoft.Azure.SignalR
 
         public override bool TryGetReturnType(string invocationId, [NotNullWhen(true)] out Type type)
         {
-            if (_clientInvocationManager.Router.CheckRoutedInvocation(invocationId))
+            if (_clientInvocationManager.Router.TryGetRoutedInvocation(invocationId, out var _))
             {
                 return _clientInvocationManager.Router.TryGetInvocationReturnType(invocationId, out type);
             }
