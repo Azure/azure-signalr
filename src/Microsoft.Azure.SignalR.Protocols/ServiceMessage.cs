@@ -27,6 +27,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         private const int TracingId = 1;
         private const int Ttl = 2;
         private const int Protocol = 3;
+        private const int Filter = 4;
 
         internal void WriteExtensionMembers(ref MessagePackWriter writer)
         {
@@ -46,6 +47,13 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 count++;
             }
+
+            var filter = (this as IHasSubscriberFilter)?.Filter;
+            if (filter != null)
+            {
+                count++;
+            }
+
             // todo : count more optional fields.
             writer.WriteMapHeader(count);
             if (tracingId != null)
@@ -62,6 +70,11 @@ namespace Microsoft.Azure.SignalR.Protocol
             {
                 writer.Write(Protocol);
                 writer.Write(protocol);
+            }
+            if (filter != null)
+            {
+                writer.Write(Filter);
+                writer.Write(filter);
             }
             // todo : write more optional fields.
         }
@@ -89,6 +102,12 @@ namespace Microsoft.Azure.SignalR.Protocol
                         if (this is IHasProtocol hasProtocol)
                         {
                             hasProtocol.Protocol = reader.ReadString();
+                        }
+                        break;
+                    case Filter:
+                        if (this is IHasSubscriberFilter hasFilter)
+                        {
+                            hasFilter.Filter = reader.ReadString();
                         }
                         break;
                     // todo : more optional fields
