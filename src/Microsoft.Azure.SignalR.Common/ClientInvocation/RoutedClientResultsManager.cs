@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if NET7_0_OR_GREATER
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -17,7 +16,9 @@ namespace Microsoft.Azure.SignalR
 
         public Task<object> AddRoutedInvocation(string connectionId, string invocationId, string callerServerId, CancellationToken cancellationToken)
         {
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSourceWithCancellation<object>(
+                cancellationToken,
+                () => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
             
             var result = _routedInvocations.TryAdd(invocationId, new RoutedInvocation(connectionId, callerServerId, tcs, static (state, completionMessage) =>
             {
@@ -33,11 +34,8 @@ namespace Microsoft.Azure.SignalR
             }
             ));
             Debug.Assert(result);
-            cancellationToken.Register(static o =>
-            {
-                var tcs = (TaskCompletionSource<object>)o!;
-                tcs.SetCanceled();
-            }, tcs);
+
+            tcs.RegisterCancellation();
 
             return tcs.Task;
         }
@@ -81,12 +79,3 @@ namespace Microsoft.Azure.SignalR
         }
     }
 }
-#else
-namespace Microsoft.Azure.SignalR
-{ 
-    internal class RoutedClientResultsManager: IRoutedClientResultsManager
-    {
-
-    }
-}
-#endif
