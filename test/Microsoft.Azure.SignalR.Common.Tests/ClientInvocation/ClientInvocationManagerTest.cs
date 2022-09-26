@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var connectionId = "Connection-0";
             var invocationResult = "invocation-success-result";
             ClientInvocationManager clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
-            var invocationId = clientInvocationManager.Caller.GetNewInvocationId(connectionId);
+            var invocationId = clientInvocationManager.Caller.GenerateInvocationId(connectionId);
 
             CancellationToken cancellationToken = new CancellationToken();
             var task = clientInvocationManager.Caller.AddInvocation<string>(connectionId, invocationId, cancellationToken);
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                 new ClientInvocationManager(HubProtocolResolver),
                 new ClientInvocationManager(HubProtocolResolver),
             };
-            var invocationId = ciManagers[0].Caller.GetNewInvocationId(connectionsId[0]);
+            var invocationId = ciManagers[0].Caller.GenerateInvocationId(connectionsId[0]);
             var completionMessage = new CompletionMessage(invocationId, null, invocationResult, true);
 
             CancellationToken cancellationToken = new CancellationToken();
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var payload = GetBytes(protocol, completionMessage);
             var clientCompletionMessage = new ClientCompletionMessage(invocationId, connectionsId[0], callerServerId, protocol, payload);
 
-            ret = ciManagers[0].Caller.TryCompleteResult(clientCompletionMessage.ConnectionId, clientCompletionMessage.Protocol, clientCompletionMessage.Payload);
+            ret = ciManagers[0].Caller.TryCompleteResult(clientCompletionMessage.ConnectionId, clientCompletionMessage);
             Assert.True(ret);
 
             await task;

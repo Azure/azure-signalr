@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class ClientResultsManager : IClientResultsManager, IInvocationBinder
+    internal class CallerClientResultsManager : ICallerClientResultsManager, IInvocationBinder
     {
         private readonly ConcurrentDictionary<string, PendingInvocation> _pendingInvocations = new();
         private readonly ConcurrentDictionary<string, List<string>> _serviceMappingMessages = new();
@@ -23,12 +23,12 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IHubProtocolResolver _hubProtocolResolver;
 
-        public ClientResultsManager(IHubProtocolResolver hubProtocolResolver)
+        public CallerClientResultsManager(IHubProtocolResolver hubProtocolResolver)
         {
             _hubProtocolResolver = hubProtocolResolver;
         }
 
-        public string GetNewInvocationId(string connectionId)
+        public string GenerateInvocationId(string connectionId)
         {
             return $"{connectionId}-{_serverGUID}-{Interlocked.Increment(ref _lastInvocationId)}";
         }
@@ -105,17 +105,18 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public bool TryCompleteResult(string connectionId, string protocol, ReadOnlySequence<byte> message)
+        public bool TryCompleteResult(string connectionId, ClientCompletionMessage message)
         {
-            var proto = _hubProtocolResolver.GetProtocol(protocol, new string[] { protocol });
+            var proto = _hubProtocolResolver.GetProtocol(message.Protocol, new string[] { message.Protocol });
             if (proto == null)
             {
-                throw new InvalidOperationException($"Not supported protcol {protocol} by server");
+                throw new InvalidOperationException($"Not supported protcol {message.Protocol} by server");
             }
 
-            if (proto.TryParseMessage(ref message, this, out var message1))
+            var payload = message.Payload;
+            if (proto.TryParseMessage(ref payload, this, out var completionMessage))
             {
-                return TryCompleteResult(connectionId, message1 as CompletionMessage);
+                return TryCompleteResult(connectionId, completionMessage as CompletionMessage);
             }
             return false;
         }

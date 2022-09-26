@@ -10,9 +10,9 @@ using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal interface IClientResultsManager
+    internal interface ICallerClientResultsManager
     {
-        string GetNewInvocationId(string connectionId);
+        string GenerateInvocationId(string connectionId);
 
         Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken);
 
@@ -20,14 +20,7 @@ namespace Microsoft.Azure.SignalR
         
         bool TryCompleteResult(string connectionId, CompletionMessage message);
 
-        /// <summary>
-        /// Try complete from <paramref name="message"/> which is serialized from a <see cref="CompletionMessage"/> in <paramref name="protocol"/>
-        /// </summary>
-        /// <param name="connectionId"></param>
-        /// <param name="protocol">Serialization protocol of <paramref name="message"/></param>
-        /// <param name="message">the seriazliation result of a <see cref="CompletionMessage"/></param>
-        /// <returns></returns>
-        bool TryCompleteResult(string connectionId, string protocol, ReadOnlySequence<byte> message);
+        public bool TryCompleteResult(string connectionId, ClientCompletionMessage message);
 
         bool TryGetInvocationReturnType(string invocationId, out Type type);
 

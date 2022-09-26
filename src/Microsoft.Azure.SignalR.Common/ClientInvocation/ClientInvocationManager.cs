@@ -7,18 +7,13 @@ namespace Microsoft.Azure.SignalR
 {
     internal class ClientInvocationManager
     {
-        public IClientResultsManager Caller => _clientResultsManager;
-        public IRoutedClientResultsManager Router => _routedClientResultsManager;
-
-        private readonly IClientResultsManager _clientResultsManager;
-        private readonly IRoutedClientResultsManager _routedClientResultsManager;
-
-        public IHubProtocolResolver HubProtocolResolver { get; }
+        public ICallerClientResultsManager Caller { get;  }
+        public IRoutedClientResultsManager Router { get; }
 
         public ClientInvocationManager(IHubProtocolResolver hubProtocolResolver)
         {
-            _clientResultsManager = new ClientResultsManager(hubProtocolResolver);
-            _routedClientResultsManager = new RoutedClientResultsManager();
+            Caller = new CallerClientResultsManager(hubProtocolResolver);
+            Router = new RoutedClientResultsManager();
         }
     }
 }
