@@ -19,10 +19,7 @@ namespace Microsoft.Azure.SignalR
 
         public void AddRoutedInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, CancellationToken cancellationToken)
         {
-            var cts = new CancellationTokenSource();
-
-            cancellationToken.Register(() => cts.Cancel());
-            cts.Token.Register(() => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
+            cancellationToken.Register(() => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
 
             var result = _routedInvocations.TryAdd(invocationId, new RoutedInvocation(connectionId, callerServerId));
             Debug.Assert(result);
@@ -78,10 +75,7 @@ namespace Microsoft.Azure.SignalR
         {
             foreach (var invocationId in _serviceMappingMessages[instanceId])
             {
-                if (_routedInvocations.TryRemove(invocationId, out var item))
-                {
-                    var message = new CompletionMessage(invocationId, $"Connection '{item.ConnectionId}' disconnected.", null, false);
-                }
+                _routedInvocations.TryRemove(invocationId, out _);
             }
         }
     }
