@@ -62,11 +62,6 @@ namespace Microsoft.Azure.SignalR
             return tcs.Task;
         }
 
-        public bool TryRemoveInvocation(string invocationId, out PendingInvocation invocation)
-        {
-            return _pendingInvocations.TryRemove(invocationId, out invocation);
-        }
-
         public void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage)
         {
             if (_serviceMappingMessages.ContainsKey(serviceMappingMessage.InstanceId))
@@ -77,6 +72,11 @@ namespace Microsoft.Azure.SignalR
             {
                 _serviceMappingMessages[serviceMappingMessage.InstanceId] = new List<ServiceMappingMessage> { serviceMappingMessage };
             }
+        }
+
+        public bool TryRemoveInvocation(string invocationId, out PendingInvocation invocation)
+        {
+            return _pendingInvocations.TryRemove(invocationId, out invocation);
         }
 
         public void CleanupInvocations(string instanceId)

@@ -77,5 +77,10 @@ namespace Microsoft.Azure.SignalR
             type = null;
             return false;
         }
+
+        public void CleanupInvocations(string instanceId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
