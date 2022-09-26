@@ -29,17 +29,11 @@ namespace Microsoft.Azure.SignalR
             _setCanceledAction = setCanceldAction;
         }
 
-        // Needs to be called after adding the completion to the dictionary in order to avoid synchronous completions of the token registration
-        // not canceling when the dictionary hasn't been updated yet.
         public void RegisterCancellation()
         {
             if (_token.CanBeCanceled)
             {
-#if NETCOREAPP3_0_OR_GREATER
-                _tokenRegistration = _token.UnsafeRegister(static o =>
-#else
                 _tokenRegistration = _token.Register(static o =>
-#endif
                 {
                     var tcs = (TaskCompletionSourceWithCancellation<T>)o!;
                     tcs.SetCanceled();
@@ -47,8 +41,6 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        // TODO: RedisHubLifetimeManager will want to notify the other server (if there is one) about the cancellation
-        // so it can clean up state and potentially forward that info to the connection
         public new void SetCanceled() => _setCanceledAction();
 
         public new void SetResult(T result)

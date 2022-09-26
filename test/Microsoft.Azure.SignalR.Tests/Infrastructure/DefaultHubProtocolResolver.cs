@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Microsoft.AspNetCore.SignalR.Internal
 {
     // copied from https://github.com/aspnet/AspNetCore/blob/release/3.0-preview7/src/SignalR/server/Core/src/Internal/DefaultHubProtocolResolver.cs
-    public class DefaultHubProtocolResolver : IHubProtocolResolver
+    internal class DefaultHubProtocolResolver : IHubProtocolResolver
     {
         private readonly ILogger<DefaultHubProtocolResolver> _logger;
         private readonly List<IHubProtocol> _hubProtocols;

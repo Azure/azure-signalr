@@ -11,6 +11,7 @@ using System.Collections.Concurrent;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR;
+using System.Collections;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -61,10 +62,15 @@ namespace Microsoft.Azure.SignalR
 
         public void AddServiceMappingMessage(ServiceMappingMessage serviceMappingMessage)
         {
-            _serviceMappingMessages.TryGetValue(serviceMappingMessage.InstanceId, out var oldValue);
-            var newValue = oldValue ?? new List<string> { };
-            newValue.Add(serviceMappingMessage.InvocationId);
-            _serviceMappingMessages.TryUpdate(serviceMappingMessage.InstanceId, newValue, oldValue);
+            var instanceId = serviceMappingMessage.InstanceId;
+
+            lock (_serviceMappingMessages)
+            {
+                _serviceMappingMessages.AddOrUpdate(
+                    instanceId,
+                    new List<string>() { },
+                    (key, valueList) => { valueList.Add(serviceMappingMessage.InvocationId); return valueList; });
+            }
         }
 
         public void CleanupInvocations(string instanceId)
@@ -73,7 +79,7 @@ namespace Microsoft.Azure.SignalR
             {
                 if (_pendingInvocations.TryRemove(invocationId, out var item))
                 {
-                    var message = new CompletionMessage(invocationId, $"Connection '{item.ConnectionId}' disconnected.", null, false);
+                    var message = new CompletionMessage(invocationId, $"Connection '{item.ConnectionId}' is disconnected.", null, false);
                     item.Complete(item.Tcs, message);
                 }
             }
@@ -107,16 +113,23 @@ namespace Microsoft.Azure.SignalR
 
         public bool TryCompleteResult(string connectionId, ClientCompletionMessage message)
         {
-            var proto = _hubProtocolResolver.GetProtocol(message.Protocol, new string[] { message.Protocol });
-            if (proto == null)
+            var protocol = _hubProtocolResolver.GetProtocol(message.Protocol, new string[] { message.Protocol });
+            if (protocol == null)
             {
-                throw new InvalidOperationException($"Not supported protcol {message.Protocol} by server");
+                throw new InvalidOperationException($"Not supported protocol {message.Protocol} by server");
             }
 
             var payload = message.Payload;
-            if (proto.TryParseMessage(ref payload, this, out var completionMessage))
+            if (protocol.TryParseMessage(ref payload, this, out var completionMessage))
             {
-                return TryCompleteResult(connectionId, completionMessage as CompletionMessage);
+                if (completionMessage.GetType() == typeof(CompletionMessage))
+                {
+                    return TryCompleteResult(connectionId, completionMessage as CompletionMessage);
+                }
+                else
+                {
+                    throw new InvalidOperationException("The payload of ClientCompletionMessage cannot be parsed into CompletionMessage correctly.");
+                }
             }
             return false;
         }

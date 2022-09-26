@@ -47,9 +47,9 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public bool TryGetRoutedInvocation(string invocationId, out RoutedInvocation routedInvocation)
+        public bool CheckRoutedInvocation(string invocationId)
         {
-            return _routedInvocations.TryGetValue(invocationId, out routedInvocation);
+            return _routedInvocations.TryGetValue(invocationId, out _);
         }
 
         public bool TryGetInvocationReturnType(string invocationId, out Type type)
@@ -65,10 +65,13 @@ namespace Microsoft.Azure.SignalR
 
         public void AddServiceMappingMessage(string instanceId, string invocationId)
         {
-            _serviceMappingMessages.TryGetValue(instanceId, out var oldValue);
-            var newValue = oldValue ?? new List<string> { };
-            newValue.Add(invocationId);
-            _serviceMappingMessages.TryUpdate(instanceId, newValue, oldValue);
+            lock (_serviceMappingMessages)
+            {
+                _serviceMappingMessages.AddOrUpdate(
+                    instanceId,
+                    new List<string>() { },
+                    (key, valueList) => { valueList.Add(invocationId); return valueList; });
+            }
         }
 
         public void CleanupInvocations(string instanceId)

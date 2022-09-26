@@ -14,9 +14,9 @@ namespace Microsoft.Azure.SignalR
 
         bool TryCompleteResult(string connectionId, CompletionMessage message);
 
-        bool TryGetRoutedInvocation(string invocationId, out RoutedInvocation routedInvocation);
-
         bool TryGetInvocationReturnType(string invocationId, out Type type);
+
+        bool CheckRoutedInvocation(string invocationId);
 
         void CleanupInvocations(string instanceId);
     }
