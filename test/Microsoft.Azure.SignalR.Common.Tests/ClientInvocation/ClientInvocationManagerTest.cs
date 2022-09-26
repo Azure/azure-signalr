@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #if NET7_0_OR_GREATER
 using System;
+using System.Dynamic;
 using System.Threading;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Internal;
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var connectionId = "Connection-0";
             var invocationResult = "invocation-success-result";
             ClientInvocationManager clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
-            var invocationId = clientInvocationManager.Caller.GetNewInvocationId(connectionId, serverGUID);
+            var invocationId = clientInvocationManager.Caller.GetNewInvocationId(connectionId);
 
             CancellationToken cancellationToken = new CancellationToken();
             var task = clientInvocationManager.Caller.AddInvocation<string>(connectionId, invocationId, cancellationToken);
@@ -67,22 +68,21 @@ namespace Microsoft.Azure.SignalR.Common.Tests
                 new ClientInvocationManager(HubProtocolResolver),
                 new ClientInvocationManager(HubProtocolResolver),
             };
-            var invocationId = ciManagers[0].Caller.GetNewInvocationId(connectionsId[0], serversGUID[0]);
+            var invocationId = ciManagers[0].Caller.GetNewInvocationId(connectionsId[0]);
             var completionMessage = new CompletionMessage(invocationId, null, invocationResult, true);
 
             CancellationToken cancellationToken = new CancellationToken();
             var task = ciManagers[0].Caller.AddInvocation<string>(connectionsId[0], invocationId, cancellationToken);
-            ciManagers[0].Caller.AddServiceMappingMessage(invocationId, new ServiceMappingMessage(invocationId, connectionsId[1], instancesId[1]));
-            var task2 = ciManagers[1].Router.AddRoutedInvocation(connectionsId[1], invocationId, callerServerId, new CancellationToken());
+            ciManagers[0].Caller.AddServiceMappingMessage(new ServiceMappingMessage(invocationId, connectionsId[1], instancesId[1]));
+            ciManagers[1].Router.AddRoutedInvocation(connectionsId[1], invocationId, callerServerId, instancesId[1], new CancellationToken());
 
             var ret = ciManagers[1].Router.TryCompleteResult(connectionsId[1], completionMessage);
             Assert.True(ret);
-            await task2;
 
             var payload = GetBytes(protocol, completionMessage);
             var clientCompletionMessage = new ClientCompletionMessage(invocationId, connectionsId[0], callerServerId, protocol, payload);
 
-            ret = ciManagers[0].Caller.TryCompleteResultFromSerializedMessage(clientCompletionMessage.ConnectionId, clientCompletionMessage.Protocol, clientCompletionMessage.Payload);
+            ret = ciManagers[0].Caller.TryCompleteResult(clientCompletionMessage.ConnectionId, clientCompletionMessage.Protocol, clientCompletionMessage.Payload);
             Assert.True(ret);
 
             await task;

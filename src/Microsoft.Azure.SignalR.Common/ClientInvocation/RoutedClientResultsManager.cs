@@ -7,37 +7,27 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.AspNetCore.SignalR.Protocol;
+using System.Collections.Generic;
+using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
     internal class RoutedClientResultsManager: IRoutedClientResultsManager
     {
         private readonly ConcurrentDictionary<string,  RoutedInvocation> _routedInvocations = new();
+        private readonly ConcurrentDictionary<string, List<string>> _serviceMappingMessages = new();
 
-        public Task<object> AddRoutedInvocation(string connectionId, string invocationId, string callerServerId, CancellationToken cancellationToken)
+        public void AddRoutedInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, CancellationToken cancellationToken)
         {
-            var tcs = new TaskCompletionSourceWithCancellation<object>(
-                cancellationToken,
-                () => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
-            
-            var result = _routedInvocations.TryAdd(invocationId, new RoutedInvocation(connectionId, callerServerId, tcs, static (state, completionMessage) =>
-            {
-                var tcs = (TaskCompletionSource<object>)state;
-                if (completionMessage.HasResult)
-                {
-                    tcs.SetResult(completionMessage.Result);
-                }
-                else
-                {
-                    tcs.SetException(new Exception(completionMessage.Error));
-                }
-            }
-            ));
+            var cts = new CancellationTokenSource();
+
+            cancellationToken.Register(() => cts.Cancel());
+            cts.Token.Register(() => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
+
+            var result = _routedInvocations.TryAdd(invocationId, new RoutedInvocation(connectionId, callerServerId));
             Debug.Assert(result);
 
-            tcs.RegisterCancellation();
-
-            return tcs.Task;
+            AddServiceMappingMessage(instanceId, invocationId);
         }
 
         public bool TryCompleteResult(string connectionId, CompletionMessage message)
@@ -48,12 +38,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     throw new InvalidOperationException($"Connection ID '{connectionId}' is not valid for invocation ID '{message.InvocationId}'.");
                 }
-                if (_routedInvocations.TryRemove(message.InvocationId!, out _))
-                {
-                    item.Complete(item.Tcs, message);
-                    return true;
-                }
-                return false;
+                return _routedInvocations.TryRemove(message.InvocationId!, out _);
             }
             else
             {
@@ -69,7 +54,7 @@ namespace Microsoft.Azure.SignalR
 
         public bool TryGetInvocationReturnType(string invocationId, out Type type)
         {
-            if (_routedInvocations.TryGetValue(invocationId, out var item))
+            if (_routedInvocations.TryGetValue(invocationId, out _))
             {
                 type = typeof(object);
                 return true;
@@ -78,9 +63,27 @@ namespace Microsoft.Azure.SignalR
             return false;
         }
 
+        public void AddServiceMappingMessage(string instanceId, string invocationId)
+        {
+            _serviceMappingMessages.TryGetValue(instanceId, out var oldValue);
+            var newValue = oldValue ?? new List<string> { };
+            newValue.Add(invocationId);
+            _serviceMappingMessages.TryUpdate(instanceId, newValue, oldValue);
+        }
+
         public void CleanupInvocations(string instanceId)
         {
-            throw new NotImplementedException();
+            foreach (var invocationId in _serviceMappingMessages[instanceId])
+            {
+                if (_routedInvocations.TryRemove(invocationId, out var item))
+                {
+                    var message = new CompletionMessage(invocationId, $"Connection '{item.ConnectionId}' disconnected.", null, false);
+                }
+            }
         }
+    }
+
+    internal record RoutedInvocation(string ConnectionId, string CallerServerId)
+    {
     }
 }

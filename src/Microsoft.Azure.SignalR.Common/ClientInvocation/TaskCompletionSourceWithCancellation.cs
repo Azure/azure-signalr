@@ -18,7 +18,7 @@ namespace Microsoft.Azure.SignalR
     // Also makes it easier to keep track of the CancellationTokenRegistration for disposal
     internal sealed class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
     {
-        private readonly Action _setCanceldAction;
+        private readonly Action _setCanceledAction;
         private readonly CancellationToken _token;
         private CancellationTokenRegistration _tokenRegistration;
 
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.SignalR
             : base(TaskCreationOptions.RunContinuationsAsynchronously)
         {
             _token = cancellationToken;
-            _setCanceldAction = setCanceldAction;
+            _setCanceledAction = setCanceldAction;
         }
 
         // Needs to be called after adding the completion to the dictionary in order to avoid synchronous completions of the token registration
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.SignalR
 
         // TODO: RedisHubLifetimeManager will want to notify the other server (if there is one) about the cancellation
         // so it can clean up state and potentially forward that info to the connection
-        public new void SetCanceled() => _setCanceldAction();
+        public new void SetCanceled() => _setCanceledAction();
 
         public new void SetResult(T result)
         {

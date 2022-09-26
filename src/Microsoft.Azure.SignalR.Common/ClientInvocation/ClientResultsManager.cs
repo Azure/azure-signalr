@@ -17,12 +17,9 @@ namespace Microsoft.Azure.SignalR
     internal class ClientResultsManager : IClientResultsManager, IInvocationBinder
     {
         private readonly ConcurrentDictionary<string, PendingInvocation> _pendingInvocations = new();
-        private readonly ConcurrentDictionary<string, List<ServiceMappingMessage>> _serviceMappingMessages = new();
-#if NETCOREAPP5_0_OR_GREATER
-        private ulong _lastInvocationId = 0;
-#else
-        private long _lastInvocationId = 0;     // Interlocked.Increment(value) does not support ulong when .NET version < 5.0
-#endif
+        private readonly ConcurrentDictionary<string, List<string>> _serviceMappingMessages = new();
+        private readonly string _serverGUID = Guid.NewGuid().ToString();
+        private long _lastInvocationId = 0;
 
         private readonly IHubProtocolResolver _hubProtocolResolver;
 
@@ -31,9 +28,9 @@ namespace Microsoft.Azure.SignalR
             _hubProtocolResolver = hubProtocolResolver;
         }
 
-        public string GetNewInvocationId(string connectionId, string serverGUID)
+        public string GetNewInvocationId(string connectionId)
         {
-            return $"{connectionId}-{serverGUID}-{Interlocked.Increment(ref _lastInvocationId)}";
+            return $"{connectionId}-{_serverGUID}-{Interlocked.Increment(ref _lastInvocationId)}";
         }
 
         public Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken)
@@ -62,30 +59,21 @@ namespace Microsoft.Azure.SignalR
             return tcs.Task;
         }
 
-        public void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage)
+        public void AddServiceMappingMessage(ServiceMappingMessage serviceMappingMessage)
         {
-            if (_serviceMappingMessages.ContainsKey(serviceMappingMessage.InstanceId))
-            {
-                _serviceMappingMessages[serviceMappingMessage.InstanceId].Add(serviceMappingMessage);
-            }
-            else
-            {
-                _serviceMappingMessages[serviceMappingMessage.InstanceId] = new List<ServiceMappingMessage> { serviceMappingMessage };
-            }
-        }
-
-        public bool TryRemoveInvocation(string invocationId, out PendingInvocation invocation)
-        {
-            return _pendingInvocations.TryRemove(invocationId, out invocation);
+            _serviceMappingMessages.TryGetValue(serviceMappingMessage.InstanceId, out var oldValue);
+            var newValue = oldValue ?? new List<string> { };
+            newValue.Add(serviceMappingMessage.InvocationId);
+            _serviceMappingMessages.TryUpdate(serviceMappingMessage.InstanceId, newValue, oldValue);
         }
 
         public void CleanupInvocations(string instanceId)
         {
-            foreach (var serviceMappingMessage in _serviceMappingMessages[instanceId])
+            foreach (var invocationId in _serviceMappingMessages[instanceId])
             {
-                if (_pendingInvocations.TryRemove(serviceMappingMessage.InvocationId, out var item))
+                if (_pendingInvocations.TryRemove(invocationId, out var item))
                 {
-                    var message = new CompletionMessage(serviceMappingMessage.InvocationId, $"Connection '{serviceMappingMessage.ConnectionId}' disconnected.", null, false);
+                    var message = new CompletionMessage(invocationId, $"Connection '{item.ConnectionId}' disconnected.", null, false);
                     item.Complete(item.Tcs, message);
                 }
             }
@@ -117,7 +105,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public bool TryCompleteResultFromSerializedMessage(string connectionId, string protocol, ReadOnlySequence<byte> message)
+        public bool TryCompleteResult(string connectionId, string protocol, ReadOnlySequence<byte> message)
         {
             var proto = _hubProtocolResolver.GetProtocol(protocol, new string[] { protocol });
             if (proto == null)
@@ -164,5 +152,9 @@ namespace Microsoft.Azure.SignalR
         {
             throw new NotImplementedException();
         }
+    }
+
+    internal record PendingInvocation(Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete)
+    {
     }
 }

@@ -12,14 +12,12 @@ namespace Microsoft.Azure.SignalR
 {
     internal interface IClientResultsManager
     {
-        string GetNewInvocationId(string connectionId, string serverGUID);
+        string GetNewInvocationId(string connectionId);
 
         Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken);
 
-        void AddServiceMappingMessage(string invocationId, ServiceMappingMessage serviceMappingMessage);
-
-        bool TryRemoveInvocation(string invocationId, out PendingInvocation invocation);
-
+        void AddServiceMappingMessage(ServiceMappingMessage serviceMappingMessage);
+        
         bool TryCompleteResult(string connectionId, CompletionMessage message);
 
         /// <summary>
@@ -29,14 +27,10 @@ namespace Microsoft.Azure.SignalR
         /// <param name="protocol">Serialization protocol of <paramref name="message"/></param>
         /// <param name="message">the seriazliation result of a <see cref="CompletionMessage"/></param>
         /// <returns></returns>
-        bool TryCompleteResultFromSerializedMessage(string connectionId, string protocol, ReadOnlySequence<byte> message);
+        bool TryCompleteResult(string connectionId, string protocol, ReadOnlySequence<byte> message);
 
         bool TryGetInvocationReturnType(string invocationId, out Type type);
 
         void CleanupInvocations(string instanceId);
-    }
-
-    internal record PendingInvocation(Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete)
-    {
     }
 }
