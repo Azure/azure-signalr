@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if NET7_0_OR_GREATER
 using System;
 using System.Buffers;
 using System.Threading;
@@ -35,6 +34,11 @@ namespace Microsoft.Azure.SignalR
             throw new NotImplementedException();
         }
 
+        public bool TryRemoveInvocation(string invocationId, out PendingInvocation invocation)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool TryCompleteResult(string connectionId, CompletionMessage message)
         {
             throw new NotImplementedException();
@@ -45,12 +49,7 @@ namespace Microsoft.Azure.SignalR
             throw new NotImplementedException();
         }
 
-        public bool TryRemoveInvocation(string invocationId, out PendingInvocation invocation)
-        {
-            throw new NotImplementedException();
-        }
-
-        // Implemented for interface IInvocationBinder
+        // Implemented for interface `IInvocationBinder`
         public Type GetReturnType(string invocationId)
         {
             throw new NotImplementedException();
@@ -67,25 +66,10 @@ namespace Microsoft.Azure.SignalR
         }
 
         // Unused, here to honor the IInvocationBinder interface but should never be called
-        public IReadOnlyList<Type> GetParameterTypes(string methodName)
-        {
-            throw new NotImplementedException();
-        }
+        public IReadOnlyList<Type> GetParameterTypes(string methodName) => throw new NotImplementedException();
 
         // Unused, here to honor the IInvocationBinder interface but should never be called
-        public Type GetStreamItemType(string streamId)
-        {
-            throw new NotImplementedException();
-        }
+        public Type GetStreamItemType(string streamId) => throw new NotImplementedException();
 #pragma warning restore IDE0060 // Remove unused parameter
     }
 }
-#else
-namespace Microsoft.Azure.SignalR
-{ 
-    internal class ClientResultsManager: IClientResultsManager
-    {
-
-    }
-}
-#endif

@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if NET7_0_OR_GREATER
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,14 +29,10 @@ namespace Microsoft.Azure.SignalR
         {
             throw new NotImplementedException();
         }
-    }
-}
-#else
-namespace Microsoft.Azure.SignalR
-{ 
-    internal class RoutedClientResultsManager: IRoutedClientResultsManager
-    {
 
+        public void CleanupInvocations(string instanceId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
-#endif

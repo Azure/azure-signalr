@@ -339,7 +339,7 @@ namespace Microsoft.Azure.SignalR
                 if (_clientInvocationManager.Router.TryGetRoutedInvocation(result.InvocationId, out var _))
                 {
                     var protocol = clientConnectionContext.Protocol;
-                    var message = AppendMessageTracingId(new ClientCompletionMessage(result.InvocationId, connectionId, _callerId, protocol, SerializeCompletionMessage(result)[protocol]));
+                    var message = AppendMessageTracingId(new ClientCompletionMessage(result.InvocationId, connectionId, _callerId, protocol, SerializeCompletionMessage(result, protocol)));
                     await WriteAsync(message);
 
                     _clientInvocationManager.Router.TryCompleteResult(connectionId, result);
@@ -404,16 +404,8 @@ namespace Microsoft.Azure.SignalR
         protected ReadOnlyMemory<byte> SerializeProtocol(string protocol, string method, object[] args) =>
             _messageSerializer.SerializeMessage(protocol, new InvocationMessage(method, args));
 
-        protected IDictionary<string, ReadOnlyMemory<byte>> SerializeCompletionMessage(CompletionMessage message)
-        {
-            var payloads = new Dictionary<string, ReadOnlyMemory<byte>>();
-            var serializedHubMessages = _messageSerializer.SerializeMessage(message);
-            foreach (var serializedMessage in serializedHubMessages)
-            {
-                payloads.Add(serializedMessage.ProtocolName, serializedMessage.Serialized);
-            }
-            return payloads;
-        }
+        protected ReadOnlyMemory<byte> SerializeCompletionMessage(CompletionMessage message, string protocol) =>
+            _messageSerializer.SerializeMessage(protocol, message);
 
         protected virtual T AppendMessageTracingId<T>(T message) where T : ServiceMessage, IMessageWithTracingId
         {
