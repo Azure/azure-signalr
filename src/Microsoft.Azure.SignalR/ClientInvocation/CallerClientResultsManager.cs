@@ -62,25 +62,23 @@ namespace Microsoft.Azure.SignalR
 
         public void AddServiceMappingMessage(ServiceMappingMessage serviceMappingMessage)
         {
-            var instanceId = serviceMappingMessage.InstanceId;
-
-            lock (_serviceMappingMessages)
-            {
-                _serviceMappingMessages.AddOrUpdate(
-                    instanceId,
-                    new List<string>() { },
-                    (key, valueList) => { valueList.Add(serviceMappingMessage.InvocationId); return valueList; });
-            }
+            _serviceMappingMessages.AddOrUpdate(
+                serviceMappingMessage.InstanceId,
+                new List<string>() { serviceMappingMessage.InvocationId },
+                (key, valueList) => { valueList.Add(serviceMappingMessage.InvocationId); return valueList; });
         }
 
         public void CleanupInvocations(string instanceId)
         {
-            foreach (var invocationId in _serviceMappingMessages[instanceId])
+            if (_serviceMappingMessages.ContainsKey(instanceId))
             {
-                if (_pendingInvocations.TryRemove(invocationId, out var item))
+                foreach (var invocationId in _serviceMappingMessages[instanceId])
                 {
-                    var message = new CompletionMessage(invocationId, $"Connection '{item.ConnectionId}' is disconnected.", null, false);
-                    item.Complete(item.Tcs, message);
+                    if (_pendingInvocations.TryRemove(invocationId, out var item))
+                    {
+                        var message = new CompletionMessage(invocationId, $"Connection '{item.ConnectionId}' is disconnected.", null, false);
+                        item.Complete(item.Tcs, message);
+                    }
                 }
             }
         }

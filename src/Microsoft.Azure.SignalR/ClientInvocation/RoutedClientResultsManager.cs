@@ -15,7 +15,7 @@ namespace Microsoft.Azure.SignalR
     internal class RoutedClientResultsManager: IRoutedClientResultsManager
     {
         private readonly ConcurrentDictionary<string,  RoutedInvocation> _routedInvocations = new();
-        private readonly ConcurrentDictionary<string, List<string>> _serviceMappingMessages = new();
+        private readonly ConcurrentDictionary<string, List<string>> _serviceMapping = new();
 
         public void AddRoutedInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, CancellationToken cancellationToken)
         {
@@ -62,20 +62,20 @@ namespace Microsoft.Azure.SignalR
 
         public void AddServiceMappingMessage(string instanceId, string invocationId)
         {
-            lock (_serviceMappingMessages)
-            {
-                _serviceMappingMessages.AddOrUpdate(
-                    instanceId,
-                    new List<string>() { },
-                    (key, valueList) => { valueList.Add(invocationId); return valueList; });
-            }
+            _serviceMapping.AddOrUpdate(
+                instanceId,
+                new List<string>() { invocationId },
+                (key, valueList) => { valueList.Add(invocationId); return valueList; });
         }
 
         public void CleanupInvocations(string instanceId)
         {
-            foreach (var invocationId in _serviceMappingMessages[instanceId])
+            if (_serviceMapping.ContainsKey(instanceId))
             {
-                _routedInvocations.TryRemove(invocationId, out _);
+                foreach (var invocationId in _serviceMapping[instanceId])
+                {
+                    _routedInvocations.TryRemove(invocationId, out _);
+                }
             }
         }
     }
