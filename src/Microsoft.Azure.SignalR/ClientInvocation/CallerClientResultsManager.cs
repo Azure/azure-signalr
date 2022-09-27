@@ -2,20 +2,18 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Buffers;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR;
-using System.Collections;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class CallerClientResultsManager : ICallerClientResultsManager, IInvocationBinder
+    internal sealed class CallerClientResultsManager : ICallerClientResultsManager, IInvocationBinder
     {
         private readonly ConcurrentDictionary<string, PendingInvocation> _pendingInvocations = new();
         private readonly ConcurrentDictionary<string, List<string>> _serviceMappingMessages = new();
@@ -70,9 +68,9 @@ namespace Microsoft.Azure.SignalR
 
         public void CleanupInvocations(string instanceId)
         {
-            if (_serviceMappingMessages.ContainsKey(instanceId))
+            if (_serviceMappingMessages.TryRemove(instanceId, out var invocationsId))
             {
-                foreach (var invocationId in _serviceMappingMessages[instanceId])
+                foreach (var invocationId in invocationsId)
                 {
                     if (_pendingInvocations.TryRemove(invocationId, out var item))
                     {
@@ -118,11 +116,11 @@ namespace Microsoft.Azure.SignalR
             }
 
             var payload = message.Payload;
-            if (protocol.TryParseMessage(ref payload, this, out var completionMessage))
+            if (protocol.TryParseMessage(ref payload, this, out var hubMessage))
             {
-                if (completionMessage.GetType() == typeof(CompletionMessage))
+                if (hubMessage is CompletionMessage completionMessage)
                 {
-                    return TryCompleteResult(connectionId, completionMessage as CompletionMessage);
+                    return TryCompleteResult(connectionId, completionMessage);
                 }
                 else
                 {
@@ -166,7 +164,7 @@ namespace Microsoft.Azure.SignalR
         }
     }
 
-    internal record PendingInvocation(Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete)
+    internal record struct PendingInvocation(Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete)
     {
     }
 }

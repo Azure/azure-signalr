@@ -74,7 +74,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             CancellationToken cancellationToken = new CancellationToken();
             var task = ciManagers[0].Caller.AddInvocation<string>(connectionsId[0], invocationId, cancellationToken);
             ciManagers[0].Caller.AddServiceMappingMessage(new ServiceMappingMessage(invocationId, connectionsId[1], instancesId[1]));
-            ciManagers[1].Router.AddRoutedInvocation(connectionsId[1], invocationId, callerServerId, instancesId[1], new CancellationToken());
+            ciManagers[1].Router.AddInvocation(connectionsId[1], invocationId, callerServerId, instancesId[1], new CancellationToken());
 
             var ret = ciManagers[1].Router.TryCompleteResult(connectionsId[1], completionMessage);
             Assert.True(ret);

@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR
         
         bool TryCompleteResult(string connectionId, CompletionMessage message);
 
-        public bool TryCompleteResult(string connectionId, ClientCompletionMessage message);
+        bool TryCompleteResult(string connectionId, ClientCompletionMessage message);
 
         bool TryGetInvocationReturnType(string invocationId, out Type type);
 

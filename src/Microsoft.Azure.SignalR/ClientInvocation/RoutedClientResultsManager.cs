@@ -2,22 +2,20 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Threading.Tasks;
 using System.Threading;
-using Microsoft.AspNetCore.SignalR.Protocol;
+using System.Diagnostics;
 using System.Collections.Generic;
-using Microsoft.Azure.SignalR.Protocol;
+using System.Collections.Concurrent;
+using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal class RoutedClientResultsManager: IRoutedClientResultsManager
+    internal sealed class RoutedClientResultsManager: IRoutedClientResultsManager
     {
         private readonly ConcurrentDictionary<string,  RoutedInvocation> _routedInvocations = new();
         private readonly ConcurrentDictionary<string, List<string>> _serviceMapping = new();
 
-        public void AddRoutedInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, CancellationToken cancellationToken)
+        public void AddInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, CancellationToken cancellationToken)
         {
             cancellationToken.Register(() => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
 
@@ -44,7 +42,7 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public bool CheckRoutedInvocation(string invocationId)
+        public bool ContainsInvocation(string invocationId)
         {
             return _routedInvocations.TryGetValue(invocationId, out _);
         }
@@ -70,9 +68,9 @@ namespace Microsoft.Azure.SignalR
 
         public void CleanupInvocations(string instanceId)
         {
-            if (_serviceMapping.ContainsKey(instanceId))
+            if (_serviceMapping.TryRemove(instanceId, out var invocationsId))
             {
-                foreach (var invocationId in _serviceMapping[instanceId])
+                foreach (var invocationId in invocationsId)
                 {
                     _routedInvocations.TryRemove(invocationId, out _);
                 }
@@ -80,7 +78,7 @@ namespace Microsoft.Azure.SignalR
         }
     }
 
-    internal record RoutedInvocation(string ConnectionId, string CallerServerId)
+    internal record struct RoutedInvocation(string ConnectionId, string CallerServerId)
     {
     }
 }
