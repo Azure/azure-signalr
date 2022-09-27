@@ -42,6 +42,7 @@ namespace Microsoft.Azure.SignalR.AspNet
             ILoggerFactory loggerFactory,
             IServiceMessageHandler serviceMessageHandler,
             IServiceEventHandler serviceEventHandler,
+            IClientInvocationManager clientInvocationManager = null,
             ServiceConnectionType connectionType = ServiceConnectionType.Default)
             : base(
                   serviceProtocol,
@@ -51,7 +52,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                   serviceMessageHandler,
                   serviceEventHandler,
                   connectionType,
-                  loggerFactory?.CreateLogger<ServiceConnection>())
+                  loggerFactory?.CreateLogger<ServiceConnection>(),
+                  clientInvocationManager)
         {
             _connectionFactory = connectionFactory;
             _clientConnectionManager = clientConnectionManager;

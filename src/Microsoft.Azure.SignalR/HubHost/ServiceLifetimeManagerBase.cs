@@ -24,9 +24,9 @@ namespace Microsoft.Azure.SignalR
         private readonly DefaultHubMessageSerializer _messageSerializer;
         private readonly IServerNameProvider _nameProvider;
         private readonly string _callerId;
-        private readonly string _serverGUID = Guid.NewGuid().ToString();
 
-        private readonly ClientInvocationManager _clientInvocationManager;
+
+        private readonly IClientInvocationManager _clientInvocationManager;
         private readonly IClientConnectionManager _clientConnectionManager;
 
         // TODO: use DependencyInjection for ClientInvocationManager and then sort parameter order 
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.SignalR
             ServiceConnectionContainer = serviceConnectionManager;
             _messageSerializer = new DefaultHubMessageSerializer(protocolResolver, globalHubOptions.Value.SupportedProtocols, hubOptions.Value.SupportedProtocols);
 
-            _nameProvider = nameProvider;
+            _nameProvider = nameProvider ?? throw new ArgumentNullException(nameof(nameProvider));
             _callerId = _nameProvider?.GetName();
 
             _clientInvocationManager = clientInvocationManager;
@@ -303,29 +303,22 @@ namespace Microsoft.Azure.SignalR
             }
             // globally distinct invocationId
             // $"{connectionId}{_callerId}{_clientResults.GetNewInvocation()}";
-            var invocationId = _clientInvocationManager.Caller.GetNewInvocationId(connectionId, _serverGUID);
-            var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, cancellationToken);
+            var invocationId = _clientInvocationManager.Caller.GenerateInvocationId(connectionId);
+            
             try
             {
                 var message = AppendMessageTracingId(new ClientInvocationMessage(invocationId, connectionId, _callerId, SerializeAllProtocols(methodName, args, invocationId)));
                 await WriteAsync(message);
-            }
-            catch (Exception)
-            {
-                _clientInvocationManager.Caller.TryRemoveInvocation(invocationId, out var _);
-                throw;
-            }
-
-            try
-            {
+                var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, cancellationToken);
                 return await task;
             }
-            catch
+            catch (Exception)
             {
                 throw;
             }
         }
 
+        // Only route server will reach here
         public override async Task SetConnectionResultAsync(string connectionId, CompletionMessage result)
         {
             if (IsInvalidArgument(connectionId))
@@ -336,7 +329,7 @@ namespace Microsoft.Azure.SignalR
             {
                 // Current server is a route server.
                 // In order to inform original Caller server with the completion result, send a ClientCompletionMessage to service and the service will route ClientCompletionMessage to the original Caller server.
-                if (_clientInvocationManager.Router.TryGetRoutedInvocation(result.InvocationId, out var _))
+                if (_clientInvocationManager.Router.CheckRoutedInvocation(result.InvocationId))
                 {
                     var protocol = clientConnectionContext.Protocol;
                     var message = AppendMessageTracingId(new ClientCompletionMessage(result.InvocationId, connectionId, _callerId, protocol, SerializeCompletionMessage(result, protocol)));
@@ -354,7 +347,7 @@ namespace Microsoft.Azure.SignalR
 
         public override bool TryGetReturnType(string invocationId, [NotNullWhen(true)] out Type type)
         {
-            if (_clientInvocationManager.Router.TryGetRoutedInvocation(invocationId, out var _))
+            if (_clientInvocationManager.Router.CheckRoutedInvocation(invocationId))
             {
                 return _clientInvocationManager.Router.TryGetInvocationReturnType(invocationId, out type);
             }

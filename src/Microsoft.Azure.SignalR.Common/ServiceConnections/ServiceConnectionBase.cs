@@ -50,7 +50,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly IServiceEventHandler _serviceEventHandler;
 
-        private readonly ClientInvocationManager _clientInvocationManager;
+        private readonly IClientInvocationManager _clientInvocationManager;
 
         private readonly object _statusLock = new object();
 
@@ -115,8 +115,8 @@ namespace Microsoft.Azure.SignalR
             IServiceEventHandler serviceEventHandler,
             ServiceConnectionType connectionType,
             ILogger logger,
-            GracefulShutdownMode mode = GracefulShutdownMode.Off,
-            ClientInvocationManager clientInvocationManager = null)
+            IClientInvocationManager clientInvocationManager = null,
+            GracefulShutdownMode mode = GracefulShutdownMode.Off)
         {
             ServiceProtocol = serviceProtocol;
             ServerId = serverId;
@@ -306,7 +306,7 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
 #if NET7_0_OR_GREATER
-                _clientInvocationManager?.Caller.CleanupInvocations(instanceId);
+                _clientInvocationManager.Caller.CleanupInvocations(instanceId);
 #endif
                 return CleanupClientConnections(instanceId);
             }
@@ -321,25 +321,25 @@ namespace Microsoft.Azure.SignalR
 #if NET7_0_OR_GREATER
         private Task OnClientInvocationAsync(ClientInvocationMessage message)
         {
-            _clientInvocationManager.Router.AddRoutedInvocation(message.ConnectionId, message.InvocationId, message.CallerServerId, new CancellationToken());
+            _clientInvocationManager.Router.AddRoutedInvocation(message.ConnectionId, message.InvocationId, message.CallerServerId, "instanceId", default);
             return Task.CompletedTask;
         }
 
         private Task OnServiceMappingAsync(ServiceMappingMessage message)
         {
-            _clientInvocationManager.Caller.AddServiceMappingMessage(message.InstanceId, message);
+            _clientInvocationManager.Caller.AddServiceMappingMessage(message);
             return Task.CompletedTask;
         }
 
         private Task OnClientCompletionAsync(ClientCompletionMessage clientCompletionMessage)
         {
-            _clientInvocationManager.Caller.TryCompleteResultFromSerializedMessage
-(clientCompletionMessage.ConnectionId, clientCompletionMessage.Protocol, clientCompletionMessage.Payload);
+            _clientInvocationManager.Caller.TryCompleteResult(clientCompletionMessage.ConnectionId, clientCompletionMessage);
             return Task.CompletedTask;
         }
 
         private Task OnErrorCompletionAsync(ErrorCompletionMessage errorCompletionMessage)
         {
+            // TODO: add behaviours for ErrorCompletionMessage
             return Task.CompletedTask;
         }
 #endif
