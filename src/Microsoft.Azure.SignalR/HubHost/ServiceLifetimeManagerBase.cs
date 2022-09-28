@@ -309,8 +309,12 @@ namespace Microsoft.Azure.SignalR
             {
                 var message = AppendMessageTracingId(new ClientInvocationMessage(invocationId, connectionId, _callerId, SerializeAllProtocols(methodName, args, invocationId)));
                 await WriteAsync(message);
-                var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, cancellationToken);
-                return await task;
+                if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var clientConnectionContext))
+                {
+                    var instanceId = clientConnectionContext.InstanceId;
+                    var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, cancellationToken);
+                    return await task;
+                }
             }
             catch (Exception)
             {
