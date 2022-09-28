@@ -32,7 +32,7 @@ namespace Microsoft.Azure.SignalR
             return $"{connectionId}-{_serverGUID}-{Interlocked.Increment(ref _lastInvocationId)}";
         }
 
-        public Task<T> AddInvocation<T>(string connectionId, string invocationId, CancellationToken cancellationToken)
+        public Task<T> AddInvocation<T>(string connectionId, string invocationId, string instanceId, CancellationToken cancellationToken)
         {
             var tcs = new TaskCompletionSourceWithCancellation<T>(
                 cancellationToken,
@@ -55,6 +55,13 @@ namespace Microsoft.Azure.SignalR
 
             tcs.RegisterCancellation();
 
+            // When the caller server is also the client router, Azure SignalR service won't send the ServiceMappingMessage to server.
+            // To handle this condition, CallerClientResultsManager should record this mapping information itself without receiving a ServiceMappingMessage from service.
+            if (instanceId != null)
+            {
+                AddServiceMappingMessage(new ServiceMappingMessage(connectionId, invocationId, instanceId));
+            }
+
             return tcs.Task;
         }
 
@@ -68,9 +75,9 @@ namespace Microsoft.Azure.SignalR
 
         public void CleanupInvocations(string instanceId)
         {
-            if (_serviceMappingMessages.TryRemove(instanceId, out var invocationsId))
+            if (_serviceMappingMessages.TryRemove(instanceId, out var invocationIds))
             {
-                foreach (var invocationId in invocationsId)
+                foreach (var invocationId in invocationIds)
                 {
                     if (_pendingInvocations.TryRemove(invocationId, out var item))
                     {
@@ -109,7 +116,7 @@ namespace Microsoft.Azure.SignalR
 
         public bool TryCompleteResult(string connectionId, ClientCompletionMessage message)
         {
-            var protocol = _hubProtocolResolver.GetProtocol(message.Protocol, new string[] { message.Protocol });
+            var protocol = _hubProtocolResolver.GetProtocol(message.Protocol, null);
             if (protocol == null)
             {
                 throw new InvalidOperationException($"Not supported protocol {message.Protocol} by server");

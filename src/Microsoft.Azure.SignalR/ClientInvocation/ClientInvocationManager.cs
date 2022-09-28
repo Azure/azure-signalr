@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal sealed class ClientInvocationManager
+    internal sealed class ClientInvocationManager : IClientInvocationManager
     {
         public ICallerClientResultsManager Caller { get;  }
         public IRoutedClientResultsManager Router { get; }

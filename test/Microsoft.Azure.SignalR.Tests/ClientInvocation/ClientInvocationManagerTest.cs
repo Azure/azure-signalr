@@ -25,17 +25,24 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         );
 
         [Fact]
-        // Server 1 <--> Pod 1 <--> Client 2
+        /*
+         * Client 1 <-->  ---------
+         *                | Pod 1 | <--> Server A
+         * Client 2 <-->  ---------
+         * 
+         * Note: Client 1 and Client 2 are both managed by Server A
+         */
         public async void TestNormalCompleteWithoutRouterServer()
         {
-            var serverGUID = Guid.NewGuid().ToString();
             var connectionId = "Connection-0";
             var invocationResult = "invocation-success-result";
+            var targetClientInstanceId = "Instance 1";
             ClientInvocationManager clientInvocationManager = new ClientInvocationManager(HubProtocolResolver);
             var invocationId = clientInvocationManager.Caller.GenerateInvocationId(connectionId);
 
             CancellationToken cancellationToken = new CancellationToken();
-            var task = clientInvocationManager.Caller.AddInvocation<string>(connectionId, invocationId, cancellationToken);
+            // Server A knows the InstanceId of Client 2, so `instaceId` in `AddInvocation` is `targetClientInstanceId` ("Instance 1")
+            var task = clientInvocationManager.Caller.AddInvocation<string>(connectionId, invocationId, targetClientInstanceId, cancellationToken);
 
             var ret = clientInvocationManager.Caller.TryGetInvocationReturnType(invocationId, out Type T);
 
@@ -53,12 +60,14 @@ namespace Microsoft.Azure.SignalR.Common.Tests
         [Theory]
         [InlineData("json")]
         [InlineData("messagepack")]
-        //                           ---------  <--> Client 2
-        // Server 1 <--> Pod 1 <-->  | Pod 2 |
-        //                           ---------  <--> Server 2       
+        /*                           ---------  <--> Client 2
+         * Server 1 <--> Pod 1 <-->  | Pod 2 |
+         *                           ---------  <--> Server 2       
+         * 
+         * Note: Server 2 manages Client 2.
+         */
         public async void TestNormalCompleteWithRouterServer(string protocol)
         {
-            var serversGUID = new string[] { Guid.NewGuid().ToString(), Guid.NewGuid().ToString() };
             var instancesId = new string[] { "Instance-0", "Instance-1" };
             var callerServerId = "Server-0";
             var connectionsId = new string[] { "Connection-0", "Connection-1" };
@@ -72,9 +81,10 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             var completionMessage = new CompletionMessage(invocationId, null, invocationResult, true);
 
             CancellationToken cancellationToken = new CancellationToken();
-            var task = ciManagers[0].Caller.AddInvocation<string>(connectionsId[0], invocationId, cancellationToken);
+            // Server 1 doesn't know the InstanceId of Client 2, so `instaceId` is null for `AddInvocation`
+            var task = ciManagers[0].Caller.AddInvocation<string>(connectionsId[0], invocationId, null, cancellationToken);
             ciManagers[0].Caller.AddServiceMappingMessage(new ServiceMappingMessage(invocationId, connectionsId[1], instancesId[1]));
-            ciManagers[1].Router.AddInvocation(connectionsId[1], invocationId, callerServerId, instancesId[1], new CancellationToken());
+            ciManagers[1].Router.AddInvocation(connectionsId[1], invocationId, callerServerId, instancesId[1], invocationResult.GetType().Name, new CancellationToken());
 
             var ret = ciManagers[1].Router.TryCompleteResult(connectionsId[1], completionMessage);
             Assert.True(ret);

@@ -15,11 +15,11 @@ namespace Microsoft.Azure.SignalR
         private readonly ConcurrentDictionary<string,  RoutedInvocation> _routedInvocations = new();
         private readonly ConcurrentDictionary<string, List<string>> _serviceMapping = new();
 
-        public void AddInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, CancellationToken cancellationToken)
+        public void AddInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, string type, CancellationToken cancellationToken)
         {
             cancellationToken.Register(() => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
 
-            var result = _routedInvocations.TryAdd(invocationId, new RoutedInvocation(connectionId, callerServerId));
+            var result = _routedInvocations.TryAdd(invocationId, new RoutedInvocation(connectionId, callerServerId, type));
             Debug.Assert(result);
 
             AddServiceMappingMessage(instanceId, invocationId);
@@ -49,13 +49,15 @@ namespace Microsoft.Azure.SignalR
 
         public bool TryGetInvocationReturnType(string invocationId, out Type type)
         {
-            if (_routedInvocations.TryGetValue(invocationId, out _))
+            if (_routedInvocations.TryGetValue(invocationId, out var routedInvocation))
             {
-                type = typeof(object);
-                return true;
+                type = Type.GetType(routedInvocation.type);
             }
-            type = null;
-            return false;
+            else
+            {
+                type = null;
+            }
+            return type != null;
         }
 
         public void AddServiceMappingMessage(string instanceId, string invocationId)
@@ -68,9 +70,9 @@ namespace Microsoft.Azure.SignalR
 
         public void CleanupInvocations(string instanceId)
         {
-            if (_serviceMapping.TryRemove(instanceId, out var invocationsId))
+            if (_serviceMapping.TryRemove(instanceId, out var invocationIds))
             {
-                foreach (var invocationId in invocationsId)
+                foreach (var invocationId in invocationIds)
                 {
                     _routedInvocations.TryRemove(invocationId, out _);
                 }
@@ -78,7 +80,7 @@ namespace Microsoft.Azure.SignalR
         }
     }
 
-    internal record struct RoutedInvocation(string ConnectionId, string CallerServerId)
+    internal record struct RoutedInvocation(string ConnectionId, string CallerServerId, string type)
     {
     }
 }
