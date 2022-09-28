@@ -81,6 +81,8 @@ namespace Microsoft.Azure.SignalR
 
         public string Protocol { get; }
 
+        public string InstanceId { get; }
+
         // Send "Abort" to service on close except that Service asks SDK to close
         public bool AbortOnClose
         {
@@ -119,6 +121,7 @@ namespace Microsoft.Azure.SignalR
             ConnectionId = serviceMessage.ConnectionId;
             Protocol = serviceMessage.Protocol;
             User = serviceMessage.GetUserPrincipal();
+            InstanceId = GetInstanceId(serviceMessage.Headers);
 
             // Create the Duplix Pipeline for the virtual connection
             transportPipeOptions = transportPipeOptions ?? DefaultPipeOptions;
@@ -292,6 +295,15 @@ namespace Microsoft.Azure.SignalR
             }
 
             return new DefaultHttpContext(httpContextFeatures);
+        }
+
+        private string GetInstanceId(IDictionary<string, StringValues> header)
+        {
+            if (header.TryGetValue(Constants.AsrsInstanceId, out var instanceId))
+            {
+                return instanceId;
+            }
+            return string.Empty;
         }
 
         internal static bool TryGetRemoteIpAddress(IHeaderDictionary headers, out IPAddress address)
