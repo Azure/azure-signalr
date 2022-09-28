@@ -374,9 +374,8 @@ namespace Microsoft.Azure.SignalR
 
         private void AddClientConnection(ClientConnectionContext connection, OpenConnectionMessage message)
         {
-            var instanceId = GetInstanceId(message.Headers);
             _clientConnectionManager.TryAddClientConnection(connection);
-            _connectionIds.TryAdd(connection.ConnectionId, instanceId);
+            _connectionIds.TryAdd(connection.ConnectionId, connection.InstanceId);
         }
 
         private async Task ProcessApplicationTaskAsyncCore(ClientConnectionContext connection)
@@ -436,15 +435,6 @@ namespace Microsoft.Azure.SignalR
             _connectionIds.TryRemove(connectionId, out _);
             _clientConnectionManager.TryRemoveClientConnection(connectionId, out var connection);
             return connection;
-        }
-
-        private string GetInstanceId(IDictionary<string, StringValues> header)
-        {
-            if (header.TryGetValue(Constants.AsrsInstanceId, out var instanceId))
-            {
-                return instanceId;
-            }
-            return string.Empty;
         }
     }
 }
