@@ -51,6 +51,17 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
+        public override Task OnConnectedAsync(HubConnectionContext connection)
+        {
+            var userIdFeature = connection.Features.Get<IServiceUserIdFeature>();
+            if (userIdFeature != null)
+            {
+                connection.UserIdentifier = userIdFeature.UserId;
+                connection.Features.Set<IServiceUserIdFeature>(null);
+            }
+            return base.OnConnectedAsync(connection);
+        }
+
         public override async Task SendConnectionAsync(string connectionId, string methodName, object[] args, CancellationToken cancellationToken = default)
         {
             if (IsInvalidArgument(connectionId))
