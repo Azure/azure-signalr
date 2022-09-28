@@ -14,7 +14,7 @@ namespace Microsoft.Azure.SignalR.Tests
         {
             var claims = new Claim[] { new(Constants.ClaimType.UserId, "testUser") };
             var connection = new ClientConnectionContext(new("connectionId", claims));
-            var feature = connection.Features.Get<IServiceUserIdFeature>();
+            var feature = connection.Features.Get<ServiceUserIdFeature>();
             Assert.NotNull(feature);
             Assert.Equal("testUser", feature.UserId);
         }
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public void DoNotSetUserIdFeatureWithoutUserIdClaimTest()
         {
             var connection = new ClientConnectionContext(new("connectionId", Array.Empty<Claim>()));
-            var feature = connection.Features.Get<IServiceUserIdFeature>();
+            var feature = connection.Features.Get<ServiceUserIdFeature>();
             Assert.Null(feature);
         }
     }

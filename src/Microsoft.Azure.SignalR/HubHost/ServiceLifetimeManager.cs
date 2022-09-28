@@ -53,11 +53,11 @@ namespace Microsoft.Azure.SignalR
 
         public override Task OnConnectedAsync(HubConnectionContext connection)
         {
-            var userIdFeature = connection.Features.Get<IServiceUserIdFeature>();
+            var userIdFeature = connection.Features.Get<ServiceUserIdFeature>();
             if (userIdFeature != null)
             {
                 connection.UserIdentifier = userIdFeature.UserId;
-                connection.Features.Set<IServiceUserIdFeature>(null);
+                connection.Features.Set<ServiceUserIdFeature>(null);
             }
             return base.OnConnectedAsync(connection);
         }

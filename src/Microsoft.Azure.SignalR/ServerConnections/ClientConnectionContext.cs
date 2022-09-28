@@ -251,7 +251,7 @@ namespace Microsoft.Azure.SignalR
             var userIdClaim = serviceMessage.Claims.FirstOrDefault(c => c.Type == Constants.ClaimType.UserId);
             if (userIdClaim != default)
             {
-                features.Set<IServiceUserIdFeature>(new ServiceUserIdFeature(userIdClaim.Value));
+                features.Set(new ServiceUserIdFeature(userIdClaim.Value));
             }
             return features;
         }

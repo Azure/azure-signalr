@@ -229,7 +229,7 @@ namespace Microsoft.Azure.SignalR.Tests
         public async void SetUserIdTest()
         {
             var connectionContext = new TestConnectionContext();
-            connectionContext.Features.Set<IServiceUserIdFeature>(new ServiceUserIdFeature("testUser"));
+            connectionContext.Features.Set(new ServiceUserIdFeature("testUser"));
 
             var hubConnectionContext = new HubConnectionContext(connectionContext, new(), NullLoggerFactory.Instance);
             var serviceLifetimeManager = MockLifetimeManager(new TestServiceConnectionManager<TestHub>());
@@ -248,6 +248,7 @@ namespace Microsoft.Azure.SignalR.Tests
             await serviceLifetimeManager.OnConnectedAsync(hubConnectionContext);
 
             Assert.Null(hubConnectionContext.UserIdentifier);
+            Assert.Null(hubConnectionContext.Features.Get<ServiceUserIdFeature>());
         }
 
         private HubLifetimeManager<TestHub> MockLifetimeManager(IServiceConnectionManager<TestHub> serviceConnectionManager, IClientConnectionManager clientConnectionManager = null, IBlazorDetector blazorDetector = null)
