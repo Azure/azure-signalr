@@ -248,7 +248,7 @@ namespace Microsoft.Azure.SignalR
             features.Set<IHttpContextFeature>(this);
             features.Set<IConnectionStatFeature>(this);
 
-            var userIdClaim = serviceMessage.Claims.FirstOrDefault(c => c.Type == Constants.ClaimType.UserId);
+            var userIdClaim = serviceMessage.Claims?.FirstOrDefault(c => c.Type == Constants.ClaimType.UserId);
             if (userIdClaim != default)
             {
                 features.Set(new ServiceUserIdFeature(userIdClaim.Value));
