@@ -226,16 +226,14 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// <param name="invocationId">The Id of the client invocation request.</param>
         /// <param name="connectionId">The client connection Id.</param>
         /// <param name="callerServerId">The serverId that init the client invocation.</param>
-        /// <param name="type">The return value type of the client invocation</param>
         /// <param name="payloads">The payload of the message.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
-        public ClientInvocationMessage(string invocationId, string connectionId, string callerServerId, string type, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null)
+        public ClientInvocationMessage(string invocationId, string connectionId, string callerServerId, IDictionary<string, ReadOnlyMemory<byte>> payloads, ulong? tracingId = null)
             : base(payloads, tracingId)
         {
             InvocationId = invocationId;
             ConnectionId = connectionId;
             CallerServerId = callerServerId;
-            Type = type;
         }
 
         /// <summary>
@@ -252,10 +250,5 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// Gets or sets the caller server Id that init the client invocation.
         /// </summary>
         public string CallerServerId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the return value type of the client invocation.
-        /// </summary>
-        public string Type { get; set; }
     }
 }

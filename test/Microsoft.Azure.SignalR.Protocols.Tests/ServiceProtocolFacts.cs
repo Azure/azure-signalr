@@ -639,12 +639,12 @@ namespace Microsoft.Azure.SignalR.Protocol.Tests
                 binary: "liGmZ3JvdXAxpmRldGFpbAGQgQEB"),
             new ProtocolTestData(
                 name: "ClientInvocationMessage",
-                message: new ClientInvocationMessage("invocationId", "conn1", "server1", "System.String", new Dictionary<string, ReadOnlyMemory<byte>>
+                message: new ClientInvocationMessage("invocationId", "conn1", "server1", new Dictionary<string, ReadOnlyMemory<byte>>
                 {
                     ["json"] = new byte[] {2, 3, 4, 5, 6, 7, 1},
                     ["messagepack"] = new byte[] {3, 4, 5, 6, 7, 1, 2}
                 }),
-                binary: "liKsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjGtU3lzdGVtLlN0cmluZ4KkanNvbsQHAgMEBQYHAattZXNzYWdlcGFja8QHAwQFBgcBAoA="),
+                binary: "liKsaW52b2NhdGlvbklkpWNvbm4xp3NlcnZlcjGCpGpzb27EBwIDBAUGBwGrbWVzc2FnZXBhY2vEBwMEBQYHAQKA"),
             new ProtocolTestData(
                 name: "ClientCompletionMessage",
                 message: new ClientCompletionMessage("invocationId", "conn1", "server1", "json", new byte[] {2, 3, 4, 5, 6, 7, 1}),

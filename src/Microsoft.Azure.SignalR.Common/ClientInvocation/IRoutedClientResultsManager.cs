@@ -10,7 +10,7 @@ namespace Microsoft.Azure.SignalR
 {
     internal interface IRoutedClientResultsManager
     {
-        void AddInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, string type, CancellationToken cancellationToken);
+        void AddInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, CancellationToken cancellationToken);
 
         bool TryCompleteResult(string connectionId, CompletionMessage message);
 

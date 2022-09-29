@@ -15,11 +15,11 @@ namespace Microsoft.Azure.SignalR
         private readonly ConcurrentDictionary<string,  RoutedInvocation> _routedInvocations = new();
         private readonly ConcurrentDictionary<string, List<string>> _serviceMapping = new();
 
-        public void AddInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, string type, CancellationToken cancellationToken)
+        public void AddInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, CancellationToken cancellationToken)
         {
             cancellationToken.Register(() => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
 
-            var result = _routedInvocations.TryAdd(invocationId, new RoutedInvocation(connectionId, callerServerId, type));
+            var result = _routedInvocations.TryAdd(invocationId, new RoutedInvocation(connectionId, callerServerId));
             Debug.Assert(result);
 
             AddServiceMappingMessage(instanceId, invocationId);
@@ -49,15 +49,16 @@ namespace Microsoft.Azure.SignalR
 
         public bool TryGetInvocationReturnType(string invocationId, out Type type)
         {
-            if (_routedInvocations.TryGetValue(invocationId, out var routedInvocation))
+            // RawResult is available when .NET >= 7.0. And client invocation also works when .NET >= 7.0
+#if NET7_0_OR_GREATER
+            if (_routedInvocations.TryGetValue(invocationId, out _))
             {
-                type = Type.GetType(routedInvocation.type);
+                type = typeof(RawResult);
+                return true;
             }
-            else
-            {
-                type = null;
-            }
-            return type != null;
+#endif
+            type = null;
+            return false;
         }
 
         public void AddServiceMappingMessage(string instanceId, string invocationId)
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.SignalR
         }
     }
 
-    internal record struct RoutedInvocation(string ConnectionId, string CallerServerId, string type)
+    internal record struct RoutedInvocation(string ConnectionId, string CallerServerId)
     {
     }
 }

@@ -84,7 +84,7 @@ namespace Microsoft.Azure.SignalR.Common.Tests
             // Server 1 doesn't know the InstanceId of Client 2, so `instaceId` is null for `AddInvocation`
             var task = ciManagers[0].Caller.AddInvocation<string>(connectionsId[0], invocationId, null, cancellationToken);
             ciManagers[0].Caller.AddServiceMappingMessage(new ServiceMappingMessage(invocationId, connectionsId[1], instancesId[1]));
-            ciManagers[1].Router.AddInvocation(connectionsId[1], invocationId, callerServerId, instancesId[1], invocationResult.GetType().Name, new CancellationToken());
+            ciManagers[1].Router.AddInvocation(connectionsId[1], invocationId, callerServerId, instancesId[1], new CancellationToken());
 
             var ret = ciManagers[1].Router.TryCompleteResult(connectionsId[1], completionMessage);
             Assert.True(ret);

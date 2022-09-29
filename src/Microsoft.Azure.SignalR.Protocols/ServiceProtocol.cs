@@ -651,7 +651,6 @@ namespace Microsoft.Azure.SignalR.Protocol
             writer.Write(message.InvocationId);
             writer.Write(message.ConnectionId);
             writer.Write(message.CallerServerId);
-            writer.Write(message.Type);
             WritePayloads(ref writer, message.Payloads);
             message.WriteExtensionMembers(ref writer);
         }
@@ -1212,10 +1211,9 @@ namespace Microsoft.Azure.SignalR.Protocol
             var invocationId = ReadString(ref reader, "invocationId");
             var connectionId = ReadString(ref reader, "connectionId");
             var callerServerId = ReadString(ref reader, "callerServerId");
-            var type = ReadString(ref reader, "type");
             var payloads = ReadPayloads(ref reader);
 
-            var result = new ClientInvocationMessage(invocationId, connectionId, callerServerId, type, payloads);
+            var result = new ClientInvocationMessage(invocationId, connectionId, callerServerId, payloads);
             result.ReadExtensionMembers(ref reader);
             return result;
         }
