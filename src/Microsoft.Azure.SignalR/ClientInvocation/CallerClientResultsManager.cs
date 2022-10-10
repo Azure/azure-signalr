@@ -16,8 +16,8 @@ namespace Microsoft.Azure.SignalR
     internal sealed class CallerClientResultsManager : ICallerClientResultsManager, IInvocationBinder
     {
         private readonly ConcurrentDictionary<string, PendingInvocation> _pendingInvocations = new();
-        private readonly ConcurrentDictionary<string, List<string>> _serviceMappingMessages = new();
-        private readonly string _serverGUID = Guid.NewGuid().ToString();
+        private readonly ConcurrentDictionary<string, ConcurrentBag<string>> _serviceMappingMessages = new();
+        private readonly string _clientResultManagerId = Guid.NewGuid().ToString();
         private long _lastInvocationId = 0;
 
         private readonly IHubProtocolResolver _hubProtocolResolver;
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.SignalR
 
         public string GenerateInvocationId(string connectionId)
         {
-            return $"{connectionId}-{_serverGUID}-{Interlocked.Increment(ref _lastInvocationId)}";
+            return $"{connectionId}-{_clientResultManagerId}-{Interlocked.Increment(ref _lastInvocationId)}";
         }
 
         public Task<T> AddInvocation<T>(string connectionId, string invocationId, string instanceId, CancellationToken cancellationToken)
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.SignalR
         {
             _serviceMappingMessages.AddOrUpdate(
                 serviceMappingMessage.InstanceId,
-                new List<string>() { serviceMappingMessage.InvocationId },
+                new ConcurrentBag<string>() { serviceMappingMessage.InvocationId },
                 (key, valueList) => { valueList.Add(serviceMappingMessage.InvocationId); return valueList; });
         }
 
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.SignalR
                 }
                 else
                 {
-                    throw new InvalidOperationException("The payload of ClientCompletionMessage cannot be parsed into CompletionMessage correctly.");
+                     throw new InvalidOperationException($"The payload of ClientCompletionMessage whose type is {hubMessage.GetType()} cannot be parsed into CompletionMessage correctly.");
                 }
             }
             return false;

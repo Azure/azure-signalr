@@ -25,6 +25,11 @@ namespace Microsoft.Azure.SignalR
         public TaskCompletionSourceWithCancellation(CancellationToken cancellationToken, Action setCanceldAction)
             : base(TaskCreationOptions.RunContinuationsAsynchronously)
         {
+            // Skip null check for cancellationToken because it never equals to null. 
+            if (setCanceldAction == null)   
+            {
+                throw new ArgumentNullException(nameof(setCanceldAction));
+            }
             _token = cancellationToken;
             _setCanceledAction = setCanceldAction;
         }

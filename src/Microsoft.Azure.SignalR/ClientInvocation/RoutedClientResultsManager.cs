@@ -12,8 +12,8 @@ namespace Microsoft.Azure.SignalR
 {
     internal sealed class RoutedClientResultsManager: IRoutedClientResultsManager
     {
-        private readonly ConcurrentDictionary<string,  RoutedInvocation> _routedInvocations = new();
-        private readonly ConcurrentDictionary<string, List<string>> _serviceMapping = new();
+        private readonly ConcurrentDictionary<string, RoutedInvocation> _routedInvocations = new();
+        private readonly ConcurrentDictionary<string, ConcurrentBag<string>> _serviceMapping = new();
 
         public void AddInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, CancellationToken cancellationToken)
         {
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.SignalR
                 {
                     throw new InvalidOperationException($"Connection ID '{connectionId}' is not valid for invocation ID '{message.InvocationId}'.");
                 }
-                return _routedInvocations.TryRemove(message.InvocationId!, out _);
+                return _routedInvocations.TryRemove(message.InvocationId, out _);
             }
             else
             {
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.SignalR
         {
             _serviceMapping.AddOrUpdate(
                 instanceId,
-                new List<string>() { invocationId },
+                new ConcurrentBag<string>() { invocationId },
                 (key, valueList) => { valueList.Add(invocationId); return valueList; });
         }
 
