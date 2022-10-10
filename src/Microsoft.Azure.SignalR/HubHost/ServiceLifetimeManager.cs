@@ -30,14 +30,17 @@ namespace Microsoft.Azure.SignalR
             IOptions<HubOptions> globalHubOptions,
             IOptions<HubOptions<THub>> hubOptions,
             IBlazorDetector blazorDetector,
-            IServerNameProvider nameProvider)
+            IServerNameProvider nameProvider,
+            IClientInvocationManager clientInvocationManager)
             : base(
                   serviceConnectionManager,
                   protocolResolver,
                   globalHubOptions,
                   hubOptions,
-                  logger,
-                  nameProvider)
+                  nameProvider,
+                  clientInvocationManager,
+                  clientConnectionManager,
+                  logger)
         {
             // after core 3.0 UseAzureSignalR() is not required.
 #if NETSTANDARD2_0

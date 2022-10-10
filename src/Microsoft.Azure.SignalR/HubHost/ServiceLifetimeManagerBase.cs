@@ -23,8 +23,7 @@ namespace Microsoft.Azure.SignalR
 
         private readonly DefaultHubMessageSerializer _messageSerializer;
         private readonly IServerNameProvider _nameProvider;
-        private readonly string _callerId;
-
+        private readonly string _callerId;  
 
         private readonly IClientInvocationManager _clientInvocationManager;
         private readonly IClientConnectionManager _clientConnectionManager;
@@ -35,17 +34,17 @@ namespace Microsoft.Azure.SignalR
             IHubProtocolResolver protocolResolver,
             IOptions<HubOptions> globalHubOptions,
             IOptions<HubOptions<THub>> hubOptions,
-            ILogger logger,
-            IServerNameProvider nameProvider = null,
-            ClientInvocationManager clientInvocationManager = null,
-            IClientConnectionManager clientConnectionManager = null)
+            IServerNameProvider nameProvider,
+            IClientInvocationManager clientInvocationManager,
+            IClientConnectionManager clientConnectionManager,
+            ILogger logger)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             ServiceConnectionContainer = serviceConnectionManager;
             _messageSerializer = new DefaultHubMessageSerializer(protocolResolver, globalHubOptions.Value.SupportedProtocols, hubOptions.Value.SupportedProtocols);
 
             _nameProvider = nameProvider ?? throw new ArgumentNullException(nameof(nameProvider));
-            _callerId = _nameProvider?.GetName();
+            _callerId = _nameProvider.GetName();
 
             _clientInvocationManager = clientInvocationManager;
             _clientConnectionManager = clientConnectionManager;
@@ -312,8 +311,12 @@ namespace Microsoft.Azure.SignalR
                 if (_clientConnectionManager.ClientConnections.TryGetValue(connectionId, out var clientConnectionContext))
                 {
                     var instanceId = clientConnectionContext.InstanceId;
-                    var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, cancellationToken);
+                    var task = _clientInvocationManager.Caller.AddInvocation<T>(connectionId, invocationId, instanceId, cancellationToken);
                     return await task;
+                }
+                else
+                {
+                    throw new ArgumentException(NullOrEmptyStringErrorMessage, nameof(connectionId));
                 }
             }
             catch (Exception)
@@ -333,7 +336,7 @@ namespace Microsoft.Azure.SignalR
             {
                 // Current server is a route server.
                 // In order to inform original Caller server with the completion result, send a ClientCompletionMessage to service and the service will route ClientCompletionMessage to the original Caller server.
-                if (_clientInvocationManager.Router.CheckRoutedInvocation(result.InvocationId))
+                if (_clientInvocationManager.Router.ContainsInvocation(result.InvocationId))
                 {
                     var protocol = clientConnectionContext.Protocol;
                     var message = AppendMessageTracingId(new ClientCompletionMessage(result.InvocationId, connectionId, _callerId, protocol, SerializeCompletionMessage(result, protocol)));
@@ -351,7 +354,7 @@ namespace Microsoft.Azure.SignalR
 
         public override bool TryGetReturnType(string invocationId, [NotNullWhen(true)] out Type type)
         {
-            if (_clientInvocationManager.Router.CheckRoutedInvocation(invocationId))
+            if (_clientInvocationManager.Router.ContainsInvocation(invocationId))
             {
                 return _clientInvocationManager.Router.TryGetInvocationReturnType(invocationId, out type);
             }

@@ -10,10 +10,8 @@ namespace Microsoft.Azure.SignalR
         public ICallerClientResultsManager Caller { get; }
         public IRoutedClientResultsManager Router { get; }
 
-        ClientInvocationManager(IHubProtocolResolver hubProtocolResolver)
+        public ClientInvocationManager(IHubProtocolResolver hubProtocolResolver)
         {
-            Caller = new CallerClientResultsManager(hubProtocolResolver);
-            Router = new RoutedClientResultsManager();
         }
     }
 }

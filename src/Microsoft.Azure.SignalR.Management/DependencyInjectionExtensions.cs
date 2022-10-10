@@ -87,7 +87,7 @@ namespace Microsoft.Azure.SignalR.Management
             // Remove the JsonHubProtocol and add new one.
             // On .NET Standard 2.0, registering multiple hub protocols with the same name is forbidden.
             services.Replace(ServiceDescriptor.Singleton<IHubProtocol>(sp =>
-            {
+                {
                 var objectSerializer = sp.GetRequiredService<IOptions<ServiceManagerOptions>>().Value.ObjectSerializer;
                 return objectSerializer != null ? new JsonObjectSerializerHubProtocol(objectSerializer) : new JsonHubProtocol();
             }));

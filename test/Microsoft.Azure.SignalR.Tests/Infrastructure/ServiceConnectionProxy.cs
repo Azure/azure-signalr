@@ -81,6 +81,7 @@ namespace Microsoft.Azure.SignalR.Tests
                 endpoint,
                 serviceMessageHandler,
                 null,
+                null,
                 type);
             ServiceConnections.TryAdd(connectionId, connection);
             return connection;

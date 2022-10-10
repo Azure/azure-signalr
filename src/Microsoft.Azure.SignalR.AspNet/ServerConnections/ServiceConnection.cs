@@ -52,8 +52,8 @@ namespace Microsoft.Azure.SignalR.AspNet
                   serviceMessageHandler,
                   serviceEventHandler,
                   connectionType,
-                  loggerFactory?.CreateLogger<ServiceConnection>(),
-                  clientInvocationManager)
+                  clientInvocationManager,
+                  loggerFactory?.CreateLogger<ServiceConnection>())
         {
             _connectionFactory = connectionFactory;
             _clientConnectionManager = clientConnectionManager;

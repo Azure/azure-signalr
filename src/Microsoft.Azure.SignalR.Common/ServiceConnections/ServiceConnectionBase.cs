@@ -2,12 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Azure.SignalR.Protocol;
@@ -105,7 +105,6 @@ namespace Microsoft.Azure.SignalR
 
         public Task ConnectionOfflineTask => _serviceConnectionOfflineTcs.Task;
 
-        // TODO: use DependencyInjection for ClientInvocationManager and then sort parameter order 
         protected ServiceConnectionBase(
             IServiceProtocol serviceProtocol,
             string serverId,
@@ -114,8 +113,8 @@ namespace Microsoft.Azure.SignalR
             IServiceMessageHandler serviceMessageHandler,
             IServiceEventHandler serviceEventHandler,
             ServiceConnectionType connectionType,
+            IClientInvocationManager clientInvocationManager,
             ILogger logger,
-            IClientInvocationManager clientInvocationManager = null,
             GracefulShutdownMode mode = GracefulShutdownMode.Off)
         {
             ServiceProtocol = serviceProtocol;
@@ -306,7 +305,7 @@ namespace Microsoft.Azure.SignalR
             {
                 Log.ReceivedInstanceOfflinePing(Logger, instanceId);
 #if NET7_0_OR_GREATER
-                _clientInvocationManager.Caller.CleanupInvocations(instanceId);
+                _clientInvocationManager?.Caller.CleanupInvocations(instanceId);
 #endif
                 return CleanupClientConnections(instanceId);
             }
@@ -321,7 +320,8 @@ namespace Microsoft.Azure.SignalR
 #if NET7_0_OR_GREATER
         private Task OnClientInvocationAsync(ClientInvocationMessage message)
         {
-            _clientInvocationManager.Router.AddRoutedInvocation(message.ConnectionId, message.InvocationId, message.CallerServerId, "instanceId", default);
+            // TODO: finding a way to get InstanceId
+            _clientInvocationManager.Router.AddInvocation(message.ConnectionId, message.InvocationId, message.CallerServerId, "instanceId", default);
             return Task.CompletedTask;
         }
 
