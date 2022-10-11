@@ -13,10 +13,9 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal sealed class CallerClientResultsManager : ICallerClientResultsManager, IInvocationBinder
+    internal sealed class CallerClientResultsManager : BaseClientResultsManager, ICallerClientResultsManager, IInvocationBinder
     {
         private readonly ConcurrentDictionary<string, PendingInvocation> _pendingInvocations = new();
-        private readonly ConcurrentDictionary<string, ConcurrentBag<string>> _serviceMappingMessages = new();
         private readonly string _clientResultManagerId = Guid.NewGuid().ToString();
         private long _lastInvocationId = 0;
 
@@ -65,19 +64,11 @@ namespace Microsoft.Azure.SignalR
             return tcs.Task;
         }
 
-        public void AddServiceMappingMessage(ServiceMappingMessage serviceMappingMessage)
+        public override void CleanupInvocations(string instanceId)
         {
-            _serviceMappingMessages.AddOrUpdate(
-                serviceMappingMessage.InstanceId,
-                new ConcurrentBag<string>() { serviceMappingMessage.InvocationId },
-                (key, valueList) => { valueList.Add(serviceMappingMessage.InvocationId); return valueList; });
-        }
-
-        public void CleanupInvocations(string instanceId)
-        {
-            if (_serviceMappingMessages.TryRemove(instanceId, out var invocationIds))
+            if (_serviceMapping.TryRemove(instanceId, out var invocationIdDict))
             {
-                foreach (var invocationId in invocationIds)
+                foreach (var invocationId in invocationIdDict.Keys)
                 {
                     if (_pendingInvocations.TryRemove(invocationId, out var item))
                     {
@@ -88,9 +79,9 @@ namespace Microsoft.Azure.SignalR
             }
         }
 
-        public bool TryCompleteResult(string connectionId, CompletionMessage message)
+        public override bool TryCompleteResult(string connectionId, CompletionMessage message)
         {
-            if (_pendingInvocations.TryGetValue(message.InvocationId!, out var item))
+            if (_pendingInvocations.TryGetValue(message.InvocationId, out var item))
             {
                 if (item.ConnectionId != connectionId)
                 {
@@ -100,9 +91,10 @@ namespace Microsoft.Azure.SignalR
                 // if false the connection disconnected right after the above TryGetValue
                 // or someone else completed the invocation (likely a bad client)
                 // we'll ignore both cases
-                if (_pendingInvocations.TryRemove(message.InvocationId!, out _))
+                if (_pendingInvocations.TryRemove(message.InvocationId, out _))
                 {
                     item.Complete(item.Tcs, message);
+                    RemoveServiceMappingMessage(message.InvocationId);
                     return true;
                 }
                 return false;
@@ -147,7 +139,7 @@ namespace Microsoft.Azure.SignalR
             throw new InvalidOperationException($"Invocation ID '{invocationId}' is not associated with a pending client result.");
         }
 
-        public bool TryGetInvocationReturnType(string invocationId, out Type type)
+        public override bool TryGetInvocationReturnType(string invocationId, out Type type)
         {
             if (_pendingInvocations.TryGetValue(invocationId, out var item))
             {
@@ -159,16 +151,10 @@ namespace Microsoft.Azure.SignalR
         }
 
         // Unused, here to honor the IInvocationBinder interface but should never be called
-        public IReadOnlyList<Type> GetParameterTypes(string methodName)
-        {
-            throw new NotImplementedException();
-        }
+        public IReadOnlyList<Type> GetParameterTypes(string methodName) => throw new NotImplementedException();
 
         // Unused, here to honor the IInvocationBinder interface but should never be called
-        public Type GetStreamItemType(string streamId)
-        {
-            throw new NotImplementedException();
-        }
+        public Type GetStreamItemType(string streamId) => throw new NotImplementedException();
     }
 
     internal record struct PendingInvocation(Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete)

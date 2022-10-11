@@ -8,16 +8,10 @@ using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal interface IRoutedClientResultsManager
+    internal interface IRoutedClientResultsManager : IBaseClientResultsManager
     {
         void AddInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, CancellationToken cancellationToken);
 
-        bool TryCompleteResult(string connectionId, CompletionMessage message);
-
-        bool TryGetInvocationReturnType(string invocationId, out Type type);
-
         bool ContainsInvocation(string invocationId);
-
-        void CleanupInvocations(string instanceId);
     }
 }
