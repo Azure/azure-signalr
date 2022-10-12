@@ -202,7 +202,7 @@ namespace Microsoft.Azure.SignalR.Protocol
         /// </summary>
         /// <param name="invocationId">The Id of the invocation that has completed.</param>
         /// <param name="connectionId">The client connection Id that complete the invocation.</param>
-        /// <param name="callerServerId">The serverId that waits for sthe completion result.</param>
+        /// <param name="callerServerId">The serverId that wrap the completion result.</param>
         /// <param name="protocol">The protocol of the connection.</param>
         /// <param name="payload">The payload of the completion result.</param>
         /// <param name="tracingId">The tracing Id of the message.</param>
