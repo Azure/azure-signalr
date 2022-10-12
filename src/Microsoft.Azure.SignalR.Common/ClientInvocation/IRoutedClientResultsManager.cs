@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal interface IRoutedClientResultsManager : IBaseClientResultsManager
+    internal interface IRoutedClientResultsManager : IClientResultsManager
     {
         void AddInvocation(string connectionId, string invocationId, string callerServerId, string instanceId, CancellationToken cancellationToken);
 

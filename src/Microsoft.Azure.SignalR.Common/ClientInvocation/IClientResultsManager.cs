@@ -10,17 +10,15 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal interface IBaseClientResultsManager
+    internal interface IClientResultsManager
     {
-        // TODO: How to extract two different AddInvocation into this interface
-
         bool TryCompleteResult(string connectionId, CompletionMessage message);
 
         bool TryGetInvocationReturnType(string invocationId, out Type type);
 
-        void AddServiceMappingMessage(ServiceMappingMessage serviceMappingMessage);
+        void AddServiceMapping(ServiceMappingMessage serviceMappingMessage);
 
-        void RemoveServiceMappingMessage(string invocationId);
+        void RemoveServiceMapping(string invocationId);
 
         void CleanupInvocations(string instanceId);
     }

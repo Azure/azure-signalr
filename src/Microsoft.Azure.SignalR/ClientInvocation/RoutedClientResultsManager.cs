@@ -8,10 +8,11 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
+using System.Linq;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal sealed class RoutedClientResultsManager: BaseClientResultsManager, IRoutedClientResultsManager
+    internal sealed class RoutedClientResultsManager: IRoutedClientResultsManager
     {
         private readonly ConcurrentDictionary<string, RoutedInvocation> _routedInvocations = new();
 
@@ -19,13 +20,13 @@ namespace Microsoft.Azure.SignalR
         {
             cancellationToken.Register(() => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
 
-            var result = _routedInvocations.TryAdd(invocationId, new RoutedInvocation(connectionId, callerServerId));
+            var result = _routedInvocations.TryAdd(invocationId, new RoutedInvocation(connectionId, callerServerId, null));
             Debug.Assert(result);
 
-            AddServiceMappingMessage(new ServiceMappingMessage(invocationId, connectionId, instanceId));
+            AddServiceMapping(new ServiceMappingMessage(invocationId, connectionId, instanceId));
         }
 
-        public override bool TryCompleteResult(string connectionId, CompletionMessage message)
+        public bool TryCompleteResult(string connectionId, CompletionMessage message)
         {
             if (_routedInvocations.TryGetValue(message.InvocationId, out var item))
             {
@@ -47,18 +48,51 @@ namespace Microsoft.Azure.SignalR
             return _routedInvocations.TryGetValue(invocationId, out _);
         }
 
-        public override void CleanupInvocations(string instanceId)
+        public void AddServiceMapping(ServiceMappingMessage serviceMappingMessage)
         {
-            if (_serviceMapping.TryRemove(instanceId, out var invocationDict))
+            if (_routedInvocations.TryGetValue(serviceMappingMessage.InvocationId, out var invocation))
             {
-                foreach (var invocationId in invocationDict.Keys)
+                if (invocation.RouterInstanceId == null)
+                {
+                    invocation.RouterInstanceId = serviceMappingMessage.InstanceId;
+                    _routedInvocations[serviceMappingMessage.InvocationId] = invocation;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Failed to record a service mapping whose RouterInstanceId '{serviceMappingMessage.InvocationId}' was already existing.");
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException($"Failed to record a service mapping whose InvocationId '{serviceMappingMessage.InvocationId}' doesn't exist.");
+            }
+        }
+
+        public void RemoveServiceMapping(string invocationId)
+        {
+            if (_routedInvocations.TryGetValue(invocationId, out var invocation))
+            {
+                invocation.RouterInstanceId = null;
+                _routedInvocations[invocationId] = invocation;
+            }
+            else
+            {
+                // it's acceptable that the mapping information of invocationId doesn't exsits.";
+            }
+        }
+
+        public void CleanupInvocations(string instanceId)
+        {
+            foreach (var (invocationId, invocation) in _routedInvocations.Select(x => (x.Key, x.Value)))
+            {
+                if (invocation.RouterInstanceId == instanceId)
                 {
                     _routedInvocations.TryRemove(invocationId, out _);
                 }
             }
         }
 
-        public override bool TryGetInvocationReturnType(string invocationId, out Type type)
+        public bool TryGetInvocationReturnType(string invocationId, out Type type)
         {
             // RawResult is available when .NET >= 7.0. And client invocation also works when .NET >= 7.0
 #if NET7_0_OR_GREATER
@@ -73,7 +107,7 @@ namespace Microsoft.Azure.SignalR
         }
     }
 
-    internal record struct RoutedInvocation(string ConnectionId, string CallerServerId)
+    internal record struct RoutedInvocation(string ConnectionId, string CallerServerId, string RouterInstanceId)
     {
     }
 }

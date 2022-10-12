@@ -10,10 +10,11 @@ using System.Collections.Concurrent;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR;
+using System.Linq;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal sealed class CallerClientResultsManager : BaseClientResultsManager, ICallerClientResultsManager, IInvocationBinder
+    internal sealed class CallerClientResultsManager : ICallerClientResultsManager, IInvocationBinder
     {
         private readonly ConcurrentDictionary<string, PendingInvocation> _pendingInvocations = new();
         private readonly string _clientResultManagerId = Guid.NewGuid().ToString();
@@ -37,49 +38,78 @@ namespace Microsoft.Azure.SignalR
                 cancellationToken,
                 () => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
 
-            var result = _pendingInvocations.TryAdd(invocationId, new PendingInvocation(typeof(T), connectionId, tcs, static (state, completionMessage) =>
-            {
-                var tcs = (TaskCompletionSourceWithCancellation<T>)state;
-                if (completionMessage.HasResult)
-                {
-                    tcs.SetResult((T)completionMessage.Result);
-                }
-                else
-                {
-                    tcs.SetException(new Exception(completionMessage.Error));
-                }
-            }
-            ));
+            // When the caller server is also the client router, Azure SignalR service won't send a ServiceMappingMessage to server.
+            // To handle this condition, CallerClientResultsManager itself should record this mapping information rather than waiting for a ServiceMappingMessage sent by service. Only in this condition, this method is called with instanceId != null.
+            var result = _pendingInvocations.TryAdd(invocationId, 
+                new PendingInvocation(
+                    typeof(T), connectionId, instanceId, tcs, 
+                    static (state, completionMessage) =>
+                    {
+                        var tcs = (TaskCompletionSourceWithCancellation<T>)state;
+                        if (completionMessage.HasResult)
+                        {
+                            tcs.SetResult((T)completionMessage.Result);
+                        }
+                        else
+                        {
+                            tcs.SetException(new Exception(completionMessage.Error));
+                        }
+                    })
+            );
             Debug.Assert(result);
 
             tcs.RegisterCancellation();
 
-            // When the caller server is also the client router, Azure SignalR service won't send the ServiceMappingMessage to server.
-            // To handle this condition, CallerClientResultsManager should record this mapping information itself without receiving a ServiceMappingMessage from service.
-            if (instanceId != null)
-            {
-                AddServiceMappingMessage(new ServiceMappingMessage(connectionId, invocationId, instanceId));
-            }
-
             return tcs.Task;
         }
 
-        public override void CleanupInvocations(string instanceId)
+        public void AddServiceMapping(ServiceMappingMessage serviceMappingMessage)
         {
-            if (_serviceMapping.TryRemove(instanceId, out var invocationIdDict))
+            if (_pendingInvocations.TryGetValue(serviceMappingMessage.InvocationId, out var invocation))
             {
-                foreach (var invocationId in invocationIdDict.Keys)
+                if (invocation.RouterInstanceId == null)
                 {
-                    if (_pendingInvocations.TryRemove(invocationId, out var item))
-                    {
-                        var message = new CompletionMessage(invocationId, $"Connection '{item.ConnectionId}' is disconnected.", null, false);
-                        item.Complete(item.Tcs, message);
-                    }
+                    invocation.RouterInstanceId = serviceMappingMessage.InstanceId;
+                    _pendingInvocations[serviceMappingMessage.InvocationId] = invocation;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Failed to record a service mapping whose RouterInstanceId '{serviceMappingMessage.InvocationId}' was already existing.");
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException($"Failed to record a service mapping whose InvocationId '{serviceMappingMessage.InvocationId}' doesn't exist.");
+            }
+        }
+
+        public void RemoveServiceMapping(string invocationId)
+        {
+            if (_pendingInvocations.TryGetValue(invocationId, out var invocation))
+            {
+                invocation.RouterInstanceId = null;
+                _pendingInvocations[invocationId] = invocation;
+            }
+            else
+            {
+                // it's acceptable that the mapping information of invocationId doesn't exsits.";
+            }
+        }
+
+        public void CleanupInvocations(string instanceId)
+        {
+            foreach (var (invocationId, invocation) in _pendingInvocations.Select(x => (x.Key, x.Value)))
+            {
+                if (invocation.RouterInstanceId == instanceId)
+                {
+                    var message = new CompletionMessage(invocationId, $"Connection '{invocation.ConnectionId}' is disconnected.", null, false);
+                    invocation.Complete(invocation.Tcs, message);
+                    _pendingInvocations.TryRemove(invocationId, out _);
                 }
             }
         }
 
-        public override bool TryCompleteResult(string connectionId, CompletionMessage message)
+        public bool TryCompleteResult(string connectionId, CompletionMessage message)
         {
             if (_pendingInvocations.TryGetValue(message.InvocationId, out var item))
             {
@@ -94,7 +124,7 @@ namespace Microsoft.Azure.SignalR
                 if (_pendingInvocations.TryRemove(message.InvocationId, out _))
                 {
                     item.Complete(item.Tcs, message);
-                    RemoveServiceMappingMessage(message.InvocationId);
+                    RemoveServiceMapping(message.InvocationId);
                     return true;
                 }
                 return false;
@@ -139,7 +169,7 @@ namespace Microsoft.Azure.SignalR
             throw new InvalidOperationException($"Invocation ID '{invocationId}' is not associated with a pending client result.");
         }
 
-        public override bool TryGetInvocationReturnType(string invocationId, out Type type)
+        public bool TryGetInvocationReturnType(string invocationId, out Type type)
         {
             if (_pendingInvocations.TryGetValue(invocationId, out var item))
             {
@@ -157,7 +187,7 @@ namespace Microsoft.Azure.SignalR
         public Type GetStreamItemType(string streamId) => throw new NotImplementedException();
     }
 
-    internal record struct PendingInvocation(Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete)
+    internal record struct PendingInvocation(Type Type, string ConnectionId, string RouterInstanceId, object Tcs, Action<object, CompletionMessage> Complete)
     {
     }
 }

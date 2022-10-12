@@ -7,7 +7,7 @@ using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal interface ICallerClientResultsManager : IBaseClientResultsManager
+    internal interface ICallerClientResultsManager : IClientResultsManager
     {
         string GenerateInvocationId(string connectionId);
 
