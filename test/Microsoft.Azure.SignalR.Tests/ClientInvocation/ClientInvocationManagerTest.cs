@@ -68,29 +68,29 @@ namespace Microsoft.Azure.SignalR.Common.Tests
          */
         public async void TestNormalCompleteWithRouterServer(string protocol)
         {
-            var instancesId = new string[] { "Instance-0", "Instance-1" };
-            var callerServerId = "Server-0";
-            var connectionsId = new string[] { "Connection-0", "Connection-1" };
+            var instanceIds = new string[] { "Instance-0", "Instance-1" };
+            var serverIds = new string[] { "Server-0", "Server-1" };
+            var connectionIds = new string[] { "Connection-0", "Connection-1" };
             var invocationResult = "invocation-success-result";
             var ciManagers = new ClientInvocationManager[]
             {
                 new ClientInvocationManager(HubProtocolResolver),
                 new ClientInvocationManager(HubProtocolResolver),
             };
-            var invocationId = ciManagers[0].Caller.GenerateInvocationId(connectionsId[0]);
+            var invocationId = ciManagers[0].Caller.GenerateInvocationId(connectionIds[0]);
             var completionMessage = new CompletionMessage(invocationId, null, invocationResult, true);
 
             CancellationToken cancellationToken = new CancellationToken();
             // Server 1 doesn't know the InstanceId of Client 2, so `instaceId` is null for `AddInvocation`
-            var task = ciManagers[0].Caller.AddInvocation<string>(connectionsId[0], invocationId, null, cancellationToken);
-            ciManagers[0].Caller.AddServiceMapping(new ServiceMappingMessage(invocationId, connectionsId[1], instancesId[1]));
-            ciManagers[1].Router.AddInvocation(connectionsId[1], invocationId, callerServerId, instancesId[1], new CancellationToken());
+            var task = ciManagers[0].Caller.AddInvocation<string>(connectionIds[0], invocationId, null, cancellationToken);
+            ciManagers[0].Caller.AddServiceMapping(new ServiceMappingMessage(invocationId, connectionIds[1], instanceIds[1]));
+            ciManagers[1].Router.AddInvocation(connectionIds[1], invocationId, serverIds[0], instanceIds[1], new CancellationToken());
 
-            var ret = ciManagers[1].Router.TryCompleteResult(connectionsId[1], completionMessage);
+            var ret = ciManagers[1].Router.TryCompleteResult(connectionIds[1], completionMessage);
             Assert.True(ret);
 
             var payload = GetBytes(protocol, completionMessage);
-            var clientCompletionMessage = new ClientCompletionMessage(invocationId, connectionsId[0], callerServerId, protocol, payload);
+            var clientCompletionMessage = new ClientCompletionMessage(invocationId, connectionIds[0], serverIds[1], protocol, payload);
 
             ret = ciManagers[0].Caller.TryCompleteResult(clientCompletionMessage.ConnectionId, clientCompletionMessage);
             Assert.True(ret);

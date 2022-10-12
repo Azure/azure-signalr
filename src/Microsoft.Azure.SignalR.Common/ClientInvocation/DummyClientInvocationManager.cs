@@ -1,20 +1,17 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-#if NET7_0_OR_GREATER
+
 using Microsoft.AspNetCore.SignalR;
 
 namespace Microsoft.Azure.SignalR
 {
-    internal sealed class ClientInvocationManager : IClientInvocationManager
+    internal sealed class DummyClientInvocationManager : IClientInvocationManager
     {
         public ICallerClientResultsManager Caller { get; }
         public IRoutedClientResultsManager Router { get; }
 
-        public ClientInvocationManager(IHubProtocolResolver hubProtocolResolver)
+        public DummyClientInvocationManager()
         {
-            Caller = new CallerClientResultsManager(hubProtocolResolver);
-            Router = new RoutedClientResultsManager();
         }
     }
 }
-#endif

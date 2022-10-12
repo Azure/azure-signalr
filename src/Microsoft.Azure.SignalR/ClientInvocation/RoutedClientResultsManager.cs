@@ -1,6 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
+#if NET7_0_OR_GREATER
 using System;
 using System.Threading;
 using System.Diagnostics;
@@ -77,13 +77,13 @@ namespace Microsoft.Azure.SignalR
             }
             else
             {
-                // it's acceptable that the mapping information of invocationId doesn't exsits.";
+                // it's acceptable that the mapping information of invocationId doesn't exsits.
             }
         }
 
         public void CleanupInvocations(string instanceId)
         {
-            foreach (var (invocationId, invocation) in _routedInvocations.Select(x => (x.Key, x.Value)))
+            foreach (var (invocationId, invocation) in _routedInvocations)
             {
                 if (invocation.RouterInstanceId == instanceId)
                 {
@@ -94,20 +94,31 @@ namespace Microsoft.Azure.SignalR
 
         public bool TryGetInvocationReturnType(string invocationId, out Type type)
         {
-            // RawResult is available when .NET >= 7.0. And client invocation also works when .NET >= 7.0
-#if NET7_0_OR_GREATER
+            // RawResult is available when .NET >= 7.0
             if (_routedInvocations.TryGetValue(invocationId, out _))
             {
                 type = typeof(RawResult);
                 return true;
             }
-#endif
             type = null;
             return false;
         }
     }
 
-    internal record struct RoutedInvocation(string ConnectionId, string CallerServerId, string RouterInstanceId)
+    class RoutedInvocation
     {
+        public RoutedInvocation(string connectionId, string callerServerId, string routerInstanceId)
+        {
+            this.ConnectionId = connectionId;
+            this.CallerServerId = callerServerId;
+            this.RouterInstanceId = routerInstanceId;
+        }
+
+        public string ConnectionId { get; set; }
+        
+        public string CallerServerId { get; set; }
+        
+        public string RouterInstanceId { get; set; }
     }
 }
+#endif

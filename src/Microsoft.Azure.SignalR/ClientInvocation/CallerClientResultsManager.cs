@@ -1,6 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
+#if NET7_0_OR_GREATER
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -14,6 +14,7 @@ using System.Linq;
 
 namespace Microsoft.Azure.SignalR
 {
+
     internal sealed class CallerClientResultsManager : ICallerClientResultsManager, IInvocationBinder
     {
         private readonly ConcurrentDictionary<string, PendingInvocation> _pendingInvocations = new();
@@ -48,11 +49,11 @@ namespace Microsoft.Azure.SignalR
                         var tcs = (TaskCompletionSourceWithCancellation<T>)state;
                         if (completionMessage.HasResult)
                         {
-                            tcs.SetResult((T)completionMessage.Result);
+                            tcs.TrySetResult((T)completionMessage.Result);
                         }
                         else
                         {
-                            tcs.SetException(new Exception(completionMessage.Error));
+                            tcs.TrySetException(new Exception(completionMessage.Error));
                         }
                     })
             );
@@ -74,12 +75,12 @@ namespace Microsoft.Azure.SignalR
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Failed to record a service mapping whose RouterInstanceId '{serviceMappingMessage.InvocationId}' was already existing.");
+                    // do nothing
                 }
             }
             else
             {
-                throw new InvalidOperationException($"Failed to record a service mapping whose InvocationId '{serviceMappingMessage.InvocationId}' doesn't exist.");
+                // do nothing
             }
         }
 
@@ -98,11 +99,12 @@ namespace Microsoft.Azure.SignalR
 
         public void CleanupInvocations(string instanceId)
         {
-            foreach (var (invocationId, invocation) in _pendingInvocations.Select(x => (x.Key, x.Value)))
+            foreach (var (invocationId, invocation) in _pendingInvocations)
             {
                 if (invocation.RouterInstanceId == instanceId)
                 {
                     var message = new CompletionMessage(invocationId, $"Connection '{invocation.ConnectionId}' is disconnected.", null, false);
+                    
                     invocation.Complete(invocation.Tcs, message);
                     _pendingInvocations.TryRemove(invocationId, out _);
                 }
@@ -187,7 +189,28 @@ namespace Microsoft.Azure.SignalR
         public Type GetStreamItemType(string streamId) => throw new NotImplementedException();
     }
 
-    internal record struct PendingInvocation(Type Type, string ConnectionId, string RouterInstanceId, object Tcs, Action<object, CompletionMessage> Complete)
-    {
+    class PendingInvocation {
+        public PendingInvocation(Type type, string connectionId, string routerInstanceId, object tcs, Action<object, CompletionMessage> complete)
+        {
+            this.Type = type;
+            this.ConnectionId = connectionId;
+            this.RouterInstanceId = routerInstanceId;
+            this.Tcs = tcs;
+            this.Complete = complete;
+        }
+
+        public Type Type { get; set; }
+
+        public string ConnectionId { get; set; }
+
+        public string InstanceId { get; set; }
+
+        public string RouterInstanceId { get; set; }
+
+        public object Tcs { get; set; }
+
+        public Action<object, CompletionMessage> Complete { get; set; }
+        
     }
 }
+#endif

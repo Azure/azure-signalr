@@ -1,6 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
+#if NET7_0_OR_GREATER
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,20 +18,20 @@ namespace Microsoft.Azure.SignalR
     // Also makes it easier to keep track of the CancellationTokenRegistration for disposal
     internal sealed class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
     {
-        private readonly Action _setCanceledAction;
+        private readonly Action _trySetCanceledAction;
         private readonly CancellationToken _token;
         private CancellationTokenRegistration _tokenRegistration;
 
-        public TaskCompletionSourceWithCancellation(CancellationToken cancellationToken, Action setCanceldAction)
+        public TaskCompletionSourceWithCancellation(CancellationToken cancellationToken, Action trySetCanceldAction)
             : base(TaskCreationOptions.RunContinuationsAsynchronously)
         {
             // Skip null check for cancellationToken because it never equals to null. 
-            if (setCanceldAction == null)   
+            if (trySetCanceldAction == null)   
             {
-                throw new ArgumentNullException(nameof(setCanceldAction));
+                throw new ArgumentNullException(nameof(trySetCanceldAction));
             }
             _token = cancellationToken;
-            _setCanceledAction = setCanceldAction;
+            _trySetCanceledAction = trySetCanceldAction;
         }
 
         public void RegisterCancellation()
@@ -41,23 +41,27 @@ namespace Microsoft.Azure.SignalR
                 _tokenRegistration = _token.Register(static o =>
                 {
                     var tcs = (TaskCompletionSourceWithCancellation<T>)o!;
-                    tcs.SetCanceled();
+                    tcs.TrySetCanceled();
                 }, this);
             }
         }
 
-        public new void SetCanceled() => _setCanceledAction();
-
-        public new void SetResult(T result)
+        public new bool TrySetCanceled()
         {
-            _tokenRegistration.Dispose();
-            base.SetResult(result);
+            _trySetCanceledAction();
+            return base.TrySetCanceled();
         }
 
-        public new void SetException(Exception exception)
+        public new bool TrySetResult(T result)
         {
             _tokenRegistration.Dispose();
-            base.SetException(exception);
+            return base.TrySetResult(result);
+        }
+
+        public new bool TrySetException(Exception exception)
+        {
+            _tokenRegistration.Dispose();
+            return base.TrySetException(exception);
         }
 
 #pragma warning disable IDE0060 // Remove unused parameter
@@ -69,31 +73,28 @@ namespace Microsoft.Azure.SignalR
 #endif
 
         public static new void SetException(IEnumerable<Exception> exceptions) => Debug.Assert(false);
-        public static new bool TrySetCanceled()
+        public static new void SetCanceled()
         {
             Debug.Assert(false);
-            return false;
         }
-        public static new bool TrySetCanceled(CancellationToken cancellationToken)
+        public static new void TrySetCanceled(CancellationToken cancellationToken)
         {
             Debug.Assert(false);
-            return false;
         }
         public static new bool TrySetException(IEnumerable<Exception> exceptions)
         {
             Debug.Assert(false);
             return false;
         }
-        public static new bool TrySetException(Exception exception)
+        public static new void SetException(Exception exception)
         {
             Debug.Assert(false);
-            return false;
         }
-        public static new bool TrySetResult(T result)
+        public static new void SetResult(T result)
         {
             Debug.Assert(false);
-            return false;
         }
 #pragma warning restore IDE0060 // Remove unused parameter
     }
 }
+#endif
