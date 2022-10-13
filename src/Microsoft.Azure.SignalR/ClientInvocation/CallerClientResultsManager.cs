@@ -10,7 +10,6 @@ using System.Collections.Concurrent;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.AspNetCore.SignalR;
-using System.Linq;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -102,6 +101,7 @@ namespace Microsoft.Azure.SignalR
             {
                 if (item.ConnectionId != connectionId)
                 {
+                    // Follow https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/common/Shared/ClientResultsManager.cs#L58
                     throw new InvalidOperationException($"Connection ID '{connectionId}' is not valid for invocation ID '{message.InvocationId}'.");
                 }
 
@@ -127,7 +127,8 @@ namespace Microsoft.Azure.SignalR
             var protocol = _hubProtocolResolver.GetProtocol(message.Protocol, null);
             if (protocol == null)
             {
-                throw new InvalidOperationException($"Not supported protocol {message.Protocol} by server");
+                var errorMessage = $"Not supported protocol {message.Protocol} by server.";
+                return TryCompleteResult(connectionId, new CompletionMessage(message.InvocationId, errorMessage, null, false));
             }
 
             var payload = message.Payload;
@@ -139,7 +140,8 @@ namespace Microsoft.Azure.SignalR
                 }
                 else
                 {
-                     throw new InvalidOperationException($"The payload of ClientCompletionMessage whose type is {hubMessage.GetType().Name} cannot be parsed into CompletionMessage correctly.");
+                     var errorMessage = $"The payload of ClientCompletionMessage whose type is {hubMessage.GetType().Name} cannot be parsed into CompletionMessage correctly.";
+                    return TryCompleteResult(connectionId, new CompletionMessage(message.InvocationId, errorMessage, null, false));
                 }
             }
             return false;

@@ -4,11 +4,9 @@
 using System;
 using System.Threading;
 using System.Diagnostics;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
-using System.Linq;
 
 namespace Microsoft.Azure.SignalR
 {
@@ -64,18 +62,6 @@ namespace Microsoft.Azure.SignalR
             else
             {
                 // do nothing
-            }
-        }
-
-        public void RemoveServiceMapping(string invocationId)
-        {
-            if (_routedInvocations.TryGetValue(invocationId, out var invocation))
-            {
-                invocation.RouterInstanceId = null;
-            }
-            else
-            {
-                // it's acceptable that the mapping information of invocationId doesn't exsits.
             }
         }
 
