@@ -59,12 +59,12 @@ namespace Microsoft.Azure.SignalR
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Failed to record a service mapping whose RouterInstanceId '{serviceMappingMessage.InvocationId}' was already existing.");
+                    // do nothing
                 }
             }
             else
             {
-                throw new InvalidOperationException($"Failed to record a service mapping whose InvocationId '{serviceMappingMessage.InvocationId}' doesn't exist.");
+                // do nothing
             }
         }
 
