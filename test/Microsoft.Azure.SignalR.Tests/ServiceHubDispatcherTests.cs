@@ -40,7 +40,6 @@ namespace Microsoft.Azure.SignalR.Tests
                 null,
                 null,
                 null,
-                null,
                 null
             );
 

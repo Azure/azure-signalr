@@ -275,7 +275,6 @@ namespace Microsoft.Azure.SignalR.Tests
                                                                      IServiceMessageHandler messageHandler = null,
                                                                      IServiceEventHandler eventHandler = null,
                                                                      IClientConnectionFactory clientConnectionFactory = null,
-                                                                     IClientInvocationManager clientInvocationManager = null,
                                                                      HubServiceEndpoint hubServiceEndpoint = null,
                                                                      ILoggerFactory loggerFactory = null)
         {
@@ -310,7 +309,6 @@ namespace Microsoft.Azure.SignalR.Tests
                 hubServiceEndpoint ?? new TestHubServiceEndpoint(),
                 messageHandler ?? new TestServiceMessageHandler(),
                 eventHandler ?? new TestServiceEventHandler(),
-                clientInvocationManager,
                 mode: mode ?? GracefulShutdownMode.Off
             );
         }
@@ -437,7 +435,6 @@ namespace Microsoft.Azure.SignalR.Tests
                                          HubServiceEndpoint endpoint,
                                          IServiceMessageHandler serviceMessageHandler,
                                          IServiceEventHandler serviceEventHandler,
-                                         IClientInvocationManager clientInvocationManager,
                                          ServiceConnectionType connectionType = ServiceConnectionType.Default,
                                          GracefulShutdownMode mode = GracefulShutdownMode.Off,
                                          int closeTimeOutMilliseconds = 10000) : base(
@@ -452,7 +449,6 @@ namespace Microsoft.Azure.SignalR.Tests
                     endpoint,
                     serviceMessageHandler,
                     serviceEventHandler,
-                    clientInvocationManager,
                     connectionType: connectionType,
                     mode: mode,
                     closeTimeOutMilliseconds: closeTimeOutMilliseconds)

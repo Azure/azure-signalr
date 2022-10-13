@@ -19,14 +19,12 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
         private IClientConnectionManager _clientConnectionManager;
         private IServiceProtocol _serviceProtocol;
         private IClientConnectionFactory _clientConnectionFactory;
-        private IClientInvocationManager _clientInvocationManager;
 
         public MockServiceHubDispatcher(
             IServiceProtocol serviceProtocol,
             IHubContext<THub> context,
             IServiceConnectionManager<THub> serviceConnectionManager,
             IClientConnectionManager clientConnectionManager,
-            IClientInvocationManager clientInvocationManager,
             IServiceEndpointManager serviceEndpointManager,
             IOptions<ServiceOptions> options,
             ILoggerFactory loggerFactory,
@@ -45,7 +43,6 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
                 nameProvider,
                 serverLifetimeManager,
                 clientConnectionFactory,
-                clientInvocationManager,
                 null)
         {
             MockService = new ConnectionTrackingMockService();
@@ -55,12 +52,11 @@ namespace Microsoft.Azure.SignalR.IntegrationTests.Infrastructure
             _clientConnectionManager = clientConnectionManager;
             _serviceProtocol = serviceProtocol;
             _clientConnectionFactory = clientConnectionFactory;
-            _clientInvocationManager = clientInvocationManager;
         }
 
         internal override ServiceConnectionFactory GetServiceConnectionFactory(
             ConnectionFactory connectionFactory, ConnectionDelegate connectionDelegate, Action<HttpContext> contextConfig
-            ) => new MockServiceConnectionFactory(MockService, _serviceProtocol, _clientConnectionManager, connectionFactory, _loggerFactory, connectionDelegate, _clientConnectionFactory, _clientInvocationManager, _nameProvider);
+            ) => new MockServiceConnectionFactory(MockService, _serviceProtocol, _clientConnectionManager, connectionFactory, _loggerFactory, connectionDelegate, _clientConnectionFactory, _nameProvider);
 
         // this is the gateway for the tests to control the mock service side
         public IMockService MockService { 
