@@ -73,27 +73,15 @@ namespace Microsoft.Azure.SignalR
 #endif
 
         public static new void SetException(IEnumerable<Exception> exceptions) => Debug.Assert(false);
-        public static new void SetCanceled()
-        {
-            Debug.Assert(false);
-        }
-        public static new void TrySetCanceled(CancellationToken cancellationToken)
-        {
-            Debug.Assert(false);
-        }
+        public static new void SetCanceled() => Debug.Assert(false);
+        public static new void TrySetCanceled(CancellationToken cancellationToken) => Debug.Assert(false);
         public static new bool TrySetException(IEnumerable<Exception> exceptions)
         {
             Debug.Assert(false);
             return false;
         }
-        public static new void SetException(Exception exception)
-        {
-            Debug.Assert(false);
-        }
-        public static new void SetResult(T result)
-        {
-            Debug.Assert(false);
-        }
+        public static new void SetException(Exception exception) => Debug.Assert(false);
+        public static new void SetResult(T result) => Debug.Assert(false);
 #pragma warning restore IDE0060 // Remove unused parameter
     }
 }
