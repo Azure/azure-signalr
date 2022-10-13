@@ -70,8 +70,7 @@ namespace Microsoft.Azure.SignalR
             {
                 if (invocation.RouterInstanceId == null)
                 {
-                    invocation.RouterInstanceId = serviceMappingMessage.InstanceId;
-                    _pendingInvocations[serviceMappingMessage.InvocationId] = invocation;
+                    _pendingInvocations[serviceMappingMessage.InvocationId].RouterInstanceId = serviceMappingMessage.InstanceId;
                 }
                 else
                 {
@@ -88,8 +87,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (_pendingInvocations.TryGetValue(invocationId, out var invocation))
             {
-                invocation.RouterInstanceId = null;
-                _pendingInvocations[invocationId] = invocation;
+                _pendingInvocations[invocationId].RouterInstanceId = null;
             }
             else
             {
