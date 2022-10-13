@@ -14,11 +14,10 @@ using System.Linq;
 
 namespace Microsoft.Azure.SignalR
 {
-
     internal sealed class CallerClientResultsManager : ICallerClientResultsManager, IInvocationBinder
     {
         private readonly ConcurrentDictionary<string, PendingInvocation> _pendingInvocations = new();
-        private readonly string _clientResultManagerId = Guid.NewGuid().ToString();
+        private readonly string _clientResultManagerId = Guid.NewGuid().ToString("N");
         private long _lastInvocationId = 0;
 
         private readonly IHubProtocolResolver _hubProtocolResolver;
@@ -41,9 +40,9 @@ namespace Microsoft.Azure.SignalR
 
             // When the caller server is also the client router, Azure SignalR service won't send a ServiceMappingMessage to server.
             // To handle this condition, CallerClientResultsManager itself should record this mapping information rather than waiting for a ServiceMappingMessage sent by service. Only in this condition, this method is called with instanceId != null.
-            var result = _pendingInvocations.TryAdd(invocationId, 
+            var result = _pendingInvocations.TryAdd(invocationId,
                 new PendingInvocation(
-                    typeof(T), connectionId, instanceId, tcs, 
+                    typeof(T), connectionId, tcs,
                     static (state, completionMessage) =>
                     {
                         var tcs = (TaskCompletionSourceWithCancellation<T>)state;
@@ -55,7 +54,7 @@ namespace Microsoft.Azure.SignalR
                         {
                             tcs.TrySetException(new Exception(completionMessage.Error));
                         }
-                    })
+                    }) { RouterInstanceId = instanceId }
             );
             Debug.Assert(result);
 
@@ -70,7 +69,7 @@ namespace Microsoft.Azure.SignalR
             {
                 if (invocation.RouterInstanceId == null)
                 {
-                    _pendingInvocations[serviceMappingMessage.InvocationId].RouterInstanceId = serviceMappingMessage.InstanceId;
+                    invocation.RouterInstanceId = serviceMappingMessage.InstanceId;
                 }
                 else
                 {
@@ -80,18 +79,6 @@ namespace Microsoft.Azure.SignalR
             else
             {
                 // do nothing
-            }
-        }
-
-        public void RemoveServiceMapping(string invocationId)
-        {
-            if (_pendingInvocations.TryGetValue(invocationId, out var invocation))
-            {
-                _pendingInvocations[invocationId].RouterInstanceId = null;
-            }
-            else
-            {
-                // it's acceptable that the mapping information of invocationId doesn't exsits.";
             }
         }
 
@@ -124,7 +111,6 @@ namespace Microsoft.Azure.SignalR
                 if (_pendingInvocations.TryRemove(message.InvocationId, out _))
                 {
                     item.Complete(item.Tcs, message);
-                    RemoveServiceMapping(message.InvocationId);
                     return true;
                 }
                 return false;
@@ -153,7 +139,7 @@ namespace Microsoft.Azure.SignalR
                 }
                 else
                 {
-                     throw new InvalidOperationException($"The payload of ClientCompletionMessage whose type is {hubMessage.GetType()} cannot be parsed into CompletionMessage correctly.");
+                     throw new InvalidOperationException($"The payload of ClientCompletionMessage whose type is {hubMessage.GetType().Name} cannot be parsed into CompletionMessage correctly.");
                 }
             }
             return false;
@@ -166,6 +152,7 @@ namespace Microsoft.Azure.SignalR
             {
                 return type;
             }
+            // This exception will be handled by https://github.com/dotnet/aspnetcore/blob/f96dce6889fe67aaed33f0c2b147b8b537358f1e/src/SignalR/common/Shared/TryGetReturnType.cs#L14 with a silent failure. The user won't be interrupted.
             throw new InvalidOperationException($"Invocation ID '{invocationId}' is not associated with a pending client result.");
         }
 
@@ -186,9 +173,9 @@ namespace Microsoft.Azure.SignalR
         // Unused, here to honor the IInvocationBinder interface but should never be called
         public Type GetStreamItemType(string streamId) => throw new NotImplementedException();
 
-        private record PendingInvocation(Type Type, string ConnectionId, string RouterInstanceId, object Tcs, Action<object, CompletionMessage> Complete)
+        private record PendingInvocation(Type Type, string ConnectionId, object Tcs, Action<object, CompletionMessage> Complete)
         {
-            public string RouterInstanceId { get; set; } = RouterInstanceId;
+            public string RouterInstanceId { get; set; }
         }
     }
 }

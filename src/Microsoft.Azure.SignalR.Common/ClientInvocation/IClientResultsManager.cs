@@ -18,8 +18,6 @@ namespace Microsoft.Azure.SignalR
 
         void AddServiceMapping(ServiceMappingMessage serviceMappingMessage);
 
-        void RemoveServiceMapping(string invocationId);
-
         void CleanupInvocations(string instanceId);
     }
 }

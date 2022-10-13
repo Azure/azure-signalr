@@ -20,7 +20,7 @@ namespace Microsoft.Azure.SignalR
         {
             cancellationToken.Register(() => TryCompleteResult(connectionId, CompletionMessage.WithError(invocationId, "Canceled")));
 
-            var result = _routedInvocations.TryAdd(invocationId, new RoutedInvocation(connectionId, callerServerId, null));
+            var result = _routedInvocations.TryAdd(invocationId, new RoutedInvocation(connectionId, callerServerId) { RouterInstanceId = null });
             Debug.Assert(result);
 
             AddServiceMapping(new ServiceMappingMessage(invocationId, connectionId, instanceId));
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.SignalR
             {
                 if (invocation.RouterInstanceId == null)
                 {
-                    _routedInvocations[serviceMappingMessage.InvocationId].RouterInstanceId = serviceMappingMessage.InstanceId;
+                    invocation.RouterInstanceId = serviceMappingMessage.InstanceId;
                 }
                 else
                 {
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.SignalR
         {
             if (_routedInvocations.TryGetValue(invocationId, out var invocation))
             {
-                _routedInvocations[invocationId].RouterInstanceId = null;
+                invocation.RouterInstanceId = null;
             }
             else
             {
@@ -102,9 +102,9 @@ namespace Microsoft.Azure.SignalR
             return false;
         }
 
-        private record RoutedInvocation(string ConnectionId, string CallerServerId, string RouterInstanceId)
+        private record RoutedInvocation(string ConnectionId, string CallerServerId)
         {
-            public string RouterInstanceId { get; set; } = RouterInstanceId;
+            public string RouterInstanceId { get; set; }
         }
     }
 }
