@@ -101,22 +101,11 @@ namespace Microsoft.Azure.SignalR
             type = null;
             return false;
         }
-    }
 
-    class RoutedInvocation
-    {
-        public RoutedInvocation(string connectionId, string callerServerId, string routerInstanceId)
+        private record RoutedInvocation(string ConnectionId, string CallerServerId, string RouterInstanceId)
         {
-            this.ConnectionId = connectionId;
-            this.CallerServerId = callerServerId;
-            this.RouterInstanceId = routerInstanceId;
+            public string RouterInstanceId { get; set; } = RouterInstanceId;
         }
-
-        public string ConnectionId { get; set; }
-        
-        public string CallerServerId { get; set; }
-        
-        public string RouterInstanceId { get; set; }
     }
 }
 #endif

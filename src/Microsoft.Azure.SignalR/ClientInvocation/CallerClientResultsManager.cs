@@ -185,30 +185,11 @@ namespace Microsoft.Azure.SignalR
 
         // Unused, here to honor the IInvocationBinder interface but should never be called
         public Type GetStreamItemType(string streamId) => throw new NotImplementedException();
-    }
 
-    class PendingInvocation {
-        public PendingInvocation(Type type, string connectionId, string routerInstanceId, object tcs, Action<object, CompletionMessage> complete)
+        private record PendingInvocation(Type Type, string ConnectionId, string RouterInstanceId, object Tcs, Action<object, CompletionMessage> Complete)
         {
-            this.Type = type;
-            this.ConnectionId = connectionId;
-            this.RouterInstanceId = routerInstanceId;
-            this.Tcs = tcs;
-            this.Complete = complete;
+            public string RouterInstanceId { get; set; } = RouterInstanceId;
         }
-
-        public Type Type { get; set; }
-
-        public string ConnectionId { get; set; }
-
-        public string InstanceId { get; set; }
-
-        public string RouterInstanceId { get; set; }
-
-        public object Tcs { get; set; }
-
-        public Action<object, CompletionMessage> Complete { get; set; }
-        
     }
 }
 #endif
