@@ -88,6 +88,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddSingleton<IClientConnectionFactory, ClientConnectionFactory>()
                 .AddSingleton<IHostedService, HeartBeat>()
                 .AddSingleton<IAccessKeySynchronizer, AccessKeySynchronizer>()
+                .AddSingleton<IClientInvocationManager, ClientInvocationManager>()
                 .AddSingleton(typeof(NegotiateHandler<>));
 
             // If a custom router is added, do not add the default router
