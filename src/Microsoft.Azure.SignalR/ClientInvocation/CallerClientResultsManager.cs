@@ -23,7 +23,7 @@ namespace Microsoft.Azure.SignalR
 
         public CallerClientResultsManager(IHubProtocolResolver hubProtocolResolver)
         {
-            _hubProtocolResolver = hubProtocolResolver;
+            _hubProtocolResolver = hubProtocolResolver ?? throw new ArgumentNullException(nameof(hubProtocolResolver));
         }
 
         public string GenerateInvocationId(string connectionId)
