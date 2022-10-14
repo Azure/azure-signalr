@@ -87,7 +87,7 @@ namespace Microsoft.Azure.SignalR
             {
                 if (invocation.RouterInstanceId == instanceId)
                 {
-                    var message = new CompletionMessage(invocationId, $"Connection '{invocation.ConnectionId}' is disconnected.", null, false);
+                    var message = CompletionMessage.WithError(invocationId, $"Connection '{invocation.ConnectionId}' is disconnected.");
                     
                     invocation.Complete(invocation.Tcs, message);
                     _pendingInvocations.TryRemove(invocationId, out _);
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.SignalR
             if (protocol == null)
             {
                 var errorMessage = $"Not supported protocol {message.Protocol} by server.";
-                return TryCompleteResult(connectionId, new CompletionMessage(message.InvocationId, errorMessage, null, false));
+                return TryCompleteResult(connectionId, CompletionMessage.WithError(message.InvocationId, errorMessage));
             }
 
             var payload = message.Payload;
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.SignalR
 
         public bool TryCompleteResult(string connectionId, ErrorCompletionMessage message)
         {
-            var errorMessage = new CompletionMessage(message.InvocationId, message.Error, null, false);
+            var errorMessage = CompletionMessage.WithError(message.InvocationId, message.Error);
             return TryCompleteResult(connectionId, errorMessage);
         }
 
